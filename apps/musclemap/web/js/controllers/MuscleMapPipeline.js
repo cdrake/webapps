@@ -29,6 +29,7 @@ export class MuscleMapPipeline extends PipelineExecutor {
   }
 
   async runTask(type, config) {
+    if (this.pendingTask) throw new Error('A MuscleMap task is already running.');
     this.currentTaskType = type;
     const labels = {
       run: 'Starting segmentation...',
@@ -36,8 +37,17 @@ export class MuscleMapPipeline extends PipelineExecutor {
       consolidateOnly: 'Consolidating segmentations...',
     };
     this.updateOutput(labels[type] || `Starting ${type}...`);
-    await this.executeCommand(type, config, { clearResults: true });
-    return new Promise((resolve, reject) => { this.pendingTask = { resolve, reject }; });
+    const completion = new Promise((resolve, reject) => { this.pendingTask = { resolve, reject }; });
+    // Cancellation may arrive while worker initialization is still pending.
+    void completion.catch(() => {});
+    try {
+      await this.executeCommand(type, config, { clearResults: true });
+      return await completion;
+    } catch (error) {
+      this.pendingTask = null;
+      this.currentTaskType = null;
+      throw error;
+    }
   }
 
   run(config) { return this.runTask('run', config); }

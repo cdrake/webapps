@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 2,
+  "app": "musclemap",
+  "title": "MuscleMap",
+  "description": "Segment muscles and calculate per-structure volumes using the app's scientific pipeline.",
+  "defaultOperation": "segment",
+  "operations": {
+    "segment": {
+      "title": "Segment muscles",
+      "description": "Segment each anatomical image and calculate its muscle volumes.",
+      "mode": "batch",
+      "inputs": {
+        "images": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "multiple": true,
+          "required": true,
+          "description": "Anatomical images to segment independently",
+          "space": "native"
+        }
+      },
+      "parameters": {
+        "model": {
+          "type": "string",
+          "enum": [
+            "musclemap-wholebody-v1.4",
+            "musclemap-wholebody-v1.3",
+            "musclemap-abdomen-v0.0",
+            "musclemap-forearm-v0.0",
+            "musclemap-leg-v0.0",
+            "musclemap-pelvis-v0.0",
+            "musclemap-thigh-v0.0"
+          ],
+          "default": "musclemap-wholebody-v1.4",
+          "description": "Published model and label-space release"
+        },
+        "overlap": {
+          "type": "number",
+          "enum": [
+            0,
+            0.5,
+            0.75,
+            0.9
+          ],
+          "default": 0.5,
+          "description": "Sliding-window overlap"
+        },
+        "chunkSize": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "1",
+            "2",
+            "4",
+            "8"
+          ],
+          "default": "auto",
+          "description": "Tiles per inference call"
+        },
+        "sourceChunkSize": {
+          "type": "string",
+          "enum": [
+            "5",
+            "17",
+            "25",
+            "34",
+            "43",
+            "50",
+            "full"
+          ],
+          "default": "17",
+          "description": "Source-axis slices per preprocessing chunk"
+        },
+        "useWebGPU": {
+          "type": "boolean",
+          "default": true,
+          "description": "Allow the app's WebGPU backend with its existing CPU fallback"
+        },
+        "sliceThickness": {
+          "type": "number",
+          "minimum": 0.1,
+          "description": "Legacy-model target slice thickness in millimeters; omitted preserves input spacing"
+        },
+        "lowResolution": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use the selected model's existing low-resolution mode"
+        }
+      },
+      "artifacts": {
+        "segmentation": {
+          "type": "neuro:label-map",
+          "mediaType": "application/x-nifti",
+          "space": "input",
+          "minimum": 1
+        },
+        "metrics": {
+          "type": "neuro:measurements",
+          "mediaType": "application/json",
+          "minimum": 1
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    }
+  }
+}
