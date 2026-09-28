@@ -10,13 +10,13 @@ export function createNiivueAdapter(nv, { tabs, regions } = {}) {
   const crosshair = typeof nv.getCrosshairPos === 'function' && typeof nv.setCrosshairPos === 'function';
   return {
     state: () => ({
-      position: crosshair ? { frame: 'fraction', value: Array.from(nv.getCrosshairPos()) } : null,
+      position: crosshair ? { frame: 'mm', value: Array.from(nv.getCrosshairPos()) } : null,
       location: clone(location),
       ...(tabs && { tabs: clone(tabs.list()) }),
     }),
     ...(crosshair && { setCrosshair: ({ frame, value }) => {
-      if (frame !== 'fraction' || !Array.isArray(value) || value.length !== 3 || !value.every(number => Number.isFinite(number) && number >= 0 && number <= 1)) {
-        throw new Error('Crosshair position requires three fractions between 0 and 1.');
+      if (frame !== 'mm' || !Array.isArray(value) || value.length !== 3 || !value.every(number => Number.isFinite(number))) {
+        throw new Error('Crosshair position requires three finite millimetre coordinates.');
       }
       nv.setCrosshairPos([...value]);
     } }),

@@ -109,9 +109,9 @@ test('retained registered viewer supports public crosshair, explicit tabs and tr
   await f.upload();
   await f.dispatch('start');
   assert.equal((await completed(f.dispatch)).state, 'succeeded');
-  const moved = await f.dispatch('viewers.crosshair', { viewerId: 'main', position: { frame: 'fraction', value: [0.1, 0.2, 0.3] } });
-  assert.deepEqual(moved.position, { frame: 'fraction', value: [0.1, 0.2, 0.3] });
-  await assert.rejects(f.dispatch('viewers.crosshair', { viewerId: 'main', position: { frame: 'mm', value: [1, 2, 3] } }), /fractions/);
+  const moved = await f.dispatch('viewers.crosshair', { viewerId: 'main', position: { frame: 'mm', value: [0.1, 0.2, 0.3] } });
+  assert.deepEqual(moved.position, { frame: 'mm', value: [0.1, 0.2, 0.3] });
+  await assert.rejects(f.dispatch('viewers.crosshair', { viewerId: 'main', position: { frame: 'fraction', value: [1, 2, 3] } }), /millimetre/);
   await f.dispatch('viewers.tab', { viewerId: 'main', tabId: 'labels' });
   assert.equal(tab, 'labels');
   assert.deepEqual(await f.dispatch('viewers.regions', { viewerId: 'main' }), [{ id: 17, label: 'Hippocampus' }]);

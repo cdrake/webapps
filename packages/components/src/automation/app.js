@@ -10,6 +10,8 @@ const terminal = new Set(['idle', 'succeeded', 'failed', 'cancelled']);
 function parameter(value, field, key) {
   if (field.type === 'array') {
     if (!Array.isArray(value)) throw new Error(`${key} must be an array`);
+    if (field.minimum !== undefined && value.length < field.minimum) throw new Error(`${key} has too few items`);
+    if (field.maximum !== undefined && value.length > field.maximum) throw new Error(`${key} has too many items`);
     return value.map((entry, index) => parameter(entry, field.items, `${key}[${index}]`));
   }
   const type = field.type === 'integer' ? 'number' : field.type;
