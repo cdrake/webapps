@@ -57,3 +57,13 @@ test('terminal callback is explicit and concurrent waits cannot replace each oth
   await run;
   assert.equal(pipeline.onComplete, undefined);
 });
+
+
+test('named pipeline callbacks use the same completion and error boundary', async () => {
+  const pipeline = { onPipelineComplete() {}, onPipelineError() {} };
+  const original = pipeline.onPipelineComplete;
+  const options = { terminal: 'complete', completionCallback: 'onPipelineComplete', errorCallback: 'onPipelineError' };
+  await awaitPipelineStep(pipeline, options, () => pipeline.onPipelineComplete(), new AbortController().signal);
+  assert.equal(pipeline.onPipelineComplete, original);
+  await assert.rejects(awaitPipelineStep(pipeline, options, () => pipeline.onPipelineError('QSM failed'), new AbortController().signal), /QSM failed/);
+});
