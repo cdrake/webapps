@@ -19,7 +19,10 @@ app.commandLine.appendSwitch('disable-background-networking');
 app.commandLine.appendSwitch('disable-component-update');
 app.commandLine.appendSwitch('disable-domain-reliability');
 if (process.env.NEURODESK_SOFTWARE_RENDERING === '1' || process.argv.includes('--software-rendering')) {
-  for (const [name, value] of [['use-gl', 'angle'], ['use-angle', 'swiftshader'], ['enable-unsafe-swiftshader', ''], ['enable-unsafe-webgpu', '']]) app.commandLine.appendSwitch(name, value);
+  for (const [name, value] of [['use-angle', 'swiftshader'], ['enable-unsafe-webgpu', '']]) app.commandLine.appendSwitch(name, value);
+  if (process.platform === 'linux') {
+    for (const [name, value] of [['use-vulkan', 'swiftshader'], ['enable-features', 'Vulkan'], ['disable-vulkan-surface', '']]) app.commandLine.appendSwitch(name, value);
+  }
 }
 let server;
 let window;
@@ -133,6 +136,7 @@ try {
       sourceGrants.add(contentsId, Object.values(request.inputs).flatMap(source => source.url ? [source.url] : []));
       const selected = bundle.apps.find(entry => entry.id === contract.app);
       await target.loadURL(`${local.origin}/${selected.path}/`);
+      if (request.retainViewer) target.showInactive();
       const report = contract.schemaVersion === 2
         ? await runBrowserOperation(target.webContents, { contract, operation, request, outputDirectory, signal, onProgress,
           async mountDirectory(directory) {

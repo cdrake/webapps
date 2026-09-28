@@ -33,7 +33,7 @@ function registerTool(server, name, description, inputSchema, annotations, handl
     } catch (error) {
       return {
         isError: true,
-        content: [{ type: 'text', text: error.message }],
+        content: [{ type: 'text', text: String(error?.message ?? error) }],
       };
     }
   });
@@ -69,7 +69,10 @@ export async function createMcpServer(service, { version }) {
     ['regions', 'Read the regions exposed by the application viewer.', viewer, false],
   ]) {
     registerTool(server, `viewers.${name}`, description, schema, mutates ? { ...startsRun, idempotentHint: true } : readOnly,
-      ({ sessionId, ...args }) => service.viewerCommand(sessionId, `viewers.${name}`, args));
+      async ({ sessionId, ...args }) => {
+        const value = await service.viewerCommand(sessionId, `viewers.${name}`, args);
+        return name === 'list' ? { viewers: value } : name === 'regions' ? { regions: value } : value;
+      });
   }
 
   for (const contract of await service.listApps()) {

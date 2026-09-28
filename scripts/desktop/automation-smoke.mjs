@@ -203,7 +203,7 @@ try {
     arguments: { app: 'brain-extraction', inputs: { image: [join(scratch, 'missing.nii')] } },
   });
   assert.equal(invalid.isError, true);
-  const request = { inputs: { image: [fixture] }, parameters: { method: 'bet', threshold: 0.5 }, timeoutMs: 300000 };
+  const request = { inputs: { image: [fixture] }, parameters: { method: 'bet', threshold: 0.5 }, timeoutMs: 300000, retainViewer: true };
   const abandoned = await client.tool('run_brain_extraction', request);
   const cancelled = await client.tool('runs.cancel', { runId: abandoned.id });
   assert.equal(cancelled.state, 'cancelled');
@@ -217,7 +217,7 @@ try {
   const report = JSON.parse(reportResource.contents[0].text);
   assert.equal(report.status, 'succeeded');
   assert.equal(report.app, 'brain-extraction');
-  assert.equal(report.inputs.image.sha256, hash(await readFile(fixture)));
+  assert.equal(report.inputs.image[0].sha256, hash(await readFile(fixture)));
   const artifacts = {};
   for (const [role, descriptor] of Object.entries(report.artifacts)) {
     const uri = `neurodesk://runs/${started.id}/artifacts/${role}`;
@@ -242,6 +242,20 @@ try {
   assert.equal(maskSha256, '107a46c3a2f42f4a7796dc5a5b2a6660a302239ae50a0cf2eea80b1767a50862');
   assert.ok(brain.data.every((value, index) => value === (binary[index] ? original.data[index] : 0)));
   assert.equal(JSON.parse(artifacts.report).runId, report.runId);
+  const sessionId = finished.session.id;
+  const sessions = await client.tool('sessions.list');
+  assert.equal(sessions.sessions[0].runId, finished.id);
+  const { viewers } = await client.tool('viewers.list', { sessionId });
+  assert.equal(viewers[0].capabilities.crosshair, true);
+  const voxel = mask.dims.map(size => Math.floor(size * 0.4));
+  const mm = mask.affine.slice(0, 3).map(row => row[0] * voxel[0] + row[1] * voxel[1] + row[2] * voxel[2] + row[3]);
+  const position = await client.tool('viewers.crosshair', { sessionId, viewerId: viewers[0].id, position: { frame: 'mm', value: mm } });
+  position.position.value.forEach((value, axis) => assert.ok(Math.abs(value - mm[axis]) < 1e-3));
+  const tab = await client.tool('viewers.tab', { sessionId, viewerId: viewers[0].id, tabId: 'mask' });
+  assert.equal(tab.tabs.find(entry => entry.id === 'mask').active, true);
+  const regions = viewers[0].capabilities.regions
+    ? await client.tool('viewers.regions', { sessionId, viewerId: viewers[0].id }) : { supported: false };
+  summary.viewer = { viewers, position, regions };
   const eofRun = await client.tool('run_brain_extraction', request);
   summary.exit = await client.end();
   const afterEof = JSON.parse(await readFile(join(scratch, 'runs', eofRun.id, 'run.json'), 'utf8'));
@@ -250,7 +264,7 @@ try {
   summary.bet = { voxelCount, maskSha256, artifacts: report.artifacts, provenance: report.provenance };
   summary.cancellation = { requested: cancelled.state, stdinClosed: afterEof.state };
   summary.passed = true;
-  console.log(`Automation smoke passed: both contracts discovered; BET mask ${voxelCount} voxels; artifacts verified; cancellation and clean EOF exit verified.`);
+  console.log(`Automation smoke passed: both contracts discovered; BET mask ${voxelCount} voxels; artifacts and retained viewer verified; cancellation and clean EOF exit verified.`);
 } catch (error) {
   summary.error = error.stack || error.message;
   console.error(summary.error);

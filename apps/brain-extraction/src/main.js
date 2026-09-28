@@ -150,7 +150,7 @@ async function ensureViewer() {
       automation.registerViewer('main', createNiivueAdapter(viewer, {
         tabs: {
           list: () => Object.entries(outputs).map(([id, entry]) => ({ id, label: entry.description, active: displayedStage === id })),
-          select: id => show(outputs[id].file, id),
+          select: id => show(outputs[id].file, id, { throwOnError: true }),
         },
       }));
       return viewer;
@@ -158,9 +158,9 @@ async function ensureViewer() {
   }
   return viewerReady;
 }
-function show(file, stage) {
+function show(file, stage, { throwOnError = false } = {}) {
   const revision = ++viewRevision;
-  viewQueue = viewQueue.then(async () => {
+  viewQueue = viewQueue.catch(() => {}).then(async () => {
     if (revision !== viewRevision) return;
     const nv = await ensureViewer();
     if (revision !== viewRevision) return;
@@ -178,6 +178,7 @@ function show(file, stage) {
     $('viewerNotice').hidden = false;
     $('viewerNotice').textContent = `Visualization unavailable. ${error.message}. NIfTI downloads remain available.`;
     log.log(error.message, 'error');
+    if (throwOnError) throw error;
   });
   return viewQueue;
 }

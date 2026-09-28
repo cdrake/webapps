@@ -33,9 +33,14 @@ export function browserDispatcher(contents, { signal, timeoutMs = 30000 } = {}) 
       }
       return this.call('describe');
     },
-    call(command, args = {}) {
+    async call(command, args = {}) {
       if (!commands.has(command)) throw new Error(`Unsupported browser command: ${command}`);
-      return bounded(contents.executeJavaScript(`globalThis.neurodeskAutomation.dispatch(${JSON.stringify(command)}, ${JSON.stringify(args)})`));
+      const result = await bounded(contents.executeJavaScript(`(async () => {
+        try { return { ok: true, value: await globalThis.neurodeskAutomation.dispatch(${JSON.stringify(command)}, ${JSON.stringify(args)}) }; }
+        catch (error) { return { ok: false, message: String(error?.message ?? JSON.stringify(error) ?? error) }; }
+      })()`));
+      if (!result.ok) throw new Error(result.message);
+      return result.value;
     },
   };
 }
