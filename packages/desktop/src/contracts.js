@@ -1,6 +1,7 @@
 import { readFile, readdir, realpath, stat } from 'node:fs/promises';
 import { isAbsolute, join } from 'node:path';
 import * as z from 'zod/v4';
+import { operationLimitsSchema, validateOperationLimits } from './resource-limits.js';
 
 const selector = z.string().trim().min(1);
 const name = z.string().regex(/^[a-z][a-z0-9-]*$/);
@@ -87,6 +88,14 @@ const operationSchema = z.strictObject({
     maximum: z.number().int().nonnegative().optional(),
   })),
   engines: z.array(z.enum(['browser', 'native'])).min(1),
+  limits: operationLimitsSchema.optional(),
+}).superRefine((operation, context) => {
+  for (const role of Object.keys(operation.limits?.browser.inputs ?? {})) {
+    const input = operation.inputs[role];
+    if (!operation.engines.includes('browser') || input?.source !== 'files' || !input.formats?.includes('nifti')) {
+      context.addIssue({ code: 'custom', path: ['limits', 'browser', 'inputs', role], message: 'Resource limits require a declared browser NIfTI file input' });
+    }
+  }
 });
 const operationContractSchema = z.strictObject({
   schemaVersion: z.literal(2),
@@ -244,6 +253,7 @@ export async function validateRequest(contract, value) {
         request.inputs[role] = files;
       }
     }
+    await validateOperationLimits(selected, request);
     return request;
   }
   for (const paths of Object.values(request.inputs)) {

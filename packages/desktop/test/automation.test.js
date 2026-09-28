@@ -12,8 +12,8 @@ const contract = { ...await readContract(new URL('../../../apps/synthseg/automat
 
 async function fixture(t, execute) {
   const root = await mkdtemp(join(tmpdir(), 'automation-service-'));
-  const image = join(root, 'head.nii');
-  await writeFile(image, 'input');
+  const image = join(root, 'head.nii.gz');
+  await writeFile(image, await readFile(new URL('../../../exes/synthseg/test/fixtures/small.nii.gz', import.meta.url)));
   const service = createAutomationService({
     contracts: [{ contract, sha256: 'a'.repeat(64) }], outputRoot: join(root, 'runs'), execute,
   });

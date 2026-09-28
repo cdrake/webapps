@@ -51,7 +51,26 @@
       "engines": [
         "browser",
         "native"
-      ]
+      ],
+      "limits": {
+        "browser": {
+          "inputs": {
+            "image": {
+              "geometry": "synthseg-1mm-ras-padded-v1",
+              "targetVoxelSizeMm": [1, 1, 1],
+              "resamplingToleranceMm": [0.95, 1.05],
+              "paddingMultiple": 32,
+              "minimumShape": [128, 128, 128],
+              "spatialUnitsPolicy": "numeric-values-as-mm",
+              "maxBufferBytes": 2147483647,
+              "bytesPerPaddedVoxel": 288,
+              "maxPaddedVoxels": 7456540,
+              "deferredFormats": ["dicom"],
+              "description": "Browser limit on the largest activation buffer after SynthSeg resampling, RAS alignment and padding; source file size is not the limit. NIfTI is checked before a run. DICOM is checked by the existing runtime after conversion. The native engine is exempt."
+            }
+          }
+        }
+      }
     }
   }
 }
