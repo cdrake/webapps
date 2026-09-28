@@ -55,3 +55,18 @@ test('ambiguous DICOM input lists actual series instead of starting extraction',
   expect(snapshot.error.candidates.every(candidate => /^[0-9a-f]{64}$/.test(candidate.sha256))).toBe(true);
   expect(snapshot.report).toBeUndefined();
 });
+
+test('DICOM series with repeated slice basenames remain separate conversion candidates', async ({ page }) => {
+  await page.goto('./');
+  await expect(page.locator('#neurodesk-input-transfer')).toHaveCount(1);
+  const series = [40, 41];
+  const files = series.flatMap(series => dicomSeries({ series }).map((file, index) => ({ ...file, name: `image${index}.dcm` })));
+  await adopt(page, files);
+  await dispatch(page, 'start', { parameters: { method: 'bet' } });
+  await expect.poll(async () => (await dispatch(page, 'snapshot')).state, { timeout: 30000 }).toBe('failed');
+  const snapshot = await dispatch(page, 'snapshot');
+  expect(snapshot.error.code, JSON.stringify(snapshot.error)).toBe('SERIES_SELECTION_REQUIRED');
+  expect(snapshot.error.candidates.map(candidate => candidate.metadata.SeriesNumber).sort()).toEqual(series);
+  expect(snapshot.error.candidates.every(candidate => candidate.dimensions.join(',') === '16,16,4')).toBe(true);
+  expect(snapshot.report).toBeUndefined();
+});

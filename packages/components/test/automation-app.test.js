@@ -158,6 +158,33 @@ test('DICOM selection reports actual candidates, preserves sidecars and hashes u
   assert.equal(again.details.conversion.selected[0], candidates[1].sha256);
 });
 
+test('DICOM staging separates repeated basenames without changing original provenance', async t => {
+  const spec = contract();
+  spec.operations.run.inputs.image.formats.push('dicom');
+  const originals = ['first slice', 'second slice'].map(bytes => new File([bytes], 'image.dcm', { type: 'application/dicom', lastModified: 42 }));
+  Object.defineProperty(originals[0], 'webkitRelativePath', { value: 'series-a/image.dcm' });
+  originals[1]._webkitRelativePath = 'series-b/image.dcm';
+  const f = fixture(t, async () => result(), spec, {
+    async convertDicom(files) {
+      const paths = files.map(file => file.webkitRelativePath || file._webkitRelativePath || file.name);
+      assert.equal(new Set(paths).size, 2);
+      assert.equal(new Set(files.map(file => file.name)).size, 2);
+      assert.deepEqual(await Promise.all(files.map(file => file.text())), ['first slice', 'second slice']);
+      assert.ok(files.every(file => file.type === 'application/dicom' && file.lastModified === 42));
+      return [nifti('converted.nii', 7)];
+    },
+  });
+  await f.upload('image', originals);
+  await f.dispatch('start');
+  const state = await completed(f.dispatch);
+  assert.equal(state.state, 'succeeded', JSON.stringify(state.error));
+  assert.deepEqual(state.report.inputs.image, await Promise.all(originals.map(async file => ({
+    filename: 'image.dcm', bytes: file.size, sha256: createHash('sha256').update(await file.text()).digest('hex'),
+  }))));
+  assert.equal(originals[0].webkitRelativePath, 'series-a/image.dcm');
+  assert.equal(originals[1]._webkitRelativePath, 'series-b/image.dcm');
+});
+
 test('optional URL inputs and camelCase artifact roles preserve the contract shape', async t => {
   const spec = contract();
   spec.operations.run.inputs.atlas = { source: 'url', type: 'neuro:volume', formats: ['nifti'], minimum: 0, maximum: 1 };

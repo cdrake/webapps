@@ -35,7 +35,8 @@ async function candidate(file, sidecars, signal) {
 export async function prepareImageInput(files, input, { selection, convertDicom, signal } = {}) {
   const direct = files.filter(isNifti);
   const dicom = files.filter(file => !isNifti(file) && !/\.(?:json|bval|bvec)$/i.test(file.name));
-  const converted = dicom.length ? await convertDicom(dicom, { signal, niftiOnly: false }) : [];
+  const staged = dicom.map((file, index) => new File([file], `${index + 1}-${file.name}`, { type: file.type, lastModified: file.lastModified }));
+  const converted = staged.length ? await convertDicom(staged, { signal, niftiOnly: false }) : [];
   signal?.throwIfAborted();
   const images = [...direct, ...converted.filter(isNifti)];
   if (!images.length) throw new Error('No images produced. Choose NIfTI files or a complete DICOM series.');
