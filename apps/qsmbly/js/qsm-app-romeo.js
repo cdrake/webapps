@@ -2389,6 +2389,11 @@ class QSMApp {
     }
 
     try {
+      const headerInfo = parseNiftiHeader(await this.readNiftiHeader(this.fileIOController.buckets.magnitude[0].file));
+      this.voxelSize = headerInfo.voxelSize;
+      this.maskDims = [headerInfo.nx, headerInfo.ny, headerInfo.nz];
+      this.applyVoxelDefaults();
+
       // Read file buffers
       const magnitudeBuffers = [];
       const phaseBuffers = [];
