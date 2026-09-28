@@ -1,3 +1,4 @@
+import { registerAppAutomation, createNiivueAdapter, type OperationContext } from '@neurodesk/webapp-components/automation'
 import NiiVue, {
   type ChunkedVolumeFetch,
   type ChunkedVolumeSource,
@@ -33,6 +34,7 @@ import {
 import {
   DEFAULT_LAYOUT_ID,
   LAYOUT_PRESET,
+  LAYOUT_IDS,
   viewerLayoutConfig,
 } from './viewer_layout'
 import {
@@ -5441,6 +5443,17 @@ async function main(): Promise<void> {
     maxChunkResidencyBytes: DEFAULT_RESIDENCY_BYTES,
   })
   await nv.attachToCanvas(els.canvas)
+  automation.registerViewer('main', createNiivueAdapter(nv, {
+    tabs: {
+      list: () => LAYOUT_IDS.map(id => ({ id: `layout-${id}`, label: `Layout ${id}`, active: Number(els.layout.value) === id })),
+      select: id => {
+        els.layout.value = id.slice('layout-'.length)
+        applyLayout()
+        syncViewControls()
+      },
+    },
+    regions: { list: () => nv?.getMeasurements() ?? [] },
+  }))
   nvSlideView = mountNvSlideView(
     els.nvslideView,
     {
@@ -5704,6 +5717,43 @@ async function main(): Promise<void> {
   startHudPolling()
 }
 
-main().catch((err: unknown) => {
-  status(errorText(err), { error: true })
+async function openAutomationStore({ inputs, signal, progress }: OperationContext) {
+  await initialized
+  signal.throwIfAborted()
+  const store = inputs.store
+  if (Array.isArray(store)) throw new Error('An OME-Zarr store URL is required')
+  resetRenderCropForSourceChange()
+  activeStainLayerId = null
+  fixedZarrLevel = null
+  requestedBaseLevel = null
+  shouldInitializeCustomSource = true
+  els.source.value = 'custom'
+  els.customStainName.value = 'Agent volume'
+  setCustomStoreUrls([store.url])
+  syncSourceControls()
+  const layer = commitCustomLayer()
+  progress({ message: 'Loading OME-Zarr metadata and image chunks' })
+  try {
+    const runtime = await loadSelectedStainLayerRuntime(layer.id, signal)
+    if (!runtime) throw new Error('The OME-Zarr volume did not load')
+    await waitForStainLayerUploads(signal)
+    signal.throwIfAborted()
+    if (stats.failures > 0) throw new Error('Some OME-Zarr image chunks failed to load')
+    return { artifacts: [], summary: {
+      source: store.url,
+      geometry: { dimensions: runtime.source.shape, spacing: runtime.source.spacing },
+      dtype: runtime.source.dtype,
+      kind: runtime.source.kind,
+      view: captureView(),
+    } }
+  } catch (error) {
+    await removeStainLayer(layer.id)
+    throw error
+  }
+}
+const automation = registerAppAutomation({
+  app: 'zarro',
+  operations: { 'open-url': openAutomationStore, 'open-directory': openAutomationStore },
 })
+const initialized = main()
+void initialized.catch((err: unknown) => { status(errorText(err), { error: true }) })

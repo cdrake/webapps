@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 2,
+  "app": "surfannotate",
+  "title": "SurfAnnotate",
+  "description": "Open cortical surfaces and inspect saved surface regions.",
+  "defaultOperation": "open-surface",
+  "operations": {
+    "open-surface": {
+      "title": "Open surfaces",
+      "description": "Load and index actual surface geometry and optional saved ROI definitions.",
+      "mode": "viewer",
+      "inputs": {
+        "surfaces": {
+          "source": "files",
+          "type": "neuro:surface",
+          "formats": [
+            "gii",
+            "mz3",
+            "stl",
+            "obj",
+            "ply",
+            "surface"
+          ],
+          "multiple": true,
+          "required": true,
+          "description": "Surface meshes to inspect"
+        },
+        "regions": {
+          "source": "files",
+          "type": "neuro:surface-regions",
+          "formats": [
+            "json",
+            "gii"
+          ],
+          "multiple": false,
+          "required": false,
+          "description": "Optional SurfAnnotate ROI session for the active surface"
+        }
+      },
+      "parameters": {},
+      "artifacts": {},
+      "engines": [
+        "browser"
+      ]
+    }
+  }
+}
