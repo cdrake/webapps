@@ -1,0 +1,49 @@
+const activeExecutors = new WeakSet();
+
+/** Await a worker callback, not the command-dispatch promise returned by PipelineExecutor. */
+export async function awaitPipelineStep(executor, { step, terminal = 'step' }, action, signal) {
+  signal.throwIfAborted();
+  if (!['step', 'complete'].includes(terminal)) throw new Error(`Unknown pipeline terminal callback: ${terminal}`);
+  if (activeExecutors.has(executor)) throw new Error('The pipeline already has a pending automation step.');
+  activeExecutors.add(executor);
+  const previous = { onStepComplete: executor.onStepComplete, onComplete: executor.onComplete, onError: executor.onError };
+  let resolveCompletion;
+  let rejectCompletion;
+  const completion = new Promise((resolve, reject) => {
+    resolveCompletion = resolve;
+    rejectCompletion = reject;
+  });
+  const invoke = (name, value, completes) => {
+    try {
+      Promise.resolve(previous[name]?.call(executor, value)).then(
+        () => { if (completes) resolveCompletion(); },
+        rejectCompletion,
+      );
+    } catch (error) {
+      rejectCompletion(error);
+    }
+  };
+  executor.onStepComplete = completed => invoke('onStepComplete', completed, terminal === 'step' && completed === step);
+  executor.onComplete = data => invoke('onComplete', data, terminal === 'complete');
+  executor.onError = error => {
+    rejectCompletion(error instanceof Error ? error : new Error(String(error)));
+    invoke('onError', error, false);
+  };
+  const cancel = () => {
+    rejectCompletion(signal.reason);
+    try {
+      Promise.resolve(executor.cancel()).catch(rejectCompletion);
+    } catch (error) {
+      rejectCompletion(error);
+    }
+  };
+  signal.addEventListener('abort', cancel, { once: true });
+  try {
+    await Promise.all([Promise.resolve().then(action), completion]);
+    signal.throwIfAborted();
+  } finally {
+    signal.removeEventListener('abort', cancel);
+    Object.assign(executor, previous);
+    activeExecutors.delete(executor);
+  }
+}
