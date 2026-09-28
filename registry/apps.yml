@@ -214,6 +214,7 @@ apps:
     keywords: [MP2RAGE, T1 mapping, B1 correction, UNI, denoising, MRI]
     legacy_domain: thomshaw92.github.io/Easy-MP2RAGE-T1-Map
     runtime: rust-wasm
+    app_scoped_runtime_families: [dcm2niix]
     model_manifest: null
     asset_manifest_schema: null
     source: thomshaw92/Easy-MP2RAGE-T1-Map@f421f4a946523ad88a936b939d3bc4c967df9ea5
