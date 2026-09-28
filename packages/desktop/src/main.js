@@ -118,6 +118,7 @@ try {
     const target = createWindow();
     const contentsId = target.webContents.id;
     const mounts = [];
+    const windowClosed = new AbortController();
     let retained = false;
     const close = () => {
       sourceGrants.remove(contentsId);
@@ -126,6 +127,7 @@ try {
       if (!target.isDestroyed()) target.destroy();
     };
     target.once('closed', () => {
+      windowClosed.abort();
       sourceGrants.remove(contentsId);
       blockedByWindow.delete(contentsId);
       for (const url of mounts.splice(0)) local.unmountDirectory(url);
@@ -154,6 +156,7 @@ try {
       retained = true;
       return { report, session: {
         close,
+        closedSignal: windowClosed.signal,
         command(command, args, { signal: commandSignal }) {
           if (target.isDestroyed()) throw new Error('Viewer window is closed');
           return browserDispatcher(target.webContents, { signal: commandSignal }).call(command, args);

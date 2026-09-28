@@ -10,12 +10,15 @@ export function createViewerSessions({ maximum = 4, timeoutMs = 30000 } = {}) {
     return session;
   };
   const snapshot = session => ({ id: session.id, runId: session.runId, app: session.app, createdAt: session.createdAt });
+  function release(session) {
+    session.closed = true;
+    sessions.delete(session.id);
+    session.controller.abort(new Error('Viewer session closed'));
+  }
   async function close(id) {
     const session = sessions.get(id);
     if (!session || session.closed) return { id, closed: true };
-    session.closed = true;
-    sessions.delete(id);
-    session.controller.abort(new Error('Viewer session closed'));
+    release(session);
     await session.adapter.close();
     return { id, closed: true };
   }
@@ -25,9 +28,11 @@ export function createViewerSessions({ maximum = 4, timeoutMs = 30000 } = {}) {
     },
     add({ app, runId, adapter }) {
       this.assertCapacity();
+      if (adapter.closedSignal?.aborted) throw new Error('Viewer window is closed');
       const session = { id: randomUUID(), app, runId, adapter, createdAt: new Date().toISOString(),
         controller: new AbortController(), queue: Promise.resolve(), closed: false };
       sessions.set(session.id, session);
+      adapter.closedSignal?.addEventListener('abort', () => release(session), { once: true, signal: session.controller.signal });
       return snapshot(session);
     },
     list: () => [...sessions.values()].map(snapshot),

@@ -43,6 +43,41 @@ test('a stalled viewer command closes the session and rejects queued commands', 
   } finally { clearInterval(alive); }
 });
 
+test('closing a retained window removes its session and cancels pending commands', async () => {
+  const sessions = createViewerSessions({ maximum: 1 });
+  const windowClosed = new AbortController();
+  let calls = 0;
+  let started;
+  const starting = new Promise(resolve => { started = resolve; });
+  const session = sessions.add({ app: 'viewer', runId: 'run', adapter: {
+    closedSignal: windowClosed.signal,
+    command() { calls++; started(); return new Promise(() => {}); },
+    close() { assert.fail('The window has already closed'); },
+  } });
+  const pending = sessions.command(session.id, 'viewers.state');
+  const queued = sessions.command(session.id, 'viewers.regions');
+  await starting;
+  windowClosed.abort();
+  assert.deepEqual(sessions.list(), []);
+  sessions.assertCapacity();
+  await assert.rejects(pending, /Viewer session closed/);
+  await assert.rejects(queued, /closed viewer session/);
+  assert.equal(calls, 1);
+  assert.throws(() => sessions.command(session.id, 'viewers.state'), /closed viewer session/);
+  await sessions.close(session.id);
+});
+
+test('a window closed before retention cannot occupy a session slot', () => {
+  const sessions = createViewerSessions({ maximum: 1 });
+  const windowClosed = new AbortController();
+  windowClosed.abort();
+  assert.throws(() => sessions.add({ app: 'viewer', runId: 'run', adapter: {
+    closedSignal: windowClosed.signal, close() {}, command() {},
+  } }), /Viewer window is closed/);
+  assert.deepEqual(sessions.list(), []);
+  sessions.assertCapacity();
+});
+
 test('invalid viewer actions preserve a usable session, while connection close releases it', async () => {
   const sessions = createViewerSessions();
   let closed = 0;
