@@ -28,3 +28,27 @@ test('automation rejects an explicitly paired lesion on the wrong grid before in
   expect(models).toEqual([]);
   await expect(page.locator('#input')).toBeEnabled();
 });
+
+test('full normalization exports all required MNI images and the real pipeline manifest', async ({ page }) => {
+  test.skip(!process.env.SYNCRO_AUTOMATION_IMAGE, 'Set SYNCRO_AUTOMATION_IMAGE to a suitable anatomical scan for full inference.');
+  test.setTimeout(900_000);
+  await page.goto('./');
+  await page.locator('#neurodesk-input-transfer').setInputFiles(process.env.SYNCRO_AUTOMATION_IMAGE);
+  await page.evaluate(() => globalThis.neurodeskAutomation.dispatch('adopt', { role: 'primary' }));
+  await page.evaluate(() => globalThis.neurodeskAutomation.dispatch('start', { operation: 'normalize', parameters: { synthsrBackend: 'wasm', brainExtractor: 'synthstrip', keepSynth: true } }));
+  await expect.poll(async () => (await page.evaluate(() => globalThis.neurodeskAutomation.dispatch('snapshot'))).state, { timeout: 840_000 }).not.toBe('running');
+  const snapshot = await page.evaluate(() => globalThis.neurodeskAutomation.dispatch('snapshot'));
+  expect(snapshot.state, snapshot.error?.message).toBe('succeeded');
+  expect(Object.values(snapshot.report.artifacts).map(({ role }) => role).sort()).toEqual(['details','native-synthetic','normalized-brain','normalized-primary','synthetic-brain']);
+  const { createHash } = await import('node:crypto');
+  for (const [artifactId, artifact] of Object.entries(snapshot.report.artifacts)) {
+    const downloading = page.waitForEvent('download');
+    await page.evaluate((artifactId) => globalThis.neurodeskAutomation.dispatch('download', { artifactId }), artifactId);
+    const bytes = await readFile(await (await downloading).path());
+    expect(createHash('sha256').update(bytes).digest('hex')).toBe(artifact.sha256);
+    if (artifact.role === 'normalized-primary') {
+      const raw = bytes[0] === 31 ? gunzipSync(bytes) : bytes;
+      expect([42,44,46].map((offset) => raw.readInt16LE(offset))).toEqual([182,218,182]);
+    }
+  }
+});
