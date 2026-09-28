@@ -34,6 +34,8 @@ test('one labelled selector loads only when chosen and reports successful import
   assert.match(control.textContent, /Run to download a brain mask/);
   const hint = control.querySelector('[role="status"]');
   assert.equal(hint.textContent, 'Brain MRI loaded.', 'the visible hint stays one short line');
+  const labelledBy = control.select.getAttribute('aria-labelledby');
+  assert.equal(control.querySelector(`#${labelledBy}`).textContent, 'Example', 'the icon never joins the accessible name');
   const info = control.querySelector('label .nd-info-icon');
   assert.equal(info.hidden, false);
   assert.equal(info.querySelector('.nd-info-tooltip').textContent, 'A T1-weighted head scan. Run to download a brain mask.');

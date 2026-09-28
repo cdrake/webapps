@@ -92,7 +92,12 @@ try {
         }));
         Object.assign(result, { workspace: await page.evaluate(({ hintMax, desktop }) => {
           const visible = node => node.checkVisibility({ opacityProperty: true, visibilityProperty: true });
-          const text = node => node.textContent.replace(/\s+/g, ' ').trim();
+          // Count a hint's own words; an inline info icon's tooltip is help on demand.
+          const text = node => {
+            const copy = node.cloneNode(true);
+            for (const tip of copy.querySelectorAll('.nd-info-tooltip, .info-tooltip')) tip.remove();
+            return copy.textContent.replace(/\s+/g, ' ').trim();
+          };
           const failures = [];
           const footer = document.querySelector('footer#status');
           if (!footer || !visible(footer)) {
@@ -187,6 +192,8 @@ try {
             await expect.poll(() => state.getAttribute('data-example-state', { timeout: 180000 }), { timeout: 180000 }).not.toBe('loading');
             await expect(state).toHaveAttribute('data-example-state', 'ready');
             await expect(state).toHaveAttribute('data-example-id', examples[0].id);
+            // The loaded example's tooltip must not change the control's name.
+            await expect(selector).toHaveAccessibleName('Example');
             result.example = examples[0].id;
             result.exampleImport = { status: 'passed', example: examples[0].id };
           }

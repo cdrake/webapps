@@ -88,7 +88,13 @@ export function defineExampleSelector(view = globalThis.window) {
       this.#select.id = `nd-example-${++nextId}`;
       this.#select.dataset.neurodeskExample = '';
       label.htmlFor = this.#select.id;
-      label.textContent = 'Example';
+      // Name the select from this span alone so the info icon below never
+      // becomes part of its accessible name ("Example", not "Example About…").
+      const name = doc.createElement('span');
+      name.id = `${this.#select.id}-label`;
+      name.textContent = 'Example';
+      label.append(name);
+      this.#select.setAttribute('aria-labelledby', name.id);
       // The loaded example's description and expected result live in a
       // tooltip beside the label; the visible hint stays one short line.
       this.#info = renderInfoIcon('', { label: 'About this example' }, doc);

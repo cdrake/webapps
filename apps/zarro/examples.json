@@ -2,8 +2,8 @@
   {
     "id": "microscopy-stack",
     "label": "Cell microscopy stack (3 planes)",
-    "description": "BioIO microscopy image, 1800 × 1200 × 3 voxels, four levels.",
-    "expectedResult": "Zoom, slice and export NIfTI.",
+    "description": "BioIO microscopy validation image, 1800 × 1200 × 3 voxels with four resolution levels. Opens the first channel and time point.",
+    "expectedResult": "Explore the cells, change zoom level or slice, and download the field of view as NIfTI.",
     "sourceUrl": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/560955bf9a1a669bbf2a89709b64f3e64eefe008/examples/zarro/microscopy-stack/",
     "files": [
       {

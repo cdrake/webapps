@@ -227,8 +227,11 @@ function workspaceDocument(html) {
   return document;
 }
 
+// A hint's own words: an inline info icon's tooltip is help on demand, not clutter.
 function visibleText(node) {
-  return node.textContent.replace(/\s+/g, ' ').trim();
+  const copy = node.cloneNode(true);
+  for (const tip of copy.querySelectorAll('.nd-info-tooltip, .info-tooltip')) tip.remove();
+  return copy.textContent.replace(/\s+/g, ' ').trim();
 }
 
 test('every app shows status in the shared footer and keeps a collapsed technical log', async () => {

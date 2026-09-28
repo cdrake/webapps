@@ -272,8 +272,7 @@ a:focus-visible {
   gap: 0.4rem;
 }
 
-#controls .dandi-search-row button,
-#controls #clearDandiSelection {
+#controls .dandi-search-row button {
   min-height: 38px;
   margin: 0;
   padding: 0.45rem 0.65rem;
@@ -282,10 +281,6 @@ a:focus-visible {
   color: var(--nd-color-text);
   background: var(--nd-color-surface-elevated);
   font-size: 0.7rem;
-}
-
-#controls #clearDandiSelection {
-  width: 100%;
 }
 
 .source-actions {

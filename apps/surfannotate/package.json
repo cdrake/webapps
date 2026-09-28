@@ -6,7 +6,7 @@
   "description": "Browser-based cortical surface viewer with manual ROI delineation and vertex selection.",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node ../../scripts/theme-app-dist.mjs --app surfannotate",
     "preview": "vite preview",
     "test": "node --test test/*.test.js",
     "test:e2e": "node scripts/fetch-fixtures.mjs && node test/fixtures/make-flat-patch.mjs && node test/fixtures/make-real-patch.mjs && playwright test",

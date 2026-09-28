@@ -296,10 +296,10 @@ $('runButton').onclick = () => void runTask('Starting…', async () => {
     data = await runDisconnectome(scored, runAtlas.tvx);
   } catch (error) {
     // The core reports a grid mismatch by name; say what to do about it.
-    const message = /grid|dim|sto_xyz/i.test(error.message)
-      ? `${error.message} This lesion is not on the ${GRID.dim.join(' × ')} MNI152 1 mm grid; normalize it with SYNcro first.`
-      : error.message;
-    throw new Error(message);
+    // The status line gives the advice; the header detail goes to the technical log.
+    if (!/grid|dim|sto_xyz/i.test(error.message)) throw error;
+    log.log(error.message, 'error');
+    throw new Error(`Not on the ${GRID.dim.join(' × ')} MNI152 grid; normalize it with SYNcro first.`);
   }
   result = { ...data, id: scored.name.replace(/\.nii(\.gz)?$/i, ''), atlas: runAtlas.id };
 

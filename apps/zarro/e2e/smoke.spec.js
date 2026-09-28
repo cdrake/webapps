@@ -355,9 +355,8 @@ test("large NIfTI export reports progress and can be cancelled", async ({ page }
 
   await openTools(page);
   await page.locator("#downloadNifti").click();
-  await expect(page.locator("#statusText")).toContainText(
-    "Fetching tile 1 of",
-  );
+  // Progress is reported per tile; a fast machine may already be past tile 1.
+  await expect(page.locator("#statusText")).toContainText(/Fetching tile \d+ of/);
   await expect(page.locator("#cancelButton")).toBeVisible();
   await page.locator("#cancelButton").click();
   await expect(page.locator("#technicalLogOutput")).toContainText(
@@ -1116,7 +1115,7 @@ test("translated OME-Zarr URLs load as one composite volume", async ({ page }) =
     page.getByLabel(/Window level/).inputValue(),
     page.getByLabel(/Window width/).inputValue(),
   ]);
-  await page.getByLabel("Zoom level").fill("2");
+  await page.getByLabel("Zoom level", { exact: true }).fill("2");
   await page.getByRole("button", { name: "Apply" }).click();
   await expect.poll(() => gatedDapiLodRequests).toBeGreaterThan(0);
   const dapiDuringLodSwap = await settledCanvasScreenshot(page.locator("#nv-canvas"));
@@ -1147,13 +1146,13 @@ test("translated OME-Zarr URLs load as one composite volume", async ({ page }) =
   // instead of leaving the pump idle or stale. Level 3 is the coarse floor and
   // already resident, so no network gate can hold this swap in flight.
   gateDualLayerLod = false;
-  await page.getByLabel("Zoom level").fill("3");
+  await page.getByLabel("Zoom level", { exact: true }).fill("3");
   await page.getByRole("button", { name: "Apply" }).click();
   await expect(page.locator("#activeLevel")).toHaveAttribute(
     "data-requested-level",
     "3",
   );
-  await page.getByLabel("Zoom level").fill("1");
+  await page.getByLabel("Zoom level", { exact: true }).fill("1");
   await page.getByRole("button", { name: "Apply" }).click();
   await expect(page.locator("#activeLevel")).toHaveAttribute(
     "data-requested-level",
@@ -1374,9 +1373,17 @@ test("generic uint16 share contrast is replaced from streamed signal", async ({ 
   await expect(page.locator("#measurementStatus")).toContainText("µm");
   await expect(page.locator(".nvslide-measurement-line")).toHaveCount(1);
   await expect(page.locator("#clearMeasurements")).toBeEnabled();
+  // Right-click the line as drawn: its end is clamped to the image edge when
+  // the drag runs past it, so the drag midpoint need not lie on the line.
+  // The overlay redraws its SVG after the drag, so read the line once it settles.
+  let drawnLine = null;
+  await expect.poll(async () => {
+    drawnLine = await page.locator(".nvslide-measurement-line").boundingBox().catch(() => null);
+    return drawnLine !== null && drawnLine.width > 0;
+  }).toBe(true);
   await page.mouse.click(
-    (measurementStart.x + measurementEnd.x) / 2,
-    (measurementStart.y + measurementEnd.y) / 2,
+    drawnLine.x + drawnLine.width / 2,
+    drawnLine.y + drawnLine.height / 2,
     { button: "right" },
   );
   await expect(page.locator(".nvslide-measurement-line")).toHaveCount(0);

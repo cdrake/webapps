@@ -4,7 +4,8 @@ import {
   bindInfoTooltips,
   createConsole,
   createExampleSelector,
-  createInfoDialog
+  createInfoDialog,
+  renderInfoIcon
 } from '@neurodesk/webapp-components/ui';
 import examples from '../examples.json';
 
@@ -1170,7 +1171,8 @@ async function loadSurface(file, { assertCurrent = () => {}, rethrow = false } =
       ? ` Border points carried over from ${state.surfaces.filter(
         (s) => s.topologyKey === entry.topologyKey).length - 1} matching surface(s).`
       : '';
-    setStatus(`${file.name}: ${geometry.vertexCount.toLocaleString()} vertices`, {
+    // Being able to close an ROI on the cut edge changes what the user can do; say so.
+    setStatus(`${file.name}: ${geometry.vertexCount.toLocaleString()} vertices.${openCount > 0 ? ' This surface is cut.' : ''}`, {
       detail: `${(geometry.triangles.length / 3).toLocaleString()} faces.${note}${carried}`
     });
   } catch (error) {
@@ -1263,8 +1265,10 @@ function activateSurface(id, { announce = false } = {}) {
       ? ` ${elsewhere.length} ROI(s) on other surfaces are not shown here — they use `
         + 'a different vertex indexing, and reappear when you switch back.'
       : '';
+    // Hidden ROIs must stay visible in the status line, or the work looks lost.
+    const hiddenBrief = elsewhere.length ? ` ${elsewhere.length} ROI(s) on other surfaces reappear when you switch back.` : '';
     setStatus(`Showing ${entry.name} — ` +
-      `${entry.geometry.vertexCount.toLocaleString()} vertices`, { detail: `${carried}${hidden}`.trim() });
+      `${entry.geometry.vertexCount.toLocaleString()} vertices.${hiddenBrief}`, { detail: `${carried}${hidden}`.trim() });
   }
 }
 
@@ -2091,7 +2095,6 @@ function isPlanar(positions) {
 function showCoordinateSource() {
   const entry = activeSurface();
   // The hint is one line; the reasoning behind a warning is its tooltip.
-  ui.exportHint.title = '';
   if (!entry) {
     ui.exportHint.textContent = "Coordinates are written in the loaded surface's space.";
     ui.exportHint.classList.remove('warn');
@@ -2140,9 +2143,11 @@ function showCoordinateSource() {
       + 'vertices are the same.';
   }
 
-  ui.exportHint.textContent = `${entry.name} x/y/z are not anatomical. ${brief}`;
-  ui.exportHint.title = `${entry.name} is ${what}, so its x/y/z are not anatomical: they are `
-    + `positions on ${where}, not in the brain. ` + advice;
+  ui.exportHint.textContent = `${entry.name} x/y/z are not anatomical. ${brief} `;
+  // A tooltip, not a title attribute, so the reasoning is reachable by keyboard and touch.
+  ui.exportHint.append(renderInfoIcon(`${entry.name} is ${what}, so its x/y/z are not anatomical: they are `
+    + `positions on ${where}, not in the brain. ` + advice, { label: 'About these coordinates' }));
+  bindInfoTooltips(ui.exportHint);
   ui.exportHint.classList.add('warn');
 }
 
