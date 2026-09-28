@@ -21,9 +21,8 @@
             "ply",
             "surface"
           ],
-          "multiple": true,
-          "required": true,
-          "description": "Surface meshes to inspect"
+          "description": "Surface meshes to inspect",
+          "minimum": 1
         },
         "regions": {
           "source": "files",
@@ -32,9 +31,9 @@
             "json",
             "gii"
           ],
-          "multiple": false,
-          "required": false,
-          "description": "Optional SurfAnnotate ROI session for the active surface"
+          "description": "Optional SurfAnnotate ROI session for the active surface",
+          "minimum": 0,
+          "maximum": 1
         }
       },
       "parameters": {},

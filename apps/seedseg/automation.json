@@ -17,10 +17,10 @@
             "nifti",
             "dicom"
           ],
-          "multiple": false,
-          "required": true,
           "description": "T1-weighted prostate MRI containing fiducial markers",
-          "space": "native"
+          "space": "native",
+          "minimum": 1,
+          "maximum": 1
         }
       },
       "parameters": {

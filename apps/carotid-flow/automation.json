@@ -17,7 +17,9 @@
             "nifti",
             "dicom"
           ],
-          "description": "Single-slice cardiac series: amplitude frames followed by phase frames."
+          "description": "Single-slice cardiac series: amplitude frames followed by phase frames.",
+          "minimum": 1,
+          "maximum": 1
         }
       },
       "parameters": {
@@ -81,7 +83,9 @@
             "nifti",
             "dicom"
           ],
-          "description": "Amplitude frames."
+          "description": "Amplitude frames.",
+          "minimum": 1,
+          "maximum": 1
         },
         "phase": {
           "source": "files",
@@ -90,7 +94,9 @@
             "nifti",
             "dicom"
           ],
-          "description": "Corresponding phase or velocity frames."
+          "description": "Corresponding phase or velocity frames.",
+          "minimum": 1,
+          "maximum": 1
         }
       },
       "parameters": {

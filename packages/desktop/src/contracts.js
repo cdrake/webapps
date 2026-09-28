@@ -72,8 +72,8 @@ const operationSchema = z.strictObject({
     source: z.enum(['files', 'url', 'directory']),
     type: semanticType,
     formats: z.array(z.string().regex(/^[a-z0-9-]+$/)).min(1).optional(),
-    multiple: z.boolean().default(false),
-    required: z.boolean().default(true),
+    minimum: z.number().int().nonnegative().default(1),
+    maximum: z.number().int().positive().optional(),
     description: z.string().min(1),
     space: z.string().optional(),
   })),
@@ -108,7 +108,8 @@ export function parseContract(value) {
     for (const operation of Object.values(contract.operations)) {
       for (const [role, field] of Object.entries(operation.inputs)) {
         if (field.source === 'files' && !field.formats) throw new Error(`${role}: file inputs require formats`);
-        if (field.source !== 'files' && field.multiple) throw new Error(`${role}: only file inputs may be multiple`);
+        if (field.maximum !== undefined && field.minimum > field.maximum) throw new Error(`${role}: invalid input cardinality`);
+        if (field.source !== 'files' && (field.minimum > 1 || field.maximum !== 1)) throw new Error(`${role}: URL and directory inputs require a maximum of one`);
       }
       for (const [role, field] of Object.entries(operation.artifacts)) {
         if (field.maximum !== undefined && field.minimum > field.maximum) throw new Error(`${role}: invalid artifact cardinality`);
@@ -175,9 +176,11 @@ export function requestSchema(contract, operation) {
           ? z.strictObject({ url: z.httpUrl() })
           : field.source === 'directory'
             ? z.strictObject({ directory: z.string().min(1) })
-            : z.array(z.string().min(1)).min(1).max(100000);
+            : z.array(z.string().min(1))
+              .min(field.formats.includes('dicom') ? Math.min(1, field.minimum) : field.minimum)
+              .max(field.formats.includes('dicom') ? 100000 : Math.min(100000, field.maximum ?? 100000));
         schema = schema.describe(field.description);
-        return [role, field.required ? schema : schema.optional()];
+        return [role, field.minimum > 0 ? schema : schema.optional()];
       }))).prefault({}),
       parameters: z.strictObject(Object.fromEntries(Object.entries(selected.parameters).map(([key, field]) => [
         key, field.default === undefined ? parameterSchema(field).optional() : parameterSchema(field).default(field.default),
@@ -227,7 +230,7 @@ export async function validateRequest(contract, value) {
           } else if (info.isFile()) files.push(path);
           else throw new Error(`Input is not a regular file: ${path}`);
         }
-        if (!files.length || files.length > 100000) throw new Error(`${role}: invalid input file count`);
+        if ((!files.length && field.minimum > 0) || files.length > 100000) throw new Error(`${role}: invalid input file count`);
         const unique = new Set();
         for (const path of files) {
           const canonical = await realpath(path);
@@ -235,7 +238,9 @@ export async function validateRequest(contract, value) {
           unique.add(canonical);
           if (!acceptsFile(field, path)) throw new Error(`${role}: unsupported input format: ${path}`);
         }
-        if (!field.multiple && files.length > 1 && !field.formats.includes('dicom')) throw new Error(`${role}: requires one input file`);
+        if (!field.formats.includes('dicom') && (files.length < field.minimum || files.length > (field.maximum ?? Infinity))) {
+          throw new Error(`${role}: input cardinality mismatch`);
+        }
         request.inputs[role] = files;
       }
     }

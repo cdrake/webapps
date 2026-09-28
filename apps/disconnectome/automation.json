@@ -17,10 +17,10 @@
             "nifti",
             "dicom"
           ],
-          "multiple": false,
-          "required": true,
           "space": "MNI152-1mm",
-          "description": "Lesion mask in the required reference grid"
+          "description": "Lesion mask in the required reference grid",
+          "minimum": 1,
+          "maximum": 1
         },
         "anatomical": {
           "source": "files",
@@ -29,10 +29,10 @@
             "nifti",
             "dicom"
           ],
-          "multiple": false,
-          "required": false,
           "space": "MNI152-1mm",
-          "description": "Optional anatomical background image"
+          "description": "Optional anatomical background image",
+          "minimum": 0,
+          "maximum": 1
         }
       },
       "parameters": {

@@ -14,10 +14,10 @@
             "nifti",
             "dicom"
           ],
-          "required": true,
           "source": "files",
-          "multiple": false,
-          "description": "Anatomical MRI or DICOM series"
+          "description": "Anatomical MRI or DICOM series",
+          "minimum": 1,
+          "maximum": 1
         }
       },
       "parameters": {

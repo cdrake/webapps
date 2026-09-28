@@ -17,10 +17,10 @@
             "nifti",
             "dicom"
           ],
-          "multiple": false,
-          "required": true,
           "space": "native",
-          "description": "MP2RAGE combined UNI image"
+          "description": "MP2RAGE combined UNI image",
+          "minimum": 1,
+          "maximum": 1
         },
         "inv2": {
           "source": "files",
@@ -29,10 +29,10 @@
             "nifti",
             "dicom"
           ],
-          "multiple": false,
-          "required": false,
           "space": "native",
-          "description": "Optional second inversion magnitude image"
+          "description": "Optional second inversion magnitude image",
+          "minimum": 0,
+          "maximum": 1
         },
         "b1": {
           "source": "files",
@@ -41,10 +41,10 @@
             "nifti",
             "dicom"
           ],
-          "multiple": false,
-          "required": false,
           "space": "native",
-          "description": "Measured B1 map; supply this or SA2RAGE"
+          "description": "Measured B1 map; supply this or SA2RAGE",
+          "minimum": 0,
+          "maximum": 1
         },
         "sa2rage": {
           "source": "files",
@@ -53,10 +53,10 @@
             "nifti",
             "dicom"
           ],
-          "multiple": false,
-          "required": false,
           "space": "native",
-          "description": "Two-volume SA2RAGE image; supply this or a measured B1 map"
+          "description": "Two-volume SA2RAGE image; supply this or a measured B1 map",
+          "minimum": 0,
+          "maximum": 1
         }
       },
       "parameters": {
@@ -157,10 +157,10 @@
             "nifti",
             "dicom"
           ],
-          "multiple": false,
-          "required": true,
           "space": "native",
-          "description": "MP2RAGE combined UNI image"
+          "description": "MP2RAGE combined UNI image",
+          "minimum": 1,
+          "maximum": 1
         },
         "inv1": {
           "source": "files",
@@ -169,10 +169,10 @@
             "nifti",
             "dicom"
           ],
-          "multiple": false,
-          "required": true,
           "space": "native",
-          "description": "First inversion magnitude image"
+          "description": "First inversion magnitude image",
+          "minimum": 1,
+          "maximum": 1
         },
         "inv2": {
           "source": "files",
@@ -181,10 +181,10 @@
             "nifti",
             "dicom"
           ],
-          "multiple": false,
-          "required": true,
           "space": "native",
-          "description": "Second inversion magnitude image"
+          "description": "Second inversion magnitude image",
+          "minimum": 1,
+          "maximum": 1
         }
       },
       "parameters": {

@@ -13,20 +13,26 @@
         "moving": {
           "source": "files",
           "type": "neuro:volume",
-          "formats": ["nifti", "dicom"],
-          "multiple": false,
-          "required": true,
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
           "description": "Moving image to register",
-          "space": "moving"
+          "space": "moving",
+          "minimum": 1,
+          "maximum": 1
         },
         "fixed": {
           "source": "files",
           "type": "neuro:volume",
-          "formats": ["nifti", "dicom"],
-          "multiple": false,
-          "required": true,
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
           "description": "Fixed reference image",
-          "space": "fixed"
+          "space": "fixed",
+          "minimum": 1,
+          "maximum": 1
         }
       },
       "parameters": {
@@ -45,7 +51,9 @@
           "maximum": 1
         }
       },
-      "engines": ["browser"]
+      "engines": [
+        "browser"
+      ]
     }
   }
 }

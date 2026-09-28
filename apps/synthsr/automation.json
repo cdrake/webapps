@@ -17,10 +17,10 @@
             "nifti",
             "dicom"
           ],
-          "multiple": false,
-          "required": true,
           "description": "An MRI or CT image",
-          "space": "native"
+          "space": "native",
+          "minimum": 1,
+          "maximum": 1
         },
         "model": {
           "source": "files",
@@ -28,9 +28,9 @@
           "formats": [
             "onnx"
           ],
-          "multiple": false,
-          "required": false,
-          "description": "Optional local copy of the validated synthsr-v2.onnx weights"
+          "description": "Optional local copy of the validated synthsr-v2.onnx weights",
+          "minimum": 0,
+          "maximum": 1
         }
       },
       "parameters": {

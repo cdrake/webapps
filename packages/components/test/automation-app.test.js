@@ -6,7 +6,7 @@ import { registerAppAutomation, createNiivueAdapter } from '../src/automation/in
 import { prepareImageInput } from '../src/automation/files.js';
 
 const contract = () => ({ schemaVersion: 2, app: 'test', appVersion: '0.1.20260928', defaultOperation: 'run', operations: {
-  run: { mode: 'batch', inputs: { image: { source: 'files', type: 'neuro:volume', formats: ['nifti'], required: true, multiple: false } },
+  run: { mode: 'batch', inputs: { image: { source: 'files', type: 'neuro:volume', formats: ['nifti'], minimum: 1, maximum: 1 } },
     parameters: { threshold: { type: 'number', minimum: 0, maximum: 1, default: 0.5 } },
     artifacts: { labels: { type: 'neuro:label-map', mediaType: 'application/x-nifti', minimum: 1, maximum: 1 } }, engines: ['browser'] },
 } });
@@ -139,7 +139,7 @@ test('DICOM selection reports actual candidates, preserves sidecars and hashes u
   const b = nifti('second.nii', 8);
   const sidecar = new File(['{"Modality":"MR","PatientName":"not exposed"}'], 'second.json');
   const gradients = new File(['0 1000'], 'second.bval');
-  const input = { multiple: false };
+  const input = { minimum: 1, maximum: 1 };
   const files = [new File(['dicom'], 'slice.dcm')];
   const convertDicom = async (_files, options) => { assert.equal(options.niftiOnly, false); return [a, b, sidecar, gradients]; };
   let candidates;
@@ -160,7 +160,7 @@ test('DICOM selection reports actual candidates, preserves sidecars and hashes u
 
 test('optional URL inputs and camelCase artifact roles preserve the contract shape', async t => {
   const spec = contract();
-  spec.operations.run.inputs.atlas = { source: 'url', type: 'neuro:volume', formats: ['nifti'], required: false };
+  spec.operations.run.inputs.atlas = { source: 'url', type: 'neuro:volume', formats: ['nifti'], minimum: 0, maximum: 1 };
   spec.operations.run.artifacts = { labelMap: spec.operations.run.artifacts.labels };
   const f = fixture(t, async ({ inputs, progress }) => {
     assert.deepEqual(inputs.atlas, []);

@@ -17,10 +17,10 @@
             "nifti",
             "dicom"
           ],
-          "multiple": false,
-          "required": true,
           "description": "MRI contrast appropriate to the selected SCT task",
-          "space": "native"
+          "space": "native",
+          "minimum": 1,
+          "maximum": 1
         }
       },
       "parameters": {

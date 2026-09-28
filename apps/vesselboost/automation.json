@@ -17,10 +17,10 @@
             "nifti",
             "dicom"
           ],
-          "multiple": false,
-          "required": true,
           "description": "TOF angiography or T2-star image suited to the chosen model",
-          "space": "native"
+          "space": "native",
+          "minimum": 1,
+          "maximum": 1
         }
       },
       "parameters": {

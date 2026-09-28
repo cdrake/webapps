@@ -17,9 +17,9 @@
             "nifti",
             "dicom"
           ],
-          "multiple": false,
-          "required": true,
-          "description": "Input image for processing"
+          "description": "Input image for processing",
+          "minimum": 1,
+          "maximum": 1
         }
       },
       "parameters": {

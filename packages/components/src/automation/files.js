@@ -51,10 +51,13 @@ export async function prepareImageInput(files, input, { selection, convertDicom,
     if (selected.length !== 1) throw Object.assign(new Error('The selected series is absent or ambiguous; inspect the current input again.'), {
       code: 'INVALID_SERIES_SELECTION', candidates: details.map(entry => entry.descriptor),
     });
-  } else if (!input.multiple && details.length !== 1) {
+  } else if (input.maximum === 1 && details.length !== 1) {
     throw Object.assign(new Error('Select one converted image by its content checksum.'), {
       code: 'SERIES_SELECTION_REQUIRED', candidates: details.map(entry => entry.descriptor),
     });
+  }
+  if (selected.length < (input.minimum ?? 1) || selected.length > (input.maximum ?? Infinity)) {
+    throw new Error(`Input image cardinality mismatch: received ${selected.length}`);
   }
   return {
     files: selected.map(entry => entry.file),

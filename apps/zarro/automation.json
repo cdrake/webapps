@@ -16,9 +16,9 @@
           "formats": [
             "ome-zarr"
           ],
-          "multiple": false,
-          "required": true,
-          "description": "OME-Zarr store url"
+          "description": "OME-Zarr store url",
+          "minimum": 1,
+          "maximum": 1
         }
       },
       "parameters": {},
@@ -38,9 +38,9 @@
           "formats": [
             "ome-zarr"
           ],
-          "multiple": false,
-          "required": true,
-          "description": "OME-Zarr store directory"
+          "description": "OME-Zarr store directory",
+          "minimum": 1,
+          "maximum": 1
         }
       },
       "parameters": {},

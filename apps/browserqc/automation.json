@@ -17,9 +17,9 @@
             "nifti",
             "dicom"
           ],
-          "multiple": false,
-          "required": true,
-          "description": "T1 anatomical image or DICOM series"
+          "description": "T1 anatomical image or DICOM series",
+          "minimum": 1,
+          "maximum": 1
         },
         "sidecar": {
           "source": "files",
@@ -27,9 +27,9 @@
           "formats": [
             "json"
           ],
-          "multiple": false,
-          "required": false,
-          "description": "Optional BIDS metadata; otherwise use the selected converted series sidecar"
+          "description": "Optional BIDS metadata; otherwise use the selected converted series sidecar",
+          "minimum": 0,
+          "maximum": 1
         }
       },
       "parameters": {

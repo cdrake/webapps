@@ -15,7 +15,7 @@ const contract = parseContract({ schemaVersion: 2, app: 'registration', appVersi
   title: 'Registration', description: 'Register a moving image.', defaultOperation: 'register', operations: {
     register: { title: 'Register', description: 'Register two inputs.', mode: 'batch', engines: ['browser'], parameters: {},
       inputs: Object.fromEntries(['moving', 'fixed'].map(role => [role, {
-        type: 'neuro:volume', source: 'files', formats: ['nifti'], description: role,
+        type: 'neuro:volume', source: 'files', formats: ['nifti'], minimum: 1, maximum: 1, description: role,
       }])),
       artifacts: { registered: { type: 'neuro:volume', mediaType: 'application/x-nifti', minimum: 1, maximum: 1 } },
     },

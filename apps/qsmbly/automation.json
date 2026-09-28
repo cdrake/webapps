@@ -17,10 +17,9 @@
             "nifti",
             "dicom"
           ],
-          "multiple": true,
-          "required": true,
           "space": "native",
-          "description": "Magnitude echoes in increasing echo-time order"
+          "description": "Magnitude echoes in increasing echo-time order",
+          "minimum": 1
         },
         "phase": {
           "source": "files",
@@ -29,10 +28,9 @@
             "nifti",
             "dicom"
           ],
-          "multiple": true,
-          "required": true,
           "space": "native",
-          "description": "Corresponding phase echoes in matching order"
+          "description": "Corresponding phase echoes in matching order",
+          "minimum": 1
         },
         "mask": {
           "source": "files",
@@ -41,10 +39,10 @@
             "nifti",
             "dicom"
           ],
-          "multiple": false,
-          "required": false,
           "space": "native",
-          "description": "Optional brain mask in the same image geometry"
+          "description": "Optional brain mask in the same image geometry",
+          "minimum": 0,
+          "maximum": 1
         }
       },
       "parameters": {

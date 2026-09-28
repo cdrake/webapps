@@ -12,7 +12,7 @@ const registration = {
     register: {
       title: 'Register', description: 'Register moving to fixed', mode: 'batch',
       inputs: Object.fromEntries(['fixed', 'moving'].map(role => [role, {
-        source: 'files', type: 'neuro:volume', formats: ['nifti', 'dicom'], description: role,
+        source: 'files', type: 'neuro:volume', formats: ['nifti', 'dicom'], minimum: 1, maximum: 1, description: role,
       }])),
       parameters: {
         iterations: { type: 'array', items: { type: 'integer', description: 'Iterations', minimum: 0 }, default: [20, 10], description: 'Iterations per resolution' },
@@ -26,7 +26,7 @@ const registration = {
     },
     inspect: {
       title: 'Inspect', description: 'Inspect a store', mode: 'viewer',
-      inputs: { store: { source: 'directory', type: 'neuro:omezarr', description: 'Local store' } },
+      inputs: { store: { source: 'directory', type: 'neuro:omezarr', minimum: 1, maximum: 1, description: 'Local store' } },
       parameters: {}, artifacts: {}, engines: ['browser'],
     },
   },
@@ -85,4 +85,23 @@ test('contracts reject undeclared defaults, invalid cardinality and array shapes
   invalid.operations.register.artifacts.registered.minimum = 1;
   delete invalid.operations.register.parameters.iterations.items;
   assert.throws(() => parseContract(invalid), /require items/);
+});
+
+test('declared input cardinality controls request arrays and optional roles', async t => {
+  const source = structuredClone(registration);
+  source.operations.register.inputs.fixed.formats = ['nifti'];
+  source.operations.register.inputs.moving.formats = ['nifti'];
+  source.operations.register.inputs.moving.minimum = 0;
+  const contract = parseContract(source);
+  const { inputs } = await fixture(t);
+  await validateRequest(contract, { inputs: { fixed: inputs.fixed } });
+  await validateRequest(contract, { inputs: { fixed: inputs.fixed, moving: [] } });
+  await assert.rejects(validateRequest(contract, { inputs: { fixed: [] } }));
+  await assert.rejects(validateRequest(contract, { inputs: { fixed: [...inputs.fixed, ...inputs.moving] } }));
+  source.operations.register.inputs.fixed.minimum = 2;
+  source.operations.register.inputs.fixed.maximum = 3;
+  await validateRequest(parseContract(source), { inputs: { fixed: [...inputs.fixed, ...inputs.moving] } });
+  await assert.rejects(validateRequest(parseContract(source), { inputs: { fixed: inputs.fixed } }));
+  source.operations.register.inputs.fixed.maximum = 1;
+  assert.throws(() => parseContract(source), /input cardinality/);
 });

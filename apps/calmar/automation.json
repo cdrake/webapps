@@ -17,10 +17,10 @@
             "nifti",
             "dicom"
           ],
-          "multiple": false,
-          "required": true,
           "space": "atlas",
-          "description": "Reviewed lesion on the selected atlas overlap grid, with matching affine"
+          "description": "Reviewed lesion on the selected atlas overlap grid, with matching affine",
+          "minimum": 1,
+          "maximum": 1
         }
       },
       "parameters": {
@@ -91,10 +91,10 @@
             "nifti",
             "dicom"
           ],
-          "multiple": false,
-          "required": true,
           "space": "native",
-          "description": "Structural T1 MRI for candidate lesion segmentation"
+          "description": "Structural T1 MRI for candidate lesion segmentation",
+          "minimum": 1,
+          "maximum": 1
         }
       },
       "parameters": {},

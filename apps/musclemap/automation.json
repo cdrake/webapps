@@ -17,10 +17,9 @@
             "nifti",
             "dicom"
           ],
-          "multiple": true,
-          "required": true,
           "description": "Anatomical images to segment independently",
-          "space": "native"
+          "space": "native",
+          "minimum": 1
         }
       },
       "parameters": {

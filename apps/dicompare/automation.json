@@ -16,9 +16,8 @@
           "formats": [
             "dicom"
           ],
-          "multiple": true,
-          "required": true,
-          "description": "DICOM instances to group and analyze"
+          "description": "DICOM instances to group and analyze",
+          "minimum": 1
         }
       },
       "parameters": {},
@@ -45,9 +44,8 @@
           "formats": [
             "dicom"
           ],
-          "multiple": true,
-          "required": true,
-          "description": "DICOM instances to group and analyze"
+          "description": "DICOM instances to group and analyze",
+          "minimum": 1
         },
         "schema": {
           "source": "files",
@@ -55,9 +53,9 @@
           "formats": [
             "json"
           ],
-          "multiple": false,
-          "required": true,
-          "description": "dicompare acquisition schema"
+          "description": "dicompare acquisition schema",
+          "minimum": 1,
+          "maximum": 1
         }
       },
       "parameters": {

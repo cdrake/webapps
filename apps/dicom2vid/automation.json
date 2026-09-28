@@ -18,8 +18,9 @@
             "mgh",
             "mgz"
           ],
-          "multiple": false,
-          "description": "Input volume."
+          "description": "Input volume.",
+          "minimum": 1,
+          "maximum": 1
         }
       },
       "parameters": {
@@ -118,8 +119,8 @@
           "formats": [
             "dicom"
           ],
-          "multiple": true,
-          "description": "DICOM series files or directory."
+          "description": "DICOM series files or directory.",
+          "minimum": 1
         }
       },
       "parameters": {

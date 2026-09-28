@@ -127,7 +127,7 @@ export function registerAppAutomation({ app, operations, convertDicom, contractU
         if (field.source !== 'files') {
           const source = request.inputs?.[role];
           if (!object(source) || typeof source.url !== 'string') {
-            if (field.required) throw new Error(`Missing input: ${role}`);
+            if (field.minimum > 0) throw new Error(`Missing input: ${role}`);
             inputs[role] = [];
             inputRecords[role] = [];
             continue;
@@ -139,7 +139,7 @@ export function registerAppAutomation({ app, operations, convertDicom, contractU
           continue;
         }
         const files = sourceFiles.get(role) ?? [];
-        if (!files.length && field.required) throw new Error(`Missing input: ${role}`);
+        if (!files.length && field.minimum > 0) throw new Error(`Missing input: ${role}`);
         inputRecords[role] = [];
         for (const file of files) inputRecords[role].push(await describeFile(file, signal));
         if (files.length && convertsDicom(field)) {
@@ -148,7 +148,7 @@ export function registerAppAutomation({ app, operations, convertDicom, contractU
           inputDetails[role] = prepared.details;
           conversions[role] = prepared.details.conversion;
         } else {
-          if (!field.multiple && files.length > 1) throw new Error(`Input ${role} accepts one file`);
+          if (files.length < field.minimum || files.length > (field.maximum ?? Infinity)) throw new Error(`Input cardinality mismatch: ${role}`);
           if (request.selections?.[role] !== undefined) throw new Error(`Input ${role} does not support series selection`);
           inputs[role] = files;
           inputDetails[role] = { sidecars: [] };

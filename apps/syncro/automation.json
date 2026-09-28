@@ -17,10 +17,10 @@
             "nifti",
             "dicom"
           ],
-          "multiple": false,
-          "required": true,
           "space": "native",
-          "description": "Primary anatomical scan to normalize"
+          "description": "Primary anatomical scan to normalize",
+          "minimum": 1,
+          "maximum": 1
         },
         "lesion": {
           "source": "files",
@@ -29,10 +29,10 @@
             "nifti",
             "dicom"
           ],
-          "multiple": false,
-          "required": false,
           "space": "lesion-reference",
-          "description": "Lesion mask in the required reference grid"
+          "description": "Lesion mask in the required reference grid",
+          "minimum": 0,
+          "maximum": 1
         },
         "pathological": {
           "source": "files",
@@ -41,10 +41,10 @@
             "nifti",
             "dicom"
           ],
-          "multiple": false,
-          "required": false,
           "space": "lesion-reference",
-          "description": "Optional scan whose grid contains the lesion"
+          "description": "Optional scan whose grid contains the lesion",
+          "minimum": 0,
+          "maximum": 1
         }
       },
       "parameters": {

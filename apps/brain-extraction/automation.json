@@ -19,8 +19,8 @@
           "space": "native",
           "description": "One anatomical head image",
           "source": "files",
-          "multiple": false,
-          "required": true
+          "minimum": 1,
+          "maximum": 1
         }
       },
       "parameters": {

@@ -17,9 +17,9 @@
             "nifti",
             "dicom"
           ],
-          "multiple": false,
-          "required": true,
-          "description": "Input image for processing"
+          "description": "Input image for processing",
+          "minimum": 1,
+          "maximum": 1
         },
         "bval": {
           "source": "files",
@@ -28,9 +28,9 @@
             "bval",
             "bvals"
           ],
-          "multiple": false,
-          "required": false,
-          "description": "Explicit b values; required for NIfTI input unless DICOM supplies sidecars"
+          "description": "Explicit b values; required for NIfTI input unless DICOM supplies sidecars",
+          "minimum": 0,
+          "maximum": 1
         },
         "bvec": {
           "source": "files",
@@ -39,9 +39,9 @@
             "bvec",
             "bvecs"
           ],
-          "multiple": false,
-          "required": false,
-          "description": "Explicit FSL gradient vectors; required unless DICOM supplies sidecars"
+          "description": "Explicit FSL gradient vectors; required unless DICOM supplies sidecars",
+          "minimum": 0,
+          "maximum": 1
         },
         "metadata": {
           "source": "files",
@@ -49,9 +49,9 @@
           "formats": [
             "json"
           ],
-          "multiple": false,
-          "required": false,
-          "description": "Optional acquisition metadata JSON"
+          "description": "Optional acquisition metadata JSON",
+          "minimum": 0,
+          "maximum": 1
         }
       },
       "parameters": {},
@@ -87,9 +87,9 @@
             "nifti",
             "dicom"
           ],
-          "multiple": false,
-          "required": true,
-          "description": "Input image for processing"
+          "description": "Input image for processing",
+          "minimum": 1,
+          "maximum": 1
         },
         "bval": {
           "source": "files",
@@ -98,9 +98,9 @@
             "bval",
             "bvals"
           ],
-          "multiple": false,
-          "required": false,
-          "description": "Explicit b values; required for NIfTI input unless DICOM supplies sidecars"
+          "description": "Explicit b values; required for NIfTI input unless DICOM supplies sidecars",
+          "minimum": 0,
+          "maximum": 1
         },
         "bvec": {
           "source": "files",
@@ -109,9 +109,9 @@
             "bvec",
             "bvecs"
           ],
-          "multiple": false,
-          "required": false,
-          "description": "Explicit FSL gradient vectors; required unless DICOM supplies sidecars"
+          "description": "Explicit FSL gradient vectors; required unless DICOM supplies sidecars",
+          "minimum": 0,
+          "maximum": 1
         },
         "metadata": {
           "source": "files",
@@ -119,9 +119,9 @@
           "formats": [
             "json"
           ],
-          "multiple": false,
-          "required": false,
-          "description": "Optional acquisition metadata JSON"
+          "description": "Optional acquisition metadata JSON",
+          "minimum": 0,
+          "maximum": 1
         }
       },
       "parameters": {
