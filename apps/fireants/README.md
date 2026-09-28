@@ -46,3 +46,17 @@ pnpm --filter fireants test:e2e
 The app requires cross-origin isolation for multithreaded CPU execution. Its
 Vite development, preview, and deployed builds use the repository's shared
 isolation policy.
+
+## Agent automation
+
+The published `automation.json` describes the typed browser operation. Desktop
+MCP uses the same processing function as the Run button and returns the exact
+output files with input and artifact checksums. See
+[desktop automation](../../packages/desktop/AUTOMATION.md) for connection details.
+
+`register` requires `moving` and `fixed` image roles. `backend` is `cpu` or
+`webgpu`; `transform` is `greedy` or `syn`. Defaults match the UI: CPU and Greedy.
+The registered NIfTI report records the execution variant, thread count and
+engine timing. The three image viewers expose crosshairs and layout tabs.
+Both image roles accept NIfTI or DICOM. Ambiguous DICOM conversion requires an
+explicit series selection; the operation never guesses roles from filenames.

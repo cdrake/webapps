@@ -4,7 +4,7 @@ import test from "node:test";
 import vm from "node:vm";
 
 const source = await readFile(new URL("../src/main.js", import.meta.url), "utf8");
-const registrationSource = source.slice(source.indexOf("function runRegistration("), source.indexOf("\nasync function register()"))
+const registrationSource = source.slice(source.indexOf("function runRegistration("), source.indexOf("\nasync function register("))
   .replace("import.meta.url", '"https://example.test/main.js"');
 
 function deferred() {
@@ -17,12 +17,14 @@ function deferred() {
   return { promise, resolve, reject };
 }
 
-for (const outcome of ["resolve", "reject"]) {
-  test(`cancelled file read ${outcome} cannot publish into or terminate a subsequent worker`, async () => {
+for (const cancellation of ["button", "signal"]) for (const outcome of ["resolve", "reject"]) {
+  test(`${cancellation}-cancelled file read ${outcome} cannot publish into or terminate a subsequent worker`, async () => {
     const workers = [];
     const cancelButton = { hidden: true };
     const context = vm.createContext({
       URL,
+      DOMException,
+      AbortController,
       $: () => cancelButton,
       Worker: class {
         constructor() {
@@ -36,9 +38,11 @@ for (const outcome of ["resolve", "reject"]) {
     });
     vm.runInContext(`let registrationWorker; let cancelRegistration; ${registrationSource}`, context);
     const read = deferred();
-    const oldJob = context.runRegistration({ arrayBuffer: () => read.promise }, { arrayBuffer: async () => new ArrayBuffer(1) }, "affine", () => {});
+    const controller = new AbortController();
+    const oldJob = context.runRegistration({ arrayBuffer: () => read.promise }, { arrayBuffer: async () => new ArrayBuffer(1) }, "affine", () => {}, controller.signal);
     const cancelled = assert.rejects(oldJob, /Cancelled/);
-    vm.runInContext("cancelRegistration()", context);
+    if (cancellation === "button") vm.runInContext("cancelRegistration()", context);
+    else controller.abort(new DOMException("Cancelled", "AbortError"));
     await cancelled;
     assert.equal(cancelButton.hidden, true);
     const newRead = deferred();

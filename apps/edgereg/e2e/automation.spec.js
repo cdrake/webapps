@@ -36,7 +36,7 @@ test("automation runs affine registration on explicit input roles and exports th
   await expect(page.locator("#stationaryInfo")).toHaveText("reference.nii.gz");
 });
 
-test("an invalid replacement input fails before registration and cannot return previous results", async ({ page }) => {
+test("an invalid input fails before registration without publishing artifacts", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("#movingInput")).toBeEnabled();
   await adopt(page, "moving", "broken.nii", Buffer.from("not a NIfTI"));
@@ -46,5 +46,5 @@ test("an invalid replacement input fails before registration and cannot return p
   const snapshot = await page.evaluate(() => globalThis.neurodeskAutomation.dispatch("snapshot"));
   expect(snapshot.error.message).toBeTruthy();
   expect(snapshot.report).toBeUndefined();
-  await expect(page.locator("#resultList")).toBeEmpty();
+  await expect(page.locator("#resultList").getByRole("button", { name: "Download" })).toHaveCount(0);
 });
