@@ -168,7 +168,7 @@ function connect(bundle) {
 async function waitForRun(client, id) {
   const deadline = Date.now() + 300000;
   while (Date.now() < deadline) {
-    const snapshot = await client.tool('runs.get', { runId: id });
+    const snapshot = await client.tool('runs_get', { runId: id });
     if (snapshot.state !== 'running') return snapshot;
     await delay(250);
   }
@@ -193,19 +193,19 @@ try {
     assert.equal(tool.inputSchema.additionalProperties, false);
     assert.equal(tool.inputSchema.properties.inputs.additionalProperties, false);
   }
-  const contracts = (await client.tool('apps.list')).apps;
+  const contracts = (await client.tool('apps_list')).apps;
   assert.deepEqual(contracts.map(contract => contract.app).sort(), appIds);
   for (const app of appIds) {
-    await client.tool('apps.validate', { app, inputs: { image: [fixture] } });
+    await client.tool('apps_validate', { app, inputs: { image: [fixture] } });
   }
   const invalid = await client.call('tools/call', {
-    name: 'apps.validate',
+    name: 'apps_validate',
     arguments: { app: 'brain-extraction', inputs: { image: [join(scratch, 'missing.nii')] } },
   });
   assert.equal(invalid.isError, true);
   const request = { inputs: { image: [fixture] }, parameters: { method: 'bet', threshold: 0.5 }, timeoutMs: 300000, retainViewer: true };
   const abandoned = await client.tool('run_brain_extraction', request);
-  const cancelled = await client.tool('runs.cancel', { runId: abandoned.id });
+  const cancelled = await client.tool('runs_cancel', { runId: abandoned.id });
   assert.equal(cancelled.state, 'cancelled');
   assert.equal(cancelled.report, undefined);
   assert.deepEqual((await client.call('resources/list')).resources, []);
@@ -243,18 +243,18 @@ try {
   assert.ok(brain.data.every((value, index) => value === (binary[index] ? original.data[index] : 0)));
   assert.equal(JSON.parse(artifacts.report).runId, report.runId);
   const sessionId = finished.session.id;
-  const sessions = await client.tool('sessions.list');
+  const sessions = await client.tool('sessions_list');
   assert.equal(sessions.sessions[0].runId, finished.id);
-  const { viewers } = await client.tool('viewers.list', { sessionId });
+  const { viewers } = await client.tool('viewers_list', { sessionId });
   assert.equal(viewers[0].capabilities.crosshair, true);
   const voxel = mask.dims.map(size => Math.floor(size * 0.4));
   const mm = mask.affine.slice(0, 3).map(row => row[0] * voxel[0] + row[1] * voxel[1] + row[2] * voxel[2] + row[3]);
-  const position = await client.tool('viewers.crosshair', { sessionId, viewerId: viewers[0].id, position: { frame: 'mm', value: mm } });
+  const position = await client.tool('viewers_crosshair', { sessionId, viewerId: viewers[0].id, position: { frame: 'mm', value: mm } });
   position.position.value.forEach((value, axis) => assert.ok(Math.abs(value - mm[axis]) < 1e-3));
-  const tab = await client.tool('viewers.tab', { sessionId, viewerId: viewers[0].id, tabId: 'mask' });
+  const tab = await client.tool('viewers_tab', { sessionId, viewerId: viewers[0].id, tabId: 'mask' });
   assert.equal(tab.tabs.find(entry => entry.id === 'mask').active, true);
   const regions = viewers[0].capabilities.regions
-    ? await client.tool('viewers.regions', { sessionId, viewerId: viewers[0].id }) : { supported: false };
+    ? await client.tool('viewers_regions', { sessionId, viewerId: viewers[0].id }) : { supported: false };
   summary.viewer = { viewers, position, regions };
   const eofRun = await client.tool('run_brain_extraction', request);
   summary.exit = await client.end();

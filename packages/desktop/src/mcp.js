@@ -27,6 +27,7 @@ function result(value) {
 }
 
 function registerTool(server, name, description, inputSchema, annotations, handler) {
+  if (!/^[a-zA-Z0-9_-]{1,64}$/.test(name)) throw new Error(`Tool name is not portable across clients: ${name}`);
   server.registerTool(name, { description, inputSchema, annotations }, async args => {
     try {
       return result(await handler(args));
@@ -41,23 +42,23 @@ function registerTool(server, name, description, inputSchema, annotations, handl
 
 export async function createMcpServer(service, { version }) {
   const server = new McpServer({ name: 'neurodesk-webapps', version });
-  registerTool(server, 'apps.list', 'List installed applications and their automation contracts.',
+  registerTool(server, 'apps_list', 'List installed applications and their automation contracts.',
     z.strictObject({}), readOnly, async () => ({ apps: await service.listApps() }));
-  registerTool(server, 'apps.describe', 'Read an installed application automation contract.',
+  registerTool(server, 'apps_describe', 'Read an installed application automation contract.',
     z.strictObject({ app }), readOnly, ({ app }) => service.describeApp(app));
-  registerTool(server, 'apps.validate', 'Validate local input paths and parameters without starting processing.',
+  registerTool(server, 'apps_validate', 'Validate local input paths and parameters without starting processing.',
     request, readOnly, ({ app, ...request }) => service.validate(app, request));
-  registerTool(server, 'runs.start', 'Start processing and return a run ID immediately. Use runs.get to observe completion.',
+  registerTool(server, 'runs_start', 'Start processing and return a run ID immediately. Use runs_get to observe completion.',
     request, startsRun, ({ app, ...request }) => service.start(app, request));
-  registerTool(server, 'runs.get', 'Read a run state, report URI and any processing error.',
+  registerTool(server, 'runs_get', 'Read a run state, report URI and any processing error.',
     run, readOnly, ({ runId }) => service.get(runId));
-  registerTool(server, 'runs.cancel', 'Cancel a run and release its processing resources. Completed runs stay terminal.',
+  registerTool(server, 'runs_cancel', 'Cancel a run and release its processing resources. Completed runs stay terminal.',
     run, { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
     ({ runId }) => service.cancel(runId));
 
-  registerTool(server, 'sessions.list', 'List retained application viewers. Closing a session preserves its completed run report.',
+  registerTool(server, 'sessions_list', 'List retained application viewers. Closing a session preserves its completed run report.',
     z.strictObject({}), readOnly, async () => ({ sessions: await service.listSessions() }));
-  registerTool(server, 'sessions.close', 'Close a retained viewer and release its memory.',
+  registerTool(server, 'sessions_close', 'Close a retained viewer and release its memory.',
     session, { ...startsRun, idempotentHint: true }, ({ sessionId }) => service.closeSession(sessionId));
   for (const [name, description, schema, mutates] of [
     ['list', 'List the actual viewers and supported controls in a retained session.', session, false],
@@ -68,7 +69,7 @@ export async function createMcpServer(service, { version }) {
     ['tab', 'Select an application tab by its reported ID.', viewer.extend({ tabId: z.string().min(1) }), true],
     ['regions', 'Read the regions exposed by the application viewer.', viewer, false],
   ]) {
-    registerTool(server, `viewers.${name}`, description, schema, mutates ? { ...startsRun, idempotentHint: true } : readOnly,
+    registerTool(server, `viewers_${name}`, description, schema, mutates ? { ...startsRun, idempotentHint: true } : readOnly,
       async ({ sessionId, ...args }) => {
         const value = await service.viewerCommand(sessionId, `viewers.${name}`, args);
         return name === 'list' ? { viewers: value } : name === 'regions' ? { regions: value } : value;
@@ -77,13 +78,13 @@ export async function createMcpServer(service, { version }) {
 
   for (const contract of await service.listApps()) {
     registerTool(server, `run_${contract.app.replaceAll('-', '_')}`,
-      `Start ${contract.title}. ${contract.description} Returns a run ID; use runs.get for completion.`,
+      `Start ${contract.title}. ${contract.description} Returns a run ID; use runs_get for completion.`,
       requestSchema(contract), startsRun, request => service.start(contract.app, request));
     if (contract.schemaVersion === 2) {
       for (const [name, operation] of Object.entries(contract.operations)) {
         if (name === contract.defaultOperation) continue;
         registerTool(server, `run_${contract.app.replaceAll('-', '_')}__${name.replaceAll('-', '_')}`,
-          `Start ${operation.title}. ${operation.description} Returns a run ID; use runs.get for completion.`,
+          `Start ${operation.title}. ${operation.description} Returns a run ID; use runs_get for completion.`,
           requestSchema(contract, name), startsRun, request => service.start(contract.app, request));
       }
     }

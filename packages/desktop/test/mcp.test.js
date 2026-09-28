@@ -100,7 +100,7 @@ test('stdio initializes and discovers strict contract-derived tools and resource
   assert.ok(initialized.capabilities.resources);
   const listed = await client.request('tools/list');
   const tools = new Map(listed.result.tools.map(tool => [tool.name, tool]));
-  assert.deepEqual([...tools.keys()].sort(), ['apps.describe', 'apps.list', 'apps.validate', 'run_brain_extraction', 'run_synthseg', 'runs.cancel', 'runs.get', 'runs.start', 'sessions.close', 'sessions.list', 'viewers.crosshair', 'viewers.list', 'viewers.regions', 'viewers.state', 'viewers.tab']);
+  assert.deepEqual([...tools.keys()].sort(), ['apps_describe', 'apps_list', 'apps_validate', 'run_brain_extraction', 'run_synthseg', 'runs_cancel', 'runs_get', 'runs_start', 'sessions_close', 'sessions_list', 'viewers_crosshair', 'viewers_list', 'viewers_regions', 'viewers_state', 'viewers_tab']);
   const synthseg = tools.get('run_synthseg').inputSchema;
   assert.equal(synthseg.additionalProperties, false);
   assert.equal(synthseg.properties.inputs.additionalProperties, false);
@@ -109,9 +109,10 @@ test('stdio initializes and discovers strict contract-derived tools and resource
   assert.equal(synthseg.properties.parameters.properties.ct.type, 'boolean');
   assert.equal(synthseg.properties.parameters.properties.ct.default, undefined);
   assert.equal(tools.get('run_brain_extraction').inputSchema.properties.parameters.properties.threshold.maximum, 1);
-  assert.equal(tools.get('runs.get').inputSchema.properties.runId.type, 'string');
-  assert.equal(value(await client.tool('apps.list')).apps.length, 2);
-  assert.equal(value(await client.tool('apps.describe', { app: 'synthseg' })).app, 'synthseg');
+  for (const name of tools.keys()) assert.match(name, /^[a-zA-Z0-9_-]{1,64}$/);
+  assert.equal(tools.get('runs_get').inputSchema.properties.runId.type, 'string');
+  assert.equal(value(await client.tool('apps_list')).apps.length, 2);
+  assert.equal(value(await client.tool('apps_describe', { app: 'synthseg' })).app, 'synthseg');
   const templates = await client.request('resources/templates/list');
   assert.deepEqual(templates.result.resourceTemplates.map(template => template.uriTemplate).sort(), [
     'neurodesk://runs/{runId}/artifacts/{artifactId}',
@@ -125,19 +126,19 @@ test('validation rejects invalid metadata and missing files while preserving omi
   const path = await inputFile(t);
   const client = connect(t);
   await client.initialize();
-  const validated = value(await client.tool('apps.validate', { app: 'synthseg', inputs: { image: [path] } }));
+  const validated = value(await client.tool('apps_validate', { app: 'synthseg', inputs: { image: [path] } }));
   assert.deepEqual(validated.parameters, { mode: 'normal' });
   assert.equal(validated.engine, 'browser');
   for (const [tool, request] of [
-    ['apps.validate', { app: 'synthseg', inputs: { image: [join(path, 'missing.nii')] } }],
-    ['apps.validate', { app: 'synthseg', inputs: { image: ['relative.nii'] } }],
-    ['runs.start', { app: 'synthseg', inputs: { image: [path] }, unexpected: true }],
+    ['apps_validate', { app: 'synthseg', inputs: { image: [join(path, 'missing.nii')] } }],
+    ['apps_validate', { app: 'synthseg', inputs: { image: ['relative.nii'] } }],
+    ['runs_start', { app: 'synthseg', inputs: { image: [path] }, unexpected: true }],
     ['run_synthseg', { inputs: { image: [path] }, parameters: { ct: 'false' } }],
     ['run_synthseg', { inputs: { image: [path] }, parameters: { mode: 'unknown' } }],
     ['run_synthseg', { inputs: { image: [path] }, parameters: { invented: true } }],
     ['run_synthseg', { inputs: { image: [path] }, engine: 'native' }],
     ['run_brain_extraction', { inputs: { image: [path] }, parameters: { threshold: 1.1 } }],
-    ['runs.get', { runId: 1 }],
+    ['runs_get', { runId: 1 }],
   ]) {
     const response = await client.tool(tool, request);
     assert.ok(response.error || response.result?.isError, `${tool} must reject ${JSON.stringify(request)}`);
@@ -153,9 +154,9 @@ test('asynchronous runs expose completion, cancellation and registered report/ar
   await client.initialize();
   const started = value(await client.tool('run_synthseg', { inputs: { image: [path] }, parameters: { mode: 'fast' } }));
   assert.equal(started.state, 'running');
-  const complete = value(await client.tool('runs.get', { runId: started.id }));
+  const complete = value(await client.tool('runs_get', { runId: started.id }));
   assert.equal(complete.state, 'succeeded');
-  assert.equal(value(await client.tool('runs.cancel', { runId: started.id })).state, 'succeeded');
+  assert.equal(value(await client.tool('runs_cancel', { runId: started.id })).state, 'succeeded');
   const resources = (await client.request('resources/list')).result.resources;
   assert.equal(resources.length, 2);
   const report = await client.request('resources/read', { uri: complete.reportUri });
@@ -165,12 +166,12 @@ test('asynchronous runs expose completion, cancellation and registered report/ar
   for (const uri of ['file:///etc/passwd', 'neurodesk://runs/unknown/report', `neurodesk://runs/${started.id}/artifacts/missing`]) {
     assert.ok((await client.request('resources/read', { uri })).error, `Resource must be rejected: ${uri}`);
   }
-  const running = value(await client.tool('runs.start', { app: 'brain-extraction', inputs: { image: [path] }, engine: 'native' }));
+  const running = value(await client.tool('runs_start', { app: 'brain-extraction', inputs: { image: [path] }, engine: 'native' }));
   assert.equal(running.engine, 'native');
-  assert.equal(value(await client.tool('runs.cancel', { runId: running.id })).state, 'cancelled');
-  assert.equal(value(await client.tool('runs.cancel', { runId: running.id })).state, 'cancelled');
-  assert.equal(value(await client.tool('runs.get', { runId: running.id })).report, undefined);
-  await client.tool('runs.start', { app: 'synthseg', inputs: { image: [path] } });
+  assert.equal(value(await client.tool('runs_cancel', { runId: running.id })).state, 'cancelled');
+  assert.equal(value(await client.tool('runs_cancel', { runId: running.id })).state, 'cancelled');
+  assert.equal(value(await client.tool('runs_get', { runId: running.id })).report, undefined);
+  await client.tool('runs_start', { app: 'synthseg', inputs: { image: [path] } });
   assert.equal((await client.end()).code, 0);
   assert.match(client.stderr, /"closeCount":1/);
   assert.match(client.stderr, /"states":\["succeeded","cancelled","cancelled"\]/);
