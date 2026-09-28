@@ -1675,7 +1675,7 @@ class MuscleMapApp {
   }
 
   setProgress(value, text) {
-    this.automationProgress?.({ fraction: value, message: text });
+    this.automationProgress?.({ value, message: text });
     const label = value >= 1 ? 'Complete' : text || (value > 0 ? 'Processing...' : null);
     this.progress.setProgress(value, label);
   }
