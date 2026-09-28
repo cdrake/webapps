@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 2,
+  "app": "dicompare",
+  "title": "dicompare",
+  "description": "Analyze DICOM acquisition metadata and compare it with an explicit protocol schema.",
+  "defaultOperation": "analyze",
+  "operations": {
+    "analyze": {
+      "title": "Analyze DICOM",
+      "description": "Parse acquisition metadata using the app scientific worker.",
+      "mode": "batch",
+      "inputs": {
+        "dicom": {
+          "source": "files",
+          "type": "neuro:dicom-series",
+          "formats": [
+            "dicom"
+          ],
+          "multiple": true,
+          "required": true,
+          "description": "DICOM instances to group and analyze"
+        }
+      },
+      "parameters": {},
+      "artifacts": {
+        "acquisitions": {
+          "type": "neuro:acquisition-report",
+          "mediaType": "application/json",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    },
+    "compare": {
+      "title": "Compare DICOM to schema",
+      "description": "Validate each acquisition against the selected schema acquisition index.",
+      "mode": "batch",
+      "inputs": {
+        "dicom": {
+          "source": "files",
+          "type": "neuro:dicom-series",
+          "formats": [
+            "dicom"
+          ],
+          "multiple": true,
+          "required": true,
+          "description": "DICOM instances to group and analyze"
+        },
+        "schema": {
+          "source": "files",
+          "type": "neuro:protocol-schema",
+          "formats": [
+            "json"
+          ],
+          "multiple": false,
+          "required": true,
+          "description": "dicompare acquisition schema"
+        }
+      },
+      "parameters": {
+        "schemaIndex": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "Zero-based acquisition index in the supplied schema"
+        }
+      },
+      "artifacts": {
+        "comparison": {
+          "type": "neuro:compliance-report",
+          "mediaType": "application/json",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    }
+  }
+}

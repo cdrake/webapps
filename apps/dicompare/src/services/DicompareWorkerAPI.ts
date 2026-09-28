@@ -16,7 +16,7 @@ function transferableCopy(bytes: Uint8Array): ArrayBuffer {
   return copy.buffer;
 }
 
-class DicompareWorkerAPI {
+export class DicompareWorkerAPI {
   private worker: Worker | null = null;
   private pendingRequests: Map<string, PendingRequest> = new Map();
   private requestId = 0;
@@ -37,6 +37,7 @@ class DicompareWorkerAPI {
     this.worker.onmessage = this.handleMessage.bind(this);
     this.worker.onerror = (error) => {
       console.error('[DicompareWorkerAPI] Worker error:', error);
+      this.terminate(new Error(error.message || 'The dicompare worker failed.'));
     };
   }
 
@@ -81,6 +82,7 @@ class DicompareWorkerAPI {
     onProgress?: (progress: ProgressPayload) => void,
     transferables?: Transferable[]
   ): Promise<T> {
+    if (!this.worker) this.createWorker();
     const id = `req_${++this.requestId}_${Date.now()}`;
 
     return new Promise<T>((resolve, reject) => {
@@ -756,12 +758,13 @@ class DicompareWorkerAPI {
   /**
    * Terminate the worker (cleanup)
    */
-  terminate(): void {
+  terminate(reason: Error = new DOMException('Cancelled', 'AbortError')): void {
     if (this.worker) {
       this.worker.terminate();
       this.worker = null;
       this.initialized = false;
       this.initializationPromise = null;
+      for (const request of this.pendingRequests.values()) request.reject(reason);
       this.pendingRequests.clear();
     }
   }
