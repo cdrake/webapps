@@ -67,6 +67,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/server": "2.1.0",
+    "@neurodesk/webapp-components": "workspace:*",
     "zod": "^4.6.5"
   }
 }

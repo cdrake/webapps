@@ -8,8 +8,9 @@ post-processing and NIfTI I/O are the native CLI's Rust compiled to WASM
 WebGPU is required — there is no WASM fallback. Without it the app says so and
 Run stays disabled.
 
-Labels are coloured and named from `src/freesurfer-lut.json` (FreeSurferColorLUT.txt
-rows for the 33 SynthSeg labels; `node scripts/freesurfer-lut.mjs <FreeSurferColorLUT.txt>`).
+Labels use the shared `@neurodesk/webapp-components/automation/freesurfer-lut`
+mapping, also used by native automation reports. Regenerate its 33 SynthSeg label
+entries with `node scripts/freesurfer-lut.mjs <FreeSurferColorLUT.txt>`.
 
 ## Controls
 

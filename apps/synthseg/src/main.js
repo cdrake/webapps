@@ -15,7 +15,7 @@ import { downloadBlob, downloadFile, readNifti } from '@neurodesk/webapp-compone
 import { readImageFiles } from '@neurodesk/runtime-support/dcm2niix-client';
 import manifest from '@neurodesk/synthseg/manifest';
 import { looksLikeCt, outputStem } from './logic.js';
-import freesurferLut from './freesurfer-lut.json';
+import freesurferLut from '@neurodesk/webapp-components/automation/freesurfer-lut';
 import './styles.css';
 
 mountImagingWorkspace({

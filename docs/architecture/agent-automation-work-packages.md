@@ -95,6 +95,22 @@ The desktop and both pilot apps also passed their lint commands.
 
 ## Remaining rollout and scientific checks
 
+The completion pass adds the following work to PR #99. An app counts as supported
+only when its real input, processing or viewing workflow, result reporting and
+artifact access have been exercised. A manifest alone does not satisfy the gate.
+
+- [x] Read the implementation principles and establish the existing execution path.
+- [ ] Ground all 27 catalog apps and compare contract designs for their input and output shapes.
+- [ ] WP7: Extend contract validation and execution for multiple inputs, DICOM series selection, variable results and viewer applications.
+- [ ] WP8: Integrate every remaining catalog app, publish its actual capabilities and report structure, and update the application template.
+- [ ] WP9: Add explicit viewer sessions and MCP controls for crosshair, region information and active view/tab using public viewer APIs.
+- [ ] WP10: Add native SynthSeg label-volume summaries and run real CPU, WebGPU and optional-model scientific checks.
+- [ ] WP11: Add a catalog coverage gate, production contract checks and end-to-end workflows; check the Apple-silicon buffer limit on the supplied hardware.
+- [ ] WP12: Update the usage guide, verification record and PR description, generate release metadata, and push the complete changes to PR #99.
+
+The initial implementation's limits, to be resolved by the completion pass, are
+listed below. Hardware checks require the test machine's access details.
+
 These six packages deliver the shared implementation and two complete app
 integrations. Other catalog apps still need their own contracts, lifecycle calls,
 reports and production workflow tests. They are not advertised as MCP tools.
