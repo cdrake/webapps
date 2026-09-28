@@ -66,7 +66,7 @@ async function makeArtifacts(result, operation, signal) {
     const index = indices.get(role) ?? 0;
     indices.set(role, index + 1);
     const id = artifact.id ?? (counts.get(role) === 1 ? role : `${role}-${index + 1}`);
-    if (!/^[a-z][a-z0-9-]*$/.test(id) || id === 'report' || files.has(id)) throw new Error(`Invalid or duplicate artifact ID: ${id}`);
+    if (!/^[a-z][a-zA-Z0-9_-]*$/.test(id) || id === 'report' || files.has(id)) throw new Error(`Invalid or duplicate artifact ID: ${id}`);
     if (!file || typeof file.arrayBuffer !== 'function' || !file.size || !file.name || /[\\/]/.test(file.name)) throw new Error(`The ${role} output is empty or invalid`);
     if (names.has(file.name)) throw new Error(`Duplicate or reserved output filename: ${file.name}`);
     names.add(file.name);
@@ -84,7 +84,7 @@ async function makeArtifacts(result, operation, signal) {
   return { files, records };
 }
 
-export function registerAppAutomation({ app, operations, convertDicom, contract: providedContract, document: doc = globalThis.document, target = globalThis, download = downloadFile }) {
+export function registerAppAutomation({ app, operations, convertDicom, contractUrl = 'automation.json', contract: providedContract, document: doc = globalThis.document, target = globalThis, download = downloadFile }) {
   const adopted = new Map();
   const viewers = createViewerRegistry();
   let contract;
@@ -101,7 +101,7 @@ export function registerAppAutomation({ app, operations, convertDicom, contract:
   const ready = (async () => {
     if (providedContract) contract = copy(providedContract);
     else {
-      const response = await fetch(new URL('automation.json', doc.baseURI));
+      const response = await fetch(new URL(contractUrl, doc.baseURI));
       if (!response.ok) throw new Error(`Automation contract could not be loaded (${response.status})`);
       contract = await response.json();
     }
@@ -126,6 +126,7 @@ export function registerAppAutomation({ app, operations, convertDicom, contract:
           if (!object(source) || typeof source.url !== 'string') {
             if (field.required) throw new Error(`Missing input: ${role}`);
             inputs[role] = [];
+            inputRecords[role] = [];
             continue;
           }
           const url = new URL(source.url);
@@ -154,7 +155,7 @@ export function registerAppAutomation({ app, operations, convertDicom, contract:
       const result = await operations[run.operation]({ inputs, parameters: copy(run.parameters), signal, inputDetails,
         progress(update) {
           if (active !== run || signal.aborted || terminal.has(snapshot.state)) return;
-          snapshot = { ...snapshot, ...(typeof update === 'string' ? { message: update } : copy(update)) };
+          snapshot = { ...snapshot, ...(typeof update === 'string' ? { message: update } : { ...(update.message !== undefined && { message: String(update.message) }), ...(Number.isFinite(update.value) && { progress: update.value }) }) };
         },
       });
       signal.throwIfAborted();

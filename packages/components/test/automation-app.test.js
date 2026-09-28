@@ -157,3 +157,21 @@ test('DICOM selection reports actual candidates, preserves sidecars and hashes u
   const again = await prepareImageInput(files, input, { convertDicom: async () => [compressed], selection: candidates[1].sha256, signal });
   assert.equal(again.details.conversion.selected[0], candidates[1].sha256);
 });
+
+test('optional URL inputs and camelCase artifact roles preserve the contract shape', async t => {
+  const spec = contract();
+  spec.operations.run.inputs.atlas = { source: 'url', type: 'neuro:volume', formats: ['nifti'], required: false };
+  spec.operations.run.artifacts = { labelMap: spec.operations.run.artifacts.labels };
+  const f = fixture(t, async ({ inputs, progress }) => {
+    assert.deepEqual(inputs.atlas, []);
+    progress({ state: 'succeeded', runId: 'incorrect', report: {}, message: 'Computing', value: 0.5 });
+    return { artifacts: [{ role: 'labelMap', file: new File(['labels'], 'labels.nii') }] };
+  }, spec);
+  await f.upload();
+  const start = await f.dispatch('start');
+  const state = await completed(f.dispatch);
+  assert.equal(state.runId, start.runId);
+  assert.equal(state.state, 'succeeded');
+  assert.deepEqual(state.report.inputs.atlas, []);
+  assert.equal(state.report.artifacts.labelMap.role, 'labelMap');
+});
