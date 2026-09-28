@@ -14,7 +14,7 @@
     "lint": "node ../../scripts/check-app-js.mjs web",
     "pretest": "pnpm vendor && pnpm runtime-support",
     "test": "node ../../scripts/check-app-js.mjs web && node --test test/*.test.mjs",
-    "test:e2e": "node ../../test/examples.smoke.mjs --app seedseg"
+    "test:e2e": "playwright test && node ../../test/examples.smoke.mjs --app seedseg"
   },
   "dependencies": {
     "@neurodesk/webapp-components": "workspace:*"
