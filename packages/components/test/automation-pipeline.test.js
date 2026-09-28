@@ -36,6 +36,20 @@ test('worker failures and cancellation reject pending automation', async () => {
   assert.equal(pipeline.cancelled, true);
 });
 
+test('cancelling before dispatch prevents the queued pipeline action from starting', async () => {
+  const pipeline = executor();
+  const original = pipeline.onStepComplete;
+  const controller = new AbortController();
+  const events = [];
+  pipeline.cancel = () => events.push('cancel');
+  const running = awaitPipelineStep(pipeline, { step: 'load' }, () => events.push('start'), controller.signal);
+  controller.abort();
+  await assert.rejects(running, { name: 'AbortError' });
+  assert.deepEqual(events, ['cancel']);
+  assert.equal(pipeline.onStepComplete, original);
+  await awaitPipelineStep(pipeline, { step: 'load' }, () => pipeline.onStepComplete('load'), new AbortController().signal);
+});
+
 test('UI callbacks retain their executor receiver and thrown errors reject automation', async () => {
   const pipeline = executor();
   pipeline.onStepComplete = function () {

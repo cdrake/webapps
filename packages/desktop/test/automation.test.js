@@ -68,6 +68,33 @@ test('cancellation clears partial outputs and permits a subsequent run', async t
   await service.cancel(second.id);
 });
 
+for (const state of ['succeeded', 'failed']) {
+  test(`a ${state} snapshot permits an immediate retry while its record is being saved`, { timeout: 5000 }, async t => {
+    const root = await mkdtemp(join(tmpdir(), 'automation-retry-'));
+    const contract = parseContract({ schemaVersion: 2, app: 'demo', title: 'Demo', description: 'Demo', appVersion: '0.1.20260928',
+      defaultOperation: 'run', operations: { run: { title: 'Run', description: 'Run', mode: 'batch', inputs: {}, parameters: {}, artifacts: {}, engines: ['browser'] } } });
+    const service = createAutomationService({
+      contracts: [{ contract, sha256: 'a'.repeat(64) }], outputRoot: root,
+      execute: async () => {
+        if (state === 'failed') throw new Error('Processing failed');
+        return { artifacts: {} };
+      },
+    });
+    t.after(async () => { await service.close(); await rm(root, { recursive: true, force: true }); });
+    const first = await service.start('demo', {});
+    let run;
+    do {
+      await new Promise(resolve => setImmediate(resolve));
+      run = await service.get(first.id);
+    } while (run.state === 'running');
+    assert.equal(run.state, state);
+    const retries = await Promise.allSettled([service.start('demo', {}), service.start('demo', {})]);
+    assert.equal(retries.filter(result => result.status === 'fulfilled').length, 1);
+    assert.match(retries.find(result => result.status === 'rejected').reason.message, /Another scientific run is active/);
+    assert.equal(JSON.parse(await readFile(join(root, first.id, 'run.json'))).state, state);
+  });
+}
+
 test('timeouts and unavailable native engines return actionable failures', async t => {
   const { service, request } = await fixture(t, async ({ signal }) => {
     signal.throwIfAborted();

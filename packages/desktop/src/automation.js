@@ -79,6 +79,7 @@ export function createAutomationService({ contracts, outputRoot, execute, native
     validate,
     async start(app, value) {
       const request = await validate(app, value);
+      if (active && active.snapshot.state !== 'running') await active.done.catch(() => {});
       if (closed) throw new Error('Automation service is closed');
       if (active) throw new Error(`Another scientific run is active: ${active.snapshot.id}`);
       if (request.retainViewer) viewers.assertCapacity();

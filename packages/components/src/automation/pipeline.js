@@ -39,7 +39,10 @@ export async function awaitPipelineStep(executor, { step, terminal = 'step', com
   };
   signal.addEventListener('abort', cancel, { once: true });
   try {
-    await Promise.all([Promise.resolve().then(action), completion]);
+    await Promise.all([Promise.resolve().then(() => {
+      signal.throwIfAborted();
+      return action();
+    }), completion]);
     signal.throwIfAborted();
   } finally {
     signal.removeEventListener('abort', cancel);
