@@ -383,7 +383,7 @@ async function runDeface(): Promise<void> {
   // Hellinger is single-threaded in WASM (no OpenMP) and runs an exhaustive search, so it
   // is minutes on a full-head scan; set the expectation so a slow run doesn't look hung.
   setStatus(
-    `Defacing with ${label}… (${useHel ? 'Hellinger, single-threaded — up to a few minutes' : 'fast ~5 s'})`,
+    `Defacing with ${label}… ${useHel ? 'single-threaded, up to a few minutes' : '~5 s'}`,
   )
   const t0 = performance.now()
   try {
@@ -491,7 +491,7 @@ async function init(): Promise<void> {
   // every WebGPU-unavailable path. (mindgrab's stricter shader-f16 requirement is a
   // separate gate via #webgpuDialog.)
   const noWebGpu =
-    'This browser/GPU can’t initialize WebGPU — deface needs a recent desktop Chrome, Edge, or Safari.'
+    'This browser can’t initialize WebGPU. Use a recent desktop Chrome, Edge or Safari.'
   if (!navigator.gpu) {
     document.querySelector('.nd-viewer-canvas-wrapper > [role="alert"]')?.remove()
     $('emptyState').hidden = false
@@ -581,13 +581,13 @@ bindFileDrop($('inputDropZone'), (files) => enqueue(() => handleDrop(files)))
 
 const methodDescriptions: Record<string, string> = {
   allineate: 'Fast affine registration to remove facial voxels.',
-  allineate_robustfov: 'Crops neck and lower slices before fast affine registration. Use this when the standard fit includes too much neck.',
-  allineate_hel: 'Uses a slower, exhaustive Hellinger registration for difficult scans where the fast fit is not accurate enough.',
-  allineate_hel_robustfov: 'Combines the neck crop with exhaustive Hellinger registration. This is the slowest affine option.',
-  mindgrab: 'Uses a WebGPU neural network to keep the brain and remove everything outside it.',
+  allineate_robustfov: 'Crops the neck, then fast affine registration. Use when the fit includes too much neck.',
+  allineate_hel: 'Slower, exhaustive Hellinger registration for scans where the fast fit is not accurate.',
+  allineate_hel_robustfov: 'Neck crop plus exhaustive Hellinger registration. The slowest affine option.',
+  mindgrab: 'WebGPU neural network keeps the brain and removes everything outside it.',
   mindgrab_robust: 'Crops neck and lower slices before WebGPU brain extraction.',
-  mindgrab8: 'Uses WebGPU brain extraction with an 8 mm border around the brain.',
-  mindgrab_robust8: 'Combines the neck crop, WebGPU brain extraction, and an 8 mm brain border.',
+  mindgrab8: 'WebGPU brain extraction with an 8 mm border around the brain.',
+  mindgrab_robust8: 'Neck crop, WebGPU brain extraction, and an 8 mm brain border.',
 }
 methodSelect.addEventListener('change', () => {
   methodDescription.textContent = methodDescriptions[methodSelect.value] ?? ''

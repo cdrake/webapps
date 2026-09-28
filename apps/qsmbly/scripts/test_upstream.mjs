@@ -13,12 +13,8 @@ await mkdir(artifacts, { recursive: true });
 try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   await page.goto(site.origin);
-  const enter = page.locator('#landingLaunch:visible');
-  if (await enter.count()) await enter.click();
   const selector = page.getByRole('combobox', { name: 'Example', exact: true });
   await expect(selector).toBeEnabled({ timeout: 120000 });
-  const welcome = page.locator('#welcomeLater');
-  if (await welcome.isVisible()) await welcome.click();
   await page.locator('.nd-app-bar:visible').first().getByRole('button', { name: 'About', exact: true }).click();
   const about = page.locator('#aboutModal');
   await expect(about.getByRole('link', { name: 'QSMbly (upstream)' })).toHaveAttribute('href', 'https://github.com/astewartau/qsmbly');

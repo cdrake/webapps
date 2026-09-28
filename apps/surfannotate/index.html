@@ -11,119 +11,11 @@
     <meta name="description" content="Cortical surface viewer with manual ROI delineation and vertex selection. Runs entirely in your browser." />
   </head>
   <body>
-    <!-- Shown first, then hidden by "Start annotating". The app is behind it the
-         whole time rather than on a second page, matching the other Neurodesk
-         webapps and keeping the single-bundle build. -->
-    <section class="start-page" id="startPage" aria-label="SurfAnnotate start page">
-      <header class="start-header">
-        <div class="start-brand">
-          <strong>SurfAnnotate</strong>
-          <span>Surface ROIs and vertex selection</span>
-        </div>
-        <div class="start-links">
-          <button type="button" class="start-link" data-cite-open title="How to cite">Cite</button>
-          <a href="../" class="start-link" title="More Neurodesk web apps">More Apps</a>
-        </div>
-      </header>
-
-      <main class="start-main">
-        <section class="start-hero">
-          <div>
-            <p class="start-kicker">Cortical surface annotation in the browser</p>
-            <h2>Delineate ROIs on a cortical surface, and export them.</h2>
-            <p class="start-intro">
-              Load a FreeSurfer or GIfTI surface — folded, inflated, spherical, or an
-              unfolded flat — and mark regions by clicking along their border.
-              The points are joined by the shortest path across the mesh, so the border
-              follows the surface rather than a straight line through it. ROIs are drawn
-              in sequence and partition the surface: each one's border becomes the edge
-              the next is closed against, so neighbouring ROIs share a boundary exactly
-              instead of having overlapping vertices.
-            </p>
-            <div class="start-actions">
-              <button class="start-primary" id="enterAppButton" type="button">
-                Start annotating
-              </button>
-            </div>
-            <p class="start-local-badge">
-              Your surfaces, overlays and labels never leave this machine — there is no
-              server to send them to.
-            </p>
-          </div>
-
-          <aside class="start-local-panel" aria-label="What it reads and writes">
-            <h3>Reads</h3>
-            <ul>
-              <li>FreeSurfer surfaces: <code>lh.pial</code>, <code>lh.white</code>,
-                <code>lh.inflated</code>, flat surfaces</li>
-              <li>GIfTI <code>.surf.gii</code>, <code>.mz3</code>, and more</li>
-              <li>Overlays: curvature, thickness, <code>.annot</code>,
-                <code>.label</code>, <code>.label.gii</code>, CIFTI <code>.dscalar.nii</code></li>
-            </ul>
-            <h3>Writes</h3>
-            <ul>
-              <li>FreeSurfer <code>.label</code></li>
-              <li>GIfTI <code>.label.gii</code></li>
-              <li>Vertex lists as JSON</li>
-            </ul>
-          </aside>
-        </section>
-
-        <section class="start-how" aria-labelledby="startHowHeading">
-          <h3 id="startHowHeading">How it works</h3>
-          <div class="start-steps">
-            <article class="start-step">
-              <div class="start-step-number">1</div>
-              <h4>Load a surface</h4>
-              <p>
-                Pick a file or drop it on the viewer. Load several and switch between
-                them; an ROI drawn on the inflated surface is still there on the folded
-                one.
-              </p>
-            </article>
-            <article class="start-step">
-              <div class="start-step-number">2</div>
-              <h4>Click the border</h4>
-              <p>
-                Nothing is traced while you click, hold and hover around the surface, so you can rotate freely. Close the
-                border and fill it. On a cut surface the edge of the flat surface closes it for
-                you — two points can be enough.
-              </p>
-            </article>
-            <article class="start-step">
-              <div class="start-step-number">3</div>
-              <h4>Save and export</h4>
-              <p>
-                Saved ROIs become the edges the next ones are drawn against, and can be
-                reopened to adjust. Export each as a <code>.label</code> or
-                <code>.label.gii</code>.
-              </p>
-            </article>
-          </div>
-        </section>
-      </main>
-
-      <footer class="start-footer">
-        <span>
-          Everything runs in this browser tab — no upload, no account, no server.
-        </span>
-        <span>
-          MIT licensed &middot; rendering by
-          <a href="https://github.com/niivue/niivue" target="_blank"
-             rel="noopener noreferrer">NiiVue</a>
-        </span>
-      </footer>
-    </section>
-
     <div id="app">
       <div id="controls">
         <section class="panel workflow-panel surface-panel">
           <div class="panel-heading">
-            <span class="panel-step" aria-hidden="true">01</span>
-            <div>
-              <h2>Surfaces</h2>
-              <p>Load the geometry you want to annotate.</p>
-            </div>
+            <h2>Surfaces</h2>
           </div>
           <label class="file-field upload-field">
             <!-- Deliberately unfiltered: FreeSurfer surfaces have irregular
@@ -143,19 +35,12 @@
             </span>
           </label>
           <ul class="layer-list" id="surfaceList" aria-label="Loaded surfaces"></ul>
-          <p class="hint">
-            FreeSurfer (lh.pial, lh.white, lh.inflated, and lh.sphere), GIfTI .surf.gii (including flat surfaces), .mz3 and more.
-            Drop files on the viewer to add them.
-          </p>
+          <p class="hint">FreeSurfer (lh.pial, lh.inflated…), GIfTI .surf.gii incl. flat patches, .mz3 and more.</p>
         </section>
 
         <details class="nd-workflow-disclosure panel workflow-panel overlay-panel" id="overlayPanel">
           <summary class="panel-heading">
-            <span class="panel-step" aria-hidden="true">02</span>
-            <div>
-              <h2>Overlays</h2>
-              <p>Add scalar or label data to the active surface.</p>
-            </div>
+            <h2>Overlays</h2>
           </summary>
           <label class="file-field upload-field">
             <input type="file" data-neurodesk-input="surface" id="overlayInput" multiple disabled />
@@ -172,19 +57,11 @@
           </label>
           <label class="check">
             <input type="checkbox" id="overlayShare" />
-            <span>Apply overlays to every loaded surface with the same vertices (the same subject)</span>
+            <span>Share overlays across same-subject surfaces</span>
+            <span class="nd-info-icon" tabindex="0" aria-label="About shared overlays">i<span class="nd-info-tooltip">Applies to every loaded surface with the same vertices. Shared overlays keep one colour map, range and visibility; removing one removes it everywhere.</span></span>
           </label>
           <ul class="layer-list" id="overlayList" aria-label="Overlays on the shown surface"></ul>
           <p class="hint">Curvature, thickness, .annot, .label.gii, .shape.gii, CIFTI .dscalar.nii.</p>
-          <details class="workflow-help">
-            <summary>How shared overlays work</summary>
-            <p>
-              Sharing applies to overlays loaded before and after the checkbox is ticked.
-              Matching surfaces share the colour map, range and visibility; removing an
-              overlay removes it from all of them. Unticking keeps existing groups shared
-              and leaves new overlays on the surface they are loaded onto.
-            </p>
-          </details>
 
           <!-- One mask for the whole surface, not per overlay: it answers "where
                is there data at all", which is a property of the subject. -->
@@ -197,12 +74,7 @@
                     title="Show every overlay everywhere again">Clear</button>
           </div>
           <!-- Replaced by syncMaskControls once a mask is loaded. -->
-          <p class="hint" id="maskHint">
-            Optional. Every overlay is drawn only where the mask is non-zero. A file
-            with "curv" or "curvature" in its name (lh.curv, hemi-L_curv.shape.gii) is
-            treated as anatomy and always shown; for any other file, tick "Always show
-            this overlay". A file with "mask" in its name can just be dropped on the viewer.
-          </p>
+          <p class="hint" id="maskHint">Optional: overlays are drawn only where the mask is non-zero.</p>
 
           <p class="hint" id="overlaySelectedHint" hidden></p>
           <div class="row">
@@ -230,7 +102,7 @@
                when one is selected. -->
           <label class="check">
             <input type="checkbox" id="overlayFlip" disabled />
-            <span>Flip for the other hemisphere (mirror the polar-angle map left–right)</span>
+            <span>Mirror polar angle for the other hemisphere</span>
           </label>
           <div class="row">
             <label for="overlayOpacity">Overlay opacity</label>
@@ -246,21 +118,17 @@
           </div>
           <label class="check">
             <input type="checkbox" id="overlayIgnoreMask" disabled />
-            <span>Always show this overlay (ignore the mask)</span>
+            <span>Always show this overlay</span>
           </label>
           <label class="check">
             <input type="checkbox" id="showLegend" checked />
-            <span>Show the colour scale on the view</span>
+            <span>Show colour scale</span>
           </label>
         </details>
 
         <details class="nd-workflow-disclosure panel workflow-panel tool-panel" id="annotationPanel">
           <summary class="panel-heading">
-            <span class="panel-step" aria-hidden="true">03</span>
-            <div>
-              <h2>Annotate</h2>
-              <p>Trace a closed region or mark individual vertices.</p>
-            </div>
+            <h2>Annotate</h2>
           </summary>
           <div class="segmented" role="radiogroup" aria-label="Drawing tool">
             <button type="button" id="modeRoi" class="active" role="radio" aria-checked="true">Closed ROI</button>
@@ -268,16 +136,7 @@
           </div>
 
           <div id="roiControls">
-            <p class="hint">
-              Click to place border points around the region. Nothing is traced
-              until you close the ROI, so you can rotate freely while placing them.
-            </p>
-            <p class="hint note instruction-note">
-              Points are joined <strong>in the order you place them</strong>, not by
-              which are nearest each other. Work consistently along the border in
-              one direction. <strong>Close ROI</strong> joins the last point back to
-              the first.
-            </p>
+            <p class="hint">Click border points in order; Close ROI joins the last to the first.</p>
             <div class="button-row">
               <button type="button" id="undoPoint" disabled>Undo point</button>
               <button type="button" id="closePath" disabled>Close ROI</button>
@@ -288,10 +147,7 @@
             <!-- Both texts are replaced by syncControls to name whichever edge
                  exists right now: the mesh's own cut, a finished ROI's rim, or
                  both. See EDGE_LABELS in main.js. -->
-            <p class="hint" id="edgeHint" hidden>
-              Draw only the part of the border crossing the flat surface: both ends are extended
-              to the nearest edge, which closes the region. Two points are enough.
-            </p>
+            <p class="hint" id="edgeHint" hidden>Draw only the crossing part; both ends extend to the edge. Two points are enough.</p>
             <div class="button-row">
               <button type="button" id="fillRegion" class="primary" disabled>Fill region</button>
               <button type="button" id="flipRegion" hidden>Other side</button>
@@ -300,9 +156,10 @@
             <label class="check">
               <input type="checkbox" id="includeBoundary" />
               <span>Include boundary vertices</span>
+              <span class="nd-info-icon" tabindex="0" aria-label="About boundary vertices">i<span class="nd-info-tooltip">Off: the next ROI drawn against this one claims its border row. Tick before saving to keep the border where you clicked it.</span></span>
             </label>
             <div class="row">
-              <label for="markerShape">Point marker</label>
+              <label for="markerShape">Point marker <span class="nd-info-icon" tabindex="0" aria-label="About point markers">i<span class="nd-info-tooltip">Drawn at a fixed size with a contrasting outline. Landmarks use the same colour and the other shape.</span></span></label>
               <select id="markerShape">
                 <option value="circle" selected>Circle</option>
                 <option value="dot">Dot</option>
@@ -315,25 +172,11 @@
                 <option value="yellow">Yellow</option>
               </select>
             </div>
-            <p class="hint">
-              Markers are drawn on top of the view at a fixed size, each with a
-              contrasting outline so it stays visible over any surface or overlay.
-              Landmarks use the same colour and the other shape.
-            </p>
             <div class="row">
               <label for="roiOpacity">ROI opacity</label>
               <input type="range" id="roiOpacity" min="0.05" max="1" step="0.05" value="0.55" />
               <span class="readout" id="roiOpacityValue">0.55</span>
             </div>
-            <p class="hint">
-              The interior is detected automatically; if it is ambiguous you are asked to
-              click inside the region you want. Closing on the edge takes the smaller side.
-            </p>
-            <p class="hint">
-              With <strong>Include boundary vertices</strong> off, a saved ROI does not
-              own the row it was drawn along, so the next ROI drawn against it claims
-              that row. Tick it before saving to keep the border where you clicked it.
-            </p>
           </div>
 
           <div id="pointControls" hidden>
@@ -348,11 +191,7 @@
 
         <details class="nd-workflow-disclosure panel workflow-panel roi-panel" id="roiPanel">
           <summary class="panel-heading">
-            <span class="panel-step" aria-hidden="true">04</span>
-            <div>
-              <h2>Saved ROIs</h2>
-              <p>Name, organise and revisit completed regions.</p>
-            </div>
+            <h2>Saved ROIs</h2>
           </summary>
           <label class="file-field">
             <span>ROI name</span>
@@ -363,38 +202,18 @@
             <button type="button" id="saveRoi" disabled>Save filled region</button>
           </div>
           <ul class="layer-list" id="roiList" aria-label="Completed ROIs"></ul>
+          <p class="hint">Saved ROIs never overlap: the one higher in the list keeps shared vertices.</p>
           <!-- Border points, not masks: what comes back is editable. -->
           <label class="file-field mask-field">
             <input type="file" data-neurodesk-input="surface" id="roiImport" accept=".json,.gii" disabled />
             <span class="mask-browse">Load ROIs from a file</span>
           </label>
-          <p class="hint">
-            Restores ROIs saved by this app — a <code>.surfannotate.json</code> session, or
-            a <code>.label.gii</code> it exported — with their border points, so they can be
-            edited or added to. They are appended below any ROIs already listed.
-          </p>
-          <details class="workflow-help">
-            <summary>How ROI partitioning works</summary>
-            <p>
-              Saved ROIs never overlap. The list is a priority order: where two ROIs
-              would share vertices, the one higher in the list keeps them and the lower
-              one is trimmed to what is left. Because an ROI is stored as its border,
-              moving a border re-shapes every ROI below it automatically. A saved ROI's
-              rim also acts as an edge for the next one, so you only need to click the
-              new border, not the shared one. Use <strong>&#9650;&#9660;</strong> to
-              change the order, <strong>&#9998;</strong> to reopen a border, or select a
-              name to export that ROI.
-            </p>
-          </details>
+          <p class="hint">Reloads a session .json or exported .label.gii with editable borders.</p>
         </details>
 
         <details class="nd-workflow-disclosure panel workflow-panel export-panel" id="exportPanel">
           <summary class="panel-heading">
-            <span class="panel-step" aria-hidden="true">05</span>
-            <div>
-              <h2>Export</h2>
-              <p>Download a saved ROI, or every saved ROI, in your preferred format.</p>
-            </div>
+            <h2>Export</h2>
           </summary>
           <p class="hint" id="exportNameHint">Exports write saved ROIs: save the filled region, then export it from here.</p>
           <div class="button-row">
@@ -418,78 +237,144 @@
             <button type="button" id="exportAnnot" disabled>FreeSurfer .annot</button>
             <button type="button" id="exportAllGifti" disabled>GIfTI .label.gii</button>
           </div>
-          <p class="hint" id="exportAllHint">
-            One label per vertex; each ROI keeps its name and colour. Opens in freeview,
-            Workbench, nibabel and NiiVue.
-          </p>
+          <p class="hint" id="exportAllHint">One label per vertex; each ROI keeps its name and colour.</p>
           <div class="button-row">
             <button type="button" id="exportSession" disabled
                     title="Border points and landmarks — the editable form">Session .json</button>
           </div>
-          <p class="hint">
-            The editable form: every ROI's border points and the landmarks. Load it back
-            from the Saved ROIs panel to continue. The <code>.label.gii</code> files above
-            carry the same inside them.
-          </p>
+          <p class="hint">Editable border points and landmarks; load it back under Saved ROIs.</p>
         </details>
+
+        <button id="aboutBtn" type="button" hidden>About</button>
       </div>
 
       <div id="viewer">
-        <canvas id="gl"></canvas>
-        <!-- Border points and landmarks, projected onto the render rather than
-             painted into the mesh. See src/niivue/markers.js. Never takes a
-             pointer event: every click on the viewer belongs to the picker. -->
-        <canvas id="markerOverlay" aria-hidden="true"></canvas>
-        <div id="dropHint" class="drop-hint">
-          <span class="drop-icon" aria-hidden="true">
-            <svg viewBox="0 0 48 48">
-              <path d="M24 31V11m0 0-7 7m7-7 7 7M12 27v7a4 4 0 0 0 4 4h16a4 4 0 0 0 4-4v-7" />
-            </svg>
-          </span>
-          <strong>Drop a cortical surface here</strong>
-          <span>FreeSurfer, GIfTI and MZ3 files are supported.</span>
-          <small>Processed locally in this browser — nothing is uploaded.</small>
+        <div class="nd-viewer-canvas-wrapper">
+          <canvas id="gl" aria-label="Surface viewer"></canvas>
+          <!-- Border points and landmarks, projected onto the render rather than
+               painted into the mesh. See src/niivue/markers.js. Never takes a
+               pointer event: every click on the viewer belongs to the picker. -->
+          <canvas id="markerOverlay" aria-hidden="true"></canvas>
+          <p id="dropHint" class="nd-viewer-empty">Drop a FreeSurfer, GIfTI or MZ3 surface here</p>
+          <!-- The scale for whichever overlay the controls are editing. A wheel for
+               the retinotopy maps, a bar for the rest; the ticks are text so the
+               values can be read and selected. The plot box is sized by main.js;
+               the canvas fills it. -->
+          <figure id="colorLegend" class="color-legend" hidden>
+            <button type="button" id="colorLegendClose" class="color-legend-close"
+                    aria-label="Hide the colour scale">&times;</button>
+            <div class="color-legend-plot" id="colorLegendPlot">
+              <canvas id="colorLegendCanvas" aria-hidden="true"></canvas>
+              <div id="colorLegendTicks" class="color-legend-ticks"></div>
+            </div>
+            <figcaption id="colorLegendCaption"></figcaption>
+          </figure>
         </div>
-        <!-- The scale for whichever overlay the controls are editing. A wheel for
-             the retinotopy maps, a bar for the rest; the ticks are text so the
-             values can be read and selected. -->
-        <figure id="colorLegend" class="color-legend" hidden>
-          <button type="button" id="colorLegendClose" class="color-legend-close"
-                  aria-label="Hide the colour scale">&times;</button>
-          <div class="color-legend-plot">
-            <canvas id="colorLegendCanvas" aria-hidden="true"></canvas>
-            <div id="colorLegendTicks" class="color-legend-ticks"></div>
-          </div>
-          <figcaption id="colorLegendCaption"></figcaption>
-        </figure>
+        <div class="nd-viewer-info"><span id="vertexReadout" class="nd-viewer-info-primary"></span></div>
       </div>
 
-      <div id="status">
-        <span id="statusText">Load a surface to begin.</span>
-        <span id="vertexReadout" class="readout"></span>
-      </div>
+      <footer id="status">
+        <span class="nd-status-label">Status</span>
+        <span id="statusText" class="nd-status-text" role="status" aria-live="polite">Load a surface to begin.</span>
+        <span id="elapsed" class="nd-status-elapsed"></span>
+        <progress id="progress" max="1" value="0" aria-label="Loading progress"></progress>
+        <button id="cancelButton" class="nd-btn-cancel" type="button" title="Cancel loading" aria-label="Cancel loading" hidden>×</button>
+      </footer>
     </div>
+
+    <template id="aboutContent">
+      <p>
+        Load a FreeSurfer or GIfTI surface — folded, inflated, spherical, or an
+        unfolded flat — and mark regions by clicking along their border.
+        The points are joined by the shortest path across the mesh, so the border
+        follows the surface rather than a straight line through it. ROIs are drawn
+        in sequence and partition the surface: each one's border becomes the edge
+        the next is closed against, so neighbouring ROIs share a boundary exactly
+        instead of having overlapping vertices.
+      </p>
+      <h3>How it works</h3>
+      <ol>
+        <li>
+          <strong>Load a surface.</strong> Pick a file or drop it on the viewer. Load
+          several and switch between them; an ROI drawn on the inflated surface is
+          still there on the folded one.
+        </li>
+        <li>
+          <strong>Click the border.</strong> Points are joined in the order you place
+          them, not by which are nearest each other, so work along the border in one
+          direction. Nothing is traced until you close the ROI, so you can rotate
+          freely between clicks. <strong>Close ROI</strong> joins the last point back
+          to the first. On a cut surface the edge closes the border for you — two
+          points can be enough.
+        </li>
+        <li>
+          <strong>Fill, save and export.</strong> The interior is detected
+          automatically; if it is ambiguous you are asked to click inside the region
+          you want. Closing on the edge takes the smaller side. Saved ROIs become the
+          edges the next ones are drawn against, and can be reopened to adjust.
+        </li>
+      </ol>
+      <h3>Boundary vertices</h3>
+      <p>
+        With <strong>Include boundary vertices</strong> off, a saved ROI does not own
+        the row it was drawn along, so the next ROI drawn against it claims that row.
+        Tick it before saving to keep the border where you clicked it.
+      </p>
+      <h3>Shared overlays</h3>
+      <p>
+        Sharing applies to every loaded surface with the same vertices (the same
+        subject), for overlays loaded before and after the checkbox is ticked.
+        Matching surfaces share the colour map, range and visibility; removing an
+        overlay removes it from all of them. Unticking keeps existing groups shared
+        and leaves new overlays on the surface they are loaded onto.
+      </p>
+      <h3>Overlay mask</h3>
+      <p>
+        Every overlay is drawn only where the mask is non-zero. A file with "curv" or
+        "curvature" in its name (lh.curv, hemi-L_curv.shape.gii) is treated as anatomy
+        and always shown; for any other file, tick "Always show this overlay". A file
+        with "mask" in its name can just be dropped on the viewer.
+      </p>
+      <h3>ROI partitioning</h3>
+      <p>
+        Saved ROIs never overlap. The list is a priority order: where two ROIs would
+        share vertices, the one higher in the list keeps them and the lower one is
+        trimmed to what is left. Because an ROI is stored as its border, moving a
+        border re-shapes every ROI below it automatically. A saved ROI's rim also acts
+        as an edge for the next one, so you only need to click the new border, not the
+        shared one. Use &#9650;&#9660; to change the order, &#9998; to reopen a border,
+        or select a name to export that ROI.
+      </p>
+      <p>
+        <strong>Load ROIs from a file</strong> restores ROIs saved by this app — a
+        <code>.surfannotate.json</code> session, or a <code>.label.gii</code> it
+        exported — with their border points, so they can be edited or added to. They
+        are appended below any ROIs already listed. The session file is the editable
+        form; the <code>.label.gii</code> exports carry the same inside them.
+      </p>
+      <h3>Reads</h3>
+      <ul>
+        <li>FreeSurfer surfaces: <code>lh.pial</code>, <code>lh.white</code>,
+          <code>lh.inflated</code>, <code>lh.sphere</code>, flat surfaces</li>
+        <li>GIfTI <code>.surf.gii</code>, <code>.mz3</code>, <code>.obj</code>,
+          <code>.stl</code>, <code>.ply</code>, <code>.vtk</code>, <code>.srf</code>,
+          <code>.off</code></li>
+        <li>Overlays: curvature, thickness, <code>.annot</code>, <code>.label</code>,
+          <code>.label.gii</code>, <code>.shape.gii</code>, CIFTI <code>.dscalar.nii</code></li>
+      </ul>
+      <h3>Writes</h3>
+      <ul>
+        <li>FreeSurfer <code>.label</code> and <code>.annot</code>, which open in
+          freeview, Workbench, nibabel and NiiVue</li>
+        <li>GIfTI <code>.label.gii</code></li>
+        <li>Landmarks and sessions as JSON</li>
+      </ul>
+      <p>
+        Your surfaces, overlays and labels never leave this machine — everything runs
+        in this browser tab, with no upload, account or server.
+      </p>
+    </template>
+
     <script type="module" src="/src/main.js"></script>
-    <dialog id="citationsDialog" class="cite-dialog" aria-labelledby="citeHeading">
-      <div class="cite-header">
-        <h3 id="citeHeading">Citations</h3>
-        <button type="button" class="cite-close" id="closeCitations" aria-label="Close">&times;</button>
-      </div>
-      <div class="cite-body">
-        <p class="cite-intro">
-          SurfAnnotate delineates regions in your browser; the rendering and mesh
-          parsing are NiiVue's. Please cite it if the figures or labels reach a paper.
-        </p>
-        <section class="cite-section">
-          <h4>Visualization</h4>
-          <div class="cite-item">
-            <strong>NiiVue</strong>
-            <p>NiiVue Contributors. NiiVue: a WebGL2 medical image viewer.</p>
-            <a href="https://github.com/niivue/niivue" target="_blank"
-               rel="noopener noreferrer">https://github.com/niivue/niivue</a>
-          </div>
-        </section>
-      </div>
-    </dialog>
   </body>
 </html>

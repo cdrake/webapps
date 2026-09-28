@@ -18,17 +18,16 @@
         <p id="primaryInfo" class="nd-file-info" aria-live="polite" hidden></p>
       </div>
       <div class="nd-field">
-        <label>Lesion map <span class="nd-hint">optional</span></label>
+        <label>Lesion map <small>optional</small></label>
         <div id="lesionField"></div>
         <p id="lesionInfo" class="nd-file-info" aria-live="polite" hidden></p>
         <button id="clearLesion" class="nd-btn nd-btn-secondary nd-btn-sm" type="button" hidden>Remove lesion map</button>
       </div>
       <div class="nd-field">
-        <label>Pathological modality <span class="nd-hint">optional</span></label>
+        <label>Pathological modality <small>optional</small> <span class="nd-info-icon" tabindex="0" aria-label="About the pathological modality">i<span class="nd-info-tooltip">Use this only when the lesion was drawn on a different scan. The lesion map must share this scan's grid.</span></span></label>
         <div id="pathologicalField"></div>
         <p id="pathologicalInfo" class="nd-file-info" aria-live="polite" hidden></p>
         <button id="clearPathological" class="nd-btn nd-btn-secondary nd-btn-sm" type="button" hidden>Remove pathological modality</button>
-        <p class="nd-hint">Use this only when the lesion was drawn on a different scan. The lesion map must share this scan's grid.</p>
       </div>
       <div class="nd-field">
         <label for="viewSelect">Image shown</label>
@@ -52,9 +51,8 @@
         <select id="brainExtractor"><option value="mindgrab">MindGrab · automatic</option><option value="synthstrip">SynthStrip · CPU WebAssembly</option></select>
       </div>
       <div class="nd-field">
-        <label for="normalization">Normalization</label>
+        <label for="normalization">Normalization <span class="nd-info-icon" tabindex="0" aria-label="About processing backends">i<span class="nd-info-tooltip">MindGrab tries WebGPU, WebGL2, then threaded CPU. Greedy and ANTs use threaded CPU WebAssembly.</span></span></label>
         <select id="normalization"><option value="greedy">Greedy · default</option><option value="ants">ANTs SyN</option></select>
-        <p class="nd-hint">MindGrab tries WebGPU, WebGL2, then threaded CPU. Greedy and ANTs use threaded CPU WebAssembly.</p>
       </div>
     </div>
   </details>

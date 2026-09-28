@@ -103,7 +103,7 @@
                 <div class="nd-field">
                   <label
                     >Parameters from
-                    <span class="nd-info-icon" tabindex="0" aria-label="Help"
+                    <span class="nd-info-icon" tabindex="0" aria-label="About parameter sources"
                       >i<span class="nd-info-tooltip"
                         >JSON sidecars: read TI/flip/TR from dropped dcm2niix
                         .json files. Image headers: from DICOM (auto-filled on
@@ -125,7 +125,7 @@
                 >
                   ↻ Reload from JSONs
                 </button>
-                <span class="nd-hint">Preset:</span>
+                <span class="nd-label">Preset</span>
                 <button
                   class="nd-btn nd-btn-secondary presetbtn"
                   data-preset="7T"
@@ -141,13 +141,13 @@
                 <span id="paramSrcNote" class="nd-hint">defaults</span>
               </div>
               <div id="mpBlock">
-                <p class="nd-hint">MP2RAGE</p>
+                <div class="nd-label">MP2RAGE</div>
                 <div class="nd-field" id="mpGrid"></div>
               </div>
               <div id="saBlock">
-                <p class="nd-hint">
+                <div class="nd-label">
                   SA2RAGE
-                  <span class="nd-info-icon" tabindex="0" aria-label="Help"
+                  <span class="nd-info-icon" tabindex="0" aria-label="About SA2RAGE parameters"
                     >i<span class="nd-info-tooltip"
                       >The SA2RAGE ratio (its two GRE volumes) is turned into a
                       relative B1 map, then used to correct the MP2RAGE T1. TR /
@@ -155,34 +155,29 @@
                       confirm them.</span
                     ></span
                   >
-                </p>
+                </div>
                 <div class="nd-field" id="saGrid"></div>
               </div>
               <div id="b1Block" hidden>
-                <p class="nd-hint">
+                <div class="nd-label">
                   B1 map
-                  <span class="nd-info-icon" tabindex="0" aria-label="Help"
+                  <span class="nd-info-icon" tabindex="0" aria-label="About B1 map types"
                     >i<span class="nd-info-tooltip"
                       >A generic Siemens B1 map. 'tfl' = FLIP ANGLE MAP storing
                       achieved flip ×10 (ref flip default 80°); 'percent' = % of
                       nominal; 'relative' = already 1.0 = nominal.</span
                     ></span
                   >
-                </p>
+                </div>
                 <div class="nd-field" id="b1Grid"></div>
                 <label class="nd-check">
-                  <input type="checkbox" id="extendFov" /> Extend B1 map to the
-                  full brain FOV (off by default)
-                  <span class="nd-info-icon" tabindex="0" aria-label="Help"
+                  <input type="checkbox" id="extendFov" /> Extend B1 map to
+                  the full brain
+                  <span class="nd-info-icon" tabindex="0" aria-label="About extending the B1 map"
                     >i<span class="nd-info-tooltip"
-                      >Opt-in. If the B1 map covers a smaller field-of-view than
-                      the MP2RAGE (common for a low-res tfl B1 map), brain
-                      voxels outside it get no correction. B1⁺ transmit fields
-                      are spatially smooth, so this fits a low-order 3-D
-                      polynomial to the measured field and uses it to fill those
-                      voxels. Measured voxels are kept unchanged; filled regions
-                      are estimates, not measurements, check the B1 map output
-                      before trusting peripheral T1.</span
+                      >Fills brain voxels outside a smaller B1 map with a smooth
+                      3-D polynomial fit. Measured voxels are unchanged; filled
+                      values are estimates, so check peripheral T1.</span
                     ></span
                   >
                 </label>
@@ -217,7 +212,7 @@
           <div class="nd-field">
             <span id="bidsSummary" class="nd-hint"></span>
             <span></span>
-            <span class="nd-hint">defaults:</span>
+            <span class="nd-label">Defaults</span>
             <label
               class="nd-check"
               title="Batch default for extend-B1-FOV. Each session has its own toggle that overrides this."
@@ -271,28 +266,6 @@
           <div id="resultList"></div>
           <div id="downloads" class="nd-field"></div>
           <select id="viewSel" hidden aria-label="Displayed image"></select>
-        </div>
-      </details>
-      <details class="nd-sidebar-section" id="helpSection">
-        <summary class="nd-section-title">Workflow help</summary>
-        <div class="nd-section-content">
-          <p class="nd-hint">
-            Load UNI, INV2 and a B1 source for T1 mapping. SA2RAGE must contain
-            both GRE volumes. Denoising needs UNI, INV1 and INV2.
-          </p>
-          <p class="nd-hint">
-            Check sequence parameters against your protocol before computing.
-            JSON and DICOM metadata do not contain every required parameter.
-          </p>
-          <p class="nd-hint">
-            Select View beside an output to inspect it. Use the slice sliders or
-            the mouse wheel over each plane. Download individual maps or the
-            complete bundle.
-          </p>
-          <p class="nd-hint">
-            For BIDS, choose a dataset root and calculate each session. Download
-            and unload a completed session before moving to the next.
-          </p>
         </div>
       </details>
       <button id="privacyButton" type="button" hidden>Privacy</button>
@@ -405,6 +378,23 @@
         MP2RAGE T1 mapping, B1 correction and UNI denoising run locally using
         Rust and WebAssembly. Load NIfTI images with JSON sidecars or
         uncompressed Siemens DICOM series.
+      </p>
+      <p>
+        T1 mapping needs UNI, INV2 and a B1 source; an SA2RAGE series must
+        contain both GRE volumes. Denoising needs UNI, INV1 and INV2.
+      </p>
+      <p>
+        Check sequence parameters against your protocol before computing: JSON
+        and DICOM metadata do not contain every required parameter.
+      </p>
+      <p>
+        Select View beside an output to inspect it, and use the slice sliders
+        or the mouse wheel over each plane. Download individual maps or the
+        complete bundle.
+      </p>
+      <p>
+        For BIDS, choose a dataset root and calculate each session. Download and
+        unload a completed session before moving to the next.
       </p>
       <p>
         Confirm acquisition parameters against your protocol and inspect the

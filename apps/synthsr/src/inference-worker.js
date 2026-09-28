@@ -14,7 +14,7 @@ async function modelBytes(model) {
     if(model.file.size!==model.bytes) throw new Error('Choose the validated synthsr-v2.onnx file. This file has a different size.');
     const bytes = await model.file.arrayBuffer();
     const hash = await sha256(bytes);
-    if (model.sha256 && hash !== model.sha256) throw new Error('This model does not match the validated SynthSR weights. Choose the exported synthsr-v2.onnx file.');
+    if (model.sha256 && hash !== model.sha256) throw new Error('These weights do not match SynthSR v2. Choose the exported synthsr-v2.onnx file.');
     return { bytes, hash };
   }
   let cache;
@@ -22,7 +22,7 @@ async function modelBytes(model) {
   let response = await cache?.match(model.url);
   if (!response) {
     response = await fetch(model.url);
-    if (!response.ok || response.headers.get('content-type')?.includes('text/html')) throw new Error('Could not download SynthSR weights. Check the connection, or select a local synthsr-v2.onnx file in Model settings.');
+    if (!response.ok || response.headers.get('content-type')?.includes('text/html')) throw new Error('Could not download SynthSR weights. Check the connection or choose a local model file.');
     // Cache only after verifying all bytes, below.
   }
   const length = Number(response.headers.get('content-length')) || model.bytes;

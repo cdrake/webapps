@@ -45,6 +45,9 @@ try {
         const response = await page.goto(`${site.origin}/${app.path}/`, { waitUntil: 'domcontentloaded' });
         expect(response.status()).toBe(200);
         await expect(page.locator('.nd-app-bar:visible').first()).toBeVisible();
+        // The workspace is the first screen: no start page, landing overlay or welcome modal.
+        const startScreens = await page.locator('.start-page:visible, #startPage:visible, #landingPage:visible, #welcomeLater:visible').count();
+        if (startScreens) result.failures.push('A start page or welcome modal covers the workspace; open straight into the workflow and move its copy to About');
         const enter = page.locator('#enterAppButton:visible, #landingLaunch:visible').first();
         if (await enter.count()) await enter.click();
         const workspace = page.getByRole('link', { name: 'Open Workspace', exact: true });
@@ -87,6 +90,46 @@ try {
             headings: [...document.querySelectorAll('h1, h2, h3, summary')].filter(visible).map(describe),
           };
         }));
+        Object.assign(result, { workspace: await page.evaluate(({ hintMax, desktop }) => {
+          const visible = node => node.checkVisibility({ opacityProperty: true, visibilityProperty: true });
+          const text = node => node.textContent.replace(/\s+/g, ' ').trim();
+          const failures = [];
+          const footer = document.querySelector('footer#status');
+          if (!footer || !visible(footer)) {
+            failures.push('Status belongs in a visible <footer id="status"> at the bottom of the window');
+          } else {
+            if (!footer.querySelector('.nd-status-text')) failures.push('Status footer lacks .nd-status-text');
+            if (!footer.querySelector('progress')) failures.push('Status footer lacks a native <progress>');
+            const rect = footer.getBoundingClientRect();
+            const bottom = Math.max(document.documentElement.clientHeight, window.innerHeight);
+            if (desktop && Math.abs(bottom - rect.bottom) > 2) failures.push(`Status footer ends ${Math.round(bottom - rect.bottom)}px above the window bottom`);
+            const sidebar = footer.closest('.nd-imaging-controls, .app-sidebar, #controls, aside');
+            if (sidebar) failures.push('Status footer sits inside the sidebar; it spans the window');
+          }
+          if (document.querySelector('.sidebar-status')) failures.push('.sidebar-status is retired; status lives in the footer');
+          const logs = [...document.querySelectorAll('nd-console, .nd-console-container, .console-container')];
+          if (!logs.length) failures.push('No technical log; append createConsole() below the viewer');
+          for (const log of logs) {
+            if (!log.classList.contains('collapsed')) failures.push(`Log "${text(log).slice(0, 40)}" starts open; technical logs start collapsed`);
+          }
+          const candidates = [...document.querySelectorAll('.nd-imaging-controls, .app-sidebar, #controls, .control-panel')].filter(visible);
+          // Count each sidebar once, even when an app nests one container inside another.
+          const sidebars = candidates.filter(node => !candidates.some(other => other !== node && other.contains(node)));
+          const hints = new Set();
+          let primaries = 0;
+          for (const sidebar of sidebars) {
+            for (const node of sidebar.querySelectorAll('.nd-hint, .hint, .step-description, p, small')) {
+              if (!visible(node) || node.closest('.nd-info-tooltip, .info-tooltip, [role="tooltip"], label, dialog')) continue;
+              const words = text(node);
+              if (words.length > hintMax) hints.add(`${words.length}: ${words.slice(0, 60)}…`);
+            }
+            primaries += [...sidebar.querySelectorAll('.nd-btn-primary, .btn-primary')].filter(visible).length;
+          }
+          for (const hint of hints) failures.push(`Sidebar help over ${hintMax} characters (${hint}); use an nd-info-icon tooltip or About`);
+          if (primaries > 1) failures.push(`${primaries} visible primary buttons in the sidebar; keep one and make the rest secondary`);
+          return { failures, logs: logs.length, primaries, longHints: hints.size };
+        }, { hintMax: 90, desktop: viewport.width >= 1024 }) });
+        result.failures.push(...result.workspace.failures);
         if (result.bars !== 1) result.failures.push(`Expected one shared app bar, found ${result.bars}`);
         if (result.legacyDisclosureCount > 0) {
           result.failures.push(`Mouse-only disclosure headings: ${result.legacyDisclosureCount}; use native disclosures or the shared button binding`);

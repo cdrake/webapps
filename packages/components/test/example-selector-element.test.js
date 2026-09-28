@@ -32,6 +32,11 @@ test('one labelled selector loads only when chosen and reports successful import
   assert.equal(control.dataset.exampleState, 'ready');
   assert.equal(control.dataset.exampleId, 'brain');
   assert.match(control.textContent, /Run to download a brain mask/);
+  const hint = control.querySelector('[role="status"]');
+  assert.equal(hint.textContent, 'Brain MRI loaded.', 'the visible hint stays one short line');
+  const info = control.querySelector('label .nd-info-icon');
+  assert.equal(info.hidden, false);
+  assert.equal(info.querySelector('.nd-info-tooltip').textContent, 'A T1-weighted head scan. Run to download a brain mask.');
   assert.equal(control.select.disabled, false);
   control.destroy();
 });

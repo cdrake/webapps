@@ -9,6 +9,8 @@ import {
   createConsole,
   createViewerToolbar,
   createExampleSelector,
+  bindInfoTooltips,
+  ProgressManager,
 } from "@neurodesk/webapp-components/ui";
 import { downloadFile } from "@neurodesk/webapp-components/file-io";
 import { APP } from "./config.js";
@@ -31,6 +33,9 @@ const toolbar = createViewerToolbar({ window: false, overlay: false, colormap: f
 $("viewer").prepend(toolbar);
 const log = createConsole({ id: "technicalLog" });
 $("viewer").append(log);
+// Status footer: message, progress, elapsed time and the × that shows only while cancellable.
+const progress = new ProgressManager();
+bindInfoTooltips(document);
 
 // 3. Information dialog: About and Privacy open from the shared app bar; Cite comes from the registry.
 const info = createInfoDialog();
@@ -62,7 +67,7 @@ async function loadFiles(filesPromise, signal) {
   $("imageInput").disabled = true;
   exampleControl.setDisabled(true);
   $("runButton").disabled = true;
-  $("cancelButton").hidden = false;
+  progress.begin("Loading image…");
   status("Loading image…");
   try {
     const files = await filesPromise;
@@ -73,7 +78,7 @@ async function loadFiles(filesPromise, signal) {
     source = files[0];
     results.render();
     $("outputSection").open = false;
-    $("progress").value = 0;
+    progress.setProgress(0);
     $("fileInfo").hidden = false;
     $("fileInfo").textContent = source.name;
     $("dropZone").classList.add("has-files");
@@ -85,7 +90,8 @@ async function loadFiles(filesPromise, signal) {
     $("imageInput").disabled = false;
     exampleControl.setDisabled(false);
     $("runButton").disabled = !source;
-    $("cancelButton").hidden = true;
+    progress.stopTimer();
+    progress.setCancellable(false);
   }
 }
 function importFiles(files) {
@@ -122,7 +128,7 @@ $("runButton").addEventListener("click", () => {
   // Replace this explicit pass-through demonstration with the app's method.
   results.render({ output: { description: "Unchanged input copy", file: source } });
   $("outputSection").open = true;
-  $("progress").value = 1;
+  progress.end("Input copy ready");
   status("Input copy ready · no scientific processing applied");
 });
 window.addEventListener("pagehide", () => {

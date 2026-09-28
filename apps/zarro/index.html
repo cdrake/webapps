@@ -14,11 +14,7 @@
       <aside id="controls" aria-label="Viewer controls">
         <section class="control-panel source-panel" aria-labelledby="source-heading">
           <div class="panel-heading">
-            <span class="panel-number" aria-hidden="true">01</span>
-            <div>
-              <h2 id="source-heading">Choose a volume</h2>
-              <p>Stream a public multiscale OME-Zarr store without downloading it first.</p>
-            </div>
+            <h2 id="source-heading">Choose a volume</h2>
           </div>
 
           <label class="field" for="source">
@@ -56,15 +52,13 @@
                   <input
                     id="dandiQuery"
                     type="search"
+                    placeholder="Search paths, or leave blank to browse all"
                     autocomplete="off"
                     spellcheck="false"
                   />
                   <button id="searchDandi" type="button">Search</button>
                 </div>
               </label>
-              <output id="dandiSearchStatus" role="status" aria-live="polite">
-                Search paths or leave blank to browse by subject, sample, and stain.
-              </output>
               <div id="dandiResults" class="dandi-results" aria-label="DANDI OME-Zarr results"></div>
             </details>
           </div>
@@ -79,7 +73,7 @@
                 autocomplete="off"
               />
             </label>
-            <span>Store URLs</span>
+            <span>Store URLs <span class="nd-info-icon" tabindex="0" aria-label="About store placement">i<span class="nd-info-tooltip">Each store is placed from its OME-NGFF translation coordinates. All selected-level voxel spacings must match.</span></span></span>
             <div id="zarrUrls" class="zarr-url-list">
               <div class="zarr-url-row">
                 <input
@@ -104,11 +98,10 @@
               <button id="addZarrUrl" class="add-url-button" type="button">+ Add another URL</button>
               <button id="newCustomLayer" class="add-url-button" type="button">+ New stain layer</button>
             </div>
-            <small>Each store is placed from its OME-NGFF translation coordinates. All selected-level voxel spacings must match.</small>
           </div>
 
           <div class="source-actions">
-            <button class="primary-button" id="reload" type="button">Load volume</button>
+            <button class="nd-btn nd-btn-primary" id="reload" type="button">Load volume</button>
             <button id="clearDandiSelection" type="button" disabled>Clear all layers</button>
           </div>
           <div
@@ -119,7 +112,6 @@
           >
             <div class="stain-layer-list-heading">
               <strong>Stain layers</strong>
-              <small>Select which loaded stain is visible in the viewer.</small>
             </div>
             <div id="stainLayers"></div>
           </div>
@@ -134,11 +126,7 @@
 
         <details class="nd-workflow-disclosure control-panel" aria-labelledby="view-heading" id="navigationPanel">
           <summary class="panel-heading compact">
-            <span class="panel-number" aria-hidden="true">02</span>
-            <div>
-              <h2 id="view-heading">Navigate</h2>
-              <p>Change the layout, scale, and center of the visible field.</p>
-            </div>
+            <h2 id="view-heading">Navigate</h2>
           </summary>
 
           <label class="field" for="layout">
@@ -157,7 +145,7 @@
           </label>
 
           <div class="slider-field zoom-field">
-            <label for="zoom">Zoom level</label>
+            <label for="zoom">Zoom level <span class="nd-info-icon" tabindex="0" aria-label="About zoom levels">i<span class="nd-info-tooltip">L0 is the finest level; higher levels show a wider overview.</span></span></label>
             <input
               id="zoom"
               type="range"
@@ -165,14 +153,11 @@
               max="0"
               step="1"
               value="0"
-              aria-describedby="zoomValue zoomLevelHelp"
+              aria-describedby="zoomValue"
             />
             <output id="zoomValue" for="zoom" aria-live="polite">L0</output>
             <button id="applyZoom" type="button" disabled>Apply</button>
           </div>
-          <small class="zoom-level-help" id="zoomLevelHelp">
-            L0 is finest; higher levels show a wider overview.
-          </small>
 
           <select id="zarrLevel" hidden aria-hidden="true" tabindex="-1">
             <option value="auto" selected>Auto</option>
@@ -194,22 +179,15 @@
               step="1"
               value="0"
               disabled
-              aria-describedby="axialSliceValue axialSliceHelp"
+              aria-describedby="axialSliceValue"
             />
             <output id="axialSliceValue" for="axialSlice" aria-live="polite">—</output>
           </div>
-          <small class="zoom-level-help" id="axialSliceHelp">
-            Use the slider or arrow keys to move through axial slices.
-          </small>
         </details>
 
         <details class="nd-workflow-disclosure control-panel" aria-labelledby="display-heading" id="displayPanel">
           <summary class="panel-heading compact">
-            <span class="panel-number" aria-hidden="true">03</span>
-            <div>
-              <h2 id="display-heading">Display</h2>
-              <p>Tune contrast and overlays for the active volume.</p>
-            </div>
+            <h2 id="display-heading">Display</h2>
           </summary>
 
           <label class="field" for="colormap">
@@ -294,11 +272,7 @@
 
         <details class="nd-workflow-disclosure control-panel" aria-labelledby="tools-heading" id="toolsPanel">
           <summary class="panel-heading compact">
-            <span class="panel-number" aria-hidden="true">04</span>
-            <div>
-              <h2 id="tools-heading">Measure &amp; export</h2>
-              <p>Measure in slice views or save the current volume crop.</p>
-            </div>
+            <h2 id="tools-heading">Measure &amp; export</h2>
           </summary>
 
           <div class="field pointer-tool-field">
@@ -330,23 +304,6 @@
           <button class="secondary-button" id="downloadNifti" type="button" disabled>
             Download NIfTI
           </button>
-          <div id="niftiProgress" class="nifti-progress" hidden>
-            <progress id="niftiProgressBar" max="1" value="0"></progress>
-            <div class="nifti-progress-detail">
-              <output
-                id="niftiProgressText"
-                for="niftiProgressBar"
-                role="status"
-                aria-live="polite"
-              >Preparing export…</output>
-              <button
-                id="cancelNifti"
-                class="nifti-cancel"
-                type="button"
-                disabled
-              >Cancel</button>
-            </div>
-          </div>
           <button class="secondary-button" id="createShareLink" type="button">
             Create share link
           </button>
@@ -357,8 +314,6 @@
             readonly
             hidden
           />
-          <output id="shareStatus" class="download-status" role="status" aria-live="polite" hidden></output>
-          <output id="downloadStatus" class="download-status" role="status" aria-live="polite" hidden></output>
         </details>
 
         <details class="control-panel advanced-panel">
@@ -379,7 +334,7 @@
             </label>
 
             <label class="slider-field" for="detailBudget">
-              <span>Detail budget</span>
+              <span>Detail budget <span class="nd-info-icon" tabindex="0" aria-label="About the detail budget">i<span class="nd-info-tooltip">Higher values allow finer FOV tiles. GPU residency stays capped at 512 MiB.</span></span></span>
               <input
                 id="detailBudget"
                 type="range"
@@ -387,13 +342,10 @@
                 max="8"
                 step="0.5"
                 value="8"
-                aria-describedby="detailBudgetValue detailBudgetHelp"
+                aria-describedby="detailBudgetValue"
               />
               <output id="detailBudgetValue" for="detailBudget">8 GiB</output>
             </label>
-            <small class="zoom-level-help" id="detailBudgetHelp">
-              Higher values allow finer FOV tiles. GPU residency remains capped at 512 MiB.
-            </small>
 
             <div class="toggle-grid">
               <label><input id="showStats" type="checkbox" /> Stream details</label>
@@ -403,6 +355,7 @@
       </aside>
 
       <main id="viewer" aria-label="OME-Zarr volume viewer">
+        <div id="canvasWrapper" class="nd-viewer-canvas-wrapper">
         <canvas id="nv-canvas" aria-label="Interactive streamed volume" tabindex="0"></canvas>
         <section
           id="nvslideView"
@@ -482,19 +435,20 @@
             aria-label="Currently displayed Zarr level"
             hidden
           ></output>
-          <output
-            id="tileLoading"
-            class="visible-level tile-loading"
-            aria-label="Tiles currently loading"
-            aria-live="polite"
-          >0 tiles loading</output>
         </div>
         <div class="hud" id="hud" hidden aria-hidden="true">Loading…</div>
         <div class="strip" id="chunkStrip" hidden aria-hidden="true"></div>
-        <div class="fallback" id="fallback" aria-hidden="true"></div>
+        <p id="emptyState" class="nd-viewer-empty">Choose an example or a DANDI asset, then press Load volume.</p>
+        </div>
       </main>
 
-      <footer id="status" hidden></footer>
+      <footer id="status">
+        <span class="nd-status-label">Status</span>
+        <span id="statusText" class="nd-status-text" role="status" aria-live="polite">Ready · choose an example or a DANDI asset</span>
+        <span id="elapsed" class="nd-status-elapsed"></span>
+        <progress id="progress" max="1" value="0" aria-label="Processing progress"></progress>
+        <button id="cancelButton" class="nd-btn-cancel" type="button" title="Cancel" aria-label="Cancel" hidden>×</button>
+      </footer>
     </div>
     <script type="module" src="/src/viewer.ts"></script>
   </body>

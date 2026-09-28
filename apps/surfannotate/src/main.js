@@ -1,6 +1,11 @@
 import '@neurodesk/webapp-components/styles/imaging-workspace.css';
 import './styles.css';
-import { createExampleSelector } from '@neurodesk/webapp-components/ui';
+import {
+  bindInfoTooltips,
+  createConsole,
+  createExampleSelector,
+  createInfoDialog
+} from '@neurodesk/webapp-components/ui';
 import examples from '../examples.json';
 
 import { mountImagingWorkspace } from '@neurodesk/webapp-components/core/mount-imaging-workspace';
@@ -178,6 +183,9 @@ const ui = {
   roiImport: el('roiImport'),
   exportHint: el('exportHint'),
   statusText: el('statusText'),
+  elapsed: el('elapsed'),
+  progress: el('progress'),
+  cancelButton: el('cancelButton'),
   vertexReadout: el('vertexReadout'),
   dropHint: el('dropHint'),
   viewer: el('viewer'),
@@ -194,8 +202,18 @@ mountImagingWorkspace({
   // Hidden in styles.css — the shell has no option to omit it. Kept as a
   // sensible value rather than removed, so unhiding is a one-line change.
   mark: 'S',
-  controlsContract: { cite: '[data-cite-open]' }
+  // Cite is rendered by the shared app bar from registry/app-information.yml.
+  controlsContract: { about: '#aboutBtn' }
 });
+
+// The technical log sits below the viewer, collapsed; the footer carries the
+// one-clause status and the log keeps the detail.
+const log = createConsole({ id: 'technicalLog' });
+ui.viewer.append(log);
+
+const info = createInfoDialog();
+el('aboutBtn').addEventListener('click', () => info.open('About SurfAnnotate', el('aboutContent')));
+bindInfoTooltips(document);
 
 const state = {
   nv: null,
@@ -349,7 +367,7 @@ function recomputeParcellation() {
   // handful of ROIs that is long enough to look like a hang, and the status
   // line would otherwise still be showing whatever it said before.
   if (rois.length > 3) {
-    setStatus(`Re-resolving ${rois.length} ROIs…`);
+    setStatus(`Re-resolving ${rois.length} ROIs…`, { busy: true });
   }
   const { rois: resolved } = resolveParcellation({
     graph: entry.graph,
@@ -471,8 +489,9 @@ function saveRoi() {
 
   const failed = recomputeParcellation();
   const size = roi.mask ? countMask(roi.mask) : 0;
-  setStatus(`Saved ${name} — ${size.toLocaleString()} vertices. Selected for export.` +
-    unresolvedNote(failed));
+  setStatus(`Saved ${name} — ${size.toLocaleString()} vertices`, {
+    detail: `Selected for export.${unresolvedNote(failed)}`
+  });
 }
 
 /**
@@ -520,11 +539,11 @@ function reopenRoi(id) {
   renderLayerLists();
   showExportName();
   repaint();
-  setStatus(filled.ok
-    ? `Reopened ${roi.name} — ${session.clicks.length} border points restored. ` +
-      'Adjust it and save again; the ROIs below it will follow.'
-    : `Reopened ${roi.name} — ${session.clicks.length} border points restored, but the ` +
-      'border could not be retraced on the surface as it is now. Close it again.');
+  setStatus(`Reopened ${roi.name} — ${session.clicks.length} border points restored`, {
+    detail: filled.ok
+      ? 'Adjust it and save again; the ROIs below it will follow.'
+      : 'The border could not be retraced on the surface as it is now. Close it again.'
+  });
 }
 
 function removeRoi(id) {
@@ -533,7 +552,7 @@ function removeRoi(id) {
   const [roi] = state.rois.splice(position, 1);
   if (state.selectedRoiId === id) state.selectedRoiId = null;
   const failed = recomputeParcellation();
-  setStatus(`Removed ${roi.name}.` + unresolvedNote(failed));
+  setStatus(`Removed ${roi.name}`, { detail: unresolvedNote(failed).trim() });
 }
 
 /**
@@ -554,7 +573,7 @@ function moveRoi(id, delta) {
   state.rois.splice(target, 0, roi);
 
   const failed = recomputeParcellation();
-  setStatus(`${roi.name} is now ${to + 1} of ${rois.length}.` + unresolvedNote(failed));
+  setStatus(`${roi.name} is now ${to + 1} of ${rois.length}`, { detail: unresolvedNote(failed).trim() });
 }
 
 function setRoiVisible(id, visible) {
@@ -570,7 +589,7 @@ function selectRoi(id) {
   const roi = state.rois.find((candidate) => candidate.id === id);
   if (roi && state.selectedRoiId === id) {
     ui.roiName.value = roi.name;
-    setStatus(`${roi.name} selected — the export buttons will write it.`);
+    setStatus(`${roi.name} selected for export`);
   } else {
     setStatus('No ROI selected for export.');
   }
@@ -620,8 +639,66 @@ function enqueueLoad(task) {
   return loadQueue;
 }
 
-function setStatus(text) {
+/**
+ * The footer status: one short clause, with the detail in the technical log.
+ *
+ * `busy` marks a load, index or trace that may take a moment: the progress bar
+ * goes indeterminate and an m:ss timer runs until the next non-busy status,
+ * which fills the bar (or empties it on an error). `cancel` shows the × for the
+ * loads that can be abandoned.
+ */
+const busy = { since: 0, timer: 0 };
+
+function showElapsed() {
+  const seconds = Math.floor((performance.now() - busy.since) / 1000);
+  ui.elapsed.textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
+function setStatus(text, { busy: working = false, error = false, cancel = false, detail = '' } = {}) {
   ui.statusText.textContent = text;
+  ui.statusText.classList.toggle('error', error);
+  log.log(detail ? `${text} ${detail}` : text, error ? 'error' : 'info');
+  ui.cancelButton.hidden = !(working && cancel);
+  if (working) {
+    ui.progress.removeAttribute('value');
+    if (!busy.timer) {
+      busy.since = performance.now();
+      showElapsed();
+      busy.timer = setInterval(showElapsed, 1000);
+    }
+    return;
+  }
+  if (busy.timer) {
+    clearInterval(busy.timer);
+    busy.timer = 0;
+    showElapsed();
+    ui.progress.value = error ? 0 : 1;
+  } else if (error) {
+    ui.progress.value = 0;
+  }
+}
+
+/** A colour-map note as a status clause and the explanation behind it. */
+function noteParts(note) {
+  const match = note.match(/^(.*?)(?:, because |, so |\. )/s);
+  const summary = match ? match[1] : note;
+  return [summary, note.slice(summary.length).replace(/^[,.]\s*/, '')];
+}
+
+/** A failure the user should see in the log, with its stack-free reason. */
+function logError(context, error) {
+  log.log(`${context}: ${error?.message || error}`, 'error');
+}
+
+/**
+ * Surface loads are cancelled by generation: the × bumps it, and a load that
+ * started under an older one stops at its next checkpoint.
+ */
+let loadGeneration = 0;
+function cancelledError() {
+  const error = new Error('Loading cancelled');
+  error.name = 'AbortError';
+  return error;
 }
 
 async function init() {
@@ -652,7 +729,14 @@ async function init() {
 
   const exampleSelector = createExampleSelector({
     examples,
-    onStatus: setStatus,
+    // The selector's own messages are long sentences: the footer gets a clause
+    // and the log keeps them whole.
+    onStatus(text, error) {
+      if (error) setStatus('Example failed to load', { error: true, detail: text });
+      else if (/^Loading /.test(text)) setStatus(text, { busy: true, cancel: true });
+      else if (/cancelled/i.test(text)) setStatus('Example loading cancelled', { detail: text });
+      else log.log(text);
+    },
     async onLoad(example, { fetchFiles, assertCurrent }) {
       const files = await fetchFiles();
       await enqueueLoad(async () => {
@@ -665,6 +749,10 @@ async function init() {
   });
   ui.surfaceInput.closest('label').before(exampleSelector);
   window.addEventListener('pagehide', () => exampleSelector.destroy(), { once: true });
+  ui.cancelButton.addEventListener('click', () => {
+    loadGeneration++;
+    exampleSelector.cancel();
+  });
 
   ui.surfaceInput.addEventListener('change', (event) => {
     const files = Array.from(event.target.files || []);
@@ -672,8 +760,12 @@ async function init() {
     // fires no change event otherwise, and clearing later would wipe the files
     // a second pick had already put there.
     event.target.value = '';
+    const generation = loadGeneration;
     enqueueLoad(async () => {
-      for (const file of files) await loadSurface(file);
+      for (const file of files) {
+        if (generation !== loadGeneration) break;
+        await loadSurface(file);
+      }
     });
   });
   ui.overlayInput.addEventListener('change', (event) => {
@@ -724,7 +816,7 @@ async function init() {
     ui.viewer.classList.remove('dragging');
     const files = event.dataTransfer?.files;
     if (!files?.length) {
-      setStatus('That drop contained no file. Try dragging the file itself, not a shortcut.');
+      setStatus('That drop contained no file', { detail: 'Drag the file itself, not a shortcut.' });
       return;
     }
     enqueueLoad(() => handleDroppedFiles(Array.from(files)));
@@ -759,27 +851,33 @@ async function init() {
       setStatus('Place at least three border points before closing the ROI.');
       return;
     }
-    setStatus('Tracing the border…');
+    setStatus('Tracing the border…', { busy: true });
     const result = session.closePath();
-    setStatus(result.ok
-      ? `ROI closed — ${result.chainLength.toLocaleString()} boundary vertices. ` +
-        'Now fill the region.'
-      : 'Could not join every border point across the surface. Try placing points ' +
-        'closer together, or on the same connected surface.');
+    if (result.ok) {
+      setStatus(`ROI closed — ${result.chainLength.toLocaleString()} boundary vertices`, {
+        detail: 'Now fill the region.'
+      });
+    } else {
+      setStatus('Could not join every border point', {
+        error: true,
+        detail: 'Try placing points closer together, or on the same connected surface.'
+      });
+    }
     repaint();
   });
   ui.closeOnEdge.addEventListener('click', () => {
     const session = state.session;
-    setStatus('Tracing the border to the surface edge…');
+    setStatus('Tracing the border to the surface edge…', { busy: true });
     const result = session.closeOnEdge();
     if (!result.ok) {
-      setStatus(FILL_ERRORS[result.error] || SESSION_ERRORS[result.error] || result.error);
+      setStatus(FILL_ERRORS[result.error] || SESSION_ERRORS[result.error] || result.error, { error: true });
       repaint();
       return;
     }
-    setStatus(`Border closed against the surface edge — ` +
-      `${result.chainLength.toLocaleString()} boundary vertices, ` +
-      `${result.regions} regions. Now fill the region.`);
+    setStatus('Border closed against the surface edge', {
+      detail: `${result.chainLength.toLocaleString()} boundary vertices, ` +
+        `${result.regions} regions. Now fill the region.`
+    });
     repaint();
   });
   ui.fillRegion.addEventListener('click', () => runFill());
@@ -788,7 +886,7 @@ async function init() {
     const result = session.nextRegion({ includeBoundary: ui.includeBoundary.checked });
     if (!result) return;
     setStatus(`Region ${session.regionIndex + 1} of ${session.regionOrder.length} — ` +
-      `${result.count.toLocaleString()} vertices.`);
+      `${result.count.toLocaleString()} vertices`);
     repaint();
   });
   ui.clearRoi.addEventListener('click', () => {
@@ -797,8 +895,8 @@ async function init() {
     state.awaitingSeed = false;
     if (restored) recomputeParcellation();
     setStatus(restored
-      ? `Cleared. ${restored.name} went back on the list unchanged.`
-      : 'Boundary cleared.');
+      ? `Cleared; ${restored.name} went back on the list unchanged`
+      : 'Boundary cleared');
     repaint();
   });
   ui.undoPointSelection.addEventListener('click', () => {
@@ -826,7 +924,10 @@ async function init() {
     syncFlipControl();
     applyOverlayDisplay();
     const snapped = applyColormapWindow();
-    if (snapped) setStatus(snapped.note);
+    if (snapped) {
+      const [summary, detail] = noteParts(snapped.note);
+      setStatus(summary, { detail });
+    }
     // applyColormapWindow only redraws the legend when it had a window to apply.
     renderColorLegend();
   });
@@ -841,8 +942,8 @@ async function init() {
     renderColorLegend();
     repaint();
     setStatus(ui.overlayFlip.checked
-      ? 'Polar angle mirrored left–right, for the other hemisphere.'
-      : 'Polar angle shown unmirrored.');
+      ? 'Polar angle mirrored for the other hemisphere'
+      : 'Polar angle shown unmirrored');
   });
 
   ui.overlayIgnoreMask.addEventListener('change', () => {
@@ -857,8 +958,8 @@ async function init() {
     renderLayerLists();
     repaint();
     setStatus(overlay.ignoreMask
-      ? `${overlay.name} is now always shown, mask or not.`
-      : `${overlay.name} now follows the mask.`);
+      ? `${overlay.name} is now always shown`
+      : `${overlay.name} now follows the mask`);
   });
 
   ui.showLegend.addEventListener('change', () => {
@@ -878,13 +979,13 @@ async function init() {
     const low = Number(ui.overlayMin.value);
     const high = Number(ui.overlayMax.value);
     if (!Number.isFinite(low) || !Number.isFinite(high) || high <= low) {
-      setStatus('Colour range needs a maximum greater than the minimum.');
+      setStatus('Colour range needs a maximum greater than the minimum', { error: true });
       return;
     }
     setOverlayWindow(layer, low, high);
     commitOverlay();
     renderColorLegend();
-    setStatus(`Colour range set to ${low} – ${high}.`);
+    setStatus(`Colour range set to ${low} – ${high}`);
   };
   ui.overlayMin.addEventListener('change', applyOverlayRange);
   ui.overlayMax.addEventListener('change', applyOverlayRange);
@@ -895,7 +996,7 @@ async function init() {
     showOverlayRange(layer);
     commitOverlay();
     renderColorLegend();
-    setStatus('Colour range reset to the data\'s 2nd–98th percentile.');
+    setStatus('Colour range reset to the 2nd–98th percentile');
   });
 
   // Only the overlay changes, so there is no need to recomposite the mesh.
@@ -926,7 +1027,7 @@ async function init() {
 
     if (event.key === 'Escape' && state.awaitingSeed) {
       state.awaitingSeed = false;
-      setStatus('Cancelled.');
+      setStatus('Cancelled');
     }
     if ((event.key === 'Backspace' || event.key === 'Delete') && state.session) {
       event.preventDefault();
@@ -936,61 +1037,7 @@ async function init() {
     }
   });
 
-  bindStartPage();
-  bindCitations();
   setStatus('Load a surface to begin.');
-}
-
-/**
- * Wire the Cite button, and add a second one to the app's own header.
- *
- * The shared shell builds its navigation with only the catalog link and takes no
- * list of extra items, so the button is appended after mounting rather than
- * passed in — the alternative is a change to the component and every app with it.
- */
-function bindCitations() {
-  const dialog = el('citationsDialog');
-  if (!dialog) return;
-
-  const navigation = document.querySelector('.nd-imaging-navigation');
-  if (navigation) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'nd-header-link';
-    button.title = 'How to cite';
-    button.textContent = 'Cite';
-    button.setAttribute('data-cite-open', '');
-    navigation.prepend(button);
-  }
-
-  for (const trigger of document.querySelectorAll('[data-cite-open]')) {
-    trigger.addEventListener('click', () => dialog.showModal());
-  }
-  el('closeCitations')?.addEventListener('click', () => dialog.close());
-  // A modal dialog fills the viewport with its backdrop, so a click that lands
-  // on the dialog element itself is a click outside the panel.
-  dialog.addEventListener('click', (event) => {
-    if (event.target === dialog) dialog.close();
-  });
-}
-
-/**
- * The start page is a section over the app, so entering is just hiding it.
- * NiiVue sized its canvas at attach time behind the overlay, so nothing needs
- * re-laying out — but a redraw costs nothing and covers a resize during reading.
- */
-function bindStartPage() {
-  const startPage = el('startPage');
-  const enter = el('enterAppButton');
-  if (!startPage || !enter) return;
-  enter.addEventListener('click', () => {
-    startPage.hidden = true;
-    ui.surfaceInput.focus();
-    requestAnimationFrame(() => {
-      window.dispatchEvent(new Event('resize'));
-      state.nv?.drawScene();
-    });
-  });
 }
 
 /**
@@ -1015,28 +1062,32 @@ async function handleDroppedFiles(files) {
       const head = await file.slice(0, SNIFF_BYTES).arrayBuffer();
       kind = classifyFile(file.name, head);
     } catch (error) {
-      console.error('surfannotate: could not read the head of the dropped file', error);
+      logError(`Could not read the head of ${file.name}`, error);
     }
     if (kind === UNKNOWN) kind = activeSurface() ? OVERLAY : SURFACE;
 
     if (kind === SURFACE) await loadSurface(file);
     else if (!activeSurface()) {
-      setStatus(`${file.name} looks like ${kind === MASK ? 'a mask' : 'an overlay'} — ` +
-        'load a surface first.');
+      setStatus(`${file.name} looks like ${kind === MASK ? 'a mask' : 'an overlay'}; load a surface first`);
     } else if (kind === MASK) await loadMask(file);
     else await addOverlay(file);
   }
 }
 
 async function loadSurface(file, { assertCurrent = () => {}, rethrow = false } = {}) {
-  setStatus(`Loading ${file.name}…`);
+  const generation = loadGeneration;
+  const checkpoint = () => {
+    assertCurrent();
+    if (generation !== loadGeneration) throw cancelledError();
+  };
+  setStatus(`Loading ${file.name}…`, { busy: true, cancel: true });
   let mesh;
   try {
     mesh = await loadMeshFromFile(state.nv, file);
-    assertCurrent();
+    checkpoint();
     const geometry = getGeometry(mesh);
 
-    setStatus(`Indexing ${geometry.vertexCount.toLocaleString()} vertices…`);
+    setStatus(`Indexing ${geometry.vertexCount.toLocaleString()} vertices…`, { busy: true, cancel: true });
     // Yield so the status paints before the synchronous build.
     await new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -1049,7 +1100,7 @@ async function loadSurface(file, { assertCurrent = () => {}, rethrow = false } =
     for (let v = 0; v < openBoundary.length; v++) if (openBoundary[v]) openCount++;
 
     const triangleHash = await hashTriangles(geometry.triangles);
-    assertCurrent();
+    checkpoint();
     // Both only for the marker overlay's back-face test, and both computed once
     // here rather than per repaint. The orientation is measured from the normals
     // that will actually be used, never inferred from the winding — see
@@ -1104,6 +1155,8 @@ async function loadSurface(file, { assertCurrent = () => {}, rethrow = false } =
       }
     }
     activateSurface(entry.id);
+    // The tools for the loaded surface; Saved ROIs and Export open when they
+    // have something in them.
     if (firstSurface) {
       document.getElementById('overlayPanel').open = true;
       document.getElementById('annotationPanel').open = true;
@@ -1117,19 +1170,24 @@ async function loadSurface(file, { assertCurrent = () => {}, rethrow = false } =
       ? ` Border points carried over from ${state.surfaces.filter(
         (s) => s.topologyKey === entry.topologyKey).length - 1} matching surface(s).`
       : '';
-    setStatus(`${file.name}: ${geometry.vertexCount.toLocaleString()} vertices, ` +
-      `${(geometry.triangles.length / 3).toLocaleString()} faces.${note}${carried}`);
+    setStatus(`${file.name}: ${geometry.vertexCount.toLocaleString()} vertices`, {
+      detail: `${(geometry.triangles.length / 3).toLocaleString()} faces.${note}${carried}`
+    });
   } catch (error) {
     if (mesh && !state.surfaces.some(entry => entry.mesh === mesh)) state.nv.removeMesh(mesh);
+    if (error?.name === 'AbortError' && generation !== loadGeneration) {
+      setStatus('Loading cancelled', { detail: file.name });
+      renderLayerLists();
+      return;
+    }
     if (rethrow) throw error;
-    // Surface it in the UI *and* the console — a parse failure deep inside
-    // NiiVue is otherwise silent and looks like "nothing happened".
-    console.error('surfannotate: failed to load surface', error);
-    setStatus(
-      `Could not read ${file.name} as a surface mesh: ${error.message}. ` +
-      'Supported: FreeSurfer (lh.pial, lh.white, lh.inflated), GIfTI .surf.gii, ' +
-      '.mz3, .obj, .stl, .ply, .vtk, .srf, .off.'
-    );
+    // A parse failure deep inside NiiVue is otherwise silent and looks like
+    // "nothing happened", so the reason goes to the status and the log.
+    setStatus(`Could not read ${file.name} as a surface: ${error.message}`, {
+      error: true,
+      detail: 'Supported: FreeSurfer (lh.pial, lh.white, lh.inflated), GIfTI .surf.gii, ' +
+        '.mz3, .obj, .stl, .ply, .vtk, .srf, .off.'
+    });
     renderLayerLists();
   }
 }
@@ -1206,7 +1264,7 @@ function activateSurface(id, { announce = false } = {}) {
         + 'a different vertex indexing, and reappear when you switch back.'
       : '';
     setStatus(`Showing ${entry.name} — ` +
-      `${entry.geometry.vertexCount.toLocaleString()} vertices.${carried}${hidden}`);
+      `${entry.geometry.vertexCount.toLocaleString()} vertices`, { detail: `${carried}${hidden}`.trim() });
   }
 }
 
@@ -1235,7 +1293,7 @@ function removeSurface(id) {
   const next = state.surfaces[position] || state.surfaces[position - 1];
   if (next) {
     activateSurface(next.id);
-    setStatus(`Removed ${entry.name}. Showing ${next.name}.`);
+    setStatus(`Removed ${entry.name}; showing ${next.name}`);
     return;
   }
 
@@ -1256,13 +1314,13 @@ function removeSurface(id) {
   // repaint() cannot do this: it returns early without a session, so every
   // control would keep the enabled state it had and then dereference null.
   resetControls();
-  setStatus(`Removed ${entry.name}. Load a surface to begin.`);
+  setStatus(`Removed ${entry.name}; load a surface to begin`);
 }
 
 async function addOverlay(file) {
   const entry = activeSurface();
   if (!entry) return;
-  setStatus(`Loading overlay ${file.name}…`);
+  setStatus(`Loading overlay ${file.name}…`, { busy: true });
   try {
     const display = {
       opacity: Number(ui.overlayOpacity.value),
@@ -1315,15 +1373,15 @@ async function addOverlay(file) {
     const shared = ui.overlayShare.checked ? shareOverlay(entry, overlay) : 0;
     const sharedNote = shared ? ` Applied to ${shared} matching surface${shared === 1 ? '' : 's'} too.` : '';
     const displayedRange = overlayLayerState(layer).range;
-    setStatus((snapped
-      ? `Overlay ${file.name} loaded. ${snapped.note}`
-      : `Overlay ${file.name} loaded — display window ` +
-        `${displayedRange.low.toFixed(3)} to ${displayedRange.high.toFixed(3)}.`)
-      + sharedNote);
+    setStatus(`Overlay ${file.name} loaded`, {
+      detail: (snapped
+        ? snapped.note
+        : `Display window ${displayedRange.low.toFixed(3)} to ${displayedRange.high.toFixed(3)}.`)
+        + sharedNote
+    });
     repaint();
   } catch (error) {
-    console.error('surfannotate: failed to load overlay', error);
-    setStatus(`Could not load overlay ${file.name}: ${error.message}`);
+    setStatus(`Could not load overlay ${file.name}: ${error.message}`, { error: true });
   }
 }
 
@@ -1340,7 +1398,7 @@ async function addOverlay(file) {
 async function loadMask(file) {
   const entry = activeSurface();
   if (!entry) return;
-  setStatus(`Loading mask ${file.name}…`);
+  setStatus(`Loading mask ${file.name}…`, { busy: true });
   try {
     const vertexCount = entry.geometry.vertexCount;
     let values;
@@ -1361,10 +1419,9 @@ async function loadMask(file) {
     commitLayer(state.nv, entry.mesh);
     repaint();
     setStatus(`Mask ${file.name}: overlays limited to ` +
-      `${kept.toLocaleString()} of ${vertexCount.toLocaleString()} vertices.`);
+      `${kept.toLocaleString()} of ${vertexCount.toLocaleString()} vertices`);
   } catch (error) {
-    console.error('surfannotate: failed to load mask', error);
-    setStatus(`Could not load mask ${file.name}: ${error.message}`);
+    setStatus(`Could not load mask ${file.name}: ${error.message}`, { error: true });
   }
 }
 
@@ -1375,7 +1432,7 @@ function clearMask() {
   syncMaskControls();
   commitLayer(state.nv, entry.mesh);
   repaint();
-  setStatus('Mask cleared. Every overlay is drawn everywhere again.');
+  setStatus('Mask cleared', { detail: 'Every overlay is drawn everywhere again.' });
 }
 
 /** Enable, disable and fill the mask controls for whatever surface is shown. */
@@ -1387,15 +1444,10 @@ function syncMaskControls() {
   // Both texts name the rule, not just its effect: "curvature is always shown"
   // says nothing about what counts as curvature, and a curvature file under
   // another name gets masked until the user finds the per-overlay switch.
+  // The full rule — what counts as curvature — is in About.
   ui.maskHint.textContent = mask
-    ? `${mask.name}: overlays limited to ` +
-      `${maskedInCount(mask.mask).toLocaleString()} vertices. Overlays named ` +
-      '"curv" or "curvature" are always shown; tick "Always show this overlay" ' +
-      'for any other.'
-    : 'Optional. Every overlay is drawn only where the mask is non-zero. A file ' +
-      'with "curv" or "curvature" in its name (lh.curv, hemi-L_curv.shape.gii) is ' +
-      'treated as anatomy and always shown; for any other file, tick "Always show ' +
-      'this overlay". A file with "mask" in its name can just be dropped on the viewer.';
+    ? `${mask.name}: ${maskedInCount(mask.mask).toLocaleString()} vertices; curvature always shown.`
+    : 'Optional: overlays are drawn only where the mask is non-zero.';
 }
 
 async function isFreeSurferLabel(file) {
@@ -1473,7 +1525,7 @@ function removeOverlay(id) {
   commitLayer(state.nv, entry.mesh);
   repaint();
   setStatus(`Removed overlay ${overlay.name}` +
-    (elsewhere ? ` from this and ${elsewhere} matching surface${elsewhere === 1 ? '' : 's'}.` : '.'));
+    (elsewhere ? ` from this and ${elsewhere} matching surface${elsewhere === 1 ? '' : 's'}` : ''));
 }
 
 /** The other loaded surfaces with this one's vertex indexing — the same subject. */
@@ -1525,15 +1577,18 @@ function shareAllOverlays() {
   renderLayerLists();
   repaint();
   if (!matchingSurfaces(entry).length) {
-    setStatus(`No other loaded surface has the same vertices as ${entry.name}, so there is ` +
-      'nothing to apply the overlays to yet. A surface of the same subject loaded later ' +
-      'will receive them.');
+    setStatus(`No other loaded surface has the same vertices as ${entry.name}`, {
+      detail: 'A surface of the same subject loaded later will receive the overlays.'
+    });
     return;
   }
-  setStatus(shared
-    ? `${shared} overlay${shared === 1 ? '' : 's'} now shared across every surface with ` +
-      `the same vertices (${copies} cop${copies === 1 ? 'y' : 'ies'} made).`
-    : 'Every overlay is already shared.');
+  if (shared) {
+    setStatus(`${shared} overlay${shared === 1 ? '' : 's'} now shared`, {
+      detail: `Across every surface with the same vertices (${copies} cop${copies === 1 ? 'y' : 'ies'} made).`
+    });
+  } else {
+    setStatus('Every overlay is already shared');
+  }
 }
 
 /** A copy of `source` on `target`, with the same values and display. */
@@ -1717,8 +1772,11 @@ function paintLegendCanvas(kind, lut, width, height) {
   const ratio = Math.min(window.devicePixelRatio || 1, 3);
   canvas.width = Math.round(width * ratio);
   canvas.height = Math.round(height * ratio);
-  canvas.style.width = `${width}px`;
-  canvas.style.height = `${height}px`;
+  // The plot box, not the canvas: the shared viewer stylesheet stretches every
+  // canvas under the canvas wrapper to its container, so the box sets the size.
+  const plot = canvas.parentElement;
+  plot.style.width = `${width}px`;
+  plot.style.height = `${height}px`;
 
   const pixels = paintLegend(kind, lut, canvas.width, canvas.height);
   canvas.getContext('2d').putImageData(
@@ -2032,6 +2090,8 @@ function isPlanar(positions) {
  */
 function showCoordinateSource() {
   const entry = activeSurface();
+  // The hint is one line; the reasoning behind a warning is its tooltip.
+  ui.exportHint.title = '';
   if (!entry) {
     ui.exportHint.textContent = "Coordinates are written in the loaded surface's space.";
     ui.exportHint.classList.remove('warn');
@@ -2056,11 +2116,14 @@ function showCoordinateSource() {
     : kind === INFLATED ? 'an inflated surface' : `${kind}`;
   const where = flattened ? 'the patch' : kind === SPHERE ? 'the sphere' : 'the inflated shape';
   let advice;
+  let brief;
   if (donor) {
+    brief = `Switch to ${donor.name} before exporting for brain coordinates.`;
     advice = `Switch to ${donor.name} before exporting if you need brain coordinates — `
       + 'the ROIs come with you, because the vertices are the same. Vertex indices are '
       + 'correct either way, which is all freeview and mris_anatomical_stats use.';
   } else if (flattened) {
+    brief = 'Its vertex indices belong to this patch alone.';
     // A patch is a cut of a surface, renumbered, so it has fewer vertices than
     // the native surface. Sending someone to lh.pial here would hide their work
     // rather than fix anything — the ROIs belong to this indexing.
@@ -2068,6 +2131,7 @@ function showCoordinateSource() {
       + 'surface it was cut from, so its vertex indices — and the ROIs drawn on it — '
       + 'belong to this patch alone. Export from here and use the file with the patch.';
   } else {
+    brief = 'Vertex indices are fine; export from lh.white or lh.pial for x/y/z.';
     advice = 'Vertex indices are correct, which is all freeview, mris_anatomical_stats '
       + 'and mri_label2label (by index) use, so exporting from here is fine for them. '
       + 'Tools that read the coordinates — mri_label2vol, mri_label2label --regmethod '
@@ -2076,9 +2140,9 @@ function showCoordinateSource() {
       + 'vertices are the same.';
   }
 
-  ui.exportHint.textContent =
-    `${entry.name} is ${what}, so its x/y/z are not anatomical: they are positions on `
-    + `${where}, not in the brain. ` + advice;
+  ui.exportHint.textContent = `${entry.name} x/y/z are not anatomical. ${brief}`;
+  ui.exportHint.title = `${entry.name} is ${what}, so its x/y/z are not anatomical: they are `
+    + `positions on ${where}, not in the brain. ` + advice;
   ui.exportHint.classList.add('warn');
 }
 
@@ -2094,8 +2158,7 @@ function showExportName() {
     return;
   }
   if (state.editing) {
-    hint.textContent = `${state.editing.name} is reopened for editing. Save it, or clear the ` +
-      'drawing to discard the edit, before exporting.';
+    hint.textContent = `${state.editing.name} is reopened for editing; save or clear it first.`;
     return;
   }
   const chosen = selectedRoi();
@@ -2121,7 +2184,7 @@ function setMode(mode) {
   ui.modePoints.setAttribute('aria-checked', String(!isRoi));
   ui.roiControls.hidden = !isRoi;
   ui.pointControls.hidden = isRoi;
-  setStatus(isRoi ? 'Click along the ROI border.' : 'Click to place landmarks.');
+  setStatus(isRoi ? 'Click along the ROI border' : 'Click to place landmarks');
   repaint();
 }
 
@@ -2295,12 +2358,10 @@ function handleVertexClick(vertex) {
   if (state.excluded && isIsolated(state.graph, vertex)) {
     const owner = savedRois().find((roi) => roi.mask && roi.mask[vertex]);
     const whose = owner ? owner.name : 'an ROI above this one in the list';
-    setStatus(
-      `That point belongs to ${whose}. To share its border, place your points on ` +
-      `open cortex and use "${EDGE_LABELS.roi.label}" — its rim closes the region ` +
-      `for you. To draw inside it, move this ROI below ${whose} in the list, or ` +
-      'reopen it.'
-    );
+    setStatus(`That point belongs to ${whose}; use "${EDGE_LABELS.roi.label}" to share its border`, {
+      detail: 'Place your points on open cortex: its rim closes the region for you. ' +
+        `To draw inside it, move this ROI below ${whose} in the list, or reopen it.`
+    });
     return;
   }
 
@@ -2312,12 +2373,13 @@ function handleVertexClick(vertex) {
 
   if (state.session.mode === MODE_ROI) {
     state.session.addClick(vertex);
-    setStatus(`${state.session.clicks.length} point(s) on the border.`);
+    setStatus(`${state.session.clicks.length} point(s) on the border`);
   } else {
     const result = state.session.togglePoint(vertex);
     setStatus(result.added
-      ? `Landmark at vertex ${vertex}.`
-      : `Removed the landmark at vertex ${vertex}.`);
+      ? `Landmark at vertex ${vertex}`
+      : `Removed the landmark at vertex ${vertex}`);
+    if (result.added) document.getElementById('exportPanel').open = true;
   }
   repaint();
 }
@@ -2346,7 +2408,7 @@ function onCanvasHover(event) {
 function runFill(seed = -1) {
   const session = state.session;
   if (!session.closed) {
-    setStatus(SESSION_ERRORS.NOT_CLOSED);
+    setStatus(SESSION_ERRORS.NOT_CLOSED, { error: true });
     return;
   }
   // A *loop* on a surface with an open edge is not necessarily split in two, so
@@ -2356,7 +2418,7 @@ function runFill(seed = -1) {
   const needsSeed = state.hasOpenBoundary && seed < 0 && session.closure !== CLOSURE_EDGE;
   if (needsSeed) {
     state.awaitingSeed = true;
-    setStatus('This surface has an open edge — click inside the region you want.');
+    setStatus('This surface has an open edge — click inside the region you want');
     return;
   }
 
@@ -2376,13 +2438,14 @@ function runFill(seed = -1) {
   }
 
   const pieces = result.components > 1
-    ? ` in ${result.components} separate pieces — the boundary probably crosses itself`
+    ? `In ${result.components} separate pieces — the boundary probably crosses itself. `
     : '';
   const otherSide = session.regionOrder.length > 1
-    ? ' If that is the wrong side of the border, take the other side.'
+    ? 'If that is the wrong side of the border, take the other side.'
     : '';
-  document.getElementById('exportPanel').open = true;
-  setStatus(`Filled ${result.count.toLocaleString()} vertices${pieces}.${otherSide}`);
+  // Save lives in Saved ROIs, so that is the panel with something to do now.
+  document.getElementById('roiPanel').open = true;
+  setStatus(`Filled ${result.count.toLocaleString()} vertices`, { detail: `${pieces}${otherSide}`.trim() });
   repaint();
 }
 
@@ -2475,20 +2538,15 @@ function resetControls() {
 const EDGE_LABELS = {
   mesh: {
     label: 'Close on surface edge',
-    hint: 'Draw only the part of the border crossing the flat surface: both ends are ' +
-      'extended to the nearest edge, which closes the region. Two points are enough.'
+    hint: 'Draw only the crossing part; both ends extend to the edge. Two points are enough.'
   },
   roi: {
     label: 'Close on ROI edge',
-    hint: 'A finished ROI acts as an edge. Draw only the part of the border you do ' +
-      'not share with it — both ends are extended to its rim, and the two regions ' +
-      'end up exactly adjacent with nothing left between them.'
+    hint: 'A finished ROI acts as an edge: draw only the part of the border you do not share.'
   },
   both: {
     label: 'Close on edge',
-    hint: 'Both the surface edge and any finished ROI close a region. Draw only the ' +
-      'part of the border that crosses open cortex; both ends are extended to the ' +
-      'nearest edge, whichever kind it is.'
+    hint: 'The surface edge and finished ROIs both close a region; draw only the open part.'
   }
 };
 
@@ -2598,8 +2656,8 @@ function requireSavedRoi() {
   const chosen = selectedRoi();
   if (chosen) return chosen;
   setStatus(savedRois().length
-    ? 'Select a saved ROI in the list to export it.'
-    : 'Save the filled region first; exports write saved ROIs only.');
+    ? 'Select a saved ROI in the list to export it'
+    : 'Save the filled region first; exports write saved ROIs only');
   return null;
 }
 
@@ -2614,7 +2672,7 @@ function exportFreeSurferLabel() {
   });
   const filename = `${exportStem()}.label`;
   download(filename, text);
-  setStatus(`Exported ${chosen.name}: ${indices.length.toLocaleString()} vertices as ${filename}.`);
+  setStatus(`Exported ${chosen.name} as ${filename}`, { detail: `${indices.length.toLocaleString()} vertices.` });
 }
 
 async function exportGiftiLabel() {
@@ -2630,7 +2688,7 @@ async function exportGiftiLabel() {
   });
 
   download(filename, xml, 'application/xml');
-  setStatus(`Exported ${chosen.name} as ${filename}.`);
+  setStatus(`Exported ${chosen.name} as ${filename}`);
 }
 
 /** The session as GIfTI file metadata, or nothing when there is nothing to carry. */
@@ -2659,8 +2717,9 @@ function sessionText(rois) {
  */
 function refuseWhileEditing() {
   if (!state.editing) return false;
-  setStatus(`${state.editing.name} is reopened for editing and would be left out. ` +
-    'Save it, or clear the drawing to discard the edit, then export.');
+  setStatus(`${state.editing.name} is reopened for editing; save or clear it first`, {
+    detail: 'It would be left out of the export. Clearing the drawing discards the edit.'
+  });
   return true;
 }
 
@@ -2671,7 +2730,7 @@ function exportSession() {
   const filename = `${parcellationStem()}.surfannotate.json`;
   download(filename, sessionText(rois), 'application/json');
   const note = `${rois.length} ROI${rois.length === 1 ? '' : 's'} and ${points.length} landmark${points.length === 1 ? '' : 's'}`;
-  setStatus(`Exported ${filename} (${note}). Load it onto the same surface to continue editing.`);
+  setStatus(`Exported ${filename} (${note})`, { detail: 'Load it onto the same surface to continue editing.' });
 }
 
 /**
@@ -2683,28 +2742,33 @@ function exportSession() {
 async function importRois(file) {
   const entry = activeSurface();
   if (!entry) return;
-  setStatus(`Loading ROIs from ${file.name}…`);
+  setStatus(`Loading ROIs from ${file.name}…`, { busy: true });
   let session;
   try {
     let text = await file.text();
     if (/\.gii$/i.test(file.name)) {
       text = sessionFromGiftiMetadata(text);
       if (!text) {
-        setStatus(`${file.name} carries no SurfAnnotate border points, so it cannot be edited ` +
-          'here yet. Only sessions and .label.gii files this app exported can be loaded for now.');
+        setStatus(`${file.name} carries no SurfAnnotate border points`, {
+          error: true,
+          detail: 'Only sessions and .label.gii files this app exported can be loaded for now.'
+        });
         return;
       }
     }
     session = readSession(text);
   } catch (error) {
-    setStatus(`Could not load ${file.name}: ${error.message}.`);
+    setStatus(`Could not load ${file.name}: ${error.message}`, { error: true });
     return;
   }
   const fit = sessionFits(session, {
     vertexCount: entry.geometry.vertexCount, topologyKey: entry.topologyKey
   });
   if (!fit.ok) {
-    setStatus(`Not loaded: ${fit.reason}. Load the surface it was drawn on and try again.`);
+    setStatus(`Not loaded: ${fit.reason}`, {
+      error: true,
+      detail: 'Load the surface it was drawn on and try again.'
+    });
     return;
   }
 
@@ -2761,10 +2825,11 @@ async function importRois(file) {
   syncControls();
   scheduleMarkers();
   const n = session.rois.length;
-  setStatus(`Loaded ${n} ROI${n === 1 ? '' : 's'} and ${landmarks} landmark${landmarks === 1 ? '' : 's'} ` +
-    `from ${file.name}.` +
-    (recoloured.length ? ` Recoloured ${recoloured.join(', ')} to stay distinct.` : '') +
-    unresolvedNote(failed));
+  setStatus(`Loaded ${n} ROI${n === 1 ? '' : 's'} and ${landmarks} landmark${landmarks === 1 ? '' : 's'}`, {
+    detail: `From ${file.name}.` +
+      (recoloured.length ? ` Recoloured ${recoloured.join(', ')} to stay distinct.` : '') +
+      unresolvedNote(failed)
+  });
 }
 
 /** The name field for the whole-parcellation files, or a sensible default. */
@@ -2804,7 +2869,7 @@ function exportAnnot() {
   })));
   const filename = `${parcellationStem()}.annot`;
   download(filename, bytes, 'application/octet-stream');
-  setStatus(`Exported ${filename} (${note}).`);
+  setStatus(`Exported ${filename} (${note})`);
 }
 
 async function exportAllGifti() {
@@ -2818,7 +2883,7 @@ async function exportAllGifti() {
   ], { arrayName: parcellationName(), metadata: sessionMetadata(savedRois()) });
   const filename = `${parcellationStem()}.label.gii`;
   download(filename, xml, 'application/xml');
-  setStatus(`Exported ${filename} (${note}).`);
+  setStatus(`Exported ${filename} (${note})`);
 }
 
 function exportPoints() {
@@ -2828,10 +2893,10 @@ function exportPoints() {
   );
   const filename = `${exportStem()}.points.json`;
   download(filename, text, 'application/json');
-  setStatus(`Exported ${state.session.points.length} landmark(s) as ${filename}.`);
+  setStatus(`Exported ${state.session.points.length} landmark(s) as ${filename}`);
 }
 
-init().catch((error) => setStatus(`Startup failed: ${error.message}`));
+init().catch((error) => setStatus(`Startup failed: ${error.message}`, { error: true }));
 
 // Exposed for the e2e smoke test, which drives the pipeline without a mouse.
 // The serialisers are re-exported here because the production build bundles the

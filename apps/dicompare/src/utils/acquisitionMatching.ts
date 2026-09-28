@@ -7,6 +7,7 @@ import { Acquisition } from '../types';
 import { ComplianceFieldResult } from '../types/schema';
 import { WorkspaceItem } from '../contexts/workspace/types';
 import { dicompareWorkerAPI as dicompareAPI } from '../services/DicompareWorkerAPI';
+import { beginActivity } from '../utils/technicalLog';
 
 export interface MatchScore {
   uploadedIndex: number;
@@ -66,6 +67,20 @@ export async function computeMatchScores(
   availableSlots: Array<{ itemId: string; item: WorkspaceItem }>
 ): Promise<MatchScore[]> {
   const scores: MatchScore[] = [];
+  const done = beginActivity(`Matching ${uploadedAcquisitions.length} acquisition(s) against ${availableSlots.length} reference(s)`);
+  try {
+    await scoreAll(uploadedAcquisitions, availableSlots, scores);
+  } finally {
+    done({ message: `Computed ${scores.length} match score(s).` });
+  }
+  return scores;
+}
+
+async function scoreAll(
+  uploadedAcquisitions: Acquisition[],
+  availableSlots: Array<{ itemId: string; item: WorkspaceItem }>,
+  scores: MatchScore[]
+): Promise<void> {
 
   for (let i = 0; i < uploadedAcquisitions.length; i++) {
     const uploaded = uploadedAcquisitions[i];
@@ -125,8 +140,6 @@ export async function computeMatchScores(
       }
     }
   }
-
-  return scores;
 }
 
 /**

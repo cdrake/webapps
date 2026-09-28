@@ -162,24 +162,6 @@
 
     </div>
 
-    <!-- Status bar -->
-    <div class="sidebar-status">
-      <div class="status-header">
-        <span class="status-label">Status</span>
-        <div class="status-right">
-          <span class="status-value" id="statusText">Ready</span>
-          <button class="btn-status-cancel" id="cancelButton" title="Cancel segmentation" disabled>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-      <div class="progress-bar">
-        <div class="progress-fill" id="progressBar" style="width: 0%"></div>
-      </div>
-    </div>
   </aside>
 
   <!-- Main Content -->
@@ -279,18 +261,19 @@
     <div data-disclosure class="collapsed console-container" id="seedseg-log">
       <div class="console-header">
         <button type="button" class="console-title" data-disclosure-toggle>Technical log</button>
+        <button class="console-clear" id="copyConsole" title="Copy to clipboard">Copy</button>
         <button class="console-clear" id="clearConsole">Clear</button>
       </div>
       <div class="console-output" id="consoleOutput" data-disclosure-panel></div>
     </div>
   </main>
 
-  <!-- Footer -->
-  <footer class="app-footer">
-    <span>SeedSeg <span id="footerVersion"></span></span>
-    <span>Imaging data is processed locally in your browser and is not uploaded.</span>
-    <a data-neurodesk-shell-link href="../" style="color: var(--nd-color-text-dim);">More Neurodesk webapps</a>
-    <a data-neurodesk-shell-link href="https://github.com/neurodesk/webapps/tree/main/apps/seedseg" target="_blank" style="color: var(--nd-color-text-dim);">GitHub</a>
+  <footer id="status" class="nd-imaging-status">
+    <span class="nd-status-label">Status</span>
+    <span id="statusText" class="nd-status-text" role="status" aria-live="polite">Ready</span>
+    <span id="elapsed" class="nd-status-elapsed"></span>
+    <progress id="progress" max="1" value="0" aria-label="Processing progress"></progress>
+    <button id="cancelButton" class="nd-btn-cancel" type="button" title="Cancel processing" aria-label="Cancel processing" hidden>&times;</button>
   </footer>
 
 </div>

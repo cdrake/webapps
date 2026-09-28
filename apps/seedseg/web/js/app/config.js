@@ -27,7 +27,11 @@ export const VIEWER_CONFIG = {
 };
 
 export const PROGRESS_CONFIG = {
-  animationSpeed: 0.5
+  animationSpeed: 0.5,
+  progressBarId: 'progress',
+  statusTextId: 'statusText',
+  elapsedId: 'elapsed',
+  cancelId: 'cancelButton'
 };
 
 export const STAGE_NAMES = {

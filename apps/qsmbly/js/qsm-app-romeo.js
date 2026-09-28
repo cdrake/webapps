@@ -15,8 +15,7 @@ import {
   , createNiftiFromVolume
 } from '@neurodesk/webapp-components/file-io';
 import { ModalManager } from '@neurodesk/webapp-components/ui';
-import { LandingPage } from './modules/ui/LandingPage.js';
-import { Tutorial, WelcomePrompt } from './modules/ui/Tutorial.js';
+import { Tutorial } from './modules/ui/Tutorial.js';
 import { QsmInputSet, QsmPipelineController, PipelineSettingsController, MaskController, ViewerController } from './controllers/index.js';
 import { QsmDicomInput } from './controllers/QsmDicomInput.js';
 import { DicompareController } from 'https://dicompare.neurodesk.org/embed/DicompareController.js';
@@ -142,13 +141,8 @@ class QSMApp {
     if (versionEl && window.QSMConfig?.VERSION) {
       versionEl.textContent = `v${window.QSMConfig.VERSION}`;
     }
-    const landingVersionEl = document.getElementById('landingVersion');
-    if (landingVersionEl && window.QSMConfig?.VERSION) {
-      landingVersionEl.textContent = `v${window.QSMConfig.VERSION}`;
-    }
-
-    // Set up landing/tutorial first so the welcome overlay is always
-    // dismissable, even if a later init step (e.g. the WebGL viewer) fails.
+    // Set up the guided tour first so the Guide button works even if a later
+    // init step (e.g. the WebGL viewer) fails.
     this._setupOnboarding();
 
     // Initialize FileIOController first (other controllers depend on it)
@@ -246,38 +240,12 @@ class QSMApp {
     void this.setupExamples().catch(error => this.updateOutput(error.message));
   }
 
-  /**
-   * Wire up the landing overlay, welcome-tour prompt and guided tutorial.
-   * On first visit the landing page is shown; launching from it may kick off
-   * the tour. The tour is always re-launchable from the header "Guide" button.
-   */
+  /** Wire up the guided tutorial, launched on demand from the header "Guide" button. */
   _setupOnboarding() {
     this.tutorial = new Tutorial(this._buildTourSteps());
 
-    this.welcomePrompt = new WelcomePrompt({
-      onStart: () => this.tutorial.start(),
-    });
-
-    this.landingPage = new LandingPage({
-      // Normal launch: offer the tour once (unless the user opted out).
-      onLaunch: () => {
-        if (!this.welcomePrompt.isDismissed()) {
-          this.welcomePrompt.open();
-        }
-      },
-      // "Take a guided tour" button: start immediately.
-      onLaunchTour: () => this.tutorial.start(),
-    });
-
-    // Header "Guide" button re-runs the tour on demand.
     document.getElementById('openGuide')?.addEventListener('click', () => {
       if (!this.tutorial.isRunning()) this.tutorial.start();
-    });
-
-    // Clicking the logo returns to the welcome page.
-    document.getElementById('appLogo')?.addEventListener('click', () => {
-      this.tutorial.stop();
-      this.landingPage.show();
     });
   }
 
@@ -359,14 +327,14 @@ class QSMApp {
 
   _onPipelineComplete() {
     this.showStageButtons();
-    document.getElementById('cancelPipeline').disabled = true;
+    this._setJobRunning(false);
     document.getElementById('runSWI').disabled = false;
     document.getElementById('runT2starR2star').disabled = false;
     this.updateEchoInfo();
   }
 
   _onPipelineError() {
-    document.getElementById('cancelPipeline').disabled = true;
+    this._setJobRunning(false);
     document.getElementById('runSWI').disabled = false;
     document.getElementById('runT2starR2star').disabled = false;
     this.updateEchoInfo();
@@ -413,8 +381,14 @@ class QSMApp {
     this.progress = value;
     this.targetProgress = value;
 
-    const textEl = document.getElementById('progressText');
+    const textEl = document.getElementById('statusText');
     if (textEl) textEl.textContent = text || `${Math.round(value * 100)}%`;
+
+    // Mask stages (Prepare, BET, ...) are not cancellable jobs; their progress drives the clock.
+    if (!this._jobActive) {
+      if (value > 0 && value < 1) this._startElapsed();
+      else this._stopElapsed();
+    }
 
     // Update progress bar immediately for accurate feedback
     this.animatedProgress = value;
@@ -448,11 +422,44 @@ class QSMApp {
   }
 
   updateProgressBar() {
-    const pct = `${this.animatedProgress * 100}%`;
-    const fill = document.getElementById('progressFill');
-    if (fill) fill.style.width = pct;
-    const mobileFill = document.getElementById('mobileProgressFill');
-    if (mobileFill) mobileFill.style.width = pct;
+    const bar = document.getElementById('progress');
+    if (bar) bar.value = Math.min(Math.max(this.animatedProgress, 0), 1);
+  }
+
+  /**
+   * Show the footer Cancel button and run the elapsed clock while a cancellable job
+   * (QSM pipeline, SWI, T2*, HD-BET) runs; hide it and freeze the clock when it ends.
+   */
+  _setJobRunning(running) {
+    this._jobActive = running;
+    const btn = document.getElementById('cancelPipeline');
+    if (btn) {
+      btn.hidden = !running;
+      btn.disabled = !running;
+    }
+    if (running) this._startElapsed();
+    else this._stopElapsed();
+  }
+
+  /** Start the footer m:ss clock from zero unless it is already running. */
+  _startElapsed() {
+    if (this._elapsedTimer) return;
+    this._elapsedStart = performance.now();
+    const tick = () => {
+      const el = document.getElementById('elapsed');
+      if (!el) return;
+      const seconds = Math.floor((performance.now() - this._elapsedStart) / 1000);
+      el.textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+    };
+    tick();
+    this._elapsedTimer = setInterval(tick, 1000);
+  }
+
+  /** Freeze the footer clock at the time the job ended. */
+  _stopElapsed() {
+    if (!this._elapsedTimer) return;
+    clearInterval(this._elapsedTimer);
+    this._elapsedTimer = null;
   }
 
   stopProgressAnimation() {
@@ -2431,14 +2438,14 @@ class QSMApp {
       });
 
       if (started) {
-        document.getElementById('cancelPipeline').disabled = false;
+        this._setJobRunning(true);
         document.getElementById('runPipelineSidebar').disabled = true;
       }
 
     } catch (error) {
       this.updateOutput(`Error: ${error.message}`);
       this.setProgress(0, 'Failed');
-      document.getElementById('cancelPipeline').disabled = true;
+      this._setJobRunning(false);
       this.updateEchoInfo();
       console.error(error);
     }
@@ -2515,13 +2522,13 @@ class QSMApp {
       });
 
       if (started) {
-        document.getElementById('cancelPipeline').disabled = false;
+        this._setJobRunning(true);
         document.getElementById('runPipelineSidebar').disabled = true;
       }
     } catch (error) {
       this.updateOutput(`Error: ${error.message}`);
       this.setProgress(0, 'Failed');
-      document.getElementById('cancelPipeline').disabled = true;
+      this._setJobRunning(false);
       this.updateEchoInfo();
       console.error(error);
     }
@@ -2601,13 +2608,13 @@ class QSMApp {
       });
 
       if (started) {
-        document.getElementById('cancelPipeline').disabled = false;
+        this._setJobRunning(true);
         document.getElementById('runPipelineSidebar').disabled = true;
       }
     } catch (error) {
       this.updateOutput(`Error: ${error.message}`);
       this.setProgress(0, 'Failed');
-      document.getElementById('cancelPipeline').disabled = true;
+      this._setJobRunning(false);
       this.updateEchoInfo();
       console.error(error);
     }
@@ -2625,20 +2632,19 @@ class QSMApp {
     const ex = this.pipelineExecutor;
     if (!ex) return () => {};
     const finish = ex.beginCancellableJob(onCancel);
-    const btn = document.getElementById('cancelPipeline');
-    if (btn) btn.disabled = false;
+    this._setJobRunning(true);
     let released = false;
     return () => {
       if (released) return;
       released = true;
       finish();
-      if (btn) btn.disabled = true;
+      this._setJobRunning(false);
     };
   }
 
   cancelPipeline() {
     this.pipelineExecutor?.cancel();
-    document.getElementById('cancelPipeline').disabled = true;
+    this._setJobRunning(false);
     this.updateEchoInfo();
   }
 
@@ -3276,7 +3282,7 @@ class QSMApp {
           pipelineSettings: this.pipelineSettings
       });
 
-      document.getElementById('cancelPipeline').disabled = false;
+      this._setJobRunning(true);
       document.getElementById('runSWI').disabled = true;
 
     } catch (error) {
@@ -3333,7 +3339,7 @@ class QSMApp {
           echoTimes
       });
 
-      document.getElementById('cancelPipeline').disabled = false;
+      this._setJobRunning(true);
       document.getElementById('runT2starR2star').disabled = true;
 
     } catch (error) {

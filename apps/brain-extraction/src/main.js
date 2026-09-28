@@ -75,7 +75,7 @@ let outputs = {};
 let state = { phase: 'idle' };
 const methodHints = {
   mindgrab: 'Brainchop neural network. Runs on the GPU when available, with a CPU fallback.',
-  synthstrip: 'SynthStrip neural network. This browser implementation uses the CPU and can require several GB of memory.',
+  synthstrip: 'SynthStrip runs on the CPU and can need several GB of memory.',
 };
 function methodChanged() {
   $('methodHint').textContent = methodHints[$('method').value] || '';

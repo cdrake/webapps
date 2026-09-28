@@ -250,6 +250,7 @@ test('bilateral mid-surfaces can be overlaid, viewed in 3D and downloaded withou
     await page.getByRole('radio', { name: 'Multi+Render', exact: true }).click();
     await row.getByRole('checkbox').uncheck();
   }
+  await page.locator('#surfaceAnalysisSettings > summary').click();
   await page.locator('#estimateNormals').check();
   await page.locator('#analyzeButton').click();
   await expect(page.locator('#statusText')).toContainText('Surface analysis ready');
@@ -426,12 +427,13 @@ test('computed patches, local normals and QC can be viewed and downloaded', asyn
   await expect(page.locator('#patchCenter')).toHaveValue('');
 });
 
-test('settings stay visible and pass edited values to the worker', async ({ page }, testInfo) => {
+test('settings open on demand and pass edited values to the worker', async ({ page }, testInfo) => {
   await deliverSurfaces(page);
   for (const id of ['advancedSettings', 'surfaceAnalysisSettings']) {
-    await expect(page.locator(`#${id}`)).toHaveJSProperty('tagName', 'SECTION');
-    await expect(page.locator(`#${id} > summary`)).toHaveCount(0);
-    await page.locator(`#${id}Title`).click();
+    await expect(page.locator(`#${id}`)).toHaveJSProperty('tagName', 'DETAILS');
+    await expect(page.locator(`#${id}`)).not.toHaveAttribute('open', '');
+    await page.locator(`#${id} > summary`).click();
+    await expect(page.locator(`#${id}`)).toHaveAttribute('open', '');
   }
   await expect(page.locator('#conform')).toBeVisible();
   await expect(page.locator('#thickness')).toBeVisible();
@@ -452,8 +454,11 @@ test('settings stay visible and pass edited values to the worker', async ({ page
 
 test('invalid patch settings and a missing ROI are revealed before reconstruction', async ({ page }) => {
   await deliverSurfaces(page);
+  await page.locator('#surfaceAnalysisSettings > summary').click();
   await page.locator('#findPatches').check();
   await page.locator('#patchCount').fill('0');
+  await page.locator('#surfaceAnalysisSettings > summary').click();
+  await expect(page.locator('#estimateNormals')).toBeHidden();
   await page.locator('#runButton').click();
   await expect(page.locator('#estimateNormals')).toBeVisible();
   await expect(page.locator('#patchCount')).toBeFocused();
@@ -571,6 +576,7 @@ test('real reconstructed cortex displays patch QC and clearly named patches', as
   for (let i = 0; i < 30; i += 1) await page.mouse.wheel(0, 120);
   await expect.poll(() => patchPixels(page, axial), { message: 'Scrolling away must hide the real cortical patch on that slice' }).toBe(0);
   await page.screenshot({ path: testInfo.outputPath('real-patch-scrolled-away.png') });
+  await page.locator('#surfaceAnalysisSettings > summary').click();
   await page.locator('#findPatches').check();
   await page.locator('#patchCount').fill('1');
   await page.locator('#patchHemisphere').selectOption('rh');

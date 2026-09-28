@@ -714,7 +714,6 @@ dialog.nd-dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
 }
 
 .nd-app-header,
-.nd-app-footer,
 .nd-viewer-toolbar,
 .nd-viewer-info,
 .nd-console-container {
@@ -757,7 +756,6 @@ dialog.nd-dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
 .nd-progress-fill { width: 0; height: 100%; background: linear-gradient(90deg, var(--nd-color-primary), var(--nd-color-accent)); transition: width 250ms ease; }
 
 .nd-app-main { display: flex; flex-direction: column; min-width: 0; overflow: hidden; background: var(--nd-color-bg); }
-.nd-app-footer { grid-column: 1 / -1; display: flex; justify-content: space-between; padding: var(--nd-space-xs) var(--nd-space-lg); border-top: 1px solid var(--nd-color-border); color: var(--nd-color-text-dim); font-size: 0.65rem; }
 .nd-modal-overlay { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.6); opacity: 0; pointer-events: none; transition: opacity 200ms ease; }
 .nd-modal-overlay.active { opacity: 1; pointer-events: auto; }
 .nd-modal { max-width: 700px; width: min(90vw, 700px); max-height: 80vh; overflow-y: auto; background: var(--nd-color-surface); border: 1px solid var(--nd-color-border); border-radius: var(--nd-radius-lg); }

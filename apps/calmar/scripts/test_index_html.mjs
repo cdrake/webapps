@@ -40,12 +40,12 @@ const requiredIds = [
   // Phase 32 — sidebar redesign: three primary sections (Input → Run → Results).
   // Per-stage controls live inside <details> disclosures inside Run/Results so
   // the orchestrator's bindings keep working without dominating the UI.
-  '#startPage',
-  '#enterAppButton',
-  '#startPrivacyButton',
-  '#startPrivacyInlineButton',
-  '#startCitationsButton',
-  '#startHowHeading',
+  // Shared status footer (the workspace is the first screen; no start page).
+  '#status',
+  '#statusText',
+  '#elapsed',
+  '#progress',
+  '#cancelButton',
   '#stepLoadSection',
   '#stepLesionSection',
   // (#stepNetworkSection removed; computeOverlapButton moved under the Run
@@ -145,39 +145,21 @@ for (const id of requiredIds) {
   assert.match(html, re, `index.html must contain element with ${id}`);
 }
 
-assert.match(html, /aria-label=["']CALMaR start page["']/,
-  'index.html must expose a start page before the analysis workspace');
-assert.match(html, /Process stroke lesion maps locally in your browser\./,
-  'start page must explain that CALMaR processes stroke lesion maps locally');
-assert.match(html, /Patient images, masks, voxel values, screenshots, and generated outputs stay on this computer\./,
-  'start page must state that patient-derived data stays local');
-assert.match(html, /Imaging data is processed locally in your browser and is not uploaded\./,
-  'footer must carry the canonical shared privacy sentence');
-assert.match(html, /<a\b[^>]*href="\.\.\/"[^>]*>More Neurodesk webapps<\/a>/,
-  'footer must link back to the composite More Neurodesk webapps page');
-assert.match(html, /class="start-links"[\s\S]{0,400}title="About"[^>]*onclick="document\.getElementById\('aboutButton'\)\.click\(\)"/,
-  'start header must open the same About modal as the workspace header');
-assert.match(html, /How It Works[\s\S]*1\. Load T1 data[\s\S]*2\. Review the mask[\s\S]*3\. Map and report/,
-  'start page must include a three-step How It Works explanation');
-assert.match(html, /Atlas and model assets may be downloaded when a workflow needs them/,
-  'start page privacy copy must distinguish public assets from patient-derived files');
+assert.doesNotMatch(html, /start-page|id=["']startPage["']|id=["']enterAppButton["']/,
+  'the workspace is the first screen; intro copy lives in About and Privacy');
+assert.match(html, /<footer id="status" class="nd-imaging-status">[\s\S]*id="statusText" class="nd-status-text"[\s\S]*<progress id="progress"[\s\S]*id="cancelButton" class="nd-btn-cancel"[^>]*hidden/,
+  'status lives in the shared footer with a native progress bar and a hidden cancel');
+assert.doesNotMatch(html, /sidebar-status/,
+  'the sidebar status block is retired');
 assert.match(html, /Background execution is possible if this site is added under "Always keep these sites active" in your browser settings\./,
-  'start page must explain how to allow background execution');
-assert.match(effectiveCss, /\.start-page\s*\{[^}]*height:\s*100vh;[^}]*overflow:\s*hidden;/,
-  'start page overlay must be a one-screen layout without internal scrolling');
-assert.match(effectiveCss, /\.start-main\s*\{[^}]*grid-template-rows:\s*minmax\(0,\s*1fr\)\s+auto;/,
-  'start page content must allocate the hero and How It Works sections within one viewport');
-assert.match(effectiveCss, /\.start-step\s*\{[^}]*grid-template-columns:\s*40px\s+1fr;[^}]*text-align:\s*left;/,
-  'desktop start-page steps must use compact horizontal rows instead of tall cards');
-assert.match(effectiveCss, /\.start-step h4,\s*\.start-step p\s*\{[^}]*grid-column:\s*2;/,
-  'start-page step text must stay in the text column instead of wrapping under the icon');
-assert.match(css, /@media\s*\(max-width:\s*540px\)[\s\S]*\.start-links\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\);/,
-  'mobile start-page header links must use a compact two-column grid');
+  'About must explain how to allow background execution');
+assert.equal((html.match(/class=["'][^"']*\bbtn-primary\b/g) || []).length, 1,
+  'the sidebar has one primary action: Run analysis');
 const moreAppsLinks = [
   ...html.matchAll(/<a\b(?=[^>]*href=["']\.\.\/["'])(?=[^>]*class=["'][^"']*\bheader-link\b[^"']*["'])(?=[^>]*title=["']More Neurodesk web apps["'])[^>]*>[\s\S]*?<span>More Apps<\/span>[\s\S]*?<\/a>/g)
 ];
-assert.equal(moreAppsLinks.length, 2,
-  'start page and workspace headers must return to the composite More Apps page');
+assert.equal(moreAppsLinks.length, 1,
+  'the workspace header must return to the composite More Apps page');
 for (const link of moreAppsLinks) {
   assert.doesNotMatch(link[0], /target=["']_blank["']/,
     'More Apps must navigate in the current tab');
@@ -256,14 +238,14 @@ assert.match(html, /Use \|t\| magnitude/,
   'connectivity-map threshold UI may only offer top-percent ranking by magnitude, not a t-stat threshold mode');
 assert.match(html, /Analysis log/,
   'default log viewer must be clinician-facing analysis log');
-assert.match(html, /<details\b[^>]*id=["']technicalLogDetails["'][^>]*>/i,
-  'technical support log must be a collapsed details viewer by default');
-assert.doesNotMatch(html, /<details\b[^>]*id=["']technicalLogDetails["'][^>]*\bopen\b/i,
-  'technical support log must not be open by default');
-assert.match(html, /Copy this when reporting a problem\./,
-  'technical log summary must tell users which log to send for support');
-assert.match(html, /Model and processing details/,
-  'technical log viewer must be labelled as model and processing details');
+assert.match(html, /<div data-disclosure class="collapsed console-container[^"]*" id="analysisLog"/,
+  'analysis log must be a collapsed console disclosure by default');
+assert.match(html, /<div data-disclosure class="collapsed console-container[^"]*" id="technicalLogDetails"/,
+  'technical support log must be a collapsed console disclosure by default');
+assert.match(html, /data-disclosure-toggle>Technical log<\/button>/,
+  'technical log toggle must be labelled Technical log');
+assert.doesNotMatch(html, /Copy this when reporting a problem\./,
+  'the technical log carries no caption');
 assert.match(html, /aria-label=["']Lesion mask drawing tools["']/,
   'viewer toolbar must expose compact lesion-mask drawing controls');
 assert.match(html, /Paint[\s\S]*Erase[\s\S]*Erase cluster[\s\S]*Confirm mask/,

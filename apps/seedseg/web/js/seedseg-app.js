@@ -55,8 +55,6 @@ class SeedSegApp {
     // Version display
     const versionEl = document.getElementById('appVersion');
     if (versionEl) versionEl.textContent = `v${Config.VERSION}`;
-    const footerVersionEl = document.getElementById('footerVersion');
-    if (footerVersionEl) footerVersionEl.textContent = `v${Config.VERSION}`;
     const aboutVersionEl = document.getElementById('aboutAppVersion');
     if (aboutVersionEl) aboutVersionEl.textContent = `v${Config.VERSION}`;
 
@@ -137,7 +135,12 @@ class SeedSegApp {
     const cancelBtn = document.getElementById('cancelButton');
     if (cancelBtn) cancelBtn.addEventListener('click', () => this.cancelSegmentation());
 
-    // Console clear
+    // Console copy / clear
+    const copyConsole = document.getElementById('copyConsole');
+    if (copyConsole) copyConsole.addEventListener('click', async () => {
+      const ok = await this.console.copyToClipboard();
+      if (ok) { copyConsole.textContent = 'Copied!'; setTimeout(() => { copyConsole.textContent = 'Copy'; }, 1500); }
+    });
     const clearConsole = document.getElementById('clearConsole');
     if (clearConsole) clearConsole.addEventListener('click', () => this.console.clear());
 
@@ -668,11 +671,11 @@ class SeedSegApp {
     // Read file
     const inputData = await file.arrayBuffer();
 
-    // Disable run, enable cancel
+    // Disable run; the status footer shows the cancel button while running
     const runBtn = document.getElementById('runSegmentation');
-    const cancelBtn = document.getElementById('cancelButton');
     if (runBtn) runBtn.disabled = true;
-    if (cancelBtn) cancelBtn.disabled = false;
+    document.getElementById('statusText')?.classList.remove('error');
+    this.progress.begin('Starting segmentation...');
 
     // Clear previous results
     this.inferenceExecutor.clearResults();
@@ -693,9 +696,8 @@ class SeedSegApp {
   cancelSegmentation() {
     this.inferenceExecutor.cancel();
     const runBtn = document.getElementById('runSegmentation');
-    const cancelBtn = document.getElementById('cancelButton');
     if (runBtn) runBtn.disabled = false;
-    if (cancelBtn) cancelBtn.disabled = true;
+    this.progress.reset('Cancelled');
   }
 
   // ==================== Results ====================
@@ -762,20 +764,15 @@ class SeedSegApp {
 
   onInferenceComplete() {
     const runBtn = document.getElementById('runSegmentation');
-    const cancelBtn = document.getElementById('cancelButton');
-    const statusText = document.getElementById('statusText');
     if (runBtn) runBtn.disabled = false;
-    if (cancelBtn) cancelBtn.disabled = true;
-    if (statusText) statusText.textContent = 'Ready';
+    this.progress.end('Complete');
   }
 
   onInferenceError(msg) {
     const runBtn = document.getElementById('runSegmentation');
-    const cancelBtn = document.getElementById('cancelButton');
-    const statusText = document.getElementById('statusText');
     if (runBtn) runBtn.disabled = false;
-    if (cancelBtn) cancelBtn.disabled = true;
-    if (statusText) statusText.textContent = 'Error';
+    this.progress.end(msg ? `Error: ${msg}` : 'Error', { success: false });
+    document.getElementById('statusText')?.classList.add('error');
   }
 
   async showResult(stage) {
@@ -945,13 +942,8 @@ class SeedSegApp {
   }
 
   setProgress(value, text) {
-    this.progress.setProgress(value);
-    const statusText = document.getElementById('statusText');
-    if (statusText) {
-      if (value >= 1) statusText.textContent = 'Complete';
-      else if (text) statusText.textContent = text;
-      else if (value > 0) statusText.textContent = 'Processing...';
-    }
+    const message = value >= 1 ? 'Complete' : (text || (value > 0 ? 'Processing...' : null));
+    this.progress.setProgress(value, message);
   }
 
   // Global method for HTML onclick handler

@@ -37,8 +37,9 @@
       <details class="nd-sidebar-section" id="taskSection" open>
         <summary class="nd-section-title">Registration</summary>
         <div class="nd-section-content">
-          <p class="nd-hint">Affine then SyN diffeomorphic registration with the Mattes mutual-information metric, the ANTsPy <code>SyN</code> schedule, seed 42.</p>
-          <p class="nd-hint">Registration expects brain-only images: a scan that still includes scalp produces artifacts. Brain extract it with MindGrab using the button under the image; the examples are already brain-only. SyN on 1 mm brains takes about a minute on a fast laptop, longer on older hardware.</p>
+          <div class="nd-field">
+            <label id="methodLabel">Method · Affine + SyN <span class="nd-info-icon" tabindex="0" aria-label="About the registration method">i<span class="nd-info-tooltip">Affine then SyN diffeomorphic registration with the Mattes mutual-information metric, the ANTsPy SyN schedule, seed 42. SyN on 1 mm brains takes about a minute on a fast laptop, longer on older hardware.</span></span></label>
+          </div>
           <button id="runButton" class="nd-btn nd-btn-primary" type="button" disabled>Register images</button>
         </div>
       </details>
@@ -78,7 +79,7 @@
       <progress id="progress" max="1" value="0" aria-label="Registration progress"></progress>
       <button id="cancelButton" class="nd-btn-cancel" type="button" title="Cancel registration" aria-label="Cancel registration" hidden>×</button>
     </footer>
-    <template id="aboutContent"><p>ANTs registers a moving image to a stationary image with an affine stage followed by SyN symmetric diffeomorphic registration, using ANTs 2.6.2 compiled to WebAssembly. Custom images are brain extracted locally with MindGrab before registration.</p></template>
+    <template id="aboutContent"><p>ANTs registers a moving image to a stationary image with an affine stage followed by SyN symmetric diffeomorphic registration, using ANTs 2.6.2 compiled to WebAssembly. Registration expects brain-only images: scalp produces artifacts. Brain extract custom images locally with MindGrab using the button under each image; the examples are already brain-only.</p></template>
     <template id="privacyContent"><p>Images are processed locally in this browser and are never uploaded.</p></template>
     <template id="standaloneContent">
       <p>The browser runs ANTs 2.6.2 compiled to WebAssembly with the ANTsPy <code>SyN</code> schedule. The same registration on your computer or an HPC system uses <code>antsRegistration</code> from an ANTs install (for example the Neurodesk <code>ants</code> container) with these arguments, then <code>antsApplyTransforms</code> to reslice.</p>

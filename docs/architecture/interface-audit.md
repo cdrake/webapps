@@ -27,7 +27,7 @@ All 16 registered apps were reviewed on 9 September 2026, starting from `e6ef75e
 
 About and Cite were reviewed across all 16 apps on 10 September 2026: no app stated who built the web application, none mentioned the lightNIIng ecosystem (lightniing.org), none cited the Neurodesk platform paper, and seven had no method citations at all. `registry/app-information.yml` now holds each app's packages, builder credits and one citation per implemented method (nnU-Net, SCIsegV2, TotalSpineSeg and PAM50 for SCT; N4, non-local means and bilateral filtering for VesselBoost; DeepISLES, Neurosynth, the MNI152NLin2009cAsym template and the Nilearn development-fMRI dataset for CALMaR; MRIQC and Brainchop for BrowserQC; niimath, MindGrab and the ICBM template for Deface; and so on). The shared shell renders Cite from it for every app and appends the shared About block to every app dialog. `test/app-information.test.mjs` enforces completeness.
 
-[The design system](design-system.md) records why the catalog drifted and defines the one vocabulary every `imaging-workspace` app is built from. `test/design-system.test.mjs` enforces it: vocabulary apps have token-only app CSS within a 40-line budget, no restyled shared selectors, no free headings, inline styles or app-owned dialogs, and use the shared console, toolbar and dialog builders; legacy shell apps (NiiMath, Deface, BrowserQC, SurfAnnotate, ZARRo) are ratcheted so their colour literals and CSS size can only fall.
+[The design system](design-system.md) records why the catalog drifted and defines the one vocabulary every `imaging-workspace` app is built from. `test/design-system.test.mjs` enforces it: vocabulary apps have token-only app CSS within a 40-line budget, no restyled shared selectors, no free headings, inline styles or app-owned dialogs, and use the shared console, toolbar and dialog builders; legacy shell apps (Deface, BrowserQC, SurfAnnotate, ZARRo) are ratcheted so their colour literals and CSS size can only fall.
 
 Scan fields now accept NIfTI and DICOM through the same multi-file picker, including extensionless DICOM instances. SynthSR converts locally, provides a series selector, and supports cancellation and retry. NiiMath, Deface, and BrowserQC share the bundled image importer. Easy MP2RAGE routes its main picker through its existing DICOM parser and rejects mixed series instead of assembling unrelated scans. CALMaR's structural, lesion, DWI, ADC, and manual-mask fields and QSMbly's mask field support conversion. SeedSeg and QSMbly no longer filter out DICOM filename variants.
 
@@ -216,3 +216,41 @@ BrowserQC ships the CPU MindGrab bundle with a 15-minute segmentation budget,
 SynthSR and brain extraction check for a WebGPU adapter rather than the API, and
 MuscleMap starts at 50 % overlap without WebGPU. VesselBoost's hosted example
 workflow now runs as part of its browser tests.
+
+## Workspace status contract, 28 September 2026
+
+A 20 September review of all apps found live status in the sidebar instead of the
+bottom bar in six apps, no status bar in five, no technical log in five, start pages
+before the workspace in seven, sidebar help paragraphs of up to 480 characters and up
+to seven primary buttons in one sidebar. Every app now follows one contract:
+
+- The workspace is the first screen. Start pages, landing overlays and the QSMbly
+  welcome modal are removed from CALMaR, MuscleMap, QSMbly, Spinal Cord Toolbox,
+  VesselBoost, SurfAnnotate and dicompare; their introductions moved to About.
+- Live status appears only in `footer#status`, with a progress bar, elapsed time
+  and a × shown while the run can be cancelled. The six `.app-container` apps place
+  the same footer as their grid's last row. NiiMath, ZARRo, SurfAnnotate, MRI2VID and
+  dicompare gained the footer. `ProgressManager` drives it. Per-step Abort buttons,
+  sidebar spinners and static footers are gone.
+- Every app has one technical log below the viewer, collapsed at load, with Copy and
+  Clear. CALMaR's always-open analysis log and SCT's sidebar log were folded in or
+  collapsed. SeedSeg gained Copy.
+- Visible sidebar help is at most 90 characters. Longer text became `.nd-info-icon`
+  tooltips or About content. Section subtitles and numbered step badges were removed.
+- Each sidebar has one primary button.
+
+`test/design-system.test.mjs` enforces the contract in source for every shell and
+now runs in CI's workspace-contracts job; it previously ran only locally.
+`pnpm audit:interfaces` enforces it in the rendered page on desktop and phone. The
+hosted theme's phone rule for the status row now applies only to the shared
+workspace grid, so it no longer covers QSMbly's mobile tab bar.
+
+The fresh 27-app production build passed `pnpm audit:interfaces` (54 desktop and
+phone cases), `pnpm test:mobile` and `pnpm test:interface-workflows`. Deface's
+example import was skipped for lack of a WebGPU adapter.
+
+NiiMath left the legacy ratchet: it now uses the shared layout tabs and the shared
+About and Privacy dialog, with no app CSS, and meets the full vocabulary contract.
+The shared example selector now shows one short line once an example loads, such as
+"T1-weighted head MRI loaded." Its description and expected result sit in a tooltip
+beside the Example label, and apps' status bars receive the same short line.

@@ -6,66 +6,96 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
     <title>NiiMath | Neurodesk Webapps</title>
-    <link rel="stylesheet" href="./niivue.css" />
   </head>
   <body>
 
-    <header>
-      <details class="control-section nd-sidebar-section" open>
-      <summary class="nd-section-title" id="inputHeading">1. Input image</summary>
-      <div class="nd-section-content">
-      <div id="exampleControl"></div>
-      <label class="nd-file" id="inputDropZone">
-        <input id="niftiInput" type="file" data-neurodesk-input="image" multiple aria-label="Choose NIfTI or DICOM files" />
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <span>Drop NIfTI or DICOM files or folder</span>
-      </label>
-      <label class="nd-btn nd-btn-secondary nd-btn-sm nd-btn-block">Choose DICOM folder<input id="dicomInput" type="file" data-neurodesk-input="image" webkitdirectory multiple hidden /></label>
-      <select id="dicomPick" class="hidden" aria-label="Pick a converted NIfTI series"></select>
-      </div>
+    <header id="controls">
+      <details class="nd-sidebar-section" id="inputSection" open>
+        <summary class="nd-section-title" id="inputHeading">Input image</summary>
+        <div class="nd-section-content">
+          <div id="exampleControl"></div>
+          <label class="nd-file" id="inputDropZone">
+            <input id="niftiInput" type="file" data-neurodesk-input="image" multiple aria-label="Choose NIfTI or DICOM files" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span>Drop NIfTI or DICOM files or folder</span>
+          </label>
+          <p id="fileInfo" class="nd-file-info" hidden></p>
+          <div id="dicomPickField" hidden>
+            <div class="nd-field">
+              <label for="dicomPick">Converted series</label>
+              <select id="dicomPick" aria-label="Pick a converted NIfTI series"></select>
+            </div>
+          </div>
+        </div>
       </details>
-      <details class="control-section nd-sidebar-section" open>
-      <summary class="nd-section-title" id="processingHeading">2. Processing</summary>
-      <div class="nd-section-content">
-      <label for="moreCommands">Example operation</label>
-      <select id="moreCommands"></select>
-      <p class="option-description">Choose an example or edit the command below.</p>
-      <label for="command">NiiMath command</label>
-      <input id="command" value="-dehaze 5 -dog 2 3.2"/>
-      <button id="processButton" disabled>Process</button>
-      <div id="loadingCircle" class="loading-circle hidden"></div>
-      <label class="checkbox-option"><input type="checkbox" id="overlayCheck" checked /> Show result as overlay</label>
-      <details class="nd-sidebar-section">
-      <summary class="nd-section-title">Overlay appearance</summary>
-      <div class="nd-section-content">
-      <!-- overlay opacity slider -->
-      <label id="overlayOpacityLabel" for="overlayOpacity">Overlay opacity</label>
-      <input type="range" id="overlayOpacity" min="0" max="1" step="0.01" value="1" />
-      <!-- overlay color select (empty but will be populated in main.js) -->
-      <label id="overlayColorLabel" for="overlayColor">Overlay color</label>
-      <select id="overlayColor"></select>
-      </div>
-      </details>
-      </div>
-      </details>
-      <details class="control-section nd-sidebar-section" id="outputSection">
-      <summary class="nd-section-title" id="outputHeading">3. Output</summary>
-      <div class="nd-section-content">
-      <p>Download the processed image, or reset to the original image.</p>
-      <button id="saveButton">Save processed image</button>
-      <button id="resetButton">Reset</button>
-      </div>
-      </details>
-      <div class="sidebar-actions">
-      <button id="helpButton">Command help</button>
-      </div>
-    </header>
-    <main>
-      <canvas id="gl"></canvas>
-    </main>
-    <footer>
 
-</footer>
+      <details class="nd-sidebar-section" id="processingSection" open>
+        <summary class="nd-section-title" id="processingHeading">Processing</summary>
+        <div class="nd-section-content">
+          <div class="nd-field">
+            <label for="moreCommands">Example operation</label>
+            <select id="moreCommands"></select>
+          </div>
+          <div class="nd-field">
+            <label for="command">NiiMath command</label>
+            <input id="command" type="text" value="-dehaze 5 -dog 2 3.2" spellcheck="false" />
+            <p class="nd-hint">Operations run left to right; -mesh outputs a surface and -bitmap a PNG.</p>
+          </div>
+          <button id="processButton" class="nd-btn nd-btn-primary" type="button" disabled>Process</button>
+          <button id="helpButton" class="nd-btn nd-btn-secondary nd-btn-sm nd-btn-block" type="button">Command help</button>
+          <label class="nd-check"><input type="checkbox" id="overlayCheck" checked /> Show result as overlay</label>
+          <details class="nd-sidebar-section" id="overlaySettings">
+            <summary class="nd-section-title">Overlay appearance</summary>
+            <div class="nd-section-content">
+              <div class="nd-field">
+                <label id="overlayOpacityLabel" for="overlayOpacity">Overlay opacity</label>
+                <input type="range" id="overlayOpacity" min="0" max="1" step="0.01" value="1" />
+              </div>
+              <div class="nd-field">
+                <label id="overlayColorLabel" for="overlayColor">Overlay color</label>
+                <select id="overlayColor"></select>
+              </div>
+            </div>
+          </details>
+        </div>
+      </details>
+
+      <details class="nd-sidebar-section" id="outputSection">
+        <summary class="nd-section-title" id="outputHeading">Output</summary>
+        <div class="nd-section-content">
+          <div class="nd-row">
+            <button id="saveButton" class="nd-btn nd-btn-secondary" type="button">Save processed image</button>
+            <button id="resetButton" class="nd-btn nd-btn-secondary" type="button">Reset</button>
+          </div>
+        </div>
+      </details>
+
+      <!-- The shared app bar shows About and Privacy; Cite comes from registry/app-information.yml. -->
+      <button id="aboutBtn" type="button" hidden>About</button>
+      <button id="privacyBtn" type="button" hidden>Privacy</button>
+    </header>
+
+    <main id="viewer">
+      <div class="nd-viewer-canvas-wrapper">
+        <canvas id="gl" aria-label="Image viewer"></canvas>
+        <p id="emptyState" class="nd-viewer-empty">Choose an example or open an image to begin.</p>
+      </div>
+    </main>
+
+    <footer id="status">
+      <span class="nd-status-label">Status</span>
+      <span id="statusText" class="nd-status-text" role="status" aria-live="polite">Ready · choose an example or open an image</span>
+      <span id="elapsed" class="nd-status-elapsed"></span>
+      <progress id="progress" max="1" value="0" aria-label="Processing progress"></progress>
+      <button id="cancelButton" class="nd-btn-cancel" type="button" title="Cancel processing" aria-label="Cancel processing" hidden>×</button>
+    </footer>
+
+    <template id="aboutContent">
+      <p>NiiMath is a WebAssembly build of niimath, a clone of fslmaths, run in a worker in this browser. Operations apply left to right, as on the command line.</p>
+      <p>The <a href="https://github.com/rordenlab/niimath/blob/9f3a301be72c331b90ef5baecb7a0232e9b47ba4/src/niimath.c#L259" target="_blank" rel="noopener">command reference</a> lists every operation.</p>
+    </template>
+    <template id="privacyContent"><p>Images are processed locally in this browser and are never uploaded.</p></template>
+
     <script type="module" src="./main.js"></script>
   </body>
 </html>

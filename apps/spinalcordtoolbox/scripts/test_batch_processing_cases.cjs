@@ -43,7 +43,7 @@ const WEBAPP_PIPELINE_FEATURES = Object.freeze({
     labels: ['SCT Segmentation', 'SCT Task', 'Probability Threshold', 'Min Component Size']
   },
   processing: {
-    controls: ['stepProcessingSection', 'processingOperationSelect', 'runProcessingBtn', 'processingOutput'],
+    controls: ['stepProcessingSection', 'processingOperationSelect', 'runProcessingBtn'],
     workerMessages: ['run-vertebral-labeling'],
     labels: ['SCT Processing', 'Vertebral labeling']
   },

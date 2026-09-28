@@ -131,13 +131,11 @@ async function main() {
     else fail(`color path: channels ${formats.colorChannels}, size ${formats.colorSize}`);
 
     // 3. Full UI flow.
-    // The tour opens from the Tutorial button, not automatically.
-    if (!(await page.locator('#tour').isVisible())) ok('tour does not auto-open');
-    else fail('tour auto-opened but should not');
-    await page.click('#tutorialBtn');
-    await page.waitForSelector('#tour:not(.hidden)', { timeout: 3000 });
-    ok('tutorial opens from the Tutorial button');
-    await page.click('#tourSkip');
+    // Status footer and collapsed technical log.
+    if (await page.locator('footer#status #statusText').isVisible()) ok('status footer is visible');
+    else fail('status footer missing');
+    if (await page.locator('#technicalLog.collapsed').count()) ok('technical log starts collapsed');
+    else fail('technical log missing or open');
 
     const files = fs.readdirSync(dicomDir).filter((n) => n.endsWith('.dcm')).map((n) => path.join(dicomDir, n));
     await page.setInputFiles('#pickFiles', files);
@@ -146,7 +144,7 @@ async function main() {
     // Preview modal, reconstruction buttons, and rotation.
     await page.click('#previewBtn');
     await page.waitForSelector('#previewModal:not(.hidden)', { timeout: 5000 });
-    await page.click('.btn.ori[data-ori=coronal]');
+    await page.click('.ori[data-ori=coronal]');
     const oriAfter = await page.inputValue('#orientation');
     if (oriAfter === 'coronal') ok('preview reconstruction buttons set orientation');
     else fail(`recon button did not set orientation (got ${oriAfter})`);
@@ -173,6 +171,9 @@ async function main() {
     const info = await page.textContent('#resultInfo');
     if (href && href.startsWith('blob:')) ok(`UI flow produced downloadable video: ${info} (preview: ${scrubLabel})`);
     else fail(`UI flow: bad download href ${href}`);
+    const logText = await page.textContent('#technicalLogOutput');
+    if (/Encoding \d+ frames/.test(logText)) ok('technical log records the encode');
+    else fail('technical log lacks the encode entry');
 
   } catch (e) {
     fail(`exception: ${e.message}\n${e.stack}`);

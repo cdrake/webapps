@@ -2,8 +2,8 @@
   {
     "id": "t1-head",
     "label": "T1-weighted head MRI",
-    "description": "A structural scan for image filtering and arithmetic.",
-    "expectedResult": "Process the image and download the result.",
+    "description": "A T1-weighted scan for filtering and arithmetic.",
+    "expectedResult": "Process it and download the result.",
     "files": [
       {
         "role": "image",
@@ -15,8 +15,8 @@
   {
     "id": "t2-head",
     "label": "T2-weighted head MRI",
-    "description": "A T2-weighted scan for comparing image operations.",
-    "expectedResult": "Process the image and download the result.",
+    "description": "A T2-weighted scan for comparing operations.",
+    "expectedResult": "Process it and download the result.",
     "files": [
       {
         "role": "image",

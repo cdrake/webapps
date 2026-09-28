@@ -29,7 +29,6 @@ function createInt16Nifti(labels, voxelSize = [10, 10, 10]) {
 
 test('runs metrics only and restores OpenRecon labels from an uploaded NIfTI', async ({ page }) => {
   await page.goto('/index.html');
-  await page.locator('#enterAppButton').click();
 
   await page.locator('#fileInput').setInputFiles({
     name: 'subject_dseg.nii',

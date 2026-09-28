@@ -382,13 +382,9 @@ try {
       failures.push(`${app.id}: imaging controls overflow horizontally: ${JSON.stringify(overflowingControls)}`);
     }
 
-    if (app.id === 'calmar') {
-      const startPage = page.locator('#startPage');
-      if (!(await startPage.isVisible())) failures.push('calmar: start page is not visible before entering the app');
-      else {
-        await page.locator('#enterAppButton').click();
-        if (await startPage.isVisible()) failures.push('calmar: Start analysis did not enter the analysis workspace');
-      }
+    // The workspace is the first screen; start pages and landing overlays are retired.
+    if (await page.locator('.start-page:visible, #landingPage:visible, #startPage:visible').count()) {
+      failures.push(`${app.id}: a start page covers the workspace; open straight into the workflow`);
     }
 
     const appThemeToggle = visibleTopBars.first().locator('[data-neurodesk-theme-toggle]');

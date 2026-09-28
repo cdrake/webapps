@@ -237,7 +237,7 @@ async function importSlot(name, filesPromise) {
     slot.series.replaceChildren(...images.map((file, index) => new Option(file.name, String(index))));
     slot.seriesField.hidden = images.length < 2;
     await loadSlot(name, images[0]);
-    status(`${images[0].name} loaded. Brain extract it before registering if it still includes scalp.`);
+    status(`${images[0].name} loaded.`);
   });
 }
 
@@ -394,7 +394,7 @@ $("cancelButton").onclick = () => {
 async function init() {
   if (!navigator.gpu) {
     setBusy(false);
-    status("WebGPU is unavailable. Greedy needs a recent desktop browser for visualization and brain extraction.", true);
+    status("WebGPU is unavailable. Greedy needs a recent desktop browser.", true);
     return;
   }
   await runTask("Initializing image viewers…", async () => {

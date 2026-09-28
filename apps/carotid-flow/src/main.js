@@ -3,6 +3,7 @@ import '@neurodesk/webapp-components/styles/imaging-workspace.css';
 import { mountImagingWorkspace } from '@neurodesk/webapp-components/core/mount-imaging-workspace';
 import {
   bindFileDrop,
+  bindInfoTooltips,
   createConsole,
   createExampleSelector,
   createInfoDialog,
@@ -41,6 +42,7 @@ const toolbar = createViewerToolbar({ views: false, window: false, colormap: fal
 $('viewer').prepend(toolbar);
 const log = createConsole({ id: 'technicalLog' });
 $('viewer').append(log);
+bindInfoTooltips(document);
 const info = createInfoDialog({ id: 'infoDialog' });
 $('aboutBtn').onclick = () => info.open('About Carotid Flow', $('aboutContent'));
 $('privacyBtn').onclick = () => info.open('Privacy', $('privacyContent'));
@@ -74,8 +76,15 @@ toolbar.control('overlayOpacity').value = '0.8';
 toolbar.control('overlayOpacityValue').textContent = '80%';
 let overlayOpacity = 0.8;
 
+// The status line keeps one short sentence; the full message goes to the technical log.
+function statusLine(message) {
+  if (message.length <= 90) return message;
+  const first = message.match(/^.*?[.;](?=\s)/)?.[0];
+  return first && first.length <= 90 ? first : `${message.slice(0, 88).trimEnd()}…`;
+}
+
 function status(message, error = false) {
-  $('statusText').textContent = message;
+  $('statusText').textContent = statusLine(message);
   $('statusText').classList.toggle('error', error);
   log.log(message, error ? 'error' : 'info');
 }
@@ -350,7 +359,8 @@ $('runButton').onclick = async () => {
     const summary = found.method === 'velocity'
       ? `left ${Math.round(left.mean)} ml/min, right ${Math.round(right.mean)} ml/min`
       : `left ${left.pixels.length} px, right ${right.pixels.length} px`;
-    status(`Both carotids found · ${summary} · systolic peak at frame ${right.peakFrame + 1} · ${Math.round(performance.now() - started)} ms`);
+    status(`Both carotids found · ${summary} · systolic peak at frame ${right.peakFrame + 1}`);
+    log.log(`Detection took ${Math.round(performance.now() - started)} ms`);
   } catch (error) {
     // Drop the previous run's overlays with its numbers: they described other settings.
     clearOutputs();
