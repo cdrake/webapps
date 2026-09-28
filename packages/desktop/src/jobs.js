@@ -44,7 +44,6 @@ export async function runJob(contents, job, outputDirectory) {
   if ((await readdir(output)).length) throw new Error('Output directory must be empty');
   const downloads = [];
   let downloadError;
-  const pending = [];
   const names = new Set();
   const onDownload = (_event, item, owner) => {
     if (owner !== contents) return;
@@ -52,12 +51,10 @@ export async function runJob(contents, job, outputDirectory) {
     if (names.has(filename)) { downloadError = new Error(`Duplicate output: ${filename}`); item.cancel(); return; }
     names.add(filename);
     item.setSavePath(join(output, filename));
-    pending.push(new Promise(resolve => {
-      item.once('done', (_event, state) => {
-        if (state !== 'completed') { downloadError = new Error(`Output download ${filename}: ${state}`); resolve(); }
-        else { downloads.push({ filename, bytes: item.getReceivedBytes() }); resolve(); }
-      });
-    }));
+    item.once('done', (_event, state) => {
+      if (state !== 'completed') downloadError = new Error(`Output download ${filename}: ${state}`);
+      else downloads.push({ filename, bytes: item.getReceivedBytes() });
+    });
   };
   contents.session.on('will-download', onDownload);
   const evaluate = (fn, value) => contents.executeJavaScript(`(${fn.toString()})(${JSON.stringify(value)})`);
@@ -101,15 +98,17 @@ export async function runJob(contents, job, outputDirectory) {
         }, step);
       }
     }
+    // Keep watching the app until every output has finished downloading, so an
+    // error raised while a download is still in flight fails the job too, and a
+    // download that never completes is bounded by the job timeout.
     const deadline = Date.now() + (job.timeoutMs || 900000);
-    while (pending.length < job.expectedDownloads) {
+    while (downloads.length < job.expectedDownloads) {
       if (downloadError) throw downloadError;
       await checkFailure();
-      if (Date.now() > deadline) throw new Error(`Expected ${job.expectedDownloads} outputs, received ${pending.length}`);
+      if (Date.now() > deadline) throw new Error(`Expected ${job.expectedDownloads} outputs, received ${downloads.length}`);
       await new Promise(resolve => setTimeout(resolve, 100));
     }
-    await Promise.all(pending);
-    if (downloadError) throw downloadError;
+    await checkFailure();
     if (downloads.length !== job.expectedDownloads || downloads.some(item => item.bytes === 0)) throw new Error('Batch output validation failed');
     const report = { app: job.app, downloads };
     await writeFile(join(output, 'job-result.json'), `${JSON.stringify(report, null, 2)}\n`);

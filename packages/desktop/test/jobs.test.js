@@ -26,13 +26,22 @@ test('missing batch inputs fail before an application is started', async t => {
 function fakeContents(elements) {
   const document = { querySelector: selector => elements[selector] ?? null };
   const context = vm.createContext({ document, getComputedStyle: () => ({ visibility: 'visible' }) });
-  const session = { on() {}, off() {} };
+  const handlers = {};
+  const session = { on: (event, handler) => { handlers[event] = handler; }, off() {} };
   let attached = false;
-  return {
+  const contents = {
     session,
+    // Starts a fake Electron download owned by this page; returns a function that ends it.
+    startDownload(filename, bytes = 10) {
+      let finish;
+      const item = { getFilename: () => filename, setSavePath() {}, cancel() {}, getReceivedBytes: () => bytes, once: (_event, handler) => { finish = handler; } };
+      handlers['will-download']({}, item, contents);
+      return state => finish({}, state);
+    },
     debugger: { attach: () => { attached = true; }, isAttached: () => attached, detach: () => { attached = false; }, sendCommand: async () => ({}) },
     executeJavaScript: async code => vm.runInContext(code, context),
   };
+  return contents;
 }
 
 const waitForReady = { schemaVersion: 1, app: 'synthseg', expectedDownloads: 1, timeoutMs: 400,
@@ -64,4 +73,45 @@ test('an invalid failure selector is rejected when the job is read', async t => 
   const path = join(directory, 'job.json');
   await writeFile(path, JSON.stringify({ ...waitForReady, failSelector: 42 }));
   await assert.rejects(readJob(path), /Invalid failure selector/);
+});
+
+const tick = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+test('a job succeeds once its outputs have finished downloading', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'offline-job-success-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const contents = fakeContents({ '#statusText': { textContent: 'Labels ready' } });
+  const output = join(directory, 'out');
+  const job = runJob(contents, structuredClone(waitForReady), output);
+  await tick(20);
+  const finish = contents.startDownload('t1_synthseg.nii.gz', 1234);
+  await tick(20);
+  finish('completed');
+  assert.deepEqual(await job, { app: 'synthseg', downloads: [{ filename: 't1_synthseg.nii.gz', bytes: 1234 }] });
+  assert.deepEqual(JSON.parse(await readFile(join(output, 'job-result.json'), 'utf8')), { app: 'synthseg', downloads: [{ filename: 't1_synthseg.nii.gz', bytes: 1234 }] });
+});
+
+test('an error reported while an output is still downloading fails the job', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'offline-job-late-error-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const elements = { '#statusText': { textContent: 'Labels ready' } };
+  const contents = fakeContents(elements);
+  const job = runJob(contents, structuredClone(waitForReady), join(directory, 'out'));
+  await tick(20);
+  contents.startDownload('t1_synthseg.nii.gz');
+  await tick(20);
+  elements['#statusText.error'] = { textContent: 'Could not write the report' };
+  const started = Date.now();
+  await assert.rejects(job, /synthseg reported an error: Could not write the report/);
+  assert.ok(Date.now() - started < 300, 'the job must not wait for its timeout');
+});
+
+test('a download that never completes is bounded by the job timeout', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'offline-job-stuck-download-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const contents = fakeContents({ '#statusText': { textContent: 'Labels ready' } });
+  const job = runJob(contents, structuredClone(waitForReady), join(directory, 'out'));
+  await tick(20);
+  contents.startDownload('t1_synthseg.nii.gz');
+  await assert.rejects(job, /Expected 1 outputs, received 0/);
 });
