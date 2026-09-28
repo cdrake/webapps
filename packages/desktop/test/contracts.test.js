@@ -30,7 +30,7 @@ test('contracts generate complete jobs with an explicit terminal state and repor
     assert.equal(contract.lifecycle.snapshotSelector, '#neurodesk-run');
     assert.equal(contract.lifecycle.stateAttribute, 'data-neurodesk-state');
   }
-  assert.equal(contractJsonSchema().properties.schemaVersion.const, 1);
+  assert.deepEqual(contractJsonSchema().oneOf.map(schema => schema.properties.schemaVersion.const), [1, 2]);
 });
 
 test('input validation rejects missing files, relative paths, unknown inputs and invalid parameters', async t => {
