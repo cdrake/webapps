@@ -6,7 +6,7 @@
   "license": "BSD-2-Clause",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node ../../scripts/theme-app-dist.mjs --app niimath",
     "preview": "vite preview",
     "lint": "node ../../scripts/check-app-js.mjs .",
     "test": "node ../../scripts/check-app-js.mjs .",
