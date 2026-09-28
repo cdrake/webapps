@@ -5,9 +5,10 @@ import { dirname, resolve } from 'node:path';
 import { expect, test } from '@playwright/test';
 import { readNifti } from '../../../packages/components/src/file-io/NiftiUtils.js';
 import { summarizeLabels } from '../../../packages/components/src/automation/label-measurements.js';
-import freesurferLut from '../../../packages/components/src/automation/freesurfer-lut.json' with { type: 'json' };
 import { planGpuGraph } from '../../../packages/runtime-support/src/gpu-unet/session.js';
-import graph from '../../../packages/synthseg/src/gpu-model.json' with { type: 'json' };
+
+const freesurferLut = JSON.parse(readFileSync(new URL('../../../packages/components/src/automation/freesurfer-lut.json', import.meta.url), 'utf8'));
+const graph = JSON.parse(readFileSync(new URL('../../../packages/synthseg/src/gpu-model.json', import.meta.url), 'utf8'));
 
 const fixtures = '../../exes/synthseg/test/fixtures';
 const references = process.env.SYNTHSEG_REFERENCE_DIR;

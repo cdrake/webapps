@@ -6,8 +6,8 @@ Desktop unit tests and a GPU capability probe do not establish scientific parity
 
 ## Prepare the Mac
 
-Use a native arm64 terminal, Node.js 24, pnpm, Python 3, rustup, and the Xcode
-command-line tools. Install the pinned Rust toolchain needed to build SYNcro's
+Use a native arm64 terminal, Node.js 24, pnpm, Python 3, rustup, GitHub CLI, and
+the Xcode command-line tools. Install the pinned Rust toolchain needed to build SYNcro's
 threaded Greedy kernel:
 
 ```sh
@@ -16,7 +16,8 @@ rustup toolchain install nightly-2025-11-15 --component rust-src --target wasm32
 cargo +stable install wasm-pack --locked
 ```
 
-Check out the PR and install its JavaScript dependencies and test browser:
+From your `neurodesk/webapps` checkout, select the PR and install its JavaScript
+dependencies and test browser:
 
 ```sh
 gh pr checkout 99
@@ -65,6 +66,11 @@ and display adapters without serial numbers. The browser probe records the
 adapter actually exposed to Chromium, its features, and buffer limits.
 `commit.txt`, `worktree.txt`, the copied lockfile and model manifests identify
 the source and dependencies used. Use a clean checkout for a reproducible run.
+
+CALMaR's full structural candidate workflow is an additional opt-in check. Both
+its supplied-lesion and full candidate workflows passed on Linux. Follow
+[CALMaR's verification instructions](../../apps/calmar/e2e/README.md) to repeat
+candidate inference on your Mac and retain its progress diagnostics.
 
 ## Check the catalog workflows
 

@@ -103,7 +103,7 @@ test('the committed scientific fixture agrees with the real WASM geometry', asyn
   } finally { actual.free(); }
 });
 
-test('apps_validate and apps_run reject oversize NIfTI before execution, including 2 mm sources', async t => {
+test('apps_validate and runs_start reject oversize NIfTI before execution, including 2 mm sources', async t => {
   const outputRoot = await directory(t);
   let executions = 0;
   const service = createAutomationService({ contracts: [{ contract, sha256: 'a'.repeat(64) }], outputRoot,

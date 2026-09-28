@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
-import examples from '../examples.json' with { type: 'json' };
+const examples = JSON.parse(await readFile(new URL('../examples.json', import.meta.url), 'utf8'));
 
 const dispatch = (page, command, request = {}) => page.evaluate(({ command, request }) => globalThis.neurodeskAutomation.dispatch(command, request), { command, request });
 

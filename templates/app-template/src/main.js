@@ -13,6 +13,7 @@ import {
   ProgressManager,
 } from "@neurodesk/webapp-components/ui";
 import { downloadFile } from "@neurodesk/webapp-components/file-io";
+import { registerAppAutomation } from "@neurodesk/webapp-components/automation";
 import { APP } from "./config.js";
 import examples from "../examples.json";
 
@@ -123,13 +124,30 @@ const exampleControl = createExampleSelector({
 });
 $("exampleControl").append(exampleControl);
 
-$("runButton").addEventListener("click", () => {
-  if (!source || loading) return;
+function copyInput(signal) {
+  signal?.throwIfAborted();
+  if (!source || loading) throw new Error("Load an image before copying it.");
   // Replace this explicit pass-through demonstration with the app's method.
   results.render({ output: { description: "Unchanged input copy", file: source } });
   $("outputSection").open = true;
   progress.end("Input copy ready");
   status("Input copy ready · no scientific processing applied");
+  return {
+    artifacts: [{ role: "output", file: source }],
+    provenance: { method: "unchanged-input-copy", scientificProcessing: false },
+  };
+}
+$("runButton").addEventListener("click", () => {
+  if (source && !loading) copyInput();
+});
+registerAppAutomation({
+  app: APP.id,
+  operations: {
+    "copy-input": async ({ inputs, signal }) => {
+      await loadFiles(Promise.resolve(inputs.image), signal);
+      return copyInput(signal);
+    },
+  },
 });
 window.addEventListener("pagehide", () => {
   exampleControl.destroy();

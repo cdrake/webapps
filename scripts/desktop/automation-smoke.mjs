@@ -12,6 +12,7 @@ import { readVolume } from '../../packages/synthsr/src/volume.js';
 
 const root = resolve(import.meta.dirname, '../..');
 const fixture = join(root, 'apps/calmar/tests/fixtures/synthstrip-mini/T1.nii.gz');
+const synthsegFixture = join(root, 'exes/synthseg/test/fixtures/small.nii.gz');
 const appIds = ['brain-extraction', 'synthseg'];
 const scratch = await mkdtemp(join(tmpdir(), 'neurodesk-automation-smoke-'));
 const evidence = process.env.NEURODESK_TEST_REPORT;
@@ -187,6 +188,7 @@ try {
   assert.equal(initialized.protocolVersion, summary.protocolVersion);
   client.notify('notifications/initialized');
   const tools = (await client.call('tools/list')).tools;
+  assert.ok(tools.every(tool => /^[A-Za-z0-9_-]{1,64}$/.test(tool.name)), 'MCP tools must have portable names');
   for (const name of ['run_brain_extraction', 'run_synthseg']) {
     const tool = tools.find(tool => tool.name === name);
     assert.ok(tool, `Missing generated tool: ${name}`);
@@ -196,8 +198,17 @@ try {
   const contracts = (await client.tool('apps_list')).apps;
   assert.deepEqual(contracts.map(contract => contract.app).sort(), appIds);
   for (const app of appIds) {
-    await client.tool('apps_validate', { app, inputs: { image: [fixture] } });
+    await client.tool('apps_validate', { app, inputs: { image: [app === 'synthseg' ? synthsegFixture : fixture] } });
   }
+  for (const name of ['apps_validate', 'runs_start']) {
+    const oversized = await client.call('tools/call', {
+      name,
+      arguments: { app: 'synthseg', inputs: { image: [fixture] } },
+    });
+    assert.equal(oversized.isError, true);
+    assert.match(oversized.content[0].text, /padded to 224×256×192.*above the validated 2 GiB limit/);
+  }
+  summary.preflight = { synthsegSmall: 'accepted', oversizedValidation: 'rejected', oversizedStart: 'rejected' };
   const invalid = await client.call('tools/call', {
     name: 'apps_validate',
     arguments: { app: 'brain-extraction', inputs: { image: [join(scratch, 'missing.nii')] } },

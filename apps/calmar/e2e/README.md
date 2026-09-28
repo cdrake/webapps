@@ -32,10 +32,9 @@ handlers. It checks native-space geometry, binary output and the explicit
 unconfirmed review state. It does not measure segmentation accuracy against an
 expert lesion annotation. It never confirms a lesion or resumes registration.
 
-The supplied-lesion checks passed on Linux. The full structural run did not
-complete there, and candidate inference remains unvalidated. A bounded
-90-second diagnostic run completed brain extraction and prealignment, then
-reached SynthStroke patch 3 of 27, augmentation 5 of 8, with an estimated 350
-seconds remaining. No minimum RAM requirement or cause of the earlier
-interrupted run has been established. Run the opt-in check on the target
-machine before treating candidate generation as verified there.
+The supplied-lesion and full structural checks passed on Linux. The structural
+example completed in 7.3 minutes and produced a binary 160×256×256 candidate
+with 65,607 foreground voxels. Its report requires review and leaves the lesion
+unconfirmed. This checks execution, geometry, artifact hashes, and review state,
+not accuracy against an expert lesion annotation. Run the opt-in check on the
+target machine before treating that machine's execution as verified.

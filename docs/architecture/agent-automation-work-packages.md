@@ -1,124 +1,145 @@
 # Agent automation work packages
 
-The first supported workflows are brain extraction and SynthSeg. The shared contract,
-runner and MCP endpoint must support further apps without app-specific server code.
-Existing selector-based jobs remain supported.
+PR #99 extends the desktop job runner into a typed operation and MCP interface
+for the 27 catalog applications. Existing schema-1 selector jobs remain supported.
+The user will run the remaining Mac hardware checks locally.
 
-## Work packages
+## Delivery checklist
 
-- [x] Ground the design in the desktop runner, app lifecycle and production packaging.
-- [x] Compare two designs and record the selected public interfaces.
-- [x] WP1: Versioned app contracts, validation, job generation and publication beside each pilot app.
-- [x] WP2: Shared run state with explicit completion, failure, cancellation and stale-run protection.
-- [x] WP3: Structured result reports for brain extraction and SynthSeg, including named artifacts and provenance.
-- [x] WP4: Desktop execution from contracts with validated inputs, bounded waits, cancellation and recorded output checksums.
-- [x] WP5: Local stdio MCP discovery, validation, execution and artifact resources using the same contracts.
-- [x] WP6: Browser and MCP integration checks, documentation, changeset and date-version release.
+- [x] WP1: Publish versioned app contracts and JSON Schema.
+- [x] WP2: Share explicit completion, failure, cancellation and stale-run protection.
+- [x] WP3: Return structured reports with artifact hashes and scientific provenance.
+- [x] WP4: Validate requests and verify downloaded reports and artifacts before success.
+- [x] WP5: Expose discovery, validation, asynchronous execution and resources over local MCP stdio.
+- [x] WP6: Verify the initial brain-extraction and SynthSeg integrations and package the desktop.
+- [x] Compare catalog input/output requirements and select the operation contract.
+- [x] WP7: Support multiple input roles, DICOM selection, variable artifacts and viewer operations.
+- [x] WP8: Complete all catalog adapters and the application template.
+- [x] WP9: Add bounded viewer sessions with public crosshair, tab and region controls.
+- [x] WP10 implementation: Add native SynthSeg label-volume summaries and real CPU/model checks.
+- [ ] WP10 hardware: Run real WebGPU and full-volume native Metal parity on the user's Mac.
+- [x] WP11 implementation: Add declaration and production registration gates plus workflow tests.
+- [ ] WP11 hardware: Record the Apple-silicon adapter limits and larger-buffer planning evidence.
+- [x] WP12: Finish integrated checks, release metadata, documentation and PR update.
 
-## Acceptance criteria
+## Operation contract
 
-An agent can discover either pilot app, validate inputs and parameters, run it,
-observe terminal success or the app's error, and read a structured report and
-the resulting files. Changing displayed status text cannot break a generated job.
-Cancellation cannot leave a successful report, and a previous run cannot complete
-a new run. Contract selectors and downloads are checked against built apps.
+Each app owns `automation.json` and registers explicit awaited handlers through
+`registerAppAutomation`. The same scientific processing runs for manual and agent
+requests. Schema 2 describes named operations, input roles and formats, typed
+parameters, engines, output roles and cardinality. The build stamps the version
+and publishes the contract beside the page. Static apps also receive a vendored
+copy so they can load the same contract without a bundler.
 
-The desktop tests cover protocol exchanges and runner behavior. Browser checks
-exercise the production bundles. Scientific GPU execution is reported separately
-from protocol and browser wiring, with hardware limitations stated explicitly.
+The shared browser layer validates parameters, prepares files and DICOM inputs,
+assigns a run identity and publishes only the current run's actual returned
+artifacts. Multiple DICOM candidates require explicit selection by converted
+content hash. Raw-DICOM applications retain their own acquisition metadata and
+series selection. Reports preserve original input hashes and conversion details.
 
-## Selected design
+The desktop transfers files through one hidden input and invokes fixed operation
+commands. A successful run requires agreement between the contract, browser
+report and downloaded artifact hashes. Cancellation terminates owned workers and
+prevents late completion. Overall deadlines include preparation and export.
+Schema-1 jobs still use their selectors and `failSelector` behavior.
 
-`packages/desktop/src/main.js` loads a checksummed offline bundle and opens a
-sandboxed Electron window. `readJob` resolves uploaded files; `runJob` uses the
-page DOM and Electron download events. Two designs were compared: generate
-these jobs from app contracts, or introduce a direct page execution API with a
-new file transport. The implementation uses generated jobs. This preserves the
-existing browser upload/download path and lets each app keep one processing
-handler for people and agents. Independent review added isolated run directories,
-bounded resource reads and contract checksums to that design.
+Viewer operations retain their windows by default. Other operations can request
+`retainViewer`. At most four sessions remain open. Viewer commands are serialized
+and bounded to 30 seconds. Crosshair coordinates use public world-millimetre
+APIs; unsupported controls are reported as unavailable. Closing a session releases
+its window and directory grants without deleting completed outputs.
 
-| Interface | Implementation |
-| --- | --- |
-| App discovery | `automation.json` and `automation.schema.json` beside each pilot's built page, with the release version stamped by the shared build |
-| Invocation | Typed inputs, parameters, engines and artifact roles; strict request validation; `scripts/automation-job.mjs` generates existing schema-1 jobs |
-| Browser state | Shared `createRunState`, `#statusText` state/run-ID attributes and `#neurodesk-run` JSON snapshot; published contracts declare the lifecycle selectors and terminal values |
-| Results | Shared JSON report with input and output SHA-256 hashes, effective parameters and scientific provenance; SynthSeg browser reports add per-label voxel counts and mL volumes |
-| Execution | One active run, a fresh browser window, an overall deadline, cancellation, exact artifact-role matching and report verification before success |
-| MCP | Desktop `--mcp` serves discovery, validation, asynchronous execution, cancellation and result resources over stdio; app-specific tools derive their schemas from contracts |
-| Native engine | Explicitly configured SynthSeg executable; argument-array invocation, sidecar provenance and bounded termination |
+See [the automation guide](../../packages/desktop/AUTOMATION.md) for requests,
+resources, DICOM selection and viewer controls. See
+[scientific validation](../../packages/desktop/SCIENTIFIC-VALIDATION.md) for the
+Mac commands and the distinction between buffer planning and inference.
 
-See [the automation guide](../../packages/desktop/AUTOMATION.md) for client
-configuration, requests, resource limits and adding another app.
+## Scientific execution evidence
 
-## Verification record
+The checks below use real production code and inputs unless marked otherwise.
+Transport, geometry and artifact checks do not establish clinical accuracy.
 
-Initial verification on Linux on 2026-09-28:
+| Application | Evidence collected on Linux | Hardware work remaining |
+| --- | --- | --- |
+| Brain extraction | BET golden mask and MCP resource hashes; real MindGrab CPU and SynthStrip WASM masks and geometry | MindGrab GPU behavior on target hardware |
+| SynthSeg | Six native CPU reference cases; exact reports, affine and per-label volumes; small final adapter cases | Native Metal and browser WebGPU reference parity |
+| EdgeReg | Real fixed/moving registration and output files | None for tested CPU path |
+| ANTs | Real SyN workflow and four output artifacts | None for tested CPU path |
+| Greedy | Real affine registration and transform | None for tested CPU path |
+| FireANTs | Real CPU registration | GPU backend parity remains separate |
+| SynthSR | Real CPU model against reference, cancellation and report hashes | GPU inference remains separate |
+| MuscleMap | Real model on synthetic input, metrics and cancellation | Scientific accuracy beyond the transport fixture |
+| VesselBoost | Pinned TOF input, 1434 mask voxels, physical volume and output hash | None for tested CPU path |
+| Spinal Cord Toolbox | Real T2 model, 23597 mask voxels and artifact hash | Other declared models need their own numerical oracles |
+| SeedSeg | All four models on a synthetic three-seed fixture, geometry and six output files | Clinical accuracy is not established by this synthetic fixture |
+| QSMbly | Real example through masking, ROMEO, V-SHARP and RTS; generated-mask and supplied-mask runs agree byte for byte after resolving voxel defaults | None for tested WASM path |
+| Carotid Flow | Public example gives 231 and 211 mL/min; label and curve hashes match | None for tested method |
+| NiiMath | Actual voxel arithmetic, cancellation and worker retry | Other NiiMath operations retain their upstream numerical tests |
+| SurfAnnotate | Actual surface geometry, source summary and viewer controls | None for tested viewer path |
+| ZARRo | Real Zarr chunk loading, world coordinates, layouts and measurement | Larger remote datasets remain data-specific |
+| DICOMpare | Actual Python analysis and protocol comparison on synthetic DICOM metadata | Protocol validity depends on the supplied schema |
+| DICOM2vid | Real playable WebM, encoded dimensions, hash and explicit DICOM series selection | Other browser codecs remain platform-specific |
+| Deface | Real affine method, cancel/retry, preserved geometry and retained voxel intensities | Other seven method accuracies remain separate |
+| Disconnectome | ENIGMA result equals CLI TSV byte for byte; wrong-grid rejection | Atlas-specific scientific interpretation is unchanged |
+| SYNcro | Existing UI checks and wrong-grid rejection before downloads | Complete supplied-image normalization test is opt-in |
+| Brain2Print | Actual worker cancellation and corrected STL/MZ3 geometry serialization | Complete hardware segmentation/meshing test |
+| DWI2TRX | Known-tensor CPU fit gives FA about 0.603; output checksum and gradient validation | Complete GPU tracking with subgroup support |
+| TopoFit | Worker checksum failure, cancellation, surface bytes and actual UI patch workflows | Complete image-to-surface inference test is opt-in |
+| Easy MP2RAGE | Real correction and denoising; SA2RAGE result agrees with Python golden within 0.1 ms | None for tested WASM path |
+| BrowserQC | Real CPU segmentation, finite QC metrics, BIDS sidecar, cancellation/retry and propagated QC failure | GPU model inference remains separate |
+| CALMaR | Supplied-lesion map equals the pinned Visual channel at every voxel; wrong-affine rejection; full CPU candidate workflow produces a binary 160×256×256 mask with 65,607 foreground voxels and requires human review | Candidate accuracy needs an expert lesion reference; target-machine execution can use the documented opt-in check |
 
-- Desktop tests: 58 passed, including protocol exchanges, native subprocess
-  cancellation, app failures, artifact verification and cancellation during
-  success-report publication. Node 24's test isolation hit a serialization error
-  in the existing packaging test; the complete suite passed with
-  `node --test --test-isolation=none packages/desktop/test/*.test.js`.
-- Shared components: 114 tests passed. Selected repository checks for versions,
-  app information, theme integration and design-system rules: 40 passed.
-- Production app tests: brain extraction passed 8 checks, including the real BET
-  golden mask and report downloads; 2 optional model tests were skipped.
-  SynthSeg passed 7 checks using a fixture worker for automation behavior.
-- `pnpm build` completed all 29 tasks and assembled 27 apps. Both pilot contracts
-  match their released app versions. Interface audits, mobile checks and interface
-  workflow checks passed for both changed apps. Desktop and phone screenshots
-  were reviewed, including the completed BET results and report control.
-- `scripts/desktop/automation-smoke.mjs` passed against source Electron and an
-  unpacked Linux desktop executable. It discovers both contracts, validates
-  requests, runs real BET, reads resources and checks their hashes, checks explicit
-  and connection-close cancellation, and checks clean JSON-RPC stdout and exit.
-  The mask contained 246875 voxels and matched the existing golden SHA-256
-  `107a46c3a2f42f4a7796dc5a5b2a6660a302239ae50a0cf2eea80b1767a50862`.
-- The unpacked archive contains the MCP SDK and Zod; all ten packaged source
-  modules matched the checkout. This validates an unpacked Linux build, not signed
-  release archives for macOS or Windows.
-- A changeset generated the release changelogs and versions: desktop
-  `0.15.20260928`, brain extraction `0.2.20260928`, SynthSeg `0.4.20260928` and
-  shared components `0.5.0`. Dependent apps received date-version updates.
-  QSMbly received a minor increment because its existing version already used
-  this date. The release command's final lockfile step needed the writable pnpm
-  store; rerunning that step and a frozen install succeeded.
+Native SynthSeg's six reference cases include small, 1 mm and 2 mm images in
+fast and default modes. Five cases had zero differing voxels; the 2 mm default
+case differed at one of 5,611,200 voxels. All affine errors were zero. The final
+operation adapter rerun matched both small reference cases exactly and verified
+report volumes against the downloaded labels. These are CPU results.
 
-After rebasing onto `main` at `5622530`, the unchanged automation patch passed
-58 desktop tests, 118 shared-component tests and 33 selected repository checks.
-The production build completed all 29 tasks. Both pilot apps passed the updated
-interface audit, mobile checks and interface workflow checks. The packaged MCP
-smoke passed again with the rebuilt apps, and all ten packaged desktop modules
-still matched the rebased source. Desktop and phone screenshots were reviewed.
-The desktop and both pilot apps also passed their lint commands.
+The software adapter probe accepts a planned 1,981,808,640-byte buffer and rejects
+the 3,623,878,656 bytes required by the 192×256×256 plan. It does not perform
+inference. An adapter reporting about 4 GiB does not validate a larger SynthSeg
+allocation. The 2 GiB cap remains unchanged until larger-volume parity has an
+appropriate oracle and target-hardware evidence.
 
-## Remaining rollout and scientific checks
+SynthSeg now publishes that budget in its operation contract. `apps_validate`
+and `runs_start` reject oversize NIfTI headers before opening a processing
+window. Tests compare the preflight geometry to the real Rust WASM preprocessing
+and the declared bytes-per-voxel factor to the actual GPU graph planner. DICOM
+geometry is explicitly deferred until conversion. Native execution is exempt.
 
-The completion pass adds the following work to PR #99. An app counts as supported
-only when its real input, processing or viewing workflow, result reporting and
-artifact access have been exercised. A manifest alone does not satisfy the gate.
+The review follow-up also incorporates PR #98's duplicate-download fix with its
+original authorship, renames public MCP tools to underscores, and declares input
+cardinality. Real DICOM conversion now handles repeated slice basenames while
+preserving original hashes. Closing a retained window releases its session.
 
-- [x] Read the implementation principles and establish the existing execution path.
-- [ ] Ground all 27 catalog apps and compare contract designs for their input and output shapes.
-- [ ] WP7: Extend contract validation and execution for multiple inputs, DICOM series selection, variable results and viewer applications.
-- [ ] WP8: Integrate every remaining catalog app, publish its actual capabilities and report structure, and update the application template.
-- [ ] WP9: Add explicit viewer sessions and MCP controls for crosshair, region information and active view/tab using public viewer APIs.
-- [ ] WP10: Add native SynthSeg label-volume summaries and run real CPU, WebGPU and optional-model scientific checks.
-- [ ] WP11: Add a catalog coverage gate, production contract checks and end-to-end workflows; check the Apple-silicon buffer limit on the supplied hardware.
-- [ ] WP12: Update the usage guide, verification record and PR description, generate release metadata, and push the complete changes to PR #99.
+## Integrated verification
 
-The initial implementation's limits, to be resolved by the completion pass, are
-listed below. Hardware checks require the test machine's access details.
+Before the catalog extension, the initial two-app implementation passed source
+and unpacked Linux desktop MCP checks after rebasing onto `main` at `5622530`.
+The catalog pass adds a real retained-viewer exercise: BET produces the golden
+246875-voxel mask, resources match their hashes, world coordinates and active
+tabs update, and connection closure cancels work and closes viewers.
 
-These six packages deliver the shared implementation and two complete app
-integrations. Other catalog apps still need their own contracts, lifecycle calls,
-reports and production workflow tests. They are not advertised as MCP tools.
-Automation currently accepts one NIfTI file per input; automated DICOM series
-selection and viewer crosshair/region/tab control remain separate work.
+The released sources pass 80 desktop tests, 138 shared-component tests and their
+browser showcase, 172 repository tests, five Mac evidence-runner tests, and all
+36 lint tasks. The 29-task production build assembles all 27 apps. Every built
+page publishes and registers the exact source contract. Static build regressions
+cover both clean sources and obsolete vendored contracts. A generated template
+also passes its actual browser download check.
 
-Real GPU SynthSeg, native SynthSeg numerical parity, and the optional MindGrab
-and SynthStrip models were not exercised in this verification. Native adapter
-tests use a fixture executable. Native reports retain the CLI sidecar but do not
-add the browser's label-volume summary. No change to the SynthSeg GPU ceiling is
-included; that needs scientific parity evidence on hardware with larger buffers.
+The unpacked Linux desktop contains the same 14 modules as the tested source.
+Its MCP check accepts a supported SynthSeg input, rejects an oversized input in
+both validation and start, and completes the BET and retained-viewer checks
+above. SynthSeg's seven browser transport tests include exactly one download per
+export. Real WebGPU inference is checked separately on a hardware adapter.
+
+The catalog interface audit and mobile checks pass for all 27 apps. Review of
+93 desktop and phone captures found a populated DICOMpare overlap, now fixed and
+covered by real DICOM imports at 320 and 390 pixels with touch emulation. The
+final DICOMpare interface and mobile checks use a fresh production build. All
+ten interface workflow checks pass on that build.
+
+Mac scientific checks remain pending by user choice. The script and guide make
+them runnable without remote machine access. CALMaR's complete CPU candidate
+workflow passed in 7.3 minutes, preserving the source affine and dimensions,
+verifying artifact hashes, and leaving the lesion unconfirmed for human review.

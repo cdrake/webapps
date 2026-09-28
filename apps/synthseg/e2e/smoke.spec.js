@@ -113,6 +113,8 @@ test('worker results publish a checksummed report and label volumes; replacement
   expect(report.measurements.labels.find(label => label.id === 2)).toEqual({
     id: 2, name: 'Left-Cerebral-White-Matter', voxels: 2, volumeMl: 0.048,
   });
+  const downloads = [];
+  page.on('download', download => downloads.push(download));
   const outputDownload = page.waitForEvent('download');
   await page.locator('#saveBtn').click();
   const outputBytes = await readFile(await (await outputDownload).path());
@@ -121,6 +123,10 @@ test('worker results publish a checksummed report and label volumes; replacement
   const reportDownload = page.waitForEvent('download');
   await page.locator('#reportBtn').click();
   expect(JSON.parse(await readFile(await (await reportDownload).path(), 'utf8'))).toEqual(report);
+  expect(downloads.map(download => download.suggestedFilename())).toEqual([
+    report.artifacts.labels.filename,
+    report.artifacts.labels.filename.replace(/\.nii\.gz$/, '.json'),
+  ]);
   await page.locator('#imageInput').setInputFiles({ name: 'invalid.nii', mimeType: 'application/octet-stream', buffer: Buffer.from('invalid') });
   await expect(page.locator('#statusText')).toHaveAttribute('data-neurodesk-state', 'failed');
   expect(JSON.parse(await page.locator('#neurodesk-run').textContent()).report).toBeUndefined();

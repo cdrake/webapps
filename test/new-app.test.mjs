@@ -91,6 +91,11 @@ test('default invocation (pnpm new-app <name>) scaffolds and validates', async (
   assert.match(viteConfig, /neurodeskViteConfig/);
   assert.match(viteConfig, /appId:\s*["']demo-app["']/);
   assert.match(main, /controlsContract/);
+  const contract = JSON.parse(await readFile(join(root, 'apps', 'demo-app', 'automation.json'), 'utf8'));
+  const { parseContract } = await import('../packages/desktop/src/contracts.js');
+  assert.equal(parseContract({ ...contract, appVersion: packageJson.version }).app, 'demo-app');
+  assert.equal(contract.defaultOperation, 'copy-input');
+  assert.match(main, /registerAppAutomation/);
   for (const id of ['aboutBtn', 'privacyBtn']) {
     assert.match(html, new RegExp(`id=["']${id}["']`), id);
   }

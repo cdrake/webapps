@@ -73,7 +73,7 @@ test('toolchain facts are carried into generated matrices', async () => {
     python_reference: false,
     shared_runtime: false,
     browser_test: true,
-    app_scoped_runtime: false,
+    app_scoped_runtime: true,
     release_test: 'test',
   }]);
 });

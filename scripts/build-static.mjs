@@ -65,3 +65,4 @@ console.log(`Assembled static site -> ${join(appDir, "dist")}`);
 await cp(join(appDir, 'examples.json'), join(dist, 'examples.json'));
 await cp(join(appDir, '../../packages/components/src'), join(dist, 'vendor/webapp-components/src'), { recursive: true });
 await publishAppContract({ app: { id: basename(appDir) }, version: manifest.version, distDir: dist });
+await publishAppContract({ app: { id: basename(appDir) }, version: manifest.version, distDir: join(dist, 'vendor') });
