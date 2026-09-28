@@ -792,7 +792,7 @@
           "verification": "source reference; production bundling may rewrite it"
         },
         {
-          "url": "https://unpkg.com/@yaireo/tagify",
+          "url": "https://unpkg.com/@yaireo/tagify@4.38.0/dist/tagify.js",
           "kind": "runtime-cdn",
           "sources": [
             "apps/qsmbly/index.html"
@@ -800,7 +800,7 @@
           "verification": "source reference; production bundling may rewrite it"
         },
         {
-          "url": "https://unpkg.com/@yaireo/tagify/dist/tagify.css",
+          "url": "https://unpkg.com/@yaireo/tagify@4.38.0/dist/tagify.css",
           "kind": "runtime-cdn",
           "sources": [
             "apps/qsmbly/index.html"

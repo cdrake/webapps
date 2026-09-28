@@ -1,5 +1,11 @@
 # qsmbly
 
+## 0.27.20260928
+
+### Patch Changes
+
+- Pin Tagify JavaScript and CSS to 4.38.0 so standalone offline verification keeps using the existing locked files after upstream releases.
+
 ## 0.27.20260924
 
 ### Patch Changes

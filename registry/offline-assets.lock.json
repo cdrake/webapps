@@ -1448,14 +1448,14 @@
       "kind": "runtime-cdn",
       "dependencies": []
     },
-    "https://unpkg.com/@yaireo/tagify": {
+    "https://unpkg.com/@yaireo/tagify@4.38.0/dist/tagify.js": {
       "sha256": "7aac84baaf804b20cd1522b79a2824b044c4b9a587f7323d7d82e38f9f655c39",
       "bytes": 68827,
       "contentType": "text/javascript; charset=utf-8",
       "kind": "runtime-cdn",
       "dependencies": []
     },
-    "https://unpkg.com/@yaireo/tagify/dist/tagify.css": {
+    "https://unpkg.com/@yaireo/tagify@4.38.0/dist/tagify.css": {
       "sha256": "7e3fd3a639d5fe4862ee0d1afb12cb0b4b8cfa5b6b21507b50b5dda702d89b4b",
       "bytes": 12343,
       "contentType": "text/css; charset=utf-8",
@@ -2798,8 +2798,8 @@
       "https://files.pythonhosted.org/packages/93/ab/9db91133fb05d5aa4be55d5068175bc878dc9dac6edd5525c8b89dc3641c/twixtools-0.24-py3-none-any.whl",
       "https://files.pythonhosted.org/packages/b8/f5/7f6aa3bbff013c0bf993129cbb2b1505790091f812accbe85cf001514737/nibabel-5.3.3-py3-none-any.whl",
       "https://fonts.googleapis.com/css2?display=swap&family=Inter%3Awght%40400%3B500%3B600",
-      "https://unpkg.com/@yaireo/tagify",
-      "https://unpkg.com/@yaireo/tagify/dist/tagify.css",
+      "https://unpkg.com/@yaireo/tagify@4.38.0/dist/tagify.js",
+      "https://unpkg.com/@yaireo/tagify@4.38.0/dist/tagify.css",
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/ee7566df698ad9b1d0cd1e8fe65ac9ccc671657f/examples/qsmbly/real-brain-qsm/sub-170705134431std1312211075243167001_ses-1_run-1_part-mag_T2starw.nii.gz",
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/ee7566df698ad9b1d0cd1e8fe65ac9ccc671657f/examples/qsmbly/real-brain-qsm/sub-170705134431std1312211075243167001_ses-1_run-1_part-mag_T2starw.json",
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/ee7566df698ad9b1d0cd1e8fe65ac9ccc671657f/examples/qsmbly/real-brain-qsm/sub-170705134431std1312211075243167001_ses-1_run-1_part-phase_T2starw.nii.gz",
