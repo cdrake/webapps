@@ -7,6 +7,9 @@ import { canonicalUrl, loadBundle, verifyBundle } from './bundle.js';
 import { readJob, runJob } from './jobs.js';
 import { mimeType, startOfflineServer } from './server.js';
 import { createModelResolver } from './models.js';
+import { createAutomationService, loadAutomationContracts } from './automation.js';
+import { generateJob } from './contracts.js';
+import { runNativeSynthseg } from './native.js';
 
 const root = process.env.NEURODESK_BUNDLE || (app.isPackaged ? join(process.resourcesPath, 'offline') : resolve('resources'));
 if (process.env.NEURODESK_USER_DATA) app.setPath('userData', process.env.NEURODESK_USER_DATA);
@@ -18,6 +21,8 @@ if (process.env.NEURODESK_SOFTWARE_RENDERING === '1' || process.argv.includes('-
 }
 let server;
 let window;
+let mcpServer;
+const mcpMode = process.argv.includes('--mcp');
 const blockedRequests = [];
 const argument = name => {
   const index = process.argv.indexOf(name);
@@ -27,6 +32,7 @@ const argument = name => {
 app.whenReady().then(async () => {
 try {
   const bundle = await loadBundle(root);
+  if (mcpMode && argument('--job')) throw new Error('--mcp and --job cannot be used together');
   const job = argument('--job') ? await readJob(resolve(argument('--job'))) : null;
   const pack = process.env.NEURODESK_MODELS_DIR;
   if (pack && !isAbsolute(pack)) throw new Error('NEURODESK_MODELS_DIR must be an absolute path to an extracted model pack');
@@ -35,7 +41,7 @@ try {
   server = local.server;
   const offlineSession = session.fromPartition('offline');
   const downloads = [];
-  if (process.env.NEURODESK_DOWNLOADS) {
+  if (process.env.NEURODESK_DOWNLOADS && !mcpMode) {
     const downloadDirectory = resolve(process.env.NEURODESK_DOWNLOADS);
     await mkdir(downloadDirectory, { recursive: true });
     offlineSession.on('will-download', (_event, item) => {
@@ -85,14 +91,47 @@ try {
       'Cross-Origin-Resource-Policy': 'cross-origin',
     } });
   });
-  window = new BrowserWindow({
-    width: 1440, height: 960, show: false,
-    webPreferences: { session: offlineSession, sandbox: true, contextIsolation: true, nodeIntegration: false },
-  });
-  window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
-  window.webContents.on('will-navigate', (event, url) => {
-    if (new URL(url).origin !== local.origin) event.preventDefault();
-  });
+  const createWindow = () => {
+    const target = new BrowserWindow({
+      width: 1440, height: 960, show: false,
+      webPreferences: { session: offlineSession, sandbox: true, contextIsolation: true, nodeIntegration: false },
+    });
+    target.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    target.webContents.on('will-navigate', (event, url) => {
+      if (new URL(url).origin !== local.origin) event.preventDefault();
+    });
+    return target;
+  };
+  if (mcpMode) {
+    const service = createAutomationService({
+      contracts: await loadAutomationContracts(root, bundle),
+      outputRoot: argument('--output') || join(app.getPath('userData'), 'runs'),
+      nativeBinary: process.env.NEURODESK_SYNTHSEG_BIN,
+      async execute({ contract, request, outputDirectory, signal, onProgress, nativeBinary }) {
+        if (request.engine === 'native') return runNativeSynthseg({ contract, request, outputDirectory, signal, binary: nativeBinary });
+        const target = createWindow();
+        const abort = () => { if (!target.isDestroyed()) target.destroy(); };
+        signal.addEventListener('abort', abort, { once: true });
+        const firstMissing = blockedRequests.length;
+        try {
+          signal.throwIfAborted();
+          const selected = bundle.apps.find(entry => entry.id === contract.app);
+          await target.loadURL(`${local.origin}/${selected.path}/`);
+          const result = await runJob(target.webContents, generateJob(contract, request), outputDirectory, { signal, onProgress });
+          if (blockedRequests.length > firstMissing) throw new Error('The run requested assets absent from the offline package');
+          return result;
+        } finally {
+          signal.removeEventListener('abort', abort);
+          abort();
+        }
+      },
+    });
+    const { serveMcp } = await import('./mcp.js');
+    mcpServer = serveMcp(service, { version: bundle.version });
+    process.stdin.once('end', () => { void mcpServer.close().finally(() => app.quit()); });
+    return;
+  }
+  window = createWindow();
   if (!job) window.once('ready-to-show', () => window.show());
   if (process.argv.includes('--verify')) {
     console.log(JSON.stringify(await verifyBundle(root)));
@@ -136,9 +175,9 @@ try {
   }
 } catch (error) {
   console.error(error);
-  if (!argument('--job')) dialog.showErrorBox('Neurodesk offline installation', error.message);
+  if (!argument('--job') && !mcpMode) dialog.showErrorBox('Neurodesk offline installation', error.message);
   app.exit(1);
 }
 });
-app.on('window-all-closed', () => app.quit());
-app.on('before-quit', () => server?.close());
+app.on('window-all-closed', () => { if (!mcpMode) app.quit(); });
+app.on('before-quit', () => { server?.close(); void mcpServer?.close(); });

@@ -1,5 +1,11 @@
 # @neurodesk/desktop
 
+## 0.15.20260928
+
+### Minor Changes
+
+- Publish versioned app automation contracts and checksummed run reports for brain extraction and SynthSeg. Add shared run identities, explicit completion and cancellation, and SynthSeg label-volume summaries. Generate browser jobs from the contracts and expose discovery, validation, asynchronous execution, cancellation and artifact resources through the desktop's local MCP server, with an optional native SynthSeg engine.
+
 ## 0.14.20260928
 
 ### Patch Changes

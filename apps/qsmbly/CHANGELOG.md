@@ -1,5 +1,16 @@
 # qsmbly
 
+## 0.28.20260928
+
+### Minor Changes
+
+- Update the shared webapp components to 0.5.0. Advance the minor version so the changed bundle does not reuse the existing 0.27.20260928 release version.
+
+### Patch Changes
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.5.0
+
 ## 0.27.20260928
 
 ### Patch Changes

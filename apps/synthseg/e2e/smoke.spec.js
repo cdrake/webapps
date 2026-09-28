@@ -1,5 +1,25 @@
 // Real browser smoke test against the built, header-served output (see playwright.config.js).
 import { expect, test } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { gzipSync } from 'node:zlib';
+import { createNiftiFromData, createNiftiHeaderFromVolume } from '../../../packages/components/src/file-io/NiftiUtils.js';
+
+async function fakeInference(page) {
+  await page.addInitScript(() => {
+    const NativeWorker = window.Worker;
+    window.Worker = class extends NativeWorker {
+      constructor(url, options) {
+        if (String(url).includes('inference-worker')) {
+          const fake = { postMessage() {}, terminate() {} };
+          window.inferenceWorker = fake;
+          return fake;
+        }
+        super(url, options);
+      }
+    };
+  });
+}
 
 test('app boots with the shared bar', async ({ page }) => {
   await page.goto('./');
@@ -48,26 +68,14 @@ test('local image parsing stays busy until it can commit the selected scan', asy
   await page.locator('#imageInput').setInputFiles('../../exes/synthseg/test/fixtures/small.nii.gz');
   await expect.poll(() => page.evaluate(() => Boolean(window.finishImageRead))).toBe(true);
   await expect(page.locator('#imageInput')).toBeDisabled();
-  await expect(page.locator('#cancelBtn')).toBeHidden();
+  await expect(page.locator('#cancelBtn')).toBeVisible();
   await page.evaluate(() => window.finishImageRead());
   await expect(page.locator('#statusText')).toContainText('Image loaded');
   await expect(page.locator('#imageInput')).toBeEnabled();
 });
 
 test('cancelled inference cannot publish a stale worker message', async ({ page }) => {
-  await page.addInitScript(() => {
-    const NativeWorker = window.Worker;
-    window.Worker = class extends NativeWorker {
-      constructor(url, options) {
-        if (String(url).includes('inference-worker')) {
-          const fake = { postMessage() {}, terminate() {} };
-          window.inferenceWorker = fake;
-          return fake;
-        }
-        super(url, options);
-      }
-    };
-  });
+  await fakeInference(page);
   await page.goto('./');
   await page.locator('#imageInput').setInputFiles('../../exes/synthseg/test/fixtures/small.nii.gz');
   await expect(page.locator('#processButton')).toBeEnabled();
@@ -76,5 +84,46 @@ test('cancelled inference cannot publish a stale worker message', async ({ page 
   await page.locator('#cancelBtn').click();
   await page.evaluate(() => window.inferenceWorker.onmessage({ data: { type: 'error', message: 'stale result' } }));
   await expect(page.locator('#statusText')).toContainText('Processing cancelled');
+  await expect(page.locator('#statusText')).toHaveAttribute('data-neurodesk-state', 'cancelled');
+  expect(JSON.parse(await page.locator('#neurodesk-run').textContent()).report).toBeUndefined();
   await expect(page.locator('#reportBtn')).toBeDisabled();
+});
+
+test('worker results publish a checksummed report and label volumes; replacement clears it', async ({ page }) => {
+  await fakeInference(page);
+  await page.goto('./');
+  await page.locator('#imageInput').setInputFiles('../../exes/synthseg/test/fixtures/small.nii.gz');
+  await expect(page.locator('#statusText')).toHaveAttribute('data-neurodesk-state', 'ready');
+  const inputRun = await page.locator('#statusText').getAttribute('data-neurodesk-run-id');
+  await page.locator('#processButton').click();
+  await expect(page.locator('#statusText')).toHaveAttribute('data-neurodesk-state', 'running');
+  expect(await page.locator('#statusText').getAttribute('data-neurodesk-run-id')).not.toBe(inputRun);
+  const header = createNiftiHeaderFromVolume({
+    dims: [2, 2, 1],
+    hdr: { affine: [[-2, 0, 0, 0], [0, 3, 0, 0], [0, 0, 4, 0], [0, 0, 0, 1]] },
+  });
+  const labels = gzipSync(createNiftiFromData(new Uint16Array([0, 2, 2, 3]), header));
+  await page.evaluate(async bytes => {
+    await window.inferenceWorker.onmessage({
+      data: { type: 'result', buffer: new Uint8Array(bytes).buffer, provenance: { outputShape: [2, 2, 1], seconds: 0 } },
+    });
+  }, [...labels]);
+  await expect(page.locator('#statusText')).toHaveAttribute('data-neurodesk-state', 'succeeded');
+  const { report } = JSON.parse(await page.locator('#neurodesk-run').textContent());
+  expect(report.measurements.labels.find(label => label.id === 2)).toEqual({
+    id: 2, name: 'Left-Cerebral-White-Matter', voxels: 2, volumeMl: 0.048,
+  });
+  const outputDownload = page.waitForEvent('download');
+  await page.locator('#saveBtn').click();
+  const outputBytes = await readFile(await (await outputDownload).path());
+  expect(createHash('sha256').update(outputBytes).digest('hex')).toBe(report.artifacts.labels.sha256);
+  expect(outputBytes.length).toBe(report.artifacts.labels.bytes);
+  const reportDownload = page.waitForEvent('download');
+  await page.locator('#reportBtn').click();
+  expect(JSON.parse(await readFile(await (await reportDownload).path(), 'utf8'))).toEqual(report);
+  await page.locator('#imageInput').setInputFiles({ name: 'invalid.nii', mimeType: 'application/octet-stream', buffer: Buffer.from('invalid') });
+  await expect(page.locator('#statusText')).toHaveAttribute('data-neurodesk-state', 'failed');
+  expect(JSON.parse(await page.locator('#neurodesk-run').textContent()).report).toBeUndefined();
+  await expect(page.locator('#reportBtn')).toBeDisabled();
+  await expect(page.locator('#saveBtn')).toBeDisabled();
 });

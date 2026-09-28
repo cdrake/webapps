@@ -1,5 +1,11 @@
 # @neurodesk/brain-extraction
 
+## 0.1.9
+
+### Patch Changes
+
+- @neurodesk/synthsr@0.4.20260928
+
 ## 0.1.8
 
 ### Patch Changes

@@ -24,6 +24,8 @@ test('BET produces the existing Rust mask and downloads images with original geo
   await page.locator('#threshold').fill('0.5');
   await page.locator('#runButton').click();
   await expect(page.locator('#statusText')).toHaveText('Brain image and mask ready');
+  await expect(page.locator('#statusText')).toHaveAttribute('data-neurodesk-state', 'succeeded');
+  const { report } = JSON.parse(await page.locator('#neurodesk-run').textContent());
   await expect(page.locator('#resultList .nd-volume-toggle')).toHaveCount(3);
   expect(requests.some(url => /ort-wasm|mindgrab\/|onnxruntime|synthstrip-.*\.js/.test(url))).toBe(false);
   const original = readVolume(bytesOf(await readFile(fixture)));
@@ -31,7 +33,11 @@ test('BET produces the existing Rust mask and downloads images with original geo
     const downloadPromise = page.waitForEvent('download');
     await page.locator('#resultList .nd-download-btn').nth(index).click();
     const download = await downloadPromise;
-    return readVolume(bytesOf(await readFile(await download.path())));
+    const bytes = await readFile(await download.path());
+    const role = index === 1 ? 'brain' : 'mask';
+    expect(createHash('sha256').update(bytes).digest('hex')).toBe(report.artifacts[role].sha256);
+    expect(bytes.length).toBe(report.artifacts[role].bytes);
+    return readVolume(bytesOf(bytes));
   };
   const brain = await readDownload(1);
   const mask = await readDownload(2);
@@ -42,6 +48,9 @@ test('BET produces the existing Rust mask and downloads images with original geo
   expect(binary.reduce((sum, value) => sum + value, 0)).toBe(246875);
   expect(createHash('sha256').update(binary).digest('hex')).toBe('107a46c3a2f42f4a7796dc5a5b2a6660a302239ae50a0cf2eea80b1767a50862');
   expect(brain.data.every((value, index) => value === (binary[index] ? original.data[index] : 0))).toBe(true);
+  const reportDownload = page.waitForEvent('download');
+  await page.locator('#reportBtn').click();
+  expect(JSON.parse(await readFile(await (await reportDownload).path(), 'utf8'))).toEqual(report);
 });
 
 test('examples load through the picker and BET downloads a brain mask', async ({ page }) => {
@@ -116,6 +125,8 @@ test('cancel terminates a waiting method load and a fresh BET run succeeds', asy
   await page.locator('#runButton').click();
   await page.locator('#cancelButton').click();
   await expect(page.locator('#statusText')).toHaveText('Cancelled');
+  await expect(page.locator('#statusText')).toHaveAttribute('data-neurodesk-state', 'cancelled');
+  expect(JSON.parse(await page.locator('#neurodesk-run').textContent()).report).toBeUndefined();
   await page.locator('#method').selectOption('bet');
   await page.locator('#runButton').click();
   await expect(page.locator('#statusText')).toHaveText('Brain image and mask ready');

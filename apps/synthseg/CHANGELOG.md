@@ -1,5 +1,17 @@
 # synthseg
 
+## 0.4.20260928
+
+### Minor Changes
+
+- Publish versioned app automation contracts and checksummed run reports for brain extraction and SynthSeg. Add shared run identities, explicit completion and cancellation, and SynthSeg label-volume summaries. Generate browser jobs from the contracts and expose discovery, validation, asynchronous execution, cancellation and artifact resources through the desktop's local MCP server, with an optional native SynthSeg engine.
+
+### Patch Changes
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.5.0
+  - @neurodesk/synthseg@0.4.20260928
+
 ## 0.3.20260924
 
 ### Patch Changes

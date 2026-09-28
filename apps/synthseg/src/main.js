@@ -1,4 +1,6 @@
 import examples from '../examples.json';
+import appPackage from '../package.json';
+import { createRunState, summarizeLabels } from '@neurodesk/webapp-components/automation';
 import { createExampleSelector } from '@neurodesk/webapp-components/ui';
 import NiiVue, { MULTIPLANAR_TYPE, SLICE_TYPE, SHOW_RENDER } from '@niivue/niivue';
 import { mountImagingWorkspace } from '@neurodesk/webapp-components/core/mount-imaging-workspace';
@@ -28,6 +30,7 @@ mountImagingWorkspace({
 const $ = (id) => document.getElementById(id);
 const technicalLog = createConsole({ id: 'technicalLog' });
 $('viewer').append(technicalLog);
+const runs = createRunState({ app: 'synthseg', appVersion: appPackage.version });
 const info = createInfoDialog({ id: 'infoDialog' });
 const layouts = {
   multiplanar: SLICE_TYPE.MULTIPLANAR,
@@ -88,13 +91,15 @@ let source,
   busy = false,
   timer,
   started;
-let importAbort,
-  importedImages = [];
+let operation;
+let viewRevision = 0;
+let importedImages = [];
 
 function status(message, error = false) {
   $('statusText').textContent = message;
   $('statusText').classList.toggle('error', error);
   technicalLog.log(message, error ? 'error' : 'info');
+  runs.message(message);
 }
 function setBusy(value, cancellable = false) {
   busy = value;
@@ -106,7 +111,7 @@ function setBusy(value, cancellable = false) {
   $('opacity').disabled = value || !output;
   $('saveBtn').disabled = value || !output;
   $('viewResultBtn').disabled = value || !output;
-  $('reportBtn').disabled = value || !provenance;
+  $('reportBtn').disabled = value || runs.snapshot().state !== 'succeeded';
   if (!value) {
     clearInterval(timer);
     worker?.terminate();
@@ -130,40 +135,70 @@ async function ensureViewer() {
   return viewerReady;
 }
 async function show() {
+  const revision = ++viewRevision;
+  const displayedOutput = output;
   $('emptyState').hidden = true;
   $('imageLabel').textContent = output ? 'ORIGINAL IMAGE · FREESURFER LABELS' : 'ORIGINAL IMAGE';
   const volumes = [{ url: source, name: source.name }];
   if (output) volumes.push({ url: output, name: output.name, opacity: Number($('opacity').value) });
   try {
     const nv = await ensureViewer();
+    if (revision !== viewRevision) return;
     await nv.loadVolumes(volumes);
+    if (revision !== viewRevision) return;
     // Label names too, so the location bar reads e.g. "Left-Hippocampus".
-    if (output) await nv.setColormapLabel(1, freesurferLut);
+    if (displayedOutput) await nv.setColormapLabel(1, freesurferLut);
+    if (revision !== viewRevision) return;
     $('viewerError').hidden = true;
   } catch (error) {
+    if (revision !== viewRevision) return;
     $('viewerError').hidden = false;
     $('viewerError').textContent =
       `Visualization unavailable: ${error.message}. Processing and NIfTI download remain available.`;
   }
 }
-async function load(file, signal) {
-  if (busy || !file) return false;
-  setBusy(true);
+function clearOutputs() {
+  output = null;
+  provenance = null;
+  $('outputSection').open = false;
+  $('reportBtn').disabled = true;
+  $('saveBtn').disabled = true;
+  $('viewResultBtn').disabled = true;
+}
+function beginImport() {
+  operation = runs.begin('loading');
+  source = null;
+  ++viewRevision;
+  clearOutputs();
+  $('fileInfo').hidden = true;
+  setBusy(true, true);
+  return operation;
+}
+async function load(file, signal, existingRun) {
+  if ((!existingRun && busy) || !file) return false;
+  const run = existingRun || beginImport();
+  const abort = () => {
+    if (operation !== run) return;
+    cancel();
+  };
+  signal?.addEventListener('abort', abort, { once: true });
   try {
+    signal?.throwIfAborted();
     if (!/\.nii(\.gz)?$/i.test(file.name)) throw new Error('Choose a .nii or .nii.gz image.');
     status('Reading image…');
     const { data, dims } = await readNifti(await file.arrayBuffer());
     signal?.throwIfAborted();
+    run.signal.throwIfAborted();
+    if (!run.current) return false;
     source = file;
-    output = null;
-    provenance = null;
-    $('outputSection').open = false;
     $('ct').checked = looksLikeCt(data);
     $('progress').value = 0;
     $('elapsed').textContent = '';
     $('fileInfo').hidden = false;
     $('fileInfo').textContent = `${file.name} · ${dims.join(' × ')} voxels`;
-    await show();
+    void show();
+    if (webgpu) run.ready('Image loaded · ready to segment');
+    else run.fail('Image loaded · this browser cannot run SynthSeg');
     status(
       webgpu
         ? 'Image loaded · ready to segment'
@@ -172,38 +207,37 @@ async function load(file, signal) {
     );
     return true;
   } catch (error) {
-    status(error.message, true);
+    if (run.fail(error)) status(error.message, true);
     return false;
   } finally {
-    setBusy(false);
+    signal?.removeEventListener('abort', abort);
+    if (operation === run) setBusy(false);
   }
 }
 async function importImages(filesPromise) {
   exampleControl.cancel();
   if (busy) return;
-  const controller = new AbortController();
-  importAbort = controller;
-  setBusy(true, true);
+  const run = beginImport();
   status('Reading images · converting DICOM if needed…');
   try {
     const files = await filesPromise;
-    const images = await readImageFiles(files, { signal: controller.signal });
-    controller.signal.throwIfAborted();
+    run.signal.throwIfAborted();
+    const images = await readImageFiles(files, { signal: run.signal });
+    run.signal.throwIfAborted();
     if (!images.length) throw new Error('Choose NIfTI files or a complete DICOM series.');
-    setBusy(false);
-    if (!(await load(images[0]))) return;
+    if (!(await load(images[0], undefined, run)) || operation !== run) return;
     importedImages = images;
     $('seriesSelect').replaceChildren(
       ...images.map((file, index) => new Option(file.name, String(index))),
     );
     $('seriesSelect').hidden = images.length < 2;
   } catch (error) {
-    if (!controller.signal.aborted) {
+    if (run.fail(error)) {
       setBusy(false);
       status(error.message, true);
     }
   } finally {
-    if (importAbort === controller) importAbort = null;
+    if (operation === run) setBusy(false);
   }
 }
 $('imageInput').onchange = () => {
@@ -221,10 +255,23 @@ bindFileDrop($('dropZone'), (files) => {
 const exampleControl = createExampleSelector({
   examples,
   onLoad: async (_example, { fetchFiles, assertCurrent, signal }) => {
-    const files = await fetchFiles();
-    assertCurrent();
-    if (!await load(files[0], signal)) throw new Error('The example image could not be loaded.');
-    assertCurrent();
+    const run = beginImport();
+    const abort = () => {
+      if (operation === run) cancel();
+    };
+    signal.addEventListener('abort', abort, { once: true });
+    try {
+      const files = await fetchFiles();
+      assertCurrent();
+      if (!await load(files[0], signal, run)) throw new Error('The example image could not be loaded.');
+      assertCurrent();
+    } catch (error) {
+      run.fail(error);
+      throw error;
+    } finally {
+      signal.removeEventListener('abort', abort);
+      if (operation === run) setBusy(false);
+    }
   },
   onStatus: status,
 });
@@ -239,87 +286,105 @@ $('opacity').oninput = () => {
 };
 $('processButton').onclick = async () => {
   if (!source || busy || !webgpu) return;
-  output = null;
-  provenance = null;
-  $('outputSection').open = false;
-  setBusy(true);
-  await show();
+  clearOutputs();
   const options = { fast: $('mode').value === 'fast', ct: $('ct').checked };
+  const run = runs.begin('running', {
+    inputs: { image: source },
+    parameters: { mode: $('mode').value, ct: options.ct },
+  });
+  operation = run;
   setBusy(true, true);
+  void show();
   $('progress').value = 0;
   started = performance.now();
   timer = setInterval(() => {
     $('elapsed').textContent = `${Math.round((performance.now() - started) / 1000)} s`;
   }, 1000);
-  worker = new Worker(new URL('./inference-worker.js', import.meta.url), { type: 'module' });
-  const jobWorker = worker;
-  worker.onmessage = async ({ data }) => {
-    if (worker !== jobWorker) return;
-    if (data.type === 'progress') {
-      status(data.message);
-      $('progress').value = data.value;
-    }
-    if (data.type === 'error') {
-      setBusy(false);
-      status(data.message, true);
-    }
-    if (data.type === 'result') {
-      $('cancelBtn').hidden = true;
-      provenance = data.provenance;
-      output = new File([data.buffer], `${outputStem(source.name)}_synthseg.nii.gz`, {
-        type: 'application/gzip',
-      });
-      $('outputSection').open = true;
-      $('progress').value = 1;
-      try {
-        await show();
-        status(
-          `Labels ready · ${provenance.outputShape.join(' × ')} · ${Math.round(provenance.seconds)} s`,
-        );
-      } finally {
-        setBusy(false);
-      }
-    }
-  };
-  worker.onerror = (e) => {
-    if (worker !== jobWorker) return;
+  const fail = error => {
+    if (!run.fail(error)) return;
     setBusy(false);
-    status(
-      `Processing stopped: ${e.message || 'The inference worker could not run. Reload the app and try again.'}`,
-      true,
-    );
+    status(error.message || String(error), true);
   };
-  const asset = manifest.assets.find((entry) => entry.filename === 'synthseg-2.0.onnx');
-  worker.postMessage({
-    file: source,
-    options,
-    model: { ...asset, url: `${assetBase}${asset.filename}?sha256=${asset.sha256}` },
-  });
+  try {
+    worker = new Worker(new URL('./inference-worker.js', import.meta.url), { type: 'module' });
+    worker.onmessage = async ({ data }) => {
+      if (!run.current) return;
+      if (data.type === 'progress') {
+        run.progress(data);
+        status(data.message);
+        $('progress').value = data.value;
+      }
+      if (data.type === 'error') fail(data.message);
+      if (data.type === 'result') {
+        try {
+          const file = new File([data.buffer], `${outputStem(source.name)}_synthseg.nii.gz`, {
+            type: 'application/gzip',
+          });
+          const image = await readNifti(data.buffer);
+          if (!run.current) return;
+          const measurements = summarizeLabels(image, freesurferLut);
+          const succeeded = await run.succeed({
+            artifacts: {
+              labels: { file, type: 'neuro:label-map', mediaType: 'application/gzip', space: 'subject-1mm', labelSystem: 'FreeSurfer' },
+            },
+            provenance: data.provenance,
+            measurements,
+          });
+          if (!succeeded) return;
+          output = file;
+          provenance = data.provenance;
+          $('outputSection').open = true;
+          $('progress').value = 1;
+          setBusy(false);
+          status(`Labels ready · ${provenance.outputShape.join(' × ')} · ${Math.round(provenance.seconds)} s`);
+          void show();
+        } catch (error) {
+          if (operation !== run) return;
+          if (runs.snapshot().state === 'failed') {
+            setBusy(false);
+            status(error.message, true);
+          } else fail(error);
+        }
+      }
+    };
+    worker.onerror = event => fail(event.message || 'The inference worker could not run. Reload the app and try again.');
+    const asset = manifest.assets.find((entry) => entry.filename === 'synthseg-2.0.onnx');
+    worker.postMessage({
+      file: source,
+      options,
+      model: { ...asset, url: `${assetBase}${asset.filename}?sha256=${asset.sha256}` },
+    });
+  } catch (error) {
+    fail(error);
+  }
 };
-$('cancelBtn').onclick = () => {
+function cancel() {
   exampleControl.cancel();
-  importAbort?.abort();
+  if (!runs.cancel()) return;
+  operation = null;
+  ++viewRevision;
+  clearOutputs();
   setBusy(false);
   $('progress').value = 0;
   status('Processing cancelled. Your original image is unchanged.');
+}
+$('cancelBtn').onclick = cancel;
+$('saveBtn').onclick = () => output && !busy && downloadFile(output);
+$('reportBtn').onclick = () => {
+  const { report } = runs.snapshot();
+  if (!report || busy) return;
+  downloadBlob(new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' }), report.artifacts.labels.filename.replace(/\.nii\.gz$/, '.json'));
 };
-$('saveBtn').onclick = () => output && downloadFile(output);
-$('reportBtn').onclick = () =>
-  provenance &&
-  downloadBlob(
-    new Blob([JSON.stringify(provenance, null, 2)], { type: 'application/json' }),
-    output.name.replace(/\.nii\.gz$/, '.json'),
-  );
 $('privacyBtn').onclick = () => info.open('Privacy', $('privacyContent'));
 $('standaloneBtn').onclick = () => info.open('Standalone', $('standaloneContent'), { wide: true });
-if (!webgpu)
-  status(
-    'This browser does not support WebGPU. SynthSeg needs WebGPU; try Chrome, Edge, or Safari 26 on a desktop.',
-    true,
-  );
+if (!webgpu) {
+  const message = 'This browser does not support WebGPU. SynthSeg needs WebGPU; try Chrome, Edge, or Safari 26 on a desktop.';
+  runs.fail(message);
+  status(message, true);
+}
 window.addEventListener('pagehide', () => {
   exampleControl.cancel();
-  importAbort?.abort();
+  runs.cancel();
   worker?.terminate();
   clearInterval(timer);
 });

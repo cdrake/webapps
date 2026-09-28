@@ -36,6 +36,7 @@ neurodesk-webapps --app niimath
 neurodesk-webapps --verify
 neurodesk-webapps --zarr /absolute/path/to/image.ome.zarr
 neurodesk-webapps --job /absolute/path/to/job.json --output /absolute/path/to/new-results
+neurodesk-webapps --mcp --output /absolute/path/to/runs
 ```
 
 On macOS the executable is inside `neurodesk-webapps.app/Contents/MacOS/`. On Windows it is `neurodesk-webapps.exe`.
@@ -45,6 +46,12 @@ A job drives the same scientific implementation as the GUI. Copy `jobs/niimath.j
 The JSON contract is `schemaVersion: 1`, an app ID, `expectedDownloads`, and a sequence of steps. Actions are `upload`, `click`, `fill`, `select`, `check`, and `wait`. Every step identifies a CSS `selector`; uploads provide `paths`, value changes provide `value`. Wait conditions are `exists`, `enabled`, `visible`, `text`, and `value`. A `timeoutMs` can be set on the job or individual step. While a job waits, including while its outputs are still downloading, it fails as soon as the application reports an error in its status line (`#statusText.error`), and the error message is the application's own; set `failSelector` to another selector, or to `null` to wait for the timeout instead. App controls can change between releases; keep job templates with the release they were tested against.
 
 Interactive editors can be used locally through the same suite. Their workflows require user choices; a batch job must explicitly supply those choices.
+
+Brain extraction and SynthSeg also expose versioned automation contracts and
+structured run reports. The local MCP server discovers these contracts and
+supports validation, execution, cancellation and artifact resources. See
+[Run applications from an agent](AUTOMATION.md) for the tool contract and native
+SynthSeg configuration. Job timeouts bound the whole invocation, including downloads.
 
 ## Local Zarr data
 

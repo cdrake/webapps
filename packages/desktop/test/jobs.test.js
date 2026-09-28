@@ -5,6 +5,8 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import vm from 'node:vm';
 import { EventEmitter } from 'node:events';
+import fs from 'node:fs';
+import { syncBuiltinESMExports } from 'node:module';
 import { runJob, readJob } from '../src/jobs.js';
 
 test('a batch invocation preserves an existing output directory before touching the browser', async t => {
@@ -174,4 +176,27 @@ test('an unexpected output still downloading prevents a success report', async t
   });
   await assert.rejects(runJob(contents, downloadJob, directory), /Batch output validation failed/);
   await assert.rejects(readFile(join(directory, 'job-result.json')), { code: 'ENOENT' });
+});
+
+test('cancelling while the success report is written removes the report and rejects', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'offline-job-cancel-write-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const controller = new AbortController();
+  const originalWrite = fs.promises.writeFile;
+  fs.promises.writeFile = async (path, ...args) => {
+    await originalWrite(path, ...args);
+    if (String(path).endsWith('.job-result.json.partial')) controller.abort();
+  };
+  syncBuiltinESMExports();
+  try {
+    const contents = fakeContents({
+      '#download': { click() { contents.startDownload('labels.nii.gz')('completed'); } },
+    });
+    await assert.rejects(runJob(contents, downloadJob, directory, { signal: controller.signal }), { name: 'AbortError' });
+    await assert.rejects(readFile(join(directory, 'job-result.json')), { code: 'ENOENT' });
+    await assert.rejects(readFile(join(directory, '.job-result.json.partial')), { code: 'ENOENT' });
+  } finally {
+    fs.promises.writeFile = originalWrite;
+    syncBuiltinESMExports();
+  }
 });
