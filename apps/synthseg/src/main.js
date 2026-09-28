@@ -403,7 +403,6 @@ function cancel() {
   status('Processing cancelled. Your original image is unchanged.');
 }
 $('cancelBtn').onclick = cancel;
-$('saveBtn').onclick = () => output && !busy && downloadFile(output);
 $('reportBtn').onclick = () => {
   const { report } = runs.snapshot();
   if (!report || busy) return;
