@@ -303,7 +303,6 @@ $('cancelBtn').onclick = () => {
   $('progress').value = 0;
   status('Processing cancelled. Your original image is unchanged.');
 };
-$('saveBtn').onclick = () => output && downloadFile(output);
 $('reportBtn').onclick = () =>
   provenance &&
   downloadBlob(
