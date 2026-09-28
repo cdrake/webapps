@@ -2,6 +2,10 @@ import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { lstat, mkdir, readFile, readdir, realpath, rename, writeFile } from 'node:fs/promises';
 import { isAbsolute, join, resolve } from 'node:path';
+import { gunzipSync } from 'node:zlib';
+import { summarizeLabels } from '@neurodesk/webapp-components/automation';
+import { isValidNifti1, parseNiftiHeader, parseNiftiVolume } from '@neurodesk/webapp-components/file-io/nifti';
+import freesurferLut from '@neurodesk/webapp-components/automation/freesurfer-lut' with { type: 'json' };
 import * as z from 'zod/v4';
 import { describeFile } from './reports.js';
 
@@ -82,6 +86,18 @@ export async function runNativeSynthseg({ contract, request, outputDirectory, si
       || provenance.ct !== request.parameters.ct || provenance.fast !== (request.parameters.mode === 'fast')) {
     throw new Error('Native SynthSeg provenance does not match the requested inputs, output or parameters');
   }
+  const labelsBytes = gunzipSync(await readFile(labelsPath), { maxOutputLength: 2 ** 31 - 1 });
+  if (!isValidNifti1(labelsBytes)) throw new Error('Native SynthSeg output is not a NIfTI-1 label map');
+  const header = parseNiftiHeader(labelsBytes);
+  const dimensions = [header.nx, header.ny, header.nz];
+  const count = dimensions.reduce((product, dimension) => product * dimension, 1);
+  if (header.datatype !== 8 || header.bitpix !== 32 || dimensions.some(dimension => dimension <= 0)
+      || !Number.isInteger(header.voxOffset) || header.voxOffset < 352
+      || header.voxOffset + count * 4 > labelsBytes.byteLength) {
+    throw new Error('Native SynthSeg output has invalid int32 label-map dimensions or payload');
+  }
+  const image = parseNiftiVolume(labelsBytes, { OutputCtor: Float64Array });
+  const measurements = summarizeLabels({ ...image, data: image.imageData }, freesurferLut);
   const { selector: _selector, ...declaration } = contract.artifacts.labels;
   const report = {
     schemaVersion: 1,
@@ -92,6 +108,7 @@ export async function runNativeSynthseg({ contract, request, outputDirectory, si
     inputs,
     parameters: request.parameters,
     provenance,
+    measurements,
     artifacts: { labels: { ...declaration, ...await describeFile(labelsPath) } },
   };
   active.throwIfAborted();

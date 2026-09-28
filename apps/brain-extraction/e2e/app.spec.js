@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { readVolume } from '@neurodesk/synthsr';
 import { dicomSeries } from '../../../test-utils/dicom-fixture.mjs';
+import { browserSynthstrip } from '../../../packages/syncro/src/assets.js';
 
 const fixture = new URL('../../calmar/tests/fixtures/synthstrip-mini/T1.nii.gz', import.meta.url).pathname;
 const examples = JSON.parse(await readFile(new URL('../examples.json', import.meta.url), 'utf8'));
@@ -180,10 +181,12 @@ for (const method of ['mindgrab', 'synthstrip']) {
       await page.locator('#mindgrabBackend').selectOption('cpu');
     }
     await page.locator('#runButton').click();
-    await expect(page.locator('#statusText')).toHaveText('Brain image and mask ready', { timeout: 1100000 });
+    await expect(page.locator('#statusText')).toHaveAttribute('data-neurodesk-state', /succeeded|failed/, { timeout: 1100000 });
+    await expect(page.locator('#statusText')).toHaveText('Brain image and mask ready');
     const downloadPromise = page.waitForEvent('download');
     await page.locator('#resultList .nd-download-btn').nth(2).click();
-    const mask = readVolume(bytesOf(await readFile(await (await downloadPromise).path())));
+    const maskBytes = await readFile(await (await downloadPromise).path());
+    const mask = readVolume(bytesOf(maskBytes));
     const original = readVolume(bytesOf(await readFile(fixture)));
     expect(mask.dims).toEqual(original.dims);
     expect(mask.affine).toEqual(original.affine);
@@ -191,5 +194,16 @@ for (const method of ['mindgrab', 'synthstrip']) {
     const count = mask.data.reduce((sum, value) => sum + value, 0);
     expect(count).toBeGreaterThan(0);
     expect(count).toBeLessThan(mask.data.length);
+    const reportDownload = page.waitForEvent('download');
+    await page.locator('#reportBtn').click();
+    const report = JSON.parse(await readFile(await (await reportDownload).path(), 'utf8'));
+    const input = Array.isArray(report.inputs.image) ? report.inputs.image[0] : report.inputs.image;
+    const artifact = report.artifacts.mask || Object.values(report.artifacts).find(value => value.role === 'mask');
+    expect(report.status).toBe('succeeded');
+    expect(input.sha256).toBe(createHash('sha256').update(await readFile(fixture)).digest('hex'));
+    expect(artifact.sha256).toBe(createHash('sha256').update(maskBytes).digest('hex'));
+    if (method === 'mindgrab') expect(report.provenance.backend).toBe('cpu');
+    else expect(report.provenance.modelHash).toBe(browserSynthstrip.sha256);
+    console.log(JSON.stringify({ method, maskVoxels: count, comparedVoxels: mask.data.length, provenance: report.provenance, inputSha256: input.sha256, outputSha256: artifact.sha256 }));
   });
 }

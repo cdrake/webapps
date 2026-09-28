@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { runNativeSynthseg } from '../src/native.js';
+import { createNiftiFromData, createNiftiHeaderFromVolume } from '@neurodesk/webapp-components/file-io/nifti';
 
 const options = { skip: process.platform === 'win32' ? 'The process fixture uses a POSIX executable script.' : false, timeout: 10000 };
 const contract = {
@@ -16,13 +17,22 @@ const contract = {
   },
 };
 
-async function setup(t, mode = 'success') {
+async function setup(t, mode = 'success', { units = 2, slope = 1, labels = [0, 17, 17, 53, 53, 53, 1000, 1000] } = {}) {
   const directory = await mkdtemp(join(tmpdir(), 'native-synthseg-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const binary = join(directory, 'synthseg fixture');
   await writeFile(binary, await readFile(new URL('./fixtures/native-synthseg.mjs', import.meta.url)), { mode: 0o755 });
   const input = join(directory, 'input ; $(not-a-command).nii');
-  await writeFile(input, JSON.stringify({ mode }));
+  const header = createNiftiHeaderFromVolume({
+    dims: [2, 2, 2],
+    hdr: { affine: [[-2, 0.5, 0, 10], [0, 3, 0, -20], [0, 0, 4, 30], [0, 0, 0, 1]] },
+  });
+  new DataView(header).setUint8(123, units);
+  const labelMap = createNiftiFromData(Int32Array.from(labels), header);
+  new DataView(labelMap).setFloat32(112, slope, true);
+  if (mode === 'invalid-nifti') new DataView(labelMap).setUint8(344, 0);
+  if (mode === 'invalid-dimensions') new DataView(labelMap).setInt16(42, 32767, true);
+  await writeFile(input, JSON.stringify({ mode, labels: Buffer.from(labelMap).toString('base64') }));
   return {
     contract,
     binary,
@@ -48,12 +58,50 @@ test('native adapter passes literal argv and records actual sidecar provenance a
   assert.equal(report.artifacts.labels.sha256, checksum(await readFile(join(args.outputDirectory, 'labels.nii.gz'))));
   assert.equal(report.artifacts.labels.labelSystem, 'FreeSurfer');
   assert.equal(report.artifacts.labels.selector, undefined);
+  assert.equal(report.measurements.voxelVolumeMl, 0.024);
+  assert.deepEqual(report.measurements.geometry.dimensions, [2, 2, 2]);
+  assert.equal(report.measurements.geometry.spatialUnits, 'mm');
+  assert.deepEqual(report.measurements.labels.find(label => label.id === 17), {
+    id: 17, name: 'Left-Hippocampus', voxels: 2, volumeMl: 0.048,
+  });
+  assert.deepEqual(report.measurements.labels.find(label => label.id === 53), {
+    id: 53, name: 'Right-Hippocampus', voxels: 3, volumeMl: 0.07200000000000001,
+  });
   const savedBytes = await readFile(join(args.outputDirectory, 'report.json'));
   const savedReport = JSON.parse(savedBytes);
   assert.equal(savedReport.runId, report.runId);
+  assert.deepEqual(savedReport.measurements, report.measurements);
   assert.equal(savedReport.artifacts.report, undefined);
   assert.equal(report.artifacts.report.sha256, checksum(savedBytes));
   assert.equal(report.artifacts.report.bytes, savedBytes.length);
+});
+
+test('native measurements convert explicit spatial units and omit unknowable volumes', options, async t => {
+  for (const [units, factor] of [[1, 1e9], [3, 1e-9], [0, null]]) {
+    const report = await runNativeSynthseg(await setup(t, 'success', { units }));
+    const left = report.measurements.labels.find(label => label.id === 17);
+    assert.equal(left.voxels, 2);
+    if (factor === null) {
+      assert.equal(report.measurements.voxelVolumeMl, null);
+      assert.equal(left.volumeMl, undefined);
+      assert.match(report.measurements.volumeUnavailable, /unknown spatial units/);
+    } else {
+      assert.ok(Math.abs(left.volumeMl - 0.048 * factor) <= 1e-12 * factor);
+    }
+  }
+});
+
+test('native reports reject invalid label images, dimensions and scaled label values', options, async t => {
+  for (const mode of ['invalid-nifti', 'invalid-dimensions']) {
+    const args = await setup(t, mode);
+    await assert.rejects(runNativeSynthseg(args), /Native SynthSeg output/);
+    await assert.rejects(readFile(join(args.outputDirectory, 'report.json')), { code: 'ENOENT' });
+  }
+  for (const options of [{ slope: 0.5 }, { labels: [0, 17, -1, 53, 53, 53, 1000, 1000] }]) {
+    const args = await setup(t, 'success', options);
+    await assert.rejects(runNativeSynthseg(args), /invalid label/);
+    await assert.rejects(readFile(join(args.outputDirectory, 'report.json')), { code: 'ENOENT' });
+  }
 });
 
 test('native adapter omits false CT and default-mode flags but requires an explicit CT choice', options, async t => {

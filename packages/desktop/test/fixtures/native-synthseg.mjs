@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { readFile, realpath, symlink, writeFile } from 'node:fs/promises';
+import { gzipSync } from 'node:zlib';
 
 const args = process.argv.slice(2);
 const input = args[args.indexOf('--i') + 1];
@@ -17,7 +18,7 @@ if (fixture.mode === 'fail') {
   process.exitCode = 7;
 } else if (fixture.mode !== 'missing') {
   if (fixture.mode === 'symlink') await symlink(input, output);
-  else await writeFile(output, fixture.mode === 'empty' ? '' : 'Fixture labels, not scientific output');
+  else await writeFile(output, fixture.mode === 'empty' ? '' : gzipSync(Buffer.from(fixture.labels, 'base64')));
   const provenance = {
     package: 'synthseg',
     version: 'fixture-build-4',
