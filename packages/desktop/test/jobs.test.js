@@ -4,6 +4,7 @@ import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import vm from 'node:vm';
+import { EventEmitter } from 'node:events';
 import { runJob, readJob } from '../src/jobs.js';
 
 test('a batch invocation preserves an existing output directory before touching the browser', async t => {
@@ -26,8 +27,7 @@ test('missing batch inputs fail before an application is started', async t => {
 function fakeContents(elements) {
   const document = { querySelector: selector => elements[selector] ?? null };
   const context = vm.createContext({ document, getComputedStyle: () => ({ visibility: 'visible' }) });
-  const handlers = {};
-  const session = { on: (event, handler) => { handlers[event] = handler; }, off() {} };
+  const session = new EventEmitter();
   let attached = false;
   const contents = {
     session,
@@ -35,7 +35,7 @@ function fakeContents(elements) {
     startDownload(filename, bytes = 10) {
       let finish;
       const item = { getFilename: () => filename, setSavePath() {}, cancel() {}, getReceivedBytes: () => bytes, once: (_event, handler) => { finish = handler; } };
-      handlers['will-download']({}, item, contents);
+      session.emit('will-download', {}, item, contents);
       return state => finish({}, state);
     },
     debugger: { attach: () => { attached = true; }, isAttached: () => attached, detach: () => { attached = false; }, sendCommand: async () => ({}) },
@@ -114,4 +114,51 @@ test('a download that never completes is bounded by the job timeout', async t =>
   await tick(20);
   contents.startDownload('t1_synthseg.nii.gz');
   await assert.rejects(job, /Expected 1 outputs, received 0/);
+});
+
+const downloadJob = {
+  schemaVersion: 1,
+  app: 'synthseg',
+  expectedDownloads: 1,
+  timeoutMs: 400,
+  steps: [{ action: 'click', selector: '#download' }],
+};
+
+test('a duplicate output still fails after the expected output completes', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'offline-job-duplicate-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const contents = fakeContents({
+    '#download': { click() {
+      contents.startDownload('labels.nii.gz')('completed');
+      contents.startDownload('labels.nii.gz');
+    } },
+  });
+  await assert.rejects(runJob(contents, downloadJob, directory), /Duplicate output: labels.nii.gz/);
+  await assert.rejects(readFile(join(directory, 'job-result.json')), { code: 'ENOENT' });
+});
+
+test('an app error at download completion prevents a success report', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'offline-job-final-error-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const elements = {
+    '#download': { click() {
+      contents.startDownload('labels.nii.gz')('completed');
+      elements['#statusText.error'] = { textContent: 'Could not write the report' };
+    } },
+  };
+  const contents = fakeContents(elements);
+  await assert.rejects(runJob(contents, downloadJob, directory), /synthseg reported an error: Could not write the report/);
+  await assert.rejects(readFile(join(directory, 'job-result.json')), { code: 'ENOENT' });
+});
+
+test('a custom failure selector reports its own message', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'offline-job-custom-error-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const contents = fakeContents({ '#failure': { textContent: 'Custom processing error' } });
+  const path = join(directory, 'job.json');
+  await writeFile(path, JSON.stringify({ ...waitForReady, failSelector: '#failure' }));
+  const job = await readJob(path);
+  const output = join(directory, 'out');
+  await assert.rejects(runJob(contents, job, output), /synthseg reported an error: Custom processing error/);
+  await assert.rejects(readFile(join(output, 'job-result.json')), { code: 'ENOENT' });
 });

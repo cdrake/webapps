@@ -109,6 +109,7 @@ export async function runJob(contents, job, outputDirectory) {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
     await checkFailure();
+    if (downloadError) throw downloadError;
     if (downloads.length !== job.expectedDownloads || downloads.some(item => item.bytes === 0)) throw new Error('Batch output validation failed');
     const report = { app: job.app, downloads };
     await writeFile(join(output, 'job-result.json'), `${JSON.stringify(report, null, 2)}\n`);
