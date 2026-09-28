@@ -3,6 +3,7 @@ bindSectionDisclosures(document);
 
 // Import extracted utility modules
 import { createThresholdMask } from '@neurodesk/webapp-components/volume';
+import { registerQsmAutomation } from './automation.js';
 import { estimateHdBetPatches } from './modules/HdBetEstimate.js';
 import {
   parseNiftiHeader,
@@ -235,6 +236,7 @@ class QSMApp {
 
     // Start loading WASM in the background immediately
     this.pipelineExecutor.initialize();
+    this.automation = registerQsmAutomation(this);
     document.getElementById('unifiedFiles').disabled = false;
     document.getElementById('maskFiles').disabled = false;
     void this.setupExamples().catch(error => this.updateOutput(error.message));
@@ -378,6 +380,7 @@ class QSMApp {
   }
 
   setProgress(value, text = null) {
+    this.automationProgress?.({ value, message: text });
     this.progress = value;
     this.targetProgress = value;
 
@@ -564,21 +567,7 @@ class QSMApp {
     }
 
     // Threshold Robust button - Otsu + auto-refinement
-    document.getElementById('thresholdRobust')?.addEventListener('click', async () => {
-      document.getElementById('thresholdModeButtons').style.display = 'none';
-      await this.previewMask();
-      this.maskOpsHistory = ['threshold:otsu'];
-      this.updateOutput("Applying robust refinement (dilate, fill holes, erode x2)...");
-      await this.dilateMask3D();
-      this._pushMaskOp('dilate');
-      await this.fillHoles3D();
-      this.maskOpsHistory.push('fill-holes:0');
-      await this.erodeMask3D(2);
-      this._pushMaskOp('erode');
-      this._pushMaskOp('erode');
-      await this.displayCurrentMask();
-      this.updateOutput("Robust mask complete");
-    });
+    document.getElementById('thresholdRobust')?.addEventListener('click', () => this.generateRobustMask());
 
     // Threshold Manual button - Otsu + slider
     document.getElementById('thresholdManual')?.addEventListener('click', async () => {
@@ -1870,7 +1859,7 @@ class QSMApp {
     switch (mode) {
       case 'raw': {
         const hasEchoTimes = this.fileIOController?.hasEchoTimes() || false;
-        const hasMask = this.currentMaskData !== null;
+        const hasMask = this.currentMaskData !== null || this.fileIOController.hasMask();
         canRun = isValid && hasEchoTimes && hasMask;
         break;
       }
@@ -2341,11 +2330,27 @@ class QSMApp {
     return createMaskNifti(maskData, this.magnitudeFileBytes);
   }
 
-  async runRomeoQSM() {
+  async generateRobustMask() {
+    document.getElementById('thresholdModeButtons').style.display = 'none';
+    await this.previewMask();
+    this.maskOpsHistory = ['threshold:otsu'];
+    this.updateOutput("Applying robust refinement (dilate, fill holes, erode x2)...");
+    await this.dilateMask3D();
+    this._pushMaskOp('dilate');
+    await this.fillHoles3D();
+    this.maskOpsHistory.push('fill-holes:0');
+    await this.erodeMask3D(2);
+    this._pushMaskOp('erode');
+    this._pushMaskOp('erode');
+    await this.displayCurrentMask();
+    this.updateOutput("Robust mask complete");
+  }
+
+  async runRomeoQSM(options = {}) {
     const mode = this.fileIOController.getInputMode();
 
     if (mode === 'raw') {
-      await this._runRawPipeline();
+      await this._runRawPipeline(options);
     } else if (mode === 'totalField') {
       await this._runTotalFieldPipeline();
     } else if (mode === 'localField') {
@@ -2353,7 +2358,7 @@ class QSMApp {
     }
   }
 
-  async _runRawPipeline() {
+  async _runRawPipeline({ throwOnError = false } = {}) {
     // Validation
     const magCount = this.fileIOController.buckets.magnitude.length;
     const phaseCount = this.fileIOController.buckets.phase.length;
@@ -2399,7 +2404,8 @@ class QSMApp {
       }
 
       // Prepare custom mask if available
-      let customMaskBuffer = null;
+      const uploadedMask = this.fileIOController.getMaskFile();
+      let customMaskBuffer = uploadedMask ? await uploadedMask.arrayBuffer() : null;
       if (this.currentMaskData && this.magnitudeFileBytes) {
         const maskNifti = this.createMaskNifti(this.currentMaskData);
         customMaskBuffer = maskNifti;
@@ -2448,6 +2454,7 @@ class QSMApp {
       this._setJobRunning(false);
       this.updateEchoInfo();
       console.error(error);
+      if (throwOnError) throw error;
     }
   }
 
