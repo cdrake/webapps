@@ -1,6 +1,6 @@
 import examples from '../examples.json';
 import appPackage from '../package.json';
-import { createRunState, summarizeLabels } from '@neurodesk/webapp-components/automation';
+import { createRunState, summarizeLabels, registerAppAutomation, createNiivueAdapter } from '@neurodesk/webapp-components/automation';
 import { createExampleSelector } from '@neurodesk/webapp-components/ui';
 import NiiVue, { MULTIPLANAR_TYPE, SLICE_TYPE, SHOW_RENDER } from '@niivue/niivue';
 import { mountImagingWorkspace } from '@neurodesk/webapp-components/core/mount-imaging-workspace';
@@ -12,7 +12,7 @@ import {
   createViewerToolbar,
 } from '@neurodesk/webapp-components/ui';
 import { downloadBlob, downloadFile, readNifti } from '@neurodesk/webapp-components/file-io';
-import { readImageFiles } from '@neurodesk/runtime-support/dcm2niix-client';
+import { readImageFiles, runDcm2niix } from '@neurodesk/runtime-support/dcm2niix-client';
 import manifest from '@neurodesk/synthseg/manifest';
 import { looksLikeCt, outputStem } from './logic.js';
 import freesurferLut from '@neurodesk/webapp-components/automation/freesurfer-lut';
@@ -93,6 +93,7 @@ let source,
   started;
 let operation;
 let viewRevision = 0;
+let displayedStage = null;
 let importedImages = [];
 
 function status(message, error = false) {
@@ -130,17 +131,27 @@ async function ensureViewer() {
     viewer.createExtensionContext().on('locationChange', (e) => {
       $('location').textContent = e.detail.string;
     });
+    automation.registerViewer('main', createNiivueAdapter(viewer, {
+      tabs: {
+        list: () => [
+          ...(source ? [{ id: 'original', label: 'Original', active: displayedStage === 'original' }] : []),
+          ...(output ? [{ id: 'labels', label: 'FreeSurfer labels', active: displayedStage === 'labels' }] : []),
+        ],
+        select: id => show(id),
+      },
+      regions: { list: () => runs.snapshot().report?.measurements?.labels ?? [] },
+    }));
     return viewer;
   })();
   return viewerReady;
 }
-async function show() {
+async function show(stage = output ? 'labels' : 'original') {
   const revision = ++viewRevision;
   const displayedOutput = output;
   $('emptyState').hidden = true;
-  $('imageLabel').textContent = output ? 'ORIGINAL IMAGE · FREESURFER LABELS' : 'ORIGINAL IMAGE';
+  $('imageLabel').textContent = output && stage === 'labels' ? 'ORIGINAL IMAGE · FREESURFER LABELS' : 'ORIGINAL IMAGE';
   const volumes = [{ url: source, name: source.name }];
-  if (output) volumes.push({ url: output, name: output.name, opacity: Number($('opacity').value) });
+  if (output) volumes.push({ url: output, name: output.name, opacity: stage === 'labels' ? Number($('opacity').value) : 0 });
   try {
     const nv = await ensureViewer();
     if (revision !== viewRevision) return;
@@ -149,6 +160,7 @@ async function show() {
     // Label names too, so the location bar reads e.g. "Left-Hippocampus".
     if (displayedOutput) await nv.setColormapLabel(1, freesurferLut);
     if (revision !== viewRevision) return;
+    displayedStage = stage;
     $('viewerError').hidden = true;
   } catch (error) {
     if (revision !== viewRevision) return;
@@ -284,13 +296,15 @@ $('opacity').oninput = () => {
   toolbar.control('overlayOpacityValue').textContent = `${Math.round(value * 100)}%`;
   if (output && viewer) viewer.setOpacity(1, value);
 };
-$('processButton').onclick = async () => {
-  if (!source || busy || !webgpu) return;
+async function segmentImage(parameters, { signal, progress = () => {} } = {}) {
+  if (!source || busy) throw new Error('Load an image before starting segmentation.');
+  if (!webgpu) throw new Error('SynthSeg requires WebGPU.');
+  signal?.throwIfAborted();
   clearOutputs();
-  const options = { fast: $('mode').value === 'fast', ct: $('ct').checked };
+  const options = { fast: parameters.mode === 'fast', ct: parameters.ct ?? $('ct').checked };
   const run = runs.begin('running', {
     inputs: { image: source },
-    parameters: { mode: $('mode').value, ct: options.ct },
+    parameters: { mode: parameters.mode, ct: options.ct },
   });
   operation = run;
   setBusy(true, true);
@@ -300,64 +314,84 @@ $('processButton').onclick = async () => {
   timer = setInterval(() => {
     $('elapsed').textContent = `${Math.round((performance.now() - started) / 1000)} s`;
   }, 1000);
-  const fail = error => {
-    if (!run.fail(error)) return;
-    setBusy(false);
-    status(error.message || String(error), true);
-  };
+  const abort = () => cancel();
+  signal?.addEventListener('abort', abort, { once: true });
   try {
-    worker = new Worker(new URL('./inference-worker.js', import.meta.url), { type: 'module' });
-    worker.onmessage = async ({ data }) => {
-      if (!run.current) return;
-      if (data.type === 'progress') {
-        run.progress(data);
-        status(data.message);
-        $('progress').value = data.value;
-      }
-      if (data.type === 'error') fail(data.message);
-      if (data.type === 'result') {
-        try {
-          const file = new File([data.buffer], `${outputStem(source.name)}_synthseg.nii.gz`, {
-            type: 'application/gzip',
-          });
-          const image = await readNifti(data.buffer);
-          if (!run.current) return;
-          const measurements = summarizeLabels(image, freesurferLut);
-          const succeeded = await run.succeed({
-            artifacts: {
-              labels: { file, type: 'neuro:label-map', mediaType: 'application/gzip', space: 'subject-1mm', labelSystem: 'FreeSurfer' },
-            },
-            provenance: data.provenance,
-            measurements,
-          });
-          if (!succeeded) return;
-          output = file;
-          provenance = data.provenance;
-          $('outputSection').open = true;
-          $('progress').value = 1;
+    return await new Promise((resolve, reject) => {
+      run.signal.addEventListener('abort', () => {
+        queueMicrotask(() => {
+          const snapshot = runs.snapshot();
+          reject(snapshot.state === 'failed' ? new Error(snapshot.message) : run.signal.reason ?? new DOMException('Cancelled', 'AbortError'));
+        });
+      }, { once: true });
+      const fail = error => {
+        run.fail(error);
+        if (operation === run) {
           setBusy(false);
-          status(`Labels ready · ${provenance.outputShape.join(' × ')} · ${Math.round(provenance.seconds)} s`);
-          void show();
-        } catch (error) {
-          if (operation !== run) return;
-          if (runs.snapshot().state === 'failed') {
-            setBusy(false);
-            status(error.message, true);
-          } else fail(error);
+          status(error.message || String(error), true);
         }
-      }
-    };
-    worker.onerror = event => fail(event.message || 'The inference worker could not run. Reload the app and try again.');
-    const asset = manifest.assets.find((entry) => entry.filename === 'synthseg-2.0.onnx');
-    worker.postMessage({
-      file: source,
-      options,
-      model: { ...asset, url: `${assetBase}${asset.filename}?sha256=${asset.sha256}` },
+        reject(error instanceof Error ? error : new Error(String(error)));
+      };
+      try {
+        worker = new Worker(new URL('./inference-worker.js', import.meta.url), { type: 'module' });
+        worker.onmessage = async ({ data }) => {
+          if (!run.current) return;
+          if (data.type === 'progress') {
+            run.progress(data);
+            progress(data);
+            status(data.message);
+            $('progress').value = data.value;
+          }
+          if (data.type === 'error') fail(new Error(data.message));
+          if (data.type === 'result') {
+            try {
+              const file = new File([data.buffer], `${outputStem(source.name)}_synthseg.nii.gz`, { type: 'application/gzip' });
+              const image = await readNifti(data.buffer);
+              if (!run.current) throw new DOMException('Cancelled', 'AbortError');
+              const measurements = summarizeLabels(image, freesurferLut);
+              const succeeded = await run.succeed({
+                artifacts: { labels: { file, type: 'neuro:label-map', mediaType: 'application/gzip', space: 'subject-1mm', labelSystem: 'FreeSurfer' } },
+                provenance: data.provenance,
+                measurements,
+              });
+              if (!succeeded) throw new DOMException('Cancelled', 'AbortError');
+              output = file;
+              provenance = data.provenance;
+              $('outputSection').open = true;
+              $('progress').value = 1;
+              setBusy(false);
+              await show();
+              signal?.throwIfAborted();
+              status(`Labels ready · ${provenance.outputShape.join(' × ')} · ${Math.round(provenance.seconds)} s`);
+              resolve({ artifacts: [{ role: 'labels', file }], provenance, measurements });
+            } catch (error) { fail(error); }
+          }
+        };
+        worker.onerror = event => fail(new Error(event.message || 'The inference worker could not run. Reload the app and try again.'));
+        const asset = manifest.assets.find(entry => entry.filename === 'synthseg-2.0.onnx');
+        worker.postMessage({ file: source, options, model: { ...asset, url: `${assetBase}${asset.filename}?sha256=${asset.sha256}` } });
+      } catch (error) { fail(error); }
     });
-  } catch (error) {
-    fail(error);
+  } finally {
+    signal?.removeEventListener('abort', abort);
   }
+}
+$('processButton').onclick = () => {
+  void segmentImage({ mode: $('mode').value, ct: $('ct').checked }).catch(error => {
+    if (error.name !== 'AbortError') status(error.message, true);
+  });
 };
+const automation = registerAppAutomation({
+  app: 'synthseg',
+  convertDicom: runDcm2niix,
+  operations: {
+    segment: async ({ inputs, parameters, signal, progress }) => {
+      exampleControl.cancel();
+      if (!await load(inputs.image[0], signal)) throw new Error('The input image could not be loaded.');
+      return segmentImage(parameters, { signal, progress });
+    },
+  },
+});
 function cancel() {
   exampleControl.cancel();
   if (!runs.cancel()) return;

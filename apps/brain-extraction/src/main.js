@@ -4,11 +4,11 @@ import NiiVue, { MULTIPLANAR_TYPE, SLICE_TYPE, SHOW_RENDER } from '@niivue/niivu
 import { mountImagingWorkspace } from '@neurodesk/webapp-components/core/mount-imaging-workspace';
 import { createResultList, createInfoDialog, createConsole, createFileField, createViewerToolbar } from '@neurodesk/webapp-components/ui';
 import { downloadBlob, downloadFile } from '@neurodesk/webapp-components/file-io';
-import { readImageFiles } from '@neurodesk/runtime-support/dcm2niix-client';
+import { readImageFiles, runDcm2niix } from '@neurodesk/runtime-support/dcm2niix-client';
 import { readVolume } from '@neurodesk/synthsr';
 import examples from '../examples.json';
 import appPackage from '../package.json';
-import { createRunState } from '@neurodesk/webapp-components/automation';
+import { createRunState, registerAppAutomation, createNiivueAdapter } from '@neurodesk/webapp-components/automation';
 
 const $ = id => document.getElementById(id);
 mountImagingWorkspace({
@@ -25,6 +25,7 @@ let viewer;
 let viewerReady;
 let viewQueue = Promise.resolve();
 let viewRevision = 0;
+let displayedStage = null;
 const layouts = {
   multiplanar: () => {
     viewer.sliceType = SLICE_TYPE.MULTIPLANAR;
@@ -146,6 +147,12 @@ async function ensureViewer() {
       layouts.multiplanar();
       viewer.isLegendVisible = false;
       viewer.createExtensionContext().on('locationChange', event => { $('location').textContent = event.detail.string; });
+      automation.registerViewer('main', createNiivueAdapter(viewer, {
+        tabs: {
+          list: () => Object.entries(outputs).map(([id, entry]) => ({ id, label: entry.description, active: displayedStage === id })),
+          select: id => show(outputs[id].file, id),
+        },
+      }));
       return viewer;
     })();
   }
@@ -159,6 +166,7 @@ function show(file, stage) {
     if (revision !== viewRevision) return;
     await nv.loadVolumes([{ url: file, name: file.name }]);
     if (revision !== viewRevision) return;
+    displayedStage = stage;
     $('gl1').hidden = false;
     $('emptyState').hidden = true;
     $('viewerNotice').hidden = true;
@@ -229,75 +237,105 @@ $('folderInput').onchange = event => {
   event.target.value = '';
   if (files.length) importImages(Promise.resolve(files));
 };
-$('runButton').onclick = async () => {
-  if (!source || state.phase !== 'idle') return;
+async function extractBrain(parameters, { signal, progress = () => {} } = {}) {
+  if (!source || state.phase !== 'idle') throw new Error('Load an image before starting brain extraction.');
+  signal?.throwIfAborted();
+  resetOutputs();
+  void show(source, 'original');
+  const { method, threshold = 0.5, backend: requestedBackend = 'auto' } = parameters;
+  const effective = { method };
+  if (method === 'bet') effective.threshold = threshold;
+  if (method === 'mindgrab') effective.backend = requestedBackend;
+  const job = start('running', { inputs: { image: source }, parameters: effective });
+  const stem = source.name.replace(/\.nii(\.gz)?$/i, '');
+  status(`Starting ${method}…`);
+  const abort = () => cancel();
+  signal?.addEventListener('abort', abort, { once: true });
+  try {
+    return await new Promise((resolve, reject) => {
+      job.run.signal.addEventListener('abort', () => {
+        queueMicrotask(() => {
+          const snapshot = runs.snapshot();
+          reject(snapshot.state === 'failed' ? new Error(snapshot.message) : job.run.signal.reason ?? new DOMException('Cancelled', 'AbortError'));
+        });
+      }, { once: true });
+      const fail = error => {
+        job.run.fail(error);
+        if (finish(job)) status(error.message || String(error), true);
+        reject(error instanceof Error ? error : new Error(String(error)));
+      };
+      try {
+        job.worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
+        job.worker.onmessage = async ({ data }) => {
+          if (!job.run.current) return;
+          if (data.type === 'progress') {
+            job.run.progress(data);
+            progress(data);
+            status(data.message);
+            $('progress').value = data.value;
+          } else if (data.type === 'log') {
+            log.log(data.message);
+          } else if (data.type === 'error') {
+            fail(new Error(data.message));
+          } else if (data.type === 'result') {
+            try {
+              const brain = new File([data.brain], `${stem}_${method}_brain.nii`);
+              const mask = new File([data.mask], `${stem}_${method}_mask.nii`);
+              const succeeded = await job.run.succeed({
+                artifacts: {
+                  brain: { file: brain, type: 'neuro:volume', mediaType: 'application/x-nifti', space: 'input' },
+                  mask: { file: mask, type: 'neuro:mask', mediaType: 'application/x-nifti', space: 'input' },
+                },
+                provenance: data.provenance,
+              });
+              if (!succeeded) throw new DOMException('Cancelled', 'AbortError');
+              outputs.brain = { description: 'Brain', file: brain };
+              outputs.mask = { description: 'Brain mask', file: mask };
+              results.render(outputs);
+              $('outputSection').open = true;
+              $('progress').value = 1;
+              log.log(JSON.stringify(data.provenance));
+              finish(job);
+              await show(brain, 'brain');
+              signal?.throwIfAborted();
+              status('Brain image and mask ready');
+              resolve({ artifacts: [{ role: 'brain', file: brain }, { role: 'mask', file: mask }], provenance: data.provenance });
+            } catch (error) { fail(error); }
+          }
+        };
+        job.worker.onerror = event => fail(new Error(event.message || 'The processing worker failed. Reload and try again.'));
+        void resolveMindgrabBackend(requestedBackend, job.run).then(backend => {
+          if (!job.run.current) return;
+          job.worker.postMessage({ file: source, method, backend, fractionalIntensity: threshold, assetBase: new URL(import.meta.env.BASE_URL, location.href).href });
+        }, fail);
+      } catch (error) { fail(error); }
+    });
+  } finally {
+    signal?.removeEventListener('abort', abort);
+  }
+}
+$('runButton').onclick = () => {
   if ($('method').value === 'bet' && !$('threshold').reportValidity()) {
     const message = 'Choose a BET threshold from 0 to 1 in steps of 0.05.';
     runs.fail(message);
     status(message, true);
     return;
   }
-  resetOutputs();
-  show(source, 'original');
-  const method = $('method').value;
-  const parameters = { method };
-  if (method === 'bet') parameters.threshold = Number($('threshold').value);
-  if (method === 'mindgrab') parameters.backend = $('mindgrabBackend').value;
-  const job = start('running', { inputs: { image: source }, parameters });
-  const stem = source.name.replace(/\.nii(\.gz)?$/i, '');
-  status(`Starting ${$('method').selectedOptions[0].text}…`);
-  try {
-    job.worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
-    job.worker.onmessage = async ({ data }) => {
-      if (!job.run.current) return;
-      if (data.type === 'progress') {
-        job.run.progress(data);
-        status(data.message);
-        $('progress').value = data.value;
-      } else if (data.type === 'log') {
-        log.log(data.message);
-      } else if (data.type === 'error') {
-        job.run.fail(data.message);
-        finish(job);
-        status(data.message, true);
-      } else if (data.type === 'result') {
-        const brain = new File([data.brain], `${stem}_${method}_brain.nii`);
-        const mask = new File([data.mask], `${stem}_${method}_mask.nii`);
-        try {
-          const succeeded = await job.run.succeed({
-            artifacts: {
-              brain: { file: brain, type: 'neuro:volume', mediaType: 'application/x-nifti', space: 'input' },
-              mask: { file: mask, type: 'neuro:mask', mediaType: 'application/x-nifti', space: 'input' },
-            },
-            provenance: data.provenance,
-          });
-          if (!succeeded) return;
-          outputs.brain = { description: 'Brain', file: brain };
-          outputs.mask = { description: 'Brain mask', file: mask };
-          results.render(outputs);
-          $('outputSection').open = true;
-          $('progress').value = 1;
-          log.log(JSON.stringify(data.provenance));
-          finish(job);
-          show(brain, 'brain');
-          status('Brain image and mask ready');
-        } catch (error) {
-          if (finish(job)) status(error.message, true);
-        }
-      }
-    };
-    job.worker.onerror = event => {
-      job.run.fail(event.message || 'The processing worker failed. Reload and try again.');
-      if (finish(job)) status(event.message || 'The processing worker failed. Reload and try again.', true);
-    };
-    const backend = await resolveMindgrabBackend($('mindgrabBackend').value, job.run);
-    if (!job.run.current) return;
-    job.worker.postMessage({ file: source, method, backend, fractionalIntensity: Number($('threshold').value), assetBase: new URL(import.meta.env.BASE_URL, location.href).href });
-  } catch (error) {
-    job.run.fail(error);
-    if (finish(job)) status(error.message, true);
-  }
+  void extractBrain({ method: $('method').value, threshold: Number($('threshold').value), backend: $('mindgrabBackend').value }).catch(error => {
+    if (error.name !== 'AbortError') status(error.message, true);
+  });
 };
+const automation = registerAppAutomation({
+  app: 'brain-extraction',
+  convertDicom: runDcm2niix,
+  operations: {
+    extract: async ({ inputs, parameters, signal, progress }) => {
+      exampleControl.cancel();
+      if (!await importImages(inputs.image, signal)) throw new Error('The input image could not be loaded.');
+      return extractBrain(parameters, { signal, progress });
+    },
+  },
+});
 function cancel() {
   exampleControl.cancel();
   if (state.phase === 'idle') return;
