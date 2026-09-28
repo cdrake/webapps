@@ -6,7 +6,8 @@ import "@neurodesk/webapp-components/styles/imaging-workspace.css";
 import { mountImagingWorkspace } from "@neurodesk/webapp-components/core/mount-imaging-workspace";
 import { createResultList, bindFileDrop, createInfoDialog, createConsole, createViewerToolbar } from "@neurodesk/webapp-components/ui";
 import { downloadFile } from "@neurodesk/webapp-components/file-io";
-import { readImageFiles } from "@neurodesk/runtime-support/dcm2niix-client";
+import { readImageFiles, runDcm2niix } from "@neurodesk/runtime-support/dcm2niix-client";
+import { registerAppAutomation, registerViewer, createNiivueAdapter } from "@neurodesk/webapp-components/automation";
 
 const $ = (id) => document.getElementById(id);
 const slots = {
@@ -19,6 +20,7 @@ const viewers = {
   resliced: new NiiVueGPU({ isDragDropEnabled: false, backgroundColor: [0, 0, 0, 1] }),
 };
 const contexts = [];
+let currentLayout = "multiplanar";
 let output = null;
 let busy = false;
 let cancelled = false;
@@ -41,6 +43,7 @@ mountImagingWorkspace({
 
 function applyLayout(id) {
   if (!viewersReady) return;
+  currentLayout = id;
   for (const viewer of Object.values(viewers)) {
     if (id === "multiplanar") {
       viewer.sliceType = SLICE_TYPE.MULTIPLANAR;
@@ -273,23 +276,36 @@ const results = createResultList({
   onDownload: () => downloadFile(output),
 });
 
-async function register() {
-  if (!slots.moving.file || !slots.stationary.file) return;
+async function register({
+  moving = slots.moving.file,
+  fixed = slots.stationary.file,
+  robustFov = $("robustFov").checked,
+  signal,
+  progress = () => {},
+} = {}) {
+  if (!moving || !fixed) throw new Error("Choose both moving and fixed images.");
+  signal?.throwIfAborted();
+  const abort = () => { cancelled = true; resetNiimath(); };
+  signal?.addEventListener("abort", abort, { once: true });
   const started = performance.now();
   timer = setInterval(() => { $("elapsed").textContent = `${Math.round((performance.now() - started) / 1000)} s`; }, 1000);
   status("Registering moving image to stationary image…");
+  progress({ message: "Registering moving image to stationary image" });
   $("progress").removeAttribute("value");
   $("cancelButton").hidden = false;
   try {
     niimathReady ||= niimath.init();
     await niimathReady;
+    signal?.throwIfAborted();
     if (cancelled) return;
-    const source = niimath.image(slots.moving.file).gz(0);
-    const chain = $("robustFov").checked ? source.robustfov() : source;
-    const blob = await chain.allineate(slots.stationary.file).run("registered.nii");
+    const source = niimath.image(moving).gz(0);
+    const chain = robustFov ? source.robustfov() : source;
+    const blob = await chain.allineate(fixed).run("registered.nii");
+    signal?.throwIfAborted();
     if (cancelled) return;
-    output = new File([blob], `${slots.moving.file.name.replace(/\.nii(\.gz)?$/i, "")}_registered.nii`);
+    output = new File([blob], `${moving.name.replace(/\.nii(\.gz)?$/i, "")}_registered.nii`);
     await viewers.resliced.loadVolumes([{ url: output, name: output.name }]);
+    signal?.throwIfAborted();
     if (cancelled) {
       await clearOutput();
       return;
@@ -298,11 +314,18 @@ async function register() {
     $("outputSection").open = true;
     $("progress").value = 1;
     status("Registration complete");
+    return {
+      artifacts: [{ role: "registered", file: output }],
+      provenance: { algorithm: "niimath allineate", robustFov, elapsedMs: performance.now() - started },
+    };
   } catch (error) {
+    signal?.throwIfAborted();
     if (cancelled) return;
     resetNiimath();
     $("progress").value = 0;
     throw new Error(`Registration failed: ${errorMessage(error)}`);
+  } finally {
+    signal?.removeEventListener("abort", abort);
   }
 }
 
@@ -348,6 +371,42 @@ window.addEventListener("pagehide", () => {
   destroyViewers();
 });
 
-void init();
+const initialization = init();
+
+registerAppAutomation({
+  app: "edgereg",
+  convertDicom: runDcm2niix,
+  operations: {
+    register: async ({ inputs, parameters, signal, progress }) => {
+      await initialization;
+      signal.throwIfAborted();
+      if (!viewersReady) throw new Error("The image viewers are unavailable.");
+      if (busy) throw new Error("Wait for the current operation to finish.");
+      exampleControl.cancel();
+      cancelled = false;
+      setBusy(true);
+      try {
+        await loadSlot("moving", inputs.moving[0], false, signal);
+        await loadSlot("stationary", inputs.fixed[0], false, signal);
+        $("robustFov").checked = parameters.robustFov;
+        const result = await register({ moving: inputs.moving[0], fixed: inputs.fixed[0], robustFov: parameters.robustFov, signal, progress });
+        signal.throwIfAborted();
+        if (!result) throw new DOMException("Registration cancelled", "AbortError");
+        return result;
+      } finally {
+        setBusy(false);
+      }
+    },
+  },
+});
+
+for (const [id, viewer] of Object.entries(viewers)) {
+  registerViewer(id, createNiivueAdapter(viewer, {
+    tabs: {
+      list: () => ["multiplanar", "axial", "coronal", "sagittal", "render"].map((id) => ({ id, label: id, active: id === currentLayout })),
+      select: (id) => { applyLayout(id); toolbar.setActive(id); },
+    },
+  }));
+}
 
 export default Object.freeze({ toolbar, log, info, results });
