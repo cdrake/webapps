@@ -162,3 +162,16 @@ test('a custom failure selector reports its own message', async t => {
   await assert.rejects(runJob(contents, job, output), /synthseg reported an error: Custom processing error/);
   await assert.rejects(readFile(join(output, 'job-result.json')), { code: 'ENOENT' });
 });
+
+test('an unexpected output still downloading prevents a success report', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'offline-job-extra-output-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const contents = fakeContents({
+    '#download': { click() {
+      contents.startDownload('labels.nii.gz')('completed');
+      contents.startDownload('unexpected.nii.gz');
+    } },
+  });
+  await assert.rejects(runJob(contents, downloadJob, directory), /Batch output validation failed/);
+  await assert.rejects(readFile(join(directory, 'job-result.json')), { code: 'ENOENT' });
+});
