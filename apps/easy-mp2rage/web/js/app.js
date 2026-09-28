@@ -1,3 +1,4 @@
+import { createDicomConverter, registerAppAutomation } from '../vendor/webapp-components/src/automation/index.js';
 import { anatomicalGrid } from "./orientation.js";
 import { fileField, technicalLog, setViewerVisible } from "./workspace.js";
 import {
@@ -548,6 +549,16 @@ $("#folder").onchange = (e) => {
 // ---- run -------------------------------------------------------------------
 let worker = null;
 let running = false;
+let pendingRun;
+let automationProgress;
+let derivedFiles = [];
+
+function settleRun(error) {
+  const pending = pendingRun;
+  pendingRun = null;
+  if (error) pending?.reject(error);
+  else pending?.resolve(derivedFiles);
+}
 
 // A fresh worker per run gives a clean WASM linear-memory heap, the large f64
 // intermediates from a previous run are freed with the old instance. This is the
@@ -565,13 +576,14 @@ function freshWorker() {
   });
   worker.onerror = (e) => {
     log("✖ worker error: " + (e.message || e));
-    stopProcessing();
+    stopProcessing(undefined, new Error(e.message || "Worker failed"));
   };
   return worker;
 }
 
 const outputs = {}; // key -> {data, dims, affine, label, range, cmap}
 function clearOutputs() {
+  derivedFiles = [];
   for (const k of Object.keys(outputs)) delete outputs[k];
   results.render();
   $("#outputSection").open = false;
@@ -591,7 +603,8 @@ function finishRun() {
 }
 
 // Stop the current run: terminate the worker (aborts in-flight WASM), keep inputs.
-function stopProcessing(msg) {
+function stopProcessing(msg, error = new DOMException("Processing cancelled", "AbortError")) {
+  settleRun(error);
   if (worker) {
     try {
       worker.terminate();
@@ -716,18 +729,19 @@ function validateBeforeRun(sel) {
   return null;
 }
 
-$("#run").onclick = async () => {
+async function runSelectedTask() {
   const sel = refreshRunState();
   const { uni, inv1, inv2, sa, b1, mode, task } = sel;
-  if ($("#run").disabled || !uni || running) return;
+  if ($("#run").disabled || !uni || running) throw new Error("The selected task is not ready to run.");
   const err = validateBeforeRun(sel);
   if (err) {
     $("#statusText").textContent = err;
     $("#parameterPanel").open = true;
     technicalLog.open();
     log("✖ " + err);
-    return;
+    throw new Error(err);
   }
+  const completion = new Promise((resolve, reject) => { pendingRun = { resolve, reject }; });
   running = true;
   $("#taskSel").disabled = true;
   $("#statusText").textContent = "Processing…";
@@ -770,7 +784,9 @@ $("#run").onclick = async () => {
       log(`  [verbose] denoise β multiplier = ${num("#reg")}`);
   }
   const w = freshWorker();
-  w.onmessage = (e) => onResult(e.data, uni, task, mode, t0);
+  w.onmessage = (e) => {
+    onResult(e.data, uni, task, mode, t0).catch(error => stopProcessing(undefined, error));
+  };
   // Copy every array we post. postMessage transfers *detach* the source buffer,
   // which would empty state.files and crash the next run. Copies keep the loaded
   // inputs pristine and re-runnable.
@@ -801,9 +817,9 @@ $("#run").onclick = async () => {
       w.postMessage(msg, [uniCopy.buffer, inv1Copy.buffer, inv2Copy.buffer]);
     } catch (err) {
       log("worker post failed: " + err);
-      stopProcessing();
+      stopProcessing(undefined, err);
     }
-    return;
+    return completion;
   }
 
   log(`\n▶ ${task === "b1only" ? "SA2RAGE → B1 map" : mode + " correction"} …`);
@@ -840,11 +856,14 @@ $("#run").onclick = async () => {
     w.postMessage(msg, transfer);
   } catch (err) {
     log("worker post failed: " + err);
-    stopProcessing();
+    stopProcessing(undefined, err);
   }
-};
+  return completion;
+}
+$("#run").onclick = () => { void runSelectedTask().catch(error => log(error.message)); };
 
 function setProgress(p) {
+  automationProgress?.({ value: p / 100, message: $("#statusText").textContent });
   $("#progress").value = p;
 }
 
@@ -883,6 +902,7 @@ async function onResult(res, uni, task, mode, t0) {
     finishRun();
     $("#statusText").textContent = "Processing failed: " + full.split("\n")[0];
     technicalLog.open();
+    settleRun(new Error(full));
     return;
   }
   if (res.type === "progress") {
@@ -982,6 +1002,7 @@ async function onResult(res, uni, task, mode, t0) {
   if (bidsMode && bidsCurrent) await bidsRunComplete(task);
   finishRun();
   $("#statusText").textContent = "Complete. Inspect or download results in Output.";
+  settleRun();
   setTimeout(() => {
     $("#progress").hidden = true;
     setProgress(0);
@@ -991,6 +1012,7 @@ async function onResult(res, uni, task, mode, t0) {
 // ---- downloads -------------------------------------------------------------
 async function buildDownloads(task, mode, uni) {
   const dd = $("#downloads");
+  derivedFiles = [];
   revokeDownloadUrls();
   dd.innerHTML = "";
   const b1name =
@@ -1020,6 +1042,7 @@ async function buildDownloads(task, mode, uni) {
     const o = outputs[key];
     if (!o) continue;
     const gz = await writeNiftiGz(o.data, o.dims, o.affine);
+    derivedFiles.push({ role: key, file: new File([gz], fname, { type: "application/gzip" }) });
     const link = addLink(
       dd,
       new Blob([gz], { type: "application/gzip" }),
@@ -1086,6 +1109,7 @@ async function buildDownloads(task, mode, uni) {
     note: "Computed entirely in-browser; no data uploaded.",
   };
   const provBytes = new TextEncoder().encode(JSON.stringify(prov, null, 2));
+  derivedFiles.push({ role: "parameters", file: new File([provBytes], "parameters.json", { type: "application/json" }) });
   addLink(
     dd,
     new Blob([provBytes], { type: "application/json" }),
@@ -2614,3 +2638,74 @@ async function setupExamples() {
   exampleSelector = selector;
 }
 void setupExamples().catch((error) => log(error.message));
+
+
+async function runAutomated(task, { inputs, parameters, signal, progress }) {
+  if (running) throw new Error('MP2RAGE is already processing images.');
+  if (task === 't1') {
+    if (Boolean(inputs.b1.length) === Boolean(inputs.sa2rage.length)) throw new Error('Supply exactly one B1 source: a measured B1 map or SA2RAGE.');
+    if (parameters.mp2rage?.length !== MP_SPEC.length) throw new Error('Supply all nine MP2RAGE acquisition parameters in the declared order.');
+    if (parameters.mp2rage[8] > 1) throw new Error('Inversion efficiency must not exceed 1.');
+    if (inputs.sa2rage.length && parameters.sa2rage?.length !== SA_SPEC.length) throw new Error('Supply all nine SA2RAGE acquisition parameters.');
+    if (inputs.b1.length && !parameters.b1Type) throw new Error('Declare the measured B1 map units.');
+  }
+  const cancel = () => stopProcessing();
+  signal.addEventListener('abort', cancel, { once: true });
+  automationProgress = progress;
+  try {
+    setAppMode('single');
+    clearOutputs();
+    revokeDownloadUrls();
+    $('#downloads').replaceChildren();
+    state.files = [];
+    state.jsons = [];
+    const roles = { uni: 'UNI', inv1: 'INV1', inv2: 'INV2', b1: 'B1 map', sa2rage: 'SA2RAGE' };
+    for (const [role, files] of Object.entries(inputs)) {
+      for (const file of files) {
+        signal.throwIfAborted();
+        const record = await readImageRecord(file, await file.arrayBuffer());
+        record.role = roles[role];
+        state.files.push(record);
+      }
+    }
+    signal.throwIfAborted();
+    $('#taskSel').value = task;
+    if (task === 'denoise') $('#reg').value = String(parameters.regularization);
+    else {
+      MP_SPEC.forEach(([key], index) => { $(`#mp_${key}`).value = String(parameters.mp2rage[index]); });
+      if (inputs.sa2rage.length) SA_SPEC.forEach(([key], index) => { $(`#sa_${key}`).value = String(parameters.sa2rage[index]); });
+      else {
+        $('#b1_type').value = parameters.b1Type;
+        $('#b1_refangle').value = String(parameters.referenceAngle);
+      }
+      $('#extendFov').checked = parameters.extendFov;
+      $('#fallbackUncorr').checked = parameters.fallbackUncorrected;
+    }
+    $('#paramSource').value = 'manual';
+    $('#paramSrcNote').textContent = 'Supplied acquisition parameters';
+    renderTable();
+    refreshRunState();
+    const artifacts = await runSelectedTask();
+    signal.throwIfAborted();
+    const measurements = {};
+    for (const [key, output] of Object.entries(outputs)) {
+      if (key === 'uni' || key === '__preview') continue;
+      const stats = volStats(output.data);
+      measurements[key] = { dimensions: output.dims, unit: ['t1', 't1u'].includes(key) ? 'ms' : key === 'b1' ? 'relative' : 'arbitrary', minimum: stats.min, maximum: stats.max, median: stats.med, nonzeroVoxels: stats.nz };
+    }
+    return { artifacts, measurements, provenance: { executionProvider: 'wasm', task, acquisition: parameters } };
+  } finally {
+    signal.removeEventListener('abort', cancel);
+    automationProgress = null;
+  }
+}
+
+registerAppAutomation({
+  app: 'easy-mp2rage',
+  contractUrl: 'vendor/automation.json',
+  convertDicom: createDicomConverter({ moduleUrl: new URL('dcm2niix/index.js', document.baseURI).href }),
+  operations: {
+    correct: context => runAutomated('t1', context),
+    denoise: context => runAutomated('denoise', context),
+  },
+});

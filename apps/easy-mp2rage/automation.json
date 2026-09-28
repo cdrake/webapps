@@ -1,0 +1,218 @@
+{
+  "schemaVersion": 2,
+  "app": "easy-mp2rage",
+  "title": "Easy MP2RAGE",
+  "description": "Compute corrected T1 maps or denoise UNI using explicit roles and acquisition settings.",
+  "defaultOperation": "correct",
+  "operations": {
+    "correct": {
+      "title": "Correct T1 map",
+      "description": "Run the existing measured-B1 or SA2RAGE correction worker with supplied acquisition settings.",
+      "mode": "batch",
+      "inputs": {
+        "uni": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "multiple": false,
+          "required": true,
+          "space": "native",
+          "description": "MP2RAGE combined UNI image"
+        },
+        "inv2": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "multiple": false,
+          "required": false,
+          "space": "native",
+          "description": "Optional second inversion magnitude image"
+        },
+        "b1": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "multiple": false,
+          "required": false,
+          "space": "native",
+          "description": "Measured B1 map; supply this or SA2RAGE"
+        },
+        "sa2rage": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "multiple": false,
+          "required": false,
+          "space": "native",
+          "description": "Two-volume SA2RAGE image; supply this or a measured B1 map"
+        }
+      },
+      "parameters": {
+        "mp2rage": {
+          "type": "array",
+          "description": "TR, TI1, TI2 (s), FA1, FA2 (degrees), NZ1, NZ2, TRFLASH (s), inversion efficiency",
+          "items": {
+            "type": "number",
+            "description": "Acquisition value in declared units",
+            "minimum": 1e-06
+          }
+        },
+        "sa2rage": {
+          "type": "array",
+          "description": "SA TR, TD1, TD2 (s), FA1, FA2 (degrees), NZ1, NZ2, TRFLASH, average T1 (s)",
+          "items": {
+            "type": "number",
+            "description": "SA2RAGE acquisition value in declared units",
+            "minimum": 1e-06
+          }
+        },
+        "b1Type": {
+          "type": "string",
+          "description": "Measured B1 map units; required when a B1 map is supplied",
+          "enum": [
+            "tfl",
+            "percent",
+            "relative"
+          ]
+        },
+        "referenceAngle": {
+          "type": "number",
+          "description": "Reference flip angle in degrees for TFL B1 maps",
+          "minimum": 0.001,
+          "maximum": 180,
+          "default": 80
+        },
+        "extendFov": {
+          "type": "boolean",
+          "description": "Extend B1 coverage beyond the measured field of view",
+          "default": false
+        },
+        "fallbackUncorrected": {
+          "type": "boolean",
+          "description": "Fill non-converged correction voxels with uncorrected values",
+          "default": false
+        }
+      },
+      "artifacts": {
+        "t1": {
+          "type": "neuro:volume",
+          "mediaType": "application/gzip",
+          "space": "native",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "t1u": {
+          "type": "neuro:volume",
+          "mediaType": "application/gzip",
+          "space": "native",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "b1": {
+          "type": "neuro:volume",
+          "mediaType": "application/gzip",
+          "space": "native",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "unic": {
+          "type": "neuro:volume",
+          "mediaType": "application/gzip",
+          "space": "native",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "parameters": {
+          "type": "file:json",
+          "mediaType": "application/json",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    },
+    "denoise": {
+      "title": "Denoise UNI",
+      "description": "Run robust-combination denoising on UNI and both inversion images.",
+      "mode": "batch",
+      "inputs": {
+        "uni": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "multiple": false,
+          "required": true,
+          "space": "native",
+          "description": "MP2RAGE combined UNI image"
+        },
+        "inv1": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "multiple": false,
+          "required": true,
+          "space": "native",
+          "description": "First inversion magnitude image"
+        },
+        "inv2": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "multiple": false,
+          "required": true,
+          "space": "native",
+          "description": "Second inversion magnitude image"
+        }
+      },
+      "parameters": {
+        "regularization": {
+          "type": "number",
+          "description": "Robust-combination regularization strength",
+          "minimum": 1,
+          "default": 6
+        }
+      },
+      "artifacts": {
+        "unic": {
+          "type": "neuro:volume",
+          "mediaType": "application/gzip",
+          "space": "native",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "parameters": {
+          "type": "file:json",
+          "mediaType": "application/json",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    }
+  }
+}
