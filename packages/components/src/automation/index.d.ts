@@ -49,7 +49,7 @@ export function summarizeLabels(image: { data: ArrayLike<number>; dims: number[]
   volumeUnavailable?: string;
   labels: { id: number; name: string; voxels: number; volumeMl?: number }[];
 };
-export function runAbortable<T>(signal: AbortSignal, task: () => T | Promise<T>, cancel: () => unknown): Promise<T>;
+export function runAbortable<T>(signal: AbortSignal | undefined, task: () => T | Promise<T>, cancel: () => unknown): Promise<T>;
 export function awaitPipelineStep<TStep, TResult, TError>(executor: {
   onStepComplete?: (step: TStep) => unknown;
   onComplete?: (result: TResult) => unknown;
