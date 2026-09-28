@@ -3,6 +3,7 @@ bindSectionDisclosures(document);
 
 import { SimpleFileIOController, readSingleImage } from '@neurodesk/webapp-components/file-io';
 import { ViewerController } from '@neurodesk/webapp-components';
+import { registerCalmarAutomation } from './automation.js';
 import { CalmarPipeline } from './controllers/CalmarPipeline.js';
 import { MaskDrawingController } from './controllers/MaskDrawingController.js';
 import { LNM_PIPELINES, getPipelineById } from './app/lnm-tasks.js';
@@ -372,6 +373,7 @@ export class LesionNetworkMappingApp {
     await this.setupExamples();
     this.populateAtlasSelect();
     this.populateVersionLabel();
+    this.automation = registerCalmarAutomation(this);
     this.updateOutput('Ready.');
   }
 
@@ -1685,6 +1687,7 @@ export class LesionNetworkMappingApp {
   }
 
   handleWorkerProgress(frac, label) {
+    this.automationProgress?.({ value: frac, message: label });
     if (!this.progress) return;
     if (label === 'Cancelled') {
       this._pipelineRunning = false;
