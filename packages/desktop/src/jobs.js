@@ -6,6 +6,7 @@ export async function readJob(path) {
   if (job.schemaVersion !== 1 || !/^[a-z][a-z0-9-]*$/.test(job.app) || !Array.isArray(job.steps) || !job.steps.length) throw new Error('Invalid offline job');
   if (!Number.isSafeInteger(job.expectedDownloads) || job.expectedDownloads < 1) throw new Error('A batch job must declare its expected download count');
   if (job.timeoutMs !== undefined && (!Number.isSafeInteger(job.timeoutMs) || job.timeoutMs < 1)) throw new Error('Invalid job timeout');
+  if (job.failSelector !== undefined && job.failSelector !== null && (typeof job.failSelector !== 'string' || !job.failSelector)) throw new Error('Invalid failure selector');
   for (const step of job.steps) {
     if (!['upload', 'click', 'fill', 'select', 'check', 'wait'].includes(step.action) || typeof step.selector !== 'string') throw new Error('Invalid job step');
     if (step.timeoutMs !== undefined && (!Number.isSafeInteger(step.timeoutMs) || step.timeoutMs < 1)) throw new Error('Invalid step timeout');
@@ -29,13 +30,20 @@ const inspectElement = ({ selector, condition, value }) => {
   return true;
 };
 
+// Apps report failures in their status line with an `error` class. A job that
+// only waits for success would otherwise sit until its timeout.
+const DEFAULT_FAIL_SELECTOR = '#statusText.error';
+const readFailure = selector => {
+  const element = document.querySelector(selector);
+  return element ? (element.textContent.trim() || 'unspecified error') : null;
+};
+
 export async function runJob(contents, job, outputDirectory) {
   const output = resolve(outputDirectory);
   await mkdir(output, { recursive: true });
   if ((await readdir(output)).length) throw new Error('Output directory must be empty');
   const downloads = [];
   let downloadError;
-  const pending = [];
   const names = new Set();
   const onDownload = (_event, item, owner) => {
     if (owner !== contents) return;
@@ -43,20 +51,25 @@ export async function runJob(contents, job, outputDirectory) {
     if (names.has(filename)) { downloadError = new Error(`Duplicate output: ${filename}`); item.cancel(); return; }
     names.add(filename);
     item.setSavePath(join(output, filename));
-    pending.push(new Promise(resolve => {
-      item.once('done', (_event, state) => {
-        if (state !== 'completed') { downloadError = new Error(`Output download ${filename}: ${state}`); resolve(); }
-        else { downloads.push({ filename, bytes: item.getReceivedBytes() }); resolve(); }
-      });
-    }));
+    item.once('done', (_event, state) => {
+      if (state !== 'completed') downloadError = new Error(`Output download ${filename}: ${state}`);
+      else downloads.push({ filename, bytes: item.getReceivedBytes() });
+    });
   };
   contents.session.on('will-download', onDownload);
   const evaluate = (fn, value) => contents.executeJavaScript(`(${fn.toString()})(${JSON.stringify(value)})`);
+  const failSelector = job.failSelector === null ? null : (job.failSelector ?? DEFAULT_FAIL_SELECTOR);
+  const checkFailure = async () => {
+    if (!failSelector) return;
+    const message = await evaluate(readFailure, failSelector);
+    if (message !== null) throw new Error(`${job.app} reported an error: ${message}`);
+  };
   const wait = async step => {
     const timeout = step.timeoutMs ?? job.timeoutMs ?? 900000;
     const deadline = Date.now() + timeout;
     while (!await evaluate(inspectElement, step)) {
       if (downloadError) throw downloadError;
+      await checkFailure();
       if (Date.now() > deadline) throw new Error(`Timed out waiting for ${step.selector} (${step.condition || 'exists'})`);
       await new Promise(resolve => setTimeout(resolve, 100));
     }
@@ -85,15 +98,19 @@ export async function runJob(contents, job, outputDirectory) {
         }, step);
       }
     }
+    // Keep watching the app until every output has finished downloading, so an
+    // error raised while a download is still in flight fails the job too, and a
+    // download that never completes is bounded by the job timeout.
     const deadline = Date.now() + (job.timeoutMs || 900000);
-    while (pending.length < job.expectedDownloads) {
+    while (downloads.length < job.expectedDownloads) {
       if (downloadError) throw downloadError;
-      if (Date.now() > deadline) throw new Error(`Expected ${job.expectedDownloads} outputs, received ${pending.length}`);
+      await checkFailure();
+      if (Date.now() > deadline) throw new Error(`Expected ${job.expectedDownloads} outputs, received ${downloads.length}`);
       await new Promise(resolve => setTimeout(resolve, 100));
     }
-    await Promise.all(pending);
+    await checkFailure();
     if (downloadError) throw downloadError;
-    if (downloads.length !== job.expectedDownloads || downloads.some(item => item.bytes === 0)) throw new Error('Batch output validation failed');
+    if (names.size !== job.expectedDownloads || downloads.some(item => item.bytes === 0)) throw new Error('Batch output validation failed');
     const report = { app: job.app, downloads };
     await writeFile(join(output, 'job-result.json'), `${JSON.stringify(report, null, 2)}\n`);
     return report;
