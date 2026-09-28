@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 2,
+  "app": "syncro",
+  "title": "SYNcro",
+  "description": "Normalize a primary scan and optional lesion and pathological modality to the MNI152 1 mm grid.",
+  "defaultOperation": "normalize",
+  "operations": {
+    "normalize": {
+      "title": "SYNcro",
+      "description": "Normalize a primary scan and optional lesion and pathological modality to the MNI152 1 mm grid.",
+      "mode": "batch",
+      "inputs": {
+        "primary": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "multiple": false,
+          "required": true,
+          "space": "native",
+          "description": "Primary anatomical scan to normalize"
+        },
+        "lesion": {
+          "source": "files",
+          "type": "neuro:mask",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "multiple": false,
+          "required": false,
+          "space": "lesion-reference",
+          "description": "Lesion mask in the required reference grid"
+        },
+        "pathological": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "multiple": false,
+          "required": false,
+          "space": "lesion-reference",
+          "description": "Optional scan whose grid contains the lesion"
+        }
+      },
+      "parameters": {
+        "ct": {
+          "type": "boolean",
+          "default": false,
+          "description": "Treat the primary image as CT in Hounsfield units"
+        },
+        "keepSynth": {
+          "type": "boolean",
+          "default": false,
+          "description": "Return the native-space synthetic T1"
+        },
+        "synthsrBackend": {
+          "type": "string",
+          "enum": [
+            "webgpu",
+            "wasm"
+          ],
+          "default": "webgpu",
+          "description": "SynthSR inference backend"
+        },
+        "brainExtractor": {
+          "type": "string",
+          "enum": [
+            "mindgrab",
+            "synthstrip"
+          ],
+          "default": "mindgrab",
+          "description": "Brain extraction engine"
+        },
+        "normalization": {
+          "type": "string",
+          "enum": [
+            "greedy",
+            "ants"
+          ],
+          "default": "greedy",
+          "description": "Nonlinear normalization engine"
+        }
+      },
+      "artifacts": {
+        "normalized-primary": {
+          "type": "neuro:volume",
+          "mediaType": "application/octet-stream",
+          "minimum": 1,
+          "maximum": 1,
+          "space": "MNI152-1mm"
+        },
+        "normalized-brain": {
+          "type": "neuro:volume",
+          "mediaType": "application/octet-stream",
+          "minimum": 1,
+          "maximum": 1,
+          "space": "MNI152-1mm"
+        },
+        "synthetic-brain": {
+          "type": "neuro:volume",
+          "mediaType": "application/octet-stream",
+          "minimum": 1,
+          "maximum": 1,
+          "space": "MNI152-1mm"
+        },
+        "native-synthetic": {
+          "type": "neuro:volume",
+          "mediaType": "application/octet-stream",
+          "minimum": 0,
+          "maximum": 1,
+          "space": "native"
+        },
+        "lesion": {
+          "type": "neuro:mask",
+          "mediaType": "application/octet-stream",
+          "minimum": 0,
+          "maximum": 1,
+          "space": "MNI152-1mm"
+        },
+        "pathological": {
+          "type": "neuro:volume",
+          "mediaType": "application/octet-stream",
+          "minimum": 0,
+          "maximum": 1,
+          "space": "MNI152-1mm"
+        },
+        "details": {
+          "type": "neuro:provenance",
+          "mediaType": "application/json",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    }
+  }
+}
