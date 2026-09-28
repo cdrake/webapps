@@ -219,17 +219,17 @@ async function mesh({ signal, progress = () => {} } = {}) {
     }
     status('Creating mesh with niimath…')
     progress({ message: 'Creating brain mesh' })
-    if (!niimathReady) niimathReady = niimath.init()
-    await niimathReady
-    signal?.throwIfAborted()
     const cancel = () => niimath.dispose('cancelled')
     signal?.addEventListener('abort', cancel, { once: true })
     let output
     try {
+      if (!niimathReady) niimathReady = niimath.init()
+      await niimathReady
+      signal?.throwIfAborted()
       output = await niimath
-      .image(new File([labels], 'segmentation.nii'))
-      .mesh(options)
-      .run('brain.mz3')
+        .image(new File([labels], 'segmentation.nii'))
+        .mesh(options)
+        .run('brain.mz3')
     } finally {
       signal?.removeEventListener('abort', cancel)
     }
