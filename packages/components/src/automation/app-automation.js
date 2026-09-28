@@ -98,6 +98,7 @@ export function registerAppAutomation({ app, operations, convertDicom, contractU
   transfer.multiple = true;
   transfer.hidden = true;
   transfer.id = 'neurodesk-input-transfer';
+  transfer.dataset.neurodeskInput = 'dataset';
   if (doc.getElementById(transfer.id)) throw new Error('Application automation is already registered');
   doc.body.append(transfer);
   const ready = (async () => {

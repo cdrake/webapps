@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { awaitPipelineStep } from '../src/automation/pipeline.js';
+import { awaitPipelineStep } from '../src/automation/await-pipeline-step.js';
 
 const executor = () => ({ onStepComplete() {}, onComplete() {}, onError() {}, cancel() { this.cancelled = true; } });
 
