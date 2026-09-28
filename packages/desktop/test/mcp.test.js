@@ -100,7 +100,7 @@ test('stdio initializes and discovers strict contract-derived tools and resource
   assert.ok(initialized.capabilities.resources);
   const listed = await client.request('tools/list');
   const tools = new Map(listed.result.tools.map(tool => [tool.name, tool]));
-  assert.deepEqual([...tools.keys()].sort(), ['apps.describe', 'apps.list', 'apps.validate', 'run_brain_extraction', 'run_synthseg', 'runs.cancel', 'runs.get', 'runs.start']);
+  assert.deepEqual([...tools.keys()].sort(), ['apps.describe', 'apps.list', 'apps.validate', 'run_brain_extraction', 'run_synthseg', 'runs.cancel', 'runs.get', 'runs.start', 'sessions.close', 'sessions.list', 'viewers.crosshair', 'viewers.list', 'viewers.regions', 'viewers.state', 'viewers.tab']);
   const synthseg = tools.get('run_synthseg').inputSchema;
   assert.equal(synthseg.additionalProperties, false);
   assert.equal(synthseg.properties.inputs.additionalProperties, false);

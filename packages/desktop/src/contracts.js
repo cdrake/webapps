@@ -130,6 +130,9 @@ export function parseContract(value) {
 
 function validateParameter(key, field) {
   if (field.minimum > field.maximum) throw new Error(`${key}: minimum exceeds maximum`);
+  if (field.enum && (field.type === 'array' || field.enum.some(value => typeof value !== (field.type === 'integer' ? 'number' : field.type)))) {
+    throw new Error(`${key}: enum values must match the parameter type`);
+  }
   if (field.type === 'array' && !field.items) throw new Error(`${key}: array parameters require items`);
   if (field.type !== 'array' && field.items) throw new Error(`${key}: items requires an array`);
   if (field.items) validateParameter(`${key} item`, field.items);
@@ -150,7 +153,7 @@ export function parameterSchema(field) {
     if (field.maximum !== undefined) schema = schema.max(field.maximum);
     if (field.multipleOf !== undefined) schema = schema.multipleOf(field.multipleOf);
   } else schema = z.string();
-  if (field.enum) schema = schema.pipe(z.union(field.enum.map(value => z.literal(value))));
+  if (field.enum) schema = field.type === 'string' ? z.enum(field.enum) : schema.and(z.literal(field.enum));
   return schema.describe(field.description);
 }
 
@@ -208,6 +211,7 @@ export async function validateRequest(contract, value) {
       if (field.source === 'url') {
         const url = new URL(source.url);
         if (url.username || url.password) throw new Error('Input URLs must not contain credentials');
+        source.url = url.href;
       } else if (field.source === 'directory') {
         if (!isAbsolute(source.directory)) throw new Error(`Input path must be absolute: ${source.directory}`);
         if (!(await stat(source.directory)).isDirectory()) throw new Error(`Input is not a directory: ${source.directory}`);
@@ -271,8 +275,10 @@ async function collectFiles(directory, files) {
 }
 
 export function generateJob(contract, request) {
-  if (contract.schemaVersion !== 1) throw new Error('Operation contracts run through the app dispatcher; selector jobs require schema version 1');
-  if (request.engine !== 'browser') throw new Error('Selector jobs require the browser engine');
+  if (request.engine !== 'browser') throw new Error('Desktop jobs require the browser engine');
+  if (contract.schemaVersion === 2) return {
+    schemaVersion: 2, app: contract.app, automation: { contract }, request: { ...request, retainViewer: false },
+  };
   return {
     schemaVersion: 1,
     app: contract.app,

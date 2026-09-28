@@ -9,7 +9,7 @@ import { readNifti } from '../../packages/components/src/file-io/NiftiUtils.js';
 import { summarizeLabels } from '../../packages/components/src/automation/label-measurements.js';
 import freesurferLut from '../../packages/components/src/automation/freesurfer-lut.json' with { type: 'json' };
 import { runNativeSynthseg } from '../../packages/desktop/src/native.js';
-import { parseContract } from '../../packages/desktop/src/contracts.js';
+import { operationFor, parseContract } from '../../packages/desktop/src/contracts.js';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const binary = process.env.NEURODESK_SYNTHSEG_BIN;
@@ -18,10 +18,10 @@ const output = resolve(process.env.NEURODESK_SCIENTIFIC_OUTPUT || join(tmpdir(),
 await mkdir(output, { recursive: false });
 const checksum = bytes => createHash('sha256').update(bytes).digest('hex');
 const packageInfo = JSON.parse(await readFile(join(root, 'apps/synthseg/package.json')));
-const contract = parseContract({
+const contract = operationFor(parseContract({
   ...JSON.parse(await readFile(join(root, 'apps/synthseg/automation.json'))),
   appVersion: packageInfo.version,
-});
+}));
 const cases = ['fast', 'default'].map(mode => ({
   name: `small_${mode}`,
   mode,
@@ -103,7 +103,7 @@ try {
       pass: true,
       executionProvider: report.provenance.executionProvider,
       modelSha256: report.provenance.modelSha256,
-      inputSha256: report.inputs.image.sha256,
+      inputSha256: (Array.isArray(report.inputs.image) ? report.inputs.image[0] : report.inputs.image).sha256,
       goldenSha256: checksum(goldenBytes),
       outputSha256: report.artifacts.labels.sha256,
       mismatchedVoxels: mismatches,

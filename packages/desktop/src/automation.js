@@ -1,8 +1,9 @@
 import { randomUUID, createHash } from 'node:crypto';
 import { mkdir, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
-import { parseContract, validateRequest } from './contracts.js';
+import { operationFor, parseContract, validateRequest } from './contracts.js';
 import { describeFile } from './reports.js';
+import { createViewerSessions } from './viewer-sessions.js';
 
 export async function loadAutomationContracts(root, bundle) {
   const contracts = [];
@@ -20,9 +21,10 @@ export async function loadAutomationContracts(root, bundle) {
   return contracts;
 }
 
-export function createAutomationService({ contracts, outputRoot, execute, nativeBinary }) {
+export function createAutomationService({ contracts, outputRoot, execute, nativeBinary, sessionOptions }) {
   const catalog = new Map(contracts.map(entry => [entry.contract.app, entry]));
   const runs = new Map();
+  const viewers = createViewerSessions(sessionOptions);
   let closed = false;
   let active;
   const lookup = app => {
@@ -52,6 +54,10 @@ export function createAutomationService({ contracts, outputRoot, execute, native
     if (request.engine === 'native') {
       if (!nativeBinary || app !== 'synthseg') throw new Error('Native SynthSeg is unavailable. Set NEURODESK_SYNTHSEG_BIN to its installed executable.');
       if (request.parameters.ct === undefined) throw new Error('Native SynthSeg requires an explicit ct parameter.');
+      if (request.inputs.image.length !== 1 || !/\.nii(?:\.gz)?$/i.test(request.inputs.image[0])) {
+        throw new Error('Native SynthSeg requires one NIfTI input; convert DICOM with the browser engine first.');
+      }
+      if (request.retainViewer) throw new Error('The native engine does not provide a viewer');
     }
     return request;
   };
@@ -61,7 +67,9 @@ export function createAutomationService({ contracts, outputRoot, execute, native
       return [...catalog.values()].map(({ contract, sha256 }) => ({
         ...structuredClone(contract),
         contractSha256: sha256,
-        availableEngines: contract.engines.filter(engine => engine === 'browser' || Boolean(nativeBinary)),
+        availableEngines: [...new Set((contract.schemaVersion === 2
+          ? Object.values(contract.operations).flatMap(operation => operation.engines)
+          : contract.engines).filter(engine => engine === 'browser' || (contract.app === 'synthseg' && Boolean(nativeBinary))))],
       }));
     },
     async describeApp(app) {
@@ -73,6 +81,7 @@ export function createAutomationService({ contracts, outputRoot, execute, native
       const request = await validate(app, value);
       if (closed) throw new Error('Automation service is closed');
       if (active) throw new Error(`Another scientific run is active: ${active.snapshot.id}`);
+      if (request.retainViewer) viewers.assertCapacity();
       const id = randomUUID();
       const directory = resolve(outputRoot, id);
       const outputDirectory = join(directory, 'outputs');
@@ -89,20 +98,28 @@ export function createAutomationService({ contracts, outputRoot, execute, native
       run.snapshot.contractSha256 = sha256;
       run.done = (async () => {
         const timer = setTimeout(() => controller.abort(new Error(`Run timed out after ${request.timeoutMs} ms`)), request.timeoutMs);
+        let retained;
+        let sessionInfo;
         try {
           await mkdir(outputDirectory, { recursive: true });
           await persist(run);
           controller.signal.throwIfAborted();
           run.snapshot.phase = 'processing';
-          const report = await execute({
-            contract, request, outputDirectory, signal: controller.signal, nativeBinary,
+          const outcome = await execute({
+            contract, operation: operationFor(contract, request.operation), request, outputDirectory, signal: controller.signal, nativeBinary,
             onProgress(page) {
               if (controller.signal.aborted) return;
               run.snapshot.phase = page.state === 'succeeded' ? 'exporting' : 'processing';
               run.snapshot.message = page.message;
             },
           });
+          retained = outcome.session;
           controller.signal.throwIfAborted();
+          if (retained) {
+            if (!request.retainViewer) throw new Error('Execution returned an unrequested viewer session');
+            sessionInfo = viewers.add({ app, runId: id, adapter: retained });
+          } else if (request.retainViewer) throw new Error('Execution did not provide the requested viewer session');
+          const report = retained ? outcome.report : outcome;
           run.snapshot = {
             ...run.snapshot,
             state: 'succeeded',
@@ -110,15 +127,19 @@ export function createAutomationService({ contracts, outputRoot, execute, native
             finishedAt: new Date().toISOString(),
             reportUri: `neurodesk://runs/${id}/report`,
             report: { ...report, executionId: id, engine: request.engine, contractSha256: sha256, outputDirectory },
+            ...(sessionInfo && { session: sessionInfo }),
           };
         } catch (error) {
+          if (sessionInfo) await viewers.close(sessionInfo.id);
+          else if (retained) await retained.close();
           const cancelled = controller.signal.aborted && controller.signal.reason?.name === 'AbortError';
           run.snapshot = {
             ...run.snapshot,
             state: cancelled ? 'cancelled' : 'failed',
             phase: 'complete',
             finishedAt: new Date().toISOString(),
-            error: { code: cancelled ? 'CANCELLED' : controller.signal.aborted ? 'TIMEOUT' : 'EXECUTION_FAILED', message: String(error.message ?? error) },
+            error: { code: cancelled ? 'CANCELLED' : controller.signal.aborted ? 'TIMEOUT' : error.code ?? 'EXECUTION_FAILED',
+              message: String(error.message ?? error), ...(error.candidates && { candidates: error.candidates }) },
           };
           await rm(outputDirectory, { recursive: true, force: true });
         } finally {
@@ -134,6 +155,9 @@ export function createAutomationService({ contracts, outputRoot, execute, native
     async get(id) {
       return snapshot(runFor(id));
     },
+    async listSessions() { return viewers.list(); },
+    async viewerCommand(sessionId, command, args) { return viewers.command(sessionId, command, args); },
+    async closeSession(sessionId) { return viewers.close(sessionId); },
     async cancel(id) {
       const run = runFor(id);
       if (run.snapshot.state === 'running') {
@@ -171,6 +195,7 @@ export function createAutomationService({ contracts, outputRoot, execute, native
         active.controller.abort(new DOMException('MCP connection closed', 'AbortError'));
         await active.done;
       }
+      await viewers.closeAll();
     },
   };
 }

@@ -1,10 +1,19 @@
 import { mkdir, readFile, writeFile, stat, readdir, rename, rm } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
-import { parseContract } from './contracts.js';
+import { parseContract, validateRequest } from './contracts.js';
 import { describeFile, verifyRunReport } from './reports.js';
 
 export async function readJob(path) {
   const job = JSON.parse(await readFile(path, 'utf8'));
+  if (job.schemaVersion === 2) {
+    if (Object.keys(job).some(key => !['schemaVersion', 'app', 'automation', 'request'].includes(key))
+        || Object.keys(job.automation ?? {}).some(key => key !== 'contract')) throw new Error('Invalid operation job');
+    const contract = parseContract(job.automation?.contract);
+    if (contract.schemaVersion !== 2 || contract.app !== job.app) throw new Error('Job contract app mismatch');
+    const request = await validateRequest(contract, job.request);
+    if (request.engine !== 'browser' || request.retainViewer) throw new Error('Operation jobs use the browser engine without retained viewers');
+    return { schemaVersion: 2, app: job.app, automation: { contract }, request };
+  }
   if (job.schemaVersion !== 1 || !/^[a-z][a-z0-9-]*$/.test(job.app) || !Array.isArray(job.steps) || !job.steps.length) throw new Error('Invalid offline job');
   if (!Number.isSafeInteger(job.expectedDownloads) || job.expectedDownloads < 1) throw new Error('A batch job must declare its expected download count');
   if (job.timeoutMs !== undefined && (!Number.isSafeInteger(job.timeoutMs) || job.timeoutMs < 1)) throw new Error('Invalid job timeout');

@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "app": "synthseg",
+  "title": "SynthSeg",
+  "description": "Segment a head image into FreeSurfer labels with SynthSeg 2.0.",
+  "inputs": {
+    "image": {
+      "type": "neuro:volume",
+      "formats": [
+        "nifti"
+      ],
+      "space": "native",
+      "description": "One anatomical head image",
+      "selector": "#imageInput"
+    }
+  },
+  "parameters": {
+    "mode": {
+      "type": "string",
+      "description": "Fast mode skips flip averaging and topology postprocessing",
+      "enum": [
+        "default",
+        "fast"
+      ],
+      "default": "default",
+      "selector": "#mode",
+      "action": "select"
+    },
+    "ct": {
+      "type": "boolean",
+      "description": "Input is CT in Hounsfield units; omitted uses the app's intensity detection",
+      "selector": "#ct",
+      "action": "check"
+    }
+  },
+  "artifacts": {
+    "labels": {
+      "type": "neuro:label-map",
+      "mediaType": "application/gzip",
+      "space": "subject-1mm",
+      "labelSystem": "FreeSurfer",
+      "selector": "#saveBtn"
+    }
+  },
+  "controls": {
+    "run": "#processButton",
+    "cancel": "#cancelBtn",
+    "report": "#reportBtn"
+  },
+  "engines": [
+    "browser",
+    "native"
+  ]
+}

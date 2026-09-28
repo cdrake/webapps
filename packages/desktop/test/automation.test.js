@@ -5,7 +5,7 @@ import { mkdtemp, mkdir, writeFile, readFile, rm, symlink } from 'node:fs/promis
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createAutomationService, loadAutomationContracts } from '../src/automation.js';
-import { readContract } from '../src/contracts.js';
+import { parseContract, readContract } from '../src/contracts.js';
 import { describeFile } from '../src/reports.js';
 
 const contract = { ...await readContract(new URL('../../../apps/synthseg/automation.json', import.meta.url)), appVersion: '0.3.20260928' };
@@ -92,4 +92,32 @@ test('discovery verifies the contract against the offline inventory', async t =>
   assert.equal((await loadAutomationContracts(root, bundle))[0].contract.app, 'synthseg');
   await writeFile(join(root, path), `${bytes} `);
   await assert.rejects(loadAutomationContracts(root, bundle), /corrupt/);
+});
+
+test('viewer sessions remain usable across scientific runs and closing them preserves reports', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'automation-viewer-'));
+  let closed = 0;
+  const viewer = parseContract({ schemaVersion: 2, app: 'viewer', title: 'Viewer', description: 'View an image', appVersion: '0.1.20260928',
+    defaultOperation: 'open', operations: { open: { title: 'Open', description: 'Open image', mode: 'viewer', inputs: {}, parameters: {}, artifacts: {}, engines: ['browser'] } } });
+  const service = createAutomationService({
+    contracts: [{ contract: viewer, sha256: 'b'.repeat(64) }], outputRoot: join(root, 'runs'), sessionOptions: { maximum: 1 },
+    execute: async () => ({ report: { artifacts: {}, summary: { dimensions: [10, 20, 30] } }, session: {
+      close() { closed++; }, command: async () => ({ position: { frame: 'mm', value: [1, 2, 3] } }),
+    } }),
+  });
+  t.after(async () => { await service.close(); await rm(root, { recursive: true, force: true }); });
+  assert.deepEqual((await service.listApps())[0].availableEngines, ['browser']);
+  const started = await service.start('viewer', {});
+  const run = await completed(service, started.id);
+  assert.equal(run.state, 'succeeded');
+  assert.equal((await service.listSessions())[0].runId, run.id);
+  assert.deepEqual(await service.viewerCommand(run.session.id, 'viewers.state', { viewerId: 'image' }), { position: { frame: 'mm', value: [1, 2, 3] } });
+  await assert.rejects(service.start('viewer', {}), /limit/);
+  await service.closeSession(run.session.id);
+  assert.equal(closed, 1);
+  assert.equal(JSON.parse((await service.readResource(run.reportUri))[0].text).executionId, run.id);
+  const second = await service.start('viewer', {});
+  assert.equal((await completed(service, second.id)).state, 'succeeded');
+  await service.close();
+  assert.equal(closed, 2);
 });

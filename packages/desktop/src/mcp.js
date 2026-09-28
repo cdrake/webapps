@@ -7,11 +7,18 @@ const app = z.string().regex(/^[a-z][a-z0-9-]*$/);
 const run = z.strictObject({ runId: z.string().min(1) });
 const request = z.strictObject({
   app,
-  inputs: z.record(z.string().min(1), z.array(z.string().min(1)).min(1)),
-  parameters: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
+  operation: app.optional(),
+  inputs: z.record(z.string().min(1), z.union([
+    z.array(z.string().min(1)).min(1), z.strictObject({ url: z.httpUrl() }), z.strictObject({ directory: z.string().min(1) }),
+  ])).optional(),
+  parameters: z.record(z.string(), z.json()).optional(),
+  selections: z.record(z.string(), z.string().regex(/^[a-f0-9]{64}$/)).optional(),
   engine: z.enum(['browser', 'native']).optional(),
   timeoutMs: z.number().int().min(1).max(86400000).optional(),
+  retainViewer: z.boolean().optional(),
 });
+const session = z.strictObject({ sessionId: z.string().min(1) });
+const viewer = session.extend({ viewerId: app });
 const readOnly = { readOnlyHint: true, idempotentHint: true, openWorldHint: false };
 const startsRun = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false };
 
@@ -48,10 +55,35 @@ export async function createMcpServer(service, { version }) {
     run, { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
     ({ runId }) => service.cancel(runId));
 
+  registerTool(server, 'sessions.list', 'List retained application viewers. Closing a session preserves its completed run report.',
+    z.strictObject({}), readOnly, async () => ({ sessions: await service.listSessions() }));
+  registerTool(server, 'sessions.close', 'Close a retained viewer and release its memory.',
+    session, { ...startsRun, idempotentHint: true }, ({ sessionId }) => service.closeSession(sessionId));
+  for (const [name, description, schema, mutates] of [
+    ['list', 'List the actual viewers and supported controls in a retained session.', session, false],
+    ['state', 'Read the current crosshair, tabs and image location.', viewer, false],
+    ['crosshair', 'Move the crosshair using three world coordinates in millimetres. Returns the actual snapped viewer position.', viewer.extend({
+      position: z.strictObject({ frame: z.literal('mm'), value: z.tuple([z.number().finite(), z.number().finite(), z.number().finite()]) }),
+    }), true],
+    ['tab', 'Select an application tab by its reported ID.', viewer.extend({ tabId: z.string().min(1) }), true],
+    ['regions', 'Read the regions exposed by the application viewer.', viewer, false],
+  ]) {
+    registerTool(server, `viewers.${name}`, description, schema, mutates ? { ...startsRun, idempotentHint: true } : readOnly,
+      ({ sessionId, ...args }) => service.viewerCommand(sessionId, `viewers.${name}`, args));
+  }
+
   for (const contract of await service.listApps()) {
     registerTool(server, `run_${contract.app.replaceAll('-', '_')}`,
       `Start ${contract.title}. ${contract.description} Returns a run ID; use runs.get for completion.`,
       requestSchema(contract), startsRun, request => service.start(contract.app, request));
+    if (contract.schemaVersion === 2) {
+      for (const [name, operation] of Object.entries(contract.operations)) {
+        if (name === contract.defaultOperation) continue;
+        registerTool(server, `run_${contract.app.replaceAll('-', '_')}__${name.replaceAll('-', '_')}`,
+          `Start ${operation.title}. ${operation.description} Returns a run ID; use runs.get for completion.`,
+          requestSchema(contract, name), startsRun, request => service.start(contract.app, request));
+      }
+    }
   }
 
   for (const resource of [

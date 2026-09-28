@@ -71,7 +71,8 @@ export async function runNativeSynthseg({ contract, request, outputDirectory, si
   if (!(await lstat(output)).isDirectory()) throw new Error('Native output directory must not be a symbolic link');
   if ((await readdir(output)).length) throw new Error('Output directory must be empty');
   const input = request.inputs.image[0];
-  const inputs = { image: await describeFile(input) };
+  const inputDescriptor = await describeFile(input);
+  const inputs = { image: contract.schemaVersion === 2 ? [inputDescriptor] : inputDescriptor };
   const labelsPath = join(output, 'labels.nii.gz');
   const sidecarPath = join(output, 'labels.json');
   const args = ['--i', input, '--o', labelsPath, '--quiet'];
@@ -98,18 +99,19 @@ export async function runNativeSynthseg({ contract, request, outputDirectory, si
   }
   const image = parseNiftiVolume(labelsBytes, { OutputCtor: Float64Array });
   const measurements = summarizeLabels({ ...image, data: image.imageData }, freesurferLut);
-  const { selector: _selector, ...declaration } = contract.artifacts.labels;
+  const { selector: _selector, minimum: _minimum, maximum: _maximum, ...declaration } = contract.artifacts.labels;
   const report = {
-    schemaVersion: 1,
+    schemaVersion: contract.schemaVersion,
     app: contract.app,
     appVersion: contract.appVersion,
     runId: randomUUID(),
     status: 'succeeded',
+    ...(contract.schemaVersion === 2 && { operation: contract.operation }),
     inputs,
     parameters: request.parameters,
     provenance,
     measurements,
-    artifacts: { labels: { ...declaration, ...await describeFile(labelsPath) } },
+    artifacts: { labels: { ...declaration, ...(contract.schemaVersion === 2 && { role: 'labels' }), ...await describeFile(labelsPath) } },
   };
   active.throwIfAborted();
   const reportPath = join(output, 'report.json');

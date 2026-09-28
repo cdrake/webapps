@@ -5,8 +5,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { readContract, parseContract, validateRequest, generateJob, contractJsonSchema } from '../src/contracts.js';
 
-const synthseg = await readContract(new URL('../../../apps/synthseg/automation.json', import.meta.url));
-const extraction = await readContract(new URL('../../../apps/brain-extraction/automation.json', import.meta.url));
+const synthseg = await readContract(new URL('./fixtures/contracts/synthseg-v1.json', import.meta.url));
+const extraction = await readContract(new URL('./fixtures/contracts/brain-extraction-v1.json', import.meta.url));
 
 async function input(t) {
   const directory = await mkdtemp(join(tmpdir(), 'automation-contract-'));
