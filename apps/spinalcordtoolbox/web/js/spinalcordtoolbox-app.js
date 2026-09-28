@@ -27,9 +27,7 @@ export class SpinalCordToolboxApp {
   // cause (WebGL2) and the remedy (hardware acceleration) so a user with a
   // fixable browser config is not left thinking the app is simply broken.
   static VIEWER_UNAVAILABLE_GUIDANCE =
-    'Image preview unavailable: WebGL2 could not initialize. You can still load images, run analysis, and download results. '
-    + 'To restore the interactive 3D viewer, enable hardware acceleration in your browser '
-    + '(Chrome: Settings › System; details at chrome://gpu), then reload.';
+    'No preview: WebGL2 failed. Enable hardware acceleration (see chrome://gpu), then reload.';
 
   constructor() {
     // NiiVue
@@ -86,8 +84,6 @@ export class SpinalCordToolboxApp {
     // Version display
     const versionEl = document.getElementById('appVersion');
     if (versionEl) versionEl.textContent = `v${Config.VERSION}`;
-    const footerVersionEl = document.getElementById('footerVersion');
-    if (footerVersionEl) footerVersionEl.textContent = `v${Config.VERSION}`;
     const aboutVersionEl = document.getElementById('aboutAppVersion');
     if (aboutVersionEl) aboutVersionEl.textContent = `v${Config.VERSION}`;
 
@@ -295,11 +291,6 @@ export class SpinalCordToolboxApp {
       modelSelect.addEventListener('change', () => this.onTaskSelectionChanged(modelSelect.value));
     }
 
-    ['abortInferenceBtn'].forEach(id => {
-      const btn = document.getElementById(id);
-      if (btn) btn.addEventListener('click', () => this.abortCurrentStep());
-    });
-
     const cancelBtn = document.getElementById('cancelButton');
     if (cancelBtn) cancelBtn.addEventListener('click', () => this.abortCurrentStep());
 
@@ -411,13 +402,9 @@ export class SpinalCordToolboxApp {
   }
 
   setupShellEventListeners() {
-    this.bindStartPageControls();
     this.bindModalButton('aboutButton', this.aboutModal);
     this.bindModalButton('citationsButton', this.citationsModal);
-    this.bindModalButton('startCitationsButton', this.citationsModal);
     this.bindModalButton('privacyButton', this.privacyModal);
-    this.bindModalButton('startPrivacyButton', this.privacyModal);
-    this.bindModalButton('startPrivacyInlineButton', this.privacyModal);
     this.bindCloseButton('closeAbout', this.aboutModal);
     this.bindCloseButton('closeCitations', this.citationsModal);
     this.bindCloseButton('closePrivacy', this.privacyModal);
@@ -431,26 +418,6 @@ export class SpinalCordToolboxApp {
   bindCloseButton(buttonId, modal) {
     const button = document.getElementById(buttonId);
     if (button) button.addEventListener('click', () => modal.close());
-  }
-
-  bindStartPageControls() {
-    const startPage = document.getElementById('startPage');
-    const enterButton = document.getElementById('enterAppButton');
-    if (!startPage || !enterButton) return;
-
-    enterButton.addEventListener('click', () => {
-      startPage.classList.add('hidden');
-      document.getElementById('fileInput')?.focus();
-      requestAnimationFrame(() => {
-        window.dispatchEvent(new Event('resize'));
-        try {
-          this.nv?.drawScene?.();
-        } catch (err) {
-          this.updateOutput(`Viewer redraw deferred: ${err.message}`);
-        }
-        if (!this.isViewerAvailable()) this.fallbackPreview?.redraw?.();
-      });
-    });
   }
 
   populateTaskSelector() {
@@ -502,9 +469,11 @@ export class SpinalCordToolboxApp {
     const task = this.selectedTask || getDefaultTask();
     const details = document.getElementById('taskDetails');
     const runBtn = document.getElementById('runSegmentation');
+    const tooltip = document.getElementById('taskInfoTooltip');
+    if (tooltip) tooltip.textContent = task.description || 'Select the segmentation task to run.';
     if (details) {
-      const contrasts = (task.inputContrasts || []).join(', ') || 'See SCT documentation';
-      details.textContent = `${task.description} Input: ${contrasts}.`;
+      const contrasts = (task.inputContrasts || []).join(', ') || 'see SCT documentation';
+      details.textContent = `Input: ${contrasts}`;
       details.classList.toggle('task-supported', task.supportStatus === 'supported');
       details.classList.toggle('task-disabled', task.supportStatus !== 'supported');
     }
@@ -801,7 +770,6 @@ export class SpinalCordToolboxApp {
     this._lastLocationData = null;
 
     this.console.clear();
-    this.progress.reset();
     this.resetStatusDisplay();
     this.resetProcessingInputs();
     this.resetViewerControls();
@@ -835,6 +803,10 @@ export class SpinalCordToolboxApp {
     this.currentRunningStep = step;
     this.abortUICheckpoint = this.captureAbortUICheckpoint(step);
     this.inferenceExecutor.captureCheckpoint(step);
+    this.setStatusError(false);
+    this.progress.begin(step === 'processing' ? 'Labelling vertebrae…' : 'Running segmentation…', { cancellable: true });
+    // Node test harnesses must not be kept alive by the elapsed counter.
+    this.progress.timer?.unref?.();
   }
 
   async abortCurrentStep() {
@@ -842,9 +814,7 @@ export class SpinalCordToolboxApp {
 
     const abortedStep = this.currentRunningStep;
     const checkpoint = this.abortUICheckpoint;
-    const statusText = document.getElementById('statusText');
-    if (statusText) statusText.textContent = 'Aborting...';
-
+    this.progress.setText('Cancelling…');
     this.resetAbortControls();
 
     try {
@@ -860,7 +830,8 @@ export class SpinalCordToolboxApp {
   }
 
   async restoreUIFromAbortCheckpoint(checkpoint, abortedStep) {
-    this.progress.reset();
+    this.setStatusError(false);
+    this.progress.reset('Cancelled');
     this.resetAbortControls();
 
     for (const step of Config.PIPELINE_STEPS) {
@@ -924,9 +895,6 @@ export class SpinalCordToolboxApp {
       await this.renderViewerVolumes();
     }
     this.syncResultViewButtons();
-
-    const statusText = document.getElementById('statusText');
-    if (statusText) statusText.textContent = 'Ready';
     this.updateViewerInfo(this._lastLocationData);
   }
 
@@ -1013,7 +981,6 @@ export class SpinalCordToolboxApp {
 
   runProcessingOperation() {
     const select = document.getElementById('processingOperationSelect');
-    const output = document.getElementById('processingOutput');
     const operation = select?.value || 'vertebrae';
     if (operation === 'vertebrae') {
       if (!this.inferenceExecutor.hasResult('segmentation')) {
@@ -1022,7 +989,6 @@ export class SpinalCordToolboxApp {
       }
       const modelBaseUrl = new URL(Config.MODEL_BASE_URL, window.location.href).href;
       const pam50LevelsUrl = getTaskTemplateAssetUrl('vertebrae', 'pam50-levels');
-      if (output) output.textContent = '';
       this.beginAbortableStep('processing');
       this.setStepRunning('processing');
       this.inferenceExecutor.runVertebralLabeling({
@@ -1033,7 +999,6 @@ export class SpinalCordToolboxApp {
       }).catch(error => this.onInferenceError(error.message));
       return;
     }
-    if (output) output.textContent = '';
     this.updateOutput(`Unsupported SCT Processing operation: ${operation}`);
   }
 
@@ -1042,11 +1007,7 @@ export class SpinalCordToolboxApp {
   setStepRunning(step) {
     this.updateStepBadge(step, 'running');
     this.setStepButtonsEnabled(step, false);
-    this.setStepAbortVisible(step, true);
-    if (this.currentRunningStep === step) {
-      const cancelBtn = document.getElementById('cancelButton');
-      if (cancelBtn) cancelBtn.disabled = false;
-    }
+    if (this.currentRunningStep === step) this.progress.setCancellable(true);
   }
 
   getStepSectionId(step) {
@@ -1066,13 +1027,6 @@ export class SpinalCordToolboxApp {
     return buttonMap[step] || [];
   }
 
-  getStepAbortButtonId(step) {
-    const abortButtonMap = {
-      'inference': 'abortInferenceBtn'
-    };
-    return abortButtonMap[step] || null;
-  }
-
   isStepEnabled(step) {
     const sectionId = this.getStepSectionId(step);
     if (!sectionId) return false;
@@ -1089,24 +1043,10 @@ export class SpinalCordToolboxApp {
     });
   }
 
-  setStepAbortVisible(step, visible) {
-    const abortButtonId = this.getStepAbortButtonId(step);
-    if (!abortButtonId) return;
-
-    const abortBtn = document.getElementById(abortButtonId);
-    if (!abortBtn) return;
-
-    abortBtn.classList.toggle('hidden', !visible);
-    abortBtn.disabled = !visible;
-  }
-
+  // The status-footer × is the only abort control; it is shown while a
+  // step can be cancelled.
   resetAbortControls() {
-    for (const step of ['inference', 'processing']) {
-      this.setStepAbortVisible(step, false);
-    }
-
-    const cancelBtn = document.getElementById('cancelButton');
-    if (cancelBtn) cancelBtn.disabled = true;
+    this.progress.setCancellable(false);
   }
 
   async resetAllSteps() {
@@ -1123,7 +1063,6 @@ export class SpinalCordToolboxApp {
       this.updateStepBadge(step, '');
       this.setStepEnabled(step, false);
       this.setStepButtonsEnabled(step, false);
-      this.setStepAbortVisible(step, false);
     }
 
     // Reset results
@@ -1144,9 +1083,12 @@ export class SpinalCordToolboxApp {
   }
 
   resetStatusDisplay() {
-    const statusText = document.getElementById('statusText');
-    if (statusText) statusText.textContent = 'Ready';
-    this.resetAbortControls();
+    this.setStatusError(false);
+    this.progress.reset('Ready');
+  }
+
+  setStatusError(isError) {
+    document.getElementById('statusText')?.classList?.toggle('error', Boolean(isError));
   }
 
   resetProcessingInputs() {
@@ -1240,7 +1182,6 @@ export class SpinalCordToolboxApp {
     const status = this.inferenceExecutor.getStepStatus(step);
     this.updateStepBadge(step, status);
     this.setStepButtonsEnabled(step, true);
-    this.setStepAbortVisible(step, false);
     this.resetAbortControls();
 
     if (this.currentRunningStep === step) {
@@ -1248,8 +1189,9 @@ export class SpinalCordToolboxApp {
       this.abortUICheckpoint = null;
     }
 
-    const statusText = document.getElementById('statusText');
-    if (statusText) statusText.textContent = 'Ready';
+    this.setStatusError(false);
+    if (step === 'load') this.progress.reset('Ready');
+    else this.progress.end('Complete');
 
     // Enable next step section
     switch (step) {
@@ -1842,11 +1784,10 @@ export class SpinalCordToolboxApp {
   onWorkerInitialized() {}
 
   async onInferenceComplete() {
-    const statusText = document.getElementById('statusText');
-    this.resetAbortControls();
     this.currentRunningStep = null;
     this.abortUICheckpoint = null;
-    if (statusText) statusText.textContent = 'Ready';
+    this.setStatusError(false);
+    this.progress.end('Complete');
 
     if (this.isViewerAvailable() && this.getVisibleOverlayStages().length > 0) {
       await this.renderViewerVolumes();
@@ -1865,11 +1806,10 @@ export class SpinalCordToolboxApp {
   }
 
   onInferenceError(msg) {
-    const statusText = document.getElementById('statusText');
-    this.resetAbortControls();
     this.currentRunningStep = null;
     this.abortUICheckpoint = null;
-    if (statusText) statusText.textContent = 'Error';
+    this.progress.end(msg ? `Error: ${msg}` : 'Error', { success: false });
+    this.setStatusError(true);
 
     // Reset any running badges back
     for (const step of Config.PIPELINE_STEPS) {
@@ -1930,14 +1870,21 @@ export class SpinalCordToolboxApp {
     this.console.log(msg);
   }
 
+  // Worker progress. The shared executor also reports its terminal states
+  // through here ('Failed' before onError, 'Cancelled', 'Ready' after an
+  // abort restore); those are owned by onInferenceError / the abort path.
   setProgress(value, text) {
-    this.progress.setProgress(value);
-    const statusText = document.getElementById('statusText');
-    if (statusText) {
-      if (value >= 1) statusText.textContent = 'Complete';
-      else if (text) statusText.textContent = text;
-      else if (value > 0) statusText.textContent = 'Processing...';
+    if (text === 'Failed' || text === 'Ready') return;
+    if (text === 'Cancelled') {
+      this.setStatusError(false);
+      this.progress.reset('Cancelled');
+      return;
     }
+    let label = null;
+    if (value >= 1) label = 'Complete';
+    else if (text) label = text;
+    else if (value > 0) label = 'Processing...';
+    this.progress.setProgress(value, label);
   }
 
   clearFiles() {

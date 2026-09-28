@@ -40,7 +40,7 @@ for (const value of [0, 0.25, 0.5, 0.999, 1]) {
   });
 }
 
-test("shared ProgressManager defaults its target to #progressBar (as MuscleMap relies on)", () => {
+test("shared ProgressManager falls back to a legacy #progressBar when no <progress> exists", () => {
   withStubDom((bar) => {
     const pm = new Shared({ animationSpeed: 0.5 });
     pm.setProgress(0.42);

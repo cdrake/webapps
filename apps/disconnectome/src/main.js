@@ -1,7 +1,7 @@
 import NiiVue, { lookupColorMap, MULTIPLANAR_TYPE, SHOW_RENDER, SLICE_TYPE } from '@niivue/niivue';
 import '@neurodesk/webapp-components/styles/imaging-workspace.css';
 import { mountImagingWorkspace } from '@neurodesk/webapp-components/core/mount-imaging-workspace';
-import { bindFileDrop, createConsole, createExampleSelector, createInfoDialog, createViewerToolbar } from '@neurodesk/webapp-components/ui';
+import { bindFileDrop, bindInfoTooltips, createConsole, createExampleSelector, createInfoDialog, createViewerToolbar } from '@neurodesk/webapp-components/ui';
 import { downloadBlob } from '@neurodesk/webapp-components/file-io';
 import { fetchModel } from '@neurodesk/webapp-components/worker';
 import { readImageFiles } from '@neurodesk/runtime-support/dcm2niix-client';
@@ -26,6 +26,7 @@ mountImagingWorkspace({
 });
 
 const log = createConsole({ id: 'technicalLog' });
+bindInfoTooltips(document);
 $('viewer').append(log);
 const info = createInfoDialog({ id: 'infoDialog' });
 $('aboutBtn').onclick = () => info.open('About Disconnectome', $('aboutContent'));
@@ -101,8 +102,15 @@ function paintColorbar() {
   $('colorbar').querySelector('.dc-colorbar-ramp').style.background = `linear-gradient(to right, ${stops.join(', ')})`;
 }
 
+// The status line keeps one short sentence; the full message goes to the technical log.
+function statusLine(message) {
+  if (message.length <= 90) return message;
+  const first = message.match(/^.*?[.;](?=\s)/)?.[0];
+  return first && first.length <= 90 ? first : `${message.slice(0, 88).trimEnd()}…`;
+}
+
 function status(message, error = false) {
-  $('statusText').textContent = message;
+  $('statusText').textContent = statusLine(message);
   $('statusText').classList.toggle('error', error);
   log.log(message, error ? 'error' : 'info');
 }
@@ -225,9 +233,7 @@ for (const entry of ATLASES) $('atlasSelect').add(new Option(entry.label, entry.
 $('atlasSelect').value = atlas.id;
 
 function describeAtlas() {
-  $('atlasHint').textContent = `Each of the ${atlas.bundles} bundles is scored by the fraction of its `
-    + `streamlines passing through the lesion. Changing atlas discards the current result: the two are `
-    + `different parcellations, so their bundles do not correspond.`;
+  $('atlasHint').textContent = `${atlas.bundles} bundles, each scored by the share of its streamlines in the lesion.`;
 }
 
 $('atlasSelect').onchange = () => {
@@ -290,10 +296,10 @@ $('runButton').onclick = () => void runTask('Starting…', async () => {
     data = await runDisconnectome(scored, runAtlas.tvx);
   } catch (error) {
     // The core reports a grid mismatch by name; say what to do about it.
-    const message = /grid|dim|sto_xyz/i.test(error.message)
-      ? `${error.message} This lesion is not on the ${GRID.dim.join(' × ')} MNI152 1 mm grid; normalize it with SYNcro first.`
-      : error.message;
-    throw new Error(message);
+    // The status line gives the advice; the header detail goes to the technical log.
+    if (!/grid|dim|sto_xyz/i.test(error.message)) throw error;
+    log.log(error.message, 'error');
+    throw new Error(`Not on the ${GRID.dim.join(' × ')} MNI152 grid; normalize it with SYNcro first.`);
   }
   result = { ...data, id: scored.name.replace(/\.nii(\.gz)?$/i, ''), atlas: runAtlas.id };
 

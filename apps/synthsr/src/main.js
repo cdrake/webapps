@@ -211,7 +211,7 @@ $('exampleControl').replaceWith(exampleControl);
 
 $('mode').onchange = () => {
   $('modeHelp').textContent = $('mode').value === 'tiled'
-    ? 'Approximate: overlapping 96³ tiles reduce memory. Limited context can change the output and introduce seams.'
+    ? 'Approximate: 96³ tiles use less memory but can change the output and add seams.'
     : 'Full-volume synthesis can require several GB of memory.';
 };
 $('modelInput').onchange = () => { $('modelInfo').textContent = $('modelInput').files[0]?.name || 'SynthSR v2 · downloads once and is cached'; };

@@ -44,7 +44,6 @@
               <option value="deformable">Affine + nonlinear · NMI</option>
             </select>
           </div>
-          <p class="nd-hint">Registration expects brain-only images: a scan that still includes scalp produces artifacts. Brain extract it with MindGrab using the button under the image; the examples are already brain-only.</p>
           <button id="runButton" class="nd-btn nd-btn-primary" type="button" disabled>Register images</button>
         </div>
       </details>
@@ -84,7 +83,7 @@
       <progress id="progress" max="1" value="0" aria-label="Registration progress"></progress>
       <button id="cancelButton" class="nd-btn-cancel" type="button" title="Cancel registration" aria-label="Cancel registration" hidden>×</button>
     </footer>
-    <template id="aboutContent"><p>Greedy registers a moving image to a stationary image with affine NMI or affine followed by nonlinear stationary-velocity NMI. Custom images are brain extracted locally with MindGrab before registration.</p></template>
+    <template id="aboutContent"><p>Greedy registers a moving image to a stationary image with affine NMI or affine followed by nonlinear stationary-velocity NMI. Registration expects brain-only images: scalp produces artifacts. Brain extract custom images locally with MindGrab using the button under each image; the examples are already brain-only.</p></template>
     <template id="privacyContent"><p>Images are processed locally in this browser and are never uploaded.</p></template>
     <template id="standaloneContent">
       <p>Build the native Rust command-line application to register images on your computer or an HPC system. These commands estimate an affine transform, then reslice the moving image into the fixed image space.</p>

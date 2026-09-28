@@ -24,6 +24,7 @@ import { isVolumeUrl, isFlatImageUrl } from '../utils/imageHelpers';
 import { getSchemaDoi, doiUrl, SchemaDoiEntry } from '../utils/schemaDoi';
 import ImageManagerModal from '../components/schema/ImageManagerModal';
 import VolumeThumbnail from '../components/common/VolumeThumbnail';
+import { log, logError } from '../utils/technicalLog';
 
 const noop = () => {};
 
@@ -175,6 +176,7 @@ const SchemaViewerPage: React.FC = () => {
           setAcquisitions(acqs);
         }
       } catch (err) {
+        logError('Schema load failed', err);
         if (!cancelled) {
           setError(err instanceof Error ? err.message : 'Failed to load schema');
         }
@@ -252,7 +254,7 @@ const SchemaViewerPage: React.FC = () => {
       acquisitionNames,
     };
     sessionStorage.setItem('pendingSchemaImport', JSON.stringify(payload));
-    navigate('/workspace');
+    navigate('/');
   };
 
   const handleDownload = () => {
@@ -264,6 +266,7 @@ const SchemaViewerPage: React.FC = () => {
     a.download = `${schemaData.name || 'schema'}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    log(`Exported schema ${a.download}.`, 'success');
   };
 
   const handleCopyDoi = () => {
@@ -447,7 +450,7 @@ const SchemaViewerPage: React.FC = () => {
                   Browse Schemas
                 </Link>
                 <Link
-                  to="/workspace"
+                  to="/"
                   className="px-4 py-2 rounded-lg bg-brand-600 text-white hover:bg-brand-700 transition-colors"
                 >
                   Open Workspace

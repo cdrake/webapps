@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ShieldCheck, Github, Layers, Quote, Shield, LayoutGrid } from 'lucide-react';
+import { ShieldCheck, Github, Layers, Quote, Shield, LayoutGrid, BookOpen } from 'lucide-react';
 import { WorkspaceProviders } from '../contexts/WorkspaceProviders';
 import { PyodideProvider } from '../contexts/PyodideContext';
 import ThemeToggle from '../components/common/ThemeToggle';
@@ -8,7 +8,8 @@ import CitationModal from '../components/common/CitationModal';
 import PrivacyModal from '../components/common/PrivacyModal';
 import VersionBadge from '../components/common/VersionBadge';
 import UnifiedWorkspace from '../components/workspace/UnifiedWorkspace';
-import PyodideLoadingNotification from '../components/common/PyodideLoadingNotification';
+import StatusFooter from '../components/common/StatusFooter';
+import TechnicalLog from '../components/common/TechnicalLog';
 
 const UnifiedWorkspacePage: React.FC = () => {
   const [showCitation, setShowCitation] = useState(false);
@@ -17,7 +18,7 @@ const UnifiedWorkspacePage: React.FC = () => {
   return (
     <PyodideProvider>
       <WorkspaceProviders>
-        <div className="min-h-screen bg-surface">
+        <div className="min-h-screen flex flex-col bg-surface">
           {/* Header */}
           <header className="bg-surface-primary shadow-sm">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between">
@@ -32,6 +33,14 @@ const UnifiedWorkspacePage: React.FC = () => {
               </div>
               <div className="flex items-center gap-1">
                 <ThemeToggle />
+                <Link
+                  to="/schema"
+                  className="inline-flex items-center gap-1.5 px-2 py-2 rounded-lg text-sm text-content-secondary hover:text-content-primary hover:bg-surface-secondary transition-colors"
+                  title="Browse community schemas"
+                >
+                  <BookOpen className="h-5 w-5" />
+                  <span>Schema Library</span>
+                </Link>
                 <button
                   onClick={() => setShowPrivacy(true)}
                   className="inline-flex items-center gap-1.5 px-2 py-2 rounded-lg text-sm text-content-secondary hover:text-content-primary hover:bg-surface-secondary transition-colors"
@@ -72,13 +81,13 @@ const UnifiedWorkspacePage: React.FC = () => {
           <CitationModal isOpen={showCitation} onClose={() => setShowCitation(false)} />
           <PrivacyModal isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} />
 
-          <PyodideLoadingNotification />
-
           {/* Content */}
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <UnifiedWorkspace />
           </div>
 
+          <TechnicalLog />
+          <StatusFooter />
 
         </div>
       </WorkspaceProviders>

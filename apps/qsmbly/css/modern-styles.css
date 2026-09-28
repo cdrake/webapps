@@ -41,14 +41,19 @@ body {
   overflow: hidden;
 }
 
-/* The shared ecosystem bar sits above both the landing overlay and the app.
-   z-index 2100: over the landing overlay (2000), under tour/modals (2500+). */
+/* The shared ecosystem bar sits above the app.
+   z-index 2100: under tour/modals (2500+). */
 .qsm-eco-bar {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 2100;
+}
+
+/* Shared status footer spans the sidebar and viewer columns. */
+.app-container > .nd-imaging-status {
+  grid-column: 1 / -1;
 }
 
 .app-header {
@@ -135,70 +140,6 @@ input[type="range"]:disabled::-moz-range-thumb {
   min-height: 0;
 }
 
-/* Fixed status bar at bottom of sidebar */
-.sidebar-status {
-  flex-shrink: 0;
-  padding: var(--nd-space-sm) var(--nd-space-md);
-  background: var(--nd-color-surface-elevated);
-  border-top: 1px solid var(--nd-color-border);
-}
-
-.status-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--nd-space-xs);
-}
-
-.status-label {
-  font-size: 0.65rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--nd-color-text-muted);
-}
-
-.status-value {
-  font-size: 0.7rem;
-  color: var(--nd-color-text);
-  font-weight: 500;
-}
-
-.status-right {
-  display: flex;
-  align-items: center;
-  gap: var(--nd-space-sm);
-}
-
-.btn-status-cancel {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  background: transparent;
-  border: 1px solid var(--nd-color-border);
-  border-radius: var(--nd-radius-sm);
-  color: var(--nd-color-text-muted);
-  cursor: pointer;
-  transition: all var(--nd-transition-fast);
-  opacity: 0;
-  pointer-events: none;
-}
-
-.btn-status-cancel:not(:disabled) {
-  opacity: 1;
-  pointer-events: auto;
-  border-color: var(--nd-color-error);
-  color: var(--nd-color-error);
-}
-
-.btn-status-cancel:not(:disabled):hover {
-  background: var(--nd-color-error);
-  color: white;
-}
-
 .app-main {
   display: flex;
   flex-direction: column;
@@ -206,17 +147,6 @@ input[type="range"]:disabled::-moz-range-thumb {
   overflow: hidden;
 }
 
-.app-footer {
-  grid-column: 1 / -1;
-  background: var(--nd-color-surface);
-  border-top: 1px solid var(--nd-color-border);
-  padding: var(--nd-space-xs) var(--nd-space-lg);
-  font-size: 0.65rem;
-  color: var(--nd-color-text-dim);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
 
 /* Header */
 .logo {
@@ -1241,20 +1171,6 @@ select {
   font-weight: 600;
 }
 
-.progress-bar {
-  height: 4px;
-  background: var(--nd-color-border);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--nd-color-primary), var(--nd-color-accent));
-  border-radius: 2px;
-  transition: width var(--nd-transition-normal);
-}
-
 /* Main Content */
 .viewer-container {
   flex: 1;
@@ -1670,33 +1586,15 @@ select {
   stroke: currentColor;
 }
 
-/* Mobile progress bar — thin bar at top, visible across all tabs */
-.mobile-progress {
-  display: none;
-  height: 3px;
-  background: var(--nd-color-border);
-  overflow: hidden;
-}
-
-.mobile-progress-fill {
-  height: 100%;
-  background: var(--nd-color-primary);
-  transition: width 0.3s ease;
-}
-
 @media (max-width: 1024px) {
   /* Grid: header, content area, tab bar */
   .app-container {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
     height: calc(100vh - var(--qsm-eco-h, 34px));
     height: calc(100dvh - var(--qsm-eco-h, 34px));
   }
 
-  /* Hide footer on mobile — tab bar replaces it */
-  .app-footer {
-    display: none;
-  }
 
   /* Header: compact */
   .app-header {
@@ -1723,7 +1621,7 @@ select {
     padding: var(--nd-space-xs);
   }
 
-  /* Header in row 1, panels in row 2, tab bar in row 3 */
+  /* Header in row 1, panels in row 2, status in row 3, tab bar in row 4 */
   .app-header {
     grid-row: 1;
   }
@@ -1738,9 +1636,15 @@ select {
     overflow: hidden;
   }
 
+  /* Status footer stays visible above the tab bar on every tab */
+  .app-container > .nd-imaging-status {
+    grid-row: 3;
+    padding: var(--nd-space-xs) var(--nd-space-sm);
+  }
+
   .mobile-tab-bar {
     display: flex;
-    grid-row: 3;
+    grid-row: 4;
   }
 
   /* Tabbed visibility — only active tab is shown */
@@ -1785,11 +1689,6 @@ select {
   .app-sidebar {
     max-height: none;
     overflow-y: auto;
-  }
-
-  /* Status bar always visible as thin bar under header when not on controls tab */
-  .sidebar-status {
-    padding: var(--nd-space-xs) var(--nd-space-sm);
   }
 
   /* Viewer toolbar: wrap and compact */
@@ -1868,18 +1767,6 @@ select {
     font-size: 0.85rem;
   }
 
-}
-
-@media (max-width: 1024px) {
-  .mobile-progress {
-    display: block;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 100;
-    pointer-events: none;
-  }
 }
 
 /* Utility Classes */
@@ -2277,4 +2164,114 @@ select {
 
 .dicompare-unchecked-content {
   border-top: 1px solid var(--nd-color-border);
+}
+
+/* ==========================================================================
+   Guided tutorial (spotlight + tooltip)
+   ========================================================================== */
+
+.tour-spotlight {
+  position: fixed;
+  z-index: 2500;
+  border-radius: var(--nd-radius-md);
+  box-shadow: 0 0 0 9999px rgba(9, 12, 18, 0.68);
+  outline: 2px solid var(--nd-color-primary);
+  outline-offset: 2px;
+  pointer-events: none; /* let the user interact with the highlighted element */
+  transition: all 180ms ease;
+}
+
+.tour-tooltip {
+  position: fixed;
+  z-index: 2600;
+  width: 300px;
+  max-width: calc(100vw - 32px);
+  background: var(--nd-color-surface-elevated);
+  border: 1px solid var(--nd-color-border-light);
+  border-radius: var(--nd-radius-lg);
+  box-shadow: var(--nd-shadow-lg);
+  padding: var(--nd-space-lg);
+  color: var(--nd-color-text);
+}
+
+.tour-tooltip h4 {
+  margin: 0 0 var(--nd-space-xs);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.tour-tooltip p {
+  margin: 0 0 var(--nd-space-md);
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--nd-color-text-muted);
+}
+
+.tour-tooltip-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nd-space-sm);
+}
+
+.tour-step-count {
+  font-size: 0.8rem;
+  color: var(--nd-color-text-dim);
+}
+
+.tour-tooltip-buttons {
+  display: flex;
+  gap: var(--nd-space-xs);
+}
+
+.tour-btn {
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 0.4rem 0.8rem;
+  border-radius: var(--nd-radius-sm);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background var(--nd-transition-fast), border-color var(--nd-transition-fast);
+}
+
+.tour-btn-primary {
+  color: #fff;
+  background: var(--nd-color-primary);
+}
+
+.tour-btn-primary:hover {
+  background: var(--nd-color-primary-hover);
+}
+
+.tour-btn-ghost {
+  color: var(--nd-color-text-muted);
+  background: transparent;
+  border-color: var(--nd-color-border-light);
+}
+
+.tour-btn-ghost:hover {
+  color: var(--nd-color-text);
+  border-color: var(--nd-color-primary);
+}
+
+.tour-skip {
+  background: none;
+  border: none;
+  color: var(--nd-color-text-dim);
+  font-size: 0.8rem;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+.tour-skip:hover {
+  color: var(--nd-color-text-muted);
+  text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+  .tour-tooltip {
+    width: calc(100vw - 32px);
+  }
 }

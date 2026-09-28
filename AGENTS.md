@@ -14,6 +14,11 @@ Before changing UI, adding controls, or scaffolding an app, read [the design sys
 - Keep one shared application bar. Register app-specific About, Cite and Privacy handlers through the shell's control contract. If an app ships a command-line package, register its Standalone instructions through the optional shell control instead of placing them in the workflow sidebar.
 - Keep the current task visible. Put optional settings, technical logs and inactive output controls in accessible collapsible sections.
 - Place technical logs in a collapsed console below the viewer, following QSMbly's `console-container` disclosure pattern. Keep Copy and Clear actions in the console header.
+- Open straight into the workspace. Do not add start pages, hero sections, landing overlays or welcome modals; an introduction is one paragraph in the About template.
+- Show every live status update in the bottom bar, `footer#status`: the message, a native `<progress>`, elapsed time and a × that appears only while the run can be cancelled. Drive it with `ProgressManager` from `@neurodesk/webapp-components/ui` (`begin`, `setProgress`, `end`, `reset`). Never put status, progress or a second log in the sidebar, and do not add a static footer.
+- Keep visible help to 90 characters. Put longer explanations in an `.nd-info-icon` tooltip beside the label (`renderInfoIcon`, `bindInfoTooltips`) or in About. No subtitle paragraphs under section titles, no numbered step badges, no instructions that repeat a button's label.
+- Give each sidebar one `.nd-btn-primary`. Every other action, including per-step Run buttons, is secondary; the footer × is the only cancel.
+- `test/design-system.test.mjs` checks these rules in source for every app, whatever its shell; `pnpm audit:interfaces` checks them in the rendered page on desktop and phone.
 - Reuse shared layout, spacing and control components. Preserve input values when sections close.
 - Before completing UI work, run `pnpm audit:interfaces`, `pnpm test:mobile` and `pnpm test:interface-workflows` against a fresh production build. Review desktop and phone screenshots and exercise the changed workflow. The interface standard defines the review criteria and the audit's limits.
 

@@ -53,6 +53,8 @@ select { cursor: pointer; appearance: none; background-image: url("data:image/sv
 .progress-bar { height: 4px; background: var(--nd-color-border); border-radius: 2px; overflow: hidden; }
 .progress-fill { height: 100%; background: linear-gradient(90deg, var(--nd-color-primary), var(--nd-color-accent)); border-radius: 2px; transition: width var(--nd-transition-normal); }
 .app-main { display: flex; flex-direction: column; background: var(--nd-color-bg); overflow: hidden; }
+/* The design-system status footer spans both columns of the legacy grid. */
+.app-container > .nd-imaging-status { grid-column: 1 / -1; }
 .viewer-toolbar { display: flex; align-items: center; gap: var(--nd-space-md); padding: var(--nd-space-xs) var(--nd-space-md); background: var(--nd-color-surface); border-bottom: 1px solid var(--nd-color-border); flex-wrap: wrap; }
 .view-tabs { display: flex; gap: 2px; }
 .view-tab { padding: var(--nd-space-xs) var(--nd-space-sm); font-size: 0.75rem; font-weight: 500; color: var(--nd-color-text-muted); background: transparent; border: none; border-radius: var(--nd-radius-sm); cursor: pointer; transition: all var(--nd-transition-fast); }
@@ -173,7 +175,6 @@ input[type="range"]:disabled { opacity: 0.4; cursor: not-allowed; }
 .viewer-info { display: flex; align-items: center; justify-content: space-between; gap: var(--nd-space-sm); padding: var(--nd-space-xs) var(--nd-space-md); background: var(--nd-color-surface); border-top: 1px solid var(--nd-color-border); font-size: 0.7rem; font-family: 'SF Mono', 'Consolas', monospace; color: var(--nd-color-text-muted); }
 .viewer-info-primary { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .viewer-info-label { flex-shrink: 0; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--nd-color-text-dim); }
-.app-footer { grid-column: 1 / -1; background: var(--nd-color-surface); border-top: 1px solid var(--nd-color-border); padding: var(--nd-space-xs) var(--nd-space-lg); font-size: 0.65rem; color: var(--nd-color-text-dim); display: flex; align-items: center; justify-content: space-between; }
 .stage-buttons-grid { display: flex; flex-direction: column; gap: var(--nd-space-xs); }
 .volume-toggle { display: flex; align-items: center; gap: 6px; }
 .volume-toggle .viewer-checkbox { flex: 1; }

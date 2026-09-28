@@ -4,6 +4,7 @@ import { Acquisition } from '../types';
 import { schemaCacheManager } from '../services/SchemaCacheManager';
 import { dicompareWorkerAPI } from '../services/DicompareWorkerAPI';
 import { convertSchemaToAcquisitions } from '../utils/schemaToAcquisition';
+import { log } from '../utils/technicalLog';
 
 interface EditingSchema {
   id: string;
@@ -80,7 +81,12 @@ export const SchemaProvider: React.FC<SchemaProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isLibraryLoading, setIsLibraryLoading] = useState(true);
   const [isAcquisitionsLoading, setIsAcquisitionsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setErrorState] = useState<string | null>(null);
+  // Every schema error also reaches the technical log.
+  const setError = (message: string | null) => {
+    setErrorState(message);
+    if (message) log(message, 'error');
+  };
 
   // Refs to track loading state for full acquisitions (avoids duplicate loads)
   const fullAcquisitionsLoadingRef = useRef<Set<string>>(new Set());
@@ -104,6 +110,7 @@ export const SchemaProvider: React.FC<SchemaProviderProps> = ({ children }) => {
       setIsLibraryLoading(true);
       const schemas = await dicompareWorkerAPI.getExampleSchemas();
       setLibrarySchemas(schemas);
+      log(`Loaded ${schemas.length} library schema(s).`);
     } catch (err) {
       console.error('Failed to load library schemas:', err);
     } finally {
@@ -147,6 +154,7 @@ export const SchemaProvider: React.FC<SchemaProviderProps> = ({ children }) => {
 
       await schemaCacheManager.storeSchema(metadata, content);
       await refreshSchemas();
+      log(`Loaded schema ${metadata.title}.`, 'success');
 
       return metadata;
     } catch (err) {

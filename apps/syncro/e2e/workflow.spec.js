@@ -118,8 +118,8 @@ test('compact help, standalone commands and result switching remain reachable',a
  await page.locator('.nd-console-title').click();
  await expect(page.locator('#localSr, #localStrip, #browserModelLink')).toHaveCount(0);
  await page.locator('#settingsSection > summary').click();
- await page.locator('.nd-info-icon').first().focus();
- await expect(page.locator('.nd-info-tooltip').first()).toBeVisible();
+ await page.locator('#settingsSection .nd-info-icon').first().focus();
+ await expect(page.locator('#settingsSection .nd-info-tooltip').first()).toBeVisible();
  await page.locator('#settingsSection > summary').click();
  await expect(page.locator('#standalone')).toHaveCount(0);
  await verifyStandaloneDialog(page, 'syncro');

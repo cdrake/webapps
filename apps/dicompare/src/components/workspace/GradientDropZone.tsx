@@ -3,6 +3,7 @@ import { Waypoints, Loader, CheckCircle, AlertCircle } from 'lucide-react';
 import { Acquisition } from '../../types';
 import { useDropZone } from '../../hooks/useDropZone';
 import { deriveGradientDescriptorFields } from '../../hooks/useFileProcessing';
+import { log, logError } from '../../utils/technicalLog';
 
 interface GradientDropZoneProps {
   acquisition: Acquisition;
@@ -37,7 +38,9 @@ const GradientDropZone: React.FC<GradientDropZoneProps> = ({
     try {
       const fields = await deriveGradientDescriptorFields(acquisition, arr);
       onUpdateAcquisition({ acquisitionFields: fields });
+      log(`Attached diffusion gradients to ${acquisition.protocolName || 'acquisition'}.`, 'success');
     } catch (e) {
+      logError('Gradient descriptors failed', e);
       setError(e instanceof Error ? e.message : 'Failed to derive gradient descriptors');
     } finally {
       setBusy(false);

@@ -18,14 +18,14 @@
           </label>
           <p id="lesionInfo" class="nd-file-info" hidden></p>
           <p id="anatomicalInfo" class="nd-file-info" hidden></p>
-          <p class="nd-hint">The lesion must already be on the MNI152 1 mm template, 182 × 218 × 182. Normalize with <a href="../syncro/" target="_blank" rel="noopener">SYNcro</a> first if it is not. Without an anatomical scan the MNI152 template is shown instead.</p>
+          <p class="nd-hint">The lesion must be on the MNI152 1 mm grid; normalize it with <a href="../syncro/" target="_blank" rel="noopener">SYNcro</a> first.</p>
         </div>
       </details>
       <details class="nd-sidebar-section" id="runSection" open>
         <summary class="nd-section-title">Disconnection</summary>
         <div class="nd-section-content">
           <div class="nd-field">
-            <label for="atlasSelect">Tractography atlas</label>
+            <label for="atlasSelect">Tractography atlas <span class="nd-info-icon" tabindex="0" aria-label="About changing atlas">i<span class="nd-info-tooltip">Changing atlas discards the current result: the two are different parcellations, so their bundles do not correspond.</span></span></label>
             <select id="atlasSelect"></select>
           </div>
           <p class="nd-hint" id="atlasHint"></p>
@@ -67,6 +67,7 @@
     </footer>
     <template id="aboutContent">
       <p>A lesion interrupts more of the brain than it destroys: fibres passing through it lose their connection even where the tissue beyond is intact. This app scores that disconnection. It intersects a lesion map with a population tractography atlas and reports, for each white-matter bundle, the fraction of streamlines that pass through the lesion.</p>
+      <p>The lesion map must already be on the MNI152 1 mm template grid, 182 × 218 × 182; normalize it with SYNcro first if it is not. Without an anatomical scan the MNI152 template is shown behind the lesion.</p>
       <p>Two atlases are offered. The <strong>ENIGMA Symmetric White Matter Tractography Atlas</strong> (65 bundles) is the default: it is built to be left–right symmetric, so a bundle and its contralateral twin are directly comparable. The <strong>HCP1065 population-averaged atlas</strong> (87 bundles) covers more bundles, including cranial nerves and brainstem pathways. They are different parcellations, not two measurements of one thing, so their bundle names and counts do not line up; report which one you used.</p>
       <p>The arithmetic runs locally in WebAssembly (<code>nii2tvx</code>), on the full-resolution atlas, so the numbers match the command-line tool exactly. The streamlines you see are a decimated sample of the same atlas, kept small enough to download; do not count fibres on screen and expect the reported fraction.</p>
       <p>The same analysis runs from a terminal: <code>exes/nii2tvx</code> in the Neurodesk webapps repository builds with <code>make</code>, and the dataset README shows the two commands. The browser and the command line produce the same table.</p>

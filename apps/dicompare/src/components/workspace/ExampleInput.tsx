@@ -3,6 +3,7 @@ import { createExampleSelector, renderSidebarSection } from '@neurodesk/webapp-c
 import '@neurodesk/webapp-components/styles/imaging-workspace.css';
 import examples from '../../../examples.json';
 import { useWorkspace } from '../../contexts/WorkspaceContext';
+import { log } from '../../utils/technicalLog';
 
 export default function ExampleInput() {
   const host = useRef<HTMLDivElement>(null);
@@ -15,6 +16,9 @@ export default function ExampleInput() {
     const control = createExampleSelector({
       scope: host.current?.parentElement ?? undefined,
       examples,
+      onStatus(text: string, error?: boolean) {
+        if (text) log(text, error ? 'error' : 'info');
+      },
       async onLoad(example, { fetchFiles, assertCurrent }) {
         const files = await fetchFiles();
         assertCurrent();

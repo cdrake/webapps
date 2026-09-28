@@ -122,6 +122,21 @@ test('bindInfoTooltips shows tooltips on focus and hides them on blur', () => {
   assert.equal(tooltip.hidden, true);
 });
 
+test('an info icon inside a label does not join the control name', () => {
+  const document = dom();
+  document.body.innerHTML = `<label for="zoom">Zoom level <small>L0–L3</small>
+    <span class="nd-info-icon" tabindex="0" aria-label="About zoom levels">i<span class="nd-info-tooltip">L0 is finest.</span></span></label>
+    <input id="zoom" type="range">
+    <label class="nd-check"><input id="share" type="checkbox"> Share overlays
+    <span class="nd-info-icon" tabindex="0" aria-label="About sharing">i<span class="nd-info-tooltip">Same subject only.</span></span></label>
+    <label for="named">Named <span class="nd-info-icon" tabindex="0">i<span class="nd-info-tooltip">x</span></span></label>
+    <input id="named" aria-label="Kept">`;
+  bindInfoTooltips(document);
+  assert.equal(document.getElementById('zoom').getAttribute('aria-label'), 'Zoom level L0–L3');
+  assert.equal(document.getElementById('share').getAttribute('aria-label'), 'Share overlays');
+  assert.equal(document.getElementById('named').getAttribute('aria-label'), 'Kept', 'an existing name is kept');
+});
+
 test('createViewerToolbar renders only the requested controls', () => {
   const document = dom();
   const toolbar = createViewerToolbar({ window: false, overlay: false, colormap: false, download: false, screenshot: false }, document);

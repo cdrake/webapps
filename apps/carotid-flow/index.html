@@ -17,7 +17,7 @@
             <span>Drop NIfTI or DICOM files or folder</span>
           </label>
           <p id="fileInfo" class="nd-file-info" hidden></p>
-          <p class="nd-hint">One gated neck slice: amplitude frames, then as many phase frames. Separate amplitude and <code>_ph</code> series also work.</p>
+          <p class="nd-hint">One gated neck slice: amplitude then phase frames, or amplitude and <code>_ph</code> series.</p>
         </div>
       </details>
 
@@ -33,9 +33,9 @@
                 <p class="nd-hint">Only for raw ±4096 phase. Phase already scaled to cm/s needs none.</p>
               </div>
               <div class="nd-field">
-                <label for="candidatePercentile">Candidate percentile <small>%</small></label>
+                <label for="candidatePercentile">Candidate percentile <small>%</small> <span class="nd-info-icon" tabindex="0" aria-label="About the candidate percentile">i<span class="nd-info-tooltip">Unsigned speed images only: candidates are pixels whose signal varies more over the cycle than this share of the head.</span></span></label>
                 <input id="candidatePercentile" type="number" min="90" max="99.99" step="0.05" value="99.9" />
-                <p class="nd-hint">Unsigned speed images only: pixels whose signal varies more than this share of the head. Lower it when a carotid is missed.</p>
+                <p class="nd-hint">Lower it when a carotid is missed.</p>
               </div>
               <div class="nd-field">
                 <label for="headPercentile">Head threshold percentile <small>%</small></label>

@@ -13,6 +13,7 @@ import {
   OpenFilePickerOptions,
 } from '../utils/fileSystemAccessUtils';
 import { FileHandleManager, BatchConfig, DEFAULT_BATCH_CONFIG } from '../utils/fileHandleManager';
+import { log } from '../utils/technicalLog';
 
 export interface UseFileSystemAccessReturn {
   // Feature detection
@@ -35,7 +36,11 @@ export function useFileSystemAccess(): UseFileSystemAccessReturn {
   const [isFilePickerSupportedState, setIsFilePickerSupportedState] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState<{ scanned: number; currentPath: string } | null>(null);
-  const [lastError, setLastError] = useState<string | null>(null);
+  const [lastError, setLastErrorState] = useState<string | null>(null);
+  const setLastError = useCallback((message: string | null) => {
+    setLastErrorState(message);
+    if (message) log(message, 'error');
+  }, []);
 
   // Check for FSAA support on mount
   useEffect(() => {

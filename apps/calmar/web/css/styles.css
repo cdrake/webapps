@@ -76,10 +76,6 @@ input[type="file"]::file-selector-button:hover { border-color: var(--nd-color-bo
 .console-source { color: var(--nd-color-text-dim); flex-shrink: 0; }
 .console-line-warning .console-message { color: var(--nd-color-warning); }
 .console-line-error .console-message { color: var(--nd-color-error); }
-.technical-log { border-top: 1px solid var(--nd-color-border); }
-.technical-log-summary { display: flex; align-items: center; justify-content: space-between; gap: var(--nd-space-md); padding: var(--nd-space-xs) var(--nd-space-md); color: var(--nd-color-text-muted); cursor: pointer; font-size: 0.7rem; }
-.technical-log-summary span:first-child { font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-.technical-log-summary span:last-child { color: var(--nd-color-text-dim); font-size: 0.68rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .console-technical-log { height: 160px; border-top: 1px solid var(--nd-color-border); }
 
 .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 7000; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
@@ -164,12 +160,6 @@ input[type="file"]::file-selector-button:hover { border-color: var(--nd-color-bo
 }
 
 @media (max-width: 1024px) {
-  .start-header { align-items: flex-start; flex-direction: column; padding: var(--nd-space-sm) var(--nd-space-md); }
-  .start-hero { grid-template-columns: minmax(0, 1fr) minmax(240px, 0.8fr); padding: var(--nd-space-md); gap: var(--nd-space-md); }
-  .start-how { padding: var(--nd-space-sm) var(--nd-space-md); }
-  .start-steps { grid-template-columns: 1fr; text-align: left; }
-  .start-step { grid-template-columns: 36px 1fr; column-gap: var(--nd-space-sm); text-align: left; }
-  .start-step-icon { grid-row: 1 / span 2; width: 36px; height: 36px; }
   .app-container { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr auto; }
   .app-header { align-items: flex-start; flex-wrap: wrap; }
   .logo { flex-basis: 100%; }
@@ -178,30 +168,3 @@ input[type="file"]::file-selector-button:hover { border-color: var(--nd-color-bo
   .app-sidebar { border-right: none; border-bottom: 1px solid var(--nd-color-border); max-height: 50vh; }
 }
 
-@media (max-width: 540px) {
-  .start-brand { gap: var(--nd-space-xs); }
-  .start-brand strong { font-size: 1rem; }
-  .start-brand span { font-size: 0.78rem; }
-  .start-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; gap: var(--nd-space-xs); }
-  .start-links .header-link { justify-content: center; padding: 3px var(--nd-space-xs); font-size: 0.78rem; }
-  .start-main { grid-template-rows: minmax(0, 1fr) auto; }
-  .start-hero { grid-template-columns: 1fr; align-content: center; gap: var(--nd-space-sm); padding: var(--nd-space-sm) var(--nd-space-md); }
-  .start-kicker { font-size: 0.66rem; margin-bottom: var(--nd-space-xs); }
-  .start-hero h2 { font-size: 1.55rem; line-height: 1.1; }
-  .start-intro { margin-top: var(--nd-space-sm); font-size: 0.8rem; line-height: 1.35; }
-  .start-actions { margin-top: var(--nd-space-sm); }
-  .start-actions .btn { width: 100%; justify-content: center; min-height: 36px; }
-  .start-local-badge { margin-top: var(--nd-space-sm); padding: var(--nd-space-xs) var(--nd-space-sm); font-size: 0.74rem; }
-  .start-local-panel { padding: var(--nd-space-sm); }
-  .start-local-panel h3 { margin-bottom: var(--nd-space-xs); font-size: 0.84rem; }
-  .start-local-panel ul { gap: var(--nd-space-xs); font-size: 0.72rem; line-height: 1.25; }
-  .start-local-panel li { padding-left: 14px; }
-  .start-local-panel li::before { top: 0.48em; width: 5px; height: 5px; box-shadow: 0 0 0 2px var(--nd-color-success-bg); }
-  .start-how h3 { font-size: 0.86rem; margin-bottom: var(--nd-space-xs); }
-  .start-steps { gap: var(--nd-space-xs); }
-  .start-step { grid-template-columns: 28px 1fr; column-gap: var(--nd-space-xs); }
-  .start-step-icon { width: 28px; height: 28px; }
-  .start-step-icon svg { width: 16px; height: 16px; }
-  .start-step h4 { font-size: 0.76rem; }
-  .start-step p { font-size: 0.66rem; line-height: 1.25; }
-}

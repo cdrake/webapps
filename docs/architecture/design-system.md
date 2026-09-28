@@ -66,7 +66,7 @@ impact:
 | Viewer toolbar | `.nd-viewer-toolbar > .nd-view-tabs > .nd-view-tab` (layout) + `.nd-viewer-actions` (opacity, colormap, window) | `createViewerToolbar({ views, window, overlay, colormap, download, screenshot, actions })` |
 | Viewer | `.nd-viewer-canvas-wrapper > canvas + p.nd-viewer-empty + p.nd-viewer-notice`, then `.nd-viewer-info` | |
 | Technical log | `.nd-console-container[data-disclosure].collapsed` with header, Copy, Clear | `createConsole()` |
-| Status | `<footer id="status"><span class="nd-status-label">Status</span><span id="statusText" class="nd-status-text">…</span><span class="nd-status-elapsed"></span><progress></progress><button class="nd-btn-cancel" hidden>×</button></footer>` | |
+| Status (the only place for live progress) | `<footer id="status"><span class="nd-status-label">Status</span><span id="statusText" class="nd-status-text">…</span><span class="nd-status-elapsed"></span><progress></progress><button class="nd-btn-cancel" hidden>×</button></footer>` | |
 | Dialog | `dialog.nd-dialog` with `.nd-dialog-header`, `.nd-dialog-close`, `.nd-dialog-body`; `.nd-dialog-highlight`, `.nd-citation`, `.nd-command` inside | `createInfoDialog()`, `renderCommand()` |
 
 Sizes are the same on every app: sections 16px padding, controls 30px tall at
@@ -91,6 +91,15 @@ dark come from the hosted theme's tokens; apps never set `color-scheme`.
   progress bar and a small × cancel that appears only while running.
 - Say things once. A field label plus a short `.nd-hint` when needed; no
   paragraphs, no repeated instructions, no "Image workspace" captions.
+  Visible help is at most 90 characters; anything longer is an
+  `.nd-info-icon` tooltip beside the label or goes to About.
+- One `.nd-btn-primary` per sidebar. Everything else is `.nd-btn-secondary`.
+- The app opens on this layout. There is no start page, hero or welcome modal,
+  and no static footer below the workspace.
+- `ProgressManager` drives the status footer (`begin`, `setProgress`, `end`,
+  `reset`), including the elapsed counter and the cancel ×. Apps on the older
+  `.app-container` grid place the same `footer#status.nd-imaging-status` as
+  the grid's last child; the shared stylesheet spans it across both columns.
 
 ## What an app may still own
 
@@ -134,7 +143,7 @@ an implemented method has no paper or an app has no entry.
 | --- | --- |
 | SynthSR, SYNcro | Rebuilt on the vocabulary; app CSS is empty. |
 | App template (`pnpm new-app`) | Canonical example; Documentation links to this executable template. |
-| NiiMath | Uses shared sections; picker and buttons still app-styled. Ratcheted. |
+| NiiMath | Rebuilt on the vocabulary (28 September 2026): shared picker, layout tabs, status footer, console and information dialog; the app stylesheet is gone. |
 | Deface, BrowserQC | Own palette (`--bg`, `--accent`) and `.upload-button` pair. Ratcheted; migrate the picker to `.nd-file` and delete the palette. |
 | SurfAnnotate, ZARRo | Specialist sidebars with their own panel styling. Ratcheted; migrate section titles and buttons first. |
 | QSMbly and the five inference apps | Already match the reference through `inference-workspace.css`. Their class names map 1:1 (`.sidebar-section` → `.nd-sidebar-section`, `.btn-primary` → `.nd-btn-primary`, `.file-upload-zone` → `.nd-file`, `.viewer-toolbar` → `.nd-viewer-toolbar`, `.console-container` → `.nd-console-container`); migrate when touching them. |

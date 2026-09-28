@@ -54,6 +54,10 @@ jobs:
         run: pnpm test:registry && node --test test/app-plan.test.mjs test/independent-workflows.test.mjs
       - name: Validate date releases and app scaffolding
         run: node --test test/app-versions.test.mjs test/new-app.test.mjs test/app-examples.test.mjs test/disconnectome-assets.test.mjs
+      - name: Enforce the design system and workspace contract
+        # Shared vocabulary, status footer, collapsed technical log, no start
+        # pages, help text within 90 characters and one primary per sidebar.
+        run: node --test test/design-system.test.mjs
       - name: Check native tract conversion and WebAssembly parity
         run: |
           sudo apt-get update

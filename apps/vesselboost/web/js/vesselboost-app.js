@@ -26,6 +26,17 @@ import {
   isResultStageVisible
 } from './modules/ui/result-display.js';
 
+// Steps the footer cancel button can abort; loading and downsampling run to completion.
+const ABORTABLE_STEPS = ['n4', 'denoise', 'inference', 'bet'];
+const STEP_LABELS = {
+  load: 'Loading volume',
+  downsample: 'Downsampling',
+  n4: 'Bias field correction',
+  denoise: 'Denoising',
+  inference: 'Vessel segmentation',
+  bet: 'Brain extraction'
+};
+
 class VesselBoostApp {
   constructor() {
     // NiiVue
@@ -68,8 +79,6 @@ class VesselBoostApp {
     // Version display
     const versionEl = document.getElementById('appVersion');
     if (versionEl) versionEl.textContent = `v${Config.VERSION}`;
-    const footerVersionEl = document.getElementById('footerVersion');
-    if (footerVersionEl) footerVersionEl.textContent = `v${Config.VERSION}`;
     const aboutVersionEl = document.getElementById('aboutAppVersion');
     if (aboutVersionEl) aboutVersionEl.textContent = `v${Config.VERSION}`;
 
@@ -242,11 +251,6 @@ class VesselBoostApp {
     const runBtn = document.getElementById('runSegmentation');
     if (runBtn) runBtn.addEventListener('click', () => this.runSegmentation());
 
-    ['abortN4Btn', 'abortDenoiseBtn', 'abortInferenceBtn', 'abortBETBtn'].forEach(id => {
-      const btn = document.getElementById(id);
-      if (btn) btn.addEventListener('click', () => this.abortCurrentStep());
-    });
-
     const cancelBtn = document.getElementById('cancelButton');
     if (cancelBtn) cancelBtn.addEventListener('click', () => this.abortCurrentStep());
 
@@ -329,8 +333,6 @@ class VesselBoostApp {
     const clearResults = document.getElementById('clearResults');
     if (clearResults) clearResults.addEventListener('click', () => this.clearResults());
 
-    this.bindStartPageControls();
-
     // Modal buttons
     const aboutBtn = document.getElementById('aboutButton');
     if (aboutBtn) aboutBtn.addEventListener('click', () => this.aboutModal.open());
@@ -346,33 +348,6 @@ class VesselBoostApp {
     if (privacyBtn) privacyBtn.addEventListener('click', () => this.privacyModal.open());
     const closePrivacy = document.getElementById('closePrivacy');
     if (closePrivacy) closePrivacy.addEventListener('click', () => this.privacyModal.close());
-  }
-
-  bindStartPageControls() {
-    const enterButton = document.getElementById('enterAppButton');
-    if (enterButton) {
-      enterButton.addEventListener('click', () => this.enterApp());
-    }
-
-    const startPrivacyButton = document.getElementById('startPrivacyButton');
-    if (startPrivacyButton) startPrivacyButton.addEventListener('click', () => this.privacyModal.open());
-
-    const startPrivacyInlineButton = document.getElementById('startPrivacyInlineButton');
-    if (startPrivacyInlineButton) startPrivacyInlineButton.addEventListener('click', () => this.privacyModal.open());
-
-    const startCitationsButton = document.getElementById('startCitationsButton');
-    if (startCitationsButton) startCitationsButton.addEventListener('click', () => this.citationsModal.open());
-  }
-
-  enterApp() {
-    const startPage = document.getElementById('startPage');
-    if (startPage) startPage.classList.add('hidden');
-
-    document.getElementById('fileInput')?.focus();
-    requestAnimationFrame(() => {
-      window.dispatchEvent(new Event('resize'));
-      this.nv.drawScene();
-    });
   }
 
   setupDropZone() {
@@ -460,7 +435,6 @@ class VesselBoostApp {
         this.setStepButtonsEnabled(node, false);
         this.setStepEnabled(node, false);
       }
-      this.setStepAbortVisible(node, false);
     }
 
     if (invalidated.stages.includes('segmentation')) {
@@ -652,9 +626,7 @@ class VesselBoostApp {
 
     const abortedStep = this.currentRunningStep;
     const checkpoint = this.abortUICheckpoint;
-    const statusText = document.getElementById('statusText');
-    if (statusText) statusText.textContent = 'Aborting...';
-
+    this.progress.setText('Aborting...');
     this.resetAbortControls();
 
     try {
@@ -670,7 +642,8 @@ class VesselBoostApp {
   }
 
   async restoreUIFromAbortCheckpoint(checkpoint, abortedStep) {
-    this.progress.reset();
+    this.setStatusError(false);
+    this.progress.reset('Cancelled');
     this.resetAbortControls();
 
     for (const step of Config.PIPELINE_STEPS) {
@@ -747,8 +720,7 @@ class VesselBoostApp {
       this.viewerController.setStageVisible('segmentation', false);
     }
 
-    const statusText = document.getElementById('statusText');
-    if (statusText) statusText.textContent = 'Ready';
+    this.progress.setText('Cancelled');
     this.updateViewerInfo(this._lastLocationData);
   }
 
@@ -935,11 +907,13 @@ class VesselBoostApp {
   setStepRunning(step) {
     this.updateStepBadge(step, 'running');
     this.setStepButtonsEnabled(step, false);
-    this.setStepAbortVisible(step, true);
-    if (this.currentRunningStep === step) {
-      const cancelBtn = document.getElementById('cancelButton');
-      if (cancelBtn) cancelBtn.disabled = false;
-    }
+    const cancellable = ABORTABLE_STEPS.includes(step) && this.currentRunningStep === step;
+    this.setStatusError(false);
+    this.progress.begin(`${STEP_LABELS[step] || 'Processing'}...`, { cancellable });
+  }
+
+  setStatusError(isError) {
+    document.getElementById('statusText')?.classList.toggle('error', Boolean(isError));
   }
 
   getStepSectionId(step) {
@@ -965,16 +939,6 @@ class VesselBoostApp {
     return buttonMap[step] || [];
   }
 
-  getStepAbortButtonId(step) {
-    const abortButtonMap = {
-      'n4': 'abortN4Btn',
-      'bet': 'abortBETBtn',
-      'denoise': 'abortDenoiseBtn',
-      'inference': 'abortInferenceBtn'
-    };
-    return abortButtonMap[step] || null;
-  }
-
   isStepEnabled(step) {
     const sectionId = this.getStepSectionId(step);
     if (!sectionId) return false;
@@ -991,24 +955,8 @@ class VesselBoostApp {
     });
   }
 
-  setStepAbortVisible(step, visible) {
-    const abortButtonId = this.getStepAbortButtonId(step);
-    if (!abortButtonId) return;
-
-    const abortBtn = document.getElementById(abortButtonId);
-    if (!abortBtn) return;
-
-    abortBtn.classList.toggle('hidden', !visible);
-    abortBtn.disabled = !visible;
-  }
-
   resetAbortControls() {
-    for (const step of ['n4', 'denoise', 'inference', 'bet']) {
-      this.setStepAbortVisible(step, false);
-    }
-
-    const cancelBtn = document.getElementById('cancelButton');
-    if (cancelBtn) cancelBtn.disabled = true;
+    this.progress.setCancellable(false);
   }
 
   async resetAllSteps() {
@@ -1025,7 +973,6 @@ class VesselBoostApp {
       this.updateStepBadge(step, '');
       this.setStepEnabled(step, false);
       this.setStepButtonsEnabled(step, false);
-      this.setStepAbortVisible(step, false);
     }
 
     // Reset results
@@ -1048,9 +995,8 @@ class VesselBoostApp {
   }
 
   resetStatusDisplay() {
-    const statusText = document.getElementById('statusText');
-    if (statusText) statusText.textContent = 'Ready';
-    this.resetAbortControls();
+    this.setStatusError(false);
+    this.progress.reset('Ready');
   }
 
   resetProcessingInputs() {
@@ -1149,16 +1095,13 @@ class VesselBoostApp {
     const status = this.inferenceExecutor.getStepStatus(step);
     this.updateStepBadge(step, status);
     this.setStepButtonsEnabled(step, true);
-    this.setStepAbortVisible(step, false);
-    this.resetAbortControls();
 
     if (this.currentRunningStep === step) {
       this.currentRunningStep = null;
       this.abortUICheckpoint = null;
     }
 
-    const statusText = document.getElementById('statusText');
-    if (statusText) statusText.textContent = 'Ready';
+    this.progress.end(`${STEP_LABELS[step] || 'Step'} complete`);
 
     // Enable next step section
     switch (step) {
@@ -1686,11 +1629,9 @@ class VesselBoostApp {
   }
 
   async onInferenceComplete() {
-    const statusText = document.getElementById('statusText');
-    this.resetAbortControls();
     this.currentRunningStep = null;
     this.abortUICheckpoint = null;
-    if (statusText) statusText.textContent = 'Ready';
+    this.progress.end('Complete');
 
     const fullResult = this.inferenceExecutor.getResult('segmentation');
     if (fullResult?.file) {
@@ -1702,11 +1643,10 @@ class VesselBoostApp {
   }
 
   onInferenceError(msg) {
-    const statusText = document.getElementById('statusText');
-    this.resetAbortControls();
     this.currentRunningStep = null;
     this.abortUICheckpoint = null;
-    if (statusText) statusText.textContent = 'Error';
+    this.setStatusError(true);
+    this.progress.end(msg ? `Error: ${msg}` : 'Error', { success: false });
 
     // Reset any running badges back
     for (const step of Config.PIPELINE_STEPS) {
@@ -1772,13 +1712,8 @@ class VesselBoostApp {
   }
 
   setProgress(value, text) {
-    this.progress.setProgress(value);
-    const statusText = document.getElementById('statusText');
-    if (statusText) {
-      if (value >= 1) statusText.textContent = 'Complete';
-      else if (text) statusText.textContent = text;
-      else if (value > 0) statusText.textContent = 'Processing...';
-    }
+    const label = value >= 1 ? 'Complete' : text || (value > 0 ? 'Processing...' : null);
+    this.progress.setProgress(value, label);
   }
 
   clearFiles() {

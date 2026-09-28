@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import { bindInfoTooltips } from '@neurodesk/webapp-components/ui';
 import { Download, Loader, FolderOpen, Book, Plus, HardDrive } from 'lucide-react';
 import { ProcessingProgress } from '../../contexts/WorkspaceContext';
 import { UseDropZoneReturn } from '../../hooks/useDropZone';
@@ -30,8 +31,10 @@ export interface DropZoneProps {
   showBlankButton?: boolean;
   /** Label shown when empty (e.g., "No reference") */
   emptyLabel?: string;
-  /** Description shown when empty */
+  /** One-line description shown when empty (90 characters or fewer) */
   emptyDescription?: string;
+  /** Supported formats, shown in the info tooltip beside the description */
+  formatsHint?: string;
   /** Unique ID for the file input */
   fileInputId: string;
   /** Accepted file types */
@@ -54,7 +57,8 @@ const DropZone: React.FC<DropZoneProps> = ({
   showLibraryButton = false,
   showBlankButton = false,
   emptyLabel = 'No data',
-  emptyDescription = 'Drop DICOMs or protocols (.pro, .exar1, ExamCard, Siemens print protocol .xml/.txt), plus diffusion gradients (.dvs/.bvec/.bval)',
+  emptyDescription = 'Drop DICOMs, scanner protocols or diffusion gradients',
+  formatsHint = 'DICOM folders or .zip; protocols: Siemens .pro, .exar1 and print protocol .xml/.txt, Philips ExamCard, GE LxProtocol; diffusion gradients: .dvs, .bvec/.bval.',
   fileInputId,
   acceptedFiles = '.dcm,.dicom,.zip,.pro,.exar1,.ExamCard,.examcard,LxProtocol,.xml,.txt,.dvs,.bvec,.bval',
   className = '',
@@ -63,6 +67,11 @@ const DropZone: React.FC<DropZoneProps> = ({
   const isDisabled = isProcessing && processingTarget !== variant;
   // Determine if this zone is actively processing
   const isActivelyProcessing = isProcessing && processingTarget === variant;
+  const info = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (info.current) bindInfoTooltips(info.current.parentElement ?? undefined);
+  }, [isActivelyProcessing]);
 
   const containerClasses = `border-2 border-dashed rounded-lg p-4 text-center transition-colors ${className} ${
     isDisabled
@@ -104,8 +113,12 @@ const DropZone: React.FC<DropZoneProps> = ({
           <p className="text-sm font-medium text-content-secondary mb-1">
             {emptyLabel}
           </p>
-          <p className="text-xs text-content-tertiary mb-3">
-            {emptyDescription}
+          <p className="text-xs text-content-tertiary mb-3 inline-flex items-center gap-1.5">
+            <span>{emptyDescription}</span>
+            <span ref={info} className="nd-info-icon" tabIndex={0} aria-label="Supported formats">
+              i
+              <span className="nd-info-tooltip">{formatsHint}</span>
+            </span>
           </p>
           <div className="flex flex-wrap items-center justify-center gap-2">
             <input

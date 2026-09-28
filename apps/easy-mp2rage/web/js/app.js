@@ -364,11 +364,7 @@ function renderWarnings() {
   for (const f of state.files) {
     if (structural.has(f.role) && isNonDistCorrected(f))
       msgs.push(
-        `“${esc(
-          f.name
-        )}” is a <b>non-distortion-corrected (_ND)</b> image but is set to <b>${
-          f.role
-        }</b>. For quantitative T1 prefer the distortion-corrected (DIS2D/DIS3D) series. <b>Please check!</b>`
+        `<b>${esc(f.name)}</b> (${f.role}) is _ND: prefer the distortion-corrected series.`
       );
   }
   // 2) more than one image assigned to the same role
@@ -378,9 +374,7 @@ function renderWarnings() {
   for (const [role, fs] of Object.entries(byrole))
     if (fs.length > 1)
       msgs.push(
-        `<b>${fs.length} images are set to ${role}</b> (${fs
-          .map((f) => esc(f.name))
-          .join(", ")}). Only one is used, check you picked the right one.`
+        `<b>${fs.length} images are set to ${role}</b>; only one is used.`
       );
   // 3) a B1 sequence's anatomical reference mistaken for the flip-angle (B1) map
   for (const f of state.files) {
@@ -393,9 +387,7 @@ function renderWarnings() {
       (t.includes("M") || t.includes("MAGNITUDE"));
     if (f.role === "B1 map" && looksAnat)
       msgs.push(
-        `“${esc(
-          f.name
-        )}” looks like the B1 sequence’s <b>anatomical reference</b>, not the flip-angle (B1) map. Use the <b>FLIP ANGLE MAP</b> series (usually “famp”) as the B1 map.`
+        `<b>${esc(f.name)}</b> is the B1 anatomical reference; use the FLIP ANGLE MAP.`
       );
   }
   box.innerHTML = msgs.map((m) => `<div>⚠ ${m}</div>`).join("");
@@ -444,8 +436,9 @@ function refreshRunState() {
         }.`
       : "Need a UNI and a B1 source (SA2RAGE or B1 map).";
     if (ok && sa && b1)
-      status +=
-        " Both a SA2RAGE and a B1 map are loaded, using SA2RAGE; set the B1 map’s role to (ignore) to use it instead.";
+      status = `Ready: SA2RAGE correction${
+        inv2 ? "" : " (mask from UNI)"
+      }. Ignore SA2RAGE to use the B1 map.`;
   }
   $("#run").disabled = running || !ok;
   $("#run").textContent = label;
@@ -2088,11 +2081,17 @@ function renderBidsSession(ses) {
   // warnings (index-time QC; flagged stale once the user has hand-edited roles)
   if (ses.warnings?.length) {
     const note = ses._edited
-      ? "roles manually edited, these index-time notes may be stale  ·  "
+      ? "Roles edited by hand; these notes may be stale."
       : "";
     const w = document.createElement("div");
     w.className = "nd-message warning";
-    w.textContent = "⚠ " + note + ses.warnings.join("  ·  ");
+    w.replaceChildren(
+      ...[note, ...ses.warnings].filter(Boolean).map((text) => {
+        const line = document.createElement("div");
+        line.textContent = "⚠ " + text;
+        return line;
+      })
+    );
     box.appendChild(w);
   }
   // actions

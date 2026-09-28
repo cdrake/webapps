@@ -18,8 +18,6 @@ test.beforeEach(async ({ page }) => {
     if (message.type() === 'error') errors.push(message.text());
   });
   await page.goto('./');
-  // Every test below drives the app itself; the start page is covered on its own.
-  await page.locator('#enterAppButton').click();
 });
 
 async function openOutputPanels(page) {
@@ -60,9 +58,9 @@ test('the shell mounts with the shared workspace and a link back to the catalog'
   await expect(page.locator('#controls')).toBeVisible();
   // #gl, not "#viewer canvas": the colour legend puts a second canvas in there.
   await expect(page.locator('#gl')).toBeVisible();
-  // Required of every app in the composite site. Scoped to the shell: the start
-  // page carries its own copy of the link, so the page has two.
-  const moreApps = page.locator('#app [title="More Neurodesk web apps"]');
+  // Required of every app in the composite site. The shared bar hides the
+  // shell's own copy, so exactly one link is visible.
+  const moreApps = page.locator('#app [title="More Neurodesk web apps"]').filter({ visible: true });
   await expect(moreApps).toHaveCount(1);
   await expect(moreApps).toHaveAttribute('href', '../');
 });
@@ -74,7 +72,6 @@ test('the workspace uses the Neurodesk palette and accessible custom upload cont
   const design = await page.evaluate(() => {
     const root = getComputedStyle(document.documentElement);
     const header = getComputedStyle(document.querySelector('.nd-imaging-app-header'));
-    const viewerHint = getComputedStyle(document.querySelector('.drop-hint'));
     const fileInput = document.getElementById('surfaceInput');
     const fileStyle = getComputedStyle(fileInput);
     return {
@@ -82,17 +79,16 @@ test('the workspace uses the Neurodesk palette and accessible custom upload cont
       menu: root.getPropertyValue('--nd-brand-menu').trim(),
       headerBackground: header.backgroundColor,
       headerText: header.color,
-      viewerHintText: viewerHint.color,
       fileInputWidth: fileInput.getBoundingClientRect().width,
       fileInputClip: fileStyle.clipPath
     };
   });
 
-  expect(design.primary).toBe('#6aa329');
-  expect(design.menu).toBe('#0c0e0a');
-  expect(design.headerBackground).toBe('rgb(12, 14, 10)');
-  expect(design.headerText).toBe('rgb(255, 255, 255)');
-  expect(design.viewerHintText).toBe('rgb(255, 255, 255)');
+  // The standalone build carries the hosted theme, which opens in dark mode.
+  expect(design.primary).toBe('#91c84a');
+  expect(design.menu).toBe('#0a0c08');
+  expect(design.headerBackground).toBe('rgb(10, 12, 8)');
+  expect(design.headerText).toBe('rgb(232, 245, 208)');
   expect(design.fileInputWidth).toBeLessThanOrEqual(1);
   expect(design.fileInputClip).toBe('inset(50%)');
 
@@ -134,12 +130,6 @@ test('the hosted dark theme keeps upload states and information links readable',
       disabledUploadBackground: background('#overlayInput + .upload-visual'),
       disabledUploadActionText: colour('#overlayInput + .upload-visual .upload-action'),
       disabledUploadActionBackground: background('#overlayInput + .upload-visual .upload-action'),
-      viewerDropTitle: colour('.drop-hint strong'),
-      startStepNumber: colour('.start-step-number'),
-      startFooterLink: colour('.start-footer a'),
-      citationSectionHeading: colour('.cite-section h4'),
-      citationLink: colour('.cite-item a'),
-      citationClose: colour('.cite-close'),
       informationLink: colour('.nd-app-dialog__source'),
       informationBackground: background('.nd-app-dialog')
     };
@@ -152,12 +142,6 @@ test('the hosted dark theme keeps upload states and information links readable',
     disabledUploadBackground: 'rgb(31, 46, 24)',
     disabledUploadActionText: 'rgb(156, 163, 175)',
     disabledUploadActionBackground: 'rgb(16, 20, 13)',
-    viewerDropTitle: 'rgb(232, 245, 208)',
-    startStepNumber: 'rgb(232, 245, 208)',
-    startFooterLink: 'rgb(196, 227, 130)',
-    citationSectionHeading: 'rgb(196, 227, 130)',
-    citationLink: 'rgb(196, 227, 130)',
-    citationClose: 'rgb(196, 227, 130)',
     informationLink: 'rgb(196, 227, 130)',
     informationBackground: 'rgb(22, 26, 14)'
   });
@@ -456,7 +440,7 @@ test('border markers are drawn on the overlay, survive a fill, and are culled wh
   await page.mouse.move(canvas.x + canvas.width / 2, canvas.y + canvas.height / 2);
   await page.mouse.down();
   await page.mouse.up();
-  await expect(page.locator('#statusText')).toContainText('1 point(s) on the border.');
+  await expect(page.locator('#statusText')).toContainText('1 point(s) on the border');
 
   const clicked = await countMarkers();
   expect(clicked).toBeGreaterThan(0);
@@ -1128,7 +1112,8 @@ test('the control panel stays one column and scrolls, never wrapping off-screen'
   const layout = await page.evaluate(() => {
     const panel = document.getElementById('controls');
     const rect = panel.getBoundingClientRect();
-    const sections = [...panel.children].map((section) => {
+    // Hidden controls (the app bar's About and Privacy handlers) take no space.
+    const sections = [...panel.children].filter((section) => !section.hidden).map((section) => {
       const r = section.getBoundingClientRect();
       return { left: Math.round(r.left), width: Math.round(r.width), heading: section.textContent.trim().slice(0, 12) };
     });
@@ -2060,45 +2045,26 @@ test('a .label from a different surface is refused with a reason', async ({ page
   await expect(overlayRows(page)).toHaveCount(0);
 });
 
-// -- the start page ---------------------------------------------------------
+// -- first screen -----------------------------------------------------------
 
-test.describe('start page', () => {
-  // These need the page as it first loads, before the shared beforeEach enters.
-  test.use({});
-
-  test('explains the app and only then hands over to it', async ({ page }) => {
-    await page.reload();
-    const start = page.locator('#startPage');
-    await expect(start).toBeVisible();
-    await expect(start.getByRole('heading', { level: 2 })).toContainText('cortical surface');
-    await expect(start.locator('.start-step')).toHaveCount(3);
-    // Required of every app in the composite site, on this page too.
-    await expect(start.locator('a[href="../"]')).toHaveCount(1);
-
-    await page.locator('#enterAppButton').click();
-    await expect(start).toBeHidden();
-    await expect(page.locator('#controls')).toBeVisible();
-    await expect(page.locator('#gl')).toBeVisible();
-
-    // The app was behind it all along, so the canvas is already sized.
-    const canvas = await page.evaluate(() => {
-      const box = document.getElementById('gl').getBoundingClientRect();
-      return { width: Math.round(box.width), height: Math.round(box.height) };
-    });
-    expect(canvas.width).toBeGreaterThan(200);
-    expect(canvas.height).toBeGreaterThan(200);
+test('the workspace is the first screen, with no start page', async ({ page }) => {
+  await expect(page.locator('#startPage, .start-page')).toHaveCount(0);
+  await expect(page.locator('#controls')).toBeVisible();
+  await expect(page.locator('#gl')).toBeVisible();
+  const canvas = await page.evaluate(() => {
+    const box = document.getElementById('gl').getBoundingClientRect();
+    return { width: Math.round(box.width), height: Math.round(box.height) };
   });
+  expect(canvas.width).toBeGreaterThan(200);
+  expect(canvas.height).toBeGreaterThan(200);
+});
 
-  test('the one-glyph badge is gone', async ({ page }) => {
-    await page.reload();
-    await page.locator('#enterAppButton').click();
-    // The shared shell always renders it; the app hides it to match the others.
-    const mark = page.locator('.nd-imaging-mark');
-    await expect(mark).toHaveCount(1, 'still in the DOM — hidden, not removed');
-    await expect(mark).toBeHidden();
-    // The name itself stays.
-    await expect(page.locator('.nd-imaging-brand-copy')).toContainText('SurfAnnotate');
-  });
+test('the one-glyph badge is gone', async ({ page }) => {
+  // The shared shell always renders it; the app hides it to match the others.
+  const mark = page.locator('.nd-imaging-mark');
+  await expect(mark).toHaveCount(1, 'still in the DOM — hidden, not removed');
+  await expect(mark).toBeHidden();
+  await expect(page.locator('.nd-imaging-brand-copy')).toContainText('SurfAnnotate');
 });
 
 test('every declared icon is actually served', async ({ page }) => {
@@ -2133,34 +2099,16 @@ test('every declared icon is actually served', async ({ page }) => {
   }
 });
 
-test('the Cite button opens the citations, from the app and from the start page', async ({ page }) => {
-  const dialog = page.locator('#citationsDialog');
-  await expect(dialog).toBeHidden();
-
-  // The shell builds its navigation with only the catalog link, so the app's
-  // Cite button is appended after mounting; check it actually landed there.
-  const inHeader = page.locator('.nd-imaging-navigation [data-cite-open]');
-  await expect(inHeader).toHaveCount(1);
-  await inHeader.click();
-  await expect(dialog).toBeVisible();
-
-  await expect(dialog).toContainText('NiiVue Contributors. NiiVue: a WebGL2 medical image viewer.');
-  const link = dialog.locator('a[href="https://github.com/niivue/niivue"]');
-  await expect(link).toHaveCount(1);
-  await expect(link).toHaveAttribute('rel', /noopener/);
-
-  await page.locator('#closeCitations').click();
-  await expect(dialog).toBeHidden();
-
-  // And again from the start page, which is a separate header.
-  await page.reload();
-  await expect(page.locator('#startPage')).toBeVisible();
-  await page.locator('#startPage [data-cite-open]').click();
-  // showModal() puts the dialog in the top layer, so it is above the start page.
-  await expect(dialog).toBeVisible();
+test('the Cite button opens the shared citations from the app bar', async ({ page }) => {
+  // Citations are data in registry/app-information.yml; the shared bar renders them.
+  await page.locator('.nd-app-bar').getByRole('button', { name: 'Cite', exact: true }).click();
+  const cite = page.locator('.nd-app-dialog[data-dialog="cite"]');
+  await expect(cite).toBeVisible();
+  await expect(cite).toContainText('NiiVue Contributors. NiiVue: a WebGL2 medical image viewer');
+  await expect(cite).toContainText('FreeSurfer');
+  await expect(cite).toContainText('GIfTI');
   await page.keyboard.press('Escape');
-  await expect(dialog).toBeHidden();
-  await expect(page.locator('#startPage')).toBeVisible('escape closed the dialog, not the page');
+  await expect(cite).toBeHidden();
 });
 
 // -- regressions found by adversarial testing ------------------------------

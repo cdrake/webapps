@@ -11,6 +11,15 @@
       @neurodesk/webapp-components/styles/imaging-workspace.css. Keep the
       structure below; change the labels, fields and scientific logic only.
       Do not add app CSS for anything shown here. See docs/architecture/design-system.md.
+
+      Rules test/design-system.test.mjs and pnpm audit:interfaces enforce:
+      - The workspace is the first screen. No start page, hero or welcome modal;
+        introductions belong in the About template below.
+      - Status, progress, elapsed time and cancel live only in footer#status.
+      - The technical log is createConsole(), below the viewer, collapsed.
+      - Visible help is at most 90 characters. Longer help goes in an
+        .nd-info-icon tooltip beside its label, or in About.
+      - One .nd-btn-primary in the sidebar; every other action is secondary.
     -->
     <header id="controls">
       <!-- 1. Input: open, one compact scan picker, working example. -->
@@ -39,7 +48,9 @@
             <summary class="nd-section-title">Advanced settings</summary>
             <div class="nd-section-content">
               <div class="nd-field">
-                <label for="threshold">Threshold <small>0–1</small></label>
+                <label for="threshold">Threshold <small>0–1</small>
+                  <span class="nd-info-icon" tabindex="0" aria-label="About the threshold">i<span class="nd-info-tooltip">Longer explanations live in a tooltip like this one, not in a paragraph under the field.</span></span>
+                </label>
                 <input id="threshold" type="number" min="0" max="1" step="0.05" value="0.5" />
                 <p class="nd-hint">Short help sits beside the field it explains.</p>
               </div>
