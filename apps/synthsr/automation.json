@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 2,
+  "app": "synthsr",
+  "title": "SynthSR",
+  "description": "Synthesize a 1 mm T1-weighted brain image with the validated SynthSR v2 model.",
+  "defaultOperation": "synthesize",
+  "operations": {
+    "synthesize": {
+      "title": "Synthesize T1",
+      "description": "Run SynthSR with explicit modality, processing device and augmentation settings.",
+      "mode": "batch",
+      "inputs": {
+        "image": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "multiple": false,
+          "required": true,
+          "description": "An MRI or CT image",
+          "space": "native"
+        },
+        "model": {
+          "source": "files",
+          "type": "neuro:model",
+          "formats": [
+            "onnx"
+          ],
+          "multiple": false,
+          "required": false,
+          "description": "Optional local copy of the validated synthsr-v2.onnx weights"
+        }
+      },
+      "parameters": {
+        "ct": {
+          "type": "boolean",
+          "default": false,
+          "description": "Treat the input as CT rather than MRI"
+        },
+        "backend": {
+          "type": "string",
+          "enum": [
+            "wasm",
+            "webgpu"
+          ],
+          "default": "wasm",
+          "description": "Execution device"
+        },
+        "tiled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use approximate 96-cubed tiles to reduce memory requirements"
+        },
+        "flip": {
+          "type": "boolean",
+          "default": true,
+          "description": "Average left-right predictions"
+        },
+        "sharpen": {
+          "type": "boolean",
+          "default": true,
+          "description": "Sharpen the synthetic output"
+        }
+      },
+      "artifacts": {
+        "synthetic": {
+          "type": "neuro:volume",
+          "mediaType": "application/x-nifti",
+          "space": "subject-1mm",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    }
+  }
+}

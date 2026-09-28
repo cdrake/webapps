@@ -259,3 +259,17 @@ artifact budget. Build the Node.js tarball directly with `npm pack` in `packages
 
 Apache-2.0. See LICENSE and NOTICE. Cite Iglesias et al., NeuroImage 237 (2021),
 118206: https://doi.org/10.1016/j.neuroimage.2021.118206.
+
+## Agent automation
+
+The published `automation.json` describes the typed browser operation. Desktop
+MCP uses the same processing function as the Run button and returns the exact
+output files with input and artifact checksums. See
+[desktop automation](../../packages/desktop/AUTOMATION.md) for connection details.
+
+`synthesize` requires an `image` and accepts an optional validated ONNX `model`
+file. Parameters are `ct`, `backend`, `tiled`, `flip` and `sharpen`. Automation
+defaults to MRI, CPU, full volume, left-right averaging and sharpening. Set
+`ct: true` for CT. The synthetic NIfTI report retains the worker's model checksum
+and scientific provenance. Retained sessions can select original or synthetic
+image tabs and move the crosshair.
