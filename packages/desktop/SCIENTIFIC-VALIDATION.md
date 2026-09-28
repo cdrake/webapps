@@ -1,69 +1,150 @@
-# Scientific validation for desktop automation
+# Validate scientific workflows on Apple silicon
 
-Run these checks on the PR branch before treating a new machine or backend as
-scientifically verified. They use real models and pinned FreeSurfer reference
-segmentations. Desktop unit tests use process fixtures and do not establish
-scientific parity.
+Run the PR branch on a Mac before treating its hardware backends as verified.
+The helper runs real inference and saves the evidence outside the checkout.
+Desktop unit tests and a GPU capability probe do not establish scientific parity.
 
-## Apple silicon
+## Prepare the Mac
 
-Install the repository's Node/pnpm dependencies, stable Rust, Python 3, Xcode
-command-line tools and Chromium. Run from the repository root:
+Use a native arm64 terminal, Node.js 24, pnpm, Python 3, rustup, and the Xcode
+command-line tools. Install the pinned Rust toolchain needed to build SYNcro's
+threaded Greedy kernel:
 
 ```sh
+rustup toolchain install stable
+rustup toolchain install nightly-2025-11-15 --component rust-src --target wasm32-unknown-unknown
+cargo +stable install wasm-pack --locked
+```
+
+Check out the PR and install its JavaScript dependencies and test browser:
+
+```sh
+gh pr checkout 99
 pnpm install --frozen-lockfile
 pnpm exec playwright install chromium
-bash scripts/desktop/verify-scientific-macos.sh all
 ```
 
-The script runs sequentially and stops at the first failure. It prints an
-external scratch directory containing the commit, machine/GPU information,
-command logs, exit status and JSON evidence. Leave the Mac awake. Allow time
-for model downloads, compilation and CPU inference. Full-volume inference
-needs considerably more memory than the small fixture. Close other memory
-intensive applications first.
-
-Run one stage when investigating a failure:
+Run every stage from the repository root:
 
 ```sh
-bash scripts/desktop/verify-scientific-macos.sh native
-bash scripts/desktop/verify-scientific-macos.sh webgpu
-bash scripts/desktop/verify-scientific-macos.sh extraction
-bash scripts/desktop/verify-scientific-macos.sh probe
+caffeinate -i bash scripts/desktop/verify-scientific-macos.sh all
 ```
 
-| Stage | What must run | Evidence |
+Keep the terminal open. The script builds each browser app before testing it
+and runs stages sequentially. Allow time for compilation, model downloads,
+and CPU inference. Native SynthSeg CPU inference can use about 14 GB on the
+1 mm head. A 16 GB Mac can swap. Close other memory-intensive applications.
+
+The helper prints its evidence directory under `TMPDIR`. macOS normally sets
+`TMPDIR`; to use another scratch volume, set it to an existing writable
+directory before running the command. References, compiler output, browser
+traces, and catalog example downloads stay there. Native SynthSeg currently
+requires its 53 MB model at `exes/synthseg/models/synthseg-2.0.onnx` because its
+build embeds that fixed path. The file is ignored by Git. A `webgpu`-only run
+keeps its model in the evidence directory instead.
+
+## Run a single stage
+
+To investigate or resume after a failure, replace `all` with one stage:
+
+```sh
+caffeinate -i bash scripts/desktop/verify-scientific-macos.sh catalog
+```
+
+| Stage | Required execution | Evidence |
 | --- | --- | --- |
-| `native` | Small real fixture, then 1 mm and 2 mm heads in both modes on **CPU and Metal**; desktop native adapter on the same six cases | `native-parity.json`, `native-automation/validation.json` and per-run reports |
-| `webgpu` | Two small-fixture modes and four full-volume cases in headed Chromium using Metal | `webgpu.json`, including adapter identity, limits, input/model/output hashes, voxel differences and hippocampal volumes |
-| `extraction` | Real MindGrab with its CPU backend, then real SynthStrip with ONNX Runtime WASM | `extraction.json` and `extraction.log`; binary mask and input geometry checks |
-| `probe` | Adapter identity and buffer planning only, without model download or inference | `webgpu-probe.json`; this is not scientific parity evidence |
+| `probe` | Headed Chromium on the Apple GPU; buffer planning without inference | `webgpu-probe.json`, `probe-tests.json`, `probe.log` |
+| `native` | Small fixtures and four full-volume cases on CPU and Metal, followed by the native desktop adapter's six cases | `native-parity.json`, `native-automation/validation.json`, per-run outputs and reports, logs |
+| `webgpu` | Two small-fixture modes and four full-volume cases in headed Chromium on Metal | `webgpu.json`, `webgpu-tests.json`, `webgpu.log` |
+| `extraction` | MindGrab CPU and SynthStrip ONNX Runtime WASM on the real fixture | `extraction.json`, build and inference logs |
+| `catalog` | Brain2Print, DWI tractography, SYNcro, and TopoFit main workflows below | `catalog-fixtures.json`; each app's `playwright.json`, `reports.json`, `run.log`, and traces under `catalog/` |
 
-`native` sets `SYNTHSEG_REAL_DEVICES=cpu,metal`, so an unavailable Metal device
-fails instead of silently skipping it. The native adapter itself follows the
-installed executable's default backend, normally Metal on macOS. Its report
-records the backend actually used. The native Rust parity suite also checks
-NIfTI header codes, units and quaternion fields.
+`all` starts with `probe`. `catalog` also runs the probe before its workflows.
+Both reject a software GPU. `hardware.json` records the Mac, operating system,
+and display adapters without serial numbers. The browser probe records the
+adapter actually exposed to Chromium, its features, and buffer limits.
+`commit.txt`, `worktree.txt`, the copied lockfile and model manifests identify
+the source and dependencies used. Use a clean checkout for a reproducible run.
 
-The parity gates are unchanged: at most 5e-6 mismatched voxels on the small
-fixture, 2e-6 on full volumes, and maximum affine error 1e-4. The browser and
-native adapter checks also verify reports against the actual downloaded label
-map, including checksums and per-label counts/volumes. Reported volumes use
-the absolute affine determinant and declared spatial units; they are not
-rounded to a presumed 1 mm voxel size.
+## Check the catalog workflows
 
-`webgpu.json` records the adapter's `maxBufferSize` and
-`maxStorageBufferBindingSize`. It plans buffers for 192×224×160 and
-192×256×256 grids without allocating them. This distinguishes the advertised
-adapter capacity from SynthSeg's validated 2 GiB single-buffer limit. A
-reported 4 GiB adapter limit alone does not validate larger inference. The
-script does not raise the cap. Extending it requires a separate larger-volume
-oracle and parity run on the target hardware.
+The helper supplies all inputs automatically. It reads the apps' example
+manifests, downloads revision-pinned files, and verifies their sizes and SHA-256
+checksums against `registry/offline-assets.lock.json`. Each reuse verifies the
+cache again. No private dataset or unexplained environment variable is needed.
 
-## Linux CPU
+| App | Input selected by the helper | What completion establishes |
+| --- | --- | --- |
+| Brain2Print | Committed `exes/synthseg/test/fixtures/small.nii.gz`, already used by its hardware regression tests | `16chan18cls` segmentation on WebGPU; corrected STL, MZ3, and segmentation downloads; a closed, consistently wound mesh with positive volume |
+| dwi2trx | The app's `dwi-gradients` example: `dwi.nii.gz`, `dwi.bval`, and `dwi.bvec` | Tensor fitting and hardware WebGPU tracking with subgroups; hashed FA, V1, and TRX outputs; no seed-cap or memory truncation |
+| SYNcro | The T1 primary image from its pinned `trace-t1` stroke example | SynthSR WASM, SynthStrip WASM, and Greedy normalization; native synthetic T1 and three normalized images; MNI dimensions and output hashes |
+| TopoFit | Its pinned `openneuro-t1` example, also used by reconstruction validation | ONNX Runtime WASM reconstruction; six anatomical surfaces, two registration spheres, QC, and the processing manifest with model hashes |
 
-The native check also runs on Linux. `TMPDIR` must point to writable scratch
-storage. These commands exercise real inference and the desktop adapter:
+SYNcro and TopoFit use CPU inference in these checks. Their results do not
+establish GPU inference parity. DWI reports whether MindGrab masking succeeded
+or the existing unmasked fallback ran. A capped or truncated tractogram leaves
+catalog validation incomplete. These workflow checks establish the listed
+artifacts and invariants; they do not add a new scientific reference oracle.
+They do not cover every segmentation model, optional lesion, or TopoFit patch
+setting.
+
+The helper sets these existing test inputs to absolute paths:
+
+| Test variable | Path used by `catalog` |
+| --- | --- |
+| `DWI2TRX_FIXTURE_DIR` | `<fixture-cache>/dwi2trx`, containing the three `dwi.*` files |
+| `SYNCRO_AUTOMATION_IMAGE` | `<fixture-cache>/syncro/sub-101_T1w.nii.gz` |
+| `TOPOFIT_AUTOMATION_IMAGE` | `<fixture-cache>/topofit/sub-01_T1w.nii.gz` |
+
+The default fixture cache is `$TMPDIR/neurodesk-scientific-fixtures`.
+Set `NEURODESK_SCIENTIFIC_FIXTURES` to another cache directory if needed.
+The helper replaces the three per-test variables above with its verified paths.
+Models download through each app's existing pinned loader. Keep internet access
+available for the first run. SYNcro's first production build compiles Greedy;
+a missing nightly toolchain or `wasm-pack` is a failure, not a skipped workflow.
+
+Catalog traces are retained even for passing tests. The helper extracts the
+actual completed automation reports into each app's `reports.json`, including
+input and output hashes, processing parameters, measurements, and provenance.
+The tests verify each downloaded artifact against those hashes. Browser download
+files themselves are temporary; the traces and extracted reports remain.
+
+## Interpret the evidence
+
+Read `stages.json` and `exit-code.txt` first. A stage is `completed` only after
+its expected tests and required evidence pass. Skipped, missing, retried, or
+failed tests cause a nonzero exit. `pending` means an earlier stage stopped the
+run. `not-requested` identifies stages outside the selected command. A partial
+run has status `incomplete`. The helper stops at the first failure and preserves
+its logs and any available evidence. Share the evidence directory when a check
+fails.
+
+Native SynthSeg sets `SYNTHSEG_REAL_DEVICES=cpu,metal`; an unavailable Metal
+device fails. Its desktop adapter uses the executable's default backend,
+normally Metal on macOS, and records the actual backend. The helper preserves
+and restores any pre-existing `exes/synthseg/validation/report.json` after saving
+the new result as `native-parity.json`.
+
+SynthSeg's existing parity gates remain unchanged: at most 5e-6 mismatched
+voxels on the small fixture, 2e-6 on full volumes, and affine error at most
+1e-4. Report volumes use the absolute affine determinant and declared spatial
+units. The native and browser checks compare those reports with the actual
+label maps, including label counts, volumes, and hashes.
+
+The probe plans buffers for 192×224×160 and 192×256×256 without allocating
+them. It records `maxBufferSize` and `maxStorageBufferBindingSize` separately
+from SynthSeg's validated 2 GiB single-buffer cap. The helper does not raise
+the cap. An advertised 4 GiB adapter limit does not validate larger inference;
+that needs its own reference output and parity run on the target hardware.
+
+Hosted macOS CI uses CPU for full-volume SynthSeg cases because of its memory
+budget. Hosted CPU success does not establish native Metal or browser WebGPU
+parity on your Mac.
+
+## Run the CPU checks on Linux
+
+Set `TMPDIR` to writable scratch storage, then run real native inference and
+the desktop adapter:
 
 ```sh
 export SYNTHSEG_REFERENCE_DIR="${TMPDIR%/}/synthseg-references"
@@ -73,35 +154,19 @@ export NEURODESK_SYNTHSEG_BIN="$CARGO_TARGET_DIR/release/synthseg"
 node scripts/desktop/native-scientific-smoke.mjs
 ```
 
-The adapter script writes a new `neurodesk-native-parity-*` directory under
-`TMPDIR`, containing each output/report and `validation.json`. Setting
-`NEURODESK_SCIENTIFIC_OUTPUT` selects a new, nonexistent output directory.
-Unset `SYNTHSEG_REFERENCE_DIR` to run only the two small-fixture cases; the
-result explicitly identifies that reduced scope. `make test-real` updates
-`exes/synthseg/validation/report.json`; retain the result as evidence rather
-than accidentally replacing an existing hardware report in a commit.
+The adapter writes a `neurodesk-native-parity-*` directory under `TMPDIR` with
+outputs, reports, and `validation.json`. `NEURODESK_SCIENTIFIC_OUTPUT` selects a
+new, nonexistent output directory. Without `SYNTHSEG_REFERENCE_DIR`, the adapter
+runs only the two small-fixture cases and records that reduced scope.
+`make test-real` updates the native validation report; retain the evidence
+without committing a replacement for another machine's report.
 
-CPU-only browser extraction checks do not require a GPU:
+CPU browser extraction needs no hardware GPU:
 
 ```sh
 pnpm --filter brain-extraction build
 BRAIN_EXTRACTION_REAL_MODELS=1 pnpm --filter brain-extraction exec playwright test --grep 'real model'
 ```
 
-These extraction checks establish working real-model inference, geometry and
-binary-mask invariants. They do not claim FreeSurfer segmentation parity or
-MindGrab GPU parity.
-
-## Interpreting a result
-
-A successful report names every case and backend that ran. A skipped test,
-missing JSON file, partial report or nonzero exit is incomplete validation.
-The macOS helper restores the pre-existing native report after preserving the
-new result in its evidence directory. The browser writes directly to that
-directory. Share the evidence directory or its logs and JSON files when a
-check fails.
-
-Hosted macOS CI selects CPU for full-volume SynthSeg tests because of its
-memory budget. A hosted full-volume CPU success does not establish full-volume
-Metal or WebGPU parity. The small fixture, full-volume native Metal and
-browser WebGPU checks are separate results.
+These checks establish real-model execution, geometry, binary masks, and report
+integrity. They do not establish MindGrab GPU or FreeSurfer segmentation parity.
