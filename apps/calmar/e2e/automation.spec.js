@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
+import { setTimeout as delay } from 'node:timers/promises';
 import { createNiftiFromVolume, readNifti } from '../../../packages/components/src/file-io/NiftiUtils.js';
 import { decodeFcPack } from '../web/js/modules/fc-weighted-sum.js';
 
@@ -31,8 +32,14 @@ async function upload(page, role, input) {
 
 async function finish(page, operation, parameters = {}, timeout = 120000) {
   await page.evaluate(({ operation, parameters }) => neurodeskAutomation.dispatch('start', { operation, parameters }), { operation, parameters });
-  await expect.poll(() => page.evaluate(async () => (await neurodeskAutomation.dispatch('snapshot')).state), { timeout }).toMatch(/succeeded|failed/);
-  return page.evaluate(() => neurodeskAutomation.dispatch('snapshot'));
+  const deadline = Date.now() + timeout;
+  let snapshot;
+  while (Date.now() < deadline) {
+    snapshot = await page.evaluate(() => neurodeskAutomation.dispatch('snapshot'));
+    if (['succeeded', 'failed', 'cancelled'].includes(snapshot.state)) return snapshot;
+    await delay(250);
+  }
+  throw new Error(`CALMaR ${operation} exceeded ${timeout} ms: ${JSON.stringify(snapshot)}`);
 }
 
 async function download(page, report, role) {
@@ -82,14 +89,31 @@ test('a matching shape with a shifted affine is rejected before lesion mapping',
 });
 
 test('real structural example produces an unconfirmed native lesion candidate', async ({ page }) => {
-  test.setTimeout(900000);
+  const image = process.env.CALMAR_AUTOMATION_IMAGE;
+  test.skip(!image, 'Set CALMAR_AUTOMATION_IMAGE=example or a structural T1 path to run full candidate inference.');
+  const timeout = Number(process.env.CALMAR_AUTOMATION_TIMEOUT_MS || 600000);
+  expect(Number.isFinite(timeout) && timeout > 0).toBe(true);
+  test.setTimeout(timeout + 60000);
   const [example] = JSON.parse(await readFile(new URL('../examples.json', import.meta.url)));
   const source = example.files[0];
-  const bytes = await cachedAsset(source.url, source.name, '725a37bf9556c6776a7be552597999df67d175a44eafc03252db058e8f5c5cad');
+  const bytes = image === 'example'
+    ? await cachedAsset(source.url, source.name, '725a37bf9556c6776a7be552597999df67d175a44eafc03252db058e8f5c5cad')
+    : await readFile(image);
+  const messages = [];
+  page.on('console', message => messages.push(`${message.type()}: ${message.text()}`));
+  page.on('pageerror', error => messages.push(`pageerror: ${error.message}`));
+  page.on('crash', () => messages.push('The browser renderer crashed.'));
   await page.goto('/');
   await page.waitForFunction(() => Boolean(globalThis.neurodeskAutomation));
-  await upload(page, 'structural', { name: source.name, mimeType: 'application/gzip', buffer: bytes });
-  const snapshot = await finish(page, 'prepare-lesion', {}, 840000);
+  await upload(page, 'structural', { name: image === 'example' ? source.name : basename(image), mimeType: 'application/octet-stream', buffer: bytes });
+  let snapshot;
+  try {
+    snapshot = await finish(page, 'prepare-lesion', {}, timeout);
+  } finally {
+    const diagnostics = messages.slice(-200).join('\n');
+    await writeFile(join(directory, 'candidate-browser.log'), diagnostics);
+    await test.info().attach('candidate-browser', { body: diagnostics, contentType: 'text/plain' });
+  }
   expect(snapshot.error).toBeUndefined();
   expect(snapshot.state).toBe('succeeded');
   expect(snapshot.report.summary.requiresReview).toBe(true);
