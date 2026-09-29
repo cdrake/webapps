@@ -88,7 +88,7 @@ three decimals. SynthStrip with CSF, which the repository already ships, scores 
 python score.py wmh <work> <method>...
 python score.py ms <work> <method>...
 python reference.py <work> flames_f0 --inputs stripped --folds 0 --order 1
-node parity.mjs <work>/stripped/Utrecht_9.nii.gz <work>/out/flames_f0/Utrecht_9.nii.gz flames-fold0.onnx
+node parity.mjs <work>/stripped/Utrecht_9.nii.gz <work>/out/flames_f0/Utrecht_9.nii.gz <work>/flames_f0.onnx
 ```
 
 `subset.json` lists the WMH cases and `results.json` holds every per-case score above. The other

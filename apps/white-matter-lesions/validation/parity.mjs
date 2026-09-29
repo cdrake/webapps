@@ -33,4 +33,4 @@ for (let i = 0; i < mask.length; i++) {
   python += r;
   both += mask[i] & r;
 }
-console.log(JSON.stringify({ windows, seconds: Math.round((performance.now() - started) / 100) / 10, js, python, dice: 2 * both / (js + python), differing: js + python - 2 * both }));
+console.log(JSON.stringify({ windows, seconds: Math.round((performance.now() - started) / 100) / 10, js, python, dice: js + python ? 2 * both / (js + python) : 1, differing: js + python - 2 * both }));

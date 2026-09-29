@@ -86,6 +86,12 @@ def main():
     so.intra_op_num_threads = 8
     sessions = [ort.InferenceSession(a.model.format(f), so) for f in a.folds.split(',')]
     os.makedirs(f'out/{a.name}', exist_ok=True)
+    # Existing masks are reused so an interrupted run can resume, but only under the same settings.
+    config = {k: v for k, v in vars(a).items() if k not in ('work', 'name')}
+    config_path = f'out/{a.name}.config.json'
+    if os.path.exists(config_path) and json.load(open(config_path)) != config:
+        raise SystemExit(f'out/{a.name} was produced with {json.load(open(config_path))}; choose another name')
+    json.dump(config, open(config_path, 'w'))
     times = {}
     for f in sorted(glob.glob(f'{a.inputs}/*.nii.gz')):
         if f.endswith('_mask.nii.gz'):

@@ -3,8 +3,9 @@
     python score.py wmh <work> <method>...    # MICCAI 2017 WMH test subset (label 1 = WMH, 2 = other pathology, ignored)
     python score.py ms <work> <method>...     # MSLesSeg test split
 
-Predictions are read from <work>/out/<method>/<case>.nii.gz (or <case>_seg.nii.gz, MindGlide's
-name); a MindGlide prediction is its label 18. Lesions for recall and F1 are 26-connected.
+WMH case paths in subset.json (beside this script) are relative to <work>. Predictions are read
+from <work>/out/<method>/<case>.nii.gz (or <case>_seg.nii.gz, MindGlide's name); a MindGlide
+prediction is its label 18. Lesions for recall and F1 are 26-connected.
 Writes <work>/out/<method>.<dataset>.json and prints means per site.
 """
 import glob, json, os, sys
@@ -36,7 +37,7 @@ def cases(dataset, work):
             patient = case[3:]
             yield 'MSLesSeg', case, f'{work}/mslesseg/MSLesSeg Dataset/test/{patient}/{patient}_MASK.nii.gz'
         return
-    for site, directory in json.load(open(f'{work}/subset.json')):
+    for site, directory in json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'subset.json'))):
         yield site, f'{site}_{os.path.basename(directory)}', f'{work}/{directory}/wmh.nii.gz'
 
 
