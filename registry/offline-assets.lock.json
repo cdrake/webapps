@@ -3220,6 +3220,9 @@
     "carotid-flow": [
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/07cac5c3f89c82ba721163ea8c1fbf1df9625c7d/carotid-flow/examples/carotid_pc_mod.nii.gz",
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/07cac5c3f89c82ba721163ea8c1fbf1df9625c7d/carotid-flow/examples/carotid_pc_ph.nii.gz"
+    ],
+    "lcmodel": [
+      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/356a4adbce52cf9052d61ef90b14ba263e7c25e9/synthseg/validation/T1_head.nii.gz"
     ]
   }
 }
