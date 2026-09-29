@@ -1,16 +1,19 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  arrayGrid,
+  fromNetworkOrder,
+  networkGrid,
   brainBox,
   gaussianWeights,
   labelLesions,
   lesionTable,
   normalizeInBrain,
-  resize,
+  resample,
+  anisotropicAxis,
   segmentFlair,
   targetShape,
   threshold,
+  toNetworkOrder,
   windowStarts,
   windows,
 } from "../src/pipeline.js";
@@ -20,9 +23,17 @@ const close = (actual, expected, tolerance = 1e-6) => {
   for (let i = 0; i < expected.length; i++) assert.ok(Math.abs(actual[i] - expected[i]) <= tolerance, `index ${i}: ${actual[i]} vs ${expected[i]}`);
 };
 
-test("array grid reverses NIfTI axes and reads spacing from the affine", () => {
-  const volume = { dims: [4, 5, 6], affine: [[-0.9, 0, 0, 0], [0, 0.9, 0, 0], [0, 0, 3, 0], [0, 0, 0, 1]] };
-  assert.deepEqual(arrayGrid(volume), { shape: [6, 5, 4], spacing: [3, 0.9, 0.9] });
+test("the network sees NIfTI axes as (x, z, y), as FLAMeS's transpose_forward [2, 0, 1] sets", () => {
+  const volume = { dims: [4, 5, 6], affine: [[-0.9, 0, 0, 0], [0, 0.8, 0, 0], [0, 0, 3, 0], [0, 0, 0, 1]] };
+  assert.deepEqual(networkGrid(volume), { shape: [4, 6, 5], spacing: [0.9, 3, 0.8] });
+  const dims = [2, 3, 4];
+  const data = Float32Array.from({ length: 24 }, (_, i) => i);
+  const network = toNetworkOrder(data, dims);
+  // Voxel (x=1, y=2, z=3) is NIfTI index 1 + 2*2 + 3*6 = 23 and network index (1*4 + 3)*3 + 2 = 23.
+  assert.equal(network[23], 23);
+  // Voxel (x=1, y=0, z=0) is NIfTI index 1 and network index (1*4 + 0)*3 + 0 = 12.
+  assert.equal(network[12], 1);
+  assert.deepEqual(fromNetworkOrder(network, dims), data);
 });
 
 test("sliding windows follow nnU-Net's half-patch step", () => {
@@ -37,9 +48,18 @@ test("resampling to 1 x 0.9 x 0.9 mm rounds each axis", () => {
   assert.deepEqual(targetShape([48, 240, 240], [3, 0.958, 0.958]), [144, 255, 255]);
 });
 
-test("trilinear resize aligns voxel centres and clamps at the edges", () => {
-  close(resize(Float32Array.of(0, 1), [1, 1, 2], [1, 1, 4]), [0, 0.25, 0.75, 1]);
-  close(resize(Float32Array.of(0, 0.25, 0.75, 1), [1, 1, 4], [1, 1, 2]), [0.125, 0.875]);
+// Expected values from nnunetv2 resample_data_or_seg_to_shape with FLAMeS's orders (3 for images, 1 for probabilities).
+test("isotropic resampling is nnU-Net's clipped cubic spline", () => {
+  close(resample(Float32Array.of(0, 1, 4, 2), [1, 1, 4], [1, 1, 6], [1, 1, 1], [1, 1, 0.6667], 3), [0, 0.14471, 1.544308, 3.790628, 3.274519, 1.788788]);
+});
+
+test("an axis over three times coarser is resampled per slice, then by nearest slice", () => {
+  assert.equal(anisotropicAxis([4, 1, 1]), 0);
+  assert.equal(anisotropicAxis([1.2, 1, 1]), null);
+  const cube = Float32Array.from({ length: 8 }, (_, i) => i);
+  close(resample(cube, [2, 2, 2], [2, 4, 4], [4, 1, 1], [4, 0.5, 0.5], 3).subarray(0, 4), [0, 0.021454, 0.590084, 0.902885]);
+  const deeper = resample(cube, [2, 2, 2], [4, 2, 2], [4, 1, 1], [2, 1, 1], 1);
+  close([deeper[0], deeper[4], deeper[8], deeper[12]], [0, 0, 4, 4]);
 });
 
 test("the importance map peaks at the patch centre and falls to exp(-24) at the corner", () => {
@@ -103,7 +123,7 @@ test("segmentation maps patch logits back onto the input grid", async () => {
     return logits;
   };
   const { probability, windows: count, resampledShape } = await segmentFlair({ volume: { dims, affine, data }, brainMask, runPatch });
-  assert.deepEqual(resampledShape, [68, 100, 89]);
+  assert.deepEqual(resampledShape, [80, 75, 100]);
   assert.equal(count, 1);
   assert.equal(patches, 1);
   const mask = threshold(probability);

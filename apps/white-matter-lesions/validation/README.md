@@ -29,8 +29,8 @@ checks that the browser port reproduces it. Measured 2026-09-29.
   1 mm MNI space, already skull-stripped.
 
 Scores are the WMH challenge's voxel Dice, absolute volume difference (AVD, %) and 26-connected
-lesion recall and F1. FLAMeS inputs were skull-stripped with SynthStrip 1.6 (`--no-csf` unless
-stated). CPU times are on a shared 16-core virtual machine and only indicative.
+lesion recall and F1. FLAMeS WMH inputs were skull-stripped with SynthStrip 1.6 (`--no-csf` unless
+stated in the table). CPU times are on a shared 16-core virtual machine and only indicative.
 
 ## Results
 
@@ -38,16 +38,16 @@ Mean over cases. Dice, AVD %, lesion recall, lesion F1.
 
 | Method | WMH (n = 25) | MS (n = 22) |
 | --- | --- | --- |
-| sysu_media, FLAIR only | **0.760**, 46.3, 0.902, 0.638 | 0.549, 44.1, 0.699, 0.450 |
-| FLAMeS, 5 folds (nnU-Net, no mirroring) | 0.714, 53.8, 0.725, **0.750** | **0.648**, 44.1, 0.777, **0.716** |
-| FLAMeS fold 0, cubic resampling | 0.695, 51.1, 0.690, 0.715 | 0.623, 41.8, 0.768, 0.687 |
-| **FLAMeS fold 0 as shipped** (SynthStrip with CSF) | 0.692, 48.3, 0.639, 0.693 | — |
-| FLAMeS fold 0, trilinear (`reference.py`) | 0.677, 60.0, 0.720, 0.714 | 0.625, 38.5, 0.759, 0.681 |
+| sysu_media, FLAIR only | **0.760**, 46.3, **0.902**, 0.638 | 0.549, 44.1, 0.699, 0.450 |
+| FLAMeS, 5 folds, nnU-Net itself (no mirroring) | 0.714, 53.8, 0.725, **0.750** | **0.648**, 44.1, 0.777, **0.716** |
+| FLAMeS, 5 folds, this port (`reference.py`) | 0.710, 55.3, 0.726, 0.748 | 0.647, 44.7, 0.782, 0.717 |
+| **App, ensemble** (SynthStrip with CSF) | 0.733, 38.3, 0.658, 0.734 | 0.647, 44.7, 0.782, 0.717 |
+| **App, one fold (default)** (SynthStrip with CSF) | 0.726, 43.9, 0.690, 0.730 | 0.608, 83.7, 0.789, 0.700 |
 | MindGlide | 0.569, 132.8, 0.559, 0.509 | 0.338, 381.7, 0.661, 0.366 |
 | WMH-SynthSeg | not completed: 26 GB resident and 32 min into the first scan | — |
 
-The MS inputs are skull-stripped, so the app's *already skull-stripped* path applies and the
-shipped configuration equals the trilinear row there.
+The MS inputs are already skull-stripped, so the app's *already skull-stripped* path applies
+there and the app rows equal the port's.
 
 What decided it:
 
@@ -62,33 +62,40 @@ What decided it:
   exceeded 26 GB of memory, far beyond a browser tab. Published comparisons also place its Dice
   well below dedicated FLAIR models ([segcsvd](https://doi.org/10.1002/hbm.70104)).
 
-Browser-configuration choices: one fold instead of five costs 0.037 Dice on WMH and 0.023 on MS, and
-runs five times faster with a fifth of the download. Cubic resampling gains 0.018 on WMH but
-nothing on MS (−0.002), so the port keeps trilinear. Float16 weight storage changes no score at
-three decimals. SynthStrip with CSF, which the repository already ships, scores 0.015 higher than
-`--no-csf`, with lower lesion recall.
+Browser-configuration choices. One fold is the default: it downloads 62 MB instead of 310 MB and
+runs five times faster. It costs 0.007 Dice on WMH and 0.039 on MS, where fold 0 alone
+over-segments (AVD 84 % against 45 %), so the ensemble is offered in the advanced settings.
+SynthStrip with CSF, which the repository already ships, suits the app: with it the ensemble
+scores 0.733 on WMH, against 0.710 with FLAMeS's recommended `--no-csf`. Float16 weight storage
+changes no score at three decimals.
+
+An earlier version of the port skipped the plans' `transpose_forward` and resampled trilinearly.
+Its Dice was 0.02 to 0.05 lower and its ensemble gained nothing over one fold; the rows above
+replace those measurements.
 
 ## Port checks
 
 - `parity.mjs` runs `src/pipeline.js` with ONNX Runtime Web (WebAssembly) against
-  `reference.py` on the same skull-stripped input and model. Utrecht 9: Dice 0.998, 59 of about
-  16 400 lesion voxels differ, from float rounding between runtimes.
+  `reference.py` on the same skull-stripped input and model. Utrecht 9: Dice 0.998, 111 of about
+  34 500 lesion voxels differ, from float rounding between runtimes. The port's resampling matches
+  nnunetv2's `resample_data_or_seg_to_shape` to 2.4 × 10⁻⁷ on anisotropic and isotropic volumes,
+  and on the 22 MS scans its five-fold masks agree with `nnUNetv2_predict`'s at Dice 0.97 to 0.99.
 - The exported graph matches the PyTorch checkpoint in ONNX Runtime; the transposed-convolution
   rewrite changes no output (max difference 0). On WebGPU (Chromium, SwiftShader) a 32 × 64 × 64
   export of the same graph agreed with native ONNX Runtime to 2 × 10⁻⁴ in the logits and on every
   voxel's class. SwiftShader is software rendering, so it gives no GPU timing.
-- The shipped example (MSLesSeg P57, clinical 2.3 mm FLAIR) runs in the built app in about three
-  minutes on eight WebAssembly threads: 60 lesions, 30.9 ml. The expert mask for that patient,
-  in MNI space, holds 42.1 ml.
+- The shipped example (MSLesSeg P57, clinical 2.3 mm FLAIR) runs in the built app on eight
+  WebAssembly threads in 3 minutes with one fold (90 lesions, 31.5 ml) and 10 minutes with the
+  ensemble (77 lesions, 29.6 ml). The expert mask for that patient, in MNI space, holds 42.1 ml.
 
 ## Reproduce
 
 ```sh
-# work directory holding the data, the exported folds (flames_f0.onnx …) and out/
+# work directory holding the data, the exported folds (flames-fold0.onnx …) and out/
 python score.py wmh <work> <method>...
 python score.py ms <work> <method>...
-python reference.py <work> flames_f0 --inputs stripped --folds 0 --order 1
-node parity.mjs <work>/stripped/Utrecht_9.nii.gz <work>/out/flames_f0/Utrecht_9.nii.gz <work>/flames_f0.onnx
+python reference.py <work> v_f0_csf --inputs stripped_csf --model 'flames-fold{}.onnx'
+node parity.mjs <work>/stripped_csf/Utrecht_9.nii.gz <work>/out/v_f0_csf/Utrecht_9.nii.gz <work>/flames-fold0.onnx
 ```
 
 `subset.json` lists the WMH cases and `results.json` holds every per-case score above. The other

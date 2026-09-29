@@ -1,8 +1,9 @@
 // FLAMeS inference around a patch runner. Pure: no DOM, no ONNX Runtime.
 //
-// Arrays use nnU-Net's axis order: a NIfTI volume with x fastest is read as a
-// C-order array of shape [nz, ny, nx], and spacing follows the same order. nnU-Net
-// never reorients, so neither do we.
+// Arrays use nnU-Net's axis order. nnU-Net reads a NIfTI volume as a C-order (z, y, x) array
+// and then applies the FLAMeS plans' transpose_forward [2, 0, 1], so the network sees (x, z, y):
+// the 1 mm target spacing and the 112-voxel patch side run along x. It never reorients, so
+// neither do we.
 
 export const PLAN = Object.freeze({
   patch: Object.freeze([112, 128, 160]),
@@ -12,10 +13,33 @@ export const PLAN = Object.freeze({
 
 const product = (shape) => shape[0] * shape[1] * shape[2];
 
-export function arrayGrid(volume) {
+export function networkGrid(volume) {
   const [nx, ny, nz] = volume.dims;
-  const spacing = [0, 1, 2].map((axis) => Math.hypot(volume.affine[0][axis], volume.affine[1][axis], volume.affine[2][axis]));
-  return { shape: [nz, ny, nx], spacing: [spacing[2], spacing[1], spacing[0]] };
+  const [sx, sy, sz] = [0, 1, 2].map((axis) => Math.hypot(volume.affine[0][axis], volume.affine[1][axis], volume.affine[2][axis]));
+  return { shape: [nx, nz, ny], spacing: [sx, sz, sy] };
+}
+
+// NIfTI voxel order (x fastest) to the network's C-order (x, z, y), and back.
+export function toNetworkOrder(data, dims) {
+  const [nx, ny, nz] = dims;
+  const out = new data.constructor(data.length);
+  for (let z = 0; z < nz; z++) {
+    for (let y = 0; y < ny; y++) {
+      for (let x = 0; x < nx; x++) out[(x * nz + z) * ny + y] = data[(z * ny + y) * nx + x];
+    }
+  }
+  return out;
+}
+
+export function fromNetworkOrder(data, dims) {
+  const [nx, ny, nz] = dims;
+  const out = new data.constructor(data.length);
+  for (let z = 0; z < nz; z++) {
+    for (let y = 0; y < ny; y++) {
+      for (let x = 0; x < nx; x++) out[(z * ny + y) * nx + x] = data[(x * nz + z) * ny + y];
+    }
+  }
+  return out;
 }
 
 // Bounding box of the brain mask, as nnU-Net's crop_to_nonzero.
@@ -77,48 +101,133 @@ export function targetShape(shape, spacing, target = PLAN.spacing) {
   return shape.map((n, a) => Math.round(n * spacing[a] / target[a]));
 }
 
-// Trilinear resize with voxel-centre alignment and edge clamping
-// (scipy.ndimage.zoom with order=1, grid_mode=True, mode='nearest').
-export function resize(data, shape, newShape) {
-  const axes = [0, 1, 2].map((a) => {
-    const n = newShape[a];
-    const i0 = new Int32Array(n);
-    const i1 = new Int32Array(n);
-    const w = new Float32Array(n);
-    const scale = shape[a] / n;
-    for (let o = 0; o < n; o++) {
-      const c = Math.min(Math.max((o + 0.5) * scale - 0.5, 0), shape[a] - 1);
-      i0[o] = Math.floor(c);
-      i1[o] = Math.min(i0[o] + 1, shape[a] - 1);
-      w[o] = c - i0[o];
+// nnU-Net resampling (default_resampling.py): skimage.transform.resize, which is
+// scipy.ndimage.zoom with grid_mode=True and mode='nearest', clipped to the input range.
+// When one axis is more than three times coarser than another it resamples each slice in-plane
+// and takes the nearest slice along that axis.
+
+const POLE = Math.sqrt(3) - 2;
+const PAD = 12;
+
+// Cubic B-spline coefficients of a line, as scipy's spline_filter1d after edge padding by 12.
+function splineCoefficients(line) {
+  const n = line.length + 2 * PAD;
+  const c = new Float64Array(n);
+  for (let i = 0; i < n; i++) c[i] = 6 * line[Math.min(Math.max(i - PAD, 0), line.length - 1)];
+  const zn = POLE ** (n - 1);
+  let z = POLE;
+  let first = c[0] + zn * c[n - 1];
+  for (let i = 1; i < n - 1; i++) {
+    first += z * (c[i] + zn * c[n - 1 - i]);
+    z *= POLE;
+  }
+  c[0] = first / (1 - zn * zn);
+  for (let i = 1; i < n; i++) c[i] += POLE * c[i - 1];
+  c[n - 1] = (POLE * c[n - 2] + c[n - 1]) * POLE / (POLE * POLE - 1);
+  for (let i = n - 2; i >= 0; i--) c[i] = POLE * (c[i + 1] - c[i]);
+  return c;
+}
+
+const lineKernels = {
+  cubic: (line, out) => {
+    const c = splineCoefficients(line);
+    const scale = line.length / out.length;
+    for (let o = 0; o < out.length; o++) {
+      const x = (o + 0.5) * scale - 0.5 + PAD;
+      const f = Math.floor(x);
+      const t = x - f;
+      const w = [(1 - t) ** 3 / 6, (4 - 6 * t * t + 3 * t ** 3) / 6, (1 + 3 * t + 3 * t * t - 3 * t ** 3) / 6, t ** 3 / 6];
+      let v = 0;
+      for (let k = 0; k < 4; k++) v += w[k] * c[Math.min(Math.max(f - 1 + k, 0), c.length - 1)];
+      out[o] = v;
     }
-    return { i0, i1, w };
-  });
-  const [Z, Y, X] = axes;
-  const plane = shape[1] * shape[2];
-  const out = new Float32Array(product(newShape));
-  let o = 0;
-  for (let z = 0; z < newShape[0]; z++) {
-    const z0 = Z.i0[z] * plane;
-    const z1 = Z.i1[z] * plane;
-    const wz = Z.w[z];
-    for (let y = 0; y < newShape[1]; y++) {
-      const y0 = Y.i0[y] * shape[2];
-      const y1 = Y.i1[y] * shape[2];
-      const wy = Y.w[y];
-      for (let x = 0; x < newShape[2]; x++, o++) {
-        const x0 = X.i0[x];
-        const x1 = X.i1[x];
-        const wx = X.w[x];
-        const c00 = data[z0 + y0 + x0] * (1 - wx) + data[z0 + y0 + x1] * wx;
-        const c01 = data[z0 + y1 + x0] * (1 - wx) + data[z0 + y1 + x1] * wx;
-        const c10 = data[z1 + y0 + x0] * (1 - wx) + data[z1 + y0 + x1] * wx;
-        const c11 = data[z1 + y1 + x0] * (1 - wx) + data[z1 + y1 + x1] * wx;
-        out[o] = (c00 * (1 - wy) + c01 * wy) * (1 - wz) + (c10 * (1 - wy) + c11 * wy) * wz;
-      }
+  },
+  linear: (line, out) => {
+    const scale = line.length / out.length;
+    for (let o = 0; o < out.length; o++) {
+      const x = Math.min(Math.max((o + 0.5) * scale - 0.5, 0), line.length - 1);
+      const f = Math.floor(x);
+      const t = x - f;
+      out[o] = line[f] * (1 - t) + line[Math.min(f + 1, line.length - 1)] * t;
+    }
+  },
+  nearest: (line, out) => {
+    const scale = line.length / out.length;
+    for (let o = 0; o < out.length; o++) out[o] = line[Math.min(Math.max(Math.floor((o + 0.5) * scale), 0), line.length - 1)];
+  },
+};
+
+// Resamples one axis of a C-order volume with a 1D kernel.
+function resampleAxis(data, shape, axis, size, kernel) {
+  if (shape[axis] === size) return { data, shape };
+  const next = [...shape];
+  next[axis] = size;
+  const out = new Float32Array(product(next));
+  const stride = (dims) => [dims[1] * dims[2], dims[2], 1][axis];
+  const inStride = stride(shape);
+  const outStride = stride(next);
+  const [p, q] = [0, 1, 2].filter((a) => a !== axis);
+  const line = new Float64Array(shape[axis]);
+  const result = new Float64Array(size);
+  for (let i = 0; i < shape[p]; i++) {
+    for (let j = 0; j < shape[q]; j++) {
+      const at = (dims) => i * [dims[1] * dims[2], dims[2], 1][p] + j * [dims[1] * dims[2], dims[2], 1][q];
+      const inBase = at(shape);
+      const outBase = at(next);
+      for (let k = 0; k < shape[axis]; k++) line[k] = data[inBase + k * inStride];
+      kernel(line, result);
+      for (let k = 0; k < size; k++) out[outBase + k * outStride] = result[k];
     }
   }
-  return out;
+  return { data: out, shape: next };
+}
+
+function sliceIndices(shape, axis, index) {
+  const [p, q] = [0, 1, 2].filter((a) => a !== axis);
+  const strides = [shape[1] * shape[2], shape[2], 1];
+  const list = new Int32Array(shape[p] * shape[q]);
+  let n = 0;
+  for (let i = 0; i < shape[p]; i++) {
+    for (let j = 0; j < shape[q]; j++) list[n++] = index * strides[axis] + i * strides[p] + j * strides[q];
+  }
+  return list;
+}
+
+export function anisotropicAxis(spacing) {
+  const max = Math.max(...spacing);
+  if (max / Math.min(...spacing) <= 3) return null;
+  const axes = [0, 1, 2].filter((a) => spacing[a] === max);
+  return axes.length === 1 ? axes[0] : null;
+}
+
+// order 3 for images, 1 for probabilities, as nnU-Net's plans for FLAMeS.
+export function resample(data, shape, newShape, spacing, newSpacing, order) {
+  if (shape.every((n, a) => n === newShape[a])) return data;
+  const kernel = order === 3 ? lineKernels.cubic : lineKernels.linear;
+  const axis = anisotropicAxis(spacing) ?? anisotropicAxis(newSpacing);
+  let volume = { data, shape };
+  for (const a of [0, 1, 2]) {
+    if (a !== axis) volume = resampleAxis(volume.data, volume.shape, a, newShape[a], kernel);
+  }
+  const range = (values, indices) => {
+    let min = Infinity;
+    let max = -Infinity;
+    for (const i of indices) {
+      min = Math.min(min, values[i]);
+      max = Math.max(max, values[i]);
+    }
+    return [min, max];
+  };
+  if (axis === null) {
+    const [min, max] = range(data, data.keys());
+    for (let i = 0; i < volume.data.length; i++) volume.data[i] = Math.min(Math.max(volume.data[i], min), max);
+    return volume.data;
+  }
+  for (let k = 0; k < shape[axis]; k++) {
+    const [min, max] = range(data, sliceIndices(shape, axis, k));
+    for (const i of sliceIndices(volume.shape, axis, k)) volume.data[i] = Math.min(Math.max(volume.data[i], min), max);
+  }
+  return resampleAxis(volume.data, volume.shape, axis, newShape[axis], lineKernels.nearest).data;
 }
 
 // Sliding-window origins along one axis, as nnU-Net's compute_steps_for_sliding_window.
@@ -222,23 +331,29 @@ export async function predictLesions({ image, shape, runPatch, folds = 1, onPatc
 
 // FLAIR volume + brain mask → lesion probability on the input grid.
 export async function segmentFlair({ volume, brainMask, runPatch, folds, onPatch, signal }) {
-  const { shape, spacing } = arrayGrid(volume);
-  const box = brainBox(brainMask, shape);
-  const inside = new Uint8Array(cropVolume(Float32Array.from(brainMask), shape, box));
-  const image = normalizeInBrain(cropVolume(volume.data, shape, box), inside);
+  const { shape, spacing } = networkGrid(volume);
+  const data = toNetworkOrder(volume.data, volume.dims);
+  const mask = toNetworkOrder(Uint8Array.from(brainMask), volume.dims);
+  const box = brainBox(mask, shape);
+  const inside = new Uint8Array(cropVolume(Float32Array.from(mask), shape, box));
+  const image = normalizeInBrain(cropVolume(data, shape, box), inside);
   const resampledShape = targetShape(box.shape, spacing);
-  const resampled = resize(image, box.shape, resampledShape);
+  const resampled = resample(image, box.shape, resampledShape, spacing, PLAN.spacing, 3);
   const predicted = await predictLesions({ image: resampled, shape: resampledShape, runPatch, folds, onPatch, signal });
-  const cropped = resize(predicted, resampledShape, box.shape);
+  const cropped = resample(predicted, resampledShape, box.shape, PLAN.spacing, spacing, 1);
   const probability = new Float32Array(product(shape));
   let o = 0;
-  for (let z = box.lo[0]; z < box.hi[0]; z++) {
-    for (let y = box.lo[1]; y < box.hi[1]; y++) {
-      probability.set(cropped.subarray(o, o + box.shape[2]), (z * shape[1] + y) * shape[2] + box.lo[2]);
+  for (let a = box.lo[0]; a < box.hi[0]; a++) {
+    for (let b = box.lo[1]; b < box.hi[1]; b++) {
+      probability.set(cropped.subarray(o, o + box.shape[2]), (a * shape[1] + b) * shape[2] + box.lo[2]);
       o += box.shape[2];
     }
   }
-  return { probability, windows: windows(resampledShape.map((n, a) => Math.max(n, PLAN.patch[a]))).length, resampledShape };
+  return {
+    probability: fromNetworkOrder(probability, volume.dims),
+    windows: windows(resampledShape.map((n, a) => Math.max(n, PLAN.patch[a]))).length,
+    resampledShape,
+  };
 }
 
 export function threshold(probability, cutoff = 0.5) {

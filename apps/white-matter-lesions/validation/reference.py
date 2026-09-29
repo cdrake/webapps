@@ -1,6 +1,6 @@
 """Browser-shaped FLAMeS pipeline in NumPy + ONNX Runtime, the reference src/pipeline.js is ported from.
 
-    python reference.py <work> <name> --inputs <dir of skull-stripped FLAIR> [--folds 0] [--order 1] [--mirror]
+    python reference.py <work> <name> --inputs <dir of skull-stripped FLAIR> [--folds 0] [--order nnunet|1|3] [--mirror]
 
 Writes <work>/out/<name>/<case>.nii.gz. Models are <work>/flames_f<fold>.onnx. The knobs are the
 deviations from nnUNetv2_predict under test: interpolation order, folds and mirroring.
@@ -8,8 +8,9 @@ deviations from nnUNetv2_predict under test: interpolation order, folds and mirr
 import argparse, glob, os, json, time
 import numpy as np, nibabel as nib, onnxruntime as ort
 from scipy import ndimage
+from nnunetv2.preprocessing.resampling.default_resampling import resample_data_or_seg_to_shape
 
-TARGET = np.array([1.0, 0.9, 0.9])  # nnU-Net axis order: (k, j, i) of the NIfTI voxel grid
+TARGET = np.array([1.0, 0.9, 0.9])  # network axis order (x, z, y) of the NIfTI voxel grid
 PATCH = np.array([112, 128, 160])
 
 def gaussian_map(patch):
@@ -31,6 +32,7 @@ def resize(x, shape, order):
     return ndimage.zoom(x, np.array(shape) / np.array(x.shape), order=order, mode='nearest', grid_mode=True)
 
 def segment(flair, spacing, sessions, order, mirror):
+    nn = order == 'nnunet'
     nz = flair != 0
     nz = ndimage.binary_fill_holes(nz)
     idx = np.argwhere(nz)
@@ -40,7 +42,10 @@ def segment(flair, spacing, sessions, order, mirror):
     crop = (crop - crop[mask].mean()) / max(crop[mask].std(), 1e-8)
     crop[~mask] = 0
     new_shape = np.round(np.array(crop.shape) * spacing / TARGET).astype(int)
-    img = resize(crop, new_shape, order).astype(np.float32)
+    if nn:
+        img = resample_data_or_seg_to_shape(crop[None], new_shape, spacing, TARGET, is_seg=False, order=3, order_z=0, force_separate_z=None)[0].astype(np.float32)
+    else:
+        img = resize(crop, new_shape, order).astype(np.float32)
     pad = np.maximum(PATCH - img.shape, 0)
     pads = [(p // 2, p - p // 2) for p in pad]
     img = np.pad(img, pads)
@@ -66,7 +71,10 @@ def segment(flair, spacing, sessions, order, mirror):
     logits = logits[(slice(None),) + tuple(slice(a, a + s) for (a, _), s in zip(pads, new_shape))]
     e = np.exp(logits - logits.max(0))
     prob = e[1] / e.sum(0)
-    prob = resize(prob, crop.shape, 1)
+    if nn:
+        prob = resample_data_or_seg_to_shape(prob[None], crop.shape, TARGET, spacing, is_seg=False, order=1, order_z=0, force_separate_z=None)[0]
+    else:
+        prob = resize(prob, crop.shape, 1)
     seg = np.zeros(flair.shape, np.uint8)
     seg[tuple(slice(a, b) for a, b in zip(lo, hi))] = prob > 0.5
     return seg
@@ -76,7 +84,7 @@ def main():
     ap.add_argument('work')
     ap.add_argument('name')
     ap.add_argument('--folds', default='0')
-    ap.add_argument('--order', type=int, default=1)
+    ap.add_argument('--order', type=lambda v: v if v == 'nnunet' else int(v), default='nnunet')
     ap.add_argument('--mirror', action='store_true')
     ap.add_argument('--inputs', default='stripped')
     ap.add_argument('--model', default='flames_f{}.onnx')
@@ -100,12 +108,13 @@ def main():
         if os.path.exists(out):
             continue
         img = nib.load(f)
-        vol = np.asarray(img.dataobj, np.float32).transpose(2, 1, 0)
-        spacing = np.array(img.header.get_zooms()[:3])[::-1]
+        # nnU-Net reads (z, y, x) and applies the plans' transpose_forward [2, 0, 1]: (x, z, y).
+        vol = np.asarray(img.dataobj, np.float32).transpose(0, 2, 1)
+        spacing = np.array(img.header.get_zooms()[:3])[[0, 2, 1]]
         t = time.time()
         seg = segment(vol, spacing, sessions, a.order, a.mirror)
         times[os.path.basename(f)] = time.time() - t
-        nib.save(nib.Nifti1Image(seg.transpose(2, 1, 0), img.affine), out)
+        nib.save(nib.Nifti1Image(seg.transpose(0, 2, 1), img.affine), out)
         print(out, f'{times[os.path.basename(f)]:.1f}s', flush=True)
     json.dump(times, open(f'out/{a.name}.times.json', 'w'))
 

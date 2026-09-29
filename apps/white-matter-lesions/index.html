@@ -31,13 +31,13 @@
               </label>
               <div class="nd-field">
                 <label for="folds">Model
-                  <span class="nd-info-icon" tabindex="0" aria-label="About the ensemble">i<span class="nd-info-tooltip">The ensemble averages all five published FLAMeS folds. It downloads 310 MB instead of 62 MB and takes five times as long, and on held-out scans it raised Dice by 0.02 to 0.04.</span></span>
+                  <span class="nd-info-icon" tabindex="0" aria-label="About the ensemble">i<span class="nd-info-tooltip">The ensemble averages all five published FLAMeS folds. It downloads 310 MB instead of 62 MB and takes five times as long. On held-out scans it raised Dice from 0.61 to 0.65 for multiple sclerosis and from 0.726 to 0.733 for vascular lesions.</span></span>
                 </label>
                 <select id="folds">
                   <option value="1">FLAMeS, one fold</option>
                   <option value="5">FLAMeS ensemble, five folds</option>
                 </select>
-                <p class="nd-hint">The ensemble is slower and slightly more accurate.</p>
+                <p class="nd-hint">The ensemble is five times slower and more accurate on MS lesions.</p>
               </div>
               <div class="nd-field">
                 <label for="backend">Processing</label>
@@ -83,7 +83,7 @@
 
     <template id="aboutContent">
       <p>Segment white matter lesions on a single FLAIR image with FLAMeS, a 3D nnU-Net trained on 668 multiple sclerosis scans from three vendors at 1.5 T and 3 T. SynthStrip removes the skull first; the network then runs over overlapping 112 × 128 × 160 patches at 1 × 0.9 × 0.9 mm.</p>
-      <p>By default the app runs one of the five published FLAMeS folds without mirroring, to keep a browser run to minutes; the advanced settings offer the five-fold ensemble. Against expert labels this configuration reached a mean Dice of 0.69 on 25 held-out scans from the MICCAI 2017 WMH challenge, a vascular cohort outside FLAMeS’s multiple sclerosis training data, and 0.63 on the 22 MSLesSeg test patients. Lesions are counted as 26-connected components; the table lists each lesion's volume and centroid.</p>
+      <p>By default the app runs one of the five published FLAMeS folds without mirroring, to keep a browser run to minutes; the advanced settings offer the five-fold ensemble. Against expert labels one fold reached a mean Dice of 0.73 on 25 held-out scans from the MICCAI 2017 WMH challenge, a vascular cohort outside FLAMeS’s multiple sclerosis training data, and 0.61 on the 22 MSLesSeg test patients; the ensemble reached 0.73 and 0.65. Lesions are counted as 26-connected components; the table lists each lesion's volume and centroid.</p>
       <p>Outputs are research estimates, not a diagnosis. Check them against the image.</p>
     </template>
     <template id="privacyContent"><p>Images are processed locally in this browser and are never uploaded. The FLAMeS and SynthStrip models are downloaded once and cached.</p></template>

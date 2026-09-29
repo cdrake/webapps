@@ -10,21 +10,23 @@ keeps the input grid and affine.
 
 1. SynthStrip (`@neurodesk/synthstrip`, the shared browser port) finds the brain. Tick
    *Image is already skull-stripped* in the advanced settings to use nonzero voxels instead.
-2. `src/pipeline.js` repeats nnU-Net's inference for FLAMeS without reorienting: crop to the
-   brain, z-score inside it, resample to 1 × 0.9 × 0.9 mm, run 112 × 128 × 160 patches at half
-   overlap with Gaussian weighting, resample the lesion probability back and threshold at 0.5.
+2. `src/pipeline.js` repeats nnU-Net's inference for FLAMeS without reorienting: permute the
+   axes as the plans' `transpose_forward` does, crop to the brain, z-score inside it, resample to
+   1 × 0.9 × 0.9 mm with nnU-Net's cubic, per-slice-when-anisotropic resampling, run
+   112 × 128 × 160 patches at half overlap with Gaussian weighting, resample the lesion
+   probability back and threshold at 0.5.
 3. `src/worker.js` runs the network with ONNX Runtime Web, on WebGPU when the browser has an
    adapter and on WebAssembly threads otherwise.
 
 The default model is FLAMeS fold 0. *Model* in the advanced settings switches to the published
 five-fold ensemble, which runs the folds one after another over every patch and averages their
 logits, so only one model is in memory at a time. All five are pinned in
-`models/white-matter-lesions.manifest.json` and converted by `scripts/export_model.py`. The conversion is exact apart from storing weights as float16: each
-transposed convolution becomes the equivalent 1 × 1 × 1 convolution plus depth-to-space, because
+`models/white-matter-lesions.manifest.json` and converted by `scripts/export_model.py`. The
+conversion is exact apart from storing weights as float16: each transposed convolution becomes the equivalent 1 × 1 × 1 convolution plus depth-to-space, because
 ONNX Runtime's WebGPU backend has no 3D transposed convolution.
 
 On an 8-thread WebAssembly run the example takes about three minutes with one fold (one minute
-of brain extraction and six patches of about 16 s) and about nine with the ensemble, whose first
+of brain extraction and six patches of about 16 s) and about ten with the ensemble, whose first
 run also downloads 310 MB instead of 62 MB.
 
 ## Why FLAMeS
@@ -34,10 +36,10 @@ run also downloads 310 MB instead of 62 MB.
 did well on both vascular and MS lesions, needs only a FLAIR, has an open licence (CC BY 4.0)
 and runs in a browser in minutes.
 
-Differences from the published FLAMeS configuration, and what each costs on the WMH subset
-(Dice): one fold instead of five (−0.037; −0.023 on MS), no mirroring, and trilinear rather than cubic
-resampling (−0.018). SynthStrip with CSF, as shipped here, instead of `--no-csf` changed Dice by
-+0.015.
+With five folds the port reproduces `nnUNetv2_predict` (Dice 0.710 against 0.714 on WMH, 0.647
+against 0.648 on MS). As shipped, with SynthStrip including CSF, the app scores Dice 0.726 on WMH
+and 0.608 on MS with one fold, and 0.733 and 0.647 with the ensemble. Mirroring at test time is
+not implemented.
 
 ## Development
 
