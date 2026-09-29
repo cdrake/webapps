@@ -1,0 +1,19 @@
+[package]
+name = "fida"
+version = "0.1.0"
+edition = "2021"
+license = "BSD-3-Clause"
+description = "A Rust port of the FID-A MR spectroscopy input and processing tools (Jamie Near)"
+
+[dependencies]
+num-complex = "0.4"
+rustfft = "6"
+flate2 = "1"
+serde_json = "1"
+
+[dev-dependencies]
+
+[profile.release]
+opt-level = 3
+
+[workspace]
