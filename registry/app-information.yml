@@ -1122,3 +1122,39 @@ apps:
         title: NiiVue
         reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
         url: https://github.com/niivue/niivue
+
+  white-matter-lesions:
+    packages:
+      - { name: FLAMeS, url: https://doi.org/10.5281/zenodo.17955359, role: lesion segmentation network (fold 0) }
+      - { name: SynthStrip, url: https://surfer.nmr.mgh.harvard.edu/docs/synthstrip/, role: brain extraction }
+      - { name: ONNX Runtime Web, url: https://onnxruntime.ai, role: inference on WebGPU or the CPU }
+      - { name: dcm2niix (WebAssembly), url: https://github.com/rordenlab/dcm2niix, role: DICOM to NIfTI conversion }
+      - { name: NiiVue, url: https://github.com/niivue/niivue, role: image viewer }
+    citations:
+      - group: Lesion segmentation
+        title: FLAMeS
+        reference: 'Dereskewicz E, La Rosa F, dos Santos Silva J, et al. FLAMeS: a robust deep learning model for automated multiple sclerosis lesion segmentation. medRxiv. 2025.'
+        doi: 10.1101/2025.05.19.25327707
+        code: https://doi.org/10.5281/zenodo.17955359
+      - group: Lesion segmentation
+        title: nnU-Net
+        reference: 'Isensee F, Jaeger PF, Kohl SAA, Petersen J, Maier-Hein KH. nnU-Net: a self-configuring method for deep learning-based biomedical image segmentation. Nature Methods. 2021;18(2):203–211.'
+        doi: 10.1038/s41592-020-01008-z
+        code: https://github.com/MIC-DKFZ/nnUNet
+      - group: Brain extraction
+        title: SynthStrip
+        reference: 'Hoopes A, Mora JS, Dalca AV, Fischl B, Hoffmann M. SynthStrip: skull-stripping for any brain image. NeuroImage. 2022;260:119474.'
+        doi: 10.1016/j.neuroimage.2022.119474
+        code: https://surfer.nmr.mgh.harvard.edu/docs/synthstrip/
+      - group: Example data
+        title: MSLesSeg
+        reference: 'Guarnera F, Rondinella A, Crispino E, et al. MSLesSeg: baseline and benchmarking of a new multiple sclerosis lesion segmentation dataset. Scientific Data. 2025;12:920.'
+        doi: 10.1038/s41597-025-05250-y
+      - group: DICOM conversion
+        title: dcm2niix
+        reference: 'Li X, Morgan PS, Ashburner J, Smith J, Rorden C. The first step for neuroimaging data analysis: DICOM to NIfTI conversion. Journal of Neuroscience Methods. 2016;264:47–56.'
+        doi: 10.1016/j.jneumeth.2016.03.001
+      - group: Visualization
+        title: NiiVue
+        reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
+        url: https://github.com/niivue/niivue

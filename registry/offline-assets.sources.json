@@ -2727,6 +2727,56 @@
         "bytes": 875770,
         "kind": "example"
       }
+    ],
+    "white-matter-lesions": [
+      {
+        "url": "https://huggingface.co/datasets/sbollmann/neurodesk-webapps-assets/resolve/e0a056b3d6b2b075bab5b780281af17fc9d6421d/syncro/synthstrip-browser.onnx",
+        "sha256": "dc9e11999b58d7949d77ddf1b2ed2910df66f8725c078a6b46ae08b8ebcc2800",
+        "bytes": 10296357,
+        "kind": "model",
+        "license": "Apache-2.0"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/ee0b2a1d563bec6821398d1ceaa0a474934d5013/white-matter-lesions/models/flames-fold0.onnx",
+        "sha256": "fe21c42078aa462091a5a553b7d2608bde0836647ab7866e1bad376744bcd0ec",
+        "bytes": 61642305,
+        "kind": "model",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/ee0b2a1d563bec6821398d1ceaa0a474934d5013/white-matter-lesions/models/flames-fold1.onnx",
+        "sha256": "f185f5dc5f4f5820be22678127f2614bda4ddcd89593006314106189c1ee69b5",
+        "bytes": 61642305,
+        "kind": "model",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/ee0b2a1d563bec6821398d1ceaa0a474934d5013/white-matter-lesions/models/flames-fold2.onnx",
+        "sha256": "e02192e2a74112740992c1716dacae1034c1526de78e7a001a517cae9d5e43bc",
+        "bytes": 61642305,
+        "kind": "model",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/ee0b2a1d563bec6821398d1ceaa0a474934d5013/white-matter-lesions/models/flames-fold3.onnx",
+        "sha256": "fd4903b2c4678cfa25fcc7098fd127fed40f4f7cc1022ad2df12b993d7c45a18",
+        "bytes": 61642305,
+        "kind": "model",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/ee0b2a1d563bec6821398d1ceaa0a474934d5013/white-matter-lesions/models/flames-fold4.onnx",
+        "sha256": "4214c079c83a6fef9aa3d662af9504118359fb943d00b932289b63ffffc1148a",
+        "bytes": 61642305,
+        "kind": "model",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/d16b3a04f7b7799420bbcd4ab3c7890b11d7f700/white-matter-lesions/examples/MSLesSeg_P57_T1_FLAIR.nii.gz",
+        "kind": "example",
+        "sha256": "179472456b8591364c0a1d4912d95c69e2b5743c87a9397aa9409fb58436f70c",
+        "bytes": 1827303
+      }
     ]
   },
   "exclusions": [

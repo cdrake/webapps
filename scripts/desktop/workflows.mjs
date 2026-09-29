@@ -9,7 +9,7 @@ import { dicomSeries } from '../../test-utils/dicom-fixture.mjs';
 import { expect } from '@playwright/test';
 import { verifyMuscleMapFullPipeline, createSyntheticMuscleMapNifti } from '../../test/musclemap-full-pipeline-smoke.mjs';
 
-export const workflowApps = ['musclemap', 'vesselboost', 'spinalcordtoolbox', 'calmar', 'qsmbly', 'seedseg', 'dicompare', 'deface', 'easy-mp2rage', 'niimath', 'dicom2vid', 'browserqc', 'surfannotate', 'zarro', 'synthsr', 'synthseg', 'syncro', 'dwi2trx', 'edgereg', 'greedy', 'ants', 'brain2print', 'topofit', 'fireants', 'brain-extraction', 'disconnectome', 'carotid-flow'];
+export const workflowApps = ['musclemap', 'vesselboost', 'spinalcordtoolbox', 'calmar', 'qsmbly', 'seedseg', 'dicompare', 'deface', 'easy-mp2rage', 'niimath', 'dicom2vid', 'browserqc', 'surfannotate', 'zarro', 'synthsr', 'synthseg', 'syncro', 'dwi2trx', 'edgereg', 'greedy', 'ants', 'brain2print', 'topofit', 'fireants', 'brain-extraction', 'disconnectome', 'carotid-flow', 'white-matter-lesions'];
 
 export async function verifyWorkflow(id, page, { root, resources, desktop }) {
   const fixture = join(root, 'exes/synthseg/test/fixtures/small.nii.gz');
@@ -37,7 +37,7 @@ export async function verifyWorkflow(id, page, { root, resources, desktop }) {
     assert.ok(bytes.length > 352, 'Output must contain image data');
     return { filename: data.filename, bytes: data.bytes.length };
   };
-  if (['deface', 'brain2print', 'dwi2trx', 'ants', 'greedy', 'edgereg', 'fireants', 'disconnectome', 'carotid-flow'].includes(id)) {
+  if (['deface', 'brain2print', 'dwi2trx', 'ants', 'greedy', 'edgereg', 'fireants', 'disconnectome', 'carotid-flow', 'white-matter-lesions'].includes(id)) {
     const examples = JSON.parse(await readFile(join(root, 'apps', id, 'examples.json')));
     const selector = page.getByRole('combobox', { name: 'Example', exact: true });
     await expect(selector).toBeEnabled({ timeout: 120000 });
@@ -319,6 +319,18 @@ export async function verifyWorkflow(id, page, { root, resources, desktop }) {
     assert.equal(Math.round(flow(2)), 231);
     assert.equal(Math.round(flow(4)), 211);
     return { filename: result.filename, frames: rows.length - 1 };
+  }
+  if (id === 'white-matter-lesions') {
+    await expect(page.locator('#runButton')).toBeEnabled({ timeout: 60000 });
+    await page.locator('#runButton').click();
+    await expect(page.locator('#statusText')).toHaveText(/^Segmentation complete · \d+ lesions/, { timeout: 1200000 });
+    const mask = await download('#resultList .nd-volume-toggle:nth-child(2) .nd-download-btn');
+    const table = await download('#resultList .nd-volume-toggle:nth-child(4) .nd-download-btn');
+    const rows = table.bytes.toString('utf8').trim().split('\n');
+    assert.equal(rows[0], 'lesion\tvoxels\tvolume_ml\tx_mm\ty_mm\tz_mm');
+    // The MSLesSeg P57 example has dozens of periventricular and deep lesions.
+    assert.ok(rows.length > 10, `expected lesions, found ${rows.length - 1}`);
+    return { mask: nifti(mask), lesions: rows.length - 1 };
   }
   throw new Error(`No offline workflow test registered for ${id}`);
 }
