@@ -33,7 +33,7 @@ test("the MS example is segmented into lesions on the input grid, falling back f
   expect(Number(count)).toBeGreaterThan(5);
   expect(Number(ml)).toBeGreaterThan(5);
   await expect(page.locator("#technicalLog")).toContainText("continuing on the CPU");
-  await expect(page.locator("#technicalLog")).toContainText("FLAMeS on WebAssembly");
+  await expect(page.locator("#technicalLog")).toContainText("FLAMeS, fold 0, on WebAssembly");
   await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(4);
   await expect(page.locator("#resultList .nd-view-btn").nth(3)).toBeDisabled();
   const flair = await download(page, 0);
