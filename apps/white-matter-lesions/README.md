@@ -32,7 +32,7 @@ did well on both vascular and MS lesions, needs only a FLAIR, has an open licenc
 and runs in a browser in minutes.
 
 Differences from the published FLAMeS configuration, and what each costs on the WMH subset
-(Dice): one fold instead of five (−0.037), no mirroring, and trilinear rather than cubic
+(Dice): one fold instead of five (−0.037; −0.023 on MS), no mirroring, and trilinear rather than cubic
 resampling (−0.018). SynthStrip with CSF, as shipped here, instead of `--no-csf` changed Dice by
 +0.015.
 

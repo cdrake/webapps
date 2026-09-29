@@ -1,0 +1,2880 @@
+{
+ "wmh": {
+  "sysu": [
+   {
+    "case": "Amsterdam_GE1T5_156",
+    "site": "Amsterdam_GE1T5",
+    "dice": 0.6529,
+    "avd": 63.7097,
+    "recall": 0.8286,
+    "f1": 0.6048,
+    "ref_voxels": 496,
+    "pred_voxels": 812
+   },
+   {
+    "case": "Amsterdam_GE1T5_159",
+    "site": "Amsterdam_GE1T5",
+    "dice": 0.7518,
+    "avd": 58.1309,
+    "recall": 0.9412,
+    "f1": 0.6561,
+    "ref_voxels": 6709,
+    "pred_voxels": 10609
+   },
+   {
+    "case": "Amsterdam_GE1T5_150",
+    "site": "Amsterdam_GE1T5",
+    "dice": 0.7359,
+    "avd": 50.7231,
+    "recall": 0.8571,
+    "f1": 0.6254,
+    "ref_voxels": 968,
+    "pred_voxels": 1459
+   },
+   {
+    "case": "Amsterdam_GE1T5_152",
+    "site": "Amsterdam_GE1T5",
+    "dice": 0.7626,
+    "avd": 58.4495,
+    "recall": 0.9623,
+    "f1": 0.8116,
+    "ref_voxels": 1793,
+    "pred_voxels": 2841
+   },
+   {
+    "case": "Amsterdam_GE1T5_154",
+    "site": "Amsterdam_GE1T5",
+    "dice": 0.8415,
+    "avd": 33.6344,
+    "recall": 0.9286,
+    "f1": 0.7202,
+    "ref_voxels": 2768,
+    "pred_voxels": 3699
+   },
+   {
+    "case": "Amsterdam_GE3T_133",
+    "site": "Amsterdam_GE3T",
+    "dice": 0.719,
+    "avd": 69.5082,
+    "recall": 0.9149,
+    "f1": 0.5515,
+    "ref_voxels": 1830,
+    "pred_voxels": 3102
+   },
+   {
+    "case": "Amsterdam_GE3T_129",
+    "site": "Amsterdam_GE3T",
+    "dice": 0.8767,
+    "avd": 9.809,
+    "recall": 0.9029,
+    "f1": 0.6253,
+    "ref_voxels": 8482,
+    "pred_voxels": 9314
+   },
+   {
+    "case": "Amsterdam_GE3T_149",
+    "site": "Amsterdam_GE3T",
+    "dice": 0.6311,
+    "avd": 105.9649,
+    "recall": 0.9211,
+    "f1": 0.5115,
+    "ref_voxels": 1710,
+    "pred_voxels": 3522
+   },
+   {
+    "case": "Amsterdam_GE3T_145",
+    "site": "Amsterdam_GE3T",
+    "dice": 0.8134,
+    "avd": 31.1091,
+    "recall": 0.878,
+    "f1": 0.8234,
+    "ref_voxels": 3282,
+    "pred_voxels": 4303
+   },
+   {
+    "case": "Amsterdam_GE3T_146",
+    "site": "Amsterdam_GE3T",
+    "dice": 0.6294,
+    "avd": 91.3508,
+    "recall": 0.8835,
+    "f1": 0.509,
+    "ref_voxels": 2058,
+    "pred_voxels": 3938
+   },
+   {
+    "case": "Amsterdam_Philips_164",
+    "site": "Amsterdam_Philips",
+    "dice": 0.7673,
+    "avd": 27.8265,
+    "recall": 0.9,
+    "f1": 0.4945,
+    "ref_voxels": 1937,
+    "pred_voxels": 2476
+   },
+   {
+    "case": "Amsterdam_Philips_167",
+    "site": "Amsterdam_Philips",
+    "dice": 0.7881,
+    "avd": 24.9934,
+    "recall": 0.9238,
+    "f1": 0.7663,
+    "ref_voxels": 7586,
+    "pred_voxels": 9482
+   },
+   {
+    "case": "Amsterdam_Philips_165",
+    "site": "Amsterdam_Philips",
+    "dice": 0.7427,
+    "avd": 40.2455,
+    "recall": 0.9149,
+    "f1": 0.7281,
+    "ref_voxels": 2281,
+    "pred_voxels": 3199
+   },
+   {
+    "case": "Amsterdam_Philips_169",
+    "site": "Amsterdam_Philips",
+    "dice": 0.7941,
+    "avd": 23.6571,
+    "recall": 0.8537,
+    "f1": 0.7309,
+    "ref_voxels": 8061,
+    "pred_voxels": 9968
+   },
+   {
+    "case": "Amsterdam_Philips_161",
+    "site": "Amsterdam_Philips",
+    "dice": 0.7744,
+    "avd": 36.9581,
+    "recall": 0.9462,
+    "f1": 0.6885,
+    "ref_voxels": 6713,
+    "pred_voxels": 9194
+   },
+   {
+    "case": "Singapore_86",
+    "site": "Singapore",
+    "dice": 0.8482,
+    "avd": 31.3336,
+    "recall": 0.9275,
+    "f1": 0.7154,
+    "ref_voxels": 9051,
+    "pred_voxels": 11887
+   },
+   {
+    "case": "Singapore_74",
+    "site": "Singapore",
+    "dice": 0.7501,
+    "avd": 42.0588,
+    "recall": 0.9762,
+    "f1": 0.6906,
+    "ref_voxels": 1020,
+    "pred_voxels": 1449
+   },
+   {
+    "case": "Singapore_79",
+    "site": "Singapore",
+    "dice": 0.7831,
+    "avd": 43.7402,
+    "recall": 0.9,
+    "f1": 0.3866,
+    "ref_voxels": 2540,
+    "pred_voxels": 3651
+   },
+   {
+    "case": "Singapore_94",
+    "site": "Singapore",
+    "dice": 0.8484,
+    "avd": 26.0996,
+    "recall": 0.873,
+    "f1": 0.6636,
+    "ref_voxels": 9640,
+    "pred_voxels": 12156
+   },
+   {
+    "case": "Singapore_73",
+    "site": "Singapore",
+    "dice": 0.5443,
+    "avd": 160.1329,
+    "recall": 1.0,
+    "f1": 0.6452,
+    "ref_voxels": 301,
+    "pred_voxels": 783
+   },
+   {
+    "case": "Utrecht_40",
+    "site": "Utrecht",
+    "dice": 0.8502,
+    "avd": 16.8487,
+    "recall": 0.8676,
+    "f1": 0.7066,
+    "ref_voxels": 5401,
+    "pred_voxels": 6311
+   },
+   {
+    "case": "Utrecht_47",
+    "site": "Utrecht",
+    "dice": 0.7796,
+    "avd": 37.5803,
+    "recall": 0.9021,
+    "f1": 0.6419,
+    "ref_voxels": 7943,
+    "pred_voxels": 10928
+   },
+   {
+    "case": "Utrecht_20",
+    "site": "Utrecht",
+    "dice": 0.7412,
+    "avd": 44.1351,
+    "recall": 0.8816,
+    "f1": 0.4921,
+    "ref_voxels": 5567,
+    "pred_voxels": 8024
+   },
+   {
+    "case": "Utrecht_9",
+    "site": "Utrecht",
+    "dice": 0.8356,
+    "avd": 20.3993,
+    "recall": 0.913,
+    "f1": 0.4641,
+    "ref_voxels": 70831,
+    "pred_voxels": 56382
+   },
+   {
+    "case": "Utrecht_36",
+    "site": "Utrecht",
+    "dice": 0.7261,
+    "avd": 8.1917,
+    "recall": 0.7451,
+    "f1": 0.7071,
+    "ref_voxels": 647,
+    "pred_voxels": 700
+   }
+  ],
+  "flames5": [
+   {
+    "id": "Amsterdam_GE1T5_156",
+    "group": "Amsterdam_GE1T5",
+    "dice": 0.6608,
+    "avd": 50.2016,
+    "recall": 0.6857,
+    "f1": 0.7425,
+    "ref_ml": 2.3425,
+    "pred_ml": 3.5184
+   },
+   {
+    "id": "Amsterdam_GE1T5_159",
+    "group": "Amsterdam_GE1T5",
+    "dice": 0.7567,
+    "avd": 57.6241,
+    "recall": 0.9244,
+    "f1": 0.8366,
+    "ref_ml": 31.6822,
+    "pred_ml": 49.9388
+   },
+   {
+    "id": "Amsterdam_GE1T5_150",
+    "group": "Amsterdam_GE1T5",
+    "dice": 0.7312,
+    "avd": 56.3017,
+    "recall": 0.7381,
+    "f1": 0.8243,
+    "ref_ml": 4.5716,
+    "pred_ml": 7.1454
+   },
+   {
+    "id": "Amsterdam_GE1T5_152",
+    "group": "Amsterdam_GE1T5",
+    "dice": 0.7412,
+    "avd": 61.2381,
+    "recall": 0.8113,
+    "f1": 0.8264,
+    "ref_ml": 8.4678,
+    "pred_ml": 13.6534
+   },
+   {
+    "id": "Amsterdam_GE1T5_154",
+    "group": "Amsterdam_GE1T5",
+    "dice": 0.8222,
+    "avd": 37.4639,
+    "recall": 0.8095,
+    "f1": 0.8552,
+    "ref_ml": 13.0726,
+    "pred_ml": 17.9701
+   },
+   {
+    "id": "Amsterdam_GE3T_133",
+    "group": "Amsterdam_GE3T",
+    "dice": 0.6794,
+    "avd": 82.1311,
+    "recall": 0.7872,
+    "f1": 0.827,
+    "ref_ml": 6.4333,
+    "pred_ml": 11.7171
+   },
+   {
+    "id": "Amsterdam_GE3T_129",
+    "group": "Amsterdam_GE3T",
+    "dice": 0.8593,
+    "avd": 21.8581,
+    "recall": 0.7864,
+    "f1": 0.8597,
+    "ref_ml": 29.8207,
+    "pred_ml": 36.3389
+   },
+   {
+    "id": "Amsterdam_GE3T_149",
+    "group": "Amsterdam_GE3T",
+    "dice": 0.6454,
+    "avd": 93.5673,
+    "recall": 0.8421,
+    "f1": 0.8593,
+    "ref_ml": 6.012,
+    "pred_ml": 11.6372
+   },
+   {
+    "id": "Amsterdam_GE3T_145",
+    "group": "Amsterdam_GE3T",
+    "dice": 0.7354,
+    "avd": 59.7806,
+    "recall": 0.7805,
+    "f1": 0.8052,
+    "ref_ml": 11.5387,
+    "pred_ml": 18.4366
+   },
+   {
+    "id": "Amsterdam_GE3T_146",
+    "group": "Amsterdam_GE3T",
+    "dice": 0.6689,
+    "avd": 48.8824,
+    "recall": 0.6117,
+    "f1": 0.7139,
+    "ref_ml": 7.2354,
+    "pred_ml": 10.7723
+   },
+   {
+    "id": "Amsterdam_Philips_164",
+    "group": "Amsterdam_Philips",
+    "dice": 0.7527,
+    "avd": 34.0217,
+    "recall": 0.4,
+    "f1": 0.5455,
+    "ref_ml": 3.3897,
+    "pred_ml": 4.543
+   },
+   {
+    "id": "Amsterdam_Philips_167",
+    "group": "Amsterdam_Philips",
+    "dice": 0.7517,
+    "avd": 39.5597,
+    "recall": 0.7048,
+    "f1": 0.8218,
+    "ref_ml": 13.2754,
+    "pred_ml": 18.5272
+   },
+   {
+    "id": "Amsterdam_Philips_165",
+    "group": "Amsterdam_Philips",
+    "dice": 0.7204,
+    "avd": 34.2832,
+    "recall": 0.734,
+    "f1": 0.8187,
+    "ref_ml": 3.9917,
+    "pred_ml": 5.3602
+   },
+   {
+    "id": "Amsterdam_Philips_169",
+    "group": "Amsterdam_Philips",
+    "dice": 0.7907,
+    "avd": 29.9218,
+    "recall": 0.6646,
+    "f1": 0.7923,
+    "ref_ml": 14.1071,
+    "pred_ml": 18.3282
+   },
+   {
+    "id": "Amsterdam_Philips_161",
+    "group": "Amsterdam_Philips",
+    "dice": 0.7057,
+    "avd": 72.0095,
+    "recall": 0.871,
+    "f1": 0.879,
+    "ref_ml": 11.7477,
+    "pred_ml": 20.2072
+   },
+   {
+    "id": "Singapore_86",
+    "group": "Singapore",
+    "dice": 0.8532,
+    "avd": 27.6323,
+    "recall": 0.8116,
+    "f1": 0.7819,
+    "ref_ml": 27.153,
+    "pred_ml": 34.656
+   },
+   {
+    "id": "Singapore_74",
+    "group": "Singapore",
+    "dice": 0.7437,
+    "avd": 15.3922,
+    "recall": 0.7857,
+    "f1": 0.8027,
+    "ref_ml": 3.06,
+    "pred_ml": 3.531
+   },
+   {
+    "id": "Singapore_79",
+    "group": "Singapore",
+    "dice": 0.73,
+    "avd": 63.622,
+    "recall": 0.8,
+    "f1": 0.603,
+    "ref_ml": 7.62,
+    "pred_ml": 12.468
+   },
+   {
+    "id": "Singapore_94",
+    "group": "Singapore",
+    "dice": 0.8097,
+    "avd": 36.5249,
+    "recall": 0.746,
+    "f1": 0.712,
+    "ref_ml": 28.92,
+    "pred_ml": 39.483
+   },
+   {
+    "id": "Singapore_73",
+    "group": "Singapore",
+    "dice": 0.5993,
+    "avd": 69.4352,
+    "recall": 0.7778,
+    "f1": 0.8465,
+    "ref_ml": 0.903,
+    "pred_ml": 1.53
+   },
+   {
+    "id": "Utrecht_40",
+    "group": "Utrecht",
+    "dice": 0.7359,
+    "avd": 64.0807,
+    "recall": 0.8088,
+    "f1": 0.7496,
+    "ref_ml": 14.8809,
+    "pred_ml": 24.4167
+   },
+   {
+    "id": "Utrecht_47",
+    "group": "Utrecht",
+    "dice": 0.7129,
+    "avd": 56.9684,
+    "recall": 0.6495,
+    "f1": 0.6729,
+    "ref_ml": 21.8846,
+    "pred_ml": 34.3519
+   },
+   {
+    "id": "Utrecht_20",
+    "group": "Utrecht",
+    "dice": 0.6075,
+    "avd": 117.9091,
+    "recall": 0.7368,
+    "f1": 0.459,
+    "ref_ml": 15.3382,
+    "pred_ml": 33.4234
+   },
+   {
+    "id": "Utrecht_9",
+    "group": "Utrecht",
+    "dice": 0.374,
+    "avd": 76.2703,
+    "recall": 0.2609,
+    "f1": 0.3983,
+    "ref_ml": 195.1542,
+    "pred_ml": 46.3096
+   },
+   {
+    "id": "Utrecht_36",
+    "group": "Utrecht",
+    "dice": 0.6554,
+    "avd": 37.2488,
+    "recall": 0.5882,
+    "f1": 0.7047,
+    "ref_ml": 1.7826,
+    "pred_ml": 2.4466
+   }
+  ],
+  "flames_f0_order3": [
+   {
+    "id": "Amsterdam_GE1T5_156",
+    "group": "Amsterdam_GE1T5",
+    "dice": 0.6345,
+    "avd": 67.5403,
+    "recall": 0.6857,
+    "f1": 0.6968,
+    "ref_ml": 2.3425,
+    "pred_ml": 3.9246
+   },
+   {
+    "id": "Amsterdam_GE1T5_159",
+    "group": "Amsterdam_GE1T5",
+    "dice": 0.7795,
+    "avd": 43.7919,
+    "recall": 0.8571,
+    "f1": 0.8264,
+    "ref_ml": 31.6822,
+    "pred_ml": 45.5565
+   },
+   {
+    "id": "Amsterdam_GE1T5_150",
+    "group": "Amsterdam_GE1T5",
+    "dice": 0.688,
+    "avd": 61.2603,
+    "recall": 0.6667,
+    "f1": 0.7194,
+    "ref_ml": 4.5716,
+    "pred_ml": 7.3721
+   },
+   {
+    "id": "Amsterdam_GE1T5_152",
+    "group": "Amsterdam_GE1T5",
+    "dice": 0.7329,
+    "avd": 61.6286,
+    "recall": 0.8302,
+    "f1": 0.7795,
+    "ref_ml": 8.4678,
+    "pred_ml": 13.6864
+   },
+   {
+    "id": "Amsterdam_GE1T5_154",
+    "group": "Amsterdam_GE1T5",
+    "dice": 0.7796,
+    "avd": 51.6257,
+    "recall": 0.8333,
+    "f1": 0.8163,
+    "ref_ml": 13.0726,
+    "pred_ml": 19.8214
+   },
+   {
+    "id": "Amsterdam_GE3T_133",
+    "group": "Amsterdam_GE3T",
+    "dice": 0.6767,
+    "avd": 82.9508,
+    "recall": 0.8085,
+    "f1": 0.8016,
+    "ref_ml": 6.4333,
+    "pred_ml": 11.7698
+   },
+   {
+    "id": "Amsterdam_GE3T_129",
+    "group": "Amsterdam_GE3T",
+    "dice": 0.843,
+    "avd": 23.2846,
+    "recall": 0.7767,
+    "f1": 0.8492,
+    "ref_ml": 29.8207,
+    "pred_ml": 36.7643
+   },
+   {
+    "id": "Amsterdam_GE3T_149",
+    "group": "Amsterdam_GE3T",
+    "dice": 0.6545,
+    "avd": 72.3392,
+    "recall": 0.7632,
+    "f1": 0.8014,
+    "ref_ml": 6.012,
+    "pred_ml": 10.3609
+   },
+   {
+    "id": "Amsterdam_GE3T_145",
+    "group": "Amsterdam_GE3T",
+    "dice": 0.7533,
+    "avd": 42.535,
+    "recall": 0.6911,
+    "f1": 0.7594,
+    "ref_ml": 11.5387,
+    "pred_ml": 16.4467
+   },
+   {
+    "id": "Amsterdam_GE3T_146",
+    "group": "Amsterdam_GE3T",
+    "dice": 0.651,
+    "avd": 62.1477,
+    "recall": 0.6796,
+    "f1": 0.7311,
+    "ref_ml": 7.2354,
+    "pred_ml": 11.7321
+   },
+   {
+    "id": "Amsterdam_Philips_164",
+    "group": "Amsterdam_Philips",
+    "dice": 0.6654,
+    "avd": 65.2039,
+    "recall": 0.6,
+    "f1": 0.5647,
+    "ref_ml": 3.3897,
+    "pred_ml": 5.6
+   },
+   {
+    "id": "Amsterdam_Philips_167",
+    "group": "Amsterdam_Philips",
+    "dice": 0.7713,
+    "avd": 28.5131,
+    "recall": 0.7048,
+    "f1": 0.8113,
+    "ref_ml": 13.2754,
+    "pred_ml": 17.0607
+   },
+   {
+    "id": "Amsterdam_Philips_165",
+    "group": "Amsterdam_Philips",
+    "dice": 0.7003,
+    "avd": 40.7716,
+    "recall": 0.7447,
+    "f1": 0.7978,
+    "ref_ml": 3.9917,
+    "pred_ml": 5.6192
+   },
+   {
+    "id": "Amsterdam_Philips_169",
+    "group": "Amsterdam_Philips",
+    "dice": 0.7725,
+    "avd": 36.4719,
+    "recall": 0.7195,
+    "f1": 0.8068,
+    "ref_ml": 14.1071,
+    "pred_ml": 19.2522
+   },
+   {
+    "id": "Amsterdam_Philips_161",
+    "group": "Amsterdam_Philips",
+    "dice": 0.6732,
+    "avd": 80.0238,
+    "recall": 0.8065,
+    "f1": 0.8109,
+    "ref_ml": 11.7477,
+    "pred_ml": 21.1487
+   },
+   {
+    "id": "Singapore_86",
+    "group": "Singapore",
+    "dice": 0.8376,
+    "avd": 29.9856,
+    "recall": 0.7246,
+    "f1": 0.7521,
+    "ref_ml": 27.153,
+    "pred_ml": 35.295
+   },
+   {
+    "id": "Singapore_74",
+    "group": "Singapore",
+    "dice": 0.6964,
+    "avd": 26.0784,
+    "recall": 0.7619,
+    "f1": 0.8117,
+    "ref_ml": 3.06,
+    "pred_ml": 3.858
+   },
+   {
+    "id": "Singapore_79",
+    "group": "Singapore",
+    "dice": 0.7337,
+    "avd": 53.3858,
+    "recall": 0.7,
+    "f1": 0.5833,
+    "ref_ml": 7.62,
+    "pred_ml": 11.688
+   },
+   {
+    "id": "Singapore_94",
+    "group": "Singapore",
+    "dice": 0.789,
+    "avd": 40.1556,
+    "recall": 0.6984,
+    "f1": 0.6906,
+    "ref_ml": 28.92,
+    "pred_ml": 40.533
+   },
+   {
+    "id": "Singapore_73",
+    "group": "Singapore",
+    "dice": 0.6128,
+    "avd": 2.6578,
+    "recall": 0.6111,
+    "f1": 0.7135,
+    "ref_ml": 0.903,
+    "pred_ml": 0.879
+   },
+   {
+    "id": "Utrecht_40",
+    "group": "Utrecht",
+    "dice": 0.7514,
+    "avd": 52.0644,
+    "recall": 0.7206,
+    "f1": 0.7548,
+    "ref_ml": 14.8809,
+    "pred_ml": 22.6285
+   },
+   {
+    "id": "Utrecht_47",
+    "group": "Utrecht",
+    "dice": 0.7014,
+    "avd": 55.1555,
+    "recall": 0.5876,
+    "f1": 0.6323,
+    "ref_ml": 21.8846,
+    "pred_ml": 33.9552
+   },
+   {
+    "id": "Utrecht_20",
+    "group": "Utrecht",
+    "dice": 0.6286,
+    "avd": 95.2578,
+    "recall": 0.6316,
+    "f1": 0.4476,
+    "ref_ml": 15.3382,
+    "pred_ml": 29.9491
+   },
+   {
+    "id": "Utrecht_9",
+    "group": "Utrecht",
+    "dice": 0.3302,
+    "avd": 79.3847,
+    "recall": 0.2174,
+    "f1": 0.3429,
+    "ref_ml": 195.1542,
+    "pred_ml": 40.2316
+   },
+   {
+    "id": "Utrecht_36",
+    "group": "Utrecht",
+    "dice": 0.5139,
+    "avd": 23.1839,
+    "recall": 0.4314,
+    "f1": 0.5767,
+    "ref_ml": 1.7826,
+    "pred_ml": 2.1959
+   }
+  ],
+  "flames_f0_csf": [
+   {
+    "id": "Amsterdam_GE1T5_156",
+    "group": "Amsterdam_GE1T5",
+    "dice": 0.6331,
+    "avd": 76.4113,
+    "recall": 0.6857,
+    "f1": 0.7059,
+    "ref_ml": 2.3425,
+    "pred_ml": 4.1324
+   },
+   {
+    "id": "Amsterdam_GE1T5_159",
+    "group": "Amsterdam_GE1T5",
+    "dice": 0.7871,
+    "avd": 35.9219,
+    "recall": 0.8067,
+    "f1": 0.8342,
+    "ref_ml": 31.6822,
+    "pred_ml": 43.0631
+   },
+   {
+    "id": "Amsterdam_GE1T5_150",
+    "group": "Amsterdam_GE1T5",
+    "dice": 0.7132,
+    "avd": 50.0,
+    "recall": 0.6667,
+    "f1": 0.7222,
+    "ref_ml": 4.5716,
+    "pred_ml": 6.8573
+   },
+   {
+    "id": "Amsterdam_GE1T5_152",
+    "group": "Amsterdam_GE1T5",
+    "dice": 0.7493,
+    "avd": 52.9281,
+    "recall": 0.6981,
+    "f1": 0.765,
+    "ref_ml": 8.4678,
+    "pred_ml": 12.9497
+   },
+   {
+    "id": "Amsterdam_GE1T5_154",
+    "group": "Amsterdam_GE1T5",
+    "dice": 0.7893,
+    "avd": 42.4133,
+    "recall": 0.7143,
+    "f1": 0.7736,
+    "ref_ml": 13.0726,
+    "pred_ml": 18.6171
+   },
+   {
+    "id": "Amsterdam_GE3T_133",
+    "group": "Amsterdam_GE3T",
+    "dice": 0.663,
+    "avd": 75.4645,
+    "recall": 0.7234,
+    "f1": 0.8007,
+    "ref_ml": 6.4333,
+    "pred_ml": 11.2882
+   },
+   {
+    "id": "Amsterdam_GE3T_129",
+    "group": "Amsterdam_GE3T",
+    "dice": 0.8387,
+    "avd": 27.2813,
+    "recall": 0.7864,
+    "f1": 0.8428,
+    "ref_ml": 29.8207,
+    "pred_ml": 37.9561
+   },
+   {
+    "id": "Amsterdam_GE3T_149",
+    "group": "Amsterdam_GE3T",
+    "dice": 0.6478,
+    "avd": 61.9883,
+    "recall": 0.7237,
+    "f1": 0.7939,
+    "ref_ml": 6.012,
+    "pred_ml": 9.7387
+   },
+   {
+    "id": "Amsterdam_GE3T_145",
+    "group": "Amsterdam_GE3T",
+    "dice": 0.7468,
+    "avd": 42.8397,
+    "recall": 0.7317,
+    "f1": 0.7964,
+    "ref_ml": 11.5387,
+    "pred_ml": 16.4819
+   },
+   {
+    "id": "Amsterdam_GE3T_146",
+    "group": "Amsterdam_GE3T",
+    "dice": 0.6404,
+    "avd": 58.7464,
+    "recall": 0.5922,
+    "f1": 0.6745,
+    "ref_ml": 7.2354,
+    "pred_ml": 11.486
+   },
+   {
+    "id": "Amsterdam_Philips_164",
+    "group": "Amsterdam_Philips",
+    "dice": 0.7221,
+    "avd": 37.0676,
+    "recall": 0.45,
+    "f1": 0.556,
+    "ref_ml": 3.3897,
+    "pred_ml": 4.6462
+   },
+   {
+    "id": "Amsterdam_Philips_167",
+    "group": "Amsterdam_Philips",
+    "dice": 0.7664,
+    "avd": 27.7089,
+    "recall": 0.6952,
+    "f1": 0.8098,
+    "ref_ml": 13.2754,
+    "pred_ml": 16.9539
+   },
+   {
+    "id": "Amsterdam_Philips_165",
+    "group": "Amsterdam_Philips",
+    "dice": 0.7022,
+    "avd": 26.8742,
+    "recall": 0.7234,
+    "f1": 0.792,
+    "ref_ml": 3.9917,
+    "pred_ml": 5.0645
+   },
+   {
+    "id": "Amsterdam_Philips_169",
+    "group": "Amsterdam_Philips",
+    "dice": 0.765,
+    "avd": 38.1963,
+    "recall": 0.7134,
+    "f1": 0.8029,
+    "ref_ml": 14.1071,
+    "pred_ml": 19.4954
+   },
+   {
+    "id": "Amsterdam_Philips_161",
+    "group": "Amsterdam_Philips",
+    "dice": 0.6974,
+    "avd": 63.3696,
+    "recall": 0.7527,
+    "f1": 0.7828,
+    "ref_ml": 11.7477,
+    "pred_ml": 19.1922
+   },
+   {
+    "id": "Singapore_86",
+    "group": "Singapore",
+    "dice": 0.8259,
+    "avd": 33.3775,
+    "recall": 0.7681,
+    "f1": 0.7516,
+    "ref_ml": 27.153,
+    "pred_ml": 36.216
+   },
+   {
+    "id": "Singapore_74",
+    "group": "Singapore",
+    "dice": 0.6849,
+    "avd": 16.7647,
+    "recall": 0.5952,
+    "f1": 0.7143,
+    "ref_ml": 3.06,
+    "pred_ml": 2.547
+   },
+   {
+    "id": "Singapore_79",
+    "group": "Singapore",
+    "dice": 0.7644,
+    "avd": 16.4173,
+    "recall": 0.65,
+    "f1": 0.5554,
+    "ref_ml": 7.62,
+    "pred_ml": 8.871
+   },
+   {
+    "id": "Singapore_94",
+    "group": "Singapore",
+    "dice": 0.7914,
+    "avd": 38.4751,
+    "recall": 0.6667,
+    "f1": 0.7293,
+    "ref_ml": 28.92,
+    "pred_ml": 40.047
+   },
+   {
+    "id": "Singapore_73",
+    "group": "Singapore",
+    "dice": 0.5196,
+    "avd": 38.8704,
+    "recall": 0.5,
+    "f1": 0.6429,
+    "ref_ml": 0.903,
+    "pred_ml": 0.552
+   },
+   {
+    "id": "Utrecht_40",
+    "group": "Utrecht",
+    "dice": 0.7045,
+    "avd": 60.137,
+    "recall": 0.6324,
+    "f1": 0.6382,
+    "ref_ml": 14.8809,
+    "pred_ml": 23.8298
+   },
+   {
+    "id": "Utrecht_47",
+    "group": "Utrecht",
+    "dice": 0.578,
+    "avd": 110.0592,
+    "recall": 0.5412,
+    "f1": 0.5664,
+    "ref_ml": 21.8846,
+    "pred_ml": 45.9706
+   },
+   {
+    "id": "Utrecht_20",
+    "group": "Utrecht",
+    "dice": 0.5572,
+    "avd": 116.1667,
+    "recall": 0.5,
+    "f1": 0.3889,
+    "ref_ml": 15.3382,
+    "pred_ml": 33.1562
+   },
+   {
+    "id": "Utrecht_9",
+    "group": "Utrecht",
+    "dice": 0.5496,
+    "avd": 59.6137,
+    "recall": 0.3043,
+    "f1": 0.4105,
+    "ref_ml": 195.1542,
+    "pred_ml": 78.8155
+   },
+   {
+    "id": "Utrecht_36",
+    "group": "Utrecht",
+    "dice": 0.4658,
+    "avd": 0.9274,
+    "recall": 0.3529,
+    "f1": 0.4724,
+    "ref_ml": 1.7826,
+    "pred_ml": 1.7661
+   }
+  ],
+  "flames_f0": [
+   {
+    "id": "Amsterdam_GE1T5_156",
+    "group": "Amsterdam_GE1T5",
+    "dice": 0.6053,
+    "avd": 91.129,
+    "recall": 0.8286,
+    "f1": 0.7528,
+    "ref_ml": 2.3425,
+    "pred_ml": 4.4771
+   },
+   {
+    "id": "Amsterdam_GE1T5_159",
+    "group": "Amsterdam_GE1T5",
+    "dice": 0.7485,
+    "avd": 59.2041,
+    "recall": 0.8908,
+    "f1": 0.8276,
+    "ref_ml": 31.6822,
+    "pred_ml": 50.4394
+   },
+   {
+    "id": "Amsterdam_GE1T5_150",
+    "group": "Amsterdam_GE1T5",
+    "dice": 0.6705,
+    "avd": 69.6281,
+    "recall": 0.7381,
+    "f1": 0.7678,
+    "ref_ml": 4.5716,
+    "pred_ml": 7.7546
+   },
+   {
+    "id": "Amsterdam_GE1T5_152",
+    "group": "Amsterdam_GE1T5",
+    "dice": 0.7091,
+    "avd": 71.333,
+    "recall": 0.8302,
+    "f1": 0.822,
+    "ref_ml": 8.4678,
+    "pred_ml": 14.5082
+   },
+   {
+    "id": "Amsterdam_GE1T5_154",
+    "group": "Amsterdam_GE1T5",
+    "dice": 0.7702,
+    "avd": 53.8656,
+    "recall": 0.8333,
+    "f1": 0.7967,
+    "ref_ml": 13.0726,
+    "pred_ml": 20.1142
+   },
+   {
+    "id": "Amsterdam_GE3T_133",
+    "group": "Amsterdam_GE3T",
+    "dice": 0.6509,
+    "avd": 91.9672,
+    "recall": 0.8298,
+    "f1": 0.8266,
+    "ref_ml": 6.4333,
+    "pred_ml": 12.3498
+   },
+   {
+    "id": "Amsterdam_GE3T_129",
+    "group": "Amsterdam_GE3T",
+    "dice": 0.8304,
+    "avd": 30.3702,
+    "recall": 0.7961,
+    "f1": 0.8247,
+    "ref_ml": 29.8207,
+    "pred_ml": 38.8773
+   },
+   {
+    "id": "Amsterdam_GE3T_149",
+    "group": "Amsterdam_GE3T",
+    "dice": 0.6285,
+    "avd": 85.848,
+    "recall": 0.7763,
+    "f1": 0.7851,
+    "ref_ml": 6.012,
+    "pred_ml": 11.1731
+   },
+   {
+    "id": "Amsterdam_GE3T_145",
+    "group": "Amsterdam_GE3T",
+    "dice": 0.7321,
+    "avd": 51.7977,
+    "recall": 0.7317,
+    "f1": 0.7653,
+    "ref_ml": 11.5387,
+    "pred_ml": 17.5155
+   },
+   {
+    "id": "Amsterdam_GE3T_146",
+    "group": "Amsterdam_GE3T",
+    "dice": 0.6256,
+    "avd": 75.8989,
+    "recall": 0.699,
+    "f1": 0.7158,
+    "ref_ml": 7.2354,
+    "pred_ml": 12.7271
+   },
+   {
+    "id": "Amsterdam_Philips_164",
+    "group": "Amsterdam_Philips",
+    "dice": 0.6521,
+    "avd": 77.2328,
+    "recall": 0.6,
+    "f1": 0.4884,
+    "ref_ml": 3.3897,
+    "pred_ml": 6.0077
+   },
+   {
+    "id": "Amsterdam_Philips_167",
+    "group": "Amsterdam_Philips",
+    "dice": 0.7569,
+    "avd": 34.7087,
+    "recall": 0.7238,
+    "f1": 0.8287,
+    "ref_ml": 13.2754,
+    "pred_ml": 17.8832
+   },
+   {
+    "id": "Amsterdam_Philips_165",
+    "group": "Amsterdam_Philips",
+    "dice": 0.6817,
+    "avd": 50.1534,
+    "recall": 0.7553,
+    "f1": 0.8038,
+    "ref_ml": 3.9917,
+    "pred_ml": 5.9937
+   },
+   {
+    "id": "Amsterdam_Philips_169",
+    "group": "Amsterdam_Philips",
+    "dice": 0.7609,
+    "avd": 41.8186,
+    "recall": 0.7134,
+    "f1": 0.7952,
+    "ref_ml": 14.1071,
+    "pred_ml": 20.0065
+   },
+   {
+    "id": "Amsterdam_Philips_161",
+    "group": "Amsterdam_Philips",
+    "dice": 0.6444,
+    "avd": 96.4844,
+    "recall": 0.8602,
+    "f1": 0.8013,
+    "ref_ml": 11.7477,
+    "pred_ml": 23.0824
+   },
+   {
+    "id": "Singapore_86",
+    "group": "Singapore",
+    "dice": 0.8214,
+    "avd": 36.7805,
+    "recall": 0.7536,
+    "f1": 0.7013,
+    "ref_ml": 27.153,
+    "pred_ml": 37.14
+   },
+   {
+    "id": "Singapore_74",
+    "group": "Singapore",
+    "dice": 0.701,
+    "avd": 19.0196,
+    "recall": 0.8095,
+    "f1": 0.8437,
+    "ref_ml": 3.06,
+    "pred_ml": 3.642
+   },
+   {
+    "id": "Singapore_79",
+    "group": "Singapore",
+    "dice": 0.7026,
+    "avd": 67.2835,
+    "recall": 0.8,
+    "f1": 0.5581,
+    "ref_ml": 7.62,
+    "pred_ml": 12.747
+   },
+   {
+    "id": "Singapore_94",
+    "group": "Singapore",
+    "dice": 0.765,
+    "avd": 50.5498,
+    "recall": 0.6984,
+    "f1": 0.6395,
+    "ref_ml": 28.92,
+    "pred_ml": 43.539
+   },
+   {
+    "id": "Singapore_73",
+    "group": "Singapore",
+    "dice": 0.5934,
+    "avd": 2.6578,
+    "recall": 0.6111,
+    "f1": 0.7168,
+    "ref_ml": 0.903,
+    "pred_ml": 0.927
+   },
+   {
+    "id": "Utrecht_40",
+    "group": "Utrecht",
+    "dice": 0.7197,
+    "avd": 66.5062,
+    "recall": 0.75,
+    "f1": 0.7192,
+    "ref_ml": 14.8809,
+    "pred_ml": 24.7776
+   },
+   {
+    "id": "Utrecht_47",
+    "group": "Utrecht",
+    "dice": 0.6817,
+    "avd": 67.5689,
+    "recall": 0.6134,
+    "f1": 0.6378,
+    "ref_ml": 21.8846,
+    "pred_ml": 36.6718
+   },
+   {
+    "id": "Utrecht_20",
+    "group": "Utrecht",
+    "dice": 0.6193,
+    "avd": 102.6765,
+    "recall": 0.6842,
+    "f1": 0.5049,
+    "ref_ml": 15.3382,
+    "pred_ml": 31.087
+   },
+   {
+    "id": "Utrecht_9",
+    "group": "Utrecht",
+    "dice": 0.3611,
+    "avd": 76.9367,
+    "recall": 0.2609,
+    "f1": 0.3838,
+    "ref_ml": 195.1542,
+    "pred_ml": 45.0091
+   },
+   {
+    "id": "Utrecht_36",
+    "group": "Utrecht",
+    "dice": 0.4817,
+    "avd": 27.8207,
+    "recall": 0.4118,
+    "f1": 0.5496,
+    "ref_ml": 1.7826,
+    "pred_ml": 2.2786
+   }
+  ],
+  "flames_f0_w16": [
+   {
+    "id": "Amsterdam_GE1T5_156",
+    "group": "Amsterdam_GE1T5",
+    "dice": 0.6053,
+    "avd": 91.129,
+    "recall": 0.8286,
+    "f1": 0.7528,
+    "ref_ml": 2.3425,
+    "pred_ml": 4.4771
+   },
+   {
+    "id": "Amsterdam_GE1T5_159",
+    "group": "Amsterdam_GE1T5",
+    "dice": 0.7484,
+    "avd": 59.219,
+    "recall": 0.8908,
+    "f1": 0.8276,
+    "ref_ml": 31.6822,
+    "pred_ml": 50.4441
+   },
+   {
+    "id": "Amsterdam_GE1T5_150",
+    "group": "Amsterdam_GE1T5",
+    "dice": 0.6708,
+    "avd": 69.5248,
+    "recall": 0.7381,
+    "f1": 0.7678,
+    "ref_ml": 4.5716,
+    "pred_ml": 7.7499
+   },
+   {
+    "id": "Amsterdam_GE1T5_152",
+    "group": "Amsterdam_GE1T5",
+    "dice": 0.7093,
+    "avd": 71.2772,
+    "recall": 0.8302,
+    "f1": 0.822,
+    "ref_ml": 8.4678,
+    "pred_ml": 14.5034
+   },
+   {
+    "id": "Amsterdam_GE1T5_154",
+    "group": "Amsterdam_GE1T5",
+    "dice": 0.7702,
+    "avd": 53.8656,
+    "recall": 0.8333,
+    "f1": 0.7967,
+    "ref_ml": 13.0726,
+    "pred_ml": 20.1142
+   },
+   {
+    "id": "Amsterdam_GE3T_133",
+    "group": "Amsterdam_GE3T",
+    "dice": 0.6509,
+    "avd": 91.9672,
+    "recall": 0.8298,
+    "f1": 0.8266,
+    "ref_ml": 6.4333,
+    "pred_ml": 12.3498
+   },
+   {
+    "id": "Amsterdam_GE3T_129",
+    "group": "Amsterdam_GE3T",
+    "dice": 0.8304,
+    "avd": 30.3584,
+    "recall": 0.7961,
+    "f1": 0.8247,
+    "ref_ml": 29.8207,
+    "pred_ml": 38.8738
+   },
+   {
+    "id": "Amsterdam_GE3T_149",
+    "group": "Amsterdam_GE3T",
+    "dice": 0.6285,
+    "avd": 85.848,
+    "recall": 0.7763,
+    "f1": 0.7851,
+    "ref_ml": 6.012,
+    "pred_ml": 11.1731
+   },
+   {
+    "id": "Amsterdam_GE3T_145",
+    "group": "Amsterdam_GE3T",
+    "dice": 0.732,
+    "avd": 51.8282,
+    "recall": 0.7317,
+    "f1": 0.7643,
+    "ref_ml": 11.5387,
+    "pred_ml": 17.519
+   },
+   {
+    "id": "Amsterdam_GE3T_146",
+    "group": "Amsterdam_GE3T",
+    "dice": 0.6256,
+    "avd": 75.8989,
+    "recall": 0.699,
+    "f1": 0.7158,
+    "ref_ml": 7.2354,
+    "pred_ml": 12.7271
+   },
+   {
+    "id": "Amsterdam_Philips_164",
+    "group": "Amsterdam_Philips",
+    "dice": 0.6527,
+    "avd": 76.9747,
+    "recall": 0.6,
+    "f1": 0.4884,
+    "ref_ml": 3.3897,
+    "pred_ml": 5.999
+   },
+   {
+    "id": "Amsterdam_Philips_167",
+    "group": "Amsterdam_Philips",
+    "dice": 0.7569,
+    "avd": 34.6955,
+    "recall": 0.7238,
+    "f1": 0.8287,
+    "ref_ml": 13.2754,
+    "pred_ml": 17.8814
+   },
+   {
+    "id": "Amsterdam_Philips_165",
+    "group": "Amsterdam_Philips",
+    "dice": 0.6819,
+    "avd": 50.1096,
+    "recall": 0.7553,
+    "f1": 0.8038,
+    "ref_ml": 3.9917,
+    "pred_ml": 5.992
+   },
+   {
+    "id": "Amsterdam_Philips_169",
+    "group": "Amsterdam_Philips",
+    "dice": 0.7609,
+    "avd": 41.8186,
+    "recall": 0.7134,
+    "f1": 0.7952,
+    "ref_ml": 14.1071,
+    "pred_ml": 20.0065
+   },
+   {
+    "id": "Amsterdam_Philips_161",
+    "group": "Amsterdam_Philips",
+    "dice": 0.6444,
+    "avd": 96.4844,
+    "recall": 0.8602,
+    "f1": 0.8013,
+    "ref_ml": 11.7477,
+    "pred_ml": 23.0824
+   },
+   {
+    "id": "Singapore_86",
+    "group": "Singapore",
+    "dice": 0.8214,
+    "avd": 36.7805,
+    "recall": 0.7536,
+    "f1": 0.7013,
+    "ref_ml": 27.153,
+    "pred_ml": 37.14
+   },
+   {
+    "id": "Singapore_74",
+    "group": "Singapore",
+    "dice": 0.701,
+    "avd": 19.0196,
+    "recall": 0.8095,
+    "f1": 0.8437,
+    "ref_ml": 3.06,
+    "pred_ml": 3.642
+   },
+   {
+    "id": "Singapore_79",
+    "group": "Singapore",
+    "dice": 0.7026,
+    "avd": 67.2835,
+    "recall": 0.8,
+    "f1": 0.5581,
+    "ref_ml": 7.62,
+    "pred_ml": 12.747
+   },
+   {
+    "id": "Singapore_94",
+    "group": "Singapore",
+    "dice": 0.765,
+    "avd": 50.5602,
+    "recall": 0.6984,
+    "f1": 0.6395,
+    "ref_ml": 28.92,
+    "pred_ml": 43.542
+   },
+   {
+    "id": "Singapore_73",
+    "group": "Singapore",
+    "dice": 0.5934,
+    "avd": 2.6578,
+    "recall": 0.6111,
+    "f1": 0.7168,
+    "ref_ml": 0.903,
+    "pred_ml": 0.927
+   },
+   {
+    "id": "Utrecht_40",
+    "group": "Utrecht",
+    "dice": 0.7197,
+    "avd": 66.5062,
+    "recall": 0.75,
+    "f1": 0.7192,
+    "ref_ml": 14.8809,
+    "pred_ml": 24.7776
+   },
+   {
+    "id": "Utrecht_47",
+    "group": "Utrecht",
+    "dice": 0.6817,
+    "avd": 67.5689,
+    "recall": 0.6134,
+    "f1": 0.6378,
+    "ref_ml": 21.8846,
+    "pred_ml": 36.6718
+   },
+   {
+    "id": "Utrecht_20",
+    "group": "Utrecht",
+    "dice": 0.6193,
+    "avd": 102.7124,
+    "recall": 0.6842,
+    "f1": 0.5049,
+    "ref_ml": 15.3382,
+    "pred_ml": 31.0925
+   },
+   {
+    "id": "Utrecht_9",
+    "group": "Utrecht",
+    "dice": 0.3611,
+    "avd": 76.9367,
+    "recall": 0.2609,
+    "f1": 0.3838,
+    "ref_ml": 195.1542,
+    "pred_ml": 45.0091
+   },
+   {
+    "id": "Utrecht_36",
+    "group": "Utrecht",
+    "dice": 0.4817,
+    "avd": 27.8207,
+    "recall": 0.4118,
+    "f1": 0.5496,
+    "ref_ml": 1.7826,
+    "pred_ml": 2.2786
+   }
+  ],
+  "mindglide": [
+   {
+    "id": "Amsterdam_GE1T5_156",
+    "group": "Amsterdam_GE1T5",
+    "dice": 0.4804,
+    "avd": 150.0,
+    "recall": 0.6571,
+    "f1": 0.6441,
+    "ref_ml": 2.3425,
+    "pred_ml": 5.8562
+   },
+   {
+    "id": "Amsterdam_GE1T5_159",
+    "group": "Amsterdam_GE1T5",
+    "dice": 0.6247,
+    "avd": 95.8116,
+    "recall": 0.7647,
+    "f1": 0.7336,
+    "ref_ml": 31.6822,
+    "pred_ml": 62.0375
+   },
+   {
+    "id": "Amsterdam_GE1T5_150",
+    "group": "Amsterdam_GE1T5",
+    "dice": 0.6849,
+    "avd": 38.0165,
+    "recall": 0.4048,
+    "f1": 0.5216,
+    "ref_ml": 4.5716,
+    "pred_ml": 6.3095
+   },
+   {
+    "id": "Amsterdam_GE1T5_152",
+    "group": "Amsterdam_GE1T5",
+    "dice": 0.5718,
+    "avd": 130.4518,
+    "recall": 0.7547,
+    "f1": 0.6422,
+    "ref_ml": 8.4678,
+    "pred_ml": 19.5142
+   },
+   {
+    "id": "Amsterdam_GE1T5_154",
+    "group": "Amsterdam_GE1T5",
+    "dice": 0.7527,
+    "avd": 52.276,
+    "recall": 0.6905,
+    "f1": 0.7101,
+    "ref_ml": 13.0726,
+    "pred_ml": 19.9064
+   },
+   {
+    "id": "Amsterdam_GE3T_133",
+    "group": "Amsterdam_GE3T",
+    "dice": 0.5174,
+    "avd": 168.1967,
+    "recall": 0.8298,
+    "f1": 0.6373,
+    "ref_ml": 6.4333,
+    "pred_ml": 17.2539
+   },
+   {
+    "id": "Amsterdam_GE3T_129",
+    "group": "Amsterdam_GE3T",
+    "dice": 0.7624,
+    "avd": 35.3336,
+    "recall": 0.4951,
+    "f1": 0.6128,
+    "ref_ml": 29.8207,
+    "pred_ml": 40.3574
+   },
+   {
+    "id": "Amsterdam_GE3T_149",
+    "group": "Amsterdam_GE3T",
+    "dice": 0.4255,
+    "avd": 223.2749,
+    "recall": 0.6316,
+    "f1": 0.5866,
+    "ref_ml": 6.012,
+    "pred_ml": 19.4351
+   },
+   {
+    "id": "Amsterdam_GE3T_145",
+    "group": "Amsterdam_GE3T",
+    "dice": 0.675,
+    "avd": 50.1523,
+    "recall": 0.4634,
+    "f1": 0.5652,
+    "ref_ml": 11.5387,
+    "pred_ml": 17.3257
+   },
+   {
+    "id": "Amsterdam_GE3T_146",
+    "group": "Amsterdam_GE3T",
+    "dice": 0.4084,
+    "avd": 242.1769,
+    "recall": 0.6796,
+    "f1": 0.5361,
+    "ref_ml": 7.2354,
+    "pred_ml": 24.758
+   },
+   {
+    "id": "Amsterdam_Philips_164",
+    "group": "Amsterdam_Philips",
+    "dice": 0.2733,
+    "avd": 497.5219,
+    "recall": 0.7,
+    "f1": 0.2373,
+    "ref_ml": 3.3897,
+    "pred_ml": 20.2544
+   },
+   {
+    "id": "Amsterdam_Philips_167",
+    "group": "Amsterdam_Philips",
+    "dice": 0.7287,
+    "avd": 19.5887,
+    "recall": 0.3524,
+    "f1": 0.4902,
+    "ref_ml": 13.2754,
+    "pred_ml": 15.8759
+   },
+   {
+    "id": "Amsterdam_Philips_165",
+    "group": "Amsterdam_Philips",
+    "dice": 0.5759,
+    "avd": 6.313,
+    "recall": 0.4149,
+    "f1": 0.539,
+    "ref_ml": 3.9917,
+    "pred_ml": 4.2437
+   },
+   {
+    "id": "Amsterdam_Philips_169",
+    "group": "Amsterdam_Philips",
+    "dice": 0.7332,
+    "avd": 20.8039,
+    "recall": 0.3415,
+    "f1": 0.4844,
+    "ref_ml": 14.1071,
+    "pred_ml": 17.0419
+   },
+   {
+    "id": "Amsterdam_Philips_161",
+    "group": "Amsterdam_Philips",
+    "dice": 0.5174,
+    "avd": 155.7128,
+    "recall": 0.6667,
+    "f1": 0.6726,
+    "ref_ml": 11.7477,
+    "pred_ml": 30.0404
+   },
+   {
+    "id": "Singapore_86",
+    "group": "Singapore",
+    "dice": 0.8027,
+    "avd": 33.2781,
+    "recall": 0.5507,
+    "f1": 0.595,
+    "ref_ml": 27.153,
+    "pred_ml": 36.189
+   },
+   {
+    "id": "Singapore_74",
+    "group": "Singapore",
+    "dice": 0.5579,
+    "avd": 59.7059,
+    "recall": 0.4048,
+    "f1": 0.4789,
+    "ref_ml": 3.06,
+    "pred_ml": 4.887
+   },
+   {
+    "id": "Singapore_79",
+    "group": "Singapore",
+    "dice": 0.4092,
+    "avd": 275.0787,
+    "recall": 0.75,
+    "f1": 0.3429,
+    "ref_ml": 7.62,
+    "pred_ml": 28.581
+   },
+   {
+    "id": "Singapore_94",
+    "group": "Singapore",
+    "dice": 0.701,
+    "avd": 71.4419,
+    "recall": 0.5556,
+    "f1": 0.3077,
+    "ref_ml": 28.92,
+    "pred_ml": 49.581
+   },
+   {
+    "id": "Singapore_73",
+    "group": "Singapore",
+    "dice": 0.3221,
+    "avd": 369.4352,
+    "recall": 0.7778,
+    "f1": 0.5657,
+    "ref_ml": 0.903,
+    "pred_ml": 4.239
+   },
+   {
+    "id": "Utrecht_40",
+    "group": "Utrecht",
+    "dice": 0.5909,
+    "avd": 114.3862,
+    "recall": 0.6029,
+    "f1": 0.4784,
+    "ref_ml": 14.8809,
+    "pred_ml": 31.9026
+   },
+   {
+    "id": "Utrecht_47",
+    "group": "Utrecht",
+    "dice": 0.5773,
+    "avd": 74.7325,
+    "recall": 0.4639,
+    "f1": 0.4332,
+    "ref_ml": 21.8846,
+    "pred_ml": 38.2395
+   },
+   {
+    "id": "Utrecht_20",
+    "group": "Utrecht",
+    "dice": 0.5257,
+    "avd": 148.2306,
+    "recall": 0.6447,
+    "f1": 0.427,
+    "ref_ml": 15.3382,
+    "pred_ml": 38.0742
+   },
+   {
+    "id": "Utrecht_9",
+    "group": "Utrecht",
+    "dice": 0.7016,
+    "avd": 43.0772,
+    "recall": 0.1304,
+    "f1": 0.2272,
+    "ref_ml": 195.1542,
+    "pred_ml": 111.0873
+   },
+   {
+    "id": "Utrecht_36",
+    "group": "Utrecht",
+    "dice": 0.3155,
+    "avd": 244.8223,
+    "recall": 0.2353,
+    "f1": 0.2654,
+    "ref_ml": 1.7826,
+    "pred_ml": 6.1469
+   }
+  ]
+ },
+ "ms": {
+  "ms_flames5": [
+   {
+    "id": "MS_P54",
+    "group": "MSLesSeg",
+    "dice": 0.7613,
+    "avd": 44.7447,
+    "recall": 1.0,
+    "f1": 0.7692,
+    "ref_ml": 1.332,
+    "pred_ml": 1.928
+   },
+   {
+    "id": "MS_P55",
+    "group": "MSLesSeg",
+    "dice": 0.6608,
+    "avd": 15.5884,
+    "recall": 0.7027,
+    "f1": 0.812,
+    "ref_ml": 5.209,
+    "pred_ml": 4.397
+   },
+   {
+    "id": "MS_P56",
+    "group": "MSLesSeg",
+    "dice": 0.7097,
+    "avd": 10.3193,
+    "recall": 0.5,
+    "f1": 0.3077,
+    "ref_ml": 1.754,
+    "pred_ml": 1.935
+   },
+   {
+    "id": "MS_P57",
+    "group": "MSLesSeg",
+    "dice": 0.7663,
+    "avd": 13.2762,
+    "recall": 0.6635,
+    "f1": 0.7574,
+    "ref_ml": 42.098,
+    "pred_ml": 36.509
+   },
+   {
+    "id": "MS_P58",
+    "group": "MSLesSeg",
+    "dice": 0.598,
+    "avd": 6.563,
+    "recall": 0.6429,
+    "f1": 0.6702,
+    "ref_ml": 6.689,
+    "pred_ml": 6.25
+   },
+   {
+    "id": "MS_P59",
+    "group": "MSLesSeg",
+    "dice": 0.1635,
+    "avd": 331.3774,
+    "recall": 0.6,
+    "f1": 0.466,
+    "ref_ml": 2.403,
+    "pred_ml": 10.366
+   },
+   {
+    "id": "MS_P60",
+    "group": "MSLesSeg",
+    "dice": 0.5404,
+    "avd": 86.5544,
+    "recall": 0.96,
+    "f1": 0.8136,
+    "ref_ml": 6.649,
+    "pred_ml": 12.404
+   },
+   {
+    "id": "MS_P61",
+    "group": "MSLesSeg",
+    "dice": 0.6279,
+    "avd": 41.5998,
+    "recall": 0.8333,
+    "f1": 0.5303,
+    "ref_ml": 4.738,
+    "pred_ml": 6.709
+   },
+   {
+    "id": "MS_P62",
+    "group": "MSLesSeg",
+    "dice": 0.724,
+    "avd": 1.6978,
+    "recall": 0.86,
+    "f1": 0.8754,
+    "ref_ml": 4.182,
+    "pred_ml": 4.111
+   },
+   {
+    "id": "MS_P63",
+    "group": "MSLesSeg",
+    "dice": 0.7325,
+    "avd": 37.6547,
+    "recall": 0.9167,
+    "f1": 0.7857,
+    "ref_ml": 2.908,
+    "pred_ml": 4.003
+   },
+   {
+    "id": "MS_P64",
+    "group": "MSLesSeg",
+    "dice": 0.6877,
+    "avd": 12.1218,
+    "recall": 0.5938,
+    "f1": 0.6552,
+    "ref_ml": 4.76,
+    "pred_ml": 5.337
+   },
+   {
+    "id": "MS_P65",
+    "group": "MSLesSeg",
+    "dice": 0.7963,
+    "avd": 11.5637,
+    "recall": 0.9119,
+    "f1": 0.8882,
+    "ref_ml": 25.338,
+    "pred_ml": 28.268
+   },
+   {
+    "id": "MS_P66",
+    "group": "MSLesSeg",
+    "dice": 0.6842,
+    "avd": 11.1701,
+    "recall": 0.6964,
+    "f1": 0.7349,
+    "ref_ml": 16.938,
+    "pred_ml": 18.83
+   },
+   {
+    "id": "MS_P67",
+    "group": "MSLesSeg",
+    "dice": 0.6428,
+    "avd": 70.6475,
+    "recall": 0.8356,
+    "f1": 0.8114,
+    "ref_ml": 23.429,
+    "pred_ml": 39.981
+   },
+   {
+    "id": "MS_P68",
+    "group": "MSLesSeg",
+    "dice": 0.3564,
+    "avd": 43.0903,
+    "recall": 0.5,
+    "f1": 0.5,
+    "ref_ml": 0.919,
+    "pred_ml": 0.523
+   },
+   {
+    "id": "MS_P69",
+    "group": "MSLesSeg",
+    "dice": 0.8159,
+    "avd": 6.4898,
+    "recall": 0.76,
+    "f1": 0.8636,
+    "ref_ml": 5.994,
+    "pred_ml": 6.383
+   },
+   {
+    "id": "MS_P70",
+    "group": "MSLesSeg",
+    "dice": 0.5799,
+    "avd": 125.6197,
+    "recall": 0.8571,
+    "f1": 0.6897,
+    "ref_ml": 9.723,
+    "pred_ml": 21.937
+   },
+   {
+    "id": "MS_P71",
+    "group": "MSLesSeg",
+    "dice": 0.6151,
+    "avd": 28.2721,
+    "recall": 0.9444,
+    "f1": 0.763,
+    "ref_ml": 3.293,
+    "pred_ml": 4.224
+   },
+   {
+    "id": "MS_P72",
+    "group": "MSLesSeg",
+    "dice": 0.6864,
+    "avd": 40.331,
+    "recall": 0.7143,
+    "f1": 0.5742,
+    "ref_ml": 32.992,
+    "pred_ml": 46.298
+   },
+   {
+    "id": "MS_P73",
+    "group": "MSLesSeg",
+    "dice": 0.6692,
+    "avd": 1.8352,
+    "recall": 0.875,
+    "f1": 0.8043,
+    "ref_ml": 12.206,
+    "pred_ml": 11.982
+   },
+   {
+    "id": "MS_P74",
+    "group": "MSLesSeg",
+    "dice": 0.6593,
+    "avd": 15.6694,
+    "recall": 0.8214,
+    "f1": 0.8181,
+    "ref_ml": 1.972,
+    "pred_ml": 2.281
+   },
+   {
+    "id": "MS_P75",
+    "group": "MSLesSeg",
+    "dice": 0.7789,
+    "avd": 14.3186,
+    "recall": 0.9118,
+    "f1": 0.8537,
+    "ref_ml": 9.568,
+    "pred_ml": 8.198
+   }
+  ],
+  "ms_flames_f0": [
+   {
+    "id": "MS_P54",
+    "group": "MSLesSeg",
+    "dice": 0.6983,
+    "avd": 76.7267,
+    "recall": 1.0,
+    "f1": 0.7692,
+    "ref_ml": 1.332,
+    "pred_ml": 2.354
+   },
+   {
+    "id": "MS_P55",
+    "group": "MSLesSeg",
+    "dice": 0.6512,
+    "avd": 2.7644,
+    "recall": 0.8378,
+    "f1": 0.8578,
+    "ref_ml": 5.209,
+    "pred_ml": 5.065
+   },
+   {
+    "id": "MS_P56",
+    "group": "MSLesSeg",
+    "dice": 0.4855,
+    "avd": 105.5302,
+    "recall": 0.5,
+    "f1": 0.3,
+    "ref_ml": 1.754,
+    "pred_ml": 3.605
+   },
+   {
+    "id": "MS_P57",
+    "group": "MSLesSeg",
+    "dice": 0.7495,
+    "avd": 13.3569,
+    "recall": 0.5962,
+    "f1": 0.7276,
+    "ref_ml": 42.098,
+    "pred_ml": 36.475
+   },
+   {
+    "id": "MS_P58",
+    "group": "MSLesSeg",
+    "dice": 0.5883,
+    "avd": 5.8155,
+    "recall": 0.7143,
+    "f1": 0.7094,
+    "ref_ml": 6.689,
+    "pred_ml": 6.3
+   },
+   {
+    "id": "MS_P59",
+    "group": "MSLesSeg",
+    "dice": 0.3352,
+    "avd": 56.9705,
+    "recall": 0.6667,
+    "f1": 0.4,
+    "ref_ml": 2.403,
+    "pred_ml": 3.772
+   },
+   {
+    "id": "MS_P60",
+    "group": "MSLesSeg",
+    "dice": 0.4772,
+    "avd": 177.6658,
+    "recall": 1.0,
+    "f1": 0.7077,
+    "ref_ml": 6.649,
+    "pred_ml": 18.462
+   },
+   {
+    "id": "MS_P61",
+    "group": "MSLesSeg",
+    "dice": 0.6019,
+    "avd": 46.4331,
+    "recall": 0.9167,
+    "f1": 0.704,
+    "ref_ml": 4.738,
+    "pred_ml": 6.938
+   },
+   {
+    "id": "MS_P62",
+    "group": "MSLesSeg",
+    "dice": 0.7234,
+    "avd": 2.3195,
+    "recall": 0.88,
+    "f1": 0.8595,
+    "ref_ml": 4.182,
+    "pred_ml": 4.085
+   },
+   {
+    "id": "MS_P63",
+    "group": "MSLesSeg",
+    "dice": 0.7246,
+    "avd": 41.575,
+    "recall": 0.8333,
+    "f1": 0.6667,
+    "ref_ml": 2.908,
+    "pred_ml": 4.117
+   },
+   {
+    "id": "MS_P64",
+    "group": "MSLesSeg",
+    "dice": 0.619,
+    "avd": 18.9706,
+    "recall": 0.5625,
+    "f1": 0.5958,
+    "ref_ml": 4.76,
+    "pred_ml": 5.663
+   },
+   {
+    "id": "MS_P65",
+    "group": "MSLesSeg",
+    "dice": 0.7772,
+    "avd": 17.9256,
+    "recall": 0.9223,
+    "f1": 0.8789,
+    "ref_ml": 25.338,
+    "pred_ml": 29.88
+   },
+   {
+    "id": "MS_P66",
+    "group": "MSLesSeg",
+    "dice": 0.6507,
+    "avd": 5.6559,
+    "recall": 0.6607,
+    "f1": 0.7318,
+    "ref_ml": 16.938,
+    "pred_ml": 17.896
+   },
+   {
+    "id": "MS_P67",
+    "group": "MSLesSeg",
+    "dice": 0.6155,
+    "avd": 67.3055,
+    "recall": 0.726,
+    "f1": 0.7241,
+    "ref_ml": 23.429,
+    "pred_ml": 39.198
+   },
+   {
+    "id": "MS_P68",
+    "group": "MSLesSeg",
+    "dice": 0.2618,
+    "avd": 7.8346,
+    "recall": 0.375,
+    "f1": 0.3333,
+    "ref_ml": 0.919,
+    "pred_ml": 0.991
+   },
+   {
+    "id": "MS_P69",
+    "group": "MSLesSeg",
+    "dice": 0.8112,
+    "avd": 4.8048,
+    "recall": 0.76,
+    "f1": 0.8444,
+    "ref_ml": 5.994,
+    "pred_ml": 6.282
+   },
+   {
+    "id": "MS_P70",
+    "group": "MSLesSeg",
+    "dice": 0.6246,
+    "avd": 91.1756,
+    "recall": 0.8095,
+    "f1": 0.5965,
+    "ref_ml": 9.723,
+    "pred_ml": 18.588
+   },
+   {
+    "id": "MS_P71",
+    "group": "MSLesSeg",
+    "dice": 0.5679,
+    "avd": 31.5214,
+    "recall": 0.7778,
+    "f1": 0.6386,
+    "ref_ml": 3.293,
+    "pred_ml": 4.331
+   },
+   {
+    "id": "MS_P72",
+    "group": "MSLesSeg",
+    "dice": 0.6814,
+    "avd": 45.3898,
+    "recall": 0.6429,
+    "f1": 0.4813,
+    "ref_ml": 32.992,
+    "pred_ml": 47.967
+   },
+   {
+    "id": "MS_P73",
+    "group": "MSLesSeg",
+    "dice": 0.6462,
+    "avd": 6.2346,
+    "recall": 0.7812,
+    "f1": 0.7825,
+    "ref_ml": 12.206,
+    "pred_ml": 11.445
+   },
+   {
+    "id": "MS_P74",
+    "group": "MSLesSeg",
+    "dice": 0.6851,
+    "avd": 12.5761,
+    "recall": 0.8214,
+    "f1": 0.7931,
+    "ref_ml": 1.972,
+    "pred_ml": 2.22
+   },
+   {
+    "id": "MS_P75",
+    "group": "MSLesSeg",
+    "dice": 0.7812,
+    "avd": 8.3821,
+    "recall": 0.9118,
+    "f1": 0.8756,
+    "ref_ml": 9.568,
+    "pred_ml": 8.766
+   }
+  ],
+  "ms_flames_f0_order3": [
+   {
+    "id": "MS_P54",
+    "group": "MSLesSeg",
+    "dice": 0.6881,
+    "avd": 80.4054,
+    "recall": 1.0,
+    "f1": 0.625,
+    "ref_ml": 1.332,
+    "pred_ml": 2.403
+   },
+   {
+    "id": "MS_P55",
+    "group": "MSLesSeg",
+    "dice": 0.6542,
+    "avd": 2.2653,
+    "recall": 0.7838,
+    "f1": 0.8149,
+    "ref_ml": 5.209,
+    "pred_ml": 5.091
+   },
+   {
+    "id": "MS_P56",
+    "group": "MSLesSeg",
+    "dice": 0.4728,
+    "avd": 115.2223,
+    "recall": 0.5,
+    "f1": 0.3158,
+    "ref_ml": 1.754,
+    "pred_ml": 3.775
+   },
+   {
+    "id": "MS_P57",
+    "group": "MSLesSeg",
+    "dice": 0.7468,
+    "avd": 16.8298,
+    "recall": 0.5865,
+    "f1": 0.7275,
+    "ref_ml": 42.098,
+    "pred_ml": 35.013
+   },
+   {
+    "id": "MS_P58",
+    "group": "MSLesSeg",
+    "dice": 0.5857,
+    "avd": 5.1577,
+    "recall": 0.7143,
+    "f1": 0.6977,
+    "ref_ml": 6.689,
+    "pred_ml": 6.344
+   },
+   {
+    "id": "MS_P59",
+    "group": "MSLesSeg",
+    "dice": 0.2875,
+    "avd": 99.6255,
+    "recall": 0.6667,
+    "f1": 0.3902,
+    "ref_ml": 2.403,
+    "pred_ml": 4.797
+   },
+   {
+    "id": "MS_P60",
+    "group": "MSLesSeg",
+    "dice": 0.4897,
+    "avd": 166.8672,
+    "recall": 1.0,
+    "f1": 0.7097,
+    "ref_ml": 6.649,
+    "pred_ml": 17.744
+   },
+   {
+    "id": "MS_P61",
+    "group": "MSLesSeg",
+    "dice": 0.5952,
+    "avd": 50.7809,
+    "recall": 0.9167,
+    "f1": 0.7479,
+    "ref_ml": 4.738,
+    "pred_ml": 7.144
+   },
+   {
+    "id": "MS_P62",
+    "group": "MSLesSeg",
+    "dice": 0.7201,
+    "avd": 4.1368,
+    "recall": 0.88,
+    "f1": 0.8684,
+    "ref_ml": 4.182,
+    "pred_ml": 4.009
+   },
+   {
+    "id": "MS_P63",
+    "group": "MSLesSeg",
+    "dice": 0.7292,
+    "avd": 38.6176,
+    "recall": 0.8333,
+    "f1": 0.7143,
+    "ref_ml": 2.908,
+    "pred_ml": 4.031
+   },
+   {
+    "id": "MS_P64",
+    "group": "MSLesSeg",
+    "dice": 0.6262,
+    "avd": 21.0084,
+    "recall": 0.5938,
+    "f1": 0.609,
+    "ref_ml": 4.76,
+    "pred_ml": 5.76
+   },
+   {
+    "id": "MS_P65",
+    "group": "MSLesSeg",
+    "dice": 0.7814,
+    "avd": 13.2291,
+    "recall": 0.9119,
+    "f1": 0.8872,
+    "ref_ml": 25.338,
+    "pred_ml": 28.69
+   },
+   {
+    "id": "MS_P66",
+    "group": "MSLesSeg",
+    "dice": 0.6542,
+    "avd": 2.6213,
+    "recall": 0.6429,
+    "f1": 0.7193,
+    "ref_ml": 16.938,
+    "pred_ml": 17.382
+   },
+   {
+    "id": "MS_P67",
+    "group": "MSLesSeg",
+    "dice": 0.617,
+    "avd": 65.8884,
+    "recall": 0.726,
+    "f1": 0.7266,
+    "ref_ml": 23.429,
+    "pred_ml": 38.866
+   },
+   {
+    "id": "MS_P68",
+    "group": "MSLesSeg",
+    "dice": 0.2708,
+    "avd": 26.4418,
+    "recall": 0.5,
+    "f1": 0.4444,
+    "ref_ml": 0.919,
+    "pred_ml": 0.676
+   },
+   {
+    "id": "MS_P69",
+    "group": "MSLesSeg",
+    "dice": 0.8125,
+    "avd": 1.9186,
+    "recall": 0.76,
+    "f1": 0.8444,
+    "ref_ml": 5.994,
+    "pred_ml": 6.109
+   },
+   {
+    "id": "MS_P70",
+    "group": "MSLesSeg",
+    "dice": 0.6139,
+    "avd": 97.4082,
+    "recall": 0.8095,
+    "f1": 0.6182,
+    "ref_ml": 9.723,
+    "pred_ml": 19.194
+   },
+   {
+    "id": "MS_P71",
+    "group": "MSLesSeg",
+    "dice": 0.5704,
+    "avd": 34.6796,
+    "recall": 0.8333,
+    "f1": 0.6667,
+    "ref_ml": 3.293,
+    "pred_ml": 4.435
+   },
+   {
+    "id": "MS_P72",
+    "group": "MSLesSeg",
+    "dice": 0.6636,
+    "avd": 50.4759,
+    "recall": 0.7143,
+    "f1": 0.5128,
+    "ref_ml": 32.992,
+    "pred_ml": 49.645
+   },
+   {
+    "id": "MS_P73",
+    "group": "MSLesSeg",
+    "dice": 0.652,
+    "avd": 5.5137,
+    "recall": 0.7812,
+    "f1": 0.7958,
+    "ref_ml": 12.206,
+    "pred_ml": 11.533
+   },
+   {
+    "id": "MS_P74",
+    "group": "MSLesSeg",
+    "dice": 0.6937,
+    "avd": 9.9391,
+    "recall": 0.8214,
+    "f1": 0.7797,
+    "ref_ml": 1.972,
+    "pred_ml": 2.168
+   },
+   {
+    "id": "MS_P75",
+    "group": "MSLesSeg",
+    "dice": 0.7772,
+    "avd": 11.413,
+    "recall": 0.9118,
+    "f1": 0.8939,
+    "ref_ml": 9.568,
+    "pred_ml": 8.476
+   }
+  ],
+  "ms_sysu": [
+   {
+    "id": "MS_P54",
+    "group": "MSLesSeg",
+    "dice": 0.6915,
+    "avd": 33.8589,
+    "recall": 1.0,
+    "f1": 0.2381,
+    "ref_ml": 1.332,
+    "pred_ml": 1.783
+   },
+   {
+    "id": "MS_P55",
+    "group": "MSLesSeg",
+    "dice": 0.4994,
+    "avd": 50.5471,
+    "recall": 0.4324,
+    "f1": 0.3985,
+    "ref_ml": 5.209,
+    "pred_ml": 2.576
+   },
+   {
+    "id": "MS_P56",
+    "group": "MSLesSeg",
+    "dice": 0.5039,
+    "avd": 82.8392,
+    "recall": 0.75,
+    "f1": 0.0706,
+    "ref_ml": 1.754,
+    "pred_ml": 3.207
+   },
+   {
+    "id": "MS_P57",
+    "group": "MSLesSeg",
+    "dice": 0.7552,
+    "avd": 13.3712,
+    "recall": 0.5673,
+    "f1": 0.5632,
+    "ref_ml": 42.098,
+    "pred_ml": 36.469
+   },
+   {
+    "id": "MS_P58",
+    "group": "MSLesSeg",
+    "dice": 0.5646,
+    "avd": 5.7408,
+    "recall": 0.6667,
+    "f1": 0.4375,
+    "ref_ml": 6.689,
+    "pred_ml": 7.073
+   },
+   {
+    "id": "MS_P59",
+    "group": "MSLesSeg",
+    "dice": 0.4031,
+    "avd": 2.1223,
+    "recall": 0.8,
+    "f1": 0.4251,
+    "ref_ml": 2.403,
+    "pred_ml": 2.454
+   },
+   {
+    "id": "MS_P60",
+    "group": "MSLesSeg",
+    "dice": 0.3591,
+    "avd": 114.1976,
+    "recall": 0.96,
+    "f1": 0.4031,
+    "ref_ml": 6.649,
+    "pred_ml": 14.242
+   },
+   {
+    "id": "MS_P61",
+    "group": "MSLesSeg",
+    "dice": 0.5691,
+    "avd": 36.1123,
+    "recall": 0.8333,
+    "f1": 0.3427,
+    "ref_ml": 4.738,
+    "pred_ml": 6.449
+   },
+   {
+    "id": "MS_P62",
+    "group": "MSLesSeg",
+    "dice": 0.4308,
+    "avd": 55.3563,
+    "recall": 0.6,
+    "f1": 0.6145,
+    "ref_ml": 4.182,
+    "pred_ml": 1.867
+   },
+   {
+    "id": "MS_P63",
+    "group": "MSLesSeg",
+    "dice": 0.6001,
+    "avd": 14.7868,
+    "recall": 0.75,
+    "f1": 0.5085,
+    "ref_ml": 2.908,
+    "pred_ml": 2.478
+   },
+   {
+    "id": "MS_P64",
+    "group": "MSLesSeg",
+    "dice": 0.6097,
+    "avd": 28.5924,
+    "recall": 0.6562,
+    "f1": 0.418,
+    "ref_ml": 4.76,
+    "pred_ml": 6.121
+   },
+   {
+    "id": "MS_P65",
+    "group": "MSLesSeg",
+    "dice": 0.6596,
+    "avd": 26.5175,
+    "recall": 0.6684,
+    "f1": 0.6912,
+    "ref_ml": 25.338,
+    "pred_ml": 18.619
+   },
+   {
+    "id": "MS_P66",
+    "group": "MSLesSeg",
+    "dice": 0.6897,
+    "avd": 22.1337,
+    "recall": 0.7321,
+    "f1": 0.5866,
+    "ref_ml": 16.938,
+    "pred_ml": 20.687
+   },
+   {
+    "id": "MS_P67",
+    "group": "MSLesSeg",
+    "dice": 0.651,
+    "avd": 78.0358,
+    "recall": 0.9178,
+    "f1": 0.5243,
+    "ref_ml": 23.429,
+    "pred_ml": 41.712
+   },
+   {
+    "id": "MS_P68",
+    "group": "MSLesSeg",
+    "dice": 0.0972,
+    "avd": 5.9848,
+    "recall": 0.375,
+    "f1": 0.1818,
+    "ref_ml": 0.919,
+    "pred_ml": 0.974
+   },
+   {
+    "id": "MS_P69",
+    "group": "MSLesSeg",
+    "dice": 0.5822,
+    "avd": 51.5682,
+    "recall": 0.6,
+    "f1": 0.6226,
+    "ref_ml": 5.994,
+    "pred_ml": 2.903
+   },
+   {
+    "id": "MS_P70",
+    "group": "MSLesSeg",
+    "dice": 0.5101,
+    "avd": 164.1057,
+    "recall": 0.8095,
+    "f1": 0.2707,
+    "ref_ml": 9.723,
+    "pred_ml": 25.679
+   },
+   {
+    "id": "MS_P71",
+    "group": "MSLesSeg",
+    "dice": 0.5826,
+    "avd": 45.3082,
+    "recall": 0.6667,
+    "f1": 0.3711,
+    "ref_ml": 3.293,
+    "pred_ml": 4.785
+   },
+   {
+    "id": "MS_P72",
+    "group": "MSLesSeg",
+    "dice": 0.7977,
+    "avd": 2.0823,
+    "recall": 0.7143,
+    "f1": 0.5078,
+    "ref_ml": 32.992,
+    "pred_ml": 32.305
+   },
+   {
+    "id": "MS_P73",
+    "group": "MSLesSeg",
+    "dice": 0.5414,
+    "avd": 37.4734,
+    "recall": 0.6562,
+    "f1": 0.5027,
+    "ref_ml": 12.206,
+    "pred_ml": 7.632
+   },
+   {
+    "id": "MS_P74",
+    "group": "MSLesSeg",
+    "dice": 0.3645,
+    "avd": 64.1988,
+    "recall": 0.4286,
+    "f1": 0.4968,
+    "ref_ml": 1.972,
+    "pred_ml": 0.706
+   },
+   {
+    "id": "MS_P75",
+    "group": "MSLesSeg",
+    "dice": 0.6076,
+    "avd": 34.6258,
+    "recall": 0.7941,
+    "f1": 0.7165,
+    "ref_ml": 9.568,
+    "pred_ml": 6.255
+   }
+  ],
+  "ms_mindglide": [
+   {
+    "id": "MS_P54",
+    "group": "MSLesSeg",
+    "dice": 0.1562,
+    "avd": 1021.5465,
+    "recall": 1.0,
+    "f1": 0.25,
+    "ref_ml": 1.332,
+    "pred_ml": 14.939
+   },
+   {
+    "id": "MS_P55",
+    "group": "MSLesSeg",
+    "dice": 0.2899,
+    "avd": 180.956,
+    "recall": 0.4595,
+    "f1": 0.2324,
+    "ref_ml": 5.209,
+    "pred_ml": 14.635
+   },
+   {
+    "id": "MS_P56",
+    "group": "MSLesSeg",
+    "dice": 0.1831,
+    "avd": 680.5017,
+    "recall": 0.5,
+    "f1": 0.1176,
+    "ref_ml": 1.754,
+    "pred_ml": 13.69
+   },
+   {
+    "id": "MS_P57",
+    "group": "MSLesSeg",
+    "dice": 0.5751,
+    "avd": 40.3606,
+    "recall": 0.3942,
+    "f1": 0.509,
+    "ref_ml": 42.098,
+    "pred_ml": 59.089
+   },
+   {
+    "id": "MS_P58",
+    "group": "MSLesSeg",
+    "dice": 0.2868,
+    "avd": 194.2592,
+    "recall": 0.5476,
+    "f1": 0.3876,
+    "ref_ml": 6.689,
+    "pred_ml": 19.683
+   },
+   {
+    "id": "MS_P59",
+    "group": "MSLesSeg",
+    "dice": 0.1826,
+    "avd": 437.2867,
+    "recall": 0.6667,
+    "f1": 0.0945,
+    "ref_ml": 2.403,
+    "pred_ml": 12.911
+   },
+   {
+    "id": "MS_P60",
+    "group": "MSLesSeg",
+    "dice": 0.2379,
+    "avd": 467.3334,
+    "recall": 0.76,
+    "f1": 0.3008,
+    "ref_ml": 6.649,
+    "pred_ml": 37.722
+   },
+   {
+    "id": "MS_P61",
+    "group": "MSLesSeg",
+    "dice": 0.2985,
+    "avd": 353.2081,
+    "recall": 0.6667,
+    "f1": 0.2667,
+    "ref_ml": 4.738,
+    "pred_ml": 21.473
+   },
+   {
+    "id": "MS_P62",
+    "group": "MSLesSeg",
+    "dice": 0.3821,
+    "avd": 182.7834,
+    "recall": 0.68,
+    "f1": 0.4857,
+    "ref_ml": 4.182,
+    "pred_ml": 11.826
+   },
+   {
+    "id": "MS_P63",
+    "group": "MSLesSeg",
+    "dice": 0.2291,
+    "avd": 524.8281,
+    "recall": 0.8333,
+    "f1": 0.2941,
+    "ref_ml": 2.908,
+    "pred_ml": 18.17
+   },
+   {
+    "id": "MS_P64",
+    "group": "MSLesSeg",
+    "dice": 0.319,
+    "avd": 287.2479,
+    "recall": 0.5938,
+    "f1": 0.3149,
+    "ref_ml": 4.76,
+    "pred_ml": 18.433
+   },
+   {
+    "id": "MS_P65",
+    "group": "MSLesSeg",
+    "dice": 0.535,
+    "avd": 31.956,
+    "recall": 0.5337,
+    "f1": 0.6044,
+    "ref_ml": 25.338,
+    "pred_ml": 33.435
+   },
+   {
+    "id": "MS_P66",
+    "group": "MSLesSeg",
+    "dice": 0.4379,
+    "avd": 110.5739,
+    "recall": 0.5357,
+    "f1": 0.4034,
+    "ref_ml": 16.938,
+    "pred_ml": 35.667
+   },
+   {
+    "id": "MS_P67",
+    "group": "MSLesSeg",
+    "dice": 0.5434,
+    "avd": 85.5478,
+    "recall": 0.7123,
+    "f1": 0.5523,
+    "ref_ml": 23.429,
+    "pred_ml": 43.472
+   },
+   {
+    "id": "MS_P68",
+    "group": "MSLesSeg",
+    "dice": 0.0135,
+    "avd": 1509.6844,
+    "recall": 0.25,
+    "f1": 0.1429,
+    "ref_ml": 0.919,
+    "pred_ml": 14.793
+   },
+   {
+    "id": "MS_P69",
+    "group": "MSLesSeg",
+    "dice": 0.4114,
+    "avd": 191.7751,
+    "recall": 0.72,
+    "f1": 0.4493,
+    "ref_ml": 5.994,
+    "pred_ml": 17.489
+   },
+   {
+    "id": "MS_P70",
+    "group": "MSLesSeg",
+    "dice": 0.4002,
+    "avd": 260.4854,
+    "recall": 0.9048,
+    "f1": 0.5816,
+    "ref_ml": 9.723,
+    "pred_ml": 35.05
+   },
+   {
+    "id": "MS_P71",
+    "group": "MSLesSeg",
+    "dice": 0.1556,
+    "avd": 832.4932,
+    "recall": 0.7222,
+    "f1": 0.2385,
+    "ref_ml": 3.293,
+    "pred_ml": 30.707
+   },
+   {
+    "id": "MS_P72",
+    "group": "MSLesSeg",
+    "dice": 0.7702,
+    "avd": 19.2835,
+    "recall": 0.7857,
+    "f1": 0.5016,
+    "ref_ml": 32.992,
+    "pred_ml": 39.354
+   },
+   {
+    "id": "MS_P73",
+    "group": "MSLesSeg",
+    "dice": 0.4782,
+    "avd": 156.0298,
+    "recall": 0.75,
+    "f1": 0.3022,
+    "ref_ml": 12.206,
+    "pred_ml": 31.251
+   },
+   {
+    "id": "MS_P74",
+    "group": "MSLesSeg",
+    "dice": 0.1796,
+    "avd": 660.4462,
+    "recall": 0.8214,
+    "f1": 0.4138,
+    "ref_ml": 1.972,
+    "pred_ml": 14.996
+   },
+   {
+    "id": "MS_P75",
+    "group": "MSLesSeg",
+    "dice": 0.365,
+    "avd": 168.8545,
+    "recall": 0.7059,
+    "f1": 0.6058,
+    "ref_ml": 9.568,
+    "pred_ml": 25.724
+   }
+  ]
+ }
+}
