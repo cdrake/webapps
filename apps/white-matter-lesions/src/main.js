@@ -95,6 +95,7 @@ function refreshControls() {
   $("imageInput").disabled = busy;
   $("skullStripped").disabled = busy;
   $("backend").disabled = busy;
+  $("folds").disabled = busy;
   $("runButton").disabled = busy || !source;
 }
 
@@ -266,7 +267,7 @@ $("runButton").addEventListener("click", async () => {
     current.worker.onerror = (event) => {
       end(current, event.message || "The processing worker failed. Reload and try again.", { success: false, error: true });
     };
-    current.worker.postMessage({ file: source, backend, skullStripped: $("skullStripped").checked });
+    current.worker.postMessage({ file: source, backend, folds: Number($("folds").value), skullStripped: $("skullStripped").checked });
   } catch (error) {
     end(current, error.message, { success: false, error: true });
   }

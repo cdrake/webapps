@@ -16,13 +16,16 @@ keeps the input grid and affine.
 3. `src/worker.js` runs the network with ONNX Runtime Web, on WebGPU when the browser has an
    adapter and on WebAssembly threads otherwise.
 
-The model is FLAMeS fold 0 (`models/white-matter-lesions.manifest.json`), converted by
-`scripts/export_model.py`. The conversion is exact apart from storing weights as float16: each
+The default model is FLAMeS fold 0. *Model* in the advanced settings switches to the published
+five-fold ensemble, which runs the folds one after another over every patch and averages their
+logits, so only one model is in memory at a time. All five are pinned in
+`models/white-matter-lesions.manifest.json` and converted by `scripts/export_model.py`. The conversion is exact apart from storing weights as float16: each
 transposed convolution becomes the equivalent 1 × 1 × 1 convolution plus depth-to-space, because
 ONNX Runtime's WebGPU backend has no 3D transposed convolution.
 
-On an 8-thread WebAssembly run the example takes about three minutes: one minute of brain
-extraction and six patches of about 16 s.
+On an 8-thread WebAssembly run the example takes about three minutes with one fold (one minute
+of brain extraction and six patches of about 16 s) and about nine with the ensemble, whose first
+run also downloads 310 MB instead of 62 MB.
 
 ## Why FLAMeS
 

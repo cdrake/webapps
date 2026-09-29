@@ -1,11 +1,11 @@
-"""Build flames-fold0.onnx from the published FLAMeS checkpoint.
+"""Build flames-fold<N>.onnx from the published FLAMeS checkpoints.
 
-    python export_model.py <Dataset004_WML directory> flames-fold0.onnx
+    python export_model.py <Dataset004_WML directory> <fold 0-4> flames-fold<fold>.onnx
 
 Needs torch, dynamic_network_architectures (installed with nnunetv2), onnx and onnxruntime.
 
 Three steps, each checked against ONNX Runtime on a random patch:
-1. Export fold 0 of the nnU-Net PlainConvUNet at the plans' patch size, without deep supervision.
+1. Export one fold of the nnU-Net PlainConvUNet at the plans' patch size, without deep supervision.
 2. Rewrite every ConvTranspose (kernel == stride, no padding) as a 1x1x1 Conv followed by
    depth-to-space. The two are the same arithmetic; ONNX Runtime's WebGPU backend runs 3D Conv
    but not 3D ConvTranspose.
@@ -20,17 +20,23 @@ from dynamic_network_architectures.architectures.unet import PlainConvUNet
 from onnx import helper, numpy_helper, shape_inference, TensorProto
 
 TRAINER = 'nnUNetTrainer_8000epochs__nnUNetPlans__3d_fullres'
-CHECKPOINT_SHA256 = '4fc7db24e7c1541b59023df2a2f498a964eb629fe38f4eaec763297dd3fdf861'
+CHECKPOINT_SHA256 = [
+    '4fc7db24e7c1541b59023df2a2f498a964eb629fe38f4eaec763297dd3fdf861',
+    '3966dd256074a0ea3c7d16c3a8e7412a6cb5071220df71b54745aeb50c33c33c',
+    '734be69b968cc6578bcf079bb79db166cd8f5edba0f0dc19a62bbe68021364d8',
+    '8e989caccdcf45368cc8f1ef8a00598f9f072c1fbe23e57458fc572fea434c3f',
+    'ff723a2eda28a7f78f75d96a993d029ea8f65aa3657f5aea7caab9b217792df2',
+]
 
 
-def export(root, path):
+def export(root, fold, path):
     plans = json.loads((root / 'plans.json').read_text())['configurations']['3d_fullres']
     kwargs = dict(plans['architecture']['arch_kwargs'])
     kwargs.update(conv_op=torch.nn.Conv3d, norm_op=torch.nn.InstanceNorm3d, dropout_op=None, nonlin=torch.nn.LeakyReLU)
     net = PlainConvUNet(input_channels=1, num_classes=2, deep_supervision=False, **kwargs)
-    checkpoint = root / 'fold_0' / 'checkpoint_final.pth'
+    checkpoint = root / f'fold_{fold}' / 'checkpoint_final.pth'
     digest = hashlib.sha256(checkpoint.read_bytes()).hexdigest()
-    assert digest == CHECKPOINT_SHA256, f'unexpected checkpoint {digest}'
+    assert digest == CHECKPOINT_SHA256[fold], f'unexpected checkpoint {digest}'
     net.load_state_dict(torch.load(checkpoint, map_location='cpu', weights_only=False)['network_weights'])
     net.eval()
     torch.onnx.export(net, torch.zeros(1, 1, *plans['patch_size']), path, input_names=['input'], output_names=['logits'], opset_version=17, dynamo=False)
@@ -102,12 +108,13 @@ def logits(path, patch):
 
 def main():
     root = Path(sys.argv[1]) / TRAINER
-    output = Path(sys.argv[2])
+    fold = int(sys.argv[2])
+    output = Path(sys.argv[3])
     with tempfile.TemporaryDirectory() as scratch:
-        exported = Path(scratch) / 'fold0.onnx'
-        patch = export(root, exported)
+        exported = Path(scratch) / 'fold.onnx'
+        patch = export(root, fold, exported)
         reference = logits(exported, patch)
-        rewritten = Path(scratch) / 'fold0-conv.onnx'
+        rewritten = Path(scratch) / 'fold-conv.onnx'
         onnx.save(replace_transposed_convolutions(onnx.load(exported)), rewritten)
         assert np.abs(logits(rewritten, patch) - reference).max() < 1e-3, 'ConvTranspose rewrite changed the output'
         model = store_half_precision(onnx.load(rewritten))

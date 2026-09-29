@@ -169,8 +169,9 @@ function padCentered(image, shape, minimum) {
 }
 
 // Runs the network over overlapping patches and returns the lesion probability on the
-// brain-cropped input grid. `runPatch(tile)` resolves to logits [2, ...patch].
-export async function predictLesions({ image, shape, runPatch, onPatch = () => {}, signal }) {
+// brain-cropped input grid. `runPatch(tile, fold)` resolves to logits [2, ...patch]. Folds run
+// one after another, so a caller holds one model at a time; their logits are averaged, as in nnU-Net.
+export async function predictLesions({ image, shape, runPatch, folds = 1, onPatch = () => {}, signal }) {
   const patch = PLAN.patch;
   const padded = padCentered(image, shape, patch);
   const weights = gaussianWeights(patch);
@@ -179,7 +180,11 @@ export async function predictLesions({ image, shape, runPatch, onPatch = () => {
   const weight = new Float32Array(sum.length);
   const tile = new Float32Array(product(patch));
   const voxels = product(patch);
-  for (const [n, [z0, y0, x0]] of origins.entries()) {
+  const passes = [];
+  for (let fold = 0; fold < folds; fold++) {
+    for (const origin of origins) passes.push([fold, origin]);
+  }
+  for (const [n, [fold, [z0, y0, x0]]] of passes.entries()) {
     signal?.throwIfAborted();
     let t = 0;
     for (let z = 0; z < patch[0]; z++) {
@@ -189,7 +194,7 @@ export async function predictLesions({ image, shape, runPatch, onPatch = () => {
         t += patch[2];
       }
     }
-    const logits = await runPatch(tile);
+    const logits = await runPatch(tile, fold);
     signal?.throwIfAborted();
     t = 0;
     for (let z = 0; z < patch[0]; z++) {
@@ -202,7 +207,7 @@ export async function predictLesions({ image, shape, runPatch, onPatch = () => {
         }
       }
     }
-    onPatch(n + 1, origins.length);
+    onPatch(n + 1, passes.length);
   }
   const probability = new Float32Array(product(shape));
   let o = 0;
@@ -216,14 +221,14 @@ export async function predictLesions({ image, shape, runPatch, onPatch = () => {
 }
 
 // FLAIR volume + brain mask → lesion probability on the input grid.
-export async function segmentFlair({ volume, brainMask, runPatch, onPatch, signal }) {
+export async function segmentFlair({ volume, brainMask, runPatch, folds, onPatch, signal }) {
   const { shape, spacing } = arrayGrid(volume);
   const box = brainBox(brainMask, shape);
   const inside = new Uint8Array(cropVolume(Float32Array.from(brainMask), shape, box));
   const image = normalizeInBrain(cropVolume(volume.data, shape, box), inside);
   const resampledShape = targetShape(box.shape, spacing);
   const resampled = resize(image, box.shape, resampledShape);
-  const predicted = await predictLesions({ image: resampled, shape: resampledShape, runPatch, onPatch, signal });
+  const predicted = await predictLesions({ image: resampled, shape: resampledShape, runPatch, folds, onPatch, signal });
   const cropped = resize(predicted, resampledShape, box.shape);
   const probability = new Float32Array(product(shape));
   let o = 0;

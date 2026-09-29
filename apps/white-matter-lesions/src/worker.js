@@ -5,7 +5,7 @@ import { readVolume, writeVolume } from '@neurodesk/synthsr';
 import { runSynthstrip } from '@neurodesk/synthstrip';
 import { fetchModel } from '@neurodesk/webapp-components/worker';
 import { browserSynthstrip } from '../../../packages/syncro/src/assets.js';
-import { flamesModel } from './model.js';
+import { flamesFolds } from './model.js';
 import { PLAN, segmentFlair, threshold, labelLesions, lesionTable } from './pipeline.js';
 
 ort.env.wasm.wasmPaths = { wasm: wasmURL, mjs: wasmModuleURL };
@@ -46,15 +46,27 @@ async function brainMask(volume, cache) {
   return result.mask.data;
 }
 
-async function segment(bytes, backend, volume, brainMask) {
+// One fold's session at a time: the ensemble visits every patch with fold 0, then fold 1, and so on.
+async function segment(models, backend, volume, brainMask) {
   progress(0.3, 'Preparing FLAMeS…');
-  const session = await ort.InferenceSession.create(bytes, { executionProviders: [backend], graphOptimizationLevel: 'all' });
-  log(`FLAMeS on ${backend === 'webgpu' ? 'WebGPU' : `WebAssembly, ${ort.env.wasm.numThreads} threads`}`);
+  log(`FLAMeS, ${models.length === 1 ? 'fold 0' : `${models.length} folds`}, on ${backend === 'webgpu' ? 'WebGPU' : `WebAssembly, ${ort.env.wasm.numThreads} threads`}`);
+  let session = null;
+  let loaded = -1;
+  const open = async (fold) => {
+    if (fold === loaded) return;
+    await session?.release();
+    session = null;
+    session = await ort.InferenceSession.create(models[fold], { executionProviders: [backend], graphOptimizationLevel: 'all' });
+    loaded = fold;
+  };
+  await open(0);
   try {
     return await segmentFlair({
       volume,
       brainMask,
-      runPatch: async (tile) => {
+      folds: models.length,
+      runPatch: async (tile, fold) => {
+        await open(fold);
         const input = new ort.Tensor('float32', tile, [1, 1, ...PLAN.patch]);
         const outputs = await session.run({ [session.inputNames[0]]: input });
         const logits = outputs[session.outputNames[0]];
@@ -66,7 +78,7 @@ async function segment(bytes, backend, volume, brainMask) {
       onPatch: (n, total) => progress(0.3 + 0.65 * n / total, `Segmenting lesions · patch ${n} of ${total}`),
     });
   } finally {
-    await session.release();
+    await session?.release();
   }
 }
 
@@ -81,17 +93,22 @@ self.onmessage = async ({ data: job }) => {
     } else {
       mask = await brainMask(volume, cache);
     }
-    const bytes = await download(flamesModel, 'FLAMeS model', 0.2, 0.3, cache);
+    const folds = flamesFolds.slice(0, job.folds);
+    const models = [];
+    for (const [n, fold] of folds.entries()) {
+      const label = folds.length === 1 ? 'FLAMeS model' : `FLAMeS model ${n + 1} of ${folds.length}`;
+      models.push(await download(fold, label, 0.2 + 0.1 * n / folds.length, 0.2 + 0.1 * (n + 1) / folds.length, cache));
+    }
     const started = performance.now();
     let backend = job.backend;
     let result;
     try {
-      result = await segment(bytes, backend, volume, mask);
+      result = await segment(models, backend, volume, mask);
     } catch (error) {
       if (backend !== 'webgpu') throw error;
       log(`WebGPU failed (${error.message}); continuing on the CPU`);
       backend = 'wasm';
-      result = await segment(bytes, backend, volume, mask);
+      result = await segment(models, backend, volume, mask);
     }
     const { probability, windows, resampledShape } = result;
     const lesionMask = threshold(probability);
@@ -107,8 +124,7 @@ self.onmessage = async ({ data: job }) => {
       tsv: table.tsv,
       summary: { count: table.rows.length, totalMl: table.totalMl },
       provenance: {
-        model: flamesModel.filename,
-        sha256: flamesModel.sha256,
+        models: folds.map((fold) => ({ file: fold.filename, sha256: fold.sha256 })),
         backend,
         brainMask: job.skullStripped ? 'nonzero voxels' : 'SynthStrip',
         resampledShape,

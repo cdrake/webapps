@@ -67,6 +67,23 @@ test("a failed model download reports the error and leaves the run available", a
   await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(1);
 });
 
+test("the ensemble downloads each fold in turn", async ({ page }) => {
+  test.setTimeout(5 * 60 * 1000);
+  const secondFold = manifest.base_url + manifest.assets[1].filename;
+  await page.route(secondFold, (route) => route.fulfill({ status: 503, body: "" }));
+  await page.goto("./");
+  await page.getByLabel("Example", { exact: true }).selectOption(examples[0].id);
+  await expect(page.locator("#runButton")).toBeEnabled({ timeout: 120000 });
+  await page.locator("#advancedSettings summary").click();
+  await page.locator("#skullStripped").check();
+  await page.locator("#folds").selectOption("5");
+  await page.locator("#runButton").click();
+  await expect(page.locator("#statusText")).toHaveText(/Model download failed \(503\): .*flames-fold1\.onnx/, { timeout: 180000 });
+  await expect(page.locator("#technicalLog")).toContainText("Downloading FLAMeS model 1 of 5…");
+  await expect(page.locator("#technicalLog")).toContainText("Downloading FLAMeS model 2 of 5…");
+  await expect(page.locator("#runButton")).toBeEnabled();
+});
+
 test("cancelling a run stops it and keeps the input ready", async ({ page }) => {
   test.setTimeout(5 * 60 * 1000);
   await page.route(modelUrl, () => {});
@@ -90,9 +107,11 @@ test("advanced settings keep their values when the section closes", async ({ pag
   await summary.click();
   await page.locator("#skullStripped").check();
   await page.locator("#backend").selectOption("wasm");
+  await page.locator("#folds").selectOption("5");
   await summary.click();
   await summary.click();
   await expect(page.locator("#skullStripped")).toBeChecked();
+  await expect(page.locator("#folds")).toHaveValue("5");
   await expect(page.locator("#backend")).toHaveValue("wasm");
 });
 

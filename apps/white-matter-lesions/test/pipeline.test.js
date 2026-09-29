@@ -114,3 +114,24 @@ test("segmentation maps patch logits back onto the input grid", async () => {
   assert.equal(lesions.length, 1);
   assert.ok(Math.abs(lesions[0].voxels - 400) <= 80, `lesion voxels ${lesions[0].voxels}`);
 });
+
+test("folds are averaged: two folds that disagree cancel to probability one half", async () => {
+  const dims = [120, 130, 40];
+  const affine = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 2.25, 0], [0, 0, 0, 1]];
+  const data = new Float32Array(dims[0] * dims[1] * dims[2]).fill(1);
+  const brainMask = new Uint8Array(data.length).fill(1);
+  const calls = [];
+  const runPatch = async (tile, fold) => {
+    calls.push(fold);
+    const logits = new Float32Array(tile.length * 2);
+    logits.fill(fold === 0 ? 3 : -3, tile.length);
+    return logits;
+  };
+  const progress = [];
+  const { probability, windows: count } = await segmentFlair({ volume: { dims, affine, data }, brainMask, runPatch, folds: 2, onPatch: (n, total) => progress.push([n, total]) });
+  assert.equal(count, 2);
+  assert.deepEqual(calls, [0, 0, 1, 1]);
+  assert.deepEqual(progress, [[1, 4], [2, 4], [3, 4], [4, 4]]);
+  assert.ok(Math.abs(probability[0] - 0.5) < 1e-6);
+  assert.ok(Math.abs(probability[probability.length - 1] - 0.5) < 1e-6);
+});
