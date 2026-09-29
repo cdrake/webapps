@@ -60,7 +60,7 @@ Precision follows Fortran exactly:
   factor, reorder, fuse or hoist floating-point expressions; do not replace a
   loop sum with `iter().sum()` if it changes the order.
 * `X**2` is `x * x` (gfortran expands small constant integer powers into
-  multiplications: `X**3` is `x * x * x`). `X**N` with a variable integer is
+  multiplications: `X**3` is `x * x * x`, `X**4` is `(x * x) * (x * x)`). `X**N` with a variable integer is
   `powi`. `X**Y` with a real exponent is `powf` (also for `X**.5`).
 * Intrinsics: `ABS`, `SQRT`, `EXP`, `ALOG`/`LOG`, `ALOG10`, `SIN`, `COS`,
   `ATAN`, `ATAN2`, `TANH` map to the Rust method of the operand type
@@ -101,7 +101,7 @@ Precision follows Fortran exactly:
 * `CH = 'x'` → `ch.set("x")`; `CH1 = CH2` → `ch1.set_f(&ch2)`;
   `CH(I:J)` → `ch.sub(i, j)`; `CH(I:J) = S` → `ch.set_sub(i, j, s)`;
   `A // B` → `a.cat(&b)`; `INDEX(CH, 'x')` → `ch.index("x")`; `LEN` → `.len()`;
-  `ILEN(CH)` → `ilen(&ch)` (control.rs; = `ch.len_trim()`);
+  `ILEN(CH)` → `ilen(&ch)` (control.rs; `ch.len_trim()`, but 1 for an all-blank string);
   `CH .EQ. 'x'` → `ch.eq_str("x")`; `CH1 .EQ. CH2` → `ch1.eq_f(&ch2)`
   (blank-padded comparison). `ICHAR`/`CHAR` work on bytes (`ch.at(i)`).
 * `WRITE (LPRINT, 5110) A, B` → `self.io.write(self.c.lprint, "(...)", &fv![a, b]);`
