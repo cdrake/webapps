@@ -14,8 +14,12 @@ async function download(page, index) {
   return { name: file.suggestedFilename(), bytes: await readFile(await file.path()) };
 }
 
-test("the MS example is segmented into lesions on the input grid", async ({ page }) => {
+test("the MS example is segmented into lesions on the input grid, falling back from a failed WebGPU", async ({ page }) => {
   test.setTimeout(20 * 60 * 1000);
+  // The page sees an adapter, so Automatic picks WebGPU; the worker has none, so its session fails.
+  await page.addInitScript(() => {
+    if (navigator.gpu) navigator.gpu.requestAdapter = async () => ({});
+  });
   await page.goto("./");
   await page.getByLabel("Example", { exact: true }).selectOption(examples[0].id);
   await expect(page.locator("[data-neurodesk-examples]")).toHaveAttribute("data-example-state", "ready", { timeout: 120000 });
@@ -28,6 +32,8 @@ test("the MS example is segmented into lesions on the input grid", async ({ page
   const [, count, ml] = (await page.locator("#statusText").textContent()).match(/(\d+) lesions · ([\d.]+) ml/);
   expect(Number(count)).toBeGreaterThan(5);
   expect(Number(ml)).toBeGreaterThan(5);
+  await expect(page.locator("#technicalLog")).toContainText("continuing on the CPU");
+  await expect(page.locator("#technicalLog")).toContainText("FLAMeS on WebAssembly");
   await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(4);
   await expect(page.locator("#resultList .nd-view-btn").nth(3)).toBeDisabled();
   const flair = await download(page, 0);

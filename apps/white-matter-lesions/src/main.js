@@ -191,7 +191,7 @@ async function loadFiles(filesPromise, signal) {
     $("fileInfo").textContent = `${source.name} · ${volume.dims.join(" × ")} voxels`;
     $("dropZone").classList.add("has-files");
     end(current, "FLAIR loaded · ready to segment lesions");
-    show("flair");
+    await show("flair");
   } catch (error) {
     const cancelled = error.name === "AbortError";
     end(current, cancelled ? "Loading cancelled" : error.message, { success: false, error: !cancelled });

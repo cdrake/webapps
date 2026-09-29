@@ -46,6 +46,30 @@ async function brainMask(volume, cache) {
   return result.mask.data;
 }
 
+async function segment(bytes, backend, volume, brainMask) {
+  progress(0.3, 'Preparing FLAMeS…');
+  const session = await ort.InferenceSession.create(bytes, { executionProviders: [backend], graphOptimizationLevel: 'all' });
+  log(`FLAMeS on ${backend === 'webgpu' ? 'WebGPU' : `WebAssembly, ${ort.env.wasm.numThreads} threads`}`);
+  try {
+    return await segmentFlair({
+      volume,
+      brainMask,
+      runPatch: async (tile) => {
+        const input = new ort.Tensor('float32', tile, [1, 1, ...PLAN.patch]);
+        const outputs = await session.run({ [session.inputNames[0]]: input });
+        const logits = outputs[session.outputNames[0]];
+        const data = await logits.getData();
+        input.dispose();
+        logits.dispose();
+        return data;
+      },
+      onPatch: (n, total) => progress(0.3 + 0.65 * n / total, `Segmenting lesions · patch ${n} of ${total}`),
+    });
+  } finally {
+    await session.release();
+  }
+}
+
 self.onmessage = async ({ data: job }) => {
   try {
     const volume = readVolume(await job.file.arrayBuffer());
@@ -58,25 +82,18 @@ self.onmessage = async ({ data: job }) => {
       mask = await brainMask(volume, cache);
     }
     const bytes = await download(flamesModel, 'FLAMeS model', 0.2, 0.3, cache);
-    progress(0.3, 'Preparing FLAMeS…');
-    const session = await ort.InferenceSession.create(bytes, { executionProviders: [job.backend], graphOptimizationLevel: 'all' });
-    log(`FLAMeS on ${job.backend === 'webgpu' ? 'WebGPU' : `WebAssembly, ${ort.env.wasm.numThreads} threads`}`);
     const started = performance.now();
-    const { probability, windows, resampledShape } = await segmentFlair({
-      volume,
-      brainMask: mask,
-      runPatch: async (tile) => {
-        const input = new ort.Tensor('float32', tile, [1, 1, ...PLAN.patch]);
-        const outputs = await session.run({ [session.inputNames[0]]: input });
-        const logits = outputs[session.outputNames[0]];
-        const data = await logits.getData();
-        input.dispose();
-        logits.dispose();
-        return data;
-      },
-      onPatch: (n, total) => progress(0.3 + 0.65 * n / total, `Segmenting lesions · patch ${n} of ${total}`),
-    });
-    await session.release();
+    let backend = job.backend;
+    let result;
+    try {
+      result = await segment(bytes, backend, volume, mask);
+    } catch (error) {
+      if (backend !== 'webgpu') throw error;
+      log(`WebGPU failed (${error.message}); continuing on the CPU`);
+      backend = 'wasm';
+      result = await segment(bytes, backend, volume, mask);
+    }
+    const { probability, windows, resampledShape } = result;
     const lesionMask = threshold(probability);
     const { lesions } = labelLesions(lesionMask, volume.dims);
     const table = lesionTable(lesions, volume.affine);
@@ -92,7 +109,7 @@ self.onmessage = async ({ data: job }) => {
       provenance: {
         model: flamesModel.filename,
         sha256: flamesModel.sha256,
-        backend: job.backend,
+        backend,
         brainMask: job.skullStripped ? 'nonzero voxels' : 'SynthStrip',
         resampledShape,
         windows,

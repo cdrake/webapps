@@ -73,7 +73,7 @@
 
     <template id="aboutContent">
       <p>Segment white matter lesions on a single FLAIR image with FLAMeS, a 3D nnU-Net trained on 668 multiple sclerosis scans from three vendors at 1.5 T and 3 T. SynthStrip removes the skull first; the network then runs over overlapping 112 × 128 × 160 patches at 1 × 0.9 × 0.9 mm.</p>
-      <p>The app runs one of the five published FLAMeS folds without mirroring, to keep a browser run to minutes. On 25 held-out scans from the MICCAI 2017 WMH challenge, a vascular cohort FLAMeS never saw, this configuration reached a mean Dice of 0.71 against expert labels. Lesions are counted as 26-connected components; the table lists each lesion's volume and centroid.</p>
+      <p>The app runs one of the five published FLAMeS folds without mirroring, to keep a browser run to minutes. Against expert labels this configuration reached a mean Dice of 0.69 on 25 held-out scans from the MICCAI 2017 WMH challenge, a vascular cohort outside FLAMeS’s multiple sclerosis training data, and 0.63 on the 22 MSLesSeg test patients. Lesions are counted as 26-connected components; the table lists each lesion's volume and centroid.</p>
       <p>Outputs are research estimates, not a diagnosis. Check them against the image.</p>
     </template>
     <template id="privacyContent"><p>Images are processed locally in this browser and are never uploaded. The FLAMeS and SynthStrip models are downloaded once and cached.</p></template>
