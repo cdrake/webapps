@@ -1,0 +1,13 @@
+ $LCMODL
+ key=210387309
+ nunfil=1024
+ deltat=5e-04
+ hzpppm=127.786142
+ filbas='3t.basis'
+ filraw='data.raw'
+ filps='out.ps'
+ lcoord=9
+ filcoo='out.coord'
+ ltable=7
+ filtab='out.table'
+ $END
