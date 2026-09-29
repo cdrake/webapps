@@ -901,6 +901,12 @@ fn read_one(desc: &Desc, kind: RKind, st: &mut InState) -> Result<FVal, ReadErr>
         }
         Desc::F(w, d) | Desc::E(w, d, _) | Desc::ES(w, d, _) | Desc::D(w, d) | Desc::G(w, d, _) => {
             let f = take_field(st, *w);
+            if kind == RKind::R || kind == RKind::C {
+                // gfortran rounds the decimal text straight to single precision.
+                if let Some(x) = parse_real_field_f32(&f, *d, st.scale) {
+                    return Ok(FVal::R(x));
+                }
+            }
             let x = parse_real_field(&f, *d, st.scale).map_err(|_| ReadErr::Bad(f.clone()))?;
             Ok(convert_num(x, kind))
         }
@@ -941,6 +947,29 @@ pub fn parse_real_field(f: &str, d: usize, scale: i32) -> Result<f64, ()> {
         x /= 10f64.powi(scale);
     }
     Ok(x)
+}
+
+/// A REAL field parsed directly to f32 when it has an explicit decimal point
+/// and needs no scaling (the usual case); None otherwise.
+fn parse_real_field_f32(f: &str, _d: usize, scale: i32) -> Option<f32> {
+    let t: String = f.chars().filter(|c| *c != ' ').collect();
+    if t.is_empty() || !t.contains('.') {
+        return None;
+    }
+    let t = t.replace(['D', 'd', 'Q', 'q'], "E");
+    let has_letter = t.contains(['E', 'e']);
+    let has_exp = has_letter || t[1..].contains(['+', '-']);
+    if scale != 0 && !has_exp {
+        return None;
+    }
+    let norm = if has_letter {
+        t
+    } else if let Some(p) = t[1..].find(['+', '-']) {
+        format!("{}E{}", &t[..p + 1], &t[p + 1..])
+    } else {
+        t
+    };
+    norm.parse::<f32>().ok()
 }
 
 fn fast_float_fallback(s: &str) -> Result<f64, ()> {
