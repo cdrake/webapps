@@ -1,11 +1,16 @@
 # dicompare
 
+## 0.14.20260929
+
+### Patch Changes
+
+- Run DICOMpare's unit tests and Playwright workflows with their respective runners. Build each app before its browser CI checks so clean runners receive the generated scientific runtimes and contracts required by automation.
+
 ## 0.14.20260928
 
 ### Patch Changes
 
 - ccece98: Keep populated reference and test-data controls from overlapping on narrow screens.
-
 
 ### Patch Changes
 

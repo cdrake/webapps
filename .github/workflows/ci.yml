@@ -212,6 +212,8 @@ jobs:
         run: |
           sudo rm -f /etc/apt/sources.list.d/google-chrome.list /etc/apt/sources.list.d/google-chrome.sources
           pnpm exec playwright install --with-deps chromium
+      - name: Build ${{ matrix.app }} browser runtime
+        run: pnpm --filter ${{ matrix.app }} build
       - name: Test ${{ matrix.app }} in a browser
         run: pnpm --filter ${{ matrix.app }} test:e2e
 

@@ -143,3 +143,13 @@ Mac scientific checks remain pending by user choice. The script and guide make
 them runnable without remote machine access. CALMaR's complete CPU candidate
 workflow passed in 7.3 minutes, preserving the source affine and dimensions,
 verifying artifact hashes, and leaving the lesion unconfirmed for human review.
+
+The first hosted CI run exposed missing build preparation in the browser jobs.
+Those jobs now build each app before testing, so clean checkouts receive the
+generated ONNX and Rust WASM runtimes. Removing VesselBoost's generated runtime
+reproduced its initialization timeout locally; rebuilding restored the real
+workflow. DICOMpare's unit runner now selects source tests, and its browser
+command explicitly runs the automation and populated-phone Playwright tests.
+All six previously failing CI commands pass locally after the build step,
+including the real model workflows. DICOMpare's four Playwright cases and its
+example-import check also pass. Hosted CI must confirm the updated commit.
