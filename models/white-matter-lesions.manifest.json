@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "app": "white-matter-lesions",
+  "license": "CC-BY-4.0",
+  "preprocessing_contract": {
+    "source": "apps/white-matter-lesions/src/pipeline.js",
+    "spacing_mm": [
+      1,
+      0.9,
+      0.9
+    ],
+    "layout": "NCDHW; NIfTI voxel axes reversed (k, j, i), no reorientation",
+    "patch": [
+      112,
+      128,
+      160
+    ],
+    "normalization": "z-score inside the brain mask, zero outside"
+  },
+  "assets": [
+    {
+      "filename": "flames-fold0.onnx",
+      "bytes": 61642305,
+      "sha256": "fe21c42078aa462091a5a553b7d2608bde0836647ab7866e1bad376744bcd0ec",
+      "source_url": "https://zenodo.org/records/17955359/files/Dataset004_WML.zip"
+    }
+  ],
+  "source_commit": "FLAMeS 2.0 (Zenodo 17955359, md5 8b90b789d6ceca1886f42fa1724a08cc), fold_0/checkpoint_final.pth",
+  "checkpoint_sha256": "4fc7db24e7c1541b59023df2a2f498a964eb629fe38f4eaec763297dd3fdf861",
+  "graph_optimization": "ConvTranspose rewritten as an equivalent 1x1x1 Conv plus depth-to-space for the WebGPU backend; convolution weights stored as float16 and cast to float32 in the graph, so arithmetic is float32. Built by apps/white-matter-lesions/scripts/export_model.py",
+  "repository": "neurodeskorg/webapps",
+  "revision": "d16b3a04f7b7799420bbcd4ab3c7890b11d7f700",
+  "base_url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/d16b3a04f7b7799420bbcd4ab3c7890b11d7f700/white-matter-lesions/models/"
+}

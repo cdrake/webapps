@@ -38,6 +38,7 @@ const REQUIRED_METHODS = {
   synthseg: ['10.1016/j.media.2023.102789', '10.1016/j.jneumeth.2016.03.001', 'github.com/niivue/niivue'],
   synthsr: ['10.1016/j.neuroimage.2021.118206', 'github.com/neurolabusc/py_synthsr'],
   syncro: ['10.1016/j.neuroimage.2021.118206', 'arxiv.org/abs/2506.11860', '10.1016/j.neuroimage.2022.119474', 'sites.google.com/view/greedyreg/about', '10.1016/j.media.2007.06.004', '10.1016/j.neuroimage.2010.07.033', '10.52294/001c.94384'],
+  'white-matter-lesions': ['10.1101/2025.05.19.25327707', '10.1038/s41592-020-01008-z', '10.1016/j.neuroimage.2022.119474', '10.1016/j.jneumeth.2016.03.001', 'github.com/niivue/niivue'],
   edgereg: ['afni.nimh.nih.gov', '10.1016/j.jneumeth.2016.03.001', 'github.com/niivue/niivue'],
   ants: ['10.1038/s41598-021-87564-6', '10.1016/j.neuroimage.2010.09.025', '10.1016/j.neuroimage.2026.122074', '10.1016/j.jneumeth.2016.03.001'],
   'carotid-flow': ['10.5281/zenodo.18712355', '10.1177/00359157740676P113', '10.1016/j.jneumeth.2016.03.001', 'github.com/niivue/niivue'],

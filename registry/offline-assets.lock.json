@@ -2695,6 +2695,21 @@
       "contentType": "application/gzip",
       "kind": "example",
       "dependencies": []
+    },
+    "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/d16b3a04f7b7799420bbcd4ab3c7890b11d7f700/white-matter-lesions/models/flames-fold0.onnx": {
+      "sha256": "fe21c42078aa462091a5a553b7d2608bde0836647ab7866e1bad376744bcd0ec",
+      "bytes": 61642305,
+      "contentType": "application/octet-stream",
+      "kind": "model",
+      "license": "CC-BY-4.0",
+      "dependencies": []
+    },
+    "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/d16b3a04f7b7799420bbcd4ab3c7890b11d7f700/white-matter-lesions/examples/MSLesSeg_P57_T1_FLAIR.nii.gz": {
+      "sha256": "179472456b8591364c0a1d4912d95c69e2b5743c87a9397aa9409fb58436f70c",
+      "bytes": 1827303,
+      "contentType": "application/gzip",
+      "kind": "example",
+      "dependencies": []
     }
   },
   "apps": {
@@ -3220,6 +3235,11 @@
     "carotid-flow": [
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/07cac5c3f89c82ba721163ea8c1fbf1df9625c7d/carotid-flow/examples/carotid_pc_mod.nii.gz",
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/07cac5c3f89c82ba721163ea8c1fbf1df9625c7d/carotid-flow/examples/carotid_pc_ph.nii.gz"
+    ],
+    "white-matter-lesions": [
+      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/d16b3a04f7b7799420bbcd4ab3c7890b11d7f700/white-matter-lesions/examples/MSLesSeg_P57_T1_FLAIR.nii.gz",
+      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/d16b3a04f7b7799420bbcd4ab3c7890b11d7f700/white-matter-lesions/models/flames-fold0.onnx",
+      "https://huggingface.co/datasets/sbollmann/neurodesk-webapps-assets/resolve/e0a056b3d6b2b075bab5b780281af17fc9d6421d/syncro/synthstrip-browser.onnx"
     ]
   }
 }
