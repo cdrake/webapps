@@ -1,0 +1,15 @@
+ $LCMODL
+ key=210387309
+ nunfil=1024
+ deltat=5e-04
+ hzpppm=127.786142
+ filbas='missing.basis'
+ filraw='data.raw'
+ lprint=8
+ filpri='out.print'
+ filps='out.ps'
+ mermes=8000
+ chsimu(3)='Lip @1.3 FWHM=.1 AMP=1. Lip @1.3 FWHM=.1 AMP=1. Lip @1.3 FWHM=.1 AMP=1. Lip @1.3 FWHM=.1 AMP=1. Lip @1.3 FWHM=.1 AMP=1. Lip @1.3 FWHM=.1 AMP=1. Lip @1.3 FWHM=.1 AMP=1. Lip @1.3 FWHM=.1 AMP=1. '
+ nchlin(2)=40
+ owner='Some Owner'
+ $END

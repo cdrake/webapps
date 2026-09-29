@@ -1,0 +1,66 @@
+@@HEAD
+
+
+
+~10~LCModel (Version 6.3-1N) Copyright: S.W. Provencher.~10~Ref.: Magn. Reson. Med. 30:672-679 (1993).~16~
+
+  
+
+  
+
+ Tue Sep 29 17:53:01 2026
+
+
+
+
+&LCMODL
+@@MEMBER CHCALI
+ CHCALI="Lac   ","NAA   ","Cre   ", 97*"~6~",
+@@MEMBER CHUSE1
+ CHUSE1="Lac   ","NAA   ","Cre   ","Glu   ","Ins   ",
+ "Lac   ","Glc   ","Gln   ","NAAG  ","Tau   ","Asp   ",
+ "Ala   ","GABA  ","Scyllo", 486*"~6~",
+@@MEMBER NCALIB
+ NCALIB=3~10~,
+@@MEMBER NRATIO
+ NRATIO=0~10~,
+@@MEMBER NREFPK
+ NREFPK=1~10~,4~10~,
+@@MEMBER NUSE1
+ NUSE1=3~10~,
+@@MEMBER VITRO
+ VITRO=T,
+@@MEMBER ALPBMN
+ ALPBMN=  8.1893997070312494~5~,
+@@MEMBER ALPBMX
+ ALPBMX=  4046.5269140625001~5~,
+@@MEMBER ALPBPN
+ ALPBPN=  10.1163168~4~,
+@@MEMBER ALPBST
+ ALPBST=  12.0432348~4~,
+@@MEMBER DKNTMN
+ DKNTMN= 0.150000006~4~,  1.26666665~4~,
+@@MEMBER HZREF
+ HZREF= 10*0.00000000~6~, -3.59999990~4~,  3.59999990~4~, 8*0.00000000~6~,
+@@MEMBER PPMREF
+ PPMREF=  4.65000010~4~, 9*0.00000000~6~, 2*1.33000004~6~,  2.00999999~4~,  3.02999997~4~,
+  6*0.00000000~6~,
+@@TAIL
+ /
+
+
+
+~10~Input changes to Control Variables
+  chcali(3)='Cre'~58~
+  chcali(2)='NAA'~58~
+  chcali(1)='Lac'~58~
+  ncalib=3~65~
+  mermes=8000~62~
+  filps='out.ps'~59~
+  filpri='out.print'~55~
+  lprint=8~65~
+  filraw='data.raw'~56~
+  filbas='missing.basis'~51~
+  hzpppm=127.786142~56~
+  deltat=5e-04~61~
+  nunfil=1024~62~

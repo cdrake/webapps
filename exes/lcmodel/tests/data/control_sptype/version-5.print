@@ -1,0 +1,42 @@
+@@HEAD
+
+
+
+~10~LCModel (Version 6.3-1N) Copyright: S.W. Provencher.~10~Ref.: Magn. Reson. Med. 30:672-679 (1993).~16~
+
+  
+
+  
+
+ Tue Sep 29 17:51:40 2026
+
+
+
+
+&LCMODL
+@@MEMBER SPTYPE
+ SPTYPE="version-5~7~",
+@@MEMBER NRATIO
+ NRATIO=0~10~,
+@@MEMBER NSIMUL
+ NSIMUL=0~10~,
+@@MEMBER PPMEND
+ PPMEND=  1.00000000~4~,
+@@MEMBER PPMST
+ PPMST=  3.84999990~4~,
+@@TAIL
+ /
+
+
+
+~10~Input changes to Control Variables
+  sptype='version-5'~55~
+  mermes=8000~62~
+  filps='out.ps'~59~
+  filpri='out.print'~55~
+  lprint=8~65~
+  filraw='data.raw'~56~
+  filbas='missing.basis'~51~
+  hzpppm=127.786142~56~
+  deltat=5e-04~61~
+  nunfil=1024~62~

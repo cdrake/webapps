@@ -1,0 +1,60 @@
+@@HEAD
+
+
+
+~10~LCModel (Version 6.3-1N) Copyright: S.W. Provencher.~10~Ref.: Magn. Reson. Med. 30:672-679 (1993).~16~
+
+  
+
+  
+
+ Tue Sep 29 17:51:39 2026
+
+
+
+
+&LCMODL
+@@MEMBER CHKEEP
+ CHKEEP="Glc   ", 499*"~6~",
+@@MEMBER CHUSE1
+ CHUSE1="NAA   ","Cr~4~","GPC   ","Glu   ","Ins   ",
+ "Glc   ","Lac   ","Gln   ","NAAG  ","Tau   ","Asp   ",
+ "Ala   ","GABA  ","Scyllo", 486*"~6~",
+@@MEMBER NORATO
+ NORATO="Asp   ","GABA  ","Glc   ","Scyllo","Tau   ",
+  95*"~6~",
+@@MEMBER SPTYPE
+ SPTYPE="csf~13~",
+@@MEMBER NKEEP
+ NKEEP=1~10~,
+@@MEMBER NNORAT
+ NNORAT=5~10~,
+@@MEMBER NREFPK
+ NREFPK=1~10~,5~10~,
+@@MEMBER NUSE1
+ NUSE1=7~10~,
+@@MEMBER REFLAC
+ REFLAC=T,
+@@MEMBER USEGLC
+ USEGLC=T,
+@@MEMBER HZREF
+ HZREF= 10*0.00000000~6~, -3.59999990~4~,  3.59999990~4~, 8*0.00000000~6~,
+@@MEMBER PPMREF
+ PPMREF=  4.65000010~4~, 9*0.00000000~6~, 2*1.33000004~6~,  2.00999999~4~,  3.02999997~4~,
+   3.22000003~4~, 5*0.00000000~6~,
+@@TAIL
+ /
+
+
+
+~10~Input changes to Control Variables
+  sptype='csf'~61~
+  mermes=8000~62~
+  filps='out.ps'~59~
+  filpri='out.print'~55~
+  lprint=8~65~
+  filraw='data.raw'~56~
+  filbas='missing.basis'~51~
+  hzpppm=127.786142~56~
+  deltat=5e-04~61~
+  nunfil=1024~62~

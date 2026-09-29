@@ -1,0 +1,44 @@
+@@HEAD
+
+
+
+~10~LCModel (Version 6.3-1N) Copyright: S.W. Provencher.~10~Ref.: Magn. Reson. Med. 30:672-679 (1993).~16~
+
+  
+
+  
+
+ Tue Sep 29 17:53:01 2026
+
+
+
+
+&LCMODL
+@@MEMBER CHGAM
+ CHGAM="3t~14~",
+@@MEMBER NCHGAM
+ NCHGAM=2~10~,
+@@MEMBER DKNGAM
+ DKNGAM= 0.200000003~4~,
+@@MEMBER HZPGAM
+ HZPGAM=  100.000000~4~,  200.000000~4~,
+@@TAIL
+ /
+
+
+
+~10~Input changes to Control Variables
+  hzpgam(2)=200.~59~
+  hzpgam(1)=100.~59~
+  dkngam=.2~64~
+  nchgam=2~65~
+  chgam='3t'~63~
+  mermes=8000~62~
+  filps='out.ps'~59~
+  filpri='out.print'~55~
+  lprint=8~65~
+  filraw='data.raw'~56~
+  filbas='missing.basis'~51~
+  hzpppm=127.786142~56~
+  deltat=5e-04~61~
+  nunfil=1024~62~

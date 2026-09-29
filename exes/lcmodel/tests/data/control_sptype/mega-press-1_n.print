@@ -1,0 +1,91 @@
+@@HEAD
+
+
+
+~10~LCModel (Version 6.3-1N) Copyright: S.W. Provencher.~10~Ref.: Magn. Reson. Med. 30:672-679 (1993).~16~
+
+  
+
+  
+
+ Tue Sep 29 17:52:55 2026
+
+
+
+
+&LCMODL
+@@MEMBER CHRATO
+ CHRATO="NAAG/NAA = .15 +- .15~243~","Lip20/Lip13* = .15 +- .07 +WT= MM12~229~","MM20/MM09* = 1.5 +- .375 +WT= Lip09*~228~","MM12/MM09* = .3 +- .1 +WT= Lip09*~231~","MM14/MM09* = .75 +- .45 +WT= Lip09*~229~",
+ "MM17/MM09* = .375 +- .3 +WT= Lip09*~229~","-CrCH2/totCr = .1 +- .25~240~","Asp/Big3 = .05 +- .05~243~","GABA/Big3 = .03 +- .03~242~","Glc/Big3 = .03 +- .03~243~","Scyllo/Big3 = .01 +- .01~240~",
+ "Tau/Big3 = .05 +- .05~243~","GSH/Gln+GSH = .286 +- .126~238~", 87*"~264~",
+@@MEMBER CHUSE1
+ CHUSE1="NAA   ","Glu   ","GPC   ","Glu   ","Ins   ",
+ "Lac   ","Glc   ","Gln   ","NAAG  ","Tau   ","Asp   ",
+ "Ala   ","GABA  ","Scyllo", 486*"~6~",
+@@MEMBER FILH2O
+ FILH2O="x.h2o~250~",
+@@MEMBER NAMREL
+ NAMREL="NAA+NAAG~342~",
+@@MEMBER SPTYPE
+ SPTYPE="mega-press-1~4~",
+@@MEMBER WSMET
+ WSMET="NAA   ",
+@@MEMBER ISDBOL
+ ISDBOL=5~10~,
+@@MEMBER NRATIO
+ NRATIO=1~10~,
+@@MEMBER NREFPK
+ NREFPK= 2*1~10~,
+@@MEMBER NSIMUL
+ NSIMUL=11~9~,
+@@MEMBER NUSE1
+ NUSE1=2~10~,
+@@MEMBER DOECC
+ DOECC=T,
+@@MEMBER DOWS
+ DOWS=T,
+@@MEMBER NOBASE
+ NOBASE=T,
+@@MEMBER USEMXB
+ USEMXB=F,
+@@MEMBER ALPBMX
+ ALPBMX=  1.3599999999999999E-002,
+@@MEMBER ALPBPN
+ ALPBPN=  1.36013599E-02,
+@@MEMBER ALPBST
+ ALPBST=  1.36000002E-02,
+@@MEMBER ALSDSH
+ ALSDSH=  4.00000019E-03, 2*8.00000038E-03  , 97*0.00000000~6~,
+@@MEMBER ATTH2O
+ ATTH2O= 0.400000006~4~,
+@@MEMBER PPMEND
+ PPMEND= -1.50000000~4~,
+@@MEMBER PPMST
+ PPMST=  3.70000005~4~,
+@@MEMBER RATIPM
+ RATIPM=  10.0000000~4~,
+@@MEMBER SDDEGP
+ SDDEGP=  1.00000000~4~,
+@@MEMBER WSPPM
+ WSPPM=  2.00999999~4~,
+@@TAIL
+ /
+
+
+
+~10~Input changes to Control Variables
+  filh2o='x.h2o'~59~
+  doecc=T~66~
+  dows=T~67~
+  ppmend=-1.5~62~
+  ppmst=3.7~64~
+  sptype='mega-press-1'~52~
+  mermes=8000~62~
+  filps='out.ps'~59~
+  filpri='out.print'~55~
+  lprint=8~65~
+  filraw='data.raw'~56~
+  filbas='missing.basis'~51~
+  hzpppm=127.786142~56~
+  deltat=5e-04~61~
+  nunfil=1024~62~
