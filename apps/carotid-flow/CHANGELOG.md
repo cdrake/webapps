@@ -1,5 +1,11 @@
 # carotid-flow
 
+## 0.3.20260930
+
+### Minor Changes
+
+- Update unsigned-phase detection from the revised lab MATLAB script: estimate head tilt, pair vessels in head-aligned coordinates, filter by baseline-relative arterial polarity, and correct signal curves. Add optional search geometry controls and quality-check results while preserving affine-based patient labels and the signed-velocity method.
+
 ## 0.2.20260930
 
 ### Patch Changes
@@ -7,7 +13,6 @@
 - Updated dependencies
 - Updated dependencies
   - @neurodesk/webapp-components@0.7.0
-
 
 ### Patch Changes
 
