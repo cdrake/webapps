@@ -8,7 +8,7 @@
       {
         "role": "spectrum",
         "name": "P17920.7",
-        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/df6b6560739cb8b6f1d67ab89ffec02ff4560b31/lcmodel/examples/ge-press-phantom/P17920.7"
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/6ea79339aa63e8d9485919da3e7afeaae8ee0170/lcmodel/examples/ge-press-phantom/P17920.7"
       }
     ]
   },
@@ -21,30 +21,35 @@
       {
         "role": "spectrum",
         "name": "specialDLPFC.dat",
-        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/df6b6560739cb8b6f1d67ab89ffec02ff4560b31/lcmodel/examples/siemens-special/specialDLPFC.dat"
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/6ea79339aa63e8d9485919da3e7afeaae8ee0170/lcmodel/examples/siemens-special/specialDLPFC.dat"
       },
       {
         "role": "water",
         "name": "specialDLPFC_w.dat",
-        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/df6b6560739cb8b6f1d67ab89ffec02ff4560b31/lcmodel/examples/siemens-special/specialDLPFC_w.dat"
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/6ea79339aa63e8d9485919da3e7afeaae8ee0170/lcmodel/examples/siemens-special/specialDLPFC_w.dat"
       }
     ]
   },
   {
     "id": "lcmodel-test",
     "label": "LCModel test spectrum (Synthetic)",
-    "description": "Synthetic: LCModel's own test case, a 3 T spectrum simulated with spant, with its basis set. It checks the fit, not preprocessing.",
+    "description": "Synthetic: LCModel's own test case, a 3 T spectrum simulated with spant, with its basis set and control file. It checks the fit, not preprocessing.",
     "expectedResult": "The fit reproduces LCModel's reference output for this spectrum; the table matches LCModel run natively.",
     "files": [
       {
         "role": "spectrum",
         "name": "data.raw",
-        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/df6b6560739cb8b6f1d67ab89ffec02ff4560b31/lcmodel/examples/lcmodel-test/data.raw"
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/6ea79339aa63e8d9485919da3e7afeaae8ee0170/lcmodel/examples/lcmodel-test/data.raw"
       },
       {
         "role": "basis",
         "name": "3t.basis",
-        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/df6b6560739cb8b6f1d67ab89ffec02ff4560b31/lcmodel/examples/lcmodel-test/3t.basis"
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/6ea79339aa63e8d9485919da3e7afeaae8ee0170/lcmodel/examples/lcmodel-test/3t.basis"
+      },
+      {
+        "role": "control",
+        "name": "control.file",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/6ea79339aa63e8d9485919da3e7afeaae8ee0170/lcmodel/examples/lcmodel-test/control.file"
       }
     ]
   }

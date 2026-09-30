@@ -110,3 +110,25 @@ fn ge_press_pipeline_matches_fida() {
     assert!((rep.linewidth_naa.unwrap() - v.f("lw_naa")).abs() < 1e-6);
     assert!((rep.linewidth_water.unwrap() - v.f("lw_water")).abs() < 1e-6);
 }
+
+/// run_pressproc_GEauto's phasing (validation/ref_geauto.m): residual-water
+/// phase, applied to the water reference too.
+#[test]
+fn ge_press_geauto_phasing_matches_fida() {
+    let Some(d) = data_dir("ge_press_geauto") else { return };
+    let v = Values::load(&d.join("values.json"));
+    let base = data_dir("ge_press").expect("ge_press inputs");
+    let raw = load(&base.join("raw"));
+    let raww = load(&base.join("raww"));
+    let opts = PressOptions { ge_phasing: true, ..PressOptions::default() };
+    let r = run_pressproc_auto(&raw, Some(&raww), &opts, &mut |_, _| {}, &|| false).unwrap();
+    let rep = &r.report;
+    eprintln!("GE phasing: ph0 {} vs {}, shift {} vs {}", rep.ph0, v.f("ph0"), rep.freq_shift, v.f("frqShift"));
+    assert_eq!(rep.pipeline, "run_pressproc_GEauto");
+    assert!((rep.ph0 - v.f("ph0")).abs() < 1e-6);
+    assert!((rep.ph0_water.unwrap() - v.f("ph0w")).abs() < 1e-6);
+    assert!((rep.freq_shift - v.f("frqShift")).abs() < 1e-9);
+    assert!((rep.freq_shift_water.unwrap() - v.f("frqShiftw")).abs() < 1e-9);
+    compare("out", &r.out, &load(&d.join("out")), 1e-6);
+    compare("outw", r.outw.as_ref().unwrap(), &load(&d.join("outw")), 1e-6);
+}

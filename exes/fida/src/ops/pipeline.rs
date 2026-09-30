@@ -100,6 +100,10 @@ pub struct PressOptions {
     pub autophase: bool,
     /// Creatine to 3.027 ppm, water to 4.65 ppm.
     pub ppmref: bool,
+    /// run_pressproc_GEauto's phasing: zero-order phase from the residual
+    /// water (4-5.5 ppm) of the unfiltered, zero-filled spectrum, applied to
+    /// the water reference too, and creatine referenced on that spectrum.
+    pub ge_phasing: bool,
 }
 
 impl Default for PressOptions {
@@ -112,6 +116,7 @@ impl Default for PressOptions {
             leftshift: true,
             autophase: true,
             ppmref: true,
+            ge_phasing: false,
         }
     }
 }
@@ -382,7 +387,7 @@ fn quality(report: &mut Report, out: &Spectra, outw: Option<&Spectra>) {
 /// referencing to creatine at 3.027 ppm (water: 4.65 ppm).
 pub fn run_pressproc_auto(raw: &Spectra, raww: Option<&Spectra>, opts: &PressOptions, progress: &mut dyn FnMut(&str, f32), cancelled: &dyn Fn() -> bool) -> Result<PipelineOutput, String> {
     let mut hooks = Hooks { progress, cancelled };
-    let mut report = Report { pipeline: "run_pressproc_auto".into(), ..Default::default() };
+    let mut report = Report { pipeline: if opts.ge_phasing { "run_pressproc_GEauto" } else { "run_pressproc_auto" }.into(), ..Default::default() };
     if raw.dims.sub_specs > 0 {
         return Err("These data have subspectra; the PRESS pipeline is for non-edited data (use the SPECIAL pipeline for SPECIAL).".into());
     }
@@ -458,15 +463,25 @@ pub fn run_pressproc_auto(raw: &Spectra, raww: Option<&Spectra>, opts: &PressOpt
     } else {
         (out_av, outw_av)
     };
-    let out_zf = op_filter(&op_zeropad(&out_ls, 16.0), 5.0);
-    let (out_zf_ph, ph0) = if opts.autophase { op_autophase(&out_zf, 2.9, 3.1, 0.0, None)? } else { (out_zf, 0.0) };
+    // run_pressproc_auto filters (5 Hz) and phases on creatine; the water
+    // reference gets its own phase. run_pressproc_GEauto phases on the
+    // residual water without filtering and gives the water reference the
+    // same phase.
+    let ge = opts.ge_phasing;
+    let out_zf = if ge { op_zeropad(&out_ls, 16.0) } else { op_filter(&op_zeropad(&out_ls, 16.0), 5.0) };
+    let (lo, hi) = if ge { (4.0, 5.5) } else { (2.9, 3.1) };
+    let (out_zf_ph, ph0) = if opts.autophase { op_autophase(&out_zf, lo, hi, 0.0, None)? } else { (out_zf, 0.0) };
     report.ph0 = ph0;
     let out_ls_ph = op_addphase(&out_ls, ph0, 0.0, 4.65);
     let mut w_zf_ph = None;
     let mut outw_ls_ph = None;
     if let Some(w) = outw_ls.as_ref() {
-        let zf = op_filter(&op_zeropad(w, 16.0), 5.0);
-        let (zf_ph, ph0w) = if opts.autophase { op_autophase(&zf, 4.0, 5.5, 0.0, None)? } else { (zf, 0.0) };
+        let (zf_ph, ph0w) = if ge {
+            (op_addphase(&op_zeropad(w, 16.0), ph0, 0.0, 4.65), ph0)
+        } else {
+            let zf = op_filter(&op_zeropad(w, 16.0), 5.0);
+            if opts.autophase { op_autophase(&zf, 4.0, 5.5, 0.0, None)? } else { (zf, 0.0) }
+        };
         report.ph0_water = Some(ph0w);
         outw_ls_ph = Some(op_addphase(w, ph0w, 0.0, 4.65));
         w_zf_ph = Some(zf_ph);

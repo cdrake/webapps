@@ -239,10 +239,15 @@
       "filename": "examples/lcmodel-test/3t.basis",
       "bytes": 468081,
       "sha256": "bdad9e7fbf607c39d269a03e6f16a0f726f47553f3b76006f65633f643c36671"
+    },
+    {
+      "filename": "examples/lcmodel-test/control.file",
+      "bytes": 121,
+      "sha256": "ee1547fe2d46116aff671652aba39d41e13c89266a3a8435c748774104627184"
     }
   ],
   "repository": "neurodeskorg/webapps",
-  "revision": "df6b6560739cb8b6f1d67ab89ffec02ff4560b31",
+  "revision": "6ea79339aa63e8d9485919da3e7afeaae8ee0170",
   "prefix": "lcmodel/",
-  "base_url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/df6b6560739cb8b6f1d67ab89ffec02ff4560b31/lcmodel/"
+  "base_url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/6ea79339aa63e8d9485919da3e7afeaae8ee0170/lcmodel/"
 }

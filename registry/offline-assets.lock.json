@@ -2695,6 +2695,48 @@
       "contentType": "application/gzip",
       "kind": "example",
       "dependencies": []
+    },
+    "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/6ea79339aa63e8d9485919da3e7afeaae8ee0170/lcmodel/examples/lcmodel-test/data.raw": {
+      "sha256": "b5c55a2b43249a15a2eb19620833e631ba3986d463006dd0e2ff792eddfec560",
+      "bytes": 31835,
+      "contentType": "application/octet-stream",
+      "kind": "example",
+      "dependencies": []
+    },
+    "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/6ea79339aa63e8d9485919da3e7afeaae8ee0170/lcmodel/examples/lcmodel-test/3t.basis": {
+      "sha256": "bdad9e7fbf607c39d269a03e6f16a0f726f47553f3b76006f65633f643c36671",
+      "bytes": 468081,
+      "contentType": "text/plain; charset=utf-8",
+      "kind": "example",
+      "dependencies": []
+    },
+    "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/6ea79339aa63e8d9485919da3e7afeaae8ee0170/lcmodel/examples/lcmodel-test/control.file": {
+      "sha256": "ee1547fe2d46116aff671652aba39d41e13c89266a3a8435c748774104627184",
+      "bytes": 121,
+      "contentType": "text/plain; charset=utf-8",
+      "kind": "example",
+      "dependencies": []
+    },
+    "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/6ea79339aa63e8d9485919da3e7afeaae8ee0170/lcmodel/examples/ge-press-phantom/P17920.7": {
+      "sha256": "e2c9aec2b310567ebf91239c96e5b25b875ccdbd96f8d338133d1267f11d20f5",
+      "bytes": 20080220,
+      "contentType": "application/octet-stream",
+      "kind": "example",
+      "dependencies": []
+    },
+    "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/6ea79339aa63e8d9485919da3e7afeaae8ee0170/lcmodel/examples/siemens-special/specialDLPFC_w.dat": {
+      "sha256": "857a102e6e0153f5ea1be7b9eb606c26139f819a9ac5df43eea50912ca3e0aa5",
+      "bytes": 8949792,
+      "contentType": "application/octet-stream",
+      "kind": "example",
+      "dependencies": []
+    },
+    "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/6ea79339aa63e8d9485919da3e7afeaae8ee0170/lcmodel/examples/siemens-special/specialDLPFC.dat": {
+      "sha256": "2ffbf866b159c2090afcc6cb595181632b07956bbbe6591e1270cf8a74df5731",
+      "bytes": 168955936,
+      "contentType": "application/octet-stream",
+      "kind": "example",
+      "dependencies": []
     }
   },
   "apps": {
@@ -3222,7 +3264,13 @@
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/07cac5c3f89c82ba721163ea8c1fbf1df9625c7d/carotid-flow/examples/carotid_pc_ph.nii.gz"
     ],
     "lcmodel": [
-      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/356a4adbce52cf9052d61ef90b14ba263e7c25e9/synthseg/validation/T1_head.nii.gz"
+      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/356a4adbce52cf9052d61ef90b14ba263e7c25e9/synthseg/validation/T1_head.nii.gz",
+      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/6ea79339aa63e8d9485919da3e7afeaae8ee0170/lcmodel/examples/ge-press-phantom/P17920.7",
+      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/6ea79339aa63e8d9485919da3e7afeaae8ee0170/lcmodel/examples/siemens-special/specialDLPFC.dat",
+      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/6ea79339aa63e8d9485919da3e7afeaae8ee0170/lcmodel/examples/siemens-special/specialDLPFC_w.dat",
+      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/6ea79339aa63e8d9485919da3e7afeaae8ee0170/lcmodel/examples/lcmodel-test/data.raw",
+      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/6ea79339aa63e8d9485919da3e7afeaae8ee0170/lcmodel/examples/lcmodel-test/3t.basis",
+      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/6ea79339aa63e8d9485919da3e7afeaae8ee0170/lcmodel/examples/lcmodel-test/control.file"
     ]
   }
 }

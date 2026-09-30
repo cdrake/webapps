@@ -3,86 +3,124 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>lcmodel — NeuroDesk</title>
+    <title>LCModel — NeuroDesk</title>
   </head>
   <body>
-    <!--
-      Every Neurodesk webapp is built from the shared workspace vocabulary in
-      @neurodesk/webapp-components/styles/imaging-workspace.css. Keep the
-      structure below; change the labels, fields and scientific logic only.
-      Do not add app CSS for anything shown here. See docs/architecture/design-system.md.
-
-      Rules test/design-system.test.mjs and pnpm audit:interfaces enforce:
-      - The workspace is the first screen. No start page, hero or welcome modal;
-        introductions belong in the About template below.
-      - Status, progress, elapsed time and cancel live only in footer#status.
-      - The technical log is createConsole(), below the viewer, collapsed.
-      - Visible help is at most 90 characters. Longer help goes in an
-        .nd-info-icon tooltip beside its label, or in About.
-      - One .nd-btn-primary in the sidebar; every other action is secondary.
-    -->
     <header id="controls">
-      <!-- 1. Input: open, one compact scan picker, working example. -->
       <details class="nd-sidebar-section" id="inputSection" open>
-        <summary class="nd-section-title">Input image</summary>
+        <summary class="nd-section-title">Spectroscopy data</summary>
         <div class="nd-section-content">
           <div id="exampleControl"></div>
           <label class="nd-file" id="dropZone">
-            <input id="imageInput" type="file" data-neurodesk-input="image" multiple aria-label="Choose NIfTI or DICOM files" />
+            <input id="dataInput" type="file" data-neurodesk-input="dataset" multiple aria-label="Choose MR spectroscopy files" />
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <span>Drop NIfTI or DICOM files or folder</span>
+            <span>Drop spectroscopy files: twix, P-file, RDA, DICOM, SPAR/SDAT, NIfTI-MRS, .RAW</span>
           </label>
           <p id="fileInfo" class="nd-file-info" hidden></p>
+          <div class="nd-field" id="datasetField" hidden>
+            <label for="datasetSelect">Dataset</label>
+            <select id="datasetSelect"></select>
+          </div>
+          <p id="datasetSummary" class="nd-hint" hidden></p>
+          <div id="acquisitionFields" hidden>
+            <div class="nd-row">
+              <div class="nd-field">
+                <label for="hzpppmInput">Frequency <small>MHz</small>
+                  <span class="nd-info-icon" tabindex="0" aria-label="About the frequency">i<span class="nd-info-tooltip">This .RAW file does not record the spectrometer frequency or dwell time, which LCModel needs. Take them from the scan protocol, or drop the LCModel control file used with it.</span></span>
+                </label>
+                <input id="hzpppmInput" type="number" min="10" max="1000" step="any" />
+              </div>
+              <div class="nd-field">
+                <label for="dwellInput">Dwell time <small>ms</small></label>
+                <input id="dwellInput" type="number" min="0.001" max="10" step="any" />
+              </div>
+            </div>
+          </div>
         </div>
       </details>
 
-      <!-- 2. The task: its fields, advanced settings collapsed, one primary action. -->
-      <details class="nd-sidebar-section" id="taskSection" open>
-        <summary class="nd-section-title">Processing</summary>
+      <details class="nd-sidebar-section" id="basisSection" open>
+        <summary class="nd-section-title">Basis set</summary>
         <div class="nd-section-content">
           <div class="nd-field">
-            <label for="method">Method</label>
-            <select id="method"><option value="default">Default</option></select>
+            <label for="basisSelect">Basis set
+              <span class="nd-info-icon" tabindex="0" aria-label="About basis sets">i<span class="nd-info-tooltip">LCModel fits the spectrum as a sum of metabolite spectra simulated for the same field strength, sequence and echo time. Coupled metabolites (Glu, Gln, GABA, mI, Lac) change shape with the sequence timing, so a mismatched basis biases them even when the fit looks good. The recommendation compares the data's header with each basis set.</span></span>
+            </label>
+            <select id="basisSelect"></select>
           </div>
-          <details class="nd-sidebar-section" id="advancedSettings">
-            <summary class="nd-section-title">Advanced settings</summary>
-            <div class="nd-section-content">
-              <div class="nd-field">
-                <label for="threshold">Threshold <small>0–1</small>
-                  <span class="nd-info-icon" tabindex="0" aria-label="About the threshold">i<span class="nd-info-tooltip">Longer explanations live in a tooltip like this one, not in a paragraph under the field.</span></span>
-                </label>
-                <input id="threshold" type="number" min="0" max="1" step="0.05" value="0.5" />
-                <p class="nd-hint">Short help sits beside the field it explains.</p>
-              </div>
-              <label class="nd-check"><input id="option" type="checkbox" checked /> Example option</label>
-            </div>
-          </details>
-          <button id="runButton" class="nd-btn nd-btn-primary" type="button" disabled>Prepare input copy</button>
+          <p id="basisAdvice" class="nd-message info" hidden></p>
+          <label class="nd-file" id="basisDrop" hidden>
+            <input id="basisInput" type="file" data-neurodesk-input="model" aria-label="Choose an LCModel .BASIS file" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span>Drop your LCModel .BASIS file</span>
+          </label>
+          <p id="basisInfo" class="nd-file-info" hidden></p>
         </div>
       </details>
 
-      <!-- 3. Output: collapsed until results exist; View/Download per result. -->
-      <details class="nd-sidebar-section" id="outputSection">
-        <summary class="nd-section-title">Output</summary>
+      <details class="nd-sidebar-section" id="taskSection" open>
+        <summary class="nd-section-title">Fit</summary>
         <div class="nd-section-content">
+          <label class="nd-check"><input id="waterScaling" type="checkbox" checked disabled /> Scale to the water reference</label>
+          <details class="nd-sidebar-section" id="preprocessingSettings">
+            <summary class="nd-section-title">Preprocessing (FID-A)</summary>
+            <div class="nd-section-content">
+              <label class="nd-check"><input id="removeBad" type="checkbox" checked /> Remove bad averages</label>
+              <div class="nd-field">
+                <label for="badSd">Threshold <small>SD</small>
+                  <span class="nd-info-icon" tabindex="0" aria-label="About the threshold">i<span class="nd-info-tooltip">An average is removed when it deviates from the mean by more than this many standard deviations (FID-A op_rmbadaverages). Empty uses FID-A's default: 4 for PRESS, 3 for SPECIAL.</span></span>
+                </label>
+                <input id="badSd" type="number" min="1" max="10" step="0.5" placeholder="FID-A default" />
+              </div>
+              <label class="nd-check"><input id="driftCorrection" type="checkbox" checked /> Correct frequency and phase drift</label>
+              <label class="nd-check"><input id="phaseReference" type="checkbox" checked /> Phase and reference to creatine</label>
+            </div>
+          </details>
+          <details class="nd-sidebar-section" id="fitSettings">
+            <summary class="nd-section-title">LCModel settings</summary>
+            <div class="nd-section-content">
+              <div class="nd-row">
+                <div class="nd-field">
+                  <label for="ppmStart">From <small>ppm</small></label>
+                  <input id="ppmStart" type="number" min="0" max="10" step="0.1" value="4.0" />
+                </div>
+                <div class="nd-field">
+                  <label for="ppmEnd">To <small>ppm</small></label>
+                  <input id="ppmEnd" type="number" min="-1" max="10" step="0.1" value="0.2" />
+                </div>
+              </div>
+              <label class="nd-check"><input id="ecc" type="checkbox" checked /> Eddy-current correction with the water reference</label>
+            </div>
+          </details>
+          <button id="runButton" class="nd-btn nd-btn-primary" type="button" disabled>Preprocess and fit</button>
+        </div>
+      </details>
+
+      <details class="nd-sidebar-section" id="outputSection">
+        <summary class="nd-section-title">Results</summary>
+        <div class="nd-section-content">
+          <p id="fitSummary" class="nd-hint" hidden></p>
+          <div class="nd-table-scroll">
+            <table class="nd-data-table lcm-conc" id="concTable" hidden>
+              <thead><tr><th>Metabolite</th><th id="concHeader">Conc.</th><th>SD</th><th id="ratioHeader">Ratio</th></tr></thead>
+              <tbody id="concBody"></tbody>
+            </table>
+          </div>
           <div id="resultList"></div>
         </div>
       </details>
 
-      <!-- About and Privacy content is app-owned; the shared app bar shows the buttons and
-           appends the packages, builder and ecosystem block. Cite is rendered entirely from
-           registry/app-information.yml. -->
       <button id="aboutBtn" type="button" hidden>About</button>
       <button id="privacyBtn" type="button" hidden>Privacy</button>
     </header>
 
     <main id="viewer">
-      <!-- createViewerToolbar() is prepended here; createConsole() is appended. -->
       <div class="nd-viewer-canvas-wrapper">
-        <canvas id="gl1" aria-label="Image viewer"></canvas>
-        <p id="emptyState" class="nd-viewer-empty">Load an image to begin.</p>
+        <div id="plot" class="lcm-plot-host" aria-live="polite"></div>
+        <p id="emptyState" class="nd-viewer-empty">Choose an example or drop spectroscopy data to begin.</p>
+        <p id="viewerNotice" class="nd-viewer-notice" hidden></p>
       </div>
-      <div class="nd-viewer-info"><span id="location" class="nd-viewer-info-primary"></span></div>
+      <div class="nd-viewer-info"><span id="plotLabel" class="nd-viewer-info-primary"></span></div>
     </main>
 
     <footer id="status">
@@ -93,8 +131,14 @@
       <button id="cancelButton" class="nd-btn-cancel" type="button" title="Cancel processing" aria-label="Cancel processing" hidden>×</button>
     </footer>
 
-    <template id="aboutContent"><p>Describe the method, its reference implementation and its limits.</p></template>
-    <template id="privacyContent"><p>Images are processed locally in this browser and are never uploaded.</p></template>
+    <template id="aboutContent">
+      <p>This app quantifies metabolites in single-voxel MR spectroscopy data, in the browser. Raw data are preprocessed with FID-A's automatic pipelines and fitted with LCModel. Both run as Rust ports compiled to WebAssembly.</p>
+      <p><strong>Preprocessing.</strong> FID-A combines the receiver channels, removes bad averages, corrects frequency and phase drift by spectral registration, and averages. For SPECIAL it also aligns and combines the ISIS subspectra. It then phases and references the spectrum to creatine and the water reference to 4.65 ppm. GE data follow FID-A's GE script, which phases on the residual water. In room-temperature phantoms water sits near 4.8 ppm, so FID-A's creatine search can lock onto choline; LCModel's own referencing corrects this and reports it as the data shift. These are FID-A's <code>run_pressproc_auto</code> and <code>run_specialproc_auto</code>, with fixed values where FID-A draws random registration windows, so the result is reproducible. The port agrees with FID-A run in GNU Octave to within 10<sup>-5</sup> Hz in the drift estimates and 10<sup>-8</sup> in the final spectra. Data that arrive coil-combined (RDA, DICOM, NIfTI-MRS) are aligned and averaged only. LCModel .RAW files go to LCModel unchanged.</p>
+      <p><strong>Fitting.</strong> LCModel 6.3-1N was translated from Stephen Provencher's Fortran subprogram by subprogram, keeping its precision and order of operations. On LCModel's own test case, the port's .TABLE and .COORD outputs are identical to those of the Fortran compiled with gfortran. Concentrations are scaled to the unsuppressed water reference when there is one (LCModel's WCONC and ATTH2O defaults); without water they are in arbitrary units, and the ratios to creatine are the useful numbers. %SD is LCModel's Cramér-Rao estimate; values above about 20% are unreliable.</p>
+      <p><strong>Basis sets.</strong> The included basis sets were simulated with FID-A's ideal-pulse density-matrix simulations for 20 metabolites. LCModel adds macromolecules and lipids itself. Choose the one that matches the data's field strength, sequence and echo time, or supply your own .BASIS file. Ideal pulses ignore the slice profiles of real pulses, which matter most for semi-LASER and long echo times.</p>
+      <p>Edited MEGA-PRESS data are not preprocessed here. Research use only.</p>
+    </template>
+    <template id="privacyContent"><p>Spectroscopy files are processed in this browser and are never uploaded. Basis sets and examples are downloaded from Hugging Face at a pinned revision and verified by checksum.</p></template>
 
     <script type="module" src="/src/main.js"></script>
   </body>

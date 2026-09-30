@@ -1,4 +1,9 @@
-function [out, outw, out_noproc, outw_noproc] = pressproc_det(raw, raww, outdir)
+function [out, outw, out_noproc, outw_noproc] = pressproc_det(raw, raww, outdir, ge)
+  % ge = true: run_pressproc_GEauto's phasing (residual water, no filter,
+  % the water reference gets the metabolite phase).
+  if nargin < 4
+    ge = false;
+  end
 % PRESSPROC_DET  run_pressproc_auto.m with its random draws fixed, no plots.
 %   The processing is FID-A's run_pressproc_auto (aaDomain 'f', iterin 20)
 %   line for line, starting from already-loaded structures (raww may be
@@ -99,15 +104,26 @@ function [out, outw, out_noproc, outw_noproc] = pressproc_det(raw, raww, outdir)
     outw_ls = op_leftshift(outw_av, outw_av.pointsToLeftshift);
   end
 
-  out_ls_zp_filt = op_filter(op_zeropad(out_ls, 16), 5);
-  ex(out_ls_zp_filt, 'out_ls_zp_filt');
-  [out_ls_zp_filt_ph, ph0] = op_autophase(out_ls_zp_filt, 2.9, 3.1);
+  if ge
+    out_ls_zp_filt = op_zeropad(out_ls, 16);
+    ex(out_ls_zp_filt, 'out_ls_zp_filt');
+    [out_ls_zp_filt_ph, ph0] = op_autophase(out_ls_zp_filt, 4, 5.5);
+  else
+    out_ls_zp_filt = op_filter(op_zeropad(out_ls, 16), 5);
+    ex(out_ls_zp_filt, 'out_ls_zp_filt');
+    [out_ls_zp_filt_ph, ph0] = op_autophase(out_ls_zp_filt, 2.9, 3.1);
+  end
   ex(out_ls_zp_filt_ph, 'out_ls_zp_filt_ph');
   V.ph0 = ph0;
   out_ls_ph = op_addphase(out_ls, ph0);
   if water
-    outw_ls_zp_filt = op_filter(op_zeropad(outw_ls, 16), 5);
-    [outw_ls_zp_filt_ph, ph0w] = op_autophase(outw_ls_zp_filt, 4, 5.5);
+    if ge
+      ph0w = ph0;
+      outw_ls_zp_filt_ph = op_addphase(op_zeropad(outw_ls, 16), ph0);
+    else
+      outw_ls_zp_filt = op_filter(op_zeropad(outw_ls, 16), 5);
+      [outw_ls_zp_filt_ph, ph0w] = op_autophase(outw_ls_zp_filt, 4, 5.5);
+    end
     V.ph0w = ph0w;
     outw_ls_ph = op_addphase(outw_ls, ph0w);
   end

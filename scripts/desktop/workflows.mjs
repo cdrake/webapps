@@ -9,7 +9,7 @@ import { dicomSeries } from '../../test-utils/dicom-fixture.mjs';
 import { expect } from '@playwright/test';
 import { verifyMuscleMapFullPipeline, createSyntheticMuscleMapNifti } from '../../test/musclemap-full-pipeline-smoke.mjs';
 
-export const workflowApps = ['musclemap', 'vesselboost', 'spinalcordtoolbox', 'calmar', 'qsmbly', 'seedseg', 'dicompare', 'deface', 'easy-mp2rage', 'niimath', 'dicom2vid', 'browserqc', 'surfannotate', 'zarro', 'synthsr', 'synthseg', 'syncro', 'dwi2trx', 'edgereg', 'greedy', 'ants', 'brain2print', 'topofit', 'fireants', 'brain-extraction', 'disconnectome', 'carotid-flow'];
+export const workflowApps = ['musclemap', 'vesselboost', 'spinalcordtoolbox', 'calmar', 'qsmbly', 'seedseg', 'dicompare', 'deface', 'easy-mp2rage', 'niimath', 'dicom2vid', 'browserqc', 'surfannotate', 'zarro', 'synthsr', 'synthseg', 'syncro', 'dwi2trx', 'edgereg', 'greedy', 'ants', 'brain2print', 'topofit', 'fireants', 'brain-extraction', 'disconnectome', 'carotid-flow', 'lcmodel'];
 
 export async function verifyWorkflow(id, page, { root, resources, desktop }) {
   const fixture = join(root, 'exes/synthseg/test/fixtures/small.nii.gz');
@@ -37,7 +37,7 @@ export async function verifyWorkflow(id, page, { root, resources, desktop }) {
     assert.ok(bytes.length > 352, 'Output must contain image data');
     return { filename: data.filename, bytes: data.bytes.length };
   };
-  if (['deface', 'brain2print', 'dwi2trx', 'ants', 'greedy', 'edgereg', 'fireants', 'disconnectome', 'carotid-flow'].includes(id)) {
+  if (['deface', 'brain2print', 'dwi2trx', 'ants', 'greedy', 'edgereg', 'fireants', 'disconnectome', 'carotid-flow', 'lcmodel'].includes(id)) {
     const examples = JSON.parse(await readFile(join(root, 'apps', id, 'examples.json')));
     const selector = page.getByRole('combobox', { name: 'Example', exact: true });
     await expect(selector).toBeEnabled({ timeout: 120000 });
@@ -319,6 +319,19 @@ export async function verifyWorkflow(id, page, { root, resources, desktop }) {
     assert.equal(Math.round(flow(2)), 231);
     assert.equal(Math.round(flow(4)), 211);
     return { filename: result.filename, frames: rows.length - 1 };
+  }
+  if (id === 'lcmodel') {
+    // GE PRESS phantom: FID-A preprocessing, then LCModel with the TE 35 ms basis set.
+    await expect(page.locator('#runButton')).toBeEnabled({ timeout: 120000 });
+    await expect(page.locator('#basisSelect')).toHaveValue('press-3t-te35');
+    await page.locator('#runButton').click();
+    await expect(page.locator('#statusText')).toContainText('Fit done', { timeout: 300000 });
+    const result = await download('#resultList .nd-volume-toggle:first-child .nd-download-btn');
+    const rows = result.bytes.toString('utf8').trim().split('\n');
+    assert.equal(rows[0], 'Metabolite,Concentration,SD (%),/Cr+PCr');
+    const naa = Number(rows.find(row => row.startsWith('NAA,')).split(',')[1]);
+    assert.ok(naa > 5 && naa < 12, `NAA ${naa} mM`);
+    return { filename: result.filename, naa };
   }
   throw new Error(`No offline workflow test registered for ${id}`);
 }

@@ -42,6 +42,7 @@ const REQUIRED_METHODS = {
   ants: ['10.1038/s41598-021-87564-6', '10.1016/j.neuroimage.2010.09.025', '10.1016/j.neuroimage.2026.122074', '10.1016/j.jneumeth.2016.03.001'],
   'carotid-flow': ['10.5281/zenodo.18712355', '10.1177/00359157740676P113', '10.1016/j.jneumeth.2016.03.001', 'github.com/niivue/niivue'],
   disconnectome: ['10.1038/s41467-022-32595-4', 'github.com/neurolabusc/nii2tvx', 'github.com/niivue/niivue'],
+  lcmodel: ['10.1002/mrm.1910300604', '10.1002/mrm.26091', '10.1002/mrm.25094'],
   greedy: ['sites.google.com/view/greedyreg/about', 'github.com/pyushkevich/greedy', 'arxiv.org/abs/2506.11860', '10.1016/j.jneumeth.2016.03.001'],
   fireants: ['10.1038/s41467-026-72508-3', 'arxiv.org/abs/2506.11860', '10.1016/j.jneumeth.2016.03.001'],
 };

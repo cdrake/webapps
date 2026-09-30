@@ -180,6 +180,8 @@ pub fn process(ds: &Dataset, opts: &Options, progress: &mut dyn FnMut(&str, f32)
         o.drift.enabled = opts.drift_correction;
         o.autophase = opts.phase_and_reference;
         o.ppmref = opts.phase_and_reference;
+        // FID-A's GE script phases on the residual water (run_pressproc_GEauto).
+        o.ge_phasing = conj;
         run_pressproc_auto(metab, water, &o, progress, cancelled)?
     };
     let mut report = out.report.to_json();
