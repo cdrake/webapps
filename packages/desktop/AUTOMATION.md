@@ -196,6 +196,14 @@ complete MCP and BET path.
 
 ## Generate tools for another workflow runtime
 
+For NeuroFlow, run `node scripts/generate-neuroflow.mjs --out DIRECTORY` from
+the repository root. It generates one validated tool per operation and a
+shared launcher that uses desktop MCP. See the
+[generator guide](neuroflow/README.md) for installation, engine selection,
+constraint mapping and verification. The
+[type-constraint RFC draft](../../docs/rfcs/0010-neuroflow-data-constraints.md)
+proposes portable encoding, space and label-system semantics.
+
 Generate one tool per entry in `operations`. Keep the app ID, operation ID and
 contract version with the generated tool. Resolve file paths at execution time,
 and use the returned artifact IDs rather than assuming that each role emits one
