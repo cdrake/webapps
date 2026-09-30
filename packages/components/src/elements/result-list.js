@@ -33,11 +33,13 @@ export function defineResultList(view = globalThis.window) {
       for (const stage of stageOrder) {
         const result = results[stage];
         const label = this.stageLabels[stage] || result?.description || stage;
+        // A result that has no image (a table, a report) keeps the column but cannot be viewed.
         const viewButton = () => createElement('button', {
           className: 'nd-view-btn',
           type: 'button',
-          title: 'View',
+          title: result?.viewable === false ? 'Download to open' : 'View',
           text: 'View',
+          disabled: result?.viewable === false && typeof result?.visible !== 'boolean',
           ownerDocument: doc,
           onclick: () => emit('nd-view', { stage, result }),
         });

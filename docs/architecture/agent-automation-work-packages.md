@@ -1,8 +1,8 @@
 # Agent automation work packages
 
 PR #99 extends the desktop job runner into a typed operation and MCP interface
-for the 27 catalog applications. Existing schema-1 selector jobs remain supported.
-The user will run the remaining Mac hardware checks locally.
+for the 28 catalog applications. Existing schema-1 selector jobs remain supported.
+The user reported the Mac larger-buffer experiment on 2026-09-30; see the hardware evidence below.
 
 ## Delivery checklist
 
@@ -101,6 +101,16 @@ inference. An adapter reporting about 4 GiB does not validate a larger SynthSeg
 allocation. The 2 GiB cap remains unchanged until larger-volume parity has an
 appropriate oracle and target-hardware evidence.
 
+On 2026-09-30 the user reported a 3.38 GiB Mac experiment. Three default-mode
+runs matched CPU exactly. One fast-mode run matched, but another reported
+success with 197,959 differing voxels, 1.57%, above tolerance. An earlier
+attempt lost its browser page. No swap use was observed. The cause remains
+unresolved, and the user restored the original cap without changing this
+branch. Keep the 2 GiB limit. Buffer allocation alone does not prove correctness.
+This is user-reported evidence: the summary JSON remains on the user's Mac
+and was not independently inspected here. It does not establish completion
+of the full native Metal and catalog hardware validation checklist.
+
 SynthSeg now publishes that budget in its operation contract. `apps_validate`
 and `runs_start` reject oversize NIfTI headers before opening a processing
 window. Tests compare the preflight geometry to the real Rust WASM preprocessing
@@ -153,3 +163,13 @@ command explicitly runs the automation and populated-phone Playwright tests.
 All six previously failing CI commands pass locally after the build step,
 including the real model workflows. DICOMpare's four Playwright cases and its
 example-import check also pass. Hosted CI must confirm the updated commit.
+
+
+## Merge integration, 2026-09-30
+
+Main added White matter lesions while this PR was open. Its schema-2 adapter
+uses the same awaited segmentation handler as the Run button, returns the
+mask, probability image and lesion TSV, and records the actual backend and
+model hashes. Cancellation terminates the worker and permits a new run.
+The SynthSeg merge retains the single-download callback and the current
+structured report handler. The 2 GiB browser cap is unchanged.

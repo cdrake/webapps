@@ -1,5 +1,13 @@
 # disconnectome
 
+## 0.2.20260930
+
+### Patch Changes
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.6.2
+  - @neurodesk/nii2tvx@0.2.20260930
+
 ## 0.2.20260928
 
 ### Patch Changes
@@ -7,7 +15,6 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.6.1
   - @neurodesk/nii2tvx@0.2.20260928
-
 
 ### Minor Changes
 

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>White matter lesions — NeuroDesk</title>
+  </head>
+  <body>
+    <header id="controls">
+      <details class="nd-sidebar-section" id="inputSection" open>
+        <summary class="nd-section-title">FLAIR image</summary>
+        <div class="nd-section-content">
+          <div id="exampleControl"></div>
+          <label class="nd-file" id="dropZone">
+            <input id="imageInput" type="file" data-neurodesk-input="image" multiple aria-label="Choose NIfTI or DICOM files" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span>Drop NIfTI or DICOM files or folder</span>
+          </label>
+          <p id="fileInfo" class="nd-file-info" hidden></p>
+        </div>
+      </details>
+
+      <details class="nd-sidebar-section" id="taskSection" open>
+        <summary class="nd-section-title">Lesion segmentation</summary>
+        <div class="nd-section-content">
+          <details class="nd-sidebar-section" id="advancedSettings">
+            <summary class="nd-section-title">Advanced settings</summary>
+            <div class="nd-section-content">
+              <label class="nd-check"><input id="skullStripped" type="checkbox" /> Image is already skull-stripped
+                <span class="nd-info-icon" tabindex="0" aria-label="About skull-stripped input">i<span class="nd-info-tooltip">By default SynthStrip removes the skull first. Tick this when the image is already brain-only, so nonzero voxels are used as the brain.</span></span>
+              </label>
+              <div class="nd-field">
+                <label for="folds">Model
+                  <span class="nd-info-icon" tabindex="0" aria-label="About the ensemble">i<span class="nd-info-tooltip">The ensemble averages all five published FLAMeS folds. It downloads 310 MB instead of 62 MB and takes five times as long. On held-out scans it raised Dice from 0.61 to 0.65 for multiple sclerosis and from 0.726 to 0.733 for vascular lesions.</span></span>
+                </label>
+                <select id="folds">
+                  <option value="1">FLAMeS, one fold</option>
+                  <option value="5">FLAMeS ensemble, five folds</option>
+                </select>
+                <p class="nd-hint">The ensemble is five times slower and more accurate on MS lesions.</p>
+              </div>
+              <div class="nd-field">
+                <label for="backend">Processing</label>
+                <select id="backend">
+                  <option value="auto">Automatic</option>
+                  <option value="wasm">CPU</option>
+                </select>
+                <p class="nd-hint">Automatic uses the GPU through WebGPU when available.</p>
+              </div>
+            </div>
+          </details>
+          <button id="runButton" class="nd-btn nd-btn-primary" type="button" disabled>Segment lesions</button>
+        </div>
+      </details>
+
+      <details class="nd-sidebar-section" id="outputSection">
+        <summary class="nd-section-title">Output</summary>
+        <div class="nd-section-content">
+          <div id="resultList"></div>
+        </div>
+      </details>
+
+      <button id="aboutBtn" type="button" hidden>About</button>
+      <button id="privacyBtn" type="button" hidden>Privacy</button>
+    </header>
+
+    <main id="viewer">
+      <div class="nd-viewer-canvas-wrapper">
+        <canvas id="gl1" aria-label="Image viewer"></canvas>
+        <p id="emptyState" class="nd-viewer-empty">Load a FLAIR image to begin.</p>
+        <p id="viewerNotice" class="nd-viewer-notice" hidden></p>
+      </div>
+      <div class="nd-viewer-info"><span id="location" class="nd-viewer-info-primary"></span></div>
+    </main>
+
+    <footer id="status">
+      <span class="nd-status-label">Status</span>
+      <span id="statusText" class="nd-status-text" role="status" aria-live="polite">Ready</span>
+      <span id="elapsed" class="nd-status-elapsed"></span>
+      <progress id="progress" max="1" value="0" aria-label="Processing progress"></progress>
+      <button id="cancelButton" class="nd-btn-cancel" type="button" title="Cancel processing" aria-label="Cancel processing" hidden>×</button>
+    </footer>
+
+    <template id="aboutContent">
+      <p>Segment white matter lesions on a single FLAIR image with FLAMeS, a 3D nnU-Net trained on 668 multiple sclerosis scans from three vendors at 1.5 T and 3 T. SynthStrip removes the skull first; the network then runs over overlapping 112 × 128 × 160 patches at 1 × 0.9 × 0.9 mm.</p>
+      <p>By default the app runs one of the five published FLAMeS folds without mirroring, to keep a browser run to minutes; the advanced settings offer the five-fold ensemble. Against expert labels one fold reached a mean Dice of 0.73 on 25 held-out scans from the MICCAI 2017 WMH challenge, a vascular cohort outside FLAMeS’s multiple sclerosis training data, and 0.61 on the 22 MSLesSeg test patients; the ensemble reached 0.73 and 0.65. Lesions are counted as 26-connected components; the table lists each lesion's volume and centroid.</p>
+      <p>Outputs are research estimates, not a diagnosis. Check them against the image.</p>
+    </template>
+    <template id="privacyContent"><p>Images are processed locally in this browser and are never uploaded. The FLAMeS and SynthStrip models are downloaded once and cached.</p></template>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

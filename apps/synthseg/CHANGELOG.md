@@ -1,5 +1,14 @@
 # synthseg
 
+## 0.5.20260930
+
+### Patch Changes
+
+- 3fb0b87: One click on the labels Download button saved the file twice: the result list's download callback and a second `saveBtn.onclick` handler both fired. The button now downloads once, and batch jobs no longer fail with "Duplicate output".
+- Updated dependencies
+  - @neurodesk/webapp-components@0.6.2
+  - @neurodesk/synthseg@0.5.20260930
+
 ## 0.5.20260928
 
 ### Patch Changes
@@ -12,7 +21,6 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.6.1
   - @neurodesk/synthseg@0.5.20260928
-
 
 ### Minor Changes
 

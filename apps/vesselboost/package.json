@@ -32,7 +32,7 @@
     "jsdom": "^24.0.0"
   },
   "name": "vesselboost",
-  "version": "0.5.20260928",
+  "version": "0.5.20260930",
   "private": true,
   "type": "module",
   "neurodeskWebapp": {
