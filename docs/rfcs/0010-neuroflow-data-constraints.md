@@ -8,9 +8,10 @@ here: the three binding outcomes, the resolve-or-fail executor, the
 conformance cases, a required version bump for qualified documents, and the
 revision on `space` and `labelSystem`. What it writes differently: the
 qualifiers are strings (the serialization of this draft's pairs), the
-revision is optional with a strict executor profile, `resolution` and
-`density` are kept, and the version bump is the `0.1.1` envelope value in the
-0.1 schemas rather than a 0.2 schema path. The generator in this repository
+revision is optional on the producer and a consumer that declares one has
+the artifact verified at runtime, `resolution` and `density` are kept, and
+the version bump is the `0.1.1` envelope value in the 0.1 schemas rather
+than a 0.2 schema path. The generator in this repository
 follows the merged RFC; this file is kept as the record of the original
 proposal and is not maintained.
 
