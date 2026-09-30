@@ -1,5 +1,11 @@
 # @neurodesk/desktop
 
+## 0.19.20260930
+
+### Minor Changes
+
+- Add a repository CLI that generates schema-validated NeuroFlow tool bundles from automation contracts, with a shared desktop MCP launcher, portable tool names, verified artifact delivery and cancellation. Document the mapping and draft a portable data-constraint RFC.
+
 ## 0.18.20260930
 
 ### Patch Changes

@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://niivue.github.io/neuroflow-spec/schemas/0.1/tool.schema.json",
+  "title": "NeuroFlow Tool Document",
+  "description": "Normalized NeuroFlow tool document: a portable contract describing a single operation with typed inputs and outputs.",
+  "type": "object",
+  "required": ["neuroflow", "kind", "id", "version", "description", "inputs", "outputs"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference for editor support."
+    },
+    "neuroflow": { "$ref": "common.schema.json#/$defs/specVersion" },
+    "kind": { "const": "tool" },
+    "id": { "$ref": "common.schema.json#/$defs/documentId" },
+    "version": { "$ref": "common.schema.json#/$defs/semver" },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of what the tool does."
+    },
+    "inputs": {
+      "type": "object",
+      "description": "Named input parameters.",
+      "additionalProperties": { "$ref": "common.schema.json#/$defs/typeDeclaration" }
+    },
+    "outputs": {
+      "type": "object",
+      "description": "Named output values.",
+      "additionalProperties": { "$ref": "#/$defs/toolOutputDef" }
+    },
+    "outputDelivery": {
+      "$ref": "#/$defs/toolOutputDeliveryDef",
+      "description": "Optional tool-level default delivery declaration. Per-output delivery declarations override this default."
+    },
+    "events": {
+      "$ref": "events.schema.json#/$defs/toolEventsDecl",
+      "description": "Optional declaration of events this tool may emit at runtime and the transports it supports. Absent or empty means the tool emits no events."
+    },
+    "extensions": { "$ref": "common.schema.json#/$defs/extensions" }
+  },
+  "$defs": {
+    "toolOutputDef": {
+      "type": "object",
+      "description": "A named output produced by the tool. Extends the shared typeDeclaration with an optional delivery declaration that tells the runtime where to harvest the output's value.",
+      "required": ["type", "description"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "$ref": "common.schema.json#/$defs/qualifiedType" },
+        "description": { "type": "string" },
+        "label": { "type": "string" },
+        "optional": { "type": "boolean", "default": false },
+        "default": { "description": "Default value when the output is absent." },
+        "enum": { "type": "array", "items": {} },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "delivery": {
+          "$ref": "#/$defs/outputDeliveryDef",
+          "description": "How this output is produced and where the runtime should look for it. Overrides the tool-level outputDelivery default."
+        },
+        "extensions": { "$ref": "common.schema.json#/$defs/extensions" }
+      }
+    },
+    "outputDeliveryDef": {
+      "type": "object",
+      "description": "Per-output delivery declaration. Picks one mode from the closed core vocabulary and supplies any mode-specific arguments.",
+      "required": ["mode"],
+      "additionalProperties": false,
+      "properties": {
+        "mode": { "$ref": "#/$defs/deliveryMode" },
+        "path": {
+          "type": "string",
+          "description": "For core:fixed-path, the output's path relative to the work directory ($NEUROFLOW_WORK_DIR). For core:result-dir, the output's path relative to the result directory ($NEUROFLOW_OUTPUT_DIR); if absent, defaults to '<output-name>' for file/directory typed outputs and '<output-name>.json' for value-typed outputs."
+        },
+        "eventName": {
+          "type": "string",
+          "description": "For core:event-stream, the tool-side event channel name (matching a key in events.emits) that carries this output. If absent, the runtime accepts core:output-final events whose payload.output equals the output's name."
+        }
+      }
+    },
+    "deliveryMode": {
+      "type": "string",
+      "description": "Closed core delivery-mode vocabulary. Validators MUST reject other values.",
+      "enum": [
+        "core:stdout-json",
+        "core:result-file",
+        "core:result-dir",
+        "core:event-stream",
+        "core:fixed-path",
+        "core:exit-code"
+      ]
+    },
+    "toolOutputDeliveryDef": {
+      "type": "object",
+      "description": "Tool-level default delivery declaration. A default applies to every output that does not declare its own.",
+      "additionalProperties": false,
+      "properties": {
+        "default": {
+          "$ref": "#/$defs/deliveryMode",
+          "description": "Default delivery mode for outputs lacking their own declaration. If absent, the runtime falls back to the rules defined by the specification (typically core:result-file)."
+        }
+      }
+    }
+  }
+}

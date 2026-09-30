@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://niivue.github.io/neuroflow-spec/schemas/0.1/common.schema.json",
+  "title": "NeuroFlow Common Definitions",
+  "description": "Shared primitives reused by the NeuroFlow workflow, tool, and heuristic schemas (specification 0.1).",
+  "$defs": {
+    "specVersion": {
+      "type": "string",
+      "description": "NeuroFlow specification version this document targets.",
+      "const": "0.1.0"
+    },
+    "semver": {
+      "type": "string",
+      "description": "Document version using semantic versioning.",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "workflowStage": {
+      "type": "string",
+      "description": "Informal, opt-in grouping of where a tool or step sits in the coarse flow of a workflow: ingest (bring data in and shape it into a dataset), explore (review, correct, and process artifacts), or publish (compose figures, captions, graphs, and reports). Stages are a non-normative discovery aid; a conforming runtime MUST NOT branch execution on them. See specification Section 27.",
+      "enum": ["ingest", "explore", "publish"]
+    },
+    "documentId": {
+      "type": "string",
+      "description": "Stable, namespace-qualified document identifier (reverse-DNS, URI-like, or registry-qualified).",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*(/[A-Za-z0-9][A-Za-z0-9._-]*)+$"
+    },
+    "localId": {
+      "type": "string",
+      "description": "Local identifier for an input, context field, step, output, or parameter within a single document.",
+      "pattern": "^[a-z][A-Za-z0-9]*(?:[-_][A-Za-z0-9]+)*$"
+    },
+    "qualifiedType": {
+      "description": "Namespace-qualified type string. The core:, neuro:, bids:, and prov: namespaces are closed vocabularies defined by this specification; any other namespace denotes an open extension type. Arrays use the container form core:array<element-type>.",
+      "anyOf": [
+        { "$ref": "#/$defs/specType" },
+        { "$ref": "#/$defs/extensionType" }
+      ]
+    },
+    "specType": {
+      "type": "string",
+      "description": "A scalar or array type drawn from the spec-defined core:, neuro:, bids:, and prov: vocabularies.",
+      "enum": [
+        "core:string",
+        "core:number",
+        "core:integer",
+        "core:boolean",
+        "core:object",
+        "core:json",
+        "core:file",
+        "core:directory",
+        "core:tabular",
+        "neuro:volume",
+        "neuro:mask",
+        "neuro:dicom-folder",
+        "neuro:dicom-series",
+        "neuro:bids-dataset",
+        "neuro:subject",
+        "neuro:series-mapping",
+        "neuro:label-map",
+        "neuro:transform",
+        "neuro:surface",
+        "neuro:tract",
+        "neuro:ome-zarr",
+        "neuro:ngff-zarr",
+        "neuro:statmap",
+        "neuro:probseg",
+        "neuro:cifti",
+        "neuro:gradient-table",
+        "neuro:connectivity-matrix",
+        "neuro:qc-metrics",
+        "neuro:report",
+        "bids:dataset-description",
+        "bids:participants-table",
+        "bids:participants-sidecar",
+        "bids:sidecar",
+        "bids:events-table",
+        "bids:scans-table",
+        "bids:sessions-table",
+        "bids:validation-report",
+        "bids:fix-proposal",
+        "bids:derivatives-dataset",
+        "bids:entity-map",
+        "prov:run-record",
+        "prov:checksum",
+        "prov:agent",
+        "prov:activity",
+        "prov:entity",
+        "core:array<core:string>",
+        "core:array<core:number>",
+        "core:array<core:integer>",
+        "core:array<core:boolean>",
+        "core:array<core:object>",
+        "core:array<core:json>",
+        "core:array<core:file>",
+        "core:array<core:directory>",
+        "core:array<core:tabular>",
+        "core:array<neuro:volume>",
+        "core:array<neuro:mask>",
+        "core:array<neuro:dicom-folder>",
+        "core:array<neuro:dicom-series>",
+        "core:array<neuro:bids-dataset>",
+        "core:array<neuro:subject>",
+        "core:array<neuro:series-mapping>",
+        "core:array<neuro:label-map>",
+        "core:array<neuro:transform>",
+        "core:array<neuro:surface>",
+        "core:array<neuro:tract>",
+        "core:array<neuro:ome-zarr>",
+        "core:array<neuro:ngff-zarr>",
+        "core:array<neuro:statmap>",
+        "core:array<neuro:probseg>",
+        "core:array<neuro:cifti>",
+        "core:array<neuro:gradient-table>",
+        "core:array<neuro:connectivity-matrix>",
+        "core:array<neuro:qc-metrics>",
+        "core:array<neuro:report>",
+        "core:array<bids:sidecar>",
+        "core:array<bids:validation-report>",
+        "core:array<bids:fix-proposal>",
+        "core:array<bids:events-table>",
+        "core:array<prov:agent>",
+        "core:array<prov:activity>",
+        "core:array<prov:entity>",
+        "core:array<prov:checksum>"
+      ]
+    },
+    "extensionType": {
+      "type": "string",
+      "description": "A type contributed by a third-party namespace (any namespace other than core:, neuro:, bids:, or prov:), in scalar or core:array<...> container form.",
+      "pattern": "^(?:(?!(?:core|neuro|bids|prov):)[a-z][a-z0-9.-]*:[a-z][a-z0-9-]*|core:array<(?!(?:core|neuro|bids|prov):)[a-z][a-z0-9.-]*:[a-z][a-z0-9-]*>)$"
+    },
+    "reference": {
+      "type": "string",
+      "description": "Statically analyzable dot-path reference to a declared workflow value.",
+      "pattern": "^(inputs\\.[a-z][A-Za-z0-9_-]*|context(\\.[a-z][A-Za-z0-9_-]*)?|steps\\.[a-z][A-Za-z0-9_-]*\\.outputs\\.[a-z][A-Za-z0-9_-]*)$"
+    },
+    "stepOutputReference": {
+      "type": "string",
+      "description": "Dot-path reference that must resolve to a step output.",
+      "pattern": "^steps\\.[a-z][A-Za-z0-9_-]*\\.outputs\\.[a-z][A-Za-z0-9_-]*$"
+    },
+    "binding": {
+      "description": "Supplies a concrete value for a tool input. Exactly one of ref or constant.",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["ref"],
+          "additionalProperties": false,
+          "properties": {
+            "ref": { "$ref": "#/$defs/reference" }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["constant"],
+          "additionalProperties": false,
+          "properties": {
+            "constant": { "description": "Fixed value passed to the tool input." }
+          }
+        }
+      ]
+    },
+    "typeDeclaration": {
+      "type": "object",
+      "description": "Describes the expected shape of a declared value.",
+      "required": ["type", "description"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "$ref": "#/$defs/qualifiedType" },
+        "description": { "type": "string", "description": "Human-readable label." },
+        "label": { "type": "string", "description": "Short label for UI display." },
+        "optional": { "type": "boolean", "description": "Whether the value can be omitted.", "default": false },
+        "default": { "description": "Default value when the declared value is absent." },
+        "enum": { "type": "array", "description": "Constrained set of allowed values.", "items": {} },
+        "min": { "type": "number", "description": "Minimum value for numeric types." },
+        "max": { "type": "number", "description": "Maximum value for numeric types." },
+        "extensions": { "$ref": "#/$defs/extensions" }
+      }
+    },
+    "extensions": {
+      "type": "object",
+      "description": "Namespace-keyed extension metadata. Keys MUST be namespace strings; unknown namespaces MUST be preserved and MUST NOT change core validation.",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9.-]*(/[a-z][a-z0-9.-]*)*$"
+      },
+      "additionalProperties": { "type": "object" }
+    }
+  }
+}

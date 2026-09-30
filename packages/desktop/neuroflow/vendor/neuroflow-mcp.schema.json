@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://niivue.github.io/neuroflow-spec/schemas/0.1/extensions/neuroflow-mcp.schema.json",
+  "title": "NeuroFlow Extension: neuroflow/mcp",
+  "description": "Schema for the neuroflow/mcp extension namespace (RFC 0009). Per-document metadata controlling how a tool or workflow is exposed through a NeuroFlow MCP server. Every field is optional; a document without this block is exposed using the RFC 0009 defaults. This is a runtime extension contract, not part of the portable NeuroFlow core.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "expose": {
+      "type": "boolean",
+      "description": "Expose this document as an MCP tool. Defaults to true, except for uiApp tools without an app block, which default to false."
+    },
+    "name": {
+      "type": "string",
+      "description": "Override for the MCP tool name derived from the document id. Names beginning with neuroflow_ are reserved for the fixed binding tools.",
+      "pattern": "^(?!neuroflow_)[A-Za-z0-9_.-]{1,64}$"
+    },
+    "title": {
+      "type": "string",
+      "description": "Human-readable MCP tool title. Falls back to niivue/ui block.label, then the document id.",
+      "minLength": 1
+    },
+    "annotations": {
+      "type": "object",
+      "description": "MCP tool annotation hints.",
+      "additionalProperties": false,
+      "properties": {
+        "readOnlyHint": { "type": "boolean" },
+        "destructiveHint": { "type": "boolean" },
+        "idempotentHint": { "type": "boolean" },
+        "openWorldHint": { "type": "boolean" }
+      }
+    },
+    "maxWaitMs": {
+      "type": "integer",
+      "description": "How long a call without the tasks extension waits before returning a runId handle. Server default is 30000.",
+      "minimum": 0
+    },
+    "valueTypes": {
+      "type": "array",
+      "description": "Extension types this tool passes inline as JSON values rather than as artifact references (RFC 0009 section 1.3).",
+      "uniqueItems": true,
+      "items": { "$ref": "../common.schema.json#/$defs/extensionType" }
+    },
+    "app": { "$ref": "#/$defs/appDef" }
+  },
+  "$defs": {
+    "appDef": {
+      "type": "object",
+      "description": "MCP App declaration (RFC 0009 section 6). The server exposes the tool with _meta.ui.resourceUri and serves the bundle as a text/html;profile=mcp-app resource.",
+      "additionalProperties": false,
+      "required": ["resourceUri"],
+      "properties": {
+        "resourceUri": {
+          "type": "string",
+          "description": "ui:// URI of the app's HTML resource.",
+          "pattern": "^ui://[^\\s/]+(/[^\\s]*)?$"
+        },
+        "connectDomains": {
+          "type": "array",
+          "description": "Origins the app may fetch from (CSP connect-src), e.g. the runtime's loopback artifact endpoint.",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "resourceDomains": {
+          "type": "array",
+          "description": "Origins the app may load scripts, styles, images, and fonts from.",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "requiredOutputs": {
+          "type": "array",
+          "description": "Tool outputs the app must submit before the step can complete. Each MUST name a declared output of the tool.",
+          "uniqueItems": true,
+          "items": { "$ref": "../common.schema.json#/$defs/localId" }
+        }
+      }
+    }
+  }
+}
