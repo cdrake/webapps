@@ -16,10 +16,10 @@ function export_values(v, path)
     end
     h.([names{k} '_size']) = size(x);
     if iscomplex(x)
-      h.([names{k} '_re']) = real(double(x(:)'));
-      h.([names{k} '_im']) = imag(double(x(:)'));
+      h.([names{k} '_re']) = real(double(x(:).'));
+      h.([names{k} '_im']) = imag(double(x(:).'));
     else
-      h.(names{k}) = double(x(:)');
+      h.(names{k}) = double(x(:).');
     end
   end
   f = fopen([path '.json'], 'w');
