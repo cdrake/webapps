@@ -51,6 +51,22 @@ test('hosted cell microscopy example streams and exports image values', async ({
   expect(values.some(value => value !== values[0])).toBe(true);
 });
 
+test('a rate-limited example host is retried instead of failing the example', async ({ page }) => {
+  test.setTimeout(180_000);
+  let limited = 0;
+  await page.route('**/examples/zarro/microscopy-stack/**', async (route) => {
+    if (limited < 3) {
+      limited++;
+      return route.fulfill({ status: 429, headers: { 'Retry-After': '1' }, body: 'Too Many Requests' });
+    }
+    return route.continue();
+  });
+  await page.goto('./');
+  await page.locator('[data-neurodesk-example]').selectOption('microscopy-stack');
+  await expect(page.locator('[data-neurodesk-examples]')).toHaveAttribute('data-example-state', 'ready', { timeout: 120_000 });
+  expect(limited).toBe(3);
+});
+
 function parseNiftiHeader(buffer) {
   const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
   const headerSize = view.getInt32(0, true);

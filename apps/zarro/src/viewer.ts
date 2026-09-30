@@ -19,6 +19,7 @@ import {
 } from '@neurodesk/webapp-components/ui'
 import examples from '../examples.json'
 import { mountImagingWorkspace } from '@neurodesk/webapp-components/core/mount-imaging-workspace'
+import { fetchWithRetry } from '@neurodesk/webapp-components/fetch'
 import * as zarr from 'zarrita'
 import './styles.css'
 import {
@@ -2525,7 +2526,9 @@ function recordRequest(label: string): void {
 
 function createTrackedZarrFetch(): (request: Request) => Promise<Response> {
   return async (request: Request): Promise<Response> => {
-    const response = await fetch(request)
+    const response = await fetchWithRetry(request, {}, {
+      onRetry: ({ status }) => recordRequest(`${status} retry ${shortZarrPath(new URL(request.url).pathname)}`),
+    })
     const method = request.method || 'GET'
     const url = new URL(response.url || request.url)
     const pathname = url.pathname
