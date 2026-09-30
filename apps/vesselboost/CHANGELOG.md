@@ -39,6 +39,12 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.5.0
 
+## 0.4.20260930
+
+### Patch Changes
+
+- Fix N4 correction, BET extraction and denoising by calling the preprocessing module's named exports instead of properties on its initializer. Add a browser CI regression test that runs every Rust preprocessing method through the production worker and compiled WASM.
+
 ## 0.4.20260924
 
 ### Patch Changes
