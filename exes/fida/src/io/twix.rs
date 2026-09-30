@@ -793,8 +793,6 @@ impl<'a> Source<'a> {
 
 /// The twix image object (`twix_obj.image`) after `clean()`.
 struct Image {
-    ncol: usize,
-    ncha: usize,
     full: [usize; 16],
 }
 
@@ -828,8 +826,24 @@ pub struct TwixResult {
     pub header: TwixHeader,
 }
 
+/// Options for [`load_with`].
+#[derive(Clone, Copy, Debug, Default)]
+pub struct TwixOptions {
+    /// Reproduce FID-A as it runs in Octave on files whose `Meas` header has
+    /// `SoftwareVersions` without "XA60" (every example file, VB17 included):
+    /// io_loadspec_twix then never sets `version`, which resolves to Octave's
+    /// `version()` function, so the 'vd' code paths are never taken. Off by
+    /// default: the reader uses mapVBVD's 'vb'/'vd', as FID-A intends.
+    pub octave_version_quirk: bool,
+}
+
 /// FID-A `io_loadspec_twix(filename)` on the bytes of a .dat file.
 pub fn load(data: &[u8]) -> Res<TwixResult> {
+    load_with(data, TwixOptions::default())
+}
+
+/// [`load`] with options.
+pub fn load_with(data: &[u8], opts: TwixOptions) -> Res<TwixResult> {
     let scan = parse_scan(data)?;
     let acqs = &scan.acqs;
     if acqs.is_empty() {
@@ -872,7 +886,7 @@ pub fn load(data: &[u8]) -> Res<TwixResult> {
         }
         page[lin] = i as u32; // the last acquisition of a line wins
     }
-    let image = Image { ncol, ncha, full };
+    let image = Image { full };
     let src = Source { data, ncol, ncha, scan_hdr, chan_hdr, page, acqs };
     let hdr = &scan.hdr;
 
@@ -881,9 +895,13 @@ pub fn load(data: &[u8]) -> Res<TwixResult> {
     if let Some(sv) = hdr.buffers.get("Meas").and_then(|m| if m.has("SoftwareVersions") { m.get("SoftwareVersions") } else { None }) {
         if sv.text().contains("XA60") {
             version = "XA60".into();
+        } else if opts.octave_version_quirk {
+            // FID-A never assigns `version` here, so the name resolves to the
+            // interpreter's version() string: neither 'vd' nor 'XA60'.
+            version = "interpreter".into();
         }
-        // FID-A leaves `version` undefined (and then errors) when the field exists
-        // without XA60; we keep mapVBVD's version instead.
+        // Otherwise (the default) keep mapVBVD's version, as FID-A intends: in
+        // MATLAB the unassigned `version=='XA60'` comparison errors.
     }
     let (mut sqz_size, mut sqz_dims) = image.sqz();
     let sequence = hdr.text("Config", "SequenceFileName")?;
@@ -909,8 +927,31 @@ pub fn load(data: &[u8]) -> Res<TwixResult> {
     let v_xa = version == "XA60";
     let nset = image.n("Set");
 
-    let universal_empty = || {
-        hdr.get("MeasYaps", "sWipMemBlock.alFree[7]").map(|v| v.is_empty()).unwrap_or(true)
+    // isempty(twix_obj.hdr.MeasYaps.sWipMemBlock.alFree{8}): FID-A errors when
+    // the structure or the 8th element does not exist.
+    let universal_empty = if is_universal {
+        let yaps = hdr.buffers.get("MeasYaps").ok_or("This twix file has no MeasYaps header.")?;
+        if !yaps.ascconv_top.contains("sWipMemBlock") {
+            return Err("FID-A needs sWipMemBlock.alFree[7] for the HERCULES sequence and this twix header has no sWipMemBlock.".into());
+        }
+        match yaps.get("sWipMemBlock.alFree[7]") {
+            Some(v) => v.is_empty(),
+            None => {
+                let longer = yaps.ascconv.keys().any(|k| {
+                    k.strip_prefix("sWipMemBlock.alFree[")
+                        .and_then(|r| r.strip_suffix(']'))
+                        .and_then(|n| n.parse::<usize>().ok())
+                        .map(|n| n > 7)
+                        .unwrap_or(false)
+                });
+                if !longer {
+                    return Err("FID-A needs sWipMemBlock.alFree[7] for the HERCULES sequence and this twix header does not have it.".into());
+                }
+                true
+            }
+        }
+    } else {
+        false
     };
     let seq_string_edit = || {
         hdr.get("Config", "SequenceString").map(|v| v.text().eq_ignore_ascii_case("svs_edit")).unwrap_or(false)
@@ -920,7 +961,7 @@ pub fn load(data: &[u8]) -> Res<TwixResult> {
     let mut fids: View;
     let split = is_special
         || (v_vd && is_jn_special)
-        || (is_universal && universal_empty())
+        || (is_universal && universal_empty)
         || (v_xa && is_jn_special)
         || (v_vd && is_jn_mp && nset == 1);
     if split {
@@ -961,6 +1002,12 @@ pub fn load(data: &[u8]) -> Res<TwixResult> {
                         sqz_size = vec![sqz_size[0], sqz_size[1], sqz_size.get(2).copied().unwrap_or(1) / 2, 2];
                     }
                     _ => {
+                        if h != 1 {
+                            // data(:,:,1)=squeezedData(:,:,1:2:end-1) is nonconformant in FID-A
+                            return Err(format!(
+                                "FID-A cannot split this SPECIAL/MEGA twix file into subspectra: it has {n} transients but no 'Ave' loop longer than 2."
+                            ));
+                        }
                         sqz_size = vec![sqz_size[0], sqz_size[1], 2];
                         sqz_dims.truncate(2);
                     }
@@ -1112,6 +1159,15 @@ pub fn load(data: &[u8]) -> Res<TwixResult> {
     }
 
     // -------------------------------------------------------- dimension indexing
+    // find(strcmp(sqzDims, name)); a name listed twice makes FID-A's index
+    // arithmetic fail, so it is an error here.
+    for (i, d) in sqz_dims.iter().enumerate() {
+        if sqz_dims[..i].contains(d) {
+            return Err(format!(
+                "FID-A cannot index the dimensions of this twix file: '{d}' appears twice in {sqz_dims:?}."
+            ));
+        }
+    }
     let find = |name: &str| sqz_dims.iter().position(|d| d == name).map(|k| k + 1);
     let mut to_index: Vec<usize> = (1..=sqz_dims.len()).collect();
     let mut dims = Dims::default();
@@ -1171,7 +1227,7 @@ pub fn load(data: &[u8]) -> Res<TwixResult> {
     }
 
     let (t, c, a, s, e) = (dims.t, dims.coils, dims.averages, dims.sub_specs, dims.extras);
-    let mut apply = |order: &[usize], nd: Dims, fids: &mut View, fids_w: &mut Option<View>| -> Res<Dims> {
+    let apply = |order: &[usize], nd: Dims, fids: &mut View, fids_w: &mut Option<View>| -> Res<Dims> {
         *fids = fids.clone().permute(order)?;
         if w_refs {
             if let Some(w) = fids_w.take() {
@@ -1277,12 +1333,11 @@ pub fn load(data: &[u8]) -> Res<TwixResult> {
             first.free_param[0] as f64
         }
     } else if is_minn_eja || is_minn_dkd {
-        // iceParam(5,1); a VB mdh has only 4 ICE parameters, where FID-A errors
-        // (a VB mdh has only 4, where FID-A errors; we report 0)
+        // iceParam(5,1): a VB mdh has only 4 ICE parameters and FID-A errors
         if scan.version == "vd" {
             first.ice_param[4] as f64
         } else {
-            0.0
+            return Err("FID-A reads the CMRR leftshift from ICE parameter 5, which this VB twix file does not have.".into());
         }
     } else if is_jn_seq || is_jn_special || is_jn_mp {
         0.0

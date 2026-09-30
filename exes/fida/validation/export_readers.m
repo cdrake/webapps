@@ -18,7 +18,9 @@ function export_readers(fida, data, outdir, only)
     'twix_megapress_w', 'twix',  'Siemens/sample01_megapress/megapress_w/megapressDLPFC_w.dat'
     'twix_special',     'twix',  'Siemens/sample02_special/special/specialDLPFC.dat'
     'twix_special_w',   'twix',  'Siemens/sample02_special/special_w/specialDLPFC_w.dat'
-    'ge_press',         'ge1',   'GE/sample01_press/press/P17920.7'
+    'twixvd_megapress', 'twix',  'SiemensVD/megapress_vd.dat'
+    'twixvd_special_w', 'twix',  'SiemensVD/special_w_vd.dat'
+    'ge_press',      'ge1',   'GE/sample01_press/press/P17920.7'
     'ge_megapress',     'ge2',   'GE/sample02_megapress/megapress/P21504.7'
     'bruker_press',     'bruk',  'Bruker/sample01_press/press'
     'bruker_press_w',   'bruk',  'Bruker/sample01_press/press_w'
@@ -26,7 +28,7 @@ function export_readers(fida, data, outdir, only)
     'sdat_ws',          'sdat',  'Philips/philips_spar_sdat_WS.SDAT'
     'sdat_w',           'sdat',  'Philips/philips_spar_sdat_W.SDAT'
   };
-  extra = {'NIfTI-MRS', '*.nii.gz', 'nii'; 'NIfTI-MRS', '*.nii', 'nii'; 'RDA', '*.rda', 'rda'; 'LCModel', '*.RAW', 'lcm'; 'LCModel', '*.H2O', 'lcm'};
+  extra = {'SiemensSeq', '*.dat', 'twix'; 'NIfTI-MRS', '*.nii.gz', 'nii'; 'NIfTI-MRS', '*.nii', 'nii'; 'RDA', '*.rda', 'rda'; 'LCModel', '*.RAW', 'lcm'; 'LCModel', '*.H2O', 'lcm'};
   for e = 1:size(extra, 1)
     d = dir(fullfile(data, extra{e, 1}, extra{e, 2}));
     for k = 1:numel(d)
@@ -59,7 +61,11 @@ function export_readers(fida, data, outdir, only)
       if isstruct(w) && isfield(w, 'fids'), export_one(w, fullfile(outdir, [name '_wref'])); end
       printf('ok %s %.1fs sz=%s\n', name, toc, mat2str(o.sz));
     catch err
+      % record the failure: the tests then require the Rust reader to fail too
       printf('FAIL %s: %s\n', name, err.message);
+      f = fopen(fullfile(outdir, 'FAILED'), 'a');
+      fprintf(f, '%s\n', name);
+      fclose(f);
     end
   end
 end
