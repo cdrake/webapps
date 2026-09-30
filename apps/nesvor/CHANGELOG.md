@@ -4,6 +4,12 @@
 
 ### Patch Changes
 
+- Use a portable runtime cache when building NeSVoR outside the development workspace. Preserve ZARRo export progress and cancellation when volume loading completes after the export starts.
+  - @neurodesk/nesvor@0.3.20260930
+
+
+### Patch Changes
+
 - Release the experimental NeSVoR browser and remote compute workflows. Package the required ONNX runtime with gzip compression and omit unused runtime variants. Include shared compute connection recovery, cancellation and Linux server setup instructions.
 - Updated dependencies
 - Updated dependencies
@@ -11,7 +17,6 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.5.2
   - @neurodesk/nesvor@0.3.20260930
-
 
 ### Patch Changes
 

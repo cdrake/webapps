@@ -5373,7 +5373,7 @@ async function performReloadVolume(
     applyLayout()
     syncViewControls()
     els.emptyState.hidden = true
-    if (reportsLoad) {
+    if (reportsLoad && !downloadInProgress) {
       const level = currentDetailLevel ?? (activeSource.kind === 'synthetic' ? null : activeSource.baseLevel)
       status(
         `${layerName ?? activeSource.name} loaded · ${activeSource.shape.join(' × ')} ${activeSource.dtype}` +
