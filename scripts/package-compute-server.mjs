@@ -51,6 +51,11 @@ export async function packageComputeServer({ binary, frontend, out, version, rep
   await chmod(join(directory, 'neurodesk-compute'), 0o755);
   for (const filename of ['README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md']) await cp(join(repository, 'exes/compute-server', filename), join(directory, filename));
   await cp(frontend, join(directory, 'www/nesvor'), { recursive: true });
+  const catalogPath = join(directory, 'www/nesvor/standalone.json');
+  const catalog = JSON.parse(await readFile(catalogPath, 'utf8'));
+  // The installed server cannot embed a checksum for its own containing archive.
+  delete catalog.apps.nesvor.computeServer;
+  await writeFile(catalogPath, `${JSON.stringify(catalog, null, 2)}\n`);
   const indexPath = join(directory, 'www/nesvor/index.html');
   const index = (await readFile(indexPath, 'utf8')).replace(/\sdata-ga4-measurement-id="[^"]*"/g, '');
   await writeFile(indexPath, index);

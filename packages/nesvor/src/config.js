@@ -15,4 +15,3 @@ export function browserConfig(request) {
   }
   return config;
 }
-

@@ -10,7 +10,7 @@ const runtime = dirname(require.resolve('onnxruntime-web/wasm'));
 const output = join(root, 'apps/nesvor/public/ort');
 await rm(output, { recursive: true, force: true });
 await mkdir(output, { recursive: true });
-const runtimeName = 'ort-wasm-simd-threaded.jsep';
+const runtimeName = 'ort-wasm-simd-threaded.asyncify';
 await copyFile(join(runtime, `${runtimeName}.mjs`), join(output, `${runtimeName}.mjs`));
 await writeFile(join(output, `${runtimeName}.wasm.gz`), gzipSync(await readFile(join(runtime, `${runtimeName}.wasm`)), { level: 9 }));
 const modelOutput = join(root, 'apps/nesvor/public/svort');

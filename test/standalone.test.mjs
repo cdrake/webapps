@@ -104,7 +104,9 @@ test('compute server setup leads with download, startup and pairing for the curr
 test('compute server setup does not fabricate an unpublished backend download', async () => {
   const catalog = await loadStandalone(await loadAppsRegistry());
   const dom = new JSDOM('<html><body></body></html>');
-  const dialog = openStandalone({ title: 'NeSVoR', app: catalog.apps.nesvor }, dom.window.document);
+  const app = structuredClone(catalog.apps.nesvor);
+  app.computeServer.download = null;
+  const dialog = openStandalone({ title: 'NeSVoR', app }, dom.window.document);
   const section = dialog.root.querySelector('#standalone-compute').parentElement;
   assert.match(section.textContent, /released backend download is not available/);
   assert.equal(section.querySelector('a[download]'), null);

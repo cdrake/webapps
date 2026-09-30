@@ -4,5 +4,6 @@ import { neurodeskViteConfig } from "../../scripts/lib/vite-app-config.mjs";
 export default neurodeskViteConfig({
   appId: "nesvor",
   define: { "import.meta.env.NESVOR_LOCAL_MODELS": Boolean(process.env.NESVOR_MODEL_DIR) },
+  resolve: { conditions: ["onnxruntime-web-use-extern-wasm"] },
   build: { target: "es2022", outDir: "dist", assetsInlineLimit: 0 },
 });

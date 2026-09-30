@@ -605,7 +605,14 @@
       "computeServer": {
         "name": "neurodesk-compute",
         "documentation": "https://github.com/neurodesk/webapps/tree/main/exes/compute-server",
-        "download": null
+        "download": {
+          "filename": "neurodesk-compute-0.1.20260930-linux-x64.tar.gz",
+          "version": "0.1.20260930",
+          "url": "https://github.com/neurodesk/webapps/releases/download/nesvor-v0.3.20260930/neurodesk-compute-0.1.20260930-linux-x64.tar.gz",
+          "checksumUrl": "https://github.com/neurodesk/webapps/releases/download/nesvor-v0.3.20260930/neurodesk-compute-0.1.20260930-linux-x64.tar.gz.sha256",
+          "bytes": 10490150,
+          "sha256": "6c2bf4eb4294666cf1dee063a1204665d4bb28ab0dadca9317362cd92da6b244"
+        }
       }
     }
   }

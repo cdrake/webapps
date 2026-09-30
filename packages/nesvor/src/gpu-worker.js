@@ -18,9 +18,13 @@ self.onmessage = async ({ data }) => {
       runtime = await import('onnxruntime-web/webgpu');
       runtime.env.wasm.numThreads = 1;
       runtime.env.wasm.wasmPaths = data.runtime.wasmBaseUrl;
-      const response = await fetch(new URL('ort-wasm-simd-threaded.jsep.wasm.gz', data.runtime.wasmBaseUrl));
+      const response = await fetch(new URL('ort-wasm-simd-threaded.asyncify.wasm.gz', data.runtime.wasmBaseUrl));
       if (!response.ok) throw new Error(`ONNX runtime download failed (${response.status}).`);
-      runtime.env.wasm.wasmBinary = await new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      // Hosts may set Content-Encoding: gzip, which fetch decodes automatically.
+      runtime.env.wasm.wasmBinary = bytes[0] === 0x1f && bytes[1] === 0x8b
+        ? await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer()
+        : bytes.buffer;
     }
     return runtime;
   };

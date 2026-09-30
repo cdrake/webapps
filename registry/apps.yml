@@ -631,6 +631,7 @@ apps:
     maintainers: [neurodesk]
     support_status: experimental
     shell: imaging-workspace
+    app_scoped_runtime_families: [dcm2niix]
     ci:
       toolchains: [node]
       shared_runtime: false

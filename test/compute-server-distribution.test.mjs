@@ -15,6 +15,7 @@ async function fixture() {
   await writeFile(join(frontend, 'assets/app.js'), 'import "./dependency.js";');
   await writeFile(join(frontend, 'assets/dependency.js'), 'export const ready = true;');
   await writeFile(join(frontend, 'app-shell.js'), 'export {};');
+  await writeFile(join(frontend, 'standalone.json'), JSON.stringify({ apps: { nesvor: { computeServer: { download: { sha256: 'obsolete' } } } } }));
   const binary = join(directory, 'binary');
   await writeFile(binary, '#!/bin/sh\nexit 0\n');
   const out = join(directory, 'out');
@@ -38,6 +39,8 @@ test('archive contains frontend at its production base and honest runtime manife
     await checkFrontend(join(bundle, 'www'));
     assert.match(await readFile(join(bundle, 'www/index.html'), 'utf8'), /url=\/nesvor\//);
     assert.doesNotMatch(await readFile(join(bundle, 'www/nesvor/index.html'), 'utf8'), /data-ga4-measurement-id/);
+    const catalog = JSON.parse(await readFile(join(bundle, 'www/nesvor/standalone.json'), 'utf8'));
+    assert.equal(catalog.apps.nesvor.computeServer, undefined);
     const runtime = JSON.parse(await readFile(join(bundle, 'runtime.json'), 'utf8'));
     assert.equal(runtime.scientificRuntimeBundled, false);
     assert.match(runtime.image, /@sha256:[a-f0-9]{64}$/);

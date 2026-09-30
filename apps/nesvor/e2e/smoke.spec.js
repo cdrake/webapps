@@ -334,36 +334,42 @@ test('inferred thickness does not require acknowledgement and remains editable',
   await expect(page.locator('#thickness-0')).toHaveValue('3.2');
 });
 
-test('production masking initializes WebGPU and can be cancelled', async ({ page }) => {
-  test.skip(!process.env.NESVOR_MASK_FIXTURE_DIR, 'Requires the external pinned MONAIfbs export.');
-  test.setTimeout(240000);
-  const { join } = await import('node:path');
-  const { writeVolume } = await import('../../../packages/synthsr/src/volume.js');
-  const manifest = JSON.parse(readFileSync(new URL('../../../packages/nesvor/src/masking/manifest.json', import.meta.url)));
-  const { createServer } = await import('node:http');
-  const { createReadStream, statSync } = await import('node:fs');
-  const modelPath = join(process.env.NESVOR_MASK_FIXTURE_DIR, manifest.file);
-  const server = createServer((_request, response) => {
-    response.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Length': statSync(modelPath).size, 'Access-Control-Allow-Origin': '*', 'Cross-Origin-Resource-Policy': 'cross-origin' });
-    createReadStream(modelPath).pipe(response);
+for (const rawGzip of [false, true]) {
+  test(`production masking initializes WebGPU and can be cancelled (${rawGzip ? 'raw gzip' : 'HTTP gzip'})`, async ({ page }) => {
+    test.skip(!process.env.NESVOR_MASK_FIXTURE_DIR, 'Requires the external pinned MONAIfbs export.');
+    test.setTimeout(240000);
+    const { join } = await import('node:path');
+    const { writeVolume } = await import('../../../packages/synthsr/src/volume.js');
+    const manifest = JSON.parse(readFileSync(new URL('../../../packages/nesvor/src/masking/manifest.json', import.meta.url)));
+    const { createServer } = await import('node:http');
+    const { createReadStream, statSync } = await import('node:fs');
+    const modelPath = join(process.env.NESVOR_MASK_FIXTURE_DIR, manifest.file);
+    if (rawGzip) {
+      const body = readFileSync(new URL('../dist/ort/ort-wasm-simd-threaded.asyncify.wasm.gz', import.meta.url));
+      await page.route('**/ort/ort-wasm-simd-threaded.asyncify.wasm.gz', route => route.fulfill({ body, contentType: 'application/octet-stream' }));
+    }
+    const server = createServer((_request, response) => {
+      response.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Length': statSync(modelPath).size, 'Access-Control-Allow-Origin': '*', 'Cross-Origin-Resource-Policy': 'cross-origin' });
+      createReadStream(modelPath).pipe(response);
+    });
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+    try {
+      await page.route(new URL(manifest.file, manifest.base_url).href, route => route.fulfill({ status: 302, headers: { location: `http://127.0.0.1:${server.address().port}/model`, 'Access-Control-Allow-Origin': '*' } }));
+      const fixture = JSON.parse(readFileSync(join(process.env.NESVOR_MASK_FIXTURE_DIR, 'stack.json')));
+      const affine = [[fixture.resolution[0],0,0,0],[0,fixture.resolution[1],0,0],[0,0,fixture.resolution[2],0],[0,0,0,1]];
+      await page.goto('/');
+      await page.locator('#imageInput').setInputFiles({ name:'fetal.nii', mimeType:'application/octet-stream', buffer:Buffer.from(writeVolume({ data:Float32Array.from(fixture.data), dims:fixture.shape, affine })) });
+      await page.locator('#registration').selectOption('none');
+      await page.locator('#advancedSettings').evaluate(element => { element.open = true; });
+      await page.locator('#biasFieldCorrection').uncheck();
+      await page.locator('#runButton').click();
+      await expect(page.locator('#technicalLog')).toContainText('Brain masking backend: webgpu', { timeout:180000 });
+      await page.locator('#cancelButton').click();
+      await expect(page.locator('#statusText')).toContainText('Browser reconstruction cancelled');
+      await expect(page.locator('#runButton')).toBeEnabled();
+    } finally {
+      server.closeAllConnections();
+      await new Promise(resolve => server.close(resolve));
+    }
   });
-  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-  try {
-    await page.route(new URL(manifest.file, manifest.base_url).href, route => route.fulfill({ status: 302, headers: { location: `http://127.0.0.1:${server.address().port}/model`, 'Access-Control-Allow-Origin': '*' } }));
-    const fixture = JSON.parse(readFileSync(join(process.env.NESVOR_MASK_FIXTURE_DIR, 'stack.json')));
-    const affine = [[fixture.resolution[0],0,0,0],[0,fixture.resolution[1],0,0],[0,0,fixture.resolution[2],0],[0,0,0,1]];
-    await page.goto('/');
-    await page.locator('#imageInput').setInputFiles({ name:'fetal.nii', mimeType:'application/octet-stream', buffer:Buffer.from(writeVolume({ data:Float32Array.from(fixture.data), dims:fixture.shape, affine })) });
-    await page.locator('#registration').selectOption('none');
-    await page.locator('#advancedSettings').evaluate(element => { element.open = true; });
-    await page.locator('#biasFieldCorrection').uncheck();
-    await page.locator('#runButton').click();
-    await expect(page.locator('#technicalLog')).toContainText('Brain masking backend: webgpu', { timeout:180000 });
-    await page.locator('#cancelButton').click();
-    await expect(page.locator('#statusText')).toContainText('Browser reconstruction cancelled');
-    await expect(page.locator('#runButton')).toBeEnabled();
-  } finally {
-    server.closeAllConnections();
-    await new Promise(resolve => server.close(resolve));
-  }
-});
+}
