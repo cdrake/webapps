@@ -4,7 +4,7 @@ Fetal and neonatal brain slice-to-volume reconstruction with
 [NeSVoR](https://github.com/daviddmc/NeSVoR), run on a compute server in the
 user's own network. The browser loads the stacks, prefills slice thicknesses,
 pairs masks, offers the upstream protocols (fetal brain, neonatal brain, fetal
-body) and reviews the reconstructed volume; the computation happens in the pinned
+body) and reviews the reconstructed volume. Remote computation uses the pinned
 Neurodesk `nesvor` 0.5.0 container on the machine named in the Compute server
 section. Design and rationale: [docs/architecture/nesvor-remote-compute.md](../../docs/architecture/nesvor-remote-compute.md);
 wire protocol: [docs/architecture/remote-compute-protocol.md](../../docs/architecture/remote-compute-protocol.md);
@@ -34,4 +34,16 @@ COMPUTE_SERVER_URL=http://127.0.0.1:8765 COMPUTE_SERVER_TOKEN=dev node --test te
 
 The last line runs the same suite against `neurodesk-compute serve --runner simulate --insecure-http --listen 127.0.0.1:8765 --token dev`.
 
-A real reconstruction needs an NVIDIA GPU host; see the server README.
+Remote full-preset reconstruction requires a Linux NVIDIA Docker host. Pairing creates an owned session; the app can recover its jobs after a tab reload. Slice thickness defaults to spacing and remains editable. A note identifies inferred values; no confirmation checkbox is required. DICOM series convert locally.
+
+The experimental WebGPU option runs the same exposed reconstruction methods locally:
+SVoRT or rigid registration, automatic fetal brain masks, N4, Otsu, stack
+intersections and deformable fitting. Pinned SVoRT and MONAIfbs model weights
+download from the Neurodesk dataset; examinations stay local. App builds stage the
+verified N4 runtime. `NESVOR_MODEL_DIR` optionally bundles SVoRT graphs locally.
+The reduced CPU reference remains available separately. Full-acquisition,
+hardware-throughput and CUDA parity validation remain outstanding. See the
+[browser engine](../../packages/nesvor/README.md) for numerical evidence and the
+repeatable hardware validation command.
+
+The real scientific gate is `node scripts/verify-nesvor-real.mjs`, run from the repository root with the backend, credentials, confirmed example thicknesses and external report directory configured. It refuses simulation. Full CUDA validation and browser/container numerical parity remain outstanding.

@@ -7,17 +7,6 @@ use axum::response::Response;
 
 use crate::api::{ApiError, AppState};
 
-/// Result of checking a request's credentials.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Credentials {
-    /// No token was presented.
-    Missing,
-    /// A token was presented and matches.
-    Valid,
-    /// A token was presented and does not match.
-    Invalid,
-}
-
 /// Compares two tokens without leaking the position of the first mismatch.
 pub fn constant_time_eq(a: &str, b: &str) -> bool {
     let a = a.as_bytes();
@@ -32,9 +21,7 @@ pub fn constant_time_eq(a: &str, b: &str) -> bool {
     difference == 0
 }
 
-/// Extracts the bearer token from the `Authorization` header, falling back
-/// to the `token` query parameter on the endpoints `EventSource` and
-/// `<a download>` use.
+/// Extracts credentials only from the Authorization header.
 pub fn presented_token(request: &Request) -> Option<String> {
     if let Some(value) = request.headers().get(AUTHORIZATION) {
         let value = value.to_str().ok()?;
@@ -43,46 +30,7 @@ pub fn presented_token(request: &Request) -> Option<String> {
             .or_else(|| value.strip_prefix("bearer "))?;
         return Some(token.trim().to_string());
     }
-    let path = request.uri().path();
-    let query_allowed = path.ends_with("/events") || path.contains("/outputs/");
-    if !query_allowed {
-        return None;
-    }
-    let query = request.uri().query()?;
-    for pair in query.split('&') {
-        if let Some(value) = pair.strip_prefix("token=") {
-            return Some(percent_decode(value));
-        }
-    }
     None
-}
-
-fn percent_decode(value: &str) -> String {
-    let bytes = value.as_bytes();
-    let mut decoded = Vec::with_capacity(bytes.len());
-    let mut index = 0;
-    while index < bytes.len() {
-        if bytes[index] == b'%' && index + 2 < bytes.len() {
-            let hex = &value[index + 1..index + 3];
-            if let Ok(byte) = u8::from_str_radix(hex, 16) {
-                decoded.push(byte);
-                index += 3;
-                continue;
-            }
-        }
-        decoded.push(bytes[index]);
-        index += 1;
-    }
-    String::from_utf8_lossy(&decoded).into_owned()
-}
-
-/// Classifies the request's credentials against the configured token.
-pub fn check(request: &Request, expected: &str) -> Credentials {
-    match presented_token(request) {
-        None => Credentials::Missing,
-        Some(token) if constant_time_eq(&token, expected) => Credentials::Valid,
-        Some(_) => Credentials::Invalid,
-    }
 }
 
 /// Middleware that rejects requests without a valid token.
@@ -91,11 +39,15 @@ pub async fn require_token(
     request: Request,
     next: Next,
 ) -> Result<Response, ApiError> {
-    match check(&request, &state.config.token) {
-        Credentials::Valid => Ok(next.run(request).await),
-        Credentials::Missing => Err(ApiError::unauthorized("missing bearer token")),
-        Credentials::Invalid => Err(ApiError::unauthorized("invalid token")),
-    }
+    let token =
+        presented_token(&request).ok_or_else(|| ApiError::unauthorized("missing bearer token"))?;
+    let owner = state
+        .sessions
+        .owner(&token)
+        .ok_or_else(|| ApiError::unauthorized("invalid or revoked client token"))?;
+    let mut request = request;
+    request.extensions_mut().insert(Owner(owner));
+    Ok(next.run(request).await)
 }
 
 #[cfg(test)]
@@ -110,12 +62,12 @@ mod tests {
     }
 
     #[test]
-    fn query_token_only_on_stream_and_outputs() {
+    fn rejects_query_credentials() {
         let request = Request::builder()
             .uri("/api/v1/jobs/1/events?token=a%20b")
             .body(axum::body::Body::empty())
             .unwrap();
-        assert_eq!(presented_token(&request).as_deref(), Some("a b"));
+        assert_eq!(presented_token(&request).as_deref(), None);
         let request = Request::builder()
             .uri("/api/v1/jobs/1?token=x")
             .body(axum::body::Body::empty())
@@ -127,5 +79,68 @@ mod tests {
             .body(axum::body::Body::empty())
             .unwrap();
         assert_eq!(presented_token(&request).as_deref(), Some("secret"));
+    }
+}
+
+#[derive(Clone)]
+pub struct Owner(pub String);
+
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
+struct Session {
+    token: String,
+    client_id: String,
+}
+
+pub struct Sessions {
+    path: std::path::PathBuf,
+    records: std::sync::Mutex<Vec<Session>>,
+}
+
+impl Sessions {
+    pub fn load(dir: &std::path::Path) -> std::io::Result<Self> {
+        let path = dir.join("sessions.json");
+        let records = match std::fs::read(&path) {
+            Ok(bytes) => serde_json::from_slice(&bytes)?,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Vec::new(),
+            Err(error) => return Err(error),
+        };
+        Ok(Self {
+            path,
+            records: std::sync::Mutex::new(records),
+        })
+    }
+
+    pub fn owner(&self, token: &str) -> Option<String> {
+        self.records
+            .lock()
+            .unwrap()
+            .iter()
+            .find(|session| constant_time_eq(token, &session.token))
+            .map(|session| session.client_id.clone())
+    }
+
+    pub fn pair(&self) -> std::io::Result<(String, String)> {
+        let mut records = self.records.lock().unwrap();
+        let session = Session {
+            token: format!("{}{}", crate::api::new_job_id(), crate::api::new_job_id()),
+            client_id: crate::api::new_job_id(),
+        };
+        let mut updated = records.clone();
+        updated.push(session.clone());
+        crate::durable::write(&self.path, &updated)?;
+        *records = updated;
+        Ok((session.token, session.client_id))
+    }
+
+    pub fn revoke(&self, owner: &str) -> std::io::Result<()> {
+        let mut records = self.records.lock().unwrap();
+        let updated: Vec<_> = records
+            .iter()
+            .filter(|record| record.client_id != owner)
+            .cloned()
+            .collect();
+        crate::durable::write(&self.path, &updated)?;
+        *records = updated;
+        Ok(())
     }
 }

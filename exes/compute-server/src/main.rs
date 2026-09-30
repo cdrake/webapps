@@ -38,7 +38,7 @@ struct ServeArgs {
     /// Socket address to listen on.
     #[arg(long, default_value = "0.0.0.0:8765")]
     listen: String,
-    /// Bearer token (default: read or generate <data-dir>/token).
+    /// Pairing code (default: read or generate <data-dir>/token).
     #[arg(long, env = "NEURODESK_COMPUTE_TOKEN")]
     token: Option<String>,
     /// Directory for jobs, token and TLS material (default: platform data dir).
@@ -246,7 +246,7 @@ async fn serve(args: ServeArgs) -> Result<(), String> {
     for url in listening_urls(&config, port) {
         println!("  {url}");
     }
-    println!("token:     {}", config.token);
+    println!("pair code: {}", config.token);
     println!("runner:    {}", config.runner.id());
     println!("image:     {}", config.image);
     println!("data dir:  {}", config.data_dir.display());
@@ -260,7 +260,7 @@ async fn serve(args: ServeArgs) -> Result<(), String> {
         println!("mode:      SIMULATED - results are placeholders, not reconstructions");
     }
     match &config.tls {
-        TlsMode::Insecure => println!("tls:       off (--insecure-http); https://webapps.neurodesk.org cannot call a plain-HTTP server"),
+        TlsMode::Insecure => println!("tls:       off (--insecure-http); use site-trusted HTTPS for supported clinical connections"),
         TlsMode::Site { .. } if resolved.self_signed => {
             println!("tls:       self-signed certificate ({})", config.data_dir.join("cert.pem").display());
             println!("           Open this URL once in the browser and accept the certificate before connecting from webapps.neurodesk.org");
@@ -271,7 +271,9 @@ async fn serve(args: ServeArgs) -> Result<(), String> {
     if let Some(dir) = &config.www {
         println!("www:       {}", dir.display());
     }
-    println!("press Ctrl+C to stop; job directories are removed at shutdown");
+    println!(
+        "press Ctrl+C to stop; active jobs stop at shutdown; results remain until retention expiry"
+    );
 
     wait_for_shutdown().await;
     println!("shutting down");
@@ -423,7 +425,7 @@ async fn doctor(args: ServeArgs) -> Result<(), String> {
     for url in listening_urls(&config, port) {
         println!("  {url}");
     }
-    println!("token: {}", config.token);
+    println!("pair code: {}", config.token);
     println!("data dir: {}", config.data_dir.display());
     if ok {
         Ok(())

@@ -41,6 +41,18 @@
       "outputs": [
         "dist/**"
       ]
+    },
+    "nesvor#build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "env": [
+        "NESVOR_MODEL_DIR",
+        "NESVOR_N4_DIR"
+      ],
+      "outputs": [
+        "dist/**"
+      ]
     }
   },
   "globalPassThroughEnv": [

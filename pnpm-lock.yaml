@@ -502,6 +502,12 @@ importers:
 
   apps/nesvor:
     dependencies:
+      '@neurodesk/nesvor':
+        specifier: workspace:*
+        version: link:../../packages/nesvor
+      '@neurodesk/runtime-support':
+        specifier: workspace:*
+        version: link:../../packages/runtime-support
       '@neurodesk/webapp-components':
         specifier: workspace:*
         version: link:../../packages/components
@@ -780,6 +786,12 @@ importers:
         version: 26.15.3(electron-builder-squirrel-windows@26.15.3)
 
   packages/greedy: {}
+
+  packages/nesvor:
+    dependencies:
+      onnxruntime-web:
+        specifier: 1.29.0
+        version: 1.29.0
 
   packages/registration: {}
 

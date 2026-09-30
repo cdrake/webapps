@@ -88,3 +88,9 @@ packages/greedy/native/
 
 # Example manifests staged for static development servers
 apps/*/web/examples.json
+
+# Generated NeSVoR browser runtime and externally stored frozen models
+/apps/nesvor/public/ort/
+/apps/nesvor/public/svort/
+
+/apps/nesvor/public/n4/

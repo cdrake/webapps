@@ -26,6 +26,7 @@ futures-util = "0.3"
 humantime = "2"
 if-addrs = "0.15"
 rand = "0.9"
+ring = "0.17"
 rcgen = { version = "0.14", default-features = false, features = ["crypto", "pem", "ring"] }
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12", "logging"] }
 serde = { version = "1", features = ["derive"] }

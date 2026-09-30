@@ -2670,10 +2670,39 @@
         "kind": "example"
       },
       {
-        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/31d4c410405c48fe76c7b1bcc2de3fb0361f6f17/examples/nesvor/svrtk-simulated-fetal/stack-d2_mask.nii.gz",
-        "sha256": "268b6f357b9dab05410c35ba7bd8c6fc341ec560d62cd9764476235bf521576d",
-        "bytes": 8381,
-        "kind": "example"
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/c5b3a2674369c0c619d726bb177a9c0a74d2e356/models/nesvor/svort-v2-730ddaa/svort-v2-step-0.onnx",
+        "sha256": "3edd3038d7c2627b89886934234171045a61a8953648120093fce72fe3fbaffb",
+        "bytes": 132123651,
+        "kind": "model",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/c5b3a2674369c0c619d726bb177a9c0a74d2e356/models/nesvor/svort-v2-730ddaa/svort-v2-step-1.onnx",
+        "sha256": "c98cd74338a0dcfff97a99973059ee33e94d08aed4794df8b0895aaf3d5733ae",
+        "bytes": 165837505,
+        "kind": "model",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/36936af3b61d369f9215e35975748f40dfd9a34b/nesvor/models/monaifbs-0.3.0-20260921/monaifbs.onnx",
+        "sha256": "b58dd7f3ff2c45aa30bb5cd74c19c64bf3cde14e8c79990f2883237dd797ec2d",
+        "bytes": 183169747,
+        "kind": "model",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/8ae6df3b7fb7b890a0fd4594ce3d63a3261a8b60/runtimes/nesvor/n4-itk-5.4.6-654e04600c4d/nesvor-n4.mjs",
+        "sha256": "ece05b066c5c0e2d25e09a339083ff3527870d43b4e9effcbd790495ab94a3cd",
+        "bytes": 93058,
+        "kind": "runtime",
+        "license": "Apache-2.0 AND MIT"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/8ae6df3b7fb7b890a0fd4594ce3d63a3261a8b60/runtimes/nesvor/n4-itk-5.4.6-654e04600c4d/nesvor-n4.wasm",
+        "sha256": "654e04600c4dd21f648bd1a288f6899b7ea21bdbe44ce927d3442a11430668af",
+        "bytes": 556448,
+        "kind": "runtime",
+        "license": "Apache-2.0 AND MIT"
       }
     ]
   },

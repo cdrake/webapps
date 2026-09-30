@@ -223,20 +223,17 @@ impl Tool for Nesvor {
             });
         }
 
+        let masks = stacks.iter().filter(|stack| stack.mask.is_some()).count();
+        if masks != 0 && masks != stacks.len() {
+            return Err(SpecError::new("supply masks for every stack or none"));
+        }
         let options = match object.get("options") {
             None | Some(Value::Null) => Map::new(),
             Some(Value::Object(options)) => validate_options(options)?,
             Some(_) => return Err(SpecError::new("'options' must be an object")),
         };
 
-        let mut warnings = Vec::new();
-        let masks_given = stacks.iter().filter(|stack| stack.mask.is_some()).count();
-        if masks_given > 0 && masks_given < stacks.len() {
-            warnings.push(format!(
-                "masks ignored: {masks_given} of {} stacks have a mask; --stack-masks needs one per stack",
-                stacks.len()
-            ));
-        }
+        let warnings = Vec::new();
 
         Ok(ValidatedJob {
             tool: tool.to_string(),
@@ -567,7 +564,7 @@ mod tests {
             "command": "reconstruct",
             "stacks": [
                 { "file": "stack-0", "thickness": 3.0, "mask": "mask-0" },
-                { "file": "stack-1", "thickness": 3.0 }
+                { "file": "stack-1", "thickness": 3.0, "mask": "mask-1" }
             ],
             "options": {
                 "outputResolution": 0.8,
@@ -593,6 +590,7 @@ mod tests {
             nifti_part("stack-0", true),
             nifti_part("stack-1", true),
             nifti_part("mask-0", true),
+            nifti_part("mask-1", false),
         ]
     }
 
@@ -605,7 +603,18 @@ mod tests {
         assert_eq!(job.stacks[0].mask.as_deref(), Some("mask-0"));
         assert_eq!(job.stacks[0].file_name, "stack-0.nii.gz");
         assert_eq!(job.options.len(), 14);
-        assert_eq!(job.warnings.len(), 1);
+        assert!(job.warnings.is_empty());
+    }
+
+    #[test]
+    fn rejects_partial_masks() {
+        let mut spec = example_spec();
+        spec["stacks"][1].as_object_mut().unwrap().remove("mask");
+        assert!(Nesvor
+            .validate(&spec, &example_parts())
+            .unwrap_err()
+            .message
+            .contains("every stack or none"));
     }
 
     #[test]
@@ -690,6 +699,7 @@ mod tests {
         let argv = Nesvor.argv(&job, &ToolPaths::container());
         let expected = "nesvor reconstruct \
             --input-stacks /job/in/stack-0.nii.gz /job/in/stack-1.nii.gz \
+            --stack-masks /job/in/mask-0.nii.gz /job/in/mask-1.nii \
             --thicknesses 3.0 3.0 \
             --output-volume /job/out/volume.nii.gz \
             --output-json /job/out/result.json \
@@ -709,6 +719,7 @@ mod tests {
         let mut spec = example_spec();
         spec["stacks"][1]["mask"] = json!("mask-1");
         let mut parts = example_parts();
+        parts.retain(|part| part.name != "mask-1");
         parts.push(nifti_part("mask-1", false));
         let job = Nesvor.validate(&spec, &parts).unwrap();
         assert!(job.warnings.is_empty());

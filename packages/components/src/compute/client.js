@@ -25,14 +25,41 @@ export class ComputeClient {
     return this.#json('GET', `${API}/info`, { signal });
   }
 
+  async pair(code, { signal } = {}) {
+    const session = await this.#json('POST', `${API}/pair`, {
+      body: JSON.stringify({ code }), signal, headers: { 'Content-Type': 'application/json' },
+    });
+    this.#token = session.token;
+    return session;
+  }
+
+  async disconnect() {
+    try {
+      const response = await this.#request('DELETE', `${API}/session`);
+      if (!response.ok) throw await this.#error(response);
+    } finally {
+      this.#token = '';
+    }
+  }
+
+  async jobs({ signal } = {}) {
+    return this.#json('GET', `${API}/jobs`, { signal });
+  }
+
   /** Submit a job: `files` maps multipart part names to Blobs. */
-  async submit(spec, files, { signal } = {}) {
+  async submit(spec, files, { signal, idempotencyKey = crypto.randomUUID() } = {}) {
     const body = new FormData();
     body.append('spec', new Blob([JSON.stringify(spec)], { type: 'application/json' }), 'spec.json');
     for (const [name, blob] of Object.entries(files)) {
       body.append(name, blob, blob.name || name);
     }
-    return this.#json('POST', `${API}/jobs`, { body, signal });
+    const submit = () => this.#json('POST', `${API}/jobs`, { body, signal, headers: { 'Idempotency-Key': idempotencyKey } });
+    try {
+      return await submit();
+    } catch (error) {
+      if (signal?.aborted || error instanceof ComputeError) throw error;
+      return submit();
+    }
   }
 
   async job(id, { signal } = {}) {
@@ -40,6 +67,10 @@ export class ComputeClient {
   }
 
   async cancel(id, { signal } = {}) {
+    return this.#json('POST', `${API}/jobs/${encodeURIComponent(id)}/cancel`, { signal });
+  }
+
+  async remove(id, { signal } = {}) {
     const response = await this.#request('DELETE', `${API}/jobs/${encodeURIComponent(id)}`, { signal });
     if (!response.ok && response.status !== 404) throw await this.#error(response);
   }
@@ -134,8 +165,9 @@ export class ComputeClient {
       }
       if (['succeeded', 'failed', 'cancelled'].includes(job.status)) return job;
       await new Promise((resolve, reject) => {
-        const timer = setTimeout(resolve, POLL_INTERVAL_MS);
-        signal?.addEventListener('abort', () => { clearTimeout(timer); reject(signal.reason); }, { once: true });
+        const abort = () => { clearTimeout(timer); reject(signal.reason); };
+        const timer = setTimeout(() => { signal?.removeEventListener('abort', abort); resolve(); }, POLL_INTERVAL_MS);
+        signal?.addEventListener('abort', abort, { once: true });
       });
     }
   }
@@ -147,7 +179,7 @@ export class ComputeClient {
   }
 
   async #request(method, path, { body, signal, headers = {} } = {}) {
-    const init = { method, signal, headers: { ...headers }, cache: 'no-store' };
+    const init = { method, signal, headers: { ...headers }, cache: 'no-store', credentials: 'omit', redirect: 'error' };
     if (this.#token) init.headers.Authorization = `Bearer ${this.#token}`;
     if (body) init.body = body;
     return this.#fetch(this.baseUrl + path, init);

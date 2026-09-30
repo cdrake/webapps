@@ -29,7 +29,7 @@ pub struct ReceivedPart {
 }
 
 /// One input stack of a validated job.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct StackInput {
     /// Part name of the stack.
     pub file: String,
@@ -44,7 +44,7 @@ pub struct StackInput {
 }
 
 /// A job specification that passed validation.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ValidatedJob {
     /// Tool identifier (`nesvor`).
     pub tool: String,

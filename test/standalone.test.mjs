@@ -81,3 +81,32 @@ test('standalone choices are ordered and omit technical clutter', () => {
 test('future apps automatically receive real offline workflow coverage on hosted CI', () => {
   assert.deepEqual(ciWorkflowApps({ apps: [{ id: 'future-app' }, { id: 'synthseg' }] }), ['future-app']);
 });
+
+test('compute server setup leads with download, startup and pairing for the current webapp origin', async () => {
+  const catalog = await loadStandalone(await loadAppsRegistry());
+  const app = structuredClone(catalog.apps.nesvor);
+  const filename = 'neurodesk-compute-0.1.20260921-linux-x64.tar.gz';
+  app.computeServer.download = { filename, url: `/nesvor/downloads/${filename}`, checksumUrl: `/nesvor/downloads/${filename}.sha256`, bytes: 28000000, sha256: 'a'.repeat(64), preview: true };
+  const dom = new JSDOM('<html><body></body></html>', { url: 'https://preview.example/nesvor/' });
+  const dialog = openStandalone({ title: 'NeSVoR', app }, dom.window.document);
+  const section = dialog.root.querySelector('section');
+  assert.equal(section.getAttribute('aria-labelledby'), 'standalone-compute');
+  assert.match(section.querySelector('a[download]').href, /neurodesk-compute-.*\.tar\.gz$/);
+  assert.match(section.textContent, /Preview build for testing/);
+  assert.match(section.querySelector('#compute-extract').textContent, /tar -xzf neurodesk-compute/);
+  assert.equal(section.querySelector('#compute-doctor').textContent, './neurodesk-compute doctor');
+  assert.equal(section.querySelector('#compute-start').textContent, "./start.sh --runner docker --allow-origin 'https://preview.example'");
+  assert.match(section.textContent, /Pairing code/);
+  assert.match(section.textContent, /port 8765/);
+  dom.window.close();
+});
+
+test('compute server setup does not fabricate an unpublished backend download', async () => {
+  const catalog = await loadStandalone(await loadAppsRegistry());
+  const dom = new JSDOM('<html><body></body></html>');
+  const dialog = openStandalone({ title: 'NeSVoR', app: catalog.apps.nesvor }, dom.window.document);
+  const section = dialog.root.querySelector('#standalone-compute').parentElement;
+  assert.match(section.textContent, /released backend download is not available/);
+  assert.equal(section.querySelector('a[download]'), null);
+  dom.window.close();
+});

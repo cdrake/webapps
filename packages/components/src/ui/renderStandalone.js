@@ -43,6 +43,56 @@ export function openStandalone({ title, app, suite, installed = false }, doc = g
     }
     root.append(row);
   };
+  if (app.computeServer) {
+    const server = app.computeServer;
+    const root = section('standalone-compute', 'Compute server · Linux with NVIDIA GPU',
+      'Install this on the Linux x86-64 machine that will process the scans. Keep the webapp open on the clinician’s computer.');
+    root.append(element('p', 'The compute machine needs an NVIDIA driver, Docker and NVIDIA Container Toolkit. Python and Node.js are not required.'));
+    const prerequisites = element('p');
+    prerequisites.append(element('a', 'NVIDIA Container Toolkit installation', { href: 'https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html' }));
+    root.append(prerequisites);
+    const download = server.download;
+    root.append(element('h4', '1. Download and extract on the compute machine'));
+    if (download) {
+      if (download.preview) root.append(element('p', 'Preview build for testing. Full reconstruction on an NVIDIA backend has not yet been validated.', { className: 'nd-message warning' }));
+      const links = element('p');
+      links.append(element('a', `Download Linux x86-64 backend (${(download.bytes / 1e6).toFixed(1)} MB)`, { href: download.url, download: download.filename }));
+      if (download.checksumUrl) links.append(doc.createTextNode(' · '), element('a', 'Checksum file', { href: download.checksumUrl }));
+      root.append(links);
+      root.append(element('p', 'In a terminal, open the folder where you saved the archive, then run:'));
+      command(root, 'compute-extract', `tar -xzf ${download.filename}\ncd ${download.filename.replace(/\.tar\.gz$/, '')}`);
+    } else {
+      const notice = element('p', 'A released backend download is not available yet. Preview deployments may provide a test archive here. ');
+      notice.append(element('a', 'Source and build instructions', { href: server.documentation }));
+      root.append(notice);
+      root.append(element('p', 'After extracting a backend archive, open a terminal inside its extracted folder.'));
+    }
+    root.append(element('h4', '2. Check the machine and download NeSVoR'));
+    command(root, 'compute-doctor', './neurodesk-compute doctor');
+    root.append(element('p', 'Resolve any reported Docker or NVIDIA setup problems. A missing NeSVoR image is expected before this next command, which downloads the pinned scientific container. This first download requires internet access and may take several minutes.'));
+    command(root, 'compute-pull', './neurodesk-compute pull --runner docker');
+    root.append(element('h4', '3. Start the server and leave the terminal open'));
+    const origin = doc.location?.origin;
+    const allowOrigin = origin && /^https?:\/\//.test(origin) ? ` --allow-origin '${origin.replaceAll("'", "'\\''")}'` : '';
+    command(root, 'compute-start', `./start.sh --runner docker${allowOrigin}`);
+    root.append(element('p', 'The terminal prints a listening address such as https://192.168.1.20:8765 and a pair code. Keep the server running. Ctrl+C stops it.'));
+    root.append(element('h4', '4. Connect from this webapp'));
+    const steps = element('ol');
+    for (const text of [
+      'On the clinician’s computer, open the printed server address once. For this test build, the default certificate is self-signed; trust it only after confirming it is your own server. A site-trusted certificate is needed for routine deployment.',
+      'Return to this webapp and select Remote NeSVoR (Linux NVIDIA). Enter the full https:// address, including :8765, in Compute server.',
+      'Copy the pair code from the server terminal into Pairing code and select Connect. The clinician’s computer must be able to reach the compute machine on port 8765.',
+    ]) steps.append(element('li', text));
+    root.append(steps);
+    const details = element('details');
+    details.append(element('summary', 'Certificates, network access and model readiness'));
+    details.append(element('p', 'Ask your network administrator to allow access from the clinician’s computer to the compute machine on TCP port 8765. Use its LAN address, not localhost, when the computers are separate.'));
+    details.append(element('p', 'To use a certificate supplied by your site, replace these example paths:'));
+    command(details, 'compute-tls', `./start.sh --runner docker${allowOrigin} --tls-cert /path/to/cert.pem --tls-key /path/to/key.pem`);
+    details.append(element('p', 'The archive includes the server and web frontend. Docker, NVIDIA drivers, the NeSVoR container and its model checkpoints are separate. Pulling the image alone has not yet been verified to provide every checkpoint; a successful connection does not establish reconstruction readiness.'));
+    details.append(element('a', 'Compute server documentation', { href: server.documentation }));
+    root.append(details);
+  }
   if (installed) content.append(element('p', 'Installed application. Models download when first used, unless a model pack is installed.'));
   if (app.containers.length) {
     const root = section('standalone-neurodesk', 'Neurodesk containers');

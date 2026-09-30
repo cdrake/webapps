@@ -1,5 +1,21 @@
 # @neurodesk/webapp-components
 
+## 0.5.1
+
+### Patch Changes
+
+- Put compute-server installation first in the shared Standalone dialog for NeSVoR. Show Linux/NVIDIA prerequisites, archive extraction, doctor and container download commands, startup with the current webapp origin, and address/pairing instructions. Support verified preview downloads without presenting them as published releases.
+
+## 0.5.0
+
+### Minor Changes
+
+- 94f7cac: Add the NeSVoR fetal slice-to-volume reconstruction app and the decoupled compute feature it needs. The app prepares stacks, thicknesses and protocol presets in the browser and sends the job to a `neurodesk-compute` server in the user's own network (`exes/compute-server`, Rust), which runs the pinned Neurodesk `nesvor` 0.5.0 container and streams progress back. The components package gains the remote compute client (`@neurodesk/webapp-components/compute`) and the `nd-compute-connection` sidebar panel; the desktop suite admits the origins listed in `NEURODESK_COMPUTE_ORIGINS`. The shared About statement is split into `builder` and a per-app overridable `execution` sentence.
+
+  Fix paired job ownership, durable recovery and retention, content-checked idempotency, and cancellation that waits for runner termination. Keep credentials out of local storage, recover jobs after tab reload, import DICOM locally, and preserve examination identity during uploads, viewing and processing. Package the Linux backend with the production frontend and add a real CUDA validation command.
+
+  Add an explicitly experimental browser CPU reference for small prealigned masked stacks, with per-case differentiable NeSVoR fitting, NIfTI output, provenance and worker cancellation. This is not the complete browser port: full SVoRT, WebGPU training, upstream numerical parity, and clinical-sized validation remain pending. Simulator tests do not establish scientific correctness.
+
 ## 0.4.4
 
 ### Patch Changes

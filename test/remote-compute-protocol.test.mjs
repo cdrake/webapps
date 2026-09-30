@@ -11,12 +11,16 @@ import { createComputeClient, ComputeError } from '../packages/components/src/co
 const external = process.env.COMPUTE_SERVER_URL;
 let server = null;
 let baseUrl = external;
-let token = process.env.COMPUTE_SERVER_TOKEN || 'test-token';
+const pairingCode = process.env.COMPUTE_SERVER_TOKEN || 'test-token';
+let token;
 
 before(async () => {
-  if (external) return;
-  server = await startReferenceServer({ token, stageDelayMs: 10 });
-  baseUrl = server.origin;
+  if (!external) {
+    server = await startReferenceServer({ token: pairingCode, stageDelayMs: 10 });
+    baseUrl = server.origin;
+  }
+  const session = await createComputeClient({ baseUrl }).pair(pairingCode);
+  token = session.token;
 });
 
 after(async () => {
@@ -37,7 +41,7 @@ test('info answers without a token and adds tools with one', async () => {
   const anonymous = await createComputeClient({ baseUrl }).info();
   assert.equal(anonymous.service, 'neurodesk-compute');
   assert.equal(anonymous.protocol, 1);
-  assert.equal(anonymous.auth, 'bearer');
+  assert.equal(anonymous.auth, 'pairing');
   assert.equal(anonymous.tools, undefined);
   const full = await createComputeClient({ baseUrl, token }).info();
   assert.equal(full.tools[0].id, 'nesvor');
@@ -100,7 +104,7 @@ test('a job streams status, progress, log and done, then serves its outputs', as
   assert.equal(result.simulated, detail.simulated);
   const log = await (await client.output(submitted.id, 'log.txt')).text();
   assert.match(log, /nesvor/);
-  await client.cancel(submitted.id);
+  await client.remove(submitted.id);
   await assert.rejects(client.job(submitted.id), error => error.status === 404 && error.code === 'not-found');
 });
 
@@ -112,7 +116,7 @@ test('cancelling a running job ends the watch with a cancelled error', async () 
       if (event.status === 'running') void client.cancel(submitted.id);
     },
   });
-  await assert.rejects(watching, error => error instanceof ComputeError && ['cancelled', 'not-found'].includes(error.code));
+  await assert.rejects(watching, error => error instanceof ComputeError && error.code === 'cancelled');
 });
 
 test('invalid specs and non-NIfTI uploads are refused as invalid-spec', async () => {
@@ -129,7 +133,7 @@ test('outputs of unknown jobs and unknown names are not found', async () => {
   const submitted = await client.submit(spec(), { 'stack-0': stackA(), 'stack-1': stackB() });
   await client.watch(submitted.id);
   await assert.rejects(client.output(submitted.id, 'secret.txt'), error => error.status === 404);
-  await client.cancel(submitted.id);
+  await client.remove(submitted.id);
 });
 
 test('gunzipped output is a NIfTI-1 volume', async () => {
@@ -140,5 +144,72 @@ test('gunzipped output is a NIfTI-1 volume', async () => {
   const raw = gunzipSync(bytes);
   assert.equal(raw.readInt32LE(0), 348);
   assert.equal(raw.toString('latin1', 344, 347), 'n+1');
-  await client.cancel(submitted.id);
+  await client.remove(submitted.id);
+});
+
+test('pairing code and URL credentials never authorize patient operations', async () => {
+  const installation = createComputeClient({ baseUrl, token: pairingCode });
+  await assert.rejects(installation.jobs(), error => error.status === 401);
+  const response = await fetch(`${baseUrl}/api/v1/jobs?token=${encodeURIComponent(token)}`);
+  assert.equal(response.status, 401);
+});
+
+test('paired clients own separate jobs and revocation invalidates the credential', async () => {
+  const other = createComputeClient({ baseUrl });
+  const credential = await other.pair(pairingCode);
+  const client = createComputeClient({ baseUrl, token });
+  const submitted = await client.submit(spec(), { 'stack-0': stackA(), 'stack-1': stackB() });
+  assert.ok((await client.jobs()).jobs.some(job => job.id === submitted.id));
+  assert.ok(!(await other.jobs()).jobs.some(job => job.id === submitted.id));
+  for (const action of [() => other.job(submitted.id), () => other.cancel(submitted.id), () => other.output(submitted.id, 'volume.nii.gz')]) {
+    await assert.rejects(action(), error => error.status === 404);
+  }
+  const deletion = await fetch(`${baseUrl}/api/v1/jobs/${submitted.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${credential.token}` } });
+  assert.equal(deletion.status, 404);
+  const events = await fetch(`${baseUrl}/api/v1/jobs/${submitted.id}/events`, { headers: { Authorization: `Bearer ${credential.token}` } });
+  assert.equal(events.status, 404);
+  await other.disconnect();
+  await assert.rejects(createComputeClient({ baseUrl, token: credential.token }).jobs(), error => error.status === 401);
+  await client.watch(submitted.id);
+  await client.remove(submitted.id);
+});
+
+test('concurrent retries with the same key produce one owned job', async () => {
+  const client = createComputeClient({ baseUrl, token });
+  const idempotencyKey = crypto.randomUUID();
+  const receipts = await Promise.all(Array.from({ length: 3 }, () => client.submit(spec(), { 'stack-0': stackA(), 'stack-1': stackB() }, { idempotencyKey })));
+  assert.equal(new Set(receipts.map(receipt => receipt.id)).size, 1);
+  assert.equal((await client.jobs()).jobs.filter(job => job.id === receipts[0].id).length, 1);
+  await client.watch(receipts[0].id);
+  const retry = await client.submit(spec(), { 'stack-0': stackA(), 'stack-1': stackB() }, { idempotencyKey });
+  assert.equal(retry.id, receipts[0].id);
+  await client.remove(receipts[0].id);
+});
+
+test('submission requires an idempotency key and live jobs cannot be deleted', async () => {
+  const client = createComputeClient({ baseUrl, token });
+  const missing = await fetch(`${baseUrl}/api/v1/jobs`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+  assert.equal(missing.status, 400);
+  const job = await client.submit(spec(), { 'stack-0': stackA(), 'stack-1': stackB() });
+  await assert.rejects(client.remove(job.id), error => error.status === 409);
+  const cancelling = await client.cancel(job.id);
+  assert.ok(['cancelling', 'cancelled'].includes(cancelling.status));
+  await assert.rejects(client.watch(job.id), error => error.code === 'cancelled');
+  assert.equal((await client.job(job.id)).status, 'cancelled');
+  await client.remove(job.id);
+});
+
+test('disallowed origins cannot pair or mutate state', async () => {
+  const response = await fetch(`${baseUrl}/api/v1/pair`, { method: 'POST', headers: { Origin: 'https://evil.example', 'Content-Type': 'application/json' }, body: JSON.stringify({ code: pairingCode }) });
+  assert.equal(response.status, 403);
+});
+
+test('reusing an idempotency key with changed content is a conflict', async () => {
+  const client = createComputeClient({ baseUrl, token });
+  const idempotencyKey = crypto.randomUUID();
+  const submitted = await client.submit(spec(), { 'stack-0': stackA(), 'stack-1': stackB() }, { idempotencyKey });
+  await assert.rejects(client.submit(spec({ options: { registration: 'none', iterations: 400 } }), { 'stack-0': stackA(), 'stack-1': stackB() }, { idempotencyKey }), error => error.status === 409 && error.code === 'conflict');
+  await assert.rejects(client.submit(spec(), { 'stack-0': stackB(), 'stack-1': stackB() }, { idempotencyKey }), error => error.status === 409 && error.code === 'conflict');
+  await client.watch(submitted.id);
+  await client.remove(submitted.id);
 });

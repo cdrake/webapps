@@ -3,15 +3,7 @@ import { createComputeClient, describeConnectionError, normalizeBaseUrl } from '
 
 let nextId = 0;
 
-/**
- * `nd-compute-connection`: the sidebar panel through which a webapp names the
- * compute server that runs its method. Built from the shared field, row,
- * button and message vocabulary only. Remembers the address and token in
- * localStorage under `storage-key`, reads a `?token=` query parameter once
- * (the server prints such a link when it serves the app itself), and probes
- * the page's own origin so an app served by the compute server connects to it
- * without typing.
- */
+/** Paired credentials live in tab session storage and are cleared on disconnect. */
 export function defineComputeConnection(view = globalThis.window) {
   return defineElement('nd-compute-connection', window => class extends window.HTMLElement {
     static observedAttributes = ['disabled'];
@@ -141,17 +133,27 @@ export function defineComputeConnection(view = globalThis.window) {
       }
       this.#address.value = baseUrl;
       this.#set('connecting', `Connecting to ${new URL(baseUrl).host}…`);
-      const client = this.#createClient({ baseUrl, token: this.#token.value.trim(), fetch: this.#fetch || undefined });
+      const pairingCode = this.#token.value.trim();
+      const savedToken = this.#session(baseUrl);
+      const client = this.#createClient({ baseUrl, token: savedToken, fetch: this.#fetch || undefined });
       try {
+        if (!savedToken) {
+          await client.pair(pairingCode, { signal: controller.signal });
+          this.#session(baseUrl, client.token);
+          this.#token.value = '';
+        }
         const info = await client.info({ signal: controller.signal });
         if (controller.signal.aborted) return null;
         if (info?.service !== 'neurodesk-compute') throw new Error(`${baseUrl} is not a Neurodesk compute server`);
         if (!Array.isArray(info.tools)) {
-          this.#set('error', this.#token.value.trim()
+          this.#session(baseUrl, '');
+          this.#set('error', pairingCode || savedToken
             ? 'The server rejected the access token. Copy the token printed when the server started.'
             : 'The server needs an access token. Copy the token printed when the server started.');
           return null;
         }
+        this.#token.value = '';
+        this.#session(baseUrl, client.token);
         this.#client = client;
         this.#info = info;
         this.#persist();
@@ -159,17 +161,27 @@ export function defineComputeConnection(view = globalThis.window) {
         return client;
       } catch (error) {
         if (controller.signal.aborted) return null;
+        if (error.status === 401) this.#session(baseUrl, '');
         const pageOrigin = this.ownerDocument.defaultView?.location?.origin || '';
         this.#set('error', describeConnectionError(error, { pageOrigin, baseUrl }).message);
         return null;
       }
     }
 
-    disconnect() {
+    async disconnect() {
       this.#controller?.abort();
+      const client = this.#client;
+      if (client) this.#session(client.baseUrl, '');
+      this.#token.value = '';
+      this.#persist();
       this.#client = null;
       this.#info = null;
       this.#set('idle', 'Not connected. Reconstruction runs on the compute server you name here.');
+      try {
+        await client?.disconnect();
+      } catch (error) {
+        this.#show('warning', `Local credentials cleared. Server session revocation failed: ${error.message}`);
+      }
     }
 
     setDisabled(value) {
@@ -193,30 +205,39 @@ export function defineComputeConnection(view = globalThis.window) {
       try {
         const saved = storage ? JSON.parse(storage.getItem(key) || 'null') : null;
         if (saved?.address) this.#address.value = saved.address;
-        if (saved?.token) this.#token.value = saved.token;
+        this.#persist();
       } catch {
         storage?.removeItem(key);
       }
       if (location?.search) {
         const params = new URLSearchParams(location.search);
-        const token = params.get('token');
-        if (token) {
-          this.#token.value = token;
-          if (!this.#address.value) this.#address.value = location.origin;
+        if (params.has('token')) {
           params.delete('token');
           const query = params.toString();
           this.ownerDocument.defaultView.history?.replaceState(null, '', `${location.pathname}${query ? `?${query}` : ''}${location.hash}`);
-          this.#persist();
         }
       }
       if (!this.#address.value) void this.detect();
+      else if (this.#session(this.#address.value)) this.#show('info', 'A paired session is available in this tab. Connect to recover its jobs.');
+    }
+
+    #session(baseUrl, token) {
+      try {
+        const storage = this.ownerDocument.defaultView.sessionStorage;
+        const key = `${this.getAttribute('storage-key') || 'nd-compute-connection'}.session.${baseUrl}`;
+        if (token === '') storage.removeItem(key);
+        else if (token !== undefined) storage.setItem(key, token);
+        return storage.getItem(key) || '';
+      } catch {
+        return '';
+      }
     }
 
     #persist() {
       const storage = this.#storage();
       if (!storage) return;
       const key = this.getAttribute('storage-key') || 'nd-compute-connection';
-      storage.setItem(key, JSON.stringify({ address: this.#address.value, token: this.#token.value }));
+      storage.setItem(key, JSON.stringify({ address: this.#address.value }));
     }
 
     #storage() {
@@ -307,7 +328,7 @@ export function defineComputeConnection(view = globalThis.window) {
       this.#detail.hidden = true;
       this.append(
         field('Server address', this.#address, 'The address printed when neurodesk-compute starts, for example https://192.168.1.20:8765.'),
-        field('Access token', this.#token),
+        field('Pairing code', this.#token),
         row,
         this.#message,
         this.#detail,

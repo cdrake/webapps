@@ -63,6 +63,9 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     await expect(selector).toBeEnabled({ timeout: 120000 });
     await selector.selectOption(examples[0].id);
     await expect(page.locator('[data-neurodesk-examples]')).toHaveAttribute('data-example-state', 'ready', { timeout: 120000 });
+    await page.locator('#executionMode').selectOption('remote');
+    await page.locator('#thicknessConfirmed').check();
+    await expect(page.locator('#stackRows input[type=number]')).toHaveCount(examples[0].files.length);
     const panel = page.locator('#computeConnection');
     await panel.locator('input[type="text"]').fill(compute.origin);
     await panel.locator('input[type="password"]').fill(compute.token);
@@ -73,6 +76,11 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     const button = '#resultList button:has-text("Download") >> nth=0';
     await expect(page.locator(button)).toBeEnabled({ timeout: 300000 });
     const result = nifti(await download(button));
+    const credentialPersisted = await page.evaluate(code => Object.values(localStorage).some(value => value.includes(code) || /"token"\s*:/.test(value)), compute.token);
+    assert.equal(credentialPersisted, false, 'Pairing codes and client credentials must not be saved to localStorage');
+    await panel.getByRole('button', { name: 'Disconnect', exact: true }).click();
+    await expect(panel).toHaveAttribute('data-state', 'idle');
+    await expect(panel.locator('input[type="password"]')).toHaveValue('');
     return { ...result, simulated: true };
   }
   if (id === 'musclemap') return verifyMuscleMapFullPipeline(page, page.url());

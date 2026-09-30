@@ -17,6 +17,7 @@ const TOKEN: &str = "test-token";
 
 struct TestServer {
     running: Running,
+    token: String,
     _data_dir: tempfile::TempDir,
     client: reqwest::Client,
 }
@@ -27,7 +28,18 @@ impl TestServer {
         let mut config = ServeConfig::simulated(data_dir.path().to_path_buf(), TOKEN);
         configure(&mut config);
         let running = server::start(config).await.expect("server starts");
+        let client = reqwest::Client::new();
+        let paired: Value = client
+            .post(format!("{}/api/v1/pair", running.base_url("http")))
+            .json(&json!({"code": TOKEN}))
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
         TestServer {
+            token: paired["token"].as_str().unwrap().to_owned(),
             running,
             _data_dir: data_dir,
             client: reqwest::Client::new(),
@@ -43,10 +55,20 @@ impl TestServer {
     }
 
     fn get(&self, path: &str) -> reqwest::RequestBuilder {
-        self.client.get(self.url(path)).bearer_auth(TOKEN)
+        self.client.get(self.url(path)).bearer_auth(&self.token)
     }
 
     async fn post_job(&self, spec: &Value, files: &[(&str, Vec<u8>)]) -> reqwest::Response {
+        self.post_key(spec, files, &compute_server::api::new_job_id())
+            .await
+    }
+
+    async fn post_key(
+        &self,
+        spec: &Value,
+        files: &[(&str, Vec<u8>)],
+        key: &str,
+    ) -> reqwest::Response {
         let mut form = Form::new().part(
             "spec",
             Part::text(spec.to_string())
@@ -61,7 +83,8 @@ impl TestServer {
         }
         self.client
             .post(self.url("/api/v1/jobs"))
-            .bearer_auth(TOKEN)
+            .bearer_auth(&self.token)
+            .header("Idempotency-Key", key)
             .multipart(form)
             .send()
             .await
@@ -187,7 +210,7 @@ async fn info_and_auth() {
         .unwrap();
     assert_eq!(anonymous["service"], "neurodesk-compute");
     assert_eq!(anonymous["protocol"], 1);
-    assert_eq!(anonymous["auth"], "bearer");
+    assert_eq!(anonymous["auth"], "pairing");
     assert!(anonymous.get("tools").is_none());
 
     let response = server.get("/api/v1/info").send().await.unwrap();
@@ -262,7 +285,7 @@ async fn cors_preflight() {
     );
     assert_eq!(
         headers["access-control-allow-headers"],
-        "Authorization, Content-Type"
+        "Authorization, Content-Type, Idempotency-Key"
     );
     assert_eq!(
         headers["access-control-allow-methods"],
@@ -333,7 +356,8 @@ async fn full_job_lifecycle() {
 
     let response = server
         .client
-        .get(server.url(&format!("/api/v1/jobs/{id}/events?token={TOKEN}")))
+        .get(server.url(&format!("/api/v1/jobs/{id}/events")))
+        .bearer_auth(&server.token)
         .send()
         .await
         .unwrap();
@@ -446,9 +470,8 @@ async fn full_job_lifecycle() {
 
     let response = server
         .client
-        .get(server.url(&format!(
-            "/api/v1/jobs/{id}/outputs/result.json?token={TOKEN}"
-        )))
+        .get(server.url(&format!("/api/v1/jobs/{id}/outputs/result.json")))
+        .bearer_auth(&server.token)
         .send()
         .await
         .unwrap();
@@ -481,7 +504,7 @@ async fn full_job_lifecycle() {
     let response = server
         .client
         .delete(server.url(&format!("/api/v1/jobs/{id}")))
-        .bearer_auth(TOKEN)
+        .bearer_auth(&server.token)
         .send()
         .await
         .unwrap();
@@ -495,7 +518,7 @@ async fn full_job_lifecycle() {
     let response = server
         .client
         .delete(server.url(&format!("/api/v1/jobs/{id}")))
-        .bearer_auth(TOKEN)
+        .bearer_auth(&server.token)
         .send()
         .await
         .unwrap();
@@ -526,12 +549,12 @@ async fn cancel_running_job() {
     tokio::time::sleep(Duration::from_millis(120)).await;
     let response = server
         .client
-        .delete(server.url(&format!("/api/v1/jobs/{id}")))
-        .bearer_auth(TOKEN)
+        .post(server.url(&format!("/api/v1/jobs/{id}/cancel")))
+        .bearer_auth(&server.token)
         .send()
         .await
         .unwrap();
-    assert_eq!(response.status(), StatusCode::NO_CONTENT);
+    assert_eq!(response.status(), StatusCode::OK);
 
     let events = tokio::time::timeout(Duration::from_secs(10), reader)
         .await
@@ -548,7 +571,7 @@ async fn cancel_running_job() {
         .send()
         .await
         .unwrap();
-    assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    assert_eq!(response.status(), StatusCode::OK);
 
     server.stop().await;
 }
@@ -617,7 +640,7 @@ async fn invalid_specs() {
     let response = server
         .client
         .post(server.url("/api/v1/jobs"))
-        .bearer_auth(TOKEN)
+        .bearer_auth(&server.token)
         .body("{}")
         .send()
         .await
@@ -628,7 +651,7 @@ async fn invalid_specs() {
     let response = server
         .client
         .post(server.url("/api/v1/jobs"))
-        .bearer_auth(TOKEN)
+        .bearer_auth(&server.token)
         .multipart(form)
         .send()
         .await
@@ -699,5 +722,232 @@ async fn static_www() {
         .await
         .unwrap();
     assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    server.stop().await;
+}
+
+#[tokio::test]
+async fn owners_idempotency_revocation_and_origin_rejection() {
+    let server = TestServer::start().await;
+    let paired: Value = server
+        .client
+        .post(server.url("/api/v1/pair"))
+        .json(&json!({"code": TOKEN}))
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    let other = paired["token"].as_str().unwrap();
+    let files = [("stack-0", nifti_gz(1.0))];
+    let job_spec = spec(1, 3000);
+    let (a, b) = tokio::join!(
+        server.post_key(&job_spec, &files, "lost-receipt"),
+        server.post_key(&job_spec, &files, "lost-receipt")
+    );
+    let a: Value = a.json().await.unwrap();
+    let b: Value = b.json().await.unwrap();
+    assert_eq!(a["id"], b["id"]);
+    assert_eq!(
+        server
+            .post_key(&spec(1, 4000), &files, "lost-receipt")
+            .await
+            .status(),
+        StatusCode::CONFLICT
+    );
+    assert_eq!(
+        server
+            .post_key(&job_spec, &[("stack-0", nifti_gz(9.0))], "lost-receipt")
+            .await
+            .status(),
+        StatusCode::CONFLICT
+    );
+    let id = a["id"].as_str().unwrap();
+    assert_eq!(
+        server
+            .client
+            .get(server.url("/api/v1/jobs"))
+            .bearer_auth(TOKEN)
+            .send()
+            .await
+            .unwrap()
+            .status(),
+        StatusCode::UNAUTHORIZED
+    );
+    for path in [
+        format!("/api/v1/jobs/{id}"),
+        format!("/api/v1/jobs/{id}/events"),
+        format!("/api/v1/jobs/{id}/outputs/volume.nii.gz"),
+    ] {
+        assert_eq!(
+            server
+                .client
+                .get(server.url(&path))
+                .bearer_auth(other)
+                .send()
+                .await
+                .unwrap()
+                .status(),
+            StatusCode::NOT_FOUND
+        );
+        assert_eq!(
+            server
+                .client
+                .get(format!("{}?token={}", server.url(&path), server.token))
+                .send()
+                .await
+                .unwrap()
+                .status(),
+            StatusCode::UNAUTHORIZED
+        );
+    }
+    assert_eq!(
+        server
+            .client
+            .post(server.url(&format!("/api/v1/jobs/{id}/cancel")))
+            .bearer_auth(other)
+            .send()
+            .await
+            .unwrap()
+            .status(),
+        StatusCode::NOT_FOUND
+    );
+    assert_eq!(
+        server
+            .client
+            .delete(server.url(&format!("/api/v1/jobs/{id}")))
+            .bearer_auth(other)
+            .send()
+            .await
+            .unwrap()
+            .status(),
+        StatusCode::NOT_FOUND
+    );
+    assert_eq!(
+        server
+            .client
+            .post(server.url("/api/v1/pair"))
+            .header("Origin", "https://evil.example")
+            .json(&json!({"code": TOKEN}))
+            .send()
+            .await
+            .unwrap()
+            .status(),
+        StatusCode::FORBIDDEN
+    );
+    let mine: Value = server
+        .get("/api/v1/jobs")
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    assert_eq!(mine["jobs"].as_array().unwrap().len(), 1);
+    let theirs: Value = server
+        .client
+        .get(server.url("/api/v1/jobs"))
+        .bearer_auth(other)
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    assert_eq!(theirs["jobs"].as_array().unwrap().len(), 0);
+    assert_eq!(
+        server
+            .client
+            .delete(server.url("/api/v1/session"))
+            .bearer_auth(other)
+            .send()
+            .await
+            .unwrap()
+            .status(),
+        StatusCode::NO_CONTENT
+    );
+    assert_eq!(
+        server
+            .client
+            .get(server.url("/api/v1/jobs"))
+            .bearer_auth(other)
+            .send()
+            .await
+            .unwrap()
+            .status(),
+        StatusCode::UNAUTHORIZED
+    );
+    server.stop().await;
+}
+
+#[tokio::test]
+async fn restart_preserves_results_identity_and_retention() {
+    let mut server = TestServer::start().await;
+    let files = [("stack-0", nifti_gz(1.0))];
+    let receipt: Value = server
+        .post_key(&spec(1, 100), &files, "restart-key")
+        .await
+        .json()
+        .await
+        .unwrap();
+    let id = receipt["id"].as_str().unwrap();
+    wait_for_status(&server, id, "succeeded").await;
+    server.running.shutdown().await;
+    let root = server._data_dir.path().join("jobs");
+    std::fs::create_dir_all(root.join("orphan/in")).unwrap();
+    std::fs::write(root.join("orphan/in/patient"), "unacknowledged upload").unwrap();
+    server.running = server::start(ServeConfig::simulated(
+        server._data_dir.path().to_path_buf(),
+        TOKEN,
+    ))
+    .await
+    .unwrap();
+    let result = server
+        .get(&format!("/api/v1/jobs/{id}/outputs/volume.nii.gz"))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(result.status(), StatusCode::OK);
+    let retry: Value = server
+        .post_key(&spec(1, 100), &files, "restart-key")
+        .await
+        .json()
+        .await
+        .unwrap();
+    assert_eq!(retry["id"], id);
+    assert!(!root.join("orphan").exists());
+    server.running.shutdown().await;
+    let path = root.join(id).join("job.json");
+    let mut record: Value = serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+    record["view"]["status"] = json!("running");
+    record["view"]["finishedAt"] = Value::Null;
+    std::fs::write(&path, serde_json::to_vec(&record).unwrap()).unwrap();
+    server.running = server::start(ServeConfig::simulated(
+        server._data_dir.path().to_path_buf(),
+        TOKEN,
+    ))
+    .await
+    .unwrap();
+    let interrupted = wait_for_status(&server, id, "failed").await;
+    assert_eq!(interrupted["error"]["code"], "interrupted");
+    server.running.shutdown().await;
+    let mut config = ServeConfig::simulated(server._data_dir.path().to_path_buf(), TOKEN);
+    config.retain = Duration::ZERO;
+    server.running = server::start(config).await.unwrap();
+    server.running.store.sweep().await;
+    assert!(!root.join(id).exists());
+    server.stop().await;
+}
+
+#[tokio::test]
+async fn a_second_server_cannot_reconcile_an_active_data_directory() {
+    let server = TestServer::start().await;
+    let config = ServeConfig::simulated(server._data_dir.path().to_path_buf(), TOKEN);
+    assert!(server::start(config)
+        .await
+        .err()
+        .unwrap()
+        .to_string()
+        .contains("already in use"));
     server.stop().await;
 }

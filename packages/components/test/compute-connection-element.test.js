@@ -15,6 +15,8 @@ function fakeClient(info, { reject } = {}) {
     calls.push(options);
     return {
       baseUrl: options.baseUrl,
+      async pair(code) { options.code = code; },
+      async disconnect() { options.revoked = true; },
       async info() {
         if (reject) throw reject;
         return typeof info === 'function' ? info(options) : info;
@@ -62,7 +64,8 @@ test('connect validates the address, stores it, and exposes the client on succes
   const client = await panel.connect();
   assert.ok(client);
   assert.equal(calls.at(-1).baseUrl, 'https://192.168.1.20:8765');
-  assert.equal(calls.at(-1).token, 'secret');
+  assert.equal(calls.at(-1).code, 'secret');
+  assert.equal(panel.token, '');
   assert.equal(panel.state, 'connected');
   assert.equal(panel.client, client);
   assert.match(panel.message.textContent, /Connected to 192\.168\.1\.20:8765/);
@@ -71,9 +74,10 @@ test('connect validates the address, stores it, and exposes the client on succes
   assert.equal(panel.message.className, 'nd-message success');
   assert.equal(panel.addressInput.disabled, true);
   assert.equal(panel.querySelector('.nd-row button:not([hidden])').textContent, 'Disconnect');
-  assert.deepEqual(JSON.parse(window.localStorage.getItem('test')), { address: 'https://192.168.1.20:8765', token: 'secret' });
+  assert.deepEqual(JSON.parse(window.localStorage.getItem('test')), { address: 'https://192.168.1.20:8765' });
   assert.deepEqual(states, ['error', 'connecting', 'connected']);
-  panel.disconnect();
+  await panel.disconnect();
+  assert.equal(calls.at(-1).revoked, true);
   assert.equal(panel.state, 'idle');
   assert.equal(panel.client, null);
   assert.equal(panel.addressInput.disabled, false);
@@ -117,17 +121,17 @@ test('network failures are explained from the two origins', async () => {
   assert.match(panel.message.textContent, /accept the certificate/);
 });
 
-test('a token in the page URL is adopted once and removed from the address bar', async () => {
+test('a token in the page URL is discarded and removed from the address bar', async () => {
   const window = setup('http://192.168.1.20:8765/?token=abc123&x=1#top');
   const detected = fakeClient({ service: 'neurodesk-compute' });
   const panel = createComputeConnection({ storageKey: 'd', createClient: detected.createClient }, window.document);
   window.document.body.append(panel);
   await tick();
-  assert.equal(panel.token, 'abc123');
+  assert.equal(panel.token, '');
   assert.equal(panel.address, 'http://192.168.1.20:8765');
   assert.equal(window.location.search, '?x=1');
   assert.equal(window.location.hash, '#top');
-  assert.deepEqual(JSON.parse(window.localStorage.getItem('d')), { address: 'http://192.168.1.20:8765', token: 'abc123' });
+  assert.deepEqual(JSON.parse(window.localStorage.getItem('d')), { address: 'http://192.168.1.20:8765' });
 });
 
 test('a page served by a compute server adopts its own origin', async () => {
@@ -154,9 +158,38 @@ test('saved connections are restored and disabled panels stay inert', async () =
   window.document.body.append(panel);
   await tick();
   assert.equal(panel.address, 'https://a:8765');
-  assert.equal(panel.token, 'x');
+  assert.equal(panel.token, '');
+  assert.equal(JSON.parse(window.localStorage.getItem('g')).token, undefined);
   assert.equal(panel.addressInput.disabled, true);
   assert.equal(panel.querySelector('.nd-row button').disabled, true);
   panel.setDisabled(false);
   assert.equal(panel.addressInput.disabled, false);
+});
+
+test('reload reuses a tab credential and disconnect removes it', async () => {
+  const window = setup();
+  let pairings = 0;
+  let revoked = false;
+  const createClient = options => ({
+    baseUrl: options.baseUrl,
+    token: options.token || '',
+    async pair() { pairings += 1; this.token = 'tab-secret'; },
+    async info() { return { service: 'neurodesk-compute', tools: [], gpu: {} }; },
+    async disconnect() { revoked = true; },
+  });
+  const first = createComputeConnection({ storageKey: 'reload', autodetect: false, createClient }, window.document);
+  window.document.body.append(first);
+  first.address = 'https://clinic:8765';
+  first.token = 'install';
+  await first.connect();
+  first.remove();
+  const next = createComputeConnection({ storageKey: 'reload', autodetect: false, createClient }, window.document);
+  window.document.body.append(next);
+  await next.connect();
+  assert.equal(pairings, 1);
+  assert.equal(next.client.token, 'tab-secret');
+  assert.equal(window.localStorage.getItem('reload').includes('secret'), false);
+  await next.disconnect();
+  assert.equal(window.sessionStorage.length, 0);
+  assert.equal(revoked, true);
 });

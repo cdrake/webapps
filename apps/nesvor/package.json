@@ -1,11 +1,11 @@
 {
   "name": "nesvor",
-  "version": "0.0.20260921",
+  "version": "0.3.20260930",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build && node ../../scripts/theme-app-dist.mjs --app nesvor",
+    "dev": "node ../../scripts/stage-nesvor-runtime.mjs && vite",
+    "build": "node ../../scripts/stage-nesvor-runtime.mjs && vite build && node ../../scripts/theme-app-dist.mjs --app nesvor",
     "preview": "vite preview",
     "test": "node --test test/*.test.js",
     "test:e2e": "playwright test",
@@ -13,7 +13,9 @@
   },
   "dependencies": {
     "@neurodesk/webapp-components": "workspace:*",
-    "@niivue/niivue": "1.0.0-rc.13"
+    "@niivue/niivue": "1.0.0-rc.13",
+    "@neurodesk/runtime-support": "workspace:*",
+    "@neurodesk/nesvor": "workspace:*"
   },
   "devDependencies": {
     "@playwright/test": "^1.44.0",

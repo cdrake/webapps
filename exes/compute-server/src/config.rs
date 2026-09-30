@@ -64,7 +64,7 @@ pub struct GpuInfo {
 pub struct ServeConfig {
     /// Socket address to bind, e.g. `0.0.0.0:8765`.
     pub listen: String,
-    /// Bearer token every API request must carry.
+    /// Installation pairing code; cannot authorize patient APIs.
     pub token: String,
     /// Directory holding jobs, the token and TLS material.
     pub data_dir: PathBuf,

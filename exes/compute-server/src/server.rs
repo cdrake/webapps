@@ -21,6 +21,7 @@ pub struct Running {
     pub store: Arc<JobStore>,
     handle: JoinHandle<io::Result<()>>,
     shutdown: CancellationToken,
+    _data_lock: std::fs::File,
 }
 
 impl Running {
@@ -29,17 +30,24 @@ impl Running {
         format!("{scheme}://{}", self.addr)
     }
 
-    /// Stops the listener, cancels every job and removes all job directories.
-    pub async fn shutdown(self) {
-        self.store.shutdown().await;
+    /// Stops the listener and active jobs; retains finished results.
+    pub async fn shutdown(mut self) {
         self.shutdown.cancel();
-        let _ = self.handle.await;
+        self.store.shutdown().await;
+        if tokio::time::timeout(std::time::Duration::from_secs(2), &mut self.handle)
+            .await
+            .is_err()
+        {
+            self.handle.abort();
+        }
     }
 }
 
 /// Builds the complete application router.
-pub fn app(config: Arc<ServeConfig>, store: Arc<JobStore>) -> Router {
+pub fn app(config: Arc<ServeConfig>, store: Arc<JobStore>) -> io::Result<Router> {
     let state = AppState {
+        sessions: Arc::new(crate::auth::Sessions::load(&config.data_dir)?),
+        submissions: Arc::new(api::SubmissionLocks::default()),
         config: config.clone(),
         store,
         tools: Arc::new(tools::registry()),
@@ -48,28 +56,48 @@ pub fn app(config: Arc<ServeConfig>, store: Arc<JobStore>) -> Router {
         Some(dir) => www::router(dir),
         None => www::placeholder_router(),
     };
-    Router::new()
+    Ok(Router::new()
         .nest("/api/v1", api::router(state))
         .merge(www_router)
-        .layer(tower_http::trace::TraceLayer::new_for_http())
+        .layer(tower_http::trace::TraceLayer::new_for_http()))
 }
 
 /// Creates the job store and workers for a configuration.
-pub fn store(config: &ServeConfig) -> Arc<JobStore> {
+pub fn store(config: &ServeConfig) -> io::Result<Arc<JobStore>> {
     let runner = runner::build(config);
     let simulated = config.runner == crate::config::RunnerKind::Simulate;
     let store = JobStore::new(runner, simulated, config.cpu, config.retain);
+    store.recover(&config.data_dir.join("jobs"))?;
     store.spawn_workers(config.parallel, config.sweep_interval);
-    store
+    Ok(store)
 }
 
 /// Binds the listener and starts serving. Self-signed certificates must be
 /// generated beforehand (`TlsMode::Site` with the generated files).
 pub async fn start(config: ServeConfig) -> io::Result<Running> {
+    if config.parallel != 1 && config.runner != crate::config::RunnerKind::Simulate {
+        return Err(io::Error::other(
+            "production runners require --parallel 1 until per-job GPU allocation is supported",
+        ));
+    }
     std::fs::create_dir_all(config.data_dir.join("jobs"))?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(&config.data_dir, std::fs::Permissions::from_mode(0o700))?;
+    }
+    let data_lock = std::fs::OpenOptions::new()
+        .create(true)
+        .truncate(false)
+        .read(true)
+        .write(true)
+        .open(config.data_dir.join("server.lock"))?;
+    data_lock
+        .try_lock()
+        .map_err(|error| io::Error::other(format!("data directory already in use: {error}")))?;
     let config = Arc::new(config);
-    let store = store(&config);
-    let app = app(config.clone(), store.clone());
+    let store = store(&config)?;
+    let app = app(config.clone(), store.clone())?;
     let shutdown = CancellationToken::new();
 
     let std_listener = std::net::TcpListener::bind(&config.listen)?;
@@ -115,5 +143,6 @@ pub async fn start(config: ServeConfig) -> io::Result<Running> {
         store,
         handle,
         shutdown,
+        _data_lock: data_lock,
     })
 }

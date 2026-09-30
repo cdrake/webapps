@@ -30,6 +30,7 @@ export async function describeStack(file) {
     dims: [parsed.nx, parsed.ny, parsed.nz],
     spacing,
     thickness: defaultThickness(spacing),
+    thicknessSource: 'spacing',
     slices: parsed.nz,
   };
 }
@@ -47,7 +48,6 @@ export function defaultThickness(spacing) {
  * or `mask`) is assigned to that stack. Returns a stack index per mask, or -1.
  */
 export function matchMasks(stackNames, maskNames) {
-  if (maskNames.length === stackNames.length) return maskNames.map((_, index) => index);
   const stems = stackNames.map(name => stem(name).toLowerCase());
   return maskNames.map(maskName => {
     const maskStem = stem(maskName).toLowerCase();
@@ -88,11 +88,6 @@ export function assembleJob(rows, options) {
     return entry;
   });
   const complete = stacks.length > 0 && stacks.every(stack => stack.mask);
-  if (!complete) {
-    for (const stack of stacks) {
-      if (stack.mask) delete files[stack.mask];
-      delete stack.mask;
-    }
-  }
+  if (!complete && stacks.some(stack => stack.mask)) throw new Error('Assign a mask to every stack, or remove all masks. Partial masks cannot be used.');
   return { spec: { tool: 'nesvor', command: 'reconstruct', stacks, options }, files, masksUsed: complete };
 }

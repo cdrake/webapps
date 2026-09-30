@@ -7,9 +7,9 @@
 
 Every catalog app runs its scientific method inside the browser. NeSVoR, the first
 fetal slice-to-volume reconstruction app, trains an implicit neural representation
-with custom CUDA kernels for minutes on a data-centre GPU. No browser runtime can
-execute the validated upstream method, and a port would be a different, unvalidated
-implementation. Clinics that own such a GPU want to keep using the hosted web
+with custom CUDA kernels for minutes on a data-centre GPU. The CUDA implementation cannot run unchanged in a browser. A browser-native
+port is required alongside the remote execution option and needs numerical
+validation against upstream. Clinics that own such a GPU want to keep using the hosted web
 frontend while the data never leaves their network. The analysis is in
 [nesvor-remote-compute.md](../architecture/nesvor-remote-compute.md).
 
@@ -37,7 +37,7 @@ Rules that follow:
 
 ## Consequences
 
-- Apps with GPU-bound upstream methods can join the catalog without a browser port.
+- Remote execution complements browser execution; it does not remove the NeSVoR browser-port requirement.
 - Clinics take on running a GPU host, Docker or Apptainer and, for the hosted
   frontend, a certificate. The install text spells this out.
 - Two protocol implementations must stay in step; the conformance test is the gate.

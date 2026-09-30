@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use chrono::{DateTime, SecondsFormat, Utc};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::{broadcast, mpsc};
@@ -19,7 +19,7 @@ use crate::tools::{LogLevel, Tool, ValidatedJob};
 pub const MAX_LOG_LINES: usize = 20_000;
 
 /// Lifecycle state of a job.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Status {
     /// Waiting for a worker.
@@ -30,8 +30,10 @@ pub enum Status {
     Succeeded,
     /// The tool failed.
     Failed,
-    /// Cancelled through `DELETE`.
+    /// The queued job was cancelled or its runner has stopped.
     Cancelled,
+    /// Waiting for runner termination.
+    Cancelling,
 }
 
 impl Status {
@@ -42,7 +44,7 @@ impl Status {
 }
 
 /// Error record of a failed job.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct JobError {
     /// Error code (`tool-failed`).
     pub code: String,
@@ -51,7 +53,7 @@ pub struct JobError {
 }
 
 /// A produced output file.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OutputInfo {
     /// File name.
@@ -63,7 +65,7 @@ pub struct OutputInfo {
 }
 
 /// The job object of `GET /api/v1/jobs/{id}`.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct JobView {
     /// Job identifier.
@@ -138,6 +140,10 @@ impl Event {
 }
 
 struct Job {
+    runner: crate::config::RunnerKind,
+    owner: String,
+    key: String,
+    fingerprint: String,
     id: String,
     tool: Arc<dyn Tool>,
     validated: ValidatedJob,
@@ -161,7 +167,7 @@ fn rfc3339(time: DateTime<Utc>) -> String {
 }
 
 impl Job {
-    fn view(&self, position: usize, simulated: bool) -> JobView {
+    fn view(&self, position: usize, _simulated: bool) -> JobView {
         JobView {
             id: self.id.clone(),
             tool: self.tool.id().to_string(),
@@ -171,7 +177,7 @@ impl Job {
             progress: self.progress,
             stage: self.stage.clone(),
             message: self.message.clone(),
-            simulated,
+            simulated: self.runner == crate::config::RunnerKind::Simulate,
             created_at: rfc3339(self.created_at),
             started_at: self.started_at.map(rfc3339),
             finished_at: self.finished_at.map(rfc3339),
@@ -180,9 +186,43 @@ impl Job {
         }
     }
 
+    fn persist(&self, simulated: bool) -> std::io::Result<()> {
+        crate::durable::write(
+            &self.dir.join("job.json"),
+            &Record {
+                runner: self.runner.id().to_owned(),
+                owner: self.owner.clone(),
+                key: self.key.clone(),
+                fingerprint: self.fingerprint.clone(),
+                validated: self.validated.clone(),
+                view: self.view(0, simulated),
+            },
+        )
+    }
+
+    fn persist_or_fail(&mut self, simulated: bool) {
+        if let Err(error) = self.persist(simulated) {
+            self.status = Status::Failed;
+            self.error = Some(JobError {
+                code: "storage-failed".into(),
+                message: error.to_string(),
+            });
+        }
+    }
+
     fn emit(&self, event: Event) {
         let _ = self.events.send(event);
     }
+}
+
+#[derive(Serialize, Deserialize)]
+struct Record {
+    runner: String,
+    owner: String,
+    key: String,
+    fingerprint: String,
+    validated: ValidatedJob,
+    view: JobView,
 }
 
 struct Inner {
@@ -213,6 +253,12 @@ struct Started {
     cancel: CancellationToken,
 }
 
+pub struct SubmissionIdentity {
+    pub owner: String,
+    pub key: String,
+    pub fingerprint: String,
+}
+
 /// Shared store of all jobs.
 pub struct JobStore {
     inner: Mutex<Inner>,
@@ -222,6 +268,7 @@ pub struct JobStore {
     simulated: bool,
     cpu: bool,
     retain: Duration,
+    stopping: CancellationToken,
 }
 
 impl JobStore {
@@ -244,7 +291,75 @@ impl JobStore {
             simulated,
             cpu,
             retain,
+            stopping: CancellationToken::new(),
         })
+    }
+
+    /// Recover completed records; interrupted jobs require an explicit new submission.
+    /// Unacknowledged upload directories and deletion tombstones are removed at startup.
+    pub fn recover(&self, root: &Path) -> std::io::Result<()> {
+        std::fs::create_dir_all(root)?;
+        for entry in std::fs::read_dir(root)? {
+            let entry = entry?;
+            if !entry.file_type()?.is_dir() {
+                continue;
+            }
+            let dir = entry.path();
+            if dir.join("deleted.json").exists() || !dir.join("job.json").exists() {
+                std::fs::remove_dir_all(&dir)?;
+                continue;
+            }
+            let record: Record = serde_json::from_slice(&std::fs::read(dir.join("job.json"))?)?;
+            let view = record.view;
+            if dir.file_name().and_then(|name| name.to_str()) != Some(&view.id) {
+                return Err(std::io::Error::other("job record directory mismatch"));
+            }
+            let tool = crate::tools::find(&crate::tools::registry(), &view.tool)
+                .ok_or_else(|| std::io::Error::other("unknown persisted tool"))?;
+            let (events, _) = broadcast::channel(4096);
+            let time = |value: &str| {
+                DateTime::parse_from_rfc3339(value)
+                    .map(|time| time.with_timezone(&Utc))
+                    .map_err(std::io::Error::other)
+            };
+            let mut job = Job {
+                runner: crate::config::RunnerKind::parse(&record.runner)
+                    .ok_or_else(|| std::io::Error::other("unknown persisted runner"))?,
+                owner: record.owner,
+                key: record.key,
+                fingerprint: record.fingerprint,
+                id: view.id,
+                tool,
+                validated: record.validated,
+                dir,
+                status: view.status,
+                progress: view.progress,
+                stage: view.stage,
+                message: view.message,
+                created_at: time(&view.created_at)?,
+                started_at: view.started_at.as_deref().map(time).transpose()?,
+                finished_at: view.finished_at.as_deref().map(time).transpose()?,
+                error: view.error,
+                outputs: view.outputs,
+                log: Vec::new(),
+                events,
+                cancel: CancellationToken::new(),
+            };
+            if !job.status.is_finished() {
+                crate::runner::process::reconcile(job.runner, &job.id)?;
+                job.status = Status::Failed;
+                job.finished_at = Some(Utc::now());
+                job.error = Some(JobError {
+                    code: "interrupted".into(),
+                    message:
+                        "Server stopped before execution completed; submit a new job to retry."
+                            .into(),
+                });
+                job.persist(self.simulated)?;
+            }
+            self.lock().jobs.insert(job.id.clone(), job);
+        }
+        Ok(())
     }
 
     /// Whether results are produced by the placeholder tool.
@@ -263,7 +378,10 @@ impl JobStore {
             let mut ticker = tokio::time::interval(sweep_interval);
             ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
             loop {
-                ticker.tick().await;
+                tokio::select! {
+                    _ = ticker.tick() => {},
+                    _ = store.stopping.cancelled() => return,
+                }
                 store.sweep().await;
             }
         });
@@ -280,13 +398,21 @@ impl JobStore {
     /// the queue position.
     pub fn submit(
         &self,
+        identity: SubmissionIdentity,
         id: String,
         tool: Arc<dyn Tool>,
         validated: ValidatedJob,
         dir: PathBuf,
-    ) -> usize {
+    ) -> std::io::Result<usize> {
+        if self.stopping.is_cancelled() {
+            return Err(std::io::Error::other("server is stopping"));
+        }
         let (events, _) = broadcast::channel(4096);
         let job = Job {
+            runner: self.runner.kind(),
+            owner: identity.owner,
+            key: identity.key,
+            fingerprint: identity.fingerprint,
             id: id.clone(),
             tool,
             validated,
@@ -304,12 +430,16 @@ impl JobStore {
             events,
             cancel: CancellationToken::new(),
         };
+        job.persist(self.simulated)?;
         let mut inner = self.lock();
+        if self.stopping.is_cancelled() {
+            return Err(std::io::Error::other("server is stopping"));
+        }
         let position = inner.queue.len() + inner.running_count();
         inner.queue.push_back(id.clone());
         inner.jobs.insert(id.clone(), job);
         let _ = self.queue_tx.send(id);
-        position
+        Ok(position)
     }
 
     /// The job object, or `None` for unknown ids.
@@ -364,52 +494,114 @@ impl JobStore {
         ))
     }
 
-    /// Cancels and removes a job. Returns `false` for unknown ids.
+    pub fn owned(&self, id: &str, owner: &str) -> bool {
+        self.lock()
+            .jobs
+            .get(id)
+            .is_some_and(|job| job.owner == owner)
+    }
+
+    pub fn list(&self, owner: &str) -> Vec<JobView> {
+        let inner = self.lock();
+        inner
+            .jobs
+            .values()
+            .filter(|job| job.owner == owner)
+            .map(|job| job.view(inner.position(&job.id), self.simulated))
+            .collect()
+    }
+
+    pub fn fingerprint(&self, id: &str) -> Option<String> {
+        self.lock().jobs.get(id).map(|job| job.fingerprint.clone())
+    }
+
+    pub fn receipt(&self, owner: &str, key: &str) -> Option<JobView> {
+        let inner = self.lock();
+        inner
+            .jobs
+            .values()
+            .find(|job| job.owner == owner && job.key == key)
+            .map(|job| job.view(inner.position(&job.id), self.simulated))
+    }
+
+    pub fn cancel(&self, id: &str) -> std::io::Result<()> {
+        let mut inner = self.lock();
+        inner.queue.retain(|queued| queued != id);
+        if let Some(job) = inner.jobs.get_mut(id) {
+            match job.status {
+                Status::Queued => self.mark_cancelled(job),
+                Status::Running => {
+                    job.status = Status::Cancelling;
+                    job.persist(self.simulated)?;
+                    job.cancel.cancel();
+                    job.emit(Event::Status {
+                        status: Status::Cancelling,
+                        position: 0,
+                    });
+                }
+                _ => {}
+            }
+        }
+        Ok(())
+    }
+
+    /// Deletes terminal jobs only. The tombstone makes interrupted deletion recoverable.
     pub async fn delete(&self, id: &str) -> bool {
-        let dir_to_remove = {
+        let dir = {
             let mut inner = self.lock();
-            let Some(mut job) = inner.jobs.remove(id) else {
+            let Some(job) = inner.jobs.get(id) else {
                 return false;
             };
-            inner.queue.retain(|queued| queued != id);
-            match job.status {
-                Status::Queued => {
-                    self.mark_cancelled(&mut job);
-                    Some(job.dir.clone())
-                }
-                Status::Running => {
-                    // The worker removes the directory once the runner returned.
-                    self.mark_cancelled(&mut job);
-                    job.cancel.cancel();
-                    None
-                }
-                Status::Succeeded | Status::Failed | Status::Cancelled => Some(job.dir.clone()),
+            if !job.status.is_finished() {
+                return false;
             }
+            if crate::durable::write(&job.dir.join("deleted.json"), &true).is_err() {
+                return false;
+            }
+            let dir = job.dir.clone();
+            inner.jobs.remove(id);
+            dir
         };
-        if let Some(dir) = dir_to_remove {
-            remove_dir(&dir).await;
-        }
+        remove_dir(&dir).await;
         true
     }
 
     fn mark_cancelled(&self, job: &mut Job) {
         job.status = Status::Cancelled;
         job.finished_at = Some(Utc::now());
+        job.persist_or_fail(self.simulated);
         job.emit(Event::Status {
-            status: Status::Cancelled,
+            status: job.status,
             position: 0,
         });
         job.emit(Event::Done(Box::new(job.view(0, self.simulated))));
     }
 
-    /// Cancels every job and removes all job directories (server shutdown).
+    /// Stops active jobs while retaining durable records and results.
     pub async fn shutdown(&self) {
+        self.stopping.cancel();
         let ids: Vec<String> = {
             let inner = self.lock();
             inner.jobs.keys().cloned().collect()
         };
         for id in ids {
-            self.delete(&id).await;
+            let _ = self.cancel(&id);
+        }
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
+        loop {
+            if tokio::time::Instant::now() >= deadline {
+                tracing::error!("shutdown cleanup unconfirmed; recovery required before new jobs");
+                break;
+            }
+            if self
+                .lock()
+                .jobs
+                .values()
+                .all(|job| job.status.is_finished())
+            {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(10)).await;
         }
     }
 
@@ -437,7 +629,10 @@ impl JobStore {
         loop {
             let next = {
                 let mut receiver = self.queue_rx.lock().await;
-                receiver.recv().await
+                tokio::select! {
+                    value = receiver.recv() => value,
+                    _ = self.stopping.cancelled() => return,
+                }
             };
             let Some(id) = next else {
                 return;
@@ -458,6 +653,11 @@ impl JobStore {
         }
         job.status = Status::Running;
         job.started_at = Some(Utc::now());
+        if job.persist(self.simulated).is_err() {
+            job.status = Status::Failed;
+            job.finished_at = Some(Utc::now());
+            return None;
+        }
         job.emit(Event::Status {
             status: Status::Running,
             position: 0,
@@ -537,6 +737,23 @@ impl JobStore {
 
     fn finish(&self, job: &mut Job, outcome: std::io::Result<RunOutcome>, out_dir: &Path) {
         let tool_name = job.tool.id();
+        if job.status == Status::Cancelling && outcome.is_err() {
+            job.error = Some(JobError { code: "termination-unconfirmed".into(), message: "Could not confirm process termination; server rejects new work until restart and recovery.".into() });
+            if let Err(error) = job.persist(self.simulated) {
+                tracing::error!(%error, "could not persist unconfirmed termination");
+            }
+            job.emit(Event::Status {
+                status: job.status,
+                position: 0,
+            });
+            self.stopping.cancel();
+            return;
+        }
+        let outcome = if job.status == Status::Cancelling && outcome.is_ok() {
+            Ok(RunOutcome::Cancelled)
+        } else {
+            outcome
+        };
         match outcome {
             Ok(RunOutcome::Cancelled) => {
                 self.mark_cancelled(job);
@@ -548,11 +765,26 @@ impl JobStore {
                 for spec in job.tool.outputs() {
                     let path = out_dir.join(spec.name);
                     match std::fs::metadata(&path) {
-                        Ok(metadata) if metadata.is_file() => outputs.push(OutputInfo {
-                            name: spec.name.to_string(),
-                            bytes: metadata.len(),
-                            content_type: spec.content_type.to_string(),
-                        }),
+                        Ok(metadata) if metadata.is_file() => {
+                            if let Err(error) =
+                                std::fs::File::open(&path).and_then(|file| file.sync_all())
+                            {
+                                job.status = Status::Failed;
+                                job.error = Some(JobError {
+                                    code: "storage-failed".into(),
+                                    message: error.to_string(),
+                                });
+                                job.finished_at = Some(Utc::now());
+                                job.persist_or_fail(self.simulated);
+                                job.emit(Event::Done(Box::new(job.view(0, self.simulated))));
+                                return;
+                            }
+                            outputs.push(OutputInfo {
+                                name: spec.name.to_string(),
+                                bytes: metadata.len(),
+                                content_type: spec.content_type.to_string(),
+                            });
+                        }
                         _ if spec.required => {
                             missing = Some(spec.name);
                             break;
@@ -588,6 +820,7 @@ impl JobStore {
             }
         }
         job.finished_at = Some(Utc::now());
+        job.persist_or_fail(self.simulated);
         job.emit(Event::Status {
             status: job.status,
             position: 0,
@@ -647,5 +880,82 @@ async fn remove_dir(dir: &Path) {
         if error.kind() != std::io::ErrorKind::NotFound {
             tracing::warn!(dir = %dir.display(), %error, "could not remove job directory");
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct SlowStop(Arc<tokio::sync::Notify>);
+
+    impl Runner for SlowStop {
+        fn kind(&self) -> crate::config::RunnerKind {
+            crate::config::RunnerKind::Simulate
+        }
+        fn paths(&self, _dir: &Path) -> crate::tools::ToolPaths {
+            crate::tools::ToolPaths::container()
+        }
+        fn run(
+            &self,
+            _request: RunRequest,
+            _sink: crate::runner::LineSink,
+            cancel: CancellationToken,
+        ) -> crate::runner::RunFuture {
+            let stopped = self.0.clone();
+            Box::pin(async move {
+                cancel.cancelled().await;
+                stopped.notified().await;
+                Ok(RunOutcome::Cancelled)
+            })
+        }
+    }
+
+    #[tokio::test]
+    async fn cancellation_does_not_finish_or_delete_before_runner_exit() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::create_dir(dir.path().join("out")).unwrap();
+        let stopped = Arc::new(tokio::sync::Notify::new());
+        let store = JobStore::new(
+            Arc::new(SlowStop(stopped.clone())),
+            true,
+            false,
+            Duration::from_secs(3600),
+        );
+        store.spawn_workers(1, Duration::from_secs(60));
+        store
+            .submit(
+                SubmissionIdentity {
+                    owner: "owner".into(),
+                    key: "key".into(),
+                    fingerprint: "test".into(),
+                },
+                "id".into(),
+                crate::tools::registry()[0].clone(),
+                ValidatedJob {
+                    tool: "nesvor".into(),
+                    command: "reconstruct".into(),
+                    stacks: vec![],
+                    options: serde_json::Map::new(),
+                    warnings: vec![],
+                },
+                dir.path().to_owned(),
+            )
+            .unwrap();
+        while store.view("id").unwrap().status != Status::Running {
+            tokio::task::yield_now().await;
+        }
+        store.cancel("id").unwrap();
+        assert_eq!(store.view("id").unwrap().status, Status::Cancelling);
+        assert!(store.view("id").unwrap().finished_at.is_none());
+        assert!(!store.delete("id").await);
+        let (events, _) = store.subscribe("id").unwrap();
+        assert!(!events.iter().any(|event| matches!(event, Event::Done(_))));
+        stopped.notify_one();
+        while store.view("id").unwrap().status != Status::Cancelled {
+            tokio::task::yield_now().await;
+        }
+        store.shutdown().await;
+        assert!(dir.path().join("job.json").exists());
     }
 }

@@ -106,3 +106,33 @@ test('describeConnectionError explains mixed content, certificates, tokens and u
   const aborted = describeConnectionError(Object.assign(new Error('x'), { name: 'AbortError' }), {});
   assert.equal(aborted.code, 'cancelled');
 });
+
+test('a lost submission receipt retries with the same key and does not send cookies or follow redirects', async () => {
+  const keys = [];
+  const client = createComputeClient({ baseUrl: 'https://compute:8765', token: 'client-secret', fetch: async (_url, init) => {
+    keys.push(init.headers['Idempotency-Key']);
+    assert.equal(init.credentials, 'omit');
+    assert.equal(init.redirect, 'error');
+    if (keys.length === 1) throw new TypeError('Receipt lost');
+    return response(202, { id: 'one-job' });
+  } });
+  const result = await client.submit({}, {}, { idempotencyKey: 'same-attempt' });
+  assert.equal(result.id, 'one-job');
+  assert.deepEqual(keys, ['same-attempt', 'same-attempt']);
+});
+
+test('pairing replaces the installation code with a client credential and disconnect clears it', async () => {
+  const client = createComputeClient({ baseUrl: 'https://compute:8765', fetch: async (url, init) => {
+    if (url.endsWith('/pair')) {
+      assert.deepEqual(JSON.parse(init.body), { code: 'installation-code' });
+      assert.equal(init.headers.Authorization, undefined);
+      return response(200, { token: 'owned-client', clientId: 'owner' });
+    }
+    assert.equal(init.headers.Authorization, 'Bearer owned-client');
+    return new Response(null, { status: 204 });
+  } });
+  await client.pair('installation-code');
+  assert.equal(client.token, 'owned-client');
+  await client.disconnect();
+  assert.equal(client.token, '');
+});

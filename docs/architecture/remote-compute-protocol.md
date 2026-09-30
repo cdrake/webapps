@@ -9,14 +9,21 @@ rationale is in [nesvor-remote-compute.md](nesvor-remote-compute.md).
 ## Transport
 
 - Base path `/api/v1`. JSON request and response bodies use camelCase.
-- Authentication: `Authorization: Bearer <token>` on every request except the
-  capability probe. `GET /api/v1/jobs/{id}/events` and `GET /api/v1/jobs/{id}/outputs/{name}`
-  also accept `?token=<token>` because `EventSource` and `<a download>` cannot set headers.
+- Pair with `POST /api/v1/pair`, JSON `{ "code": "<installation code>" }`.
+  The response is `{ "token": "<client credential>", "clientId": "<owner>" }`.
+  The installation code never authorizes patient operations. Each pairing owns
+  its own jobs. Send `Authorization: Bearer <client credential>` on subsequent
+  requests. Credentials are never accepted in URLs. The browser keeps the
+  credential in tab session storage for reload recovery. Disconnect clears it.
+  Only the server address goes into persistent local storage.
+- `DELETE /api/v1/session` revokes the current credential. `GET /api/v1/jobs`
+  returns `{ "jobs": [...] }` for that credential's owner. Other owners' job IDs
+  return 404 on every endpoint, including output and cancellation.
 - CORS: the server answers preflights for allowed origins with
-  `Access-Control-Allow-Origin: <origin>`, `Access-Control-Allow-Headers: Authorization, Content-Type`,
+  `Access-Control-Allow-Origin: <origin>`, `Access-Control-Allow-Headers: Authorization, Content-Type, Idempotency-Key`,
   `Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS`,
   `Access-Control-Allow-Private-Network: true`, `Access-Control-Max-Age: 600`, and
-  `Vary: Origin`. Requests from other origins receive no CORS headers. `Origin`-less
+  `Vary: Origin`. Requests from other origins are rejected before executing a handler. `Origin`-less
   requests (same origin, curl) are always allowed.
 - Errors: `{ "error": { "code": string, "message": string } }`. Codes: `invalid-spec` (400),
   `unauthorized` (401), `not-found` (404), `conflict` (409), `too-large` (413),
@@ -30,7 +37,7 @@ rationale is in [nesvor-remote-compute.md](nesvor-remote-compute.md).
 Without a token:
 
 ```json
-{ "service": "neurodesk-compute", "version": "0.1.20260921", "protocol": 1, "auth": "bearer" }
+{ "service": "neurodesk-compute", "version": "0.1.20260921", "protocol": 1, "auth": "pairing" }
 ```
 
 With a valid token the same object also contains:
@@ -51,6 +58,12 @@ With a valid token the same object also contains:
 container. `gpu.name` is `null` when unknown.
 
 ### `POST /api/v1/jobs`
+
+`Idempotency-Key` is required and scoped to the paired owner. Retrying the same
+accepted key with identical parsed settings and file bytes returns the same job
+receipt. Changed content under an accepted key returns 409. Use a new key for a
+new run. Current retries resend the complete upload; chunked resume is not yet
+implemented.
 
 `multipart/form-data`. The first part is named `spec` and holds the JSON job
 specification. Every further part is a file whose part name is referenced by the
@@ -85,7 +98,7 @@ Response `202 Accepted`:
 }
 ```
 
-`status` is one of `queued`, `running`, `succeeded`, `failed`, `cancelled`.
+`status` is one of `queued`, `running`, `cancelling`, `succeeded`, `failed`, `cancelled`.
 `progress` is a fraction in `[0, 1]` or `null` before the first progress event.
 `outputs` is filled when the job succeeded:
 
@@ -120,10 +133,23 @@ Bytes of the named output with `Content-Type`, `Content-Length` and
 `Content-Disposition: attachment; filename="<name>"`. `404` for unknown names or
 jobs that did not succeed.
 
+### `POST /api/v1/jobs/{id}/cancel`
+
+Returns the current job. A running job enters `cancelling`; `cancelled` and the
+terminal event occur only after its process exits. Cancelling a queued job
+removes it from the queue. Cancellation retains status and logs for inspection.
+
 ### `DELETE /api/v1/jobs/{id}`
 
-Cancels a queued or running job, deletes the job directory, and responds `204`.
-Deleting a finished job also removes its outputs. Unknown ids give `404`.
+Deletes a terminal job and its files, returning 204. Active jobs return 409;
+unknown or other-owner IDs return 404. Download results before deleting.
+
+### Persistence
+
+The server writes job ownership, receipt and status atomically to its data
+folder. Startup reconciles interrupted runs and restores terminal records so
+retention cleanup continues after restart. Stopping the server does not delete
+completed jobs.
 
 ## Job specification: `nesvor`
 
@@ -191,8 +217,8 @@ nesvor reconstruct
   --verbose 1
 ```
 
-Masks are passed only when every stack has one, because `--stack-masks` requires
-one mask per stack; otherwise masks are ignored and a warning log line says so.
+Masks must be supplied for every stack or for none. Partial mask bundles are
+rejected instead of silently discarding masks.
 
 Outputs: `volume.nii.gz`, `result.json` and `log.txt` (the complete stdout and
 stderr of the tool). A failed job still exposes `log.txt` through the events

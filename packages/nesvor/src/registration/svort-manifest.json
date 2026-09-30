@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "source_commit": "730ddaa3711a2304386de34193ea4b957892fe7b",
+  "checkpoint_sha256": "a52c867ff2668152835d148ccf97615178649a627e055a65cff11048e7506cd9",
+  "torch": "2.14.0+cpu",
+  "onnxruntime": "1.30.0",
+  "models": [
+    {
+      "file": "svort-v2-step-0.onnx",
+      "sha256": "3edd3038d7c2627b89886934234171045a61a8953648120093fce72fe3fbaffb",
+      "max_absolute_error": 0.00030517578125,
+      "bytes": 132123651
+    },
+    {
+      "file": "svort-v2-step-1.onnx",
+      "sha256": "c98cd74338a0dcfff97a99973059ee33e94d08aed4794df8b0895aaf3d5733ae",
+      "max_absolute_error": 7.2479248046875e-05,
+      "bytes": 165837505
+    }
+  ],
+  "base_url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/c5b3a2674369c0c619d726bb177a9c0a74d2e356/models/nesvor/svort-v2-730ddaa/",
+  "license": "CC-BY-4.0",
+  "checkpoint_url": "https://zenodo.org/records/7486938/files/checkpoint_v2.pt?download=1",
+  "verification": {
+    "browser_subgraphs": true,
+    "maximum_coordinate_error_mm": 0.0005497932434082031,
+    "coordinate_tolerance_mm": 0.001,
+    "full_acquisition": false
+  }
+}

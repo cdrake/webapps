@@ -5,6 +5,7 @@ import '@neurodesk/webapp-components/styles/imaging-workspace.css';
 import NiiVue, { MULTIPLANAR_TYPE, SLICE_TYPE, SHOW_RENDER } from '@niivue/niivue';
 import { mountImagingWorkspace } from '@neurodesk/webapp-components/core/mount-imaging-workspace';
 import {
+  bindInfoTooltips,
   createResultList,
   bindFileDrop,
   createInfoDialog,
@@ -15,12 +16,16 @@ import {
 } from '@neurodesk/webapp-components/ui';
 import { downloadFile } from '@neurodesk/webapp-components/file-io';
 import { ComputeError } from '@neurodesk/webapp-components/compute';
+import { readImageFiles } from '@neurodesk/runtime-support/dcm2niix-client';
+import { runBrowserReference, runBrowserReconstruction } from '@neurodesk/nesvor/browser';
 import { APP } from './config.js';
 import { PRESETS, DEFAULT_OPTIONS, presetOptions, validateNesvorSpec } from './spec.js';
 import { assembleJob, describeStack, formatDims, isNiftiName, matchMasks } from './stacks.js';
 import examples from '../examples.json';
+import { createProgressReporter } from './progress.js';
 
 const $ = id => document.getElementById(id);
+bindInfoTooltips();
 
 // 1. Shell: shared app bar, sidebar, viewer and status regions.
 const workspace = mountImagingWorkspace({
@@ -28,7 +33,7 @@ const workspace = mountImagingWorkspace({
   viewer: '#viewer',
   status: '#status',
   title: 'NeSVoR',
-  subtitle: 'Slice-to-volume reconstruction on your compute server',
+  subtitle: 'Slice-to-volume reconstruction',
   controlsContract: { about: '#aboutBtn', privacy: '#privacyBtn' },
 });
 
@@ -84,7 +89,8 @@ function elapsed() {
 async function ensureViewer() {
   if (viewerReady) return viewerReady;
   viewerReady = (async () => {
-    viewer = new NiiVue({ isDragDropEnabled: false, backgroundColor: [0, 0, 0, 1] });
+    // Keep visualization alive when the worker's WebGPU device is destroyed.
+    viewer = new NiiVue({ backend: 'webgl2', isDragDropEnabled: false, backgroundColor: [0, 0, 0, 1] });
     await viewer.attachTo('gl1');
     layouts.multiplanar();
     viewer.isLegendVisible = false;
@@ -94,17 +100,29 @@ async function ensureViewer() {
   return viewerReady;
 }
 
-async function show(file, label) {
+let viewerSequence = 0;
+let viewerQueue = Promise.resolve();
+function show(file, label) {
+  const sequence = ++viewerSequence;
   $('emptyState').hidden = true;
-  $('imageLabel').textContent = label;
-  try {
-    const nv = await ensureViewer();
-    await nv.loadVolumes([{ url: file, name: file.name }]);
-    $('viewerError').hidden = true;
-  } catch (error) {
-    $('viewerError').hidden = false;
-    $('viewerError').textContent = `Visualization unavailable: ${error.message}. Reconstruction and download remain available.`;
-  }
+  $('gl1').hidden = true;
+  $('imageLabel').textContent = `Loading ${file.name}…`;
+  viewerQueue = viewerQueue.then(async () => {
+    if (sequence !== viewerSequence) return;
+    try {
+      const nv = await ensureViewer();
+      await nv.loadVolumes([{ url: file, name: file.name }]);
+      if (sequence !== viewerSequence) return;
+      $('imageLabel').textContent = label;
+      $('gl1').hidden = false;
+      $('viewerError').hidden = true;
+    } catch (error) {
+      if (sequence !== viewerSequence) return;
+      $('viewerError').hidden = false;
+      $('viewerError').textContent = `Visualization unavailable: ${error.message}. Reconstruction and download remain available.`;
+    }
+  });
+  return viewerQueue;
 }
 
 // 5. Compute server connection.
@@ -122,6 +140,7 @@ connection.addEventListener('nd-compute-change', ({ detail }) => {
     $('computeSection').open = true;
   }
   syncRun();
+  void refreshJobs();
 });
 
 // 6. Reconstruction settings.
@@ -222,10 +241,16 @@ function renderRows() {
     input.max = '20';
     input.step = '0.1';
     input.value = String(row.thickness);
-    input.addEventListener('change', () => { row.thickness = Number(input.value); syncRun(); });
+    input.addEventListener('change', () => {
+      row.thickness = Number(input.value);
+      row.thicknessSource = 'manual';
+      syncThicknessHint();
+      syncRun();
+    });
     thickness.append(thicknessLabel, input);
     const mask = document.createElement('div');
     mask.className = 'nd-field';
+    mask.hidden = masks.length === 0;
     const maskLabel = document.createElement('label');
     maskLabel.htmlFor = `mask-${index}`;
     maskLabel.textContent = 'Mask';
@@ -249,16 +274,39 @@ function renderRows() {
     body.append(item);
   });
   $('stackRows').hidden = !rows.length;
-  $('stackHint').hidden = !rows.length;
+  syncThicknessHint();
   $('fileInfo').hidden = !rows.length;
   $('fileInfo').textContent = rows.length ? `${rows.length} stack${rows.length === 1 ? '' : 's'} loaded` : '';
   $('dropZone').classList.toggle('has-files', rows.length > 0);
 }
 
+function isBrowser() {
+  return $('executionMode').value !== 'remote';
+}
+
+function isBrowserReference() {
+  return $('executionMode').value === 'browser-reference';
+}
+
+function syncThicknessHint() {
+  $('stackHint').hidden = !rows.some(row => row.thicknessSource === 'spacing');
+}
+
 function syncRun() {
+  const busy = Boolean(job || loading);
+  connection.setDisabled(busy);
+  $('executionMode').disabled = busy;
+  $('referenceAcknowledged').disabled = busy;
+  $('refreshJobs').disabled = busy;
+  $('deleteJob').disabled = busy || !$('previousJob').value;
+  $('resumeJob').disabled = busy || !$('previousJob').value;
+  $('previousJob').disabled = busy;
+  exampleControl.setDisabled(busy);
+  for (const input of document.querySelectorAll('#inputSection input, #inputSection select, #stackRows button, #taskSection input, #taskSection select')) input.disabled = busy;
   const complete = rows.length > 0 && rows.every(row => Number.isFinite(row.thickness) && row.thickness > 0);
-  $('runButton').disabled = Boolean(job || loading) || !complete || !connection.client;
-  $('runButton').title = !rows.length ? 'Load stacks first' : !connection.client ? 'Connect to a compute server first' : '';
+  const available = isBrowserReference() ? $('referenceAcknowledged').checked && rows.every(row => row.mask) : isBrowser() ? Boolean(navigator.gpu) : Boolean(connection.client);
+  $('runButton').disabled = busy || !complete || !available;
+  $('runButton').title = !rows.length ? 'Load stacks first' : !complete ? 'Enter a positive slice thickness for every stack' : !available ? (isBrowserReference() ? 'Assign all masks and acknowledge the reference limits' : isBrowser() ? 'A WebGPU-capable browser is required' : 'Connect to a compute server first') : '';
 }
 
 function assignMasks() {
@@ -269,8 +317,8 @@ function assignMasks() {
   });
 }
 
-async function loadFiles(filesPromise, signal, { replace = false } = {}) {
-  if (loading) throw new Error('Stacks are still loading. Wait or cancel, then retry.');
+async function loadFiles(filesPromise, signal, { replace = false, asMasks = false } = {}) {
+  if (job || loading) throw new Error('Wait for the current operation to finish, or cancel it first.');
   const controller = new AbortController();
   const abort = () => controller.abort();
   signal?.throwIfAborted();
@@ -283,21 +331,25 @@ async function loadFiles(filesPromise, signal, { replace = false } = {}) {
   syncRun();
   status('Reading stacks…');
   try {
-    const files = await filesPromise;
+    const files = await readImageFiles(await filesPromise, { signal: controller.signal });
     controller.signal.throwIfAborted();
-    const stacks = files.filter(file => isNiftiName(file.name) && !/mask/i.test(file.name));
-    const maskFiles = files.filter(file => isNiftiName(file.name) && /mask/i.test(file.name));
+    const stacks = asMasks ? [] : files.filter(file => isNiftiName(file.name) && !/mask/i.test(file.name));
+    const maskFiles = asMasks ? files : files.filter(file => isNiftiName(file.name) && /mask/i.test(file.name));
     if (!stacks.length && !maskFiles.length) throw new Error('Choose NIfTI stacks (.nii or .nii.gz).');
+    const prepared = [];
+    for (const file of stacks) {
+      const description = await describeStack(file);
+      controller.signal.throwIfAborted();
+      prepared.push({ file, ...description, mask: null });
+    }
+    for (const file of maskFiles) await describeStack(file);
+    controller.signal.throwIfAborted();
     if (replace) {
       rows.length = 0;
       masks.length = 0;
     }
-    for (const file of stacks) {
-      const description = await describeStack(file);
-      controller.signal.throwIfAborted();
-      rows.push({ file, ...description, mask: null });
-    }
-    for (const file of maskFiles) masks.push(file);
+    rows.push(...prepared);
+    masks.push(...maskFiles);
     if (maskFiles.length || replace) assignMasks();
     results.render();
     $('outputSection').open = false;
@@ -324,14 +376,8 @@ function importFiles(files, options) {
   ));
 }
 
-async function importMasks(filesPromise) {
-  const files = (await filesPromise).filter(file => isNiftiName(file.name));
-  if (!files.length) return status('Choose NIfTI masks (.nii or .nii.gz).', true);
-  masks.push(...files);
-  assignMasks();
-  renderRows();
-  syncRun();
-  return status(`${masks.length} mask${masks.length === 1 ? '' : 's'} loaded`);
+function importMasks(filesPromise) {
+  return importFiles(filesPromise, { asMasks: true });
 }
 
 $('imageInput').addEventListener('change', event => {
@@ -349,7 +395,7 @@ bindFileDrop($('maskDropZone'), files => importMasks(files).catch(error => statu
 
 const exampleControl = createExampleSelector({
   examples,
-  onStatus: status,
+  onStatus: (message, error) => status(exampleControl.dataset.exampleState === 'ready' ? `Example ready · ${rows.length} stacks. Ready to reconstruct.` : message, error),
   onLoad: async (example, { fetchFiles, assertCurrent, signal }) => {
     const files = await fetchFiles();
     assertCurrent();
@@ -368,20 +414,23 @@ function finishJob() {
   job = null;
   $('cancelButton').hidden = true;
   syncRun();
+  void refreshJobs();
 }
 
 async function reconstruct() {
+  if (isBrowser()) return reconstructLocally();
   const client = connection.client;
   if (!client || job || loading || !rows.length) return;
-  const { spec, files, masksUsed } = assembleJob(rows, readOptions());
+  let spec, files;
+  const stamp = rows[0].file.name.replace(/\.nii(\.gz)?$/i, '');
   try {
+    ({ spec, files } = assembleJob(rows, readOptions()));
     validateNesvorSpec(spec, Object.keys(files));
   } catch (error) {
     return status(`Check the settings: ${error.message}`, true);
   }
-  if (masks.length && !masksUsed) log.log('Masks are ignored because not every stack has one.', 'warning');
   const controller = new AbortController();
-  job = { controller, id: null };
+  job = { controller, client, id: null, cancelling: false, key: crypto.randomUUID() };
   started = Date.now();
   elapsed();
   timer = setInterval(elapsed, 1000);
@@ -393,10 +442,27 @@ async function reconstruct() {
   status(`Uploading ${rows.length} stack${rows.length === 1 ? '' : 's'} to ${new URL(client.baseUrl).host}…`);
   log.log(`Job spec: ${JSON.stringify(spec)}`);
   try {
-    const submitted = await client.submit(spec, files, { signal: controller.signal });
+    const submitted = await client.submit(spec, files, { signal: controller.signal, idempotencyKey: job.key });
     job.id = submitted.id;
+    if (job.cancelling) await client.cancel(submitted.id);
     status(submitted.position > 0 ? `Queued behind ${submitted.position} job${submitted.position === 1 ? '' : 's'}` : 'Queued on the compute server');
-    const done = await client.watch(submitted.id, {
+    await collectJob(client, submitted.id, controller, stamp, spec);
+  } catch (error) {
+    if (error?.name === 'AbortError' || (error instanceof ComputeError && error.code === 'cancelled')) {
+      status('Reconstruction cancelled');
+    } else {
+      status(`Reconstruction interrupted: ${error.message}. Check Previous jobs before starting another run.`, true);
+      void refreshJobs();
+      if (error instanceof ComputeError && error.job?.error) log.log(JSON.stringify(error.job.error), 'error');
+    }
+  } finally {
+    finishJob();
+  }
+  return null;
+}
+
+async function collectJob(client, id, controller, stamp, spec) {
+    const done = await client.watch(id, {
       onStatus: event => {
         if (event.status === 'queued') status(event.position > 0 ? `Queued behind ${event.position} job${event.position === 1 ? '' : 's'}` : 'Queued on the compute server');
         else if (event.status === 'running') status('Running on the compute server');
@@ -408,13 +474,11 @@ async function reconstruct() {
       onLog: event => log.log(event.line, event.level === 'error' ? 'error' : event.level === 'warning' ? 'warning' : 'info'),
     }, { signal: controller.signal });
     status('Downloading the reconstructed volume…');
-    const stamp = rows[0].file.name.replace(/\.nii(\.gz)?$/i, '');
     const volume = new File([await client.output(done.id, 'volume.nii.gz', { signal: controller.signal })], `${stamp}_nesvor.nii.gz`, { type: 'application/gzip' });
     const record = new File([await client.output(done.id, 'result.json', { signal: controller.signal })], `${stamp}_nesvor.json`, { type: 'application/json' });
     const logFile = new File([await client.output(done.id, 'log.txt', { signal: controller.signal })], `${stamp}_nesvor.log`, { type: 'text/plain' });
-    await client.cancel(done.id).catch(() => {});
     results.render({
-      volume: { description: done.simulated ? 'Simulated placeholder (mean of the stacks), not a reconstruction' : `Reconstructed volume, ${spec.options.outputResolution} mm isotropic`, file: volume },
+      volume: { description: done.simulated ? 'Simulated placeholder (mean of the stacks), not a reconstruction' : `Reconstructed volume, ${spec?.options.outputResolution ?? "recorded"} mm isotropic`, file: volume },
       result: { description: 'Inputs and results recorded by nesvor', file: record, viewable: false },
       log: { description: 'Complete output of the compute server', file: logFile, viewable: false },
     }, ['volume', 'result', 'log']);
@@ -422,27 +486,163 @@ async function reconstruct() {
     $('progress').value = 1;
     await show(volume, `${volume.name} · reconstructed`);
     status(done.simulated ? 'Simulated result ready · the server did not run NeSVoR' : 'Reconstructed volume ready');
+}
+
+async function refreshJobs() {
+  const client = connection.client;
+  $('previousJobs').hidden = !client;
+  if (!client) return;
+  try {
+    const { jobs } = await client.jobs();
+    if (client !== connection.client) return;
+    $('previousJob').replaceChildren(...jobs.map(item => {
+      const option = document.createElement('option');
+      option.value = item.id;
+      option.textContent = `${item.createdAt} · ${item.status} · ${item.id.slice(0, 8)}`;
+      return option;
+    }));
+    $('resumeJob').disabled = !jobs.length || Boolean(job);
+    $('deleteJob').disabled = !jobs.length || Boolean(job);
   } catch (error) {
-    if (error?.name === 'AbortError' || (error instanceof ComputeError && error.code === 'cancelled')) {
-      status('Reconstruction cancelled');
-    } else {
-      status(error instanceof ComputeError ? `Reconstruction failed: ${error.message}` : `Reconstruction failed: ${error.message}`, true);
-      if (error instanceof ComputeError && error.job?.error) log.log(JSON.stringify(error.job.error), 'error');
-    }
+    log.log(`Could not list previous jobs: ${error.message}`, 'warning');
+  }
+}
+
+$('refreshJobs').onclick = () => void refreshJobs();
+$('deleteJob').onclick = async () => {
+  const client = connection.client;
+  const id = $('previousJob').value;
+  if (!client || !id || job || loading) return;
+  try {
+    await client.remove(id);
+    status('Server job and files deleted');
+    await refreshJobs();
+  } catch (error) {
+    status(`Server job was not deleted: ${error.message}`, true);
+  }
+};
+$('resumeJob').onclick = async () => {
+  const client = connection.client;
+  const id = $('previousJob').value;
+  if (!client || !id || job || loading) return;
+  const controller = new AbortController();
+  job = { client, id, controller, cancelling: false };
+  started = Date.now();
+  timer = setInterval(elapsed, 1000);
+  $('cancelButton').hidden = false;
+  syncRun();
+  try {
+    await collectJob(client, id, controller, `job-${id.slice(0, 8)}`);
+  } catch (error) {
+    status(`Job ${id.slice(0, 8)}: ${error.message}`, true);
+  } finally {
+    finishJob();
+    void refreshJobs();
+  }
+};
+
+function syncExecutionMode() {
+  const browser = isBrowser();
+  const reference = isBrowserReference();
+  $('browserReferenceInfo').hidden = !reference;
+  $('browserGpuInfo').hidden = !browser || reference;
+  $('remoteControls').hidden = browser;
+  for (const id of ['protocol', 'registration']) $(id).closest('.nd-field').hidden = reference;
+  $('advancedSettings').hidden = reference;
+  $('singlePrecision').closest('label').hidden = browser && !reference;
+  for (const [id, remoteMinimum] of [['iterations', 100], ['batchSize', 256], ['log2HashmapSize', 15]]) {
+    $(id).min = String(browser && !reference ? id === 'log2HashmapSize' ? 3 : 1 : remoteMinimum);
+    $(id).step = String(browser && !reference || id === 'log2HashmapSize' ? 1 : remoteMinimum);
+  }
+  $('runButton').textContent = reference ? 'Run browser reference' : browser ? 'Reconstruct in browser' : 'Reconstruct volume';
+  syncRun();
+}
+$('executionMode').addEventListener('change', syncExecutionMode);
+syncExecutionMode();
+$('referenceAcknowledged').addEventListener('change', syncRun);
+
+async function reconstructLocally() {
+  if (job || loading || !rows.length) return;
+  const controller = new AbortController();
+  const snapshot = rows.map(row => ({ ...row }));
+  const resolution = Number($('outputResolution').value);
+  const acknowledged = $('referenceAcknowledged').checked;
+  const reference = isBrowserReference();
+  const options = reference ? { registration: 'none', outputResolution: resolution } : { ...readOptions(), singlePrecision: true };
+  const runner = reference ? runBrowserReference : runBrowserReconstruction;
+  const suffix = reference ? 'reference' : 'webgpu';
+  const stamp = snapshot[0].file.name.replace(/\.nii(\.gz)?$/i, '');
+  job = { controller, mode: reference ? 'browser-reference' : 'browser-webgpu' };
+  started = Date.now();
+  const reporter = createProgressReporter({
+    display: (message, fraction) => {
+      $('statusText').textContent = message;
+      if (fraction === undefined) $('progress').removeAttribute('value');
+      else $('progress').value = fraction;
+    },
+    log: message => log.log(message, 'info'),
+  });
+  timer = setInterval(() => { elapsed(); reporter.checkQuiet(); }, 1000);
+  $('cancelButton').hidden = false;
+  results.render();
+  syncRun();
+  status('Preparing the experimental browser reconstruction…');
+  try {
+    const stacks = await Promise.all(snapshot.map(async row => ({
+      image: await row.file.arrayBuffer(),
+      mask: await row.mask?.arrayBuffer(),
+      thickness: row.thickness,
+    })));
+    const output = await runner({
+      stacks,
+      options,
+      runtime: { modelBaseUrl: import.meta.env.NESVOR_LOCAL_MODELS ? new URL('svort/', document.baseURI).href : undefined, wasmBaseUrl: new URL('ort/', document.baseURI).href, n4BaseUrl: new URL('n4/', document.baseURI).href },
+      reference: { acknowledged },
+    }, {
+      signal: controller.signal,
+      onProgress: reporter.update,
+    });
+    const volume = new File([output.volume], `${stamp}_nesvor_${suffix}.nii`, { type: 'application/octet-stream' });
+    const record = new File([JSON.stringify(output.provenance, null, 2)], `${stamp}_nesvor_${suffix}.json`, { type: 'application/json' });
+    const logFile = new File([reporter.text(), '\n', output.log], `${stamp}_nesvor_${suffix}.log`, { type: 'text/plain' });
+    results.render({
+      volume: { description: reference ? 'Experimental CPU reference output; not validated for clinical use' : 'Experimental WebGPU reconstruction; full acquisition validation outstanding', file: volume },
+      result: { description: 'Reconstruction settings and limitations', file: record, viewable: false },
+      log: { description: 'Browser reconstruction log', file: logFile, viewable: false },
+    }, ['volume', 'result', 'log']);
+    $('outputSection').open = true;
+    $('progress').value = 1;
+    await show(volume, `${volume.name} · experimental ${suffix}`);
+    status(reference ? 'Browser reference output ready · full NeSVoR parity is not established' : 'Browser WebGPU output ready · full acquisition validation is outstanding');
+  } catch (error) {
+    status(error.name === 'AbortError' ? 'Browser reconstruction cancelled' : error.message, error.name !== 'AbortError');
   } finally {
     finishJob();
   }
-  return null;
 }
 
 $('runButton').addEventListener('click', () => void reconstruct());
-$('cancelButton').onclick = () => {
+$('cancelButton').onclick = async () => {
   exampleControl.cancel();
   loading?.abort();
+  if (job?.mode === 'browser-reference' || job?.mode === 'browser-webgpu') {
+    job.controller.abort();
+    return;
+  }
   if (job) {
-    const { controller, id } = job;
-    controller.abort();
-    if (id) void connection.client?.cancel(id).catch(() => {});
+    const currentJob = job;
+    currentJob.cancelling = true;
+    $('cancelButton').disabled = true;
+    status('Requesting cancellation; waiting for the server to stop processing…');
+    try {
+      if (currentJob.id) await currentJob.client.cancel(currentJob.id);
+    } catch (error) {
+      if (job !== currentJob) return;
+      currentJob.cancelling = false;
+      status(`Cancellation was not confirmed: ${error.message}. The job may still be running.`, true);
+    } finally {
+      if (job === currentJob || !job) $('cancelButton').disabled = false;
+    }
   }
 };
 window.addEventListener('pagehide', () => {

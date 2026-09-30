@@ -29,22 +29,19 @@ test("describeStack reads dimensions and spacing from gzipped and plain NIfTI", 
   await assert.rejects(describeStack(new File([new Uint8Array(400)], "x.nii")), /not a NIfTI-1/);
 });
 
-test("masks pair by order when counts match and by name otherwise", () => {
-  assert.deepEqual(matchMasks(["a.nii.gz", "b.nii.gz"], ["m1.nii.gz", "m2.nii.gz"]), [0, 1]);
+test("masks pair by name and never silently by file order", () => {
+  assert.deepEqual(matchMasks(["a.nii.gz", "b.nii.gz"], ["m1.nii.gz", "m2.nii.gz"]), [-1, -1]);
   assert.deepEqual(matchMasks(["stack-d0.nii.gz", "stack-d1.nii.gz", "stack-d2.nii.gz"], ["stack-d2_mask.nii.gz"]), [2]);
   assert.deepEqual(matchMasks(["stack-1.nii.gz", "stack-10.nii.gz"], ["stack-10-mask.nii.gz"]), [1]);
   assert.deepEqual(matchMasks(["a.nii.gz", "b.nii.gz", "c.nii.gz"], ["other.nii.gz"]), [-1]);
 });
 
-test("assembleJob names parts and drops incomplete masks", () => {
+test("assembleJob names parts and rejects incomplete masks", () => {
   const stack = new File([new Uint8Array(1)], "a.nii.gz");
   const mask = new File([new Uint8Array(1)], "a_mask.nii.gz");
   const complete = assembleJob([{ file: stack, thickness: 2, mask }], { registration: "stack" });
   assert.deepEqual(Object.keys(complete.files), ["stack-0", "mask-0"]);
   assert.deepEqual(complete.spec.stacks, [{ file: "stack-0", thickness: 2, mask: "mask-0" }]);
   assert.equal(complete.masksUsed, true);
-  const partial = assembleJob([{ file: stack, thickness: 2, mask }, { file: stack, thickness: 2, mask: null }], {});
-  assert.deepEqual(Object.keys(partial.files), ["stack-0", "stack-1"]);
-  assert.deepEqual(partial.spec.stacks, [{ file: "stack-0", thickness: 2 }, { file: "stack-1", thickness: 2 }]);
-  assert.equal(partial.masksUsed, false);
+  assert.throws(() => assembleJob([{ file: stack, thickness: 2, mask }, { file: stack, thickness: 2, mask: null }], {}), /Assign a mask to every stack/);
 });

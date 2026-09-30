@@ -580,7 +580,12 @@
           "apptainerUrl": "https://neurocontainers.neurodesk.workers.dev/nesvor_0.5.0_20260722.simg",
           "apptainerName": "nesvor_0.5.0_20260722"
         }
-      ]
+      ],
+      "computeServer": {
+        "name": "neurodesk-compute",
+        "documentation": "https://github.com/neurodesk/webapps/tree/main/exes/compute-server",
+        "download": null
+      }
     }
   }
 }

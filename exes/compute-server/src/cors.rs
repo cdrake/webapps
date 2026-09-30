@@ -97,7 +97,7 @@ pub async fn cors(State(policy): State<CorsPolicy>, request: Request, next: Next
             }
             headers.insert(
                 "access-control-allow-headers",
-                HeaderValue::from_static("Authorization, Content-Type"),
+                HeaderValue::from_static("Authorization, Content-Type, Idempotency-Key"),
             );
             headers.insert(
                 "access-control-allow-methods",
@@ -113,6 +113,9 @@ pub async fn cors(State(policy): State<CorsPolicy>, request: Request, next: Next
         return response;
     }
 
+    if allowed == Some(false) {
+        return StatusCode::FORBIDDEN.into_response();
+    }
     let mut response = next.run(request).await;
     // Every response varies by origin, whether or not CORS headers follow.
     response

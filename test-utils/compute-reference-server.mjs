@@ -2,7 +2,7 @@
 // simulated nesvor tool. Used by browser tests, the desktop workflow and the
 // protocol conformance test. See docs/architecture/remote-compute-protocol.md.
 import { createServer } from 'node:http';
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { fileURLToPath } from 'node:url';
 import { isNifti1, readVolume, writeFloat32Volume } from './nifti-fixture.mjs';
@@ -28,6 +28,8 @@ function logLine(level, message) {
 
 export function startReferenceServer({ port = 0, host = '127.0.0.1', token = 'test-token', allowOrigins = [], stageDelayMs = 40, maxUploadBytes = 512 * 1024 * 1024, maxFiles = 40 } = {}) {
   const jobs = new Map();
+  const sessions = new Map();
+  const submissions = new Map();
   let failNext = null;
   let running = null;
   const queue = [];
@@ -44,7 +46,7 @@ export function startReferenceServer({ port = 0, host = '127.0.0.1', token = 'te
     response.setHeader('Vary', 'Origin');
     if (origin && allowed(origin)) {
       response.setHeader('Access-Control-Allow-Origin', origin);
-      response.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+      response.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, Idempotency-Key');
       response.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
       response.setHeader('Access-Control-Allow-Private-Network', 'true');
       response.setHeader('Access-Control-Max-Age', '600');
@@ -59,10 +61,9 @@ export function startReferenceServer({ port = 0, host = '127.0.0.1', token = 'te
   };
   const fail = (response, status, code, message) => json(response, status, { error: { code, message } });
 
-  const authorized = (request, url) => {
+  const ownerOf = request => {
     const header = request.headers.authorization || '';
-    const bearer = header.startsWith('Bearer ') ? header.slice(7) : '';
-    return bearer === token || url.searchParams.get('token') === token;
+    return header.startsWith('Bearer ') ? sessions.get(header.slice(7)) : undefined;
   };
 
   const publicJob = job => ({
@@ -134,6 +135,7 @@ export function startReferenceServer({ port = 0, host = '127.0.0.1', token = 'te
       progress(job, 0.4 + 0.5 * fractionDone, 'Reconstruction');
       await sleep(job, stageDelayMs);
     }
+    if (job.cancelled) return finish(job, 'cancelled');
     if (wantsFailure) {
       log(job, 'error', `Unhandled exception:\n${wantsFailure}`);
       return finish(job, 'failed', { code: 'tool-failed', message: 'nesvor exited with status 1' });
@@ -181,7 +183,10 @@ export function startReferenceServer({ port = 0, host = '127.0.0.1', token = 'te
     });
   };
 
-  const submit = async (request, response) => {
+  const submit = async (request, response, owner) => {
+    const key = request.headers['idempotency-key'];
+    if (typeof key !== 'string' || !key.trim() || key.length > 200) return fail(response, 400, 'invalid-spec', 'A nonempty Idempotency-Key of at most 200 characters is required');
+    const scopedKey = `${owner}:${key}`;
     const type = request.headers['content-type'] || '';
     if (!type.startsWith('multipart/form-data')) return fail(response, 400, 'invalid-spec', 'Expected multipart/form-data');
     const length = Number(request.headers['content-length'] || 0);
@@ -215,8 +220,17 @@ export function startReferenceServer({ port = 0, host = '127.0.0.1', token = 'te
     for (const name of Object.keys(files)) {
       if (!isNifti1(files[name])) return fail(response, 400, 'invalid-spec', `${name} is not a NIfTI-1 file`);
     }
+    const fingerprint = JSON.stringify({ validated, files: Object.keys(files).sort().map(name => [name, createHash('sha256').update(files[name]).digest('hex')]) });
+    const previous = submissions.get(scopedKey);
+    if (previous) {
+      if (previous.fingerprint !== fingerprint) return fail(response, 409, 'conflict', 'Idempotency-Key was already used for different content');
+      const existing = jobs.get(previous.id);
+      if (!existing) return fail(response, 409, 'conflict', 'The original job has been deleted; use a new submission key');
+      return json(response, 202, { id: existing.id, status: existing.status, position: publicJob(existing).position });
+    }
     const job = {
       id: randomBytes(16).toString('hex'),
+      owner,
       spec,
       validated,
       files,
@@ -236,11 +250,13 @@ export function startReferenceServer({ port = 0, host = '127.0.0.1', token = 'te
       wake: null,
     };
     jobs.set(job.id, job);
+    submissions.set(scopedKey, { id: job.id, fingerprint });
     queue.push(job);
     const payload = { id: job.id, status: 'queued', position: publicJob(job).position };
     json(response, 202, payload);
     pump();
     return null;
+
   };
 
   const events = (request, response, job) => {
@@ -277,6 +293,7 @@ export function startReferenceServer({ port = 0, host = '127.0.0.1', token = 'te
       response.end();
       return;
     }
+    if (!originAllowed) return fail(response, 403, 'forbidden', 'Origin is not allowed');
     if (url.pathname === '/__test/fail-next' && request.method === 'POST') {
       failNext = 'RuntimeError: CUDA out of memory';
       response.writeHead(204);
@@ -285,9 +302,20 @@ export function startReferenceServer({ port = 0, host = '127.0.0.1', token = 'te
     }
     if (!url.pathname.startsWith('/api/v1/')) return fail(response, 404, 'not-found', 'Not found');
     const route = url.pathname.slice('/api/v1/'.length).split('/');
-    const isAuthorized = authorized(request, url);
+    if (route[0] === 'pair' && route.length === 1 && request.method === 'POST') {
+      let body;
+      try { body = await new Response(Readable.toWeb(request)).json(); }
+      catch { return fail(response, 400, 'invalid-spec', 'Expected JSON pairing request'); }
+      if (body.code !== token) return fail(response, 401, 'unauthorized', 'Invalid pairing code');
+      const clientId = randomBytes(16).toString('hex');
+      const credential = randomBytes(32).toString('hex');
+      sessions.set(credential, clientId);
+      return json(response, 200, { token: credential, clientId });
+    }
+    const owner = ownerOf(request);
+    const isAuthorized = Boolean(owner);
     if (route[0] === 'info' && route.length === 1 && request.method === 'GET') {
-      const info = { service: 'neurodesk-compute', version: REFERENCE_VERSION, protocol: 1, auth: 'bearer' };
+      const info = { service: 'neurodesk-compute', version: REFERENCE_VERSION, protocol: 1, auth: 'pairing' };
       if (isAuthorized) {
         Object.assign(info, {
           simulated: true,
@@ -300,20 +328,34 @@ export function startReferenceServer({ port = 0, host = '127.0.0.1', token = 'te
       return json(response, 200, info);
     }
     if (!isAuthorized) return fail(response, 401, 'unauthorized', 'A valid bearer token is required');
+    if (route[0] === 'session' && route.length === 1 && request.method === 'DELETE') {
+      sessions.delete(request.headers.authorization.slice(7));
+      response.writeHead(204);
+      response.end();
+      return;
+    }
     if (route[0] !== 'jobs') return fail(response, 404, 'not-found', 'Not found');
-    if (route.length === 1 && request.method === 'POST') return submit(request, response);
+    if (route.length === 1 && request.method === 'POST') return submit(request, response, owner);
+    if (route.length === 1 && request.method === 'GET') return json(response, 200, { jobs: Array.from(jobs.values()).filter(job => job.owner === owner).map(publicJob) });
     const job = jobs.get(route[1]);
-    if (!job) return fail(response, 404, 'not-found', 'Unknown job');
+    if (!job || job.owner !== owner) return fail(response, 404, 'not-found', 'Unknown job');
     if (route.length === 2 && request.method === 'GET') return json(response, 200, publicJob(job));
-    if (route.length === 2 && request.method === 'DELETE') {
-      job.cancelled = true;
-      const index = queue.indexOf(job);
-      if (index >= 0) {
-        queue.splice(index, 1);
-        finish(job, 'cancelled');
-      } else if (job.status === 'running') {
-        job.wake?.();
+    if (route.length === 3 && route[2] === 'cancel' && request.method === 'POST') {
+      if (['queued', 'running', 'cancelling'].includes(job.status)) {
+        job.cancelled = true;
+        const index = queue.indexOf(job);
+        if (index >= 0) {
+          queue.splice(index, 1);
+          finish(job, 'cancelled');
+        } else {
+          setStatus(job, 'cancelling');
+          job.wake?.();
+        }
       }
+      return json(response, 200, publicJob(job));
+    }
+    if (route.length === 2 && request.method === 'DELETE') {
+      if (['queued', 'running', 'cancelling'].includes(job.status)) return fail(response, 409, 'conflict', 'Cancel the job and wait for its runner to stop before deletion');
       jobs.delete(job.id);
       response.writeHead(204);
       response.end();

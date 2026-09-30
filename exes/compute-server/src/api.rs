@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use axum::body::Body;
 use axum::extract::multipart::{Multipart, MultipartRejection};
-use axum::extract::{DefaultBodyLimit, Path, Request, State};
+use axum::extract::{DefaultBodyLimit, Extension, Path, Request, State};
 use axum::http::header::{
     HeaderName, HeaderValue, CACHE_CONTROL, CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_TYPE,
 };
@@ -23,7 +23,7 @@ use serde_json::{json, Value};
 use tokio::io::AsyncWriteExt;
 use tokio_util::io::ReaderStream;
 
-use crate::auth::{self, Credentials};
+use crate::auth::{self, Owner};
 use crate::config::ServeConfig;
 use crate::cors::{self, CorsPolicy};
 use crate::jobs::{Event, JobStore};
@@ -41,6 +41,8 @@ pub struct AppState {
     pub store: Arc<JobStore>,
     /// Registered tools.
     pub tools: Arc<Vec<Arc<dyn Tool>>>,
+    pub sessions: Arc<auth::Sessions>,
+    pub submissions: Arc<SubmissionLocks>,
 }
 
 /// An API error with the protocol's JSON shape.
@@ -78,9 +80,7 @@ impl ApiError {
         ApiError::new(StatusCode::NOT_FOUND, "not-found", message)
     }
 
-    /// `409 conflict` (reserved by the protocol; the Rust server currently
-    /// never produces it).
-    #[allow(dead_code)]
+    /// `409 conflict` for an incompatible retry or premature deletion.
     pub fn conflict(message: impl Into<String>) -> ApiError {
         ApiError::new(StatusCode::CONFLICT, "conflict", message)
     }
@@ -117,8 +117,12 @@ pub fn router(state: AppState) -> Router {
     let protected = Router::new()
         .route(
             "/jobs",
-            post(create_job).layer(DefaultBodyLimit::max(max_body)),
+            get(list_jobs)
+                .post(create_job)
+                .layer(DefaultBodyLimit::max(max_body)),
         )
+        .route("/session", axum::routing::delete(revoke_session))
+        .route("/jobs/{id}/cancel", post(cancel_job))
         .route("/jobs/{id}", get(get_job).delete(delete_job))
         .route("/jobs/{id}/events", get(job_events))
         .route("/jobs/{id}/outputs/{name}", get(job_output))
@@ -128,6 +132,7 @@ pub fn router(state: AppState) -> Router {
         ));
     Router::new()
         .route("/info", get(info))
+        .route("/pair", post(pair))
         .merge(protected)
         .fallback(api_not_found)
         .layer(middleware::from_fn(no_store))
@@ -153,13 +158,15 @@ async fn info(State(state): State<AppState>, request: Request) -> Result<Json<Va
         "service": crate::SERVICE_NAME,
         "version": crate::VERSION,
         "protocol": crate::PROTOCOL_VERSION,
-        "auth": "bearer",
+        "auth": "pairing",
     });
     // Without a valid token the probe stays anonymous; a wrong token is not
     // rejected here so that the capability probe never needs credentials.
-    match auth::check(&request, &state.config.token) {
-        Credentials::Missing | Credentials::Invalid => return Ok(Json(body)),
-        Credentials::Valid => {}
+    if auth::presented_token(&request)
+        .and_then(|token| state.sessions.owner(&token))
+        .is_none()
+    {
+        return Ok(Json(body));
     }
     let tools: Vec<Value> = state
         .tools
@@ -222,6 +229,22 @@ async fn create_job(
     State(state): State<AppState>,
     request: Request,
 ) -> Result<(StatusCode, Json<Value>), ApiError> {
+    let owner = request
+        .extensions()
+        .get::<Owner>()
+        .ok_or_else(|| ApiError::unauthorized("missing identity"))?
+        .0
+        .clone();
+    let key = request
+        .headers()
+        .get("idempotency-key")
+        .and_then(|value| value.to_str().ok())
+        .filter(|value| !value.is_empty() && value.len() <= 128)
+        .ok_or_else(|| ApiError::invalid_spec("Idempotency-Key is required (1 to 128 characters)"))?
+        .to_owned();
+    // Only duplicate attempts share an upload lock.
+    let submission = state.submissions.for_key(&owner, &key);
+    let _submission = submission.lock().await;
     if let Some(length) = request
         .headers()
         .get(CONTENT_LENGTH)
@@ -238,6 +261,7 @@ async fn create_job(
 
     let id = new_job_id();
     let job_dir = state.config.data_dir.join("jobs").join(&id);
+    let mut upload = PendingUpload(Some(job_dir.clone()));
     let in_dir = job_dir.join("in");
     let out_dir = job_dir.join("out");
     tokio::fs::create_dir_all(&in_dir).await.map_err(|error| {
@@ -248,14 +272,45 @@ async fn create_job(
     })?;
 
     let result = receive_job(&state, multipart, &in_dir).await;
-    let (tool, validated) = match result {
+    let (tool, validated, fingerprint) = match result {
         Ok(ok) => ok,
         Err(error) => {
             let _ = tokio::fs::remove_dir_all(&job_dir).await;
             return Err(error);
         }
     };
-    let position = state.store.submit(id.clone(), tool, validated, job_dir);
+    if let Some(view) = state.store.receipt(&owner, &key) {
+        if state.store.fingerprint(&view.id).as_deref() != Some(&fingerprint) {
+            return Err(ApiError::conflict(
+                "Idempotency-Key already identifies different inputs or settings",
+            ));
+        }
+        return Ok((
+            StatusCode::ACCEPTED,
+            Json(json!({ "id": view.id, "status": view.status, "position": view.position })),
+        ));
+    }
+    #[cfg(unix)]
+    for directory in [&in_dir, &job_dir, &state.config.data_dir.join("jobs")] {
+        std::fs::File::open(directory)
+            .and_then(|file| file.sync_all())
+            .map_err(|error| ApiError::runner_unavailable(error.to_string()))?;
+    }
+    let position = state
+        .store
+        .submit(
+            crate::jobs::SubmissionIdentity {
+                owner,
+                key,
+                fingerprint,
+            },
+            id.clone(),
+            tool,
+            validated,
+            job_dir,
+        )
+        .map_err(|error| ApiError::runner_unavailable(error.to_string()))?;
+    upload.0 = None;
     Ok((
         StatusCode::ACCEPTED,
         Json(json!({ "id": id, "status": "queued", "position": position })),
@@ -269,10 +324,11 @@ async fn receive_job(
     state: &AppState,
     mut multipart: Multipart,
     in_dir: &std::path::Path,
-) -> Result<(Arc<dyn Tool>, tools::ValidatedJob), ApiError> {
+) -> Result<(Arc<dyn Tool>, tools::ValidatedJob, String), ApiError> {
     let mut spec: Option<Value> = None;
     let mut parts: Vec<ReceivedPart> = Vec::new();
     let mut total_bytes: u64 = 0;
+    let mut digests: Vec<(String, String)> = Vec::new();
 
     while let Some(mut field) = multipart.next_field().await.map_err(multipart_error)? {
         let name = field.name().unwrap_or("").to_string();
@@ -316,7 +372,9 @@ async fn receive_job(
         })?;
         let mut first_bytes: Vec<u8> = Vec::new();
         let mut bytes: u64 = 0;
+        let mut digest = ring::digest::Context::new(&ring::digest::SHA256);
         while let Some(chunk) = field.chunk().await.map_err(multipart_error)? {
+            digest.update(&chunk);
             bytes += chunk.len() as u64;
             total_bytes += chunk.len() as u64;
             if total_bytes > state.config.max_upload_bytes {
@@ -329,7 +387,7 @@ async fn receive_job(
                 ApiError::runner_unavailable(format!("cannot write upload: {error}"))
             })?;
         }
-        file.flush().await.map_err(|error| {
+        file.sync_all().await.map_err(|error| {
             ApiError::runner_unavailable(format!("cannot write upload: {error}"))
         })?;
         drop(file);
@@ -350,6 +408,7 @@ async fn receive_job(
             .await
             .map_err(|error| ApiError::runner_unavailable(error.to_string()))?
             .unwrap_or_default();
+        digests.push((name.clone(), hex_digest(digest.finish())));
         parts.push(ReceivedPart {
             name,
             path,
@@ -370,13 +429,19 @@ async fn receive_job(
     let validated = tool
         .validate(&spec, &parts)
         .map_err(|error| ApiError::invalid_spec(error.message))?;
-    Ok((tool, validated))
+    digests.sort();
+    let bytes = serde_json::to_vec(&(&spec, &digests))
+        .map_err(|error| ApiError::invalid_spec(error.to_string()))?;
+    let fingerprint = hex_digest(ring::digest::digest(&ring::digest::SHA256, &bytes));
+    Ok((tool, validated, fingerprint))
 }
 
 async fn get_job(
     State(state): State<AppState>,
     Path(id): Path<String>,
+    Extension(Owner(owner)): Extension<Owner>,
 ) -> Result<Json<Value>, ApiError> {
+    require_owner(&state, &id, &owner)?;
     let view = state
         .store
         .view(&id)
@@ -389,7 +454,18 @@ async fn get_job(
 async fn delete_job(
     State(state): State<AppState>,
     Path(id): Path<String>,
+    Extension(Owner(owner)): Extension<Owner>,
 ) -> Result<StatusCode, ApiError> {
+    require_owner(&state, &id, &owner)?;
+    if !state
+        .store
+        .view(&id)
+        .is_some_and(|job| job.status.is_finished())
+    {
+        return Err(ApiError::conflict(
+            "cancel and wait for termination before deletion",
+        ));
+    }
     if state.store.delete(&id).await {
         Ok(StatusCode::NO_CONTENT)
     } else {
@@ -405,7 +481,9 @@ fn sse_event(event: &Event) -> SseEvent {
 async fn job_events(
     State(state): State<AppState>,
     Path(id): Path<String>,
+    Extension(Owner(owner)): Extension<Owner>,
 ) -> Result<Sse<impl Stream<Item = Result<SseEvent, Infallible>>>, ApiError> {
+    require_owner(&state, &id, &owner)?;
     let (replay, mut receiver) = state
         .store
         .subscribe(&id)
@@ -441,7 +519,9 @@ async fn job_events(
 async fn job_output(
     State(state): State<AppState>,
     Path((id, name)): Path<(String, String)>,
+    Extension(Owner(owner)): Extension<Owner>,
 ) -> Result<Response, ApiError> {
+    require_owner(&state, &id, &owner)?;
     let (path, content_type, _) = state
         .store
         .output(&id, &name)
@@ -473,4 +553,100 @@ async fn serve_file(path: PathBuf, content_type: &str, name: &str) -> Result<Res
         HeaderValue::from_static("nosniff"),
     );
     Ok(response)
+}
+
+async fn pair(
+    State(state): State<AppState>,
+    Json(body): Json<Value>,
+) -> Result<Json<Value>, ApiError> {
+    let code = body.get("code").and_then(Value::as_str).unwrap_or("");
+    if !auth::constant_time_eq(code, &state.config.token) {
+        return Err(ApiError::unauthorized("invalid pairing code"));
+    }
+    let (token, client_id) = state
+        .sessions
+        .pair()
+        .map_err(|error| ApiError::runner_unavailable(error.to_string()))?;
+    Ok(Json(json!({ "token": token, "clientId": client_id })))
+}
+
+async fn revoke_session(
+    State(state): State<AppState>,
+    Extension(Owner(owner)): Extension<Owner>,
+) -> Result<StatusCode, ApiError> {
+    state
+        .sessions
+        .revoke(&owner)
+        .map_err(|error| ApiError::runner_unavailable(error.to_string()))?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+fn require_owner(state: &AppState, id: &str, owner: &str) -> Result<(), ApiError> {
+    if state.store.owned(id, owner) {
+        Ok(())
+    } else {
+        Err(ApiError::not_found("no such job"))
+    }
+}
+
+async fn list_jobs(
+    State(state): State<AppState>,
+    Extension(Owner(owner)): Extension<Owner>,
+) -> Json<Value> {
+    Json(json!({ "jobs": state.store.list(&owner) }))
+}
+
+async fn cancel_job(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    Extension(Owner(owner)): Extension<Owner>,
+) -> Result<Json<Value>, ApiError> {
+    require_owner(&state, &id, &owner)?;
+    state
+        .store
+        .cancel(&id)
+        .map_err(|error| ApiError::runner_unavailable(error.to_string()))?;
+    Ok(Json(json!(state.store.view(&id))))
+}
+
+type UploadLocks =
+    std::collections::HashMap<(String, String), std::sync::Weak<tokio::sync::Mutex<()>>>;
+
+#[derive(Default)]
+pub struct SubmissionLocks {
+    entries: std::sync::Mutex<UploadLocks>,
+}
+
+impl SubmissionLocks {
+    fn for_key(&self, owner: &str, key: &str) -> Arc<tokio::sync::Mutex<()>> {
+        let mut entries = self.entries.lock().unwrap();
+        entries.retain(|_, value| value.strong_count() > 0);
+        let entry = entries
+            .entry((owner.to_owned(), key.to_owned()))
+            .or_default();
+        if let Some(lock) = entry.upgrade() {
+            return lock;
+        }
+        let lock = Arc::new(tokio::sync::Mutex::new(()));
+        *entry = Arc::downgrade(&lock);
+        lock
+    }
+}
+
+struct PendingUpload(Option<PathBuf>);
+
+impl Drop for PendingUpload {
+    fn drop(&mut self) {
+        if let Some(path) = &self.0 {
+            let _ = std::fs::remove_dir_all(path);
+        }
+    }
+}
+
+fn hex_digest(digest: ring::digest::Digest) -> String {
+    digest
+        .as_ref()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
 }

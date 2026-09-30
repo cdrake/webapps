@@ -37,3 +37,5 @@ pub const NESVOR_SIMG_NAME: &str = "nesvor_0.5.0_20260722.simg";
 /// Download location of the apptainer image.
 pub const NESVOR_SIMG_URL: &str =
     "https://neurocontainers.neurodesk.workers.dev/nesvor_0.5.0_20260722.simg";
+
+pub mod durable;
