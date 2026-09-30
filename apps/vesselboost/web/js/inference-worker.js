@@ -23,7 +23,7 @@ import { zScoreNormalize } from '../vendor/webapp-components/src/volume/normaliz
 
 let localforage;
 let nifti;
-let wasm_bindgen;
+let preprocessingWasm;
 let VesselBoostN4Policy;
 let dependenciesReady;
 
@@ -37,12 +37,12 @@ function loadDependencies() {
     localforage = localForageModule.default;
     nifti = globalThis.nifti;
     VesselBoostN4Policy = globalThis.VesselBoostN4Policy;
-    wasm_bindgen = preprocessingModule?.default || null;
-    wasmPreprocessingAvailable = typeof wasm_bindgen === 'function';
+    preprocessingWasm = preprocessingModule;
+    wasmPreprocessingAvailable = typeof preprocessingWasm?.default === 'function';
     if (!localforage || !nifti || !VesselBoostN4Policy) {
       throw new Error('VesselBoost worker dependencies failed to initialize');
     }
-    return { localforage, nifti, wasm_bindgen };
+    return { localforage, nifti, preprocessingWasm };
   });
   return dependenciesReady;
 }
@@ -415,7 +415,7 @@ async function fetchModel(url, modelName, progressBase, progressSpan) {
 async function initWasmPreprocessing() {
   if (!wasmPreprocessingAvailable) return false;
   try {
-    await wasm_bindgen('../preprocessing-wasm/preprocessing_bg.wasm');
+    await preprocessingWasm.default();
     return true;
   } catch (e) {
     postLog('Warning: Could not initialize preprocessing WASM: ' + e.message);
@@ -654,7 +654,7 @@ function stepN4() {
     );
   }
 
-  const corrected = wasm_bindgen.n4_bias_correct(
+  const corrected = preprocessingWasm.n4_bias_correct(
     rasData, rasDims[0], rasDims[1], rasDims[2],
     rasSpacing[0], rasSpacing[1], rasSpacing[2],
     n4Policy.shrinkFactor, 10, 0.005
@@ -835,7 +835,7 @@ function stepBET(params) {
     }
   };
 
-  const brainMask = wasm_bindgen.bet_brain_extract(
+  const brainMask = preprocessingWasm.bet_brain_extract(
     rasData,
     rasDims[0], rasDims[1], rasDims[2],
     rasSpacing[0], rasSpacing[1], rasSpacing[2],
@@ -1184,7 +1184,7 @@ function stepDenoise(params) {
     methodLabel = 'Bilateral';
     postProgress(0.1, 'Denoising (Bilateral)...');
     postLog('Running bilateral filter denoising on volume...');
-    denoised = wasm_bindgen.bilateral_denoise(
+    denoised = preprocessingWasm.bilateral_denoise(
       rasData, rasDims[0], rasDims[1], rasDims[2],
       2, 1.5, 0.0
     );
@@ -1192,7 +1192,7 @@ function stepDenoise(params) {
     methodLabel = 'NLM Fast';
     postProgress(0.1, 'Denoising (NLM Fast)...');
     postLog('Running non-local means (fast) denoising on volume...');
-    denoised = wasm_bindgen.nlm_denoise(
+    denoised = preprocessingWasm.nlm_denoise(
       rasData, rasDims[0], rasDims[1], rasDims[2],
       3, 1, 0.0
     );
@@ -1200,7 +1200,7 @@ function stepDenoise(params) {
     methodLabel = 'NLM';
     postProgress(0.1, 'Denoising (NLM)...');
     postLog('Running non-local means denoising on volume...');
-    denoised = wasm_bindgen.nlm_denoise(
+    denoised = preprocessingWasm.nlm_denoise(
       rasData, rasDims[0], rasDims[1], rasDims[2],
       5, 1, 0.0
     );
