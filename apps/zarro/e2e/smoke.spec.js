@@ -263,6 +263,12 @@ test("large NIfTI export reports progress and can be cancelled", async ({ page }
     });
   });
 
+  // Tile chunks are held until the test has pressed cancel, so a slow runner cannot finish
+  // tile 1 first; the only write must then be the header.
+  let releaseTiles;
+  const tilesReleased = new Promise((resolve) => {
+    releaseTiles = resolve;
+  });
   const rootAttributes = {
     multiscales: [{
       axes: [
@@ -326,7 +332,7 @@ test("large NIfTI export reports progress and can be cancelled", async ({ page }
         body: Buffer.alloc(1 * 8 * 17 * 2, 1),
       });
     } else if (/\/0\/0\.\d+\.\d+$/.test(path)) {
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      await tilesReleased;
       try {
         await route.fulfill({
           contentType: "application/octet-stream",
@@ -355,13 +361,13 @@ test("large NIfTI export reports progress and can be cancelled", async ({ page }
 
   await openTools(page);
   await page.locator("#downloadNifti").click();
-  // Progress is reported per tile; a fast machine may already be past tile 1.
-  await expect(page.locator("#statusText")).toContainText(/Fetching tile \d+ of/);
+  await expect(page.locator("#statusText")).toContainText("Fetching tile 1 of");
   await expect(page.locator("#cancelButton")).toBeVisible();
   await page.locator("#cancelButton").click();
   await expect(page.locator("#technicalLogOutput")).toContainText(
     "Download cancelled",
   );
+  releaseTiles();
   await expect(page.locator("#cancelButton")).toBeHidden();
   expect(await page.evaluate(() => window.__niftiWriterAborted)).toBe(true);
   expect(await page.evaluate(() => window.__niftiWriterWrites)).toBe(1);
