@@ -5270,6 +5270,7 @@ async function performReloadVolume(
   if (reportsLoad) {
     status(`Reading ${layerName ? `${layerName} ` : ''}OME-Zarr metadata…`, {
       progress: null,
+      background: downloadInProgress,
     })
   }
   try {
@@ -5380,6 +5381,7 @@ async function performReloadVolume(
       status(
         `${layerName ?? activeSource.name} loaded · ${activeSource.shape.join(' × ')} ${activeSource.dtype}` +
           (level !== null ? ` · L${level}` : ''),
+        { background: downloadInProgress },
       )
     }
   } catch (err) {
@@ -5400,7 +5402,7 @@ async function performReloadVolume(
       els.activeLevel.value = 'unavailable'
       els.activeLevel.title = 'The OME-Zarr volume did not load'
     }
-    status(`Could not load the volume: ${errorText(err)}`, { error: true })
+    status(`Could not load the volume: ${errorText(err)}`, { error: true, background: downloadInProgress })
   } finally {
     suppressAdaptiveEvents = false
     syncDownloadControl()

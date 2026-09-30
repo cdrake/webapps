@@ -4,6 +4,11 @@
 
 ### Patch Changes
 
+- Preserve NIfTI export progress and Cancel when a pending viewer load finishes during the export.
+
+
+### Patch Changes
+
 - Updated dependencies
   - @neurodesk/webapp-components@0.6.2
 
