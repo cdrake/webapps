@@ -8,5 +8,6 @@ pub mod ge;
 pub mod lcm;
 pub mod lcmraw;
 pub mod niimrs;
+pub mod rda;
 pub mod sdat;
 pub mod twix;
