@@ -2,6 +2,7 @@ import NiiVue, { lookupColorMap, SLICE_TYPE } from '@niivue/niivue';
 import '@neurodesk/webapp-components/styles/imaging-workspace.css';
 import { mountImagingWorkspace } from '@neurodesk/webapp-components/core/mount-imaging-workspace';
 import {
+  ProgressManager,
   bindFileDrop,
   bindInfoTooltips,
   createConsole,
@@ -28,6 +29,8 @@ import examples from '../examples.json';
 import './styles.css';
 
 const $ = (id) => document.getElementById(id);
+const progress = new ProgressManager();
+const geometryFields = ['tiltLimit', 'posterior', 'anterior', 'lateral', 'midline', 'minSeparation'];
 
 mountImagingWorkspace({
   controls: '#controls',
@@ -85,7 +88,7 @@ function statusLine(message) {
 }
 
 function status(message, error = false) {
-  $('statusText').textContent = statusLine(message);
+  progress.setText(statusLine(message));
   $('statusText').classList.toggle('error', error);
   log.log(message, error ? 'error' : 'info');
 }
@@ -97,7 +100,7 @@ function refreshActions() {
 
 function setBusy(value) {
   busy = value;
-  for (const id of ['imageInput', 'candidatePercentile', 'headPercentile', 'venc']) $(id).disabled = value;
+  for (const id of ['imageInput', 'candidatePercentile', 'headPercentile', 'venc', ...geometryFields]) $(id).disabled = value;
   exampleControl.setDisabled(value);
   refreshActions();
 }
@@ -171,7 +174,8 @@ function clearOutputs() {
   $('metricsBody').replaceChildren();
   results.render();
   $('outputSection').open = false;
-  $('progress').value = 0;
+  progress.setProgress(0);
+  $('qcSummary').hidden = true;
 }
 
 async function loadFiles(files, { signal, assertCurrent = () => {}, label, chosen } = {}) {
@@ -182,7 +186,7 @@ async function loadFiles(files, { signal, assertCurrent = () => {}, label, chose
   signal?.addEventListener('abort', abort, { once: true });
   loading = controller;
   setBusy(true);
-  $('cancelButton').hidden = false;
+  progress.begin('Reading the series…');
   status('Reading the series…');
   try {
     const images = await readImageFiles(await files, { signal: controller.signal });
@@ -209,7 +213,9 @@ async function loadFiles(files, { signal, assertCurrent = () => {}, label, chose
   } finally {
     signal?.removeEventListener('abort', abort);
     loading = null;
-    $('cancelButton').hidden = true;
+    progress.stopTimer();
+    progress.setCancellable(false);
+    progress.setProgress(0);
     setBusy(false);
   }
 }
@@ -282,7 +288,38 @@ const UNITS = {
   variability: { axis: 'Phase signal (a.u.)', column: 'a.u.', digits: 1 },
 };
 
+function readGeometry() {
+  const values = {};
+  for (const id of geometryFields) {
+    const input = $(id);
+    if (!input.value.trim() || !input.checkValidity()) {
+      $('advancedSettings').open = true;
+      input.focus();
+      throw new Error(`${input.labels[0].firstChild.textContent.trim()} must be ${input.min} to ${input.max}, in steps of ${input.step}.`);
+    }
+    values[id] = Number(input.value);
+  }
+  if (values.midline >= values.lateral) {
+    $('advancedSettings').open = true;
+    $('midline').focus();
+    throw new Error('Midline exclusion must be smaller than the lateral extent.');
+  }
+  return values;
+}
+
 function renderOutputs() {
+  const qc = result.found.qc;
+  $('qcSummary').hidden = !qc;
+  if (qc) {
+    const reasons = [];
+    if (qc.tiltAtEdge) reasons.push('tilt at search limit');
+    if (Math.abs(qc.peakLag) > 1) reasons.push('peaks differ by more than one frame');
+    if (qc.pairOffcentre > 0.3) reasons.push('pair off centre');
+    if (qc.pairVshift > 0.3) reasons.push('pair offset');
+    $('qcSummary').textContent = `Tilt ${qc.tiltDegrees.toFixed(1)}° · ${reasons.length ? `Review: ${reasons.join('; ')}` : 'No automatic QC flags'}`;
+    $('qcSummary').className = `nd-message ${qc.flag ? 'warning' : 'info'}`;
+    log.log(`Quality checks: ${JSON.stringify(qc)}; static baseline ${result.found.baseline}`);
+  }
   const sides = ['left', 'right'];
   const unit = UNITS[result.found.method];
   $('flowChart').innerHTML = flowChartSvg(
@@ -330,6 +367,7 @@ async function runDetection({ options: explicitOptions, signal, throwOnError = f
       candidatePercentile: readSetting('candidatePercentile', 50, 100),
       headPercentile: readSetting('headPercentile', 0, 100),
       venc: readVenc(),
+      ...readGeometry(),
     };
   } catch (error) {
     status(error.message, true);
@@ -338,6 +376,7 @@ async function runDetection({ options: explicitOptions, signal, throwOnError = f
   }
   setBusy(true);
   clearOutputs();
+  progress.begin('Detecting carotids…', { cancellable: false });
   status('Detecting carotids…');
   const started = performance.now();
   try {
@@ -362,17 +401,19 @@ async function runDetection({ options: explicitOptions, signal, throwOnError = f
     signal?.throwIfAborted();
     renderOutputs();
     $('outputSection').open = true;
-    $('progress').value = 1;
+    progress.end('Detection complete');
     const { left, right } = found;
     const summary = found.method === 'velocity'
       ? `left ${Math.round(left.mean)} ml/min, right ${Math.round(right.mean)} ml/min`
       : `left ${left.pixels.length} px, right ${right.pixels.length} px`;
     status(`Both carotids found · ${summary} · systolic peak at frame ${right.peakFrame + 1}`);
+    if (found.qc?.flag) status('Review flagged carotid pair · see quality checks in Flow curves');
     log.log(`Detection took ${Math.round(performance.now() - started)} ms`);
     return result;
   } catch (error) {
     // Drop the previous run's overlays with its numbers: they described other settings.
     clearOutputs();
+    progress.end('Detection failed', { success: false });
     await showImages().catch(() => {});
     status(error instanceof Error ? error.message : String(error), true);
     if (throwOnError) throw error;
@@ -414,6 +455,7 @@ const initialized = init();
 function measurements(found) {
   return {
     method: found.method,
+    ...(found.qc ? { qc: found.qc, baseline: found.baseline, arterialSign: found.arterialSign } : {}),
     curveUnit: found.method === 'velocity' ? 'ml/min' : 'a.u.',
     vessels: Object.fromEntries(['left', 'right'].map(side => {
       const vessel = found[side];

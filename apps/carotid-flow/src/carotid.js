@@ -1,13 +1,8 @@
 // Carotid detection and flow curves from one phase-contrast neck slice. Two methods, chosen by
 // the data. Unsigned phase frames (a magnitude-weighted speed image, as the requesting lab's
 // scanner exports) go through a port of the lab's standalone_automatic_carotid_flow.m.
-// Signed velocity goes through detectFromVelocity, below. The port has two deliberate
-// differences from the script:
-//   - it works in the stored voxel grid and reads the anterior and left directions from the
-//     affine, where the MATLAB script transposes the image and assumes the nose points down;
-//   - left and right are the patient's, from the world x of each vessel. The script labelled
-//     the vessel on the image's left as the left carotid, which on a radiological grid (the
-//     example's x decreases along i) is the patient's right.
+// Signed velocity goes through detectFromVelocity. The variability method follows the updated
+// lab script, retaining the stored voxel grid and affine-based anatomical directions.
 // Pure: typed arrays in, typed arrays and numbers out, so Node tests it without a browser.
 import { connectedComponents3D, keepLargestComponent } from '@neurodesk/webapp-components/volume';
 
@@ -20,6 +15,7 @@ export const DEFAULTS = Object.freeze({
   lateral: 0.30,
   midline: 0.08,
   minSeparation: 5,
+  tiltLimit: 30,
   // Velocity method: vessels are pixels whose mean speed exceeds this fraction of the 99.9th
   // percentile inside the head, and blobs smaller than minPixels are dropped.
   velocityFraction: 0.25,
@@ -157,9 +153,84 @@ export function detectCarotids(series, options = {}) {
   return isSignedPhase(series.phase) ? detectFromVelocity(series, options) : detectFromVariability(series, options);
 }
 
+function extentOf(values) {
+  let low = Infinity;
+  let high = -Infinity;
+  for (const value of values) {
+    low = Math.min(low, value);
+    high = Math.max(high, value);
+  }
+  return high - low;
+}
+
+/** Bilinear symmetry search in an affine-oriented plane, without resampling the input masks. */
+function estimateTilt(amplitude, head, nx, ny, axes, cx, cy, limit) {
+  const width = axes.lr === 0 ? nx : ny;
+  const height = axes.ap === 0 ? nx : ny;
+  const sample = (x, y) => {
+    const i = axes.lr === 0 ? x : y;
+    const j = axes.lr === 0 ? y : x;
+    const ix = Math.floor(i);
+    const iy = Math.floor(j);
+    let value = 0;
+    for (let dy = 0; dy <= 1; dy++) {
+      for (let dx = 0; dx <= 1; dx++) {
+        const xx = ix + dx;
+        const yy = iy + dy;
+        if (xx < 0 || yy < 0 || xx >= nx || yy >= ny) continue;
+        const v = yy * nx + xx;
+        if (head[v]) value += amplitude[v] * (dx ? i - ix : 1 - i + ix) * (dy ? j - iy : 1 - j + iy);
+      }
+    }
+    return value;
+  };
+  const scores = [];
+  let best = { score: -Infinity, degrees: 0 };
+  const rotated = new Float64Array(width * height);
+  for (let degrees = -limit; degrees <= limit; degrees += 0.5) {
+    const c = Math.cos(degrees * Math.PI / 180);
+    const s = Math.sin(degrees * Math.PI / 180);
+    let sum = 0;
+    let squares = 0;
+    let product = 0;
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const u = x - (width - 1) / 2;
+        const w = y - (height - 1) / 2;
+        const value = sample(cx + c * u + s * w, cy + axes.anterior * (-s * u + c * w));
+        rotated[y * width + x] = value;
+        sum += value;
+        squares += value * value;
+      }
+    }
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) product += rotated[y * width + x] * rotated[y * width + width - 1 - x];
+    }
+    const centred = sum * sum / rotated.length;
+    const score = squares > centred ? (product - centred) / (squares - centred) : 0;
+    scores.push(score);
+    if (score > best.score) best = { score, degrees };
+  }
+  return { degrees: best.degrees, contrast: best.score - percentile(scores, 50), atEdge: Math.abs(best.degrees) === limit };
+}
+
 /** The port of standalone_automatic_carotid_flow.m. Curves are phase-image intensities. */
 export function detectFromVariability(series, options = {}) {
   const settings = { ...DEFAULTS, ...options };
+  for (const [key, low, high, step] of [
+    ['tiltLimit', 0.5, 60, 0.5],
+    ['posterior', 0, 0.5, 0.01],
+    ['anterior', 0, 0.5, 0.01],
+    ['lateral', 0.01, 0.5, 0.01],
+    ['midline', 0, 0.49, 0.01],
+    ['minSeparation', 1, 100, 1],
+  ]) {
+    const value = settings[key];
+    if (!Number.isFinite(value) || value < low || value > high || Math.abs(value / step - Math.round(value / step)) > 1e-8) {
+      throw new Error(`${key} must be ${low} to ${high}, in steps of ${step}.`);
+    }
+  }
+  if (settings.midline >= settings.lateral) throw new Error('Midline exclusion must be smaller than the lateral extent.');
   const { amplitude, phase, nx, ny, phases, affine } = series;
   const voxels = nx * ny;
   const axes = inPlaneAxes(affine);
@@ -190,24 +261,23 @@ export function detectFromVariability(series, options = {}) {
   const threshold = percentile(inHead.map(v => variability[v]), settings.candidatePercentile);
 
   // 3. Anatomical band: just behind to just in front of the head centre, lateral to the midline.
-  const clamp = (value, axis) => Math.min(Math.max(value, 1), extent[axis]);
-  const back = axes.anterior > 0 ? settings.posterior : settings.anterior;
-  const front = axes.anterior > 0 ? settings.anterior : settings.posterior;
-  const box = {
-    apLow: clamp(Math.round(along.centre - back * along.size), axes.ap),
-    apHigh: clamp(Math.round(along.centre + front * along.size), axes.ap),
-    lrLow: clamp(Math.round(across.centre - settings.lateral * across.size), axes.lr),
-    lrHigh: clamp(Math.round(across.centre + settings.lateral * across.size), axes.lr),
-    midLow: Math.round(across.centre - settings.midline * across.size),
-    midHigh: Math.round(across.centre + settings.midline * across.size),
+  const tilt = estimateTilt(meanAmplitude, head, nx, ny, axes, across.centre - 1, along.centre - 1, settings.tiltLimit);
+  const c = Math.cos(tilt.degrees * Math.PI / 180);
+  const s = Math.sin(tilt.degrees * Math.PI / 180);
+  const aligned = (u, w) => {
+    const x = u - across.centre;
+    const y = axes.anterior * (w - along.centre);
+    return [c * x - s * y, s * x + c * y];
   };
+  const positions = inHead.map(v => aligned(coordinate(v, axes.lr) + 1, coordinate(v, axes.ap) + 1));
+  const width = extentOf(positions.map(p => p[0]));
+  const height = extentOf(positions.map(p => p[1]));
   const candidates = new Uint8Array(voxels);
   for (let v = 0; v < voxels; v++) {
     if (!(variability[v] > threshold)) continue;
-    const u = coordinate(v, axes.lr) + 1;
-    const w = coordinate(v, axes.ap) + 1;
-    if (w < box.apLow || w > box.apHigh || u < box.lrLow || u > box.lrHigh) continue;
-    if (u >= box.midLow && u <= box.midHigh) continue;
+    const [u, w] = aligned(coordinate(v, axes.lr) + 1, coordinate(v, axes.ap) + 1);
+    if (w < -settings.posterior * height || w > settings.anterior * height) continue;
+    if (Math.abs(u) > settings.lateral * width || Math.abs(u) < settings.midline * width) continue;
     candidates[v] = 1;
   }
 
@@ -233,15 +303,30 @@ export function detectFromVariability(series, options = {}) {
     throw new Error(`Found ${blobs.length} candidate vessel${blobs.length === 1 ? '' : 's'} in the search band, need two. Lower the candidate percentile or check the slice position.`);
   }
 
-  // 5. The pair: side by side, far apart and level with each other.
+  const staticThreshold = percentile(inHead.map(v => variability[v]), 50);
+  const phaseMean = meanFrames(phase, voxels, phases);
+  const baseline = percentile(inHead.filter(v => variability[v] <= staticThreshold).map(v => phaseMean[v]), 50);
+  for (const blob of blobs) {
+    blob.aligned = aligned(blob.u, blob.w);
+    blob.curve = Float64Array.from({ length: phases }, (_, t) =>
+      blob.pixels.reduce((sum, v) => sum + phase[t * voxels + v], 0) / blob.pixels.length);
+    blob.net = blob.curve.reduce((sum, value) => sum + value, 0) / phases - baseline;
+    blob.pulse = Math.max(...blob.curve) - Math.min(...blob.curve);
+  }
+  const strongest = blobs.reduce((best, blob) => blob.pulse > best.pulse ? blob : best);
+  const arterialSign = Math.sign(strongest.net);
+  const valid = blobs.filter(blob => Math.sign(blob.net) === arterialSign);
+  if (!arterialSign || valid.length < 2) throw new Error('Fewer than two arterial-polarity blobs. Check the search band and candidate percentile.');
+
+  // Pair geometry is measured in the head-aligned frame; masks stay in the original grid.
   let best = null;
-  for (let i = 0; i < blobs.length; i++) {
-    for (let j = i + 1; j < blobs.length; j++) {
-      const level = Math.abs(blobs[i].w - blobs[j].w);
-      const apart = Math.abs(blobs[i].u - blobs[j].u);
+  for (let i = 0; i < valid.length; i++) {
+    for (let j = i + 1; j < valid.length; j++) {
+      const level = Math.abs(valid[i].aligned[1] - valid[j].aligned[1]);
+      const apart = Math.abs(valid[i].aligned[0] - valid[j].aligned[0]);
       if (apart < level || apart < settings.minSeparation) continue;
       const score = apart / (1 + level ** 2);
-      if (!best || score > best.score) best = { score, pair: [blobs[i], blobs[j]] };
+      if (!best || score > best.score) best = { score, pair: [valid[i], valid[j]] };
     }
   }
   if (!best) throw new Error('No side-by-side pair of vessels found; the candidates are stacked front to back.');
@@ -256,32 +341,37 @@ export function detectFromVariability(series, options = {}) {
   const [left, right] = best.pair.slice().sort((a, b) => worldX(a) - worldX(b));
   const pixelArea = Math.abs((series.voxelSize?.[0] ?? 1) * (series.voxelSize?.[1] ?? 1));
   const vessel = (blob, side) => {
-    let curve = new Float64Array(phases);
-    for (let t = 0; t < phases; t++) {
-      let sum = 0;
-      for (const v of blob.pixels) sum += phase[t * voxels + v];
-      curve[t] = sum / blob.pixels.length;
-    }
-    // Arterial flow is positive: flip a curve whose trough outweighs its peak.
-    const high = Math.max(...curve);
-    const low = Math.min(...curve);
-    if (Math.abs(low) > Math.abs(high)) curve = curve.map(value => -value);
+    const curve = blob.curve.map(value => arterialSign * (value - baseline));
     return { side, pixels: blob.pixels, centroid: [blob.u, blob.w], areaMm2: blob.pixels.length * pixelArea, curve, ...curveMetrics(curve) };
   };
 
+  const leftVessel = vessel(left, 'left');
+  const rightVessel = vessel(right, 'right');
+  const separation = Math.abs(left.aligned[0] - right.aligned[0]);
+  const qc = {
+    tiltDegrees: tilt.degrees,
+    symmetryContrast: tilt.contrast,
+    tiltAtEdge: tilt.atEdge,
+    pairOffcentre: Math.abs(left.aligned[0] + right.aligned[0]) / separation,
+    pairVshift: Math.abs(left.aligned[1] - right.aligned[1]) / separation,
+    peakLag: ((leftVessel.peakFrame - rightVessel.peakFrame + Math.floor(phases / 2) + phases) % phases) - Math.floor(phases / 2),
+  };
+  qc.flag = qc.tiltAtEdge || Math.abs(qc.peakLag) > 1 || qc.pairOffcentre > 0.3 || qc.pairVshift > 0.3;
   const mask = new Uint8Array(voxels);
   for (const v of left.pixels) mask[v] = 1;
   for (const v of right.pixels) mask[v] = 2;
   return {
-    left: vessel(left, 'left'),
-    right: vessel(right, 'right'),
+    left: leftVessel,
+    right: rightVessel,
     mask,
     head,
     candidates,
     meanAmplitude: Float32Array.from(meanAmplitude),
     variability: Float32Array.from(variability),
     threshold,
-    box,
+    qc,
+    baseline,
+    arterialSign,
     axes,
     blobs: blobs.length,
     method: 'variability',

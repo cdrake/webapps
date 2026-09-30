@@ -1,3 +1,4 @@
+import { tiltedPhantom } from './tilted-phantom.js';
 // DOM-independent unit tests (Node, no browser). Browser behaviour is covered in e2e/.
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
@@ -232,4 +233,70 @@ test('selects the same vessels as the MATLAB script on the example', { skip: !EX
   assert.equal(found.left.pixels.length, 4);
   assert.deepEqual(found.left.centroid, [148.75, 121]);
   assert.equal(found.right.peakFrame, 19);
+});
+
+test('tilted head selects arteries over the aligned contralateral jugular and removes baseline', () => {
+  const found = detectCarotids(tiltedPhantom(), { candidatePercentile: 97 });
+  assert.ok(found.left.centroid[1] < 32);
+  assert.ok(found.right.centroid[1] > 32);
+  assert.ok(Math.abs(found.qc.tiltDegrees - 20) <= 2);
+  assert.ok(Math.abs(found.left.curve[0] - 20) < 0.01);
+  assert.equal(found.qc.flag, false);
+});
+
+test('flipping or transposing both images preserves patient labels, masks and corrected curves', () => {
+  const original = tiltedPhantom();
+  const expected = detectCarotids(original, { candidatePercentile: 97 });
+  for (const transform of ['flipX', 'flipY', 'transpose']) {
+    const map = v => {
+      const x = v % NX;
+      const y = Math.floor(v / NX);
+      return transform === 'flipX' ? y * NX + NX - 1 - x : transform === 'flipY' ? (NY - 1 - y) * NX + x : x * NX + y;
+    };
+    const series = { ...original, affine: original.affine.map(row => [...row]) };
+    for (const field of ['amplitude', 'phase']) {
+      series[field] = new Float32Array(original[field].length);
+      for (let t = 0; t < PHASES; t++) {
+        for (let v = 0; v < NX * NY; v++) series[field][t * NX * NY + map(v)] = original[field][t * NX * NY + v];
+      }
+    }
+    for (let row = 0; row < 3; row++) {
+      if (transform === 'transpose') [series.affine[row][0], series.affine[row][1]] = [series.affine[row][1], series.affine[row][0]];
+      else {
+        const axis = transform === 'flipX' ? 0 : 1;
+        series.affine[row][3] += series.affine[row][axis] * (NX - 1);
+        series.affine[row][axis] *= -1;
+      }
+    }
+    const found = detectCarotids(series, { candidatePercentile: 97 });
+    for (let v = 0; v < NX * NY; v++) assert.equal(found.mask[map(v)], expected.mask[v], transform);
+    for (const side of ['left', 'right']) assert.deepEqual(found[side].curve, expected[side].curve);
+  }
+});
+
+test('polarity filtering rejects a jugular inside a widened tilted search band', () => {
+  const series = tiltedPhantom();
+  const options = { candidatePercentile: 97, posterior: 0.3 };
+  const found = detectCarotids(series, options);
+  assert.equal(found.blobs, 3);
+  assert.ok(found.right.centroid[1] > 32);
+  const reversed = { ...series, phase: series.phase.map(value => value ? 200 - value : 0) };
+  const reverseFound = detectCarotids(reversed, options);
+  assert.equal(reverseFound.arterialSign, -1);
+  assert.deepEqual(reverseFound.mask, found.mask);
+  assert.ok(Math.abs(reverseFound.left.mean - found.left.mean) < 1e-5);
+});
+
+test('a tilt at the configured search limit flags the result for review', () => {
+  const found = detectCarotids(tiltedPhantom(), { candidatePercentile: 97, tiltLimit: 15, posterior: 0.3 });
+  assert.equal(found.qc.tiltAtEdge, true);
+  assert.equal(found.qc.flag, true);
+});
+
+test('invalid search geometry fails before the symmetry search', () => {
+  const series = tiltedPhantom();
+  for (const options of [{ tiltLimit: Infinity }, { tiltLimit: 0 }, { tiltLimit: 1.2 }, { posterior: -0.1 }, { minSeparation: 0 }]) {
+    assert.throws(() => detectCarotids(series, options), /must be/);
+  }
+  assert.throws(() => detectCarotids(series, { midline: 0.3, lateral: 0.2 }), /Midline exclusion/);
 });
