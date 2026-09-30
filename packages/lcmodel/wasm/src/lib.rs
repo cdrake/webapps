@@ -4,6 +4,8 @@
 //!   reply    {"outputs": {"name": "text"}, "stdout": "...", "error": null | "..."}
 //! LCModel's inputs (control, .RAW, .H2O, .BASIS) and outputs are all text.
 
+pub mod session;
+
 use std::cell::RefCell;
 
 thread_local!(static REPLY: RefCell<Vec<u8>> = const { RefCell::new(Vec::new()) });
@@ -58,4 +60,97 @@ pub unsafe extern "C" fn lcmodel_run(ptr: *const u8, len: usize) {
     let refs: Vec<(&str, &[u8])> = files.iter().map(|(k, v)| (k.as_str(), v.as_slice())).collect();
     let result = lcmodel::run_lcmodel(control, &refs, fdate);
     reply(serde_json::json!({ "outputs": result.outputs, "stdout": result.stdout, "error": result.error }));
+}
+
+// ---------------------------------------------------------------------------
+// FID-A: files are added one by one (the bytes are copied once into wasm
+// memory), loaded together (so metabolite and water files pair up), then a
+// dataset is preprocessed. Replies are JSON at reply_ptr()/reply_len().
+// Progress goes to the imported `env.mrs_progress(text_ptr, text_len, fraction)`.
+// ---------------------------------------------------------------------------
+
+#[cfg(target_arch = "wasm32")]
+#[link(wasm_import_module = "env")]
+extern "C" {
+    fn mrs_progress(ptr: *const u8, len: usize, fraction: f32);
+}
+
+fn report_progress(text: &str, fraction: f32) {
+    #[cfg(target_arch = "wasm32")]
+    unsafe {
+        mrs_progress(text.as_ptr(), text.len(), fraction)
+    };
+    #[cfg(not(target_arch = "wasm32"))]
+    let _ = (text, fraction);
+}
+
+thread_local! {
+    static FILES: RefCell<Vec<(String, Vec<u8>)>> = const { RefCell::new(Vec::new()) };
+    static DATASETS: RefCell<Vec<session::Dataset>> = const { RefCell::new(Vec::new()) };
+    static PROCESSED: RefCell<Option<session::Processed>> = const { RefCell::new(None) };
+}
+
+/// Drop added files, loaded datasets and results.
+#[no_mangle]
+pub extern "C" fn mrs_reset() {
+    FILES.with(|f| f.borrow_mut().clear());
+    DATASETS.with(|d| d.borrow_mut().clear());
+    PROCESSED.with(|p| *p.borrow_mut() = None);
+}
+
+/// Take ownership of a buffer from `alloc` as the file `name`.
+///
+/// # Safety
+/// `name_ptr`/`name_len` must be readable UTF-8; `data_ptr`/`data_len` must
+/// come from `alloc(data_len)` and are owned by the module afterwards.
+#[no_mangle]
+pub unsafe extern "C" fn mrs_add_file(name_ptr: *const u8, name_len: usize, data_ptr: *mut u8, data_len: usize) {
+    let name = String::from_utf8_lossy(std::slice::from_raw_parts(name_ptr, name_len)).into_owned();
+    let bytes = Vec::from_raw_parts(data_ptr, data_len, data_len);
+    FILES.with(|f| f.borrow_mut().push((name, bytes)));
+}
+
+/// Detect and load the added files, then release them.
+#[no_mangle]
+pub extern "C" fn mrs_load() {
+    let files = FILES.with(|f| std::mem::take(&mut *f.borrow_mut()));
+    let refs: Vec<(String, &[u8])> = files.iter().map(|(n, b)| (n.clone(), b.as_slice())).collect();
+    let (datasets, summary) = session::load(&refs);
+    drop(refs);
+    drop(files);
+    DATASETS.with(|d| *d.borrow_mut() = datasets);
+    PROCESSED.with(|p| *p.borrow_mut() = None);
+    reply(summary);
+}
+
+/// Preprocess one loaded dataset. Request: {"dataset": i, "options": {...}}.
+/// Reply: {"report", "spectrum", "unprocessed", "water", "lcmodel"} or {"error"}.
+///
+/// # Safety
+/// `ptr`/`len` must describe a readable byte range.
+#[no_mangle]
+pub unsafe extern "C" fn mrs_process(ptr: *const u8, len: usize) {
+    let req: serde_json::Value = serde_json::from_slice(std::slice::from_raw_parts(ptr, len)).unwrap_or_default();
+    let index = req["dataset"].as_u64().unwrap_or(0) as usize;
+    let opts = session::Options::from_json(&req["options"]);
+    let result = DATASETS.with(|d| {
+        let d = d.borrow();
+        let ds = d.get(index).ok_or_else(|| "No such dataset; load the files again.".to_string())?;
+        session::process(ds, &opts, &mut report_progress, &|| false)
+    });
+    match result.and_then(|p| session::lcmodel_inputs(&p).map(|inputs| (p, inputs))) {
+        Ok((p, inputs)) => {
+            let value = serde_json::json!({
+                "report": p.report,
+                "spectrum": session::spectrum_trace(&p.metab, -0.5, 8.5),
+                "unprocessed": session::spectrum_trace(&p.unprocessed, -0.5, 8.5),
+                "water": p.water.as_ref().map(|w| session::spectrum_trace(w, -0.5, 8.5)),
+                "header": session::header(&p.metab),
+                "lcmodel": inputs,
+            });
+            PROCESSED.with(|s| *s.borrow_mut() = Some(p));
+            reply(value);
+        }
+        Err(e) => reply(serde_json::json!({ "error": e })),
+    }
 }
