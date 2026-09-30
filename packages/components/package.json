@@ -25,6 +25,10 @@
       "default": "./src/ui/index.js"
     },
     "./file-io": "./src/file-io/index.js",
+    "./fetch": {
+      "types": "./src/net/fetchWithRetry.d.ts",
+      "default": "./src/net/fetchWithRetry.js"
+    },
     "./viewer": "./src/viewer/index.js",
     "./inference": "./src/inference/index.js",
     "./pipeline": "./src/pipeline/index.js",
