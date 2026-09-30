@@ -4,4 +4,5 @@
 //! WebAssembly, and returns `Err(String)` with a message a user can act on.
 
 pub mod common;
+pub mod ge;
 pub mod twix;
