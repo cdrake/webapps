@@ -7,5 +7,6 @@ pub mod common;
 pub mod ge;
 pub mod lcm;
 pub mod lcmraw;
+pub mod niimrs;
 pub mod sdat;
 pub mod twix;
