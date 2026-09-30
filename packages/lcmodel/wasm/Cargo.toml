@@ -1,0 +1,22 @@
+# The browser build of LCModel (../../../exes/lcmodel) and FID-A (../../../exes/fida),
+# compiled to wasm32 with a plain C ABI driven by ../src/wasm.js. Standalone
+# workspace so `cargo build` here never joins a parent one.
+[package]
+name = "lcmodel-wasm"
+version = "0.1.0"
+edition = "2021"
+license = "BSD-3-Clause"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+lcmodel = { path = "../../../exes/lcmodel" }
+serde_json = "1"
+
+[profile.release]
+opt-level = 3
+lto = true
+panic = "abort"
+
+[workspace]
