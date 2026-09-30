@@ -1,0 +1,248 @@
+{
+  "schema_version": 1,
+  "app": "lcmodel",
+  "license": "BSD-3-Clause",
+  "basis_sets": [
+    {
+      "id": "press-3t-te30",
+      "label": "PRESS, 3 T, TE 30 ms",
+      "sequence": "PRESS",
+      "fieldT": 3.0,
+      "hzpppm": 127.731,
+      "teMs": 30,
+      "file": "basis/press-3t-te30.basis.gz",
+      "simulation": {
+        "te1_ms": 10,
+        "te2_ms": 20,
+        "points": 8192,
+        "bandwidth_Hz": 6000,
+        "linewidth_Hz": 1.5
+      }
+    },
+    {
+      "id": "press-3t-te35",
+      "label": "PRESS, 3 T, TE 35 ms",
+      "sequence": "PRESS",
+      "fieldT": 3.0,
+      "hzpppm": 127.731,
+      "teMs": 35,
+      "file": "basis/press-3t-te35.basis.gz",
+      "simulation": {
+        "te1_ms": 10,
+        "te2_ms": 25,
+        "points": 8192,
+        "bandwidth_Hz": 6000,
+        "linewidth_Hz": 1.5
+      }
+    },
+    {
+      "id": "press-3t-te144",
+      "label": "PRESS, 3 T, TE 144 ms",
+      "sequence": "PRESS",
+      "fieldT": 3.0,
+      "hzpppm": 127.731,
+      "teMs": 144,
+      "file": "basis/press-3t-te144.basis.gz",
+      "simulation": {
+        "te1_ms": 10,
+        "te2_ms": 134,
+        "points": 8192,
+        "bandwidth_Hz": 6000,
+        "linewidth_Hz": 1.5
+      }
+    },
+    {
+      "id": "steam-3t-te20",
+      "label": "STEAM, 3 T, TE 20 ms",
+      "sequence": "STEAM",
+      "fieldT": 3.0,
+      "hzpppm": 127.731,
+      "teMs": 20,
+      "file": "basis/steam-3t-te20.basis.gz",
+      "simulation": {
+        "tm_ms": 10,
+        "points": 8192,
+        "bandwidth_Hz": 6000,
+        "linewidth_Hz": 1.5
+      }
+    },
+    {
+      "id": "slaser-3t-te30",
+      "label": "semi-LASER, 3 T, TE 30 ms",
+      "sequence": "sLASER",
+      "fieldT": 3.0,
+      "hzpppm": 127.731,
+      "teMs": 30,
+      "file": "basis/slaser-3t-te30.basis.gz",
+      "simulation": {
+        "points": 8192,
+        "bandwidth_Hz": 6000,
+        "linewidth_Hz": 1.5
+      }
+    },
+    {
+      "id": "special-3t-te8.5",
+      "label": "SPECIAL, 3 T, TE 8.5 ms",
+      "sequence": "SPECIAL",
+      "fieldT": 3.0,
+      "hzpppm": 127.731,
+      "teMs": 8.5,
+      "file": "basis/special-3t-te8.5.basis.gz",
+      "simulation": {
+        "points": 8192,
+        "bandwidth_Hz": 6000,
+        "linewidth_Hz": 1.5
+      }
+    },
+    {
+      "id": "press-1.5t-te30",
+      "label": "PRESS, 1.5 T, TE 30 ms",
+      "sequence": "PRESS",
+      "fieldT": 1.5,
+      "hzpppm": 63.865,
+      "teMs": 30,
+      "file": "basis/press-1.5t-te30.basis.gz",
+      "simulation": {
+        "te1_ms": 10,
+        "te2_ms": 20,
+        "points": 8192,
+        "bandwidth_Hz": 4000,
+        "linewidth_Hz": 1.0
+      }
+    },
+    {
+      "id": "slaser-7t-te28",
+      "label": "semi-LASER, 7 T, TE 28 ms",
+      "sequence": "sLASER",
+      "fieldT": 7.0,
+      "hzpppm": 298.039,
+      "teMs": 28,
+      "file": "basis/slaser-7t-te28.basis.gz",
+      "simulation": {
+        "points": 8192,
+        "bandwidth_Hz": 8000,
+        "linewidth_Hz": 2.0
+      }
+    },
+    {
+      "id": "steam-7t-te8",
+      "label": "STEAM, 7 T, TE 8 ms",
+      "sequence": "STEAM",
+      "fieldT": 7.0,
+      "hzpppm": 298.039,
+      "teMs": 8,
+      "file": "basis/steam-7t-te8.basis.gz",
+      "simulation": {
+        "tm_ms": 32,
+        "points": 8192,
+        "bandwidth_Hz": 8000,
+        "linewidth_Hz": 2.0
+      }
+    }
+  ],
+  "metabolites": [
+    "Ala",
+    "Asc",
+    "Asp",
+    "Cr",
+    "GABA",
+    "Glc",
+    "Gln",
+    "Glu",
+    "Gly",
+    "GPC",
+    "GSH",
+    "Ins",
+    "Lac",
+    "NAA",
+    "NAAG",
+    "PCh",
+    "PCr",
+    "PE",
+    "Scyllo",
+    "Tau"
+  ],
+  "source": {
+    "tool": "FID-A (https://github.com/CIC-methods/FID-A) ideal-pulse simulations",
+    "generator": "exes/lcmodel/basis/make_basis.py",
+    "citation": "Simpson R, Devenyi GA, Jezzard P, Hennessy TJ, Near J. Advanced processing and simulation of MRS data using the FID appliance (FID-A)-An open source, MATLAB-based toolkit. Magn Reson Med. 2017;77:23-33."
+  },
+  "assets": [
+    {
+      "filename": "basis/press-3t-te30.basis.gz",
+      "bytes": 1042768,
+      "sha256": "ab93814c67acd8e76b872968d064805f4ae831e0406b53d7b390966d48823542"
+    },
+    {
+      "filename": "basis/press-3t-te35.basis.gz",
+      "bytes": 1061494,
+      "sha256": "a6fa0a8a342f4ce81ac247a521c681cfe1e77e7873709754ecaa01b2b11517c8"
+    },
+    {
+      "filename": "basis/press-3t-te144.basis.gz",
+      "bytes": 1056475,
+      "sha256": "a610b8e37b28e366f1db7ae78c634cb2cd4f615e565dc594ee64e2641bc9e07a"
+    },
+    {
+      "filename": "basis/steam-3t-te20.basis.gz",
+      "bytes": 960647,
+      "sha256": "b61fa043a7af3447d37a62606cce27022b0558940bbba2a6072bcff68a985951"
+    },
+    {
+      "filename": "basis/slaser-3t-te30.basis.gz",
+      "bytes": 981491,
+      "sha256": "79110b07f9092d144e967d31608b48053b886a0a5e257aad50d698c60463ad36"
+    },
+    {
+      "filename": "basis/special-3t-te8.5.basis.gz",
+      "bytes": 955111,
+      "sha256": "d40836630d253702c5377dc4f9239f5ceb0c8955f69785d546fe372230fc2f31"
+    },
+    {
+      "filename": "basis/press-1.5t-te30.basis.gz",
+      "bytes": 1033507,
+      "sha256": "d1dc3e9e7e353ee08860588367d27e3eb14675196ad71f23e660240e413dacb5"
+    },
+    {
+      "filename": "basis/slaser-7t-te28.basis.gz",
+      "bytes": 1017506,
+      "sha256": "f1b1ec404b7d55b2cddfeb719200f3232e9a144f0e66bd55927af9323e4b9cd9"
+    },
+    {
+      "filename": "basis/steam-7t-te8.basis.gz",
+      "bytes": 934810,
+      "sha256": "295cca5c7d7cf07611aa8834a26a2513fe592fcc21548ae32e2c1c2f4b47a408"
+    }
+  ],
+  "examples": [
+    {
+      "filename": "examples/ge-press-phantom/P17920.7",
+      "bytes": 20080220,
+      "sha256": "e2c9aec2b310567ebf91239c96e5b25b875ccdbd96f8d338133d1267f11d20f5"
+    },
+    {
+      "filename": "examples/siemens-special/specialDLPFC.dat",
+      "bytes": 168955936,
+      "sha256": "2ffbf866b159c2090afcc6cb595181632b07956bbbe6591e1270cf8a74df5731"
+    },
+    {
+      "filename": "examples/siemens-special/specialDLPFC_w.dat",
+      "bytes": 8949792,
+      "sha256": "857a102e6e0153f5ea1be7b9eb606c26139f819a9ac5df43eea50912ca3e0aa5"
+    },
+    {
+      "filename": "examples/lcmodel-test/data.raw",
+      "bytes": 31835,
+      "sha256": "b5c55a2b43249a15a2eb19620833e631ba3986d463006dd0e2ff792eddfec560"
+    },
+    {
+      "filename": "examples/lcmodel-test/3t.basis",
+      "bytes": 468081,
+      "sha256": "bdad9e7fbf607c39d269a03e6f16a0f726f47553f3b76006f65633f643c36671"
+    }
+  ],
+  "repository": "neurodeskorg/webapps",
+  "revision": "df6b6560739cb8b6f1d67ab89ffec02ff4560b31",
+  "prefix": "lcmodel/",
+  "base_url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/df6b6560739cb8b6f1d67ab89ffec02ff4560b31/lcmodel/"
+}

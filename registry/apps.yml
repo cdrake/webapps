@@ -603,15 +603,15 @@ apps:
     keywords: [MRS, spectroscopy, LCModel, FID-A, metabolites, NAA, creatine, basis set, quantification]
     legacy_domain: null
     runtime: vite-wasm
-    model_manifest: null
-    asset_manifest_schema: null
+    model_manifest: models/lcmodel.manifest.json
+    asset_manifest_schema: scientific-assets-v1
     source: neurodesk/webapps@local
-    license: NOASSERTION
+    license: BSD-3-Clause
     maintainers: [neurodesk]
     support_status: experimental
     shell: imaging-workspace
     ci:
-      toolchains: [node]
+      toolchains: [node, rust-wasm]
       shared_runtime: false
       browser_test: true
-      release: false
+      release: true

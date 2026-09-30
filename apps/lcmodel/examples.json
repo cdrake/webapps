@@ -1,14 +1,50 @@
 [
   {
-    "id": "t1",
-    "label": "T1-weighted head MRI",
-    "description": "A T1-weighted head MRI for the scaffold’s pass-through demonstration.",
-    "expectedResult": "Prepare and download an unchanged copy; replace this demonstration with the app’s scientific method.",
+    "id": "ge-press-phantom",
+    "label": "GE PRESS 3 T, TE 35 ms (phantom)",
+    "description": "GE P-file from FID-A: PRESS at 3 T, TE 35 ms, 32 channels, 16 averages and water frames, acquired in a spectroscopy phantom.",
+    "expectedResult": "FID-A combines coils and aligns averages; LCModel fits it with the PRESS TE 35 ms basis and reports water-scaled concentrations for NAA, Cr, Cho, mI, Glu and Lac.",
     "files": [
       {
-        "role": "image",
-        "name": "T1_head.nii.gz",
-        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/356a4adbce52cf9052d61ef90b14ba263e7c25e9/synthseg/validation/T1_head.nii.gz"
+        "role": "spectrum",
+        "name": "P17920.7",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/df6b6560739cb8b6f1d67ab89ffec02ff4560b31/lcmodel/examples/ge-press-phantom/P17920.7"
+      }
+    ]
+  },
+  {
+    "id": "siemens-special",
+    "label": "Siemens SPECIAL 3 T, TE 8.5 ms (in vivo)",
+    "description": "Siemens raw data (twix) from FID-A: SPECIAL at 2.89 T, TE 8.5 ms, 32 channels, 80 ISIS pairs, left DLPFC, with a separate water reference. 178 MB.",
+    "expectedResult": "FID-A combines coils, aligns and combines the ISIS subspectra, removes bad averages and corrects drift; LCModel fits the result with the SPECIAL basis.",
+    "files": [
+      {
+        "role": "spectrum",
+        "name": "specialDLPFC.dat",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/df6b6560739cb8b6f1d67ab89ffec02ff4560b31/lcmodel/examples/siemens-special/specialDLPFC.dat"
+      },
+      {
+        "role": "water",
+        "name": "specialDLPFC_w.dat",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/df6b6560739cb8b6f1d67ab89ffec02ff4560b31/lcmodel/examples/siemens-special/specialDLPFC_w.dat"
+      }
+    ]
+  },
+  {
+    "id": "lcmodel-test",
+    "label": "LCModel test spectrum (Synthetic)",
+    "description": "Synthetic: LCModel's own test case, a 3 T spectrum simulated with spant, with its basis set. It checks the fit, not preprocessing.",
+    "expectedResult": "The fit reproduces LCModel's reference output for this spectrum; the table matches LCModel run natively.",
+    "files": [
+      {
+        "role": "spectrum",
+        "name": "data.raw",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/df6b6560739cb8b6f1d67ab89ffec02ff4560b31/lcmodel/examples/lcmodel-test/data.raw"
+      },
+      {
+        "role": "basis",
+        "name": "3t.basis",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/df6b6560739cb8b6f1d67ab89ffec02ff4560b31/lcmodel/examples/lcmodel-test/3t.basis"
       }
     ]
   }
