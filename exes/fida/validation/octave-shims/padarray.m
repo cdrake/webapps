@@ -1,11 +1,20 @@
-function b = padarray(a, padsize, varargin)
-  % PADARRAY  The one form FID-A uses (op_zeropad): padarray(a, n, 'post')
-  % appends n zeros along the first dimension. The image package that
-  % provides padarray is not installed. BSD-3-Clause, for the Rust port.
-  if numel(padsize) ~= 1 || numel(varargin) ~= 1 || ~strcmp(varargin{1}, 'post')
-    error('padarray shim: only padarray(a, n, ''post'') is supported');
+function B = padarray(A, padsize, direction)
+  % Minimal stand-in for the image package's padarray: zero padding only,
+  % 'post' (FID-A's io_loadspec_bruk), 'pre' or 'both' (the default).
+  if nargin < 3, direction = 'both'; end
+  padsize(end+1:ndims(A)) = 0;
+  sz = size(A);
+  sz(end+1:numel(padsize)) = 1;
+  switch direction
+    case 'post', pre = zeros(size(padsize)); post = padsize;
+    case 'pre', pre = padsize; post = zeros(size(padsize));
+    otherwise, pre = padsize; post = padsize;
   end
-  sz = size(a);
-  sz(1) = padsize;
-  b = cat(1, a, zeros(sz, class(a)));
+  B = zeros(sz + pre + post, class(A));
+  if ~isreal(A), B = complex(B); end
+  idx = cell(1, numel(sz));
+  for k = 1:numel(sz)
+    idx{k} = pre(k) + (1:sz(k));
+  end
+  B(idx{:}) = A;
 end
