@@ -27,6 +27,19 @@ clear raw raww;
 sp = fullfile(ex, 'Siemens', 'sample02_special');
 raw = io_loadspec_twix(fullfile(sp, 'special', 'specialDLPFC.dat'));
 raww = io_loadspec_twix(fullfile(sp, 'special_w', 'specialDLPFC_w.dat'));
+% io_loadspec_twix returns single precision. FID-A then runs the first
+% alignment (op_alignAverages on the coil-combined data) in single
+% precision, which limits it to ~0.07 Hz / 1 degree. The reference used by
+% the tests is computed in double; the single-precision run is kept in
+% special_single/ to measure how far FID-A's own float32 rounding moves the
+% result (tests/ref_special.rs reports it).
+d = fullfile(root, 'special_single');
+mkdir(d);
+tic;
+specialproc_det(raw, raww, d);
+printf('SPECIAL pipeline (single): %.1f s\n', toc);
+raw.fids = double(raw.fids);
+raww.fids = double(raww.fids);
 d = fullfile(root, 'special');
 mkdir(d);
 export_fida(raw, fullfile(d, 'raw'));
