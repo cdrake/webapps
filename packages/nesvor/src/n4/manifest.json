@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "itk": "5.4.6",
+  "source_commit": "730ddaa3711a2304386de34193ea4b957892fe7b",
+  "toolchain": "itkwasm/emscripten@sha256:d6c35290a9f1c5cfeb8168c18bbf64d78394cd111b6a19c6091921e98a3aaa1d",
+  "base_url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/8ae6df3b7fb7b890a0fd4594ce3d63a3261a8b60/runtimes/nesvor/n4-itk-5.4.6-654e04600c4d/",
+  "license": "Apache-2.0 AND MIT",
+  "browser_validated": true,
+  "files": [
+    {
+      "file": "nesvor-n4.mjs",
+      "bytes": 93058,
+      "sha256": "ece05b066c5c0e2d25e09a339083ff3527870d43b4e9effcbd790495ab94a3cd"
+    },
+    {
+      "file": "nesvor-n4.wasm",
+      "bytes": 556448,
+      "sha256": "654e04600c4dd21f648bd1a288f6899b7ea21bdbe44ce927d3442a11430668af"
+    }
+  ]
+}

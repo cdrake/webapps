@@ -5,7 +5,7 @@ import { join, resolve, basename, isAbsolute } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { canonicalUrl, loadBundle, verifyBundle } from './bundle.js';
 import { readJob, runJob } from './jobs.js';
-import { mimeType, startOfflineServer } from './server.js';
+import { mimeType, parseComputeOrigins, startOfflineServer } from './server.js';
 import { createModelResolver } from './models.js';
 import { createAutomationService, loadAutomationContracts } from './automation.js';
 import { generateJob, operationFor } from './contracts.js';
@@ -68,13 +68,16 @@ try {
     await appendFile(join(app.getPath('userData'), 'offline-missing.jsonl'), `${JSON.stringify({ url })}\n`);
   };
   offlineSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
+  // Compute origins permit job traffic; automation input grants permit GET/HEAD only.
+  const computeOrigins = parseComputeOrigins(process.env.NEURODESK_COMPUTE_ORIGINS);
+  const computeRequest = url => computeOrigins.has(url.origin);
   offlineSession.webRequest.onBeforeRequest((details, callback) => {
     const url = new URL(details.url);
     const localRequest = url.origin === local.origin;
     const bundledRequest = Boolean(bundle.assets[canonicalUrl(details.url)]);
     const internalRequest = ['data:', 'blob:', 'devtools:'].includes(url.protocol);
     const inputRequest = ['GET', 'HEAD'].includes(details.method) && sourceGrants.permits(details.webContentsId, details.url);
-    if (!localRequest && !bundledRequest && !internalRequest && !inputRequest) {
+    if (!localRequest && !bundledRequest && !internalRequest && !inputRequest && !computeRequest(url)) {
       blockedByWindow.set(details.webContentsId, (blockedByWindow.get(details.webContentsId) ?? 0) + 1);
       void blocked(details.url);
       callback({ cancel: true });
@@ -83,6 +86,7 @@ try {
   // Full installations serve packaged files. The smaller edition can fetch
   // only pinned model assets, which are verified and cached before use.
   offlineSession.protocol.handle('https', async request => {
+    if (computeRequest(new URL(request.url))) return net.fetch(request, { bypassCustomProtocolHandlers: true });
     const asset = bundle.assets[canonicalUrl(request.url)];
     if (!asset) {
       if (['GET', 'HEAD'].includes(request.method) && sourceGrants.permitsAny(request.url)) {

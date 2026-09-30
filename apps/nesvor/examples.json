@@ -1,0 +1,41 @@
+[
+  {
+    "id": "svrtk-simulated-fetal",
+    "label": "Synthetic fetal brain stacks (SVRTK)",
+    "description": "Six synthetic fetal brain stacks (SVRTK, Apache-2.0).",
+    "expectedResult": "Reconstruct a 0.8 mm volume.",
+    "protocol": "fetal-brain",
+    "files": [
+      {
+        "role": "stack",
+        "name": "stack-d0.nii.gz",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/31d4c410405c48fe76c7b1bcc2de3fb0361f6f17/examples/nesvor/svrtk-simulated-fetal/stack-d0.nii.gz"
+      },
+      {
+        "role": "stack",
+        "name": "stack-d1.nii.gz",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/31d4c410405c48fe76c7b1bcc2de3fb0361f6f17/examples/nesvor/svrtk-simulated-fetal/stack-d1.nii.gz"
+      },
+      {
+        "role": "stack",
+        "name": "stack-d2.nii.gz",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/31d4c410405c48fe76c7b1bcc2de3fb0361f6f17/examples/nesvor/svrtk-simulated-fetal/stack-d2.nii.gz"
+      },
+      {
+        "role": "stack",
+        "name": "stack-d3.nii.gz",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/31d4c410405c48fe76c7b1bcc2de3fb0361f6f17/examples/nesvor/svrtk-simulated-fetal/stack-d3.nii.gz"
+      },
+      {
+        "role": "stack",
+        "name": "stack-d4.nii.gz",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/31d4c410405c48fe76c7b1bcc2de3fb0361f6f17/examples/nesvor/svrtk-simulated-fetal/stack-d4.nii.gz"
+      },
+      {
+        "role": "stack",
+        "name": "stack-d5.nii.gz",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/31d4c410405c48fe76c7b1bcc2de3fb0361f6f17/examples/nesvor/svrtk-simulated-fetal/stack-d5.nii.gz"
+      }
+    ]
+  }
+]

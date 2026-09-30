@@ -544,7 +544,7 @@
           "apptainerSource": "https://raw.githubusercontent.com/neurodesk/neurocommand/main/cvmfs/log.txt",
           "url": "https://hub.docker.com/r/vnmd/topofit_0.5.1",
           "dockerImage": "vnmd/topofit_0.5.1:candidate-1c960cec82947541d270e06099ab415933c9ea07",
-          "dockerLabel": "Docker Hub · candidate build"
+          "dockerLabel": "Docker Hub \u00b7 candidate build"
         }
       ],
       "openrecon": {
@@ -586,6 +586,34 @@
       "assets": [],
       "downloads": [],
       "containers": []
+    },
+    "nesvor": {
+      "desktop": true,
+      "profile": "interactive",
+      "assets": [],
+      "downloads": [],
+      "containers": [
+        {
+          "id": "nesvor",
+          "label": "nesvor 0.5.0 (20260722)",
+          "url": "https://hub.docker.com/r/vnmd/nesvor_0.5.0",
+          "dockerImage": "vnmd/nesvor_0.5.0:20260722",
+          "apptainerUrl": "https://neurocontainers.neurodesk.workers.dev/nesvor_0.5.0_20260722.simg",
+          "apptainerName": "nesvor_0.5.0_20260722"
+        }
+      ],
+      "computeServer": {
+        "name": "neurodesk-compute",
+        "documentation": "https://github.com/neurodesk/webapps/tree/main/exes/compute-server",
+        "download": {
+          "filename": "neurodesk-compute-0.1.20260930-linux-x64.tar.gz",
+          "version": "0.1.20260930",
+          "url": "https://github.com/neurodesk/webapps/releases/download/nesvor-v0.3.20260930/neurodesk-compute-0.1.20260930-linux-x64.tar.gz",
+          "checksumUrl": "https://github.com/neurodesk/webapps/releases/download/nesvor-v0.3.20260930/neurodesk-compute-0.1.20260930-linux-x64.tar.gz.sha256",
+          "bytes": 10490150,
+          "sha256": "6c2bf4eb4294666cf1dee063a1204665d4bb28ab0dadca9317362cd92da6b244"
+        }
+      }
     }
   }
 }

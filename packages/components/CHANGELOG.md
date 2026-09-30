@@ -1,5 +1,15 @@
 # @neurodesk/webapp-components
 
+## 0.7.0
+
+### Minor Changes
+
+- Add the shared remote compute client and connection panel for NeSVoR, including paired job ownership, recovery, cancellation and Linux/NVIDIA standalone server setup instructions. Keep credentials out of local storage and show the current webapp origin in server startup commands. Preserve the desktop automation input grants alongside the explicitly configured compute-server origins.
+
+### Patch Changes
+
+- Retry example downloads and OME-Zarr reads that the host rate-limits (HTTP 429), honouring Retry-After, instead of failing the example.
+
 ## 0.6.2
 
 ### Patch Changes

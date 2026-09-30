@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NeSVoR — NeuroDesk</title>
+  </head>
+  <body>
+    <!--
+      Built from the shared workspace vocabulary in
+      @neurodesk/webapp-components/styles/imaging-workspace.css. Only the words,
+      the stack table and the reconstruction settings are app-owned.
+      See docs/architecture/design-system.md and docs/architecture/nesvor-remote-compute.md.
+    -->
+    <header id="controls">
+      <!-- 1. Input: the example first, then one picker for every stack. -->
+      <details class="nd-sidebar-section" id="inputSection" open>
+        <summary class="nd-section-title">Input stacks</summary>
+        <div class="nd-section-content">
+          <div id="exampleControl"></div>
+          <label class="nd-file" id="dropZone">
+            <input id="imageInput" type="file" data-neurodesk-input="image" multiple aria-label="Choose NIfTI or DICOM stacks" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span>Drop NIfTI or DICOM stacks</span>
+          </label>
+          <p id="fileInfo" class="nd-file-info" hidden></p>
+          <div id="stackRows" aria-label="Loaded stacks"></div>
+          <p class="nd-hint" id="stackHint" hidden>Thickness estimated from spacing. <span class="nd-info-icon" tabindex="0" aria-label="About slice thickness">i<span class="nd-info-tooltip" role="tooltip">You can reconstruct with these values. If the acquisition used gaps or overlapping slices, enter the physical slice thickness above. Use two or more orthogonal acquisitions.</span></span></p>
+          <details class="nd-sidebar-section" id="maskSection">
+            <summary class="nd-section-title">Masks (optional)</summary>
+            <div class="nd-section-content">
+              <label class="nd-file" id="maskDropZone">
+                <input id="maskInput" type="file" data-neurodesk-input="image" multiple aria-label="Choose NIfTI masks" />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span>Drop one brain mask per stack</span>
+              </label>
+              <p class="nd-hint">Assign one mask per stack, or use automatic fetal brain masking.</p>
+            </div>
+          </details>
+        </div>
+      </details>
+
+      <!-- 2. Where the computation runs. -->
+      <details class="nd-sidebar-section" id="computeSection" open>
+        <summary class="nd-section-title">Processing <span class="nd-step-badge" id="computeBadge" hidden></span></summary>
+        <div class="nd-section-content">
+          <div class="nd-field">
+            <label for="executionMode">Process with</label>
+            <select id="executionMode">
+              <option value="browser-webgpu" selected>Browser WebGPU</option>
+              <option value="remote">Remote NVIDIA GPU</option>
+              <option value="browser-reference">Browser CPU reference (experimental)</option>
+            </select>
+          </div>
+          <div id="browserGpuInfo" hidden>
+            <p class="nd-hint">Experimental · runs locally. <span class="nd-info-icon" tabindex="0" aria-label="About browser WebGPU">i<span class="nd-info-tooltip" role="tooltip">Full acquisition validation and hardware performance measurements are outstanding. Training uses float32 and the selected settings. Learned methods download model weights; images stay in this browser. Keep the tab open until the run finishes.</span></span></p>
+          </div>
+          <div id="browserReferenceInfo" hidden>
+            <p class="nd-hint">Reduced CPU reference · software evaluation only. <span class="nd-info-icon" tabindex="0" aria-label="About CPU reference">i<span class="nd-info-tooltip" role="tooltip">Requires prealigned stacks and a reviewed mask for every stack. No SVoRT or WebGPU training. Fixed preset: 100 iterations, batch 4, 4 PSF samples, 256 hash entries per level, width 16. Limits: 20,000 observations and 32,768 output voxels. Keep the tab open.</span></span></p>
+            <label class="nd-check"><input id="referenceAcknowledged" type="checkbox" /> I understand these limits and have prealigned, masked inputs.</label>
+          </div>
+          <div id="remoteControls">
+          <div id="computeControl"></div>
+          <details class="nd-sidebar-section" id="previousJobs" hidden>
+            <summary class="nd-section-title">Previous jobs</summary>
+            <div class="nd-section-content">
+              <p class="nd-hint">Completed files stay on the server until its retention limit or explicit deletion. Save your downloads before deleting.</p>
+              <div class="nd-field">
+                <label for="previousJob">Job</label>
+                <select id="previousJob"></select>
+              </div>
+              <div class="nd-row">
+                <button id="refreshJobs" class="nd-btn nd-btn-secondary" type="button">Refresh jobs</button>
+                <button id="resumeJob" class="nd-btn nd-btn-secondary" type="button">Open job</button>
+                <button id="deleteJob" class="nd-btn nd-btn-danger" type="button">Delete server files</button>
+              </div>
+            </div>
+          </details>
+          <button id="standaloneLink" class="nd-btn nd-btn-sm" type="button">Download and set up compute server</button>
+          </div>
+        </div>
+      </details>
+
+      <!-- 3. The task: protocol, visible settings, advanced settings collapsed, one primary action. -->
+      <details class="nd-sidebar-section" id="taskSection" open>
+        <summary class="nd-section-title">Reconstruction</summary>
+        <div class="nd-section-content">
+          <div class="nd-field">
+            <label for="protocol">Protocol <span class="nd-info-icon" tabindex="0" aria-label="About protocol">i<span class="nd-info-tooltip" role="tooltip" id="protocolHint"></span></span></label>
+            <select id="protocol"></select>
+          </div>
+          <div class="nd-field">
+            <label for="outputResolution">Output resolution <small>mm, isotropic</small></label>
+            <input id="outputResolution" type="number" min="0.3" max="3" step="0.1" value="0.8" />
+          </div>
+          <div class="nd-field">
+            <label for="registration">Motion correction <span class="nd-info-icon" tabindex="0" aria-label="About motion correction">i<span class="nd-info-tooltip" role="tooltip">SVoRT is trained for fetal brain images. The combined option keeps stack registration when it improves alignment. Use rigid registration for other anatomy.</span></span></label>
+            <select id="registration">
+              <option value="svort">SVoRT + stack registration</option>
+              <option value="svort-only">SVoRT only</option>
+              <option value="svort-stack">SVoRT stack transforms</option>
+              <option value="stack">Stack-to-stack rigid registration</option>
+              <option value="none">None</option>
+            </select>
+          </div>
+          <details class="nd-sidebar-section" id="advancedSettings">
+            <summary class="nd-section-title">Advanced settings</summary>
+            <div class="nd-section-content">
+              <label class="nd-check"><input id="segmentation" type="checkbox" /> Fetal brain masking (MONAIfbs)</label>
+              <label class="nd-check"><input id="biasFieldCorrection" type="checkbox" /> N4 bias field correction</label>
+              <label class="nd-check"><input id="otsuThresholding" type="checkbox" /> Otsu background removal</label>
+              <label class="nd-check"><input id="stacksIntersection" type="checkbox" /> Restrict to the intersection of all stacks</label>
+              <label class="nd-check"><input id="deformable" type="checkbox" /> Deformable motion (experimental)</label>
+              <label class="nd-check"><input id="singlePrecision" type="checkbox" /> Single precision training</label>
+              <div class="nd-field">
+                <label for="iterations">Training iterations <span class="nd-info-icon" tabindex="0" aria-label="About training iterations">i<span class="nd-info-tooltip" role="tooltip">Fewer iterations finish faster with less detail. The upstream default is 6000.</span></span></label>
+                <input id="iterations" type="number" min="100" max="20000" step="100" value="6000" />
+              </div>
+              <div class="nd-field">
+                <label for="weightTransformation">Transformation regularisation weight</label>
+                <input id="weightTransformation" type="number" min="0" max="100" step="0.1" value="0.1" />
+              </div>
+              <div class="nd-field">
+                <label for="weightImage">Image regularisation weight</label>
+                <input id="weightImage" type="number" min="0" max="100" step="0.1" value="1" />
+              </div>
+              <div class="nd-field">
+                <label for="weightDeform">Deformation regularisation weight</label>
+                <input id="weightDeform" type="number" min="0" max="100" step="0.1" value="0.1" />
+              </div>
+              <div class="nd-field">
+                <label for="batchSize">Batch size</label>
+                <input id="batchSize" type="number" min="256" max="32768" step="256" value="4096" />
+              </div>
+              <div class="nd-field">
+                <label for="log2HashmapSize">Hash grid size <small>log2</small></label>
+                <input id="log2HashmapSize" type="number" min="15" max="24" step="1" value="19" />
+              </div>
+            </div>
+          </details>
+          <button id="runButton" class="nd-btn nd-btn-primary" type="button" disabled>Reconstruct volume</button>
+        </div>
+      </details>
+
+      <!-- 4. Output: collapsed until results exist. -->
+      <details class="nd-sidebar-section" id="outputSection">
+        <summary class="nd-section-title">Output</summary>
+        <div class="nd-section-content">
+          <div id="resultList"></div>
+        </div>
+      </details>
+
+      <button id="aboutBtn" type="button" hidden>About</button>
+      <button id="privacyBtn" type="button" hidden>Privacy</button>
+    </header>
+
+    <main id="viewer">
+      <div class="nd-viewer-canvas-wrapper">
+        <canvas id="gl1" aria-label="Image viewer"></canvas>
+        <p id="emptyState" class="nd-viewer-empty">Load stacks to begin.</p>
+        <p id="viewerError" class="nd-viewer-notice" hidden></p>
+      </div>
+      <div class="nd-viewer-info"><span id="imageLabel" class="nd-viewer-info-primary"></span><span id="location"></span></div>
+    </main>
+
+    <footer id="status">
+      <span class="nd-status-label">Status</span>
+      <span id="statusText" class="nd-status-text" role="status" aria-live="polite">Ready</span>
+      <span id="elapsed" class="nd-status-elapsed"></span>
+      <progress id="progress" max="1" value="0" aria-label="Reconstruction progress"></progress>
+      <button id="cancelButton" class="nd-btn-cancel" type="button" title="Cancel" aria-label="Cancel" hidden>×</button>
+    </footer>
+
+    <template id="aboutContent">
+      <p>NeSVoR reconstructs one isotropic 3D volume from several stacks of motion-corrupted 2D MRI slices, as acquired in fetal and neonatal brain imaging. Slices are first aligned with SVoRT, a transformer trained for fetal brain slice-to-volume registration, or with stack-to-stack registration. The aligned slices then train an implicit neural representation of the volume, from which the output grid is sampled at the chosen resolution. Optional steps mask the fetal brain in each slice (MONAIfbs) and correct the bias field (N4).</p>
+      <p>This app prepares the stacks, thicknesses and settings in your browser and sends them to a compute server in your own network, where the pinned Neurodesk NeSVoR 0.5.0 container runs on an NVIDIA GPU. The reconstructed volume returns to this page for review and download. The experimental WebGPU worker runs reconstruction locally, including SVoRT or rigid registration, automatic fetal brain masks, N4 correction and deformable motion. SVoRT and MONAIfbs download pinned model assets. The small CPU reference is available for numerical evaluation. Full acquisition and CUDA parity validation remain outstanding.</p>
+      <p>SVoRT is trained on fetal brains only; use stack registration for neonatal or body data. Deformable reconstruction is experimental upstream.</p>
+    </template>
+    <template id="privacyContent">
+      <p>Your stacks and masks are uploaded only to the compute server whose address you enter in this app, inside your own network. NeSVoR runs there in a container without network access, and the server deletes each job's files after its retention period (one hour by default) or when you explicitly delete the job. Cancelling stops processing but retains files until deletion or expiry. Patient images are not sent to Neurodesk or other third parties. The compute server records no analytics. The shared hosted page may collect page-view analytics.</p>
+      <p>The experimental browser modes process images locally without uploading them. The remote mode sends the selected images and masks to your chosen server.</p>
+      <p>Only connect to a server that you or your IT department set up. The server address is remembered in this browser. A paired credential stays in this tab’s session storage so you can reconnect after a reload; Disconnect clears it and requests server revocation.</p>
+    </template>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

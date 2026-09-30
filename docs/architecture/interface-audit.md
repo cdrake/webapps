@@ -217,6 +217,19 @@ SynthSR and brain extraction check for a WebGPU adapter rather than the API, and
 MuscleMap starts at 50 % overlap without WebGPU. VesselBoost's hosted example
 workflow now runs as part of its browser tests.
 
+## NeSVoR review, 21 September 2026
+
+NeSVoR uses the shared imaging workspace, connection panel, example control,
+console and result list. Inputs are locked during processing and staged before
+commit. The shared DICOM importer preserves multiple series. The execution
+selector separates the remote container from an explicitly reduced, unvalidated
+browser CPU reference. Server jobs can be reopened after tab reload and deleted
+explicitly after saving downloads.
+
+A fresh production build passed the NeSVoR-scoped desktop/phone interface audit,
+mobile layout suite, retained-settings workflow and DICOM upload workflow.
+Desktop, 390 px phone, 320 px phone, light-theme and DICOM-loaded screenshots were
+reviewed. Scientific CUDA/parity validation remains separate and outstanding.
 ## Workspace status contract, 28 September 2026
 
 A 20 September review of all apps found live status in the sidebar instead of the

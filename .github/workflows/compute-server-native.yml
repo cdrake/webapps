@@ -1,0 +1,106 @@
+name: compute-server-native
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/compute-server-native.yml'
+      - 'exes/compute-server/**'
+      - 'apps/nesvor/**'
+      - 'packages/components/**'
+      - 'packages/runtime-support/**'
+      - 'scripts/package-compute-server.mjs'
+      - 'test/compute-server-distribution.test.mjs'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/compute-server-native.yml'
+      - 'exes/compute-server/**'
+      - 'apps/nesvor/**'
+      - 'packages/components/**'
+      - 'packages/runtime-support/**'
+      - 'scripts/package-compute-server.mjs'
+  workflow_dispatch:
+    inputs:
+      draft_release:
+        description: Create a draft release with the verified Linux NVIDIA backend archive
+        type: boolean
+        default: false
+
+concurrency:
+  group: compute-server-native-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: linux-x64
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          components: clippy, rustfmt
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Test and lint backend
+        working-directory: exes/compute-server
+        run: |
+          cargo test --locked --release
+          cargo clippy --locked --release --all-targets -- -D warnings
+          cargo fmt --check
+          cargo build --locked --release
+      - name: Build frontend and test packaging
+        run: |
+          pnpm --filter nesvor build
+          node --test test/compute-server-distribution.test.mjs
+      - name: Package Linux server with frontend
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' exes/compute-server/Cargo.toml)
+          node scripts/package-compute-server.mjs --binary exes/compute-server/target/release/neurodesk-compute --frontend apps/nesvor/dist --out exes/compute-server/dist --version "$version"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: neurodesk-compute-linux-x64-archive
+          path: |
+            exes/compute-server/dist/*.tar.gz
+            exes/compute-server/dist/*.sha256
+            exes/compute-server/dist/*.json
+          if-no-files-found: error
+
+  draft-release:
+    if: github.event_name == 'workflow_dispatch' && inputs.draft_release
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: neurodesk-compute-linux-x64-archive
+          path: release-assets
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' exes/compute-server/Cargo.toml)
+          tag="neurodesk-compute-v$version"
+          cat > release-notes.md <<'NOTES'
+          Linux x86-64 backend with the production NeSVoR frontend.
+
+          Requires an NVIDIA GPU, compatible driver, Docker and NVIDIA Container Toolkit. The archive does not bundle the scientific container or model weights. Run doctor and pull before reconstruction. See INSTALL.md and runtime.json inside the archive.
+
+          This draft is for validation. Do not publish until a real CUDA reconstruction and offline asset preparation have passed release checks.
+          NOTES
+          gh release create "$tag" release-assets/* --draft --target "$GITHUB_SHA" --title "Neurodesk Compute $version (Linux NVIDIA)" --notes-file release-notes.md

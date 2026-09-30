@@ -14,6 +14,7 @@ export const LINKED_PACKAGES = Object.freeze({
   '@neurodesk/greedy': 'greedy',
   '@neurodesk/synthseg': 'synthseg',
   '@neurodesk/synthsr': 'synthsr',
+  '@neurodesk/nesvor': 'nesvor',
   '@neurodesk/syncro': 'syncro',
   '@neurodesk/topofit': 'topofit',
 });

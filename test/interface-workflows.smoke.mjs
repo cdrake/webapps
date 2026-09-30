@@ -36,6 +36,20 @@ async function check(id, workflow) {
   finally { await page.close(); }
 }
 try {
+  await check('nesvor', async page => {
+    await page.locator('#imageInput').setInputFiles(nifti('stack.nii'));
+    await expect(page.locator('#fileInfo')).toContainText('1 stack loaded');
+    await page.locator('#thickness-0').fill('3.2');
+    await page.locator('#inputSection > summary').tap();
+    await page.locator('#inputSection > summary').tap();
+    await expect(page.locator('#thickness-0')).toHaveValue('3.2');
+    await page.locator('#executionMode').selectOption('browser-reference');
+    await page.locator('#computeSection > summary').tap();
+    await page.locator('#computeSection > summary').tap();
+    await expect(page.locator('#executionMode')).toHaveValue('browser-reference');
+    await expect(page.locator('#runButton')).toBeDisabled();
+    await expect(page.locator('#technicalLog')).not.toHaveAttribute('open', '');
+  });
   await check('brain-extraction', async page => {
     await page.locator('#imageInput').setInputFiles(nifti('automation-input.nii'));
     await expect(page.locator('#statusText')).toHaveAttribute('data-neurodesk-state', 'ready');

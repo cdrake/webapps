@@ -4,8 +4,15 @@
 
 ### Patch Changes
 
-- Preserve NIfTI export progress and Cancel when a pending viewer load finishes during the export.
+- Retry example downloads and OME-Zarr reads that the host rate-limits (HTTP 429), honouring Retry-After, instead of failing the example.
+- Updated dependencies
+- Updated dependencies
+  - @neurodesk/webapp-components@0.7.0
 
+
+### Patch Changes
+
+- Preserve NIfTI export progress and Cancel when a pending viewer load finishes during the export.
 
 ### Patch Changes
 

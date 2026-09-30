@@ -1,0 +1,29 @@
+{
+  "source_commit": "730ddaa3711a2304386de34193ea4b957892fe7b",
+  "checkpoint_sha256": "6be297078b7b64a2464829fa8b7d9600983f21bfd2dc2c69a16808245f028c78",
+  "file": "monaifbs.onnx",
+  "bytes": 183169747,
+  "sha256": "b58dd7f3ff2c45aa30bb5cd74c19c64bf3cde14e8c79990f2883237dd797ec2d",
+  "license": "CC-BY-4.0",
+  "source": "https://zenodo.org/records/4282679",
+  "verification": {
+    "onnx_cpu_max_absolute_error": 9.28044319152832e-05,
+    "onnx_wasm_max_absolute_error": 0.0007762908935546875,
+    "onnx_wasm_argmax_disagreements": 0,
+    "fetal_subset": {
+      "fixture": "three central slices from SVRTK simulated fetal stack",
+      "shape": [
+        77,
+        76,
+        3
+      ],
+      "firstSlice": 44,
+      "sourceSha256": "ca5ad2c6926d5fa7d4379be406ea7c59bf506c6276759e1bc81b0d2356f86255",
+      "foreground": 4086,
+      "disagreements": 0,
+      "dice": 1
+    }
+  },
+  "monai_version": "0.3.0",
+  "base_url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/36936af3b61d369f9215e35975748f40dfd9a34b/nesvor/models/monaifbs-0.3.0-20260921/"
+}
