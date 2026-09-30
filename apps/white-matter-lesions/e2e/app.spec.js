@@ -73,7 +73,6 @@ test("automation reports a failed model download and leaves the run available", 
   await page.goto("./");
   await page.getByLabel("Example", { exact: true }).selectOption(examples[0].id);
   await expect(page.locator("#runButton")).toBeEnabled({ timeout: 120000 });
-  await page.locator("#advancedSettings summary").click();
   await page.locator("#skullStripped").check();
   const input = await download(page, 0);
   await page.locator("#neurodesk-input-transfer").setInputFiles({ name: input.name, mimeType: "application/gzip", buffer: input.bytes });
@@ -99,7 +98,6 @@ test("the ensemble downloads each fold in turn", async ({ page }) => {
   await page.goto("./");
   await page.getByLabel("Example", { exact: true }).selectOption(examples[0].id);
   await expect(page.locator("#runButton")).toBeEnabled({ timeout: 120000 });
-  await page.locator("#advancedSettings summary").click();
   await page.locator("#skullStripped").check();
   await page.locator("#folds").selectOption("5");
   await page.locator("#runButton").click();
@@ -115,7 +113,6 @@ test("cancelling a run stops it and keeps the input ready", async ({ page }) => 
   await page.goto("./");
   await page.getByLabel("Example", { exact: true }).selectOption(examples[0].id);
   await expect(page.locator("#runButton")).toBeEnabled({ timeout: 120000 });
-  await page.locator("#advancedSettings summary").click();
   await page.locator("#skullStripped").check();
   await page.locator("#runButton").click();
   await expect(page.locator("#statusText")).toHaveText("Downloading FLAMeS model…", { timeout: 60000 });
@@ -132,7 +129,6 @@ test("automation cancellation stops the worker and permits a new run", async ({ 
   await page.goto("./");
   await page.getByLabel("Example", { exact: true }).selectOption(examples[0].id);
   await expect(page.locator("#runButton")).toBeEnabled({ timeout: 120000 });
-  await page.locator("#advancedSettings summary").click();
   await page.locator("#skullStripped").check();
   const input = await download(page, 0);
   await page.locator("#neurodesk-input-transfer").setInputFiles({ name: input.name, mimeType: "application/gzip", buffer: input.bytes });
@@ -159,10 +155,11 @@ test("automation cancellation stops the worker and permits a new run", async ({ 
   await expect(page.locator("#statusText")).toHaveText(/Model download failed/);
 });
 
-test("advanced settings keep their values when the section closes", async ({ page }) => {
+test("advanced settings start open and keep their values when the section closes", async ({ page }) => {
   await page.goto("./");
   const summary = page.locator("#advancedSettings summary");
-  await summary.click();
+  await expect(page.locator("#advancedSettings")).toHaveAttribute("open", "");
+  await expect(page.locator("#folds")).toBeVisible();
   await page.locator("#skullStripped").check();
   await page.locator("#backend").selectOption("wasm");
   await page.locator("#folds").selectOption("5");
