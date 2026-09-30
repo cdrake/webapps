@@ -84,7 +84,7 @@ test("the GE PRESS phantom goes through FID-A and the recommended basis set", as
   const download = page.waitForEvent("download");
   await page.locator("#resultList .nd-volume-toggle").filter({ hasText: "FID-A report" }).getByRole("button", { name: "Download" }).click();
   const report = JSON.parse(readFileSync(await (await download).path(), "utf8"));
-  expect(report.pipeline).toBe("run_pressproc_auto");
+  expect(report.pipeline).toBe("run_pressproc_GEauto");
   expect(report.conjugated).toBe(true);
 });
 
