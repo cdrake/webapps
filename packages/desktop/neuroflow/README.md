@@ -54,7 +54,7 @@ A SynthSeg call uses the generated inputs:
 
 ```json
 {
-  "input_image": ["/absolute/path/to/T1.nii.gz"],
+  "input_image": "/absolute/path/to/T1.nii.gz",
   "param_mode": "default",
   "param_ct": false,
   "engine": "native"
@@ -78,26 +78,32 @@ process; the launcher never constructs a shell command.
 | --- | --- |
 | App + operation | `neurodesk.webapps/<app>/<operation>` |
 | App version | Tool version and installed-contract check |
-| File input role | `input_<role>`, array of artifact references |
-| URL / directory role | `input_<role>`, URL string / directory reference |
+| File input role | `input_<role>`, one artifact reference when `maximum` is 1, otherwise an array |
+| URL / directory role | `input_<role>`, URL string / directory reference (`neuro:ome-zarr` for a multiscale store) |
 | Parameter | `param_<name>`, scalar or array, with defaults and numeric bounds |
-| Artifact role | `output_<role>`, array, including roles that currently emit one file |
+| Artifact role | `output_<role>`, one artifact when `maximum` is 1 (optional when `minimum` is 0), otherwise an array |
 | Engine list | `engine` enum, defaulting to the first declared engine |
-| Report | `report`, a JSON file with actual run provenance and measurements |
-| Formats, space, labelSystem, cardinality | Unchanged source declaration in `neurodesk/data` |
+| Report | `report`, a `neuro:report` JSON file with actual run provenance and measurements |
+| Formats, space, labelSystem | RFC 0010 qualifiers where the migration mapping applies (below); the unchanged source declaration always stays in `neurodesk/data` |
+| Cardinality | Unchanged source declaration in `neurodesk/data` |
 | Nested constraints and multipleOf | Unchanged declaration in `neurodesk/parameter` |
 | Limits and operation mode | Full source contract in `neurodesk/automation` |
 
-File inputs remain arrays, and output roles always return arrays. This keeps
-single-output and variable-output workflows consistent. Cardinality on DICOM
-inputs counts logical images after series selection, not the number of slice
-files. A multi-series input that needs a selection fails with the desktop's
+A role with `maximum: 1` is a scalar in the tool document, so a single
+artifact from another tool binds to it directly; NeuroFlow never binds a
+scalar to an array. The launcher widens a scalar input to the one-element list
+the desktop takes and narrows a single-file output to one path (omitting an
+absent optional one). A role without a maximum stays an array. Cardinality on
+DICOM inputs counts logical images after series selection, not the number of
+slice files. A multi-series input that needs a selection fails with the desktop's
 diagnostic; this adapter does not guess a series. Select or convert that series
 before running it through this interface.
 
 The generator uses standard artifact types when their representation matches,
 including `core:tabular` for `neuro:table`, `neuro:tract` for
-`neuro:tractogram`, and `neuro:gradient-table` for `neuro:gradients`.
+`neuro:tractogram`, `neuro:gradient-table` for `neuro:gradients`,
+`neuro:ome-zarr` for `neuro:multiscale-volume`, and `neuro:transform` with
+`formats: ["displacement-field"]` for `neuro:displacement-field`.
 Other Neurodesk-specific `neuro:` types become `neurodesk:` extension types.
 Their original declarations remain in the extension. A union of artifact
 types uses `core:file` with the union preserved and verified by the adapter.
@@ -120,11 +126,34 @@ Viewer operations load and inspect their input and return a report, then close
 the viewer. They do not leave a retained interactive session inside NeuroFlow.
 Use the desktop MCP viewer controls directly when an agent needs that session.
 
-NeuroFlow 0.1 does not interpret the vendor data constraints. Desktop preflight
-enforces the checks its contracts support; annotations such as `native` or
-`FreeSurfer` alone do not prove space or label-system compatibility. See the
-[type-constraint RFC draft](../../../docs/rfcs/0010-neuroflow-data-constraints.md)
-for the proposed portable semantics and runtime checks.
+## Type qualifiers
+
+[NeuroFlow RFC 0010](https://github.com/cdrake/neuroflow-spec/blob/rfc/0010-type-qualifiers/rfcs/0010-type-qualifiers.md)
+adds `formats`, `space`, `resolution`, `density` and `labelSystem` to type
+declarations, and a document that carries any of them declares
+`"neuroflow": "0.1.1"`. The generator promotes a contract annotation to a
+qualifier only where the RFC's migration mapping gives it a portable meaning;
+everything else stays in `neurodesk/data` as documentation, which no validator
+may report as checked.
+
+| Contract value | Qualifier |
+| --- | --- |
+| `formats` spellings | RFC tokens as they are (`nifti`, `dicom`, `json`, ...); `gii` becomes `gifti`, `bvals`/`bvecs` become `bval`/`bvec`; `surface` is a category, not a token, and is dropped; any other spelling keeps a `neurodesk:` prefix |
+| `space: native` | `individual` |
+| `space: input` or `subject-1mm` on an artifact | `inputs.input_<role>` of the operation's one spatial file input; two spatial inputs leave it in the extension. `subject-1mm` adds `resolution: 1` |
+| `space: fixed` or `moving` on an artifact | `inputs.input_fixed` / `inputs.input_moving` |
+| `space: fixed`, `moving` or `input` on an input | none: the input defines that frame |
+| `space` on a transform (`moving-to-fixed`, warps) | none: RFC 0010 excludes `space` from `neuro:transform` |
+| `MNI152-1mm`, `atlas`, `analysis`, `lesion-reference`, `RAS-mm`, `scanner-RAS-mm`, `registration-sphere` | `neurodesk:<value>`, compared literally, until the app owner names the BIDS template label or the input it means |
+| `labelSystem: FreeSurfer` | `freesurfer` |
+| other `labelSystem` values | `neurodesk:<value>` |
+
+The generator checks the two rules the schemas cannot: a qualified document
+declares 0.1.1, and an `inputs.<id>` reference names an input of the tool.
+Desktop preflight still enforces only the checks its contracts support; a
+qualifier states what the desktop promises, and the NeuroFlow runtime that
+binds the tools decides whether two declarations are compatible, incompatible,
+or need a runtime check.
 
 ## Verification
 
@@ -139,8 +168,10 @@ tests use the actual desktop MCP/service implementation with a clearly labelled
 test executor; they do not claim scientific inference accuracy.
 
 The [schema snapshot record](vendor/README.md) pins the upstream spec and runtime
-used for compatibility testing. The RFC is a draft in this repository; it has
-not been submitted or adopted upstream.
+used for compatibility testing. The snapshot is the RFC 0010 branch of the
+spec; the earlier draft in this repository,
+[docs/rfcs/0010-neuroflow-data-constraints.md](../../../docs/rfcs/0010-neuroflow-data-constraints.md),
+is superseded by it.
 
 For a real scientific integration check, build `neuroflow-mcp` in the upstream
 runtime checkout and build this repository's brain-extraction app. Then run:

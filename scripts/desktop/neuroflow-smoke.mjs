@@ -51,22 +51,22 @@ const client = openDesktop(executable, ['--registry', registry, '--data-root', d
 try {
   await client.initialize();
   const completed = await client.tool('neurodesk_brain-extraction__extract', {
-    input_image: [fixture], param_method: 'bet', param_threshold: 0.5, engine: 'browser',
+    input_image: fixture, param_method: 'bet', param_threshold: 0.5, engine: 'browser',
   }, { timeoutMs: 270000 });
   assert.equal(completed.status, 'completed', JSON.stringify(completed));
-  assert.equal(completed.outputs.output_mask.length, 1);
-  assert.equal(completed.outputs.output_brain.length, 1);
+  assert.equal(typeof completed.outputs.output_mask.uri, 'string');
+  assert.equal(typeof completed.outputs.output_brain.uri, 'string');
   const reportUri = `${completed.outputs.report.uri}/raw`;
   const reportResource = (await client.resource(reportUri)).contents[0];
   const report = JSON.parse(reportResource.text ?? Buffer.from(reportResource.blob, 'base64').toString('utf8'));
-  const maskResource = (await client.resource(completed.outputs.output_mask[0].uri)).contents[0];
+  const maskResource = (await client.resource(completed.outputs.output_mask.uri)).contents[0];
   const summary = JSON.parse(maskResource.text);
   // Read the verified local output rather than the runtime's size-limited raw resource.
   const resultFiles = await readdir(join(scratch, 'sessions', completed.runId), { recursive: true });
   const resultFile = resultFiles.find(name => /outputs\/[^/]+\/result\.json$/.test(name));
   assert.ok(resultFile, 'NeuroFlow result file exists');
   const result = JSON.parse(await readFile(join(scratch, 'sessions', completed.runId, resultFile)));
-  const bytes = await readFile(result.output_mask[0]);
+  const bytes = await readFile(result.output_mask);
   assert.equal(createHash('sha256').update(bytes).digest('hex'), report.artifacts.mask.sha256);
   const image = readVolume(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
   const original = await readFile(fixture);
