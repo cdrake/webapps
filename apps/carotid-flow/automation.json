@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 2,
+  "app": "carotid-flow",
+  "title": "Carotid Flow",
+  "description": "Detect left and right carotids and measure cardiac flow curves.",
+  "defaultOperation": "detect-combined",
+  "operations": {
+    "detect-combined": {
+      "title": "Detect carotids",
+      "description": "Detect carotids from a combined amplitude and phase series.",
+      "mode": "batch",
+      "inputs": {
+        "series": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "description": "Single-slice cardiac series: amplitude frames followed by phase frames.",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "parameters": {
+        "candidatePercentile": {
+          "type": "number",
+          "description": "Unsigned-speed candidate percentile.",
+          "default": 99.9,
+          "minimum": 50.000001,
+          "maximum": 99.999999
+        },
+        "headPercentile": {
+          "type": "number",
+          "description": "Head threshold percentile.",
+          "default": 20,
+          "minimum": 1e-06,
+          "maximum": 99.999999
+        },
+        "venc": {
+          "type": "number",
+          "description": "Velocity encoding in cm/s; required for raw \u00b14096 phase.",
+          "minimum": 1e-06,
+          "maximum": 999.999999
+        }
+      },
+      "artifacts": {
+        "labels": {
+          "type": "neuro:label-map",
+          "mediaType": "application/octet-stream",
+          "space": "native",
+          "labelSystem": "carotid-left-1-right-2",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "variability": {
+          "type": "neuro:volume",
+          "mediaType": "application/octet-stream",
+          "space": "native",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "curves": {
+          "type": "neuro:table",
+          "mediaType": "text/csv",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    },
+    "detect-pair": {
+      "title": "Detect carotids",
+      "description": "Detect carotids using explicitly assigned amplitude and phase files.",
+      "mode": "batch",
+      "inputs": {
+        "amplitude": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "description": "Amplitude frames.",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "phase": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "description": "Corresponding phase or velocity frames.",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "parameters": {
+        "candidatePercentile": {
+          "type": "number",
+          "description": "Unsigned-speed candidate percentile.",
+          "default": 99.9,
+          "minimum": 50.000001,
+          "maximum": 99.999999
+        },
+        "headPercentile": {
+          "type": "number",
+          "description": "Head threshold percentile.",
+          "default": 20,
+          "minimum": 1e-06,
+          "maximum": 99.999999
+        },
+        "venc": {
+          "type": "number",
+          "description": "Velocity encoding in cm/s; required for raw \u00b14096 phase.",
+          "minimum": 1e-06,
+          "maximum": 999.999999
+        }
+      },
+      "artifacts": {
+        "labels": {
+          "type": "neuro:label-map",
+          "mediaType": "application/octet-stream",
+          "space": "native",
+          "labelSystem": "carotid-left-1-right-2",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "variability": {
+          "type": "neuro:volume",
+          "mediaType": "application/octet-stream",
+          "space": "native",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "curves": {
+          "type": "neuro:table",
+          "mediaType": "text/csv",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    }
+  }
+}

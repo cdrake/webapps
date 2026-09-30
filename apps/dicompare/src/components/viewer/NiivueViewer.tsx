@@ -2,6 +2,9 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Loader2, AlertTriangle, Camera, Download, RotateCcw } from 'lucide-react';
 import { Niivue, SLICE_TYPE, MULTIPLANAR_TYPE, SHOW_RENDER, DRAG_MODE } from '@niivue/niivue';
 import { Dcm2niix } from '@niivue/dcm2niix';
+import { registerViewer } from '@neurodesk/webapp-components/automation';
+
+let nextViewerId = 0;
 
 export interface VolumeInfo {
   name: string;
@@ -53,6 +56,8 @@ const NiivueViewer: React.FC<NiivueViewerProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const nvRef = useRef<Niivue | null>(null);
+  const automationViewer = useRef<{ unregister(): boolean } | null>(null);
+  const viewControl = useRef<{ active: ViewMode; select(mode: ViewMode): void }>({ active: 'multiplanar', select: () => {} });
   const [isLoading, setIsLoading] = useState(true);
   const [loadingMessage, setLoadingMessage] = useState('Loading...');
   const [error, setError] = useState<string | null>(null);
@@ -94,6 +99,8 @@ const NiivueViewer: React.FC<NiivueViewerProps> = ({
 
   // Clean up NiiVue instance
   const cleanup = useCallback(() => {
+    automationViewer.current?.unregister();
+    automationViewer.current = null;
     if (nvRef.current) {
       try {
         const vols = nvRef.current.volumes;
@@ -180,6 +187,21 @@ const NiivueViewer: React.FC<NiivueViewerProps> = ({
       return nv;
     };
 
+    const registerLoadedViewer = (nv: Niivue) => {
+      const tabs = {
+        list: () => VIEW_MODES.map(mode => ({ id: mode.key, label: mode.label, active: mode.key === viewControl.current.active })),
+        select: (id: string) => {
+          const mode = VIEW_MODES.find(mode => mode.key === id);
+          if (!mode) throw new Error(`Unknown viewer mode: ${id}`);
+          viewControl.current.select(mode.key);
+        },
+      };
+      automationViewer.current = { unregister: registerViewer(`dicom-${++nextViewerId}`, {
+        state: () => ({ tabs: tabs.list(), volumes: nv.volumes.map(volume => ({ name: volume.name })) }),
+        tabs,
+      }) };
+    };
+
     const initViewer = async () => {
       setIsLoading(true);
       setError(null);
@@ -197,7 +219,9 @@ const NiivueViewer: React.FC<NiivueViewerProps> = ({
 
           await loadVolumeFromUrl(nv, urls![0].url, urls![0].name);
 
+          if (cancelled) return;
           nvRef.current = nv;
+          registerLoadedViewer(nv);
           onNiivueReady?.(nv);
           setViewerReady(true);
           setIsLoading(false);
@@ -234,7 +258,9 @@ const NiivueViewer: React.FC<NiivueViewerProps> = ({
 
           await loadVolume(nv, niftiFiles[initialIndex]);
 
+          if (cancelled) return;
           nvRef.current = nv;
+          registerLoadedViewer(nv);
           onNiivueReady?.(nv);
           setViewerReady(true);
           setIsLoading(false);
@@ -286,9 +312,12 @@ const NiivueViewer: React.FC<NiivueViewerProps> = ({
     if (config) {
       nv.setSliceType(config.sliceType);
       setActiveView(mode);
+      viewControl.current.active = mode;
       onViewModeChange?.(mode);
     }
   };
+
+  viewControl.current = { active: activeView, select: handleViewChange };
 
   // Respond to external view mode changes
   useEffect(() => {

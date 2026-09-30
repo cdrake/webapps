@@ -18,6 +18,7 @@ import * as Config from './app/config.js';
 import { generateNiivueColormap, getLabelName } from './app/labels.js';
 import { computeAutoWindow } from '@neurodesk/webapp-components/volume';
 import { createNiftiFromVolume, downloadArrayBuffer } from '@neurodesk/webapp-components/file-io';
+import { registerVesselBoostAutomation } from './automation.js';
 import {
   buildResultVolumeStack,
   defaultResultVisibility,
@@ -135,6 +136,7 @@ class VesselBoostApp {
 
     // Start ONNX initialization in background
     this.inferenceExecutor.initialize();
+    this.automation = registerVesselBoostAutomation(this);
   }
 
   async setupViewer() {

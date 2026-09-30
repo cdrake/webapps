@@ -3,7 +3,7 @@ import { createExampleSelector } from '@neurodesk/webapp-components/ui';
 import { SLICE_TYPE } from '@niivue/niivue';
 import { mountViewer } from './freebrowse-viewer.js';
 import '@neurodesk/webapp-components/styles/imaging-workspace.css';
-import { readImageFiles } from '@neurodesk/runtime-support/dcm2niix-client';
+import { runDcm2niix, readImageFiles } from '@neurodesk/runtime-support/dcm2niix-client';
 import { mountImagingWorkspace } from '@neurodesk/webapp-components/core/mount-imaging-workspace';
 import { createElement } from '@neurodesk/webapp-components/core';
 import { downloadArrayBuffer, downloadFile } from '@neurodesk/webapp-components/file-io';
@@ -15,6 +15,8 @@ import {
   createConsole,
   createViewerToolbar,
 } from '@neurodesk/webapp-components/ui';
+import { registerAppAutomation, registerViewer, createNiivueAdapter } from '@neurodesk/webapp-components/automation';
+import { automationArtifacts } from './automation-results.js';
 import manifest from '@neurodesk/topofit/manifest';
 
 const $ = (id) => document.getElementById(id);
@@ -40,6 +42,7 @@ let viewerReady;
 let embeddedViewer;
 let source;
 let worker;
+let cancelRun;
 let busy = false;
 let outputs = new Map();
 let importedImages = [];
@@ -346,6 +349,13 @@ async function ensureViewer() {
       for (const event of ['meshLoaded', 'meshRemoved', 'meshUpdated', 'volumeLoaded', 'volumeRemoved', 'volumeUpdated']) {
         viewer.addEventListener(event, () => queueMicrotask(syncMeshControls));
       }
+      registerViewer('image', createNiivueAdapter(viewer, {
+        tabs: {
+          list: () => [{ id: 'source', label: 'Source image', active: !displayedResult && !meshSceneReady }, ...[...outputs.keys()].filter((id) => id === 'qc' || id === 'patch-qc' || surfaceStages.has(id)).map((id) => ({ id, label: resultLabel(id), active: surfaceStages.has(id) ? visibleMeshes.has(id) : displayedResult === id }))],
+          select: (id) => id === 'source' ? showSource() : showResult(id),
+        },
+        regions: { list: () => Object.values(surfaceAnalysis?.flat_patches ?? {}).map((patch) => ({ id: patch.patch_id, name: patch.patch_id, ...patch })) },
+      }));
       return viewer;
     })().catch((error) => {
       embeddedViewer?.destroy();
@@ -446,9 +456,9 @@ async function setMeshVisible(stage, visible, input) {
   }
 }
 
-async function showResult(stage) {
+async function showResult(stage, { duringRun = false } = {}) {
   const file = outputs.get(stage);
-  if (!file || busy) return;
+  if (!file || (busy && !duringRun)) return;
   if (file.type === 'application/json' || file.type === 'text/csv') {
     const content = document.createElement('pre');
     content.className = 'nd-console-output';
@@ -582,8 +592,9 @@ $('exampleControl').replaceWith(exampleControl);
 $('findPatches').onchange = () => { $('patchSettings').hidden = !$('findPatches').checked; };
 $('patchRegion').onchange = () => { $('patchRoiField').hidden = $('patchRegion').value !== 'roi'; };
 
-async function run(analysisOnly = false) {
-  if (!source || busy || viewerBusy || (analysisOnly && !reconstruction)) return;
+async function run(analysisOnly = false, { signal, progress = () => {}, roiFile } = {}) {
+  signal?.throwIfAborted();
+  if (!source || busy || viewerBusy || (analysisOnly && !reconstruction)) throw new Error('Load an image and wait for the current operation to finish.');
   if (analysisOnly && !$('estimateNormals').checked && !$('findPatches').checked) {
     $('surfaceAnalysisSettings').open = true;
     status('Choose normals, flat patches, or both.', true);
@@ -604,7 +615,7 @@ async function run(analysisOnly = false) {
   if ($('findPatches').checked && $('patchRegion').value === 'roi') {
     setBusy(true);
     try {
-      const images = await readImageFiles(Array.from($('patchRoi').files));
+      const images = roiFile ? [roiFile] : await readImageFiles(Array.from($('patchRoi').files));
       if (images.length !== 1) throw new Error('Choose one ROI mask on the input image grid.');
       roiBuffer = await images[0].arrayBuffer();
     } catch (error) {
@@ -613,10 +624,14 @@ async function run(analysisOnly = false) {
       $('patchQuality').open = true;
       status(error.message, true);
       setBusy(false);
-      return;
+      throw error;
     }
   }
-  if (preparation !== currentPreparation) return;
+  if (signal?.aborted) {
+    setBusy(false);
+    signal.throwIfAborted();
+  }
+  if (preparation !== currentPreparation) throw new DOMException('Cancelled', 'AbortError');
   if (!analysisOnly) {
     reconstruction = null;
     outputs = new Map();
@@ -636,91 +651,117 @@ async function run(analysisOnly = false) {
     $('viewerError').hidden = false;
     $('viewerError').textContent = `Visualization unavailable: ${error.message}. Reconstruction can continue.`;
   }
-  if (!busy || preparation !== currentPreparation) return;
-  worker = analysisOnly
-    ? new Worker(new URL('./analysis-worker.js', import.meta.url), { type: 'module' })
-    : new Worker(new URL('./inference-worker.js', import.meta.url), { type: 'module' });
-  const active = worker;
-  worker.onmessage = async ({ data }) => {
-    if (worker !== active) return;
-    if (data.type === 'progress') {
-      $('progress').value = data.value;
-      status(data.message);
-    }
-    if (data.type === 'error') {
-      active.terminate();
-      worker = null;
-      setBusy(false);
-      status(data.message, true);
-    }
-    if (data.type === 'result') {
-      showPatchMeasurements(null);
-      surfaceAnalysis = data.provenance.surfaceAnalysis;
-      if (analysisOnly) outputs = new Map(reconstruction.files);
-      for (const output of data.files) {
-        if (output.id.endsWith('-registration')) continue;
-        if (output.id === 'surface-analysis' || output.id === 'provenance') {
-          const title = output.id === 'surface-analysis' ? 'Surface analysis measurements' : 'Processing manifest';
-          log.log(`${title}\n${new TextDecoder().decode(output.bytes)}`);
-          continue;
-        }
-        outputs.set(output.id, new File([output.bytes], output.name, { type: output.mediaType }));
-      }
-      if (!analysisOnly && data.surfaces) {
-        normalArrowWorker?.terminate();
-        normalArrowWorker = null;
-        reconstruction = {
-          surfaces: data.surfaces,
-          provenance: data.provenance,
-          files: new Map([...outputs].filter(([id]) => surfaceStages.has(id) || id === 'qc')),
-        };
-      }
-      results.render(Object.fromEntries([...outputs].map(([id]) => [
-        id,
-        surfaceStages.has(id) ? { visible: false, viewable: true } : { description: resultLabel(id) },
-      ])));
-      $('stlButton').hidden = !reconstruction;
-      $('outputSection').open = true;
-      $('progress').value = 1;
-      active.terminate();
-      worker = null;
-      setBusy(false);
-      status(analysisOnly ? `Surface analysis ready · ${Math.round(data.elapsedSeconds)} s` : `Surfaces ready · ${data.provenance.surfaceVertices.toLocaleString()} vertices per hemisphere · ${Math.round(data.elapsedSeconds)} s`);
-      if (surfaceAnalysis?.flat_patch_status === 'NO_PATCH_MEETS_CRITERIA') status('Surfaces ready · no cortical patch meets the selected criteria');
-      await showResult(outputs.has('patch-qc') ? 'patch-qc' : 'qc');
-    }
-  };
-  worker.onerror = (event) => {
-    if (worker !== active) return;
-    active.terminate();
-    worker = null;
+  if (!busy || preparation !== currentPreparation) throw new DOMException('Cancelled', 'AbortError');
+  if (signal?.aborted) {
     setBusy(false);
-    status(`${operation} stopped: ${event.message || 'worker failure'}`, true);
-  };
-  worker.postMessage({
-    file: source,
-    ...(analysisOnly ? { surfaces: reconstruction.surfaces, provenance: reconstruction.provenance } : {}),
-    model: $('model').value,
-    conform: $('conform').checked,
-    overlayThickness: Number($('thickness').value),
-    estimateNormals: $('estimateNormals').checked,
-    patches: $('findPatches').checked ? {
-      count: Number($('patchCount').value),
-      radius: Number($('patchRadius').value),
-      hemisphere: $('patchHemisphere').value,
-      maxRms: Number($('patchMaxRms').value),
-      minAreaFraction: Number($('patchMinArea').value),
-    } : null,
-    roiBuffer,
-    assetBase,
+    signal.throwIfAborted();
+  }
+  return new Promise((resolve, reject) => {
+    worker = analysisOnly
+      ? new Worker(new URL('./analysis-worker.js', import.meta.url), { type: 'module' })
+      : new Worker(new URL('./inference-worker.js', import.meta.url), { type: 'module' });
+    const active = worker;
+    let settled = false;
+    const finish = (error, data) => {
+      if (settled) return;
+      settled = true;
+      active.terminate();
+      if (worker === active) worker = null;
+      signal?.removeEventListener('abort', cancel);
+      cancelRun = null;
+      setBusy(false);
+      if (error) reject(error);
+      else resolve(data);
+    };
+    const cancel = () => {
+      status(`${operation} cancelled.`);
+      finish(signal?.reason ?? new DOMException('Cancelled', 'AbortError'));
+    };
+    cancelRun = cancel;
+    signal?.addEventListener('abort', cancel, { once: true });
+    worker.onmessage = async ({ data }) => {
+      if (worker !== active) return;
+      try {
+        if (data.type === 'progress') {
+          $('progress').value = data.value;
+          status(data.message);
+          progress({ message: data.message, value: data.value });
+        }
+        if (data.type === 'error') {
+          status(data.message, true);
+          finish(new Error(data.message));
+        }
+        if (data.type === 'result') {
+          showPatchMeasurements(null);
+          surfaceAnalysis = data.provenance.surfaceAnalysis;
+          if (analysisOnly) outputs = new Map(reconstruction.files);
+          for (const output of data.files) {
+            if (output.id.endsWith('-registration')) continue;
+            if (output.id === 'surface-analysis' || output.id === 'provenance') {
+              const title = output.id === 'surface-analysis' ? 'Surface analysis measurements' : 'Processing manifest';
+              log.log(`${title}\n${new TextDecoder().decode(output.bytes)}`);
+              continue;
+            }
+            outputs.set(output.id, new File([output.bytes], output.name, { type: output.mediaType }));
+          }
+          if (!analysisOnly && data.surfaces) {
+            normalArrowWorker?.terminate();
+            normalArrowWorker = null;
+            reconstruction = {
+              surfaces: data.surfaces,
+              provenance: data.provenance,
+              files: new Map([...outputs].filter(([id]) => surfaceStages.has(id) || id === 'qc')),
+            };
+          }
+          results.render(Object.fromEntries([...outputs].map(([id]) => [
+            id,
+            surfaceStages.has(id) ? { visible: false, viewable: true } : { description: resultLabel(id) },
+          ])));
+          $('stlButton').hidden = !reconstruction;
+          $('outputSection').open = true;
+          $('progress').value = 1;
+          status(analysisOnly ? `Surface analysis ready · ${Math.round(data.elapsedSeconds)} s` : `Surfaces ready · ${data.provenance.surfaceVertices.toLocaleString()} vertices per hemisphere · ${Math.round(data.elapsedSeconds)} s`);
+          if (surfaceAnalysis?.flat_patch_status === 'NO_PATCH_MEETS_CRITERIA') status('Surfaces ready · no cortical patch meets the selected criteria');
+          await showResult(outputs.has('patch-qc') ? 'patch-qc' : 'qc', { duringRun: true });
+          finish(null, { artifacts: automationArtifacts(data.files), provenance: data.provenance, measurements: { elapsedSeconds: data.elapsedSeconds, ...(data.provenance.surfaceAnalysis ? { surfaceAnalysis: data.provenance.surfaceAnalysis } : {}) } });
+        }
+      } catch (error) {
+        status(error.message, true);
+        finish(error);
+      }
+    };
+    worker.onerror = (event) => {
+      if (worker !== active) return;
+      status(`${operation} stopped: ${event.message || 'worker failure'}`, true);
+      finish(new Error(event.message || 'Worker failure'));
+    };
+    worker.onmessageerror = () => finish(new Error('Worker returned an unreadable result'));
+    worker.postMessage({
+      file: source,
+      ...(analysisOnly ? { surfaces: reconstruction.surfaces, provenance: reconstruction.provenance } : {}),
+      model: $('model').value,
+      conform: $('conform').checked,
+      overlayThickness: Number($('thickness').value),
+      estimateNormals: $('estimateNormals').checked,
+      patches: $('findPatches').checked ? {
+        count: Number($('patchCount').value),
+        radius: Number($('patchRadius').value),
+        hemisphere: $('patchHemisphere').value,
+        maxRms: Number($('patchMaxRms').value),
+        minAreaFraction: Number($('patchMinArea').value),
+      } : null,
+      roiBuffer,
+      assetBase,
+    });
   });
 }
 
-$('runButton').onclick = () => void run();
-$('analyzeButton').onclick = () => void run(true);
+$('runButton').onclick = () => void run().catch((error) => { if (error.name !== 'AbortError') status(error.message, true); });
+$('analyzeButton').onclick = () => void run(true).catch((error) => { if (error.name !== 'AbortError') status(error.message, true); });
 
 $('cancelButton').onclick = () => {
   exampleControl.cancel();
+  cancelRun?.();
   preparation = null;
   worker?.terminate();
   worker = null;
@@ -730,8 +771,31 @@ $('cancelButton').onclick = () => {
 };
 window.addEventListener('pagehide', (event) => {
   if (event.persisted) return;
+  cancelRun?.();
   normalArrowWorker?.terminate();
   exampleControl.destroy();
   worker?.terminate();
   embeddedViewer?.destroy();
+});
+
+
+registerAppAutomation({
+  app: 'topofit',
+  convertDicom: runDcm2niix,
+  operations: {
+    reconstruct: async ({ inputs, parameters, signal, progress }) => {
+      signal.throwIfAborted();
+      if (busy || viewerBusy) throw new Error('Wait for the current operation to finish.');
+      exampleControl.cancel();
+      if (!await load(inputs.image[0])) throw new Error('The image could not be loaded.');
+      signal.throwIfAborted();
+      for (const id of ['conform', 'estimateNormals', 'findPatches']) $(id).checked = parameters[id];
+      for (const id of ['model', 'thickness', 'patchCount', 'patchRadius', 'patchHemisphere', 'patchMaxRms', 'patchMinArea']) $(id).value = String(parameters[id]);
+      $('patchRegion').value = inputs.roi.length ? 'roi' : 'cortex';
+      $('patchSettings').hidden = !parameters.findPatches;
+      $('patchRoiField').hidden = !inputs.roi.length;
+      if (inputs.roi.length && !parameters.findPatches) throw new Error('An ROI requires findPatches to be enabled.');
+      return run(false, { signal, progress, roiFile: inputs.roi[0] });
+    },
+  },
 });

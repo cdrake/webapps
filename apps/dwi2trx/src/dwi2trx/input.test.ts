@@ -39,3 +39,13 @@ assert.equal(resolved.directions, 21)
 assert.equal(resolved.source, 'nifti')
 
 console.log('input.test.ts: size guard and NIfTI sample validation OK')
+
+const { resolveExplicitInput } = await import('./input.ts')
+const explicit = await resolveExplicitInput({
+  nifti: new File([nifti], 'image-from-agent.nii'),
+  bval: new File([await sample[1].text()], 'unrelated-values.bval'),
+  bvec: new File([await sample[2].text()], 'unrelated-directions.bvec'),
+})
+assert.equal(explicit.directions, 21)
+assert.equal(explicit.bvec.name, 'unrelated-directions.bvec')
+await assert.rejects(resolveExplicitInput({ ...explicit, bval: new File(['0'], 'bad.bval') }), /bval|mismatch|bvec/i)

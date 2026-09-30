@@ -1,31 +1,49 @@
 # @neurodesk/webapp-components
 
-## 0.5.2
+## 0.7.0
+
+### Minor Changes
+
+- Add the shared remote compute client and connection panel for NeSVoR, including paired job ownership, recovery, cancellation and Linux/NVIDIA standalone server setup instructions. Keep credentials out of local storage and show the current webapp origin in server startup commands. Preserve the desktop automation input grants alongside the explicitly configured compute-server origins.
 
 ### Patch Changes
 
-- Release the experimental NeSVoR browser and remote compute workflows. Package the required ONNX runtime with gzip compression and omit unused runtime variants. Include shared compute connection recovery, cancellation and Linux server setup instructions.
-- Remove the static bottom bar (version, privacy sentence, duplicate More Apps and GitHub links) from the six inference-workspace apps. The shared app bar already shows the version and links, and Privacy has its own dialog. The unused `.app-footer` and `.nd-app-footer` rules leave the shared stylesheets and the hosted theme.
+- Retry example downloads and OME-Zarr reads that the host rate-limits (HTTP 429), honouring Retry-After, instead of failing the example.
+
+## 0.6.2
+
+### Patch Changes
+
 - Add White matter lesions: FLAMeS lesion segmentation of a single FLAIR image in the browser, after SynthStrip brain extraction, with a lesion mask, probability map and lesion table. Result lists can mark a result as not viewable, which keeps its row and disables View.
-- Every app now opens on its workspace and shows live status only in the bottom bar: a short message, a progress bar, elapsed time and a cancel × that appears while a run can be cancelled. Start pages, landing overlays and welcome modals are gone, and their copy moved to About. Every app has a technical log below the viewer that starts collapsed. Sidebar help longer than 90 characters moved into info tooltips or About, and each sidebar has one primary action. `ProgressManager` now drives the design-system footer, including the elapsed counter and the cancel button.
+
+## 0.6.1
+
+### Patch Changes
+
+- Use portable underscore MCP tool names, explicit input cardinality, and declared SynthSeg browser geometry limits for preflight validation. Preserve duplicate DICOM filenames during conversion, release viewer sessions when their windows close, and prevent cancellation/retry races.
+
+  Resolve QSM voxel-dependent defaults for supplied masks before reconstruction, so generated-mask and supplied-mask runs produce the same output. Add complete Mac scientific validation commands and evidence checks. The SynthSeg GPU buffer ceiling remains unchanged.
+
+## 0.6.0
+
+### Minor Changes
+
+- Expose typed operations across the application catalog, including multiple inputs, DICOM series selection, variable artifacts and viewer workflows. Share awaited processing and cancellation between each app and its agent adapter. Publish verified result reports and scientific provenance.
+
+  Add bounded desktop viewer sessions and MCP controls using public viewer APIs. Native SynthSeg now reports per-label counts and physical volumes. Include real-model CPU checks and a Mac runner for Metal, WebGPU and buffer-planning evidence without raising the validated SynthSeg limit.
+
+### Patch Changes
+
+- 93381e8: Remove the static bottom bar (version, privacy sentence, duplicate More Apps and GitHub links) from the six inference-workspace apps. The shared app bar already shows the version and links, and Privacy has its own dialog. The unused `.app-footer` and `.nd-app-footer` rules leave the shared stylesheets and the hosted theme.
+- 93381e8: Every app now opens on its workspace and shows live status only in the bottom bar: a short message, a progress bar, elapsed time and a cancel × that appears while a run can be cancelled. Start pages, landing overlays and welcome modals are gone, and their copy moved to About. Every app has a technical log below the viewer that starts collapsed. Sidebar help longer than 90 characters moved into info tooltips or About, and each sidebar has one primary action. `ProgressManager` now drives the design-system footer, including the elapsed counter and the cancel button.
 
   The shared example selector shows one short line once an example loads; the description and expected result moved to a tooltip beside the Example label. NiiMath gained the shared layout tabs and About dialog and no longer ships app CSS.
-
-## 0.5.1
-
-### Patch Changes
-
-- Put compute-server installation first in the shared Standalone dialog for NeSVoR. Show Linux/NVIDIA prerequisites, archive extraction, doctor and container download commands, startup with the current webapp origin, and address/pairing instructions. Support verified preview downloads without presenting them as published releases.
 
 ## 0.5.0
 
 ### Minor Changes
 
-- 94f7cac: Add the NeSVoR fetal slice-to-volume reconstruction app and the decoupled compute feature it needs. The app prepares stacks, thicknesses and protocol presets in the browser and sends the job to a `neurodesk-compute` server in the user's own network (`exes/compute-server`, Rust), which runs the pinned Neurodesk `nesvor` 0.5.0 container and streams progress back. The components package gains the remote compute client (`@neurodesk/webapp-components/compute`) and the `nd-compute-connection` sidebar panel; the desktop suite admits the origins listed in `NEURODESK_COMPUTE_ORIGINS`. The shared About statement is split into `builder` and a per-app overridable `execution` sentence.
-
-  Fix paired job ownership, durable recovery and retention, content-checked idempotency, and cancellation that waits for runner termination. Keep credentials out of local storage, recover jobs after tab reload, import DICOM locally, and preserve examination identity during uploads, viewing and processing. Package the Linux backend with the production frontend and add a real CUDA validation command.
-
-  Add an explicitly experimental browser CPU reference for small prealigned masked stacks, with per-case differentiable NeSVoR fitting, NIfTI output, provenance and worker cancellation. This is not the complete browser port: full SVoRT, WebGPU training, upstream numerical parity, and clinical-sized validation remain pending. Simulator tests do not establish scientific correctness.
+- Publish versioned app automation contracts and checksummed run reports for brain extraction and SynthSeg. Add shared run identities, explicit completion and cancellation, and SynthSeg label-volume summaries. Generate browser jobs from the contracts and expose discovery, validation, asynchronous execution, cancellation and artifact resources through the desktop's local MCP server, with an optional native SynthSeg engine.
 
 ## 0.4.5
 

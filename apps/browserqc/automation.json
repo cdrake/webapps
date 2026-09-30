@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 2,
+  "app": "browserqc",
+  "title": "BrowserQC",
+  "description": "Segment a T1 scan and compute MRI quality metrics.",
+  "defaultOperation": "quality-control",
+  "operations": {
+    "quality-control": {
+      "title": "Quality control",
+      "description": "Run MindGrab 18-label segmentation and niimath MRIQC-style metrics on the same native grid.",
+      "mode": "batch",
+      "inputs": {
+        "image": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "description": "T1 anatomical image or DICOM series",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "sidecar": {
+          "source": "files",
+          "type": "neuro:metadata",
+          "formats": [
+            "json"
+          ],
+          "description": "Optional BIDS metadata; otherwise use the selected converted series sidecar",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "parameters": {
+        "backend": {
+          "type": "string",
+          "description": "Segmentation backend",
+          "enum": [
+            "auto",
+            "cpu"
+          ],
+          "default": "auto"
+        }
+      },
+      "artifacts": {
+        "labels": {
+          "type": "neuro:label-map",
+          "mediaType": "application/x-nifti",
+          "labelSystem": "mindgrab-16chan18cls",
+          "space": "input",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "qc": {
+          "type": "neuro:report",
+          "mediaType": "application/json",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    }
+  }
+}

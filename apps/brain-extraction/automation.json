@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 2,
+  "app": "brain-extraction",
+  "title": "Brain extraction",
+  "description": "Extract a brain image and binary mask with MindGrab, BET or SynthStrip.",
+  "defaultOperation": "extract",
+  "operations": {
+    "extract": {
+      "title": "Extract brain",
+      "description": "Extract a brain image and binary mask with MindGrab, BET or SynthStrip.",
+      "mode": "batch",
+      "inputs": {
+        "image": {
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "space": "native",
+          "description": "One anatomical head image",
+          "source": "files",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "parameters": {
+        "method": {
+          "type": "string",
+          "description": "Brain extraction method",
+          "enum": [
+            "mindgrab",
+            "bet",
+            "synthstrip"
+          ],
+          "default": "mindgrab"
+        },
+        "threshold": {
+          "type": "number",
+          "description": "BET fractional intensity threshold; used only by BET",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.5,
+          "multipleOf": 0.05
+        },
+        "backend": {
+          "type": "string",
+          "description": "MindGrab backend; used only by MindGrab",
+          "enum": [
+            "auto",
+            "cpu"
+          ],
+          "default": "auto"
+        }
+      },
+      "artifacts": {
+        "brain": {
+          "type": "neuro:volume",
+          "mediaType": "application/x-nifti",
+          "space": "input",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "mask": {
+          "type": "neuro:mask",
+          "mediaType": "application/x-nifti",
+          "space": "input",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    }
+  }
+}

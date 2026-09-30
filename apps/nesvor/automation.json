@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 2,
+  "app": "nesvor",
+  "title": "NeSVoR",
+  "description": "Open NIfTI stacks for inspection before interactive slice-to-volume reconstruction.",
+  "defaultOperation": "open-stacks",
+  "operations": {
+    "open-stacks": {
+      "title": "Open stacks",
+      "description": "Replace the current inputs and display the first stack. Reconstruction requires the interactive controls.",
+      "mode": "viewer",
+      "inputs": {
+        "stacks": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": ["nifti"],
+          "description": "NIfTI acquisition stacks",
+          "minimum": 1
+        }
+      },
+      "parameters": {},
+      "artifacts": {},
+      "engines": ["browser"]
+    }
+  }
+}

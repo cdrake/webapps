@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 2,
+  "app": "brain2print",
+  "title": "Brain2Print",
+  "description": "Brain2Print scientific workflow automation.",
+  "defaultOperation": "create-mesh",
+  "operations": {
+    "create-mesh": {
+      "title": "Create a printable brain mesh",
+      "description": "Create a printable brain mesh. Uses the same scientific processing handler as the interface.",
+      "mode": "batch",
+      "inputs": {
+        "image": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "description": "Input image for processing",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "parameters": {
+        "model": {
+          "type": "string",
+          "default": "pve",
+          "enum": [
+            "pve",
+            "16chan18cls",
+            "mindmap",
+            "mindsnap"
+          ],
+          "description": "Published model variant"
+        },
+        "simplify": {
+          "type": "number",
+          "default": 20,
+          "minimum": 5,
+          "maximum": 100,
+          "description": "Percentage of mesh faces to retain"
+        },
+        "smooth": {
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 20,
+          "description": "Mesh smoothing iterations"
+        },
+        "largestOnly": {
+          "type": "boolean",
+          "default": true,
+          "description": "Keep only the largest mesh component"
+        },
+        "fillBubbles": {
+          "type": "boolean",
+          "default": true,
+          "description": "Fill internal mesh bubbles"
+        }
+      },
+      "artifacts": {
+        "segmentation": {
+          "type": [
+            "neuro:volume",
+            "neuro:label-map"
+          ],
+          "mediaType": "application/octet-stream",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "mesh": {
+          "type": "neuro:surface",
+          "mediaType": "model/stl",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "geometry": {
+          "type": "neuro:surface",
+          "mediaType": "application/octet-stream",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    }
+  }
+}

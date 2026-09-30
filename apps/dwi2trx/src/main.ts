@@ -1,4 +1,5 @@
 import examples from '../examples.json'
+import niimathPackage from '../vendor/niimath/package.json'
 import { createExampleSelector } from '@neurodesk/webapp-components/ui'
 /**
  * dwi2trx — browser-only diffusion MRI pipeline (WASM + WebGPU; no data leaves
@@ -11,7 +12,8 @@ import '@neurodesk/webapp-components/styles/imaging-workspace.css'
 import { mountImagingWorkspace } from '@neurodesk/webapp-components/core/mount-imaging-workspace'
 import { createInfoDialog, createConsole, createViewerToolbar } from '@neurodesk/webapp-components/ui'
 import NiiVueGPU, { SHOW_RENDER, SLICE_TYPE } from '@niivue/niivue'
-import { cropB0Volume, fitTensor } from './dwi2trx/dtifit'
+import { registerAppAutomation, registerViewer, createNiivueAdapter } from '@neurodesk/webapp-components/automation'
+import { runDcm2niix } from '@neurodesk/runtime-support/dcm2niix-client'
 import {
   countB0,
   describeShells,
@@ -31,7 +33,7 @@ import {
   cancelSchemeGeneration,
   generateSchemeInWorker,
 } from './dwi2trx/genvectors-worker-client'
-import { collectFiles, readNiftiHeader, type ResolvedInput, resolveInput } from './dwi2trx/input'
+import { collectFiles, readNiftiHeader, type ResolvedInput, resolveInput, resolveExplicitInput } from './dwi2trx/input'
 import { formatBytes, InputTooLargeError } from './dwi2trx/input-limits'
 import {
   type InputSource,
@@ -230,10 +232,10 @@ function gotoTab(step: Step): void {
 }
 
 maskFitBtn.addEventListener('click', () => {
-  void runFit()
+  void runFit().catch(() => {})
 })
 trackBtn.addEventListener('click', () => {
-  void runTrack()
+  void runTrack().catch(() => {})
 })
 fiberColor.addEventListener('change', () => {
   void applyFiberColor() // self-guards on a loaded tract
@@ -882,30 +884,41 @@ try {
   throw err
 }
 
-/** Run mindgrab on the b0 → a binary brain mask on the DWI's own grid. `seq` is
- *  the input identity this mask belongs to; we bail if a newer input arrives so
- *  a superseded mask doesn't waste GPU work. Throws if mindgrab can't run here
- *  (no shader-f16, buffers too small); the caller then fits unmasked. */
-async function makeBrainMask(
-  input: NonNullable<typeof state.input>,
-  seq: number,
-): Promise<File | undefined> {
-  setStatus('Brain extraction (mindgrab)…')
-  const b0 = await cropB0Volume(input)
-  if (seq !== loadSeq) return
-  const { segment } = await import('@brainchop/mindgrab')
-  // `worker: true` keeps the page responsive and is the only real cancellation.
-  // `backend: 'webgpu'` because only that module is staged (see AGENTS.md);
-  // `auto` could otherwise reach for a WebGL2 file this app doesn't ship.
-  const { mask } = await segment(await b0.arrayBuffer(), {
-    model: 'mindgrab',
-    mask: true,
-    worker: true,
-    backend: 'webgpu',
-    assetPath: `${import.meta.env.BASE_URL}brainchop/`,
+interface ProcessingContext {
+  signal?: AbortSignal
+  progress?: (update: { message: string; value?: number }) => void
+}
+
+interface TensorResult {
+  maps: TensorMaps
+  masked: boolean
+  maskFailure: string | null
+  maskProvenance: { model: string; version: string; backend: string; elapsedMs: number } | null
+}
+
+function fitInWorker(input: DwiInput, { signal, progress }: ProcessingContext): Promise<TensorResult> {
+  return new Promise((resolve, reject) => {
+    const active = new Worker(new URL('./dwi2trx/tensor-worker.ts', import.meta.url), { type: 'module' })
+    const finish = (error?: Error, result?: TensorResult) => {
+      active.terminate()
+      signal?.removeEventListener('abort', cancel)
+      if (error) reject(error)
+      else if (result) resolve(result)
+    }
+    const cancel = () => finish(signal?.reason ?? new DOMException('Cancelled', 'AbortError'))
+    signal?.addEventListener('abort', cancel, { once: true })
+    active.onmessage = ({ data }) => {
+      if (data.type === 'progress') {
+        setStatus(data.message)
+        progress?.({ message: data.message })
+      } else if (data.type === 'error') finish(new Error(data.message))
+      else if (data.type === 'result') finish(undefined, data.result)
+    }
+    active.onerror = (event) => finish(new Error(event.message || 'Tensor worker failed'))
+    active.onmessageerror = () => finish(new Error('Tensor worker returned an unreadable result'))
+    if (signal?.aborted) cancel()
+    else active.postMessage({ input, assetPath: `${import.meta.env.BASE_URL}brainchop/` })
   })
-  if (seq !== loadSeq || !mask) return
-  return new File([mask], 'mask.nii.gz')
 }
 
 // The input is already fully validated by resolveInput (volume count cross-
@@ -934,37 +947,31 @@ async function loadInput(
 
 let fitting = false
 
-async function runFit(): Promise<void> {
+async function runFit(context: ProcessingContext = {}): Promise<TensorResult> {
+  context.signal?.throwIfAborted()
   const input = state.input
-  if (!input || fitting) return // local guard: ignore a queued duplicate click
+  if (!input || fitting) throw new Error('Load a diffusion image and wait for the current fit to finish.')
   const seq = loadSeq // the input identity this fit belongs to
   fitting = true
   maskFitBtn.disabled = true
   busy(true)
   setStatus('Fitting the diffusion tensor (niimath dtifit)…')
   try {
-    // Brain-mask with mindgrab. Non-fatal: a GPU too small for the model throws
-    // a BrainchopError, so fall back to an unmasked fit rather than failing the
-    // whole tensor fit. A superseded input must not write the status line.
-    const mask = await makeBrainMask(input, seq).catch((err: unknown) => {
-      if (seq === loadSeq) {
-        const why = (err as Error)?.message ?? String(err)
-        setStatus(`Brain mask failed (${why}) — fitting without a mask.`)
-      }
-      return undefined
-    })
-    if (seq !== loadSeq) return
-    const maps = await fitTensor(input, mask)
-    if (seq !== loadSeq) return // a newer input superseded this fit — discard
+    const result = await fitInWorker(input, context)
+    context.signal?.throwIfAborted()
+    if (seq !== loadSeq) throw new DOMException('Input superseded', 'AbortError')
+    const { maps } = result
     state.maps = maps
     state.tracts = undefined // a new fit invalidates the old TRX
     shownView = null // force showMaps to (re)load
     gotoTab(2) // reveal tensor maps
     await syncView()
-    if (seq !== loadSeq) return // re-check: a new input may have arrived during the swap
+    context.signal?.throwIfAborted()
+    if (seq !== loadSeq) throw new DOMException('Input superseded', 'AbortError')
     setStatus(
-      `Tensor fit complete${mask ? ' (brain-masked)' : ''} — V1 modulated by FA.`,
+      `Tensor fit complete${result.masked ? ' (brain-masked)' : ''} — V1 modulated by FA.`,
     )
+    return result
   } catch (err) {
     if (seq === loadSeq) {
       const msg = (err as Error)?.message ?? String(err)
@@ -985,6 +992,7 @@ async function runFit(): Promise<void> {
           : undefined,
       )
     }
+    throw err
   } finally {
     fitting = false
     maskFitBtn.disabled = !state.input
@@ -1000,10 +1008,11 @@ let tracking = false
  *  over the FA in a clipped 3D render, then reveal its save action. Browser-only:
  *  needs WebGPU with `subgroups` (getTrackingDevice throws a clear reason if
  *  not). Seeds from FA ≥ 0.25, stops below FA 0.1. */
-async function runTrack(): Promise<void> {
+async function runTrack({ signal, progress }: ProcessingContext = {}) {
+  signal?.throwIfAborted()
   const input = state.input
   const maps = state.maps
-  if (!input || !maps || tracking) return
+  if (!input || !maps || tracking) throw new Error('Fit the tensor and wait for the current tracking run to finish.')
   const seq = loadSeq
   tracking = true
   trackBtn.disabled = true
@@ -1048,7 +1057,8 @@ async function runTrack(): Promise<void> {
         device.limits.maxBufferSize,
       ),
     )
-    if (seq !== loadSeq) return
+    signal?.throwIfAborted()
+    if (seq !== loadSeq) throw new DOMException('Input superseded', 'AbortError')
     // Tracking knobs from the UI (clamped to the input ranges).
     const MAX_SEEDS = 100000
     const seedFa = num(seedFaIn, 0.25, 0, 1)
@@ -1066,7 +1076,7 @@ async function runTrack(): Promise<void> {
         `No seed voxels with FA ≥ ${seedFa}. Lower the Seed FA threshold.`,
         true,
       )
-      return
+      throw new Error(`No seed voxels with FA ≥ ${seedFa}. Lower the Seed FA threshold.`)
     }
     // The seed list is built in voxel order, so hitting the cap biases toward
     // one side of the brain — tell the user rather than silently truncating.
@@ -1087,25 +1097,28 @@ async function runTrack(): Promise<void> {
       seeds,
       params,
       (done, total) => {
+        progress?.({ message: `Tracking ${done} / ${total} seeds`, value: done / total })
         if (seq === loadSeq)
           setStatus(
             `Tracking… ${done.toLocaleString()} / ${total.toLocaleString()} seeds`,
           )
       },
-      () => seq !== loadSeq, // stop promptly if a new DWI was dropped mid-track
+      () => seq !== loadSeq || Boolean(signal?.aborted), // stop promptly if a new DWI was dropped mid-track
     )
-    if (seq !== loadSeq) return
+    signal?.throwIfAborted()
+    if (seq !== loadSeq) throw new DOMException('Input superseded', 'AbortError')
     if (lines.length === 0) {
       setStatus(
         'No streamlines survived — lower the Seed/Stop FA thresholds or the step size.',
         true,
       )
-      return
+      throw new Error('No streamlines survived; lower the Seed/Stop FA thresholds or step size.')
     }
     const trxName = `${outputBase(input)}.trx`
     const totalPts = lines.reduce((s, l) => s + l.length / 3, 0)
     const meanLen = (totalPts / lines.length).toFixed(1)
-    const count = lines.length.toLocaleString()
+    const streamlineCount = lines.length
+    const count = streamlineCount.toLocaleString()
     state.tracts = new File([writeTrx(lines, voxelToRasmm, dims3)], trxName)
     // Free the voxel-space lines now that the TRX is serialized — the 3D preview
     // below allocates a large cylinder mesh, and there is no need to hold both.
@@ -1131,10 +1144,12 @@ async function runTrack(): Promise<void> {
     // failure and the user can still download their TRX.
     try {
       await syncView()
-      if (seq !== loadSeq) return
+      signal?.throwIfAborted()
+      if (seq !== loadSeq) throw new DOMException('Input superseded', 'AbortError')
       setStatus(summary, false, detail)
     } catch (renderErr) {
-      if (seq !== loadSeq) return
+      signal?.throwIfAborted()
+      if (seq !== loadSeq) throw new DOMException('Input superseded', 'AbortError')
       console.warn('[dwi2trx] tract render failed:', renderErr)
       render() // keep “Save TRX” enabled (state.tracts is set)
       // Distinguish an out-of-memory preview (the expected failure on a huge
@@ -1152,6 +1167,8 @@ async function runTrack(): Promise<void> {
           : `${summary} ${detail} Preview error: ${msg}`,
       )
     }
+    signal?.throwIfAborted()
+    return { file: state.tracts, measurements: { streamlines: streamlineCount, points: totalPts, seeds: nSeeds, processedSeeds, seedCap: MAX_SEEDS, capped, truncated, partial: capped || truncated }, provenance: { algorithm: '@dipy/gpu-streamlines', seedFa, density, parameters: params, bvecXFlipped: det3(extractAffine(header)) > 0 } }
   } catch (err) {
     if (seq === loadSeq)
       setStatus(
@@ -1159,6 +1176,7 @@ async function runTrack(): Promise<void> {
         true,
         'Raise the Seed and Stop FA thresholds, or lower Density/step size, to use less memory.',
       )
+    throw err
   } finally {
     device?.destroy() // free the WebGPU device on every path (incl. errors)
     tracking = false
@@ -1321,3 +1339,61 @@ exampleControl = createExampleSelector({
 $('inputSection').querySelector('.nd-section-content')?.prepend(exampleControl)
 window.addEventListener('pagehide', () => exampleControl?.destroy())
 render()
+
+
+interface AutomationRequest {
+  inputs: Record<string, File[]>
+  inputDetails: Record<string, { sidecars: File[] }>
+  parameters: Record<string, number>
+  signal: AbortSignal
+  progress: NonNullable<ProcessingContext['progress']>
+}
+
+async function runAutomation(request: AutomationRequest, track: boolean) {
+  const { inputs, inputDetails, parameters, signal, progress } = request
+  signal.throwIfAborted()
+  if (fitting || tracking) throw new Error('Wait for the current processing step to finish.')
+  exampleControl?.cancel()
+  const sidecars = inputDetails.image.sidecars
+  const bval = inputs.bval[0] ?? sidecars.find((file) => /\.bvals?$/i.test(file.name))
+  const bvec = inputs.bvec[0] ?? sidecars.find((file) => /\.bvecs?$/i.test(file.name))
+  if (!bval || !bvec) throw new Error('A diffusion image requires bval and bvec roles or DICOM gradient sidecars.')
+  const { seq, controller } = beginLoad()
+  const abort = () => controller.abort(signal.reason)
+  signal.addEventListener('abort', abort, { once: true })
+  busy(true)
+  try {
+    const resolved = await resolveExplicitInput({ nifti: inputs.image[0], bval, bvec, json: inputs.metadata[0] ?? sidecars.find((file) => /\.json$/i.test(file.name)) }, signal)
+    await loadInput(resolved, resolved.source, seq, 'DWI')
+    signal.throwIfAborted()
+    const fitted = await runFit({ signal, progress })
+    const artifacts = [{ role: 'fa', file: fitted.maps.fa }, { role: 'v1', file: fitted.maps.v1 }]
+    const provenance = { tensor: { algorithm: 'niimath dtifit', version: niimathPackage.version, masked: fitted.masked, maskFailure: fitted.maskFailure, mask: fitted.maskProvenance } }
+    if (!track) return { artifacts, provenance }
+    for (const [input, key] of [[seedFaIn, 'seedFa'], [stopFaIn, 'stopFa'], [stepSizeIn, 'stepSize'], [maxAngleIn, 'maxAngle'], [seedDensityIn, 'density']] as const) input.value = String(parameters[key])
+    const tracked = await runTrack({ signal, progress })
+    return { artifacts: [...artifacts, { role: 'tracts', file: tracked.file }], provenance: { ...provenance, tracking: tracked.provenance }, measurements: tracked.measurements }
+  } finally {
+    signal.removeEventListener('abort', abort)
+    if (inputAbortController === controller) inputAbortController = null
+    if (seq === loadSeq) busy(false)
+  }
+}
+
+registerAppAutomation({
+  app: 'dwi2trx',
+  convertDicom: runDcm2niix,
+  operations: {
+    fit: (request: AutomationRequest) => runAutomation(request, false),
+    tractography: (request: AutomationRequest) => runAutomation(request, true),
+  },
+})
+registerViewer('image', createNiivueAdapter(nv, {
+  tabs: {
+    list: () => [{ id: 'input', label: 'Diffusion input', step: 1 }, ...(state.maps ? [{ id: 'tensor', label: 'Tensor maps', step: 2 }] : []), ...(state.tracts ? [{ id: 'tracts', label: 'Streamlines', step: 3 }] : [])].map(({ id, label, step }) => ({ id, label, active: state.step === step })),
+    select: async (id: string) => {
+      gotoTab(id === 'input' ? 1 : id === 'tensor' ? 2 : 3)
+      await syncView()
+    },
+  },
+}))

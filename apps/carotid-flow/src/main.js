@@ -19,7 +19,8 @@ import {
   extractNiftiHeader,
   readNiftiFrames,
 } from '@neurodesk/webapp-components/file-io';
-import { readImageFiles } from '@neurodesk/runtime-support/dcm2niix-client';
+import { readImageFiles, runDcm2niix } from '@neurodesk/runtime-support/dcm2niix-client';
+import { registerAppAutomation, createNiivueAdapter } from '@neurodesk/webapp-components/automation';
 import { curvesCsv, detectCarotids, meanFrames, splitSeries } from './carotid.js';
 import { flowChartSvg } from './chart.js';
 import { APP, assignSeries, stem } from './config.js';
@@ -173,7 +174,7 @@ function clearOutputs() {
   $('progress').value = 0;
 }
 
-async function loadFiles(files, { signal, assertCurrent = () => {}, label } = {}) {
+async function loadFiles(files, { signal, assertCurrent = () => {}, label, chosen } = {}) {
   if (loading) throw new Error('A series is still loading. Wait or cancel, then retry.');
   const controller = new AbortController();
   const abort = () => controller.abort(signal.reason);
@@ -187,7 +188,7 @@ async function loadFiles(files, { signal, assertCurrent = () => {}, label } = {}
     const images = await readImageFiles(await files, { signal: controller.signal });
     controller.signal.throwIfAborted();
     assertCurrent();
-    const next = await readSeries(assignSeries(images));
+    const next = await readSeries(chosen ?? assignSeries(images));
     controller.signal.throwIfAborted();
     assertCurrent();
     try {
@@ -315,19 +316,24 @@ function renderOutputs() {
   });
 }
 
-$('runButton').onclick = async () => {
-  if (!series || busy) return;
+async function runDetection({ options: explicitOptions, signal, throwOnError = false } = {}) {
+  signal?.throwIfAborted();
+  if (!series || busy) {
+    if (throwOnError) throw new Error('Load a series and wait for processing to finish before detecting carotids.');
+    return;
+  }
   const source = series;
   let options;
   try {
     // Validate while the fields are still enabled, so the one at fault can take focus.
-    options = {
+    options = explicitOptions ?? {
       candidatePercentile: readSetting('candidatePercentile', 50, 100),
       headPercentile: readSetting('headPercentile', 0, 100),
       venc: readVenc(),
     };
   } catch (error) {
     status(error.message, true);
+    if (throwOnError) throw error;
     return;
   }
   setBusy(true);
@@ -337,6 +343,7 @@ $('runButton').onclick = async () => {
   try {
     // Let the status paint before the synchronous detection.
     await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve)));
+    signal?.throwIfAborted();
     const found = detectCarotids(source, options);
     const base = stem(source.name);
     const perSide = (value) => found.mask.map((label) => (label === value ? 1 : 0));
@@ -352,6 +359,7 @@ $('runButton').onclick = async () => {
     };
     background = 'mask';
     await showImages();
+    signal?.throwIfAborted();
     renderOutputs();
     $('outputSection').open = true;
     $('progress').value = 1;
@@ -361,15 +369,18 @@ $('runButton').onclick = async () => {
       : `left ${left.pixels.length} px, right ${right.pixels.length} px`;
     status(`Both carotids found · ${summary} · systolic peak at frame ${right.peakFrame + 1}`);
     log.log(`Detection took ${Math.round(performance.now() - started)} ms`);
+    return result;
   } catch (error) {
     // Drop the previous run's overlays with its numbers: they described other settings.
     clearOutputs();
     await showImages().catch(() => {});
     status(error instanceof Error ? error.message : String(error), true);
+    if (throwOnError) throw error;
   } finally {
     setBusy(false);
   }
-};
+}
+$('runButton').onclick = () => { void runDetection(); };
 
 $('saveButton').onclick = () => {
   if (!result) return;
@@ -398,6 +409,49 @@ window.addEventListener('pagehide', () => {
   exampleControl.destroy();
   loading?.abort();
 });
-void init();
+const initialized = init();
+
+function measurements(found) {
+  return {
+    method: found.method,
+    curveUnit: found.method === 'velocity' ? 'ml/min' : 'a.u.',
+    vessels: Object.fromEntries(['left', 'right'].map(side => {
+      const vessel = found[side];
+      return [side, { areaMm2: vessel.areaMm2, pixelCount: vessel.pixels.length, mean: vessel.mean,
+        peak: vessel.peak, peakFrame: vessel.peakFrame, pulsatility: vessel.pulsatility, curve: Array.from(vessel.curve) }];
+    })),
+  };
+}
+
+async function detectOperation({ inputs, parameters, signal, progress }) {
+  await initialized;
+  if (!ready) throw new Error('Carotid Flow viewer could not initialize.');
+  const chosen = inputs.series ? { combined: inputs.series[0] } : { amplitude: inputs.amplitude[0], phase: inputs.phase[0] };
+  progress('Reading the phase-contrast series');
+  await loadFiles(Object.values(chosen), { signal, chosen });
+  progress('Detecting carotids');
+  const completed = await runDetection({ options: parameters, signal, throwOnError: true });
+  const csv = new File([curvesCsv(completed.found)], `${stem(completed.source.name)}_carotid_curves.csv`, { type: 'text/csv' });
+  return {
+    artifacts: [
+      { role: 'labels', file: completed.files.mask },
+      { role: 'variability', file: completed.files.variability },
+      { role: 'curves', file: csv },
+    ],
+    measurements: measurements(completed.found),
+    provenance: { method: completed.found.method, parameters, phases: completed.source.phases, affine: completed.source.affine },
+  };
+}
+
+const automation = registerAppAutomation({ app: APP.id, convertDicom: runDcm2niix,
+  operations: { 'detect-combined': detectOperation, 'detect-pair': detectOperation },
+});
+automation.registerViewer('main', createNiivueAdapter(viewer, {
+  tabs: {
+    list: () => result ? ['mask', 'variability'].map(id => ({ id, label: id === 'mask' ? 'Carotid labels' : 'Temporal variability', active: background === id })) : [],
+    async select(id) { background = id; await showImages(); },
+  },
+  regions: { list: () => result ? measurements(result.found).vessels : {} },
+}));
 
 export default Object.freeze({ APP, SIDES });

@@ -5,7 +5,8 @@ import "@neurodesk/webapp-components/styles/imaging-workspace.css";
 import { mountImagingWorkspace } from "@neurodesk/webapp-components/core/mount-imaging-workspace";
 import { createResultList, bindFileDrop, createInfoDialog, renderCommand, createConsole, createViewerToolbar } from "@neurodesk/webapp-components/ui";
 import { downloadFile } from "@neurodesk/webapp-components/file-io";
-import { readImageFiles } from "@neurodesk/runtime-support/dcm2niix-client";
+import { readImageFiles, runDcm2niix } from "@neurodesk/runtime-support/dcm2niix-client";
+import { registerAppAutomation, registerViewer, createNiivueAdapter } from "@neurodesk/webapp-components/automation";
 import { extractBrain } from "./brain-extraction.js";
 
 const $ = (id) => document.getElementById(id);
@@ -19,6 +20,7 @@ const viewers = {
   resliced: new NiiVueGPU({ isDragDropEnabled: false, backgroundColor: [0, 0, 0, 1] }),
 };
 const contexts = [];
+let currentLayout = "multiplanar";
 let output = null;
 let busy = false;
 let viewersReady = false;
@@ -38,6 +40,7 @@ mountImagingWorkspace({
 
 function applyLayout(id) {
   if (!viewersReady) return;
+  currentLayout = id;
   for (const viewer of Object.values(viewers)) {
     if (id === "multiplanar") {
       viewer.sliceType = SLICE_TYPE.MULTIPLANAR;
@@ -295,13 +298,15 @@ const results = createResultList({
   onDownload: () => downloadFile(output),
 });
 
-function runRegistration(fixed, moving, mode, onProgress) {
+function runRegistration(fixed, moving, mode, onProgress, signal) {
+  signal?.throwIfAborted();
   return new Promise((resolve, reject) => {
     const worker = new Worker(new URL("./registration-worker.js", import.meta.url), { type: "module" });
     registrationWorker = worker;
     let closed = false;
     const close = () => {
       closed = true;
+      signal?.removeEventListener("abort", abort);
       worker.terminate();
       if (registrationWorker === worker) {
         registrationWorker = null;
@@ -329,10 +334,13 @@ function runRegistration(fixed, moving, mode, onProgress) {
       close();
       reject(new Error("Greedy worker could not exchange registration data."));
     };
-    cancelRegistration = () => {
+    const abort = () => {
+      if (closed) return;
       close();
-      reject(new Error("Cancelled"));
+      reject(signal?.reason ?? new DOMException("Cancelled", "AbortError"));
     };
+    cancelRegistration = abort;
+    signal?.addEventListener("abort", abort, { once: true });
     $("cancelButton").hidden = false;
     Promise.all([fixed.arrayBuffer(), moving.arrayBuffer()]).then(([fixedBytes, movingBytes]) => {
       if (closed) return;
@@ -345,14 +353,19 @@ function runRegistration(fixed, moving, mode, onProgress) {
   });
 }
 
-async function register() {
-  if (!slots.moving.file || !slots.stationary.file) return;
+async function register({
+  moving = slots.moving.file,
+  fixed = slots.stationary.file,
+  method = $("method").value,
+  signal,
+  progress = () => {},
+} = {}) {
+  if (!moving || !fixed) throw new Error("Choose both moving and fixed images.");
+  signal?.throwIfAborted();
   // Extraction is the user's call; a scalp-bearing input is only flagged, not forced.
   for (const name of ["moving", "stationary"]) {
     if (!slots[name].brainExtracted) log.log(`The ${name} image is not brain extracted; scalp can distort the registration.`);
   }
-  const fixed = slots.stationary.file;
-  const moving = slots.moving.file;
   const started = performance.now();
   let phase = "Starting Greedy registration";
   timer = setInterval(() => {
@@ -361,19 +374,32 @@ async function register() {
   }, 1000);
   $("progress").removeAttribute("value");
   try {
-    const data = await runRegistration(fixed, moving, $("method").value, (next) => {
+    const data = await runRegistration(fixed, moving, method, (next) => {
       phase = next;
       status(next);
-    });
+      progress({ message: next });
+    }, signal);
+    signal?.throwIfAborted();
     output = new File([data.image], `${moving.name.replace(/\.nii(\.gz)?$/i, "")}_registered.nii.gz`);
     await viewers.resliced.loadVolumes([{ url: output, name: output.name }]);
+    signal?.throwIfAborted();
     results.render({ registered: { description: "Registered moving image" } });
     $("outputSection").open = true;
     $("progress").value = 1;
     status(`Registration complete in ${((performance.now() - started) / 1000).toFixed(1)} s`);
+    const stem = moving.name.replace(/\.nii(\.gz)?$/i, "");
+    return {
+      artifacts: [
+        { role: "registered", file: output },
+        { role: "affine", file: new File([data.matrix], `${stem}_affine.mat`, { type: "text/plain" }) },
+        ...(data.warp ? [{ role: "warp", file: new File([data.warp], `${stem}_warp.nii.gz`) }] : []),
+      ],
+      provenance: { algorithm: "Greedy", implementation: "greedy-rs-wasm", method, metric: "NMI", iterations: "100x50x10", elapsedMs: performance.now() - started },
+    };
   } catch (error) {
     $("progress").value = 0;
-    if (errorMessage(error) === "Cancelled") {
+    signal?.throwIfAborted();
+    if (error?.name === "AbortError" || errorMessage(error) === "Cancelled") {
       status("Registration cancelled. Your images are unchanged.");
       return;
     }
@@ -417,6 +443,41 @@ window.addEventListener("pagehide", () => {
   destroyViewers();
 });
 
-void init();
+const initialization = init();
+
+registerAppAutomation({
+  app: "greedy",
+  convertDicom: runDcm2niix,
+  operations: {
+    register: async ({ inputs, parameters, signal, progress }) => {
+      await initialization;
+      signal.throwIfAborted();
+      if (!viewersReady) throw new Error("The image viewers are unavailable.");
+      if (busy) throw new Error("Wait for the current operation to finish.");
+      exampleControl.cancel();
+      setBusy(true);
+      try {
+        await loadSlot("moving", inputs.moving[0], false, signal);
+        await loadSlot("stationary", inputs.fixed[0], false, signal);
+        $("method").value = parameters.method;
+        const result = await register({ moving: inputs.moving[0], fixed: inputs.fixed[0], method: parameters.method, signal, progress });
+        signal.throwIfAborted();
+        if (!result) throw new DOMException("Registration cancelled", "AbortError");
+        return result;
+      } finally {
+        setBusy(false);
+      }
+    },
+  },
+});
+
+for (const [id, viewer] of Object.entries(viewers)) {
+  registerViewer(id, createNiivueAdapter(viewer, {
+    tabs: {
+      list: () => ["multiplanar", "axial", "coronal", "sagittal", "render"].map((id) => ({ id, label: id, active: id === currentLayout })),
+      select: (id) => { applyLayout(id); toolbar.setActive(id); },
+    },
+  }));
+}
 
 export default Object.freeze({ toolbar, log, info, results });

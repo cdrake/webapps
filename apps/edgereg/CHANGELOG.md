@@ -1,14 +1,45 @@
 # edgereg
 
-## 0.2.20260930
+## 0.3.20260930
 
 ### Patch Changes
 
 - Updated dependencies
 - Updated dependencies
+  - @neurodesk/webapp-components@0.7.0
+
+
+### Patch Changes
+
 - Updated dependencies
+  - @neurodesk/webapp-components@0.6.2
+
+## 0.3.20260928
+
+### Patch Changes
+
 - Updated dependencies
-  - @neurodesk/webapp-components@0.5.2
+  - @neurodesk/webapp-components@0.6.1
+
+### Minor Changes
+
+- Expose typed operations across the application catalog, including multiple inputs, DICOM series selection, variable artifacts and viewer workflows. Share awaited processing and cancellation between each app and its agent adapter. Publish verified result reports and scientific provenance.
+
+  Add bounded desktop viewer sessions and MCP controls using public viewer APIs. Native SynthSeg now reports per-label counts and physical volumes. Include real-model CPU checks and a Mac runner for Metal, WebGPU and buffer-planning evidence without raising the validated SynthSeg limit.
+
+### Patch Changes
+
+- Updated dependencies
+- Updated dependencies [93381e8]
+- Updated dependencies [93381e8]
+  - @neurodesk/webapp-components@0.6.0
+
+## 0.2.20260928
+
+### Patch Changes
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.5.0
 
 ## 0.2.20260924
 

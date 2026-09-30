@@ -27,3 +27,16 @@ hf upload neurodeskorg/webapps ./reg reg --repo-type dataset
 ```
 
 The app pins dataset revision `67c378c8f8ac5313e5dbeee4c8d95ebe2a2f79c9` so releases remain reproducible.
+
+## Agent automation
+
+The published `automation.json` describes the typed browser operation. Desktop
+MCP uses the same processing function as the Run button and returns the exact
+output files with input and artifact checksums. See
+[desktop automation](../../packages/desktop/AUTOMATION.md) for connection details.
+
+`register` requires `moving` and `fixed` image roles. `robustFov` defaults to
+false. The result is a registered NIfTI on the fixed grid. The three image
+viewers expose their crosshairs and layout tabs to retained MCP sessions.
+Both image roles accept NIfTI or DICOM. Ambiguous DICOM conversion requires an
+explicit series selection; the operation never guesses roles from filenames.

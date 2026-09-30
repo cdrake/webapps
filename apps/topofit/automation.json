@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 2,
+  "app": "topofit",
+  "title": "TopoFit",
+  "description": "TopoFit scientific workflow automation.",
+  "defaultOperation": "reconstruct",
+  "operations": {
+    "reconstruct": {
+      "title": "Reconstruct cortical surfaces",
+      "description": "Reconstruct cortical surfaces. Uses the same scientific processing handler as the interface.",
+      "mode": "batch",
+      "inputs": {
+        "image": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "description": "Input image for processing",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "roi": {
+          "source": "files",
+          "type": "neuro:mask",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "description": "Optional binary ROI in the input image grid",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "parameters": {
+        "model": {
+          "type": "string",
+          "default": "t1w-1mm",
+          "enum": [
+            "t1w-1mm"
+          ],
+          "description": "Published model variant"
+        },
+        "conform": {
+          "type": "boolean",
+          "default": true,
+          "description": "Conform to the model 1 mm RAS grid"
+        },
+        "thickness": {
+          "type": "integer",
+          "default": 1,
+          "minimum": 0,
+          "maximum": 3,
+          "description": "QC overlay thickness setting"
+        },
+        "estimateNormals": {
+          "type": "boolean",
+          "default": false,
+          "description": "Export mid-surface vertex normals"
+        },
+        "findPatches": {
+          "type": "boolean",
+          "default": false,
+          "description": "Find flat cortical patches"
+        },
+        "patchCount": {
+          "type": "integer",
+          "default": 3,
+          "minimum": 1,
+          "maximum": 50,
+          "description": "Maximum patches per hemisphere"
+        },
+        "patchRadius": {
+          "type": "number",
+          "default": 10,
+          "minimum": 2,
+          "maximum": 20,
+          "description": "Patch radius in millimetres"
+        },
+        "patchHemisphere": {
+          "type": "string",
+          "default": "both",
+          "enum": [
+            "both",
+            "lh",
+            "rh"
+          ],
+          "description": "Hemisphere to search for patches"
+        },
+        "patchMaxRms": {
+          "type": "number",
+          "default": 0.5,
+          "minimum": 0.01,
+          "maximum": 2,
+          "description": "Maximum patch plane RMS error in millimetres"
+        },
+        "patchMinArea": {
+          "type": "number",
+          "default": 0.25,
+          "minimum": 0.1,
+          "maximum": 1,
+          "description": "Minimum fraction of nominal patch area"
+        }
+      },
+      "artifacts": {
+        "surface": {
+          "type": "neuro:surface",
+          "mediaType": "application/vnd.freesurfer.surface",
+          "minimum": 6,
+          "space": "scanner-RAS-mm"
+        },
+        "qc": {
+          "type": "neuro:label-map",
+          "mediaType": "application/nifti",
+          "minimum": 1,
+          "space": "input",
+          "maximum": 2
+        },
+        "table": {
+          "type": "neuro:table",
+          "mediaType": "text/csv",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "metadata": {
+          "type": "neuro:metadata",
+          "mediaType": "application/json",
+          "minimum": 1,
+          "maximum": 3
+        },
+        "registration": {
+          "type": "neuro:surface",
+          "mediaType": "application/vnd.freesurfer.surface",
+          "space": "registration-sphere",
+          "minimum": 2,
+          "maximum": 2
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    }
+  }
+}

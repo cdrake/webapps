@@ -4,9 +4,21 @@
 
 ### Patch Changes
 
-- Discover a same-host compute server only after remote processing is selected. Browser mode no longer requests a nonexistent API from the static website.
+- Register stack loading and viewer inspection with the shared automation contract. Opening stacks replaces prior inputs and waits for the viewer; reconstruction remains an interactive operation.
   - @neurodesk/nesvor@0.3.20260930
 
+
+### Patch Changes
+
+- Updated dependencies
+- Updated dependencies
+  - @neurodesk/webapp-components@0.7.0
+  - @neurodesk/nesvor@0.3.20260930
+
+### Patch Changes
+
+- Discover a same-host compute server only after remote processing is selected. Browser mode no longer requests a nonexistent API from the static website.
+  - @neurodesk/nesvor@0.3.20260930
 
 ### Patch Changes
 

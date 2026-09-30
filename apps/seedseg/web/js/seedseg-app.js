@@ -7,6 +7,7 @@ bindSectionDisclosures(document);
  * Main application class. Orchestrates controllers, viewer, and inference.
  */
 
+import { registerSeedSegAutomation } from './automation.js';
 import { SeedSegInputSet } from './controllers/SeedSegInputSet.js';
 import { SeedSegDicomInput } from './controllers/SeedSegDicomInput.js';
 import { DicompareController } from 'https://dicompare.neurodesk.org/embed/DicompareController.js';
@@ -111,6 +112,7 @@ class SeedSegApp {
 
     // Start ONNX initialization in background
     this.inferenceExecutor.initialize();
+    this.automation = registerSeedSegAutomation(this);
   }
 
   async setupViewer() {

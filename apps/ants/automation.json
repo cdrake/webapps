@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 2,
+  "app": "ants",
+  "title": "ANTs",
+  "description": "Register a moving image to a fixed image with ANTs.",
+  "defaultOperation": "register",
+  "operations": {
+    "register": {
+      "title": "Register images",
+      "description": "Run ANTs registration and reslice the moving image onto the fixed grid.",
+      "mode": "batch",
+      "inputs": {
+        "moving": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "description": "Moving image to register",
+          "space": "moving",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "fixed": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "description": "Fixed reference image",
+          "space": "fixed",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "parameters": {},
+      "artifacts": {
+        "registered": {
+          "type": "neuro:volume",
+          "mediaType": "application/gzip",
+          "space": "fixed",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "affine": {
+          "type": "neuro:transform",
+          "mediaType": "application/octet-stream",
+          "space": "moving-to-fixed",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "warp": {
+          "type": "neuro:displacement-field",
+          "mediaType": "application/gzip",
+          "space": "fixed",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "inverse-warp": {
+          "type": "neuro:displacement-field",
+          "mediaType": "application/gzip",
+          "space": "moving",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    }
+  }
+}

@@ -24,6 +24,7 @@ await rm(destination, { recursive: true, force: true });
 await mkdir(join(destination, 'site'), { recursive: true });
 await mkdir(join(destination, 'assets'), { recursive: true });
 await cp(join(repoRoot, 'packages/desktop/STANDALONE.md'), join(destination, 'STANDALONE.md'));
+await cp(join(repoRoot, 'packages/desktop/AUTOMATION.md'), join(destination, 'AUTOMATION.md'));
 await cp(join(repoRoot, 'packages/desktop/jobs'), join(destination, 'jobs'), { recursive: true });
 const assets = {};
 const add = async url => {

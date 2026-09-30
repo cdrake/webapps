@@ -8,8 +8,9 @@ post-processing and NIfTI I/O are the native CLI's Rust compiled to WASM
 WebGPU is required — there is no WASM fallback. Without it the app says so and
 Run stays disabled.
 
-Labels are coloured and named from `src/freesurfer-lut.json` (FreeSurferColorLUT.txt
-rows for the 33 SynthSeg labels; `node scripts/freesurfer-lut.mjs <FreeSurferColorLUT.txt>`).
+Labels use the shared `@neurodesk/webapp-components/automation/freesurfer-lut`
+mapping, also used by native automation reports. Regenerate its 33 SynthSeg label
+entries with `node scripts/freesurfer-lut.mjs <FreeSurferColorLUT.txt>`.
 
 ## Controls
 
@@ -18,6 +19,29 @@ rows for the 33 SynthSeg labels; `node scripts/freesurfer-lut.mjs <FreeSurferCol
   topological correction); `fast` is a single pass.
 - **CT** — auto-checked when the loaded image contains negative intensities.
 - **Output** — label-overlay opacity, `<stem>_synthseg.nii.gz`, `<stem>_synthseg.json`.
+
+## Automation limits
+
+`automation.json` declares the browser's limit under
+`operations.segment.limits.browser.inputs.image`. Desktop `apps_validate` and
+`apps_run` read the NIfTI header before starting a run. They derive SynthSeg's
+resampled, RAS-aligned grid and pad each axis to a multiple of 32, at least 128.
+The current GPU graph needs 288 bytes per padded voxel in its largest activation
+buffer. Its validated cap remains 2,147,483,647 bytes (7,456,540 padded voxels).
+
+The 192×256×256 case therefore fails preflight with the required buffer size and
+the native-engine alternative. A 96×128×128 source with 2 mm spacing reaches the
+same limit after resampling; compressed file size and source voxel count cannot
+predict this limit. The check uses the existing preprocessing rule: absolute
+`pixdim` outside 0.95–1.05 triggers resampling using affine column lengths. It
+preserves the runtime's numeric-spacing treatment of spatial units.
+
+Uncompressed reads need only the 352-byte header. Compressed reads stop once that
+header is available and accept at most 1 MiB of compressed prefix. This preflight
+does not validate voxel data or guarantee that a particular adapter has enough
+memory. Runtime adapter checks still apply. DICOM geometry is unavailable until
+conversion, so its check remains deferred to that runtime guard. The native
+engine is exempt from this browser limit.
 
 ## Develop
 

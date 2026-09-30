@@ -63,6 +63,24 @@ test("app boots with the shared bar, isolation and the compute section open", as
   await expect(page.locator("#infoDialog")).toContainText("inside your own network");
 });
 
+test("automation opens stacks in the real viewer and replaces previous inputs", async ({ page }) => {
+  const { syntheticNifti } = await import('../../../test-utils/nifti-fixture.mjs');
+  const dispatch = (command, request = {}) => page.evaluate(({ command, request }) => globalThis.neurodeskAutomation.dispatch(command, request), { command, request });
+  await page.goto('/');
+  for (const name of ['first.nii.gz', 'second.nii.gz']) {
+    await page.locator('#neurodesk-input-transfer').setInputFiles({ name, mimeType: 'application/gzip', buffer: syntheticNifti({ dims: [5, 5, 5] }) });
+    await dispatch('adopt', { role: 'stacks' });
+    await dispatch('start');
+    await expect.poll(async () => (await dispatch('snapshot')).state).toBe('succeeded');
+    const { report } = await dispatch('snapshot');
+    expect(report.summary.stacks).toHaveLength(1);
+    expect(report.summary.stacks[0].name).toBe(name);
+    await expect(page.locator('#stackRows [data-stack]')).toHaveCount(1);
+    await expect(page.locator('#emptyState')).toBeHidden();
+  }
+  expect(await dispatch('viewers.list')).toEqual([expect.objectContaining({ id: 'main' })]);
+});
+
 test("the example loads every stack with its thickness and uses segmentation masks", async ({ page }) => {
   test.setTimeout(240000);
   await loadExample(page);

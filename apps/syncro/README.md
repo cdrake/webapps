@@ -80,3 +80,7 @@ Changing inputs or leaving the page cancels an in-progress result archive so sta
 outputs are never downloaded.
 Review the normalized acquired scan, lesion and synthetic brain before using
 research outputs.
+
+## Agent automation
+
+The `normalize` automation operation accepts an explicit `primary` NIfTI or DICOM input and optional `lesion` and `pathological` roles. A lesion must match the pathological image grid when supplied, otherwise the primary grid. It runs the same worker as the interface, waits for processing and viewer completion, and returns the normalized images and pipeline provenance. `keepSynth` adds the native synthetic T1; optional lesion and pathological inputs add their normalized counterparts. Parameters select the existing SynthSR backend, brain extractor, normalization engine and CT handling. The image viewer exposes the actual input/output selections as tabs. Cancellation terminates the pipeline worker. Full normalization requires its published models and a suitable inference backend; contract and geometry checks do not establish scientific model parity.

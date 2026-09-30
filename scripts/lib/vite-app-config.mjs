@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { findApp, loadAppsRegistry, repoRoot } from './apps-registry.mjs';
 import { loadAppInformation, appInformationPayload } from './app-information.mjs';
 import { injectCompositeTheme } from './composite-theme.mjs';
+import { loadAppContract } from './app-automation.mjs';
 
 // The one production header policy for every deployable. The composite root
 // `_headers` (scripts/build-site.mjs) serves COEP `credentialless`, so the
@@ -84,12 +85,23 @@ export async function neurodeskViteConfig({ appId, base, ...overrides }) {
   const registry = await loadAppsRegistry();
   const app = findApp(registry, appId);
   const appPackage = JSON.parse(await readFile(join(repoRoot, 'apps', app.id, 'package.json'), 'utf8'));
+  const contract = await loadAppContract(app, appPackage.version);
   return mergeConfig({
     base: process.env.WEBAPPS_BASE_PATH || base || `/${app.path}/`,
     worker: { format: 'es' },
     server: { headers: { ...isolationHeaders } },
     preview: { headers: { ...isolationHeaders } },
-    plugins: [emitHeadersFile(), injectDevShell({
+    plugins: [emitHeadersFile(), {
+      name: 'neurodesk-automation-contract',
+      configureServer(server) {
+        if (!contract) return;
+        server.middlewares.use((request, response, next) => {
+          if (!new URL(request.url, 'http://localhost').pathname.endsWith('/automation.json')) return next();
+          response.setHeader('Content-Type', 'application/json');
+          response.end(JSON.stringify(contract));
+        });
+      },
+    }, injectDevShell({
       app,
       information: appInformationPayload(await loadAppInformation(registry), app.id),
       version: appPackage.version,

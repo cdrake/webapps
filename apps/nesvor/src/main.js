@@ -16,6 +16,7 @@ import {
 } from '@neurodesk/webapp-components/ui';
 import { downloadFile } from '@neurodesk/webapp-components/file-io';
 import { ComputeError } from '@neurodesk/webapp-components/compute';
+import { registerAppAutomation, createNiivueAdapter } from '@neurodesk/webapp-components/automation';
 import { readImageFiles } from '@neurodesk/runtime-support/dcm2niix-client';
 import { runBrowserReference, runBrowserReconstruction } from '@neurodesk/nesvor/browser';
 import { APP } from './config.js';
@@ -95,6 +96,7 @@ async function ensureViewer() {
     layouts.multiplanar();
     viewer.isLegendVisible = false;
     viewer.createExtensionContext().on('locationChange', event => { $('location').textContent = event.detail.string; });
+    automation.registerViewer('main', createNiivueAdapter(viewer));
     return viewer;
   })();
   return viewerReady;
@@ -375,6 +377,18 @@ function importFiles(files, options) {
     error.name !== 'AbortError',
   ));
 }
+
+const automation = registerAppAutomation({
+  app: 'nesvor',
+  operations: {
+    'open-stacks': async ({ inputs, signal }) => {
+      await loadFiles(inputs.stacks, signal, { replace: true });
+      signal.throwIfAborted();
+      if (!rows.length) throw new Error('Choose acquisition stacks, not only mask files.');
+      return { artifacts: [], summary: { stacks: rows.map(row => ({ name: row.file.name, thickness: row.thickness })) } };
+    },
+  },
+});
 
 function importMasks(filesPromise) {
   return importFiles(filesPromise, { asMasks: true });

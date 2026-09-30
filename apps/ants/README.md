@@ -27,3 +27,17 @@ pnpm --filter ants test:e2e   # ANTS_LIVE_DATA=1 additionally registers the real
 
 Example data comes from the `reg/` folder of the `neurodeskorg/webapps` Hugging
 Face dataset at a pinned revision, shared with Greedy.
+
+## Agent automation
+
+The published `automation.json` describes the typed browser operation. Desktop
+MCP uses the same processing function as the Run button and returns the exact
+output files with input and artifact checksums. See
+[desktop automation](../../packages/desktop/AUTOMATION.md) for connection details.
+
+`register` requires `moving` and `fixed` image roles and runs the existing SyN
+schedule. Outputs include the registered NIfTI, affine transform, forward warp
+and inverse warp. The report records the actual seed and iteration schedules.
+The three image viewers expose their crosshairs and layout tabs.
+Both image roles accept NIfTI or DICOM. Ambiguous DICOM conversion requires an
+explicit series selection; the operation never guesses roles from filenames.

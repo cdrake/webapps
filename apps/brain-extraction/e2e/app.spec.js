@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { readVolume } from '@neurodesk/synthsr';
 import { dicomSeries } from '../../../test-utils/dicom-fixture.mjs';
+import { browserSynthstrip } from '../../../packages/syncro/src/assets.js';
 
 const fixture = new URL('../../calmar/tests/fixtures/synthstrip-mini/T1.nii.gz', import.meta.url).pathname;
 const examples = JSON.parse(await readFile(new URL('../examples.json', import.meta.url), 'utf8'));
@@ -24,6 +25,8 @@ test('BET produces the existing Rust mask and downloads images with original geo
   await page.locator('#threshold').fill('0.5');
   await page.locator('#runButton').click();
   await expect(page.locator('#statusText')).toHaveText('Brain image and mask ready');
+  await expect(page.locator('#statusText')).toHaveAttribute('data-neurodesk-state', 'succeeded');
+  const { report } = JSON.parse(await page.locator('#neurodesk-run').textContent());
   await expect(page.locator('#resultList .nd-volume-toggle')).toHaveCount(3);
   expect(requests.some(url => /ort-wasm|mindgrab\/|onnxruntime|synthstrip-.*\.js/.test(url))).toBe(false);
   const original = readVolume(bytesOf(await readFile(fixture)));
@@ -31,7 +34,11 @@ test('BET produces the existing Rust mask and downloads images with original geo
     const downloadPromise = page.waitForEvent('download');
     await page.locator('#resultList .nd-download-btn').nth(index).click();
     const download = await downloadPromise;
-    return readVolume(bytesOf(await readFile(await download.path())));
+    const bytes = await readFile(await download.path());
+    const role = index === 1 ? 'brain' : 'mask';
+    expect(createHash('sha256').update(bytes).digest('hex')).toBe(report.artifacts[role].sha256);
+    expect(bytes.length).toBe(report.artifacts[role].bytes);
+    return readVolume(bytesOf(bytes));
   };
   const brain = await readDownload(1);
   const mask = await readDownload(2);
@@ -42,6 +49,9 @@ test('BET produces the existing Rust mask and downloads images with original geo
   expect(binary.reduce((sum, value) => sum + value, 0)).toBe(246875);
   expect(createHash('sha256').update(binary).digest('hex')).toBe('107a46c3a2f42f4a7796dc5a5b2a6660a302239ae50a0cf2eea80b1767a50862');
   expect(brain.data.every((value, index) => value === (binary[index] ? original.data[index] : 0))).toBe(true);
+  const reportDownload = page.waitForEvent('download');
+  await page.locator('#reportBtn').click();
+  expect(JSON.parse(await readFile(await (await reportDownload).path(), 'utf8'))).toEqual(report);
 });
 
 test('examples load through the picker and BET downloads a brain mask', async ({ page }) => {
@@ -116,6 +126,8 @@ test('cancel terminates a waiting method load and a fresh BET run succeeds', asy
   await page.locator('#runButton').click();
   await page.locator('#cancelButton').click();
   await expect(page.locator('#statusText')).toHaveText('Cancelled');
+  await expect(page.locator('#statusText')).toHaveAttribute('data-neurodesk-state', 'cancelled');
+  expect(JSON.parse(await page.locator('#neurodesk-run').textContent()).report).toBeUndefined();
   await page.locator('#method').selectOption('bet');
   await page.locator('#runButton').click();
   await expect(page.locator('#statusText')).toHaveText('Brain image and mask ready');
@@ -169,10 +181,12 @@ for (const method of ['mindgrab', 'synthstrip']) {
       await page.locator('#mindgrabBackend').selectOption('cpu');
     }
     await page.locator('#runButton').click();
-    await expect(page.locator('#statusText')).toHaveText('Brain image and mask ready', { timeout: 1100000 });
+    await expect(page.locator('#statusText')).toHaveAttribute('data-neurodesk-state', /succeeded|failed/, { timeout: 1100000 });
+    await expect(page.locator('#statusText')).toHaveText('Brain image and mask ready');
     const downloadPromise = page.waitForEvent('download');
     await page.locator('#resultList .nd-download-btn').nth(2).click();
-    const mask = readVolume(bytesOf(await readFile(await (await downloadPromise).path())));
+    const maskBytes = await readFile(await (await downloadPromise).path());
+    const mask = readVolume(bytesOf(maskBytes));
     const original = readVolume(bytesOf(await readFile(fixture)));
     expect(mask.dims).toEqual(original.dims);
     expect(mask.affine).toEqual(original.affine);
@@ -180,5 +194,16 @@ for (const method of ['mindgrab', 'synthstrip']) {
     const count = mask.data.reduce((sum, value) => sum + value, 0);
     expect(count).toBeGreaterThan(0);
     expect(count).toBeLessThan(mask.data.length);
+    const reportDownload = page.waitForEvent('download');
+    await page.locator('#reportBtn').click();
+    const report = JSON.parse(await readFile(await (await reportDownload).path(), 'utf8'));
+    const input = Array.isArray(report.inputs.image) ? report.inputs.image[0] : report.inputs.image;
+    const artifact = report.artifacts.mask || Object.values(report.artifacts).find(value => value.role === 'mask');
+    expect(report.status).toBe('succeeded');
+    expect(input.sha256).toBe(createHash('sha256').update(await readFile(fixture)).digest('hex'));
+    expect(artifact.sha256).toBe(createHash('sha256').update(maskBytes).digest('hex'));
+    if (method === 'mindgrab') expect(report.provenance.backend).toBe('cpu');
+    else expect(report.provenance.modelHash).toBe(browserSynthstrip.sha256);
+    console.log(JSON.stringify({ method, maskVoxels: count, comparedVoxels: mask.data.length, provenance: report.provenance, inputSha256: input.sha256, outputSha256: artifact.sha256 }));
   });
 }

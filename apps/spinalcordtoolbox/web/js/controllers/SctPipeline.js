@@ -30,6 +30,7 @@ export class SctPipeline extends PipelineExecutor {
   }
 
   runInference(settings) {
+    this.lastRunSettings = structuredClone(settings);
     return this.executeCommand('run-inference', settings, {
       step: 'inference',
       taskId: settings?.taskId || 'spinalcord',
