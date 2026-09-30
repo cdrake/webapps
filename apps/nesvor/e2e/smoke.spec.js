@@ -40,6 +40,10 @@ async function download(page, name) {
 }
 
 test("app boots with the shared bar, isolation and the compute section open", async ({ page }) => {
+  const probes = [];
+  page.on("request", request => {
+    if (new URL(request.url()).pathname === "/api/v1/info") probes.push(request.url());
+  });
   await page.goto("/");
   await expect(page.locator("#viewer")).toBeVisible();
   const bar = page.locator(".nd-app-bar:visible");
@@ -51,6 +55,7 @@ test("app boots with the shared bar, isolation and the compute section open", as
   await expect(page.locator("#computeSection")).toHaveAttribute("open", "");
   await expect(page.locator("#computeConnection")).toHaveAttribute("data-state", "idle");
   await expect(page.locator("#runButton")).toBeDisabled();
+  expect(probes).toEqual([]);
   await bar.getByRole("button", { name: "About", exact: true }).click();
   await expect(page.locator("#infoDialog")).toContainText("compute server");
   await page.locator("#infoDialog").getByRole("button", { name: "Close" }).click();

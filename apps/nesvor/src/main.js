@@ -126,7 +126,7 @@ function show(file, label) {
 }
 
 // 5. Compute server connection.
-const connection = createComputeConnection({ id: 'computeConnection', storageKey: 'nesvor.compute' });
+const connection = createComputeConnection({ id: 'computeConnection', storageKey: 'nesvor.compute', autodetect: false });
 $('computeControl').append(connection);
 connection.addEventListener('nd-compute-change', ({ detail }) => {
   const badge = $('computeBadge');
@@ -547,6 +547,8 @@ function syncExecutionMode() {
   $('browserReferenceInfo').hidden = !reference;
   $('browserGpuInfo').hidden = !browser || reference;
   $('remoteControls').hidden = browser;
+  connection.configure({ autodetect: !browser });
+  if (!browser) void connection.detect();
   for (const id of ['protocol', 'registration']) $(id).closest('.nd-field').hidden = reference;
   $('advancedSettings').hidden = reference;
   $('singlePrecision').closest('label').hidden = browser && !reference;

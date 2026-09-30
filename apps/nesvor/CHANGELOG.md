@@ -4,9 +4,14 @@
 
 ### Patch Changes
 
-- Use a portable runtime cache when building NeSVoR outside the development workspace. Preserve ZARRo export progress and cancellation when volume loading completes after the export starts.
+- Discover a same-host compute server only after remote processing is selected. Browser mode no longer requests a nonexistent API from the static website.
   - @neurodesk/nesvor@0.3.20260930
 
+
+### Patch Changes
+
+- Use a portable runtime cache when building NeSVoR outside the development workspace. Preserve ZARRo export progress and cancellation when volume loading completes after the export starts.
+  - @neurodesk/nesvor@0.3.20260930
 
 ### Patch Changes
 
