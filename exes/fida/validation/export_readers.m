@@ -32,9 +32,8 @@ function export_readers(fida, data, outdir, only)
   for e = 1:size(extra, 1)
     d = dir(fullfile(data, extra{e, 1}, extra{e, 2}));
     for k = 1:numel(d)
-      [~, stem] = fileparts(d(k).name);
-      stem = regexprep(stem, '\.nii$', '');
-      cases(end+1, :) = {[extra{e, 3} '_' regexprep(stem, '[^A-Za-z0-9]', '_')], extra{e, 3}, fullfile(extra{e, 1}, d(k).name)};
+      % case name: kind + file name with every non-alphanumeric as '_'
+      cases(end+1, :) = {[extra{e, 3} '_' regexprep(d(k).name, '[^A-Za-z0-9]', '_')], extra{e, 3}, fullfile(extra{e, 1}, d(k).name)};
     end
   end
   for k = 1:size(cases, 1)
