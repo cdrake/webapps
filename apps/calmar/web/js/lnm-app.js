@@ -305,6 +305,8 @@ export class LesionNetworkMappingApp {
     this._perfStats = [];            // Phase 19: per-stage runtime markers
     this._perfRunStart = null;       // Phase 19: total runFullPipeline start
     this._lastClinicalLogMessage = null;
+    this._pipelineRunning = false;
+    this._lastStageFailure = null;
     this._stageDataResolvers = new Map();
     this._stepCompleteResolvers = new Map();
     this._preMaskReviewMultiplanarShowRender = null;
@@ -330,6 +332,7 @@ export class LesionNetworkMappingApp {
       onStepComplete: (step) => this.handleStepComplete(step),
       onError: (msg) => {
         this.updateOutput(`Worker error: ${msg}`);
+        this.failStatus(`Error: ${msg}`);
         this._rejectPendingWorkerWaits(msg);
       },
       onInitialized: () => this.updateDebugOutput('Inference worker ready.', { source: 'worker' })
@@ -596,16 +599,18 @@ export class LesionNetworkMappingApp {
       });
     }
 
-    // Phase 14: cancel button terminates the worker. The executor's
-    // cancel() rejects pending restores + clears running-step state and
-    // surfaces a 'Cancelled' status. Disabled state is driven from
-    // handleWorkerProgress / handleStepComplete.
+    // Phase 14: the status-footer cancel terminates the worker. The
+    // executor's cancel() rejects pending restores + clears running-step
+    // state. ProgressManager shows the cancel only while a worker step runs
+    // (handleWorkerProgress / handleStepComplete).
     const cancelBtn = document.getElementById('cancelButton');
     if (cancelBtn) {
-      cancelBtn.disabled = true;
       cancelBtn.addEventListener('click', () => {
         try { this.executor.cancel(); }
         catch (err) { this.updateOutput(`Cancel failed: ${err.message}`); }
+        this._pipelineRunning = false;
+        this.setStatusError(false);
+        this.progress.reset('Cancelled');
       });
     }
 
@@ -757,13 +762,9 @@ export class LesionNetworkMappingApp {
     }
 
     this.bindMaskDrawingControls();
-    this.bindStartPageControls();
     this.bindModalButton('aboutButton', this.aboutModal);
     this.bindModalButton('privacyButton', this.privacyModal);
-    this.bindModalButton('startPrivacyButton', this.privacyModal);
-    this.bindModalButton('startPrivacyInlineButton', this.privacyModal);
     this.bindModalButton('citationsButton', this.citationsModal);
-    this.bindModalButton('startCitationsButton', this.citationsModal);
     this.bindCloseButton('closeAbout', this.aboutModal);
     this.bindCloseButton('closePrivacy', this.privacyModal);
     this.bindCloseButton('closeCitations', this.citationsModal);
@@ -821,21 +822,6 @@ export class LesionNetworkMappingApp {
   bindModalButton(buttonId, modal) {
     const button = document.getElementById(buttonId);
     if (button) button.addEventListener('click', () => modal.open());
-  }
-
-  bindStartPageControls() {
-    const startPage = document.getElementById('startPage');
-    const enterButton = document.getElementById('enterAppButton');
-    if (!startPage || !enterButton) return;
-
-    enterButton.addEventListener('click', () => {
-      startPage.classList.add('hidden');
-      document.getElementById('structuralFileInput')?.focus();
-      requestAnimationFrame(() => {
-        window.dispatchEvent(new Event('resize'));
-        this.nv.drawScene();
-      });
-    });
   }
 
   bindCloseButton(buttonId, modal) {
@@ -1288,7 +1274,7 @@ export class LesionNetworkMappingApp {
       }
     } catch (e) { /* best-effort: silent fallback to VERSION */ }
     const label = formatVersionLabel(Config.VERSION, buildInfo);
-    const ids = ['aboutAppVersion', 'appVersion', 'footerVersion'];
+    const ids = ['aboutAppVersion', 'appVersion'];
     for (const id of ids) {
       const el = document.getElementById(id);
       if (el) el.textContent = label;
@@ -1700,12 +1686,46 @@ export class LesionNetworkMappingApp {
 
   handleWorkerProgress(frac, label) {
     if (!this.progress) return;
-    this.progress.setProgress(frac, label);
-    // Phase 14: enable the cancel button while the worker is mid-run.
-    const cancelBtn = document.getElementById('cancelButton');
-    if (cancelBtn) {
-      cancelBtn.disabled = !(typeof frac === 'number' && frac >= 0 && frac < 1);
+    if (label === 'Cancelled') {
+      this._pipelineRunning = false;
+      this.setStatusError(false);
+      this.progress.reset('Cancelled');
+      return;
     }
+    if (label === 'Failed') {
+      this.failStatus('Failed');
+      return;
+    }
+    this.setStatusError(false);
+    this.progress.setProgress(frac, label);
+    // Phase 14: offer the cancel × while the worker is mid-run.
+    this.progress.setCancellable(typeof frac === 'number' && frac >= 0 && frac < 1);
+  }
+
+  // Status footer: a run begins with an indeterminate bar, elapsed timer
+  // and (once the worker reports progress) the cancel ×.
+  beginStatus(text) {
+    this._pipelineRunning = true;
+    this.setStatusError(false);
+    this.progress.begin(text, { cancellable: false });
+    // Node test harnesses must not be kept alive by the elapsed counter.
+    this.progress.timer?.unref?.();
+  }
+
+  endStatus(text) {
+    this._pipelineRunning = false;
+    this.setStatusError(false);
+    this.progress.end(text);
+  }
+
+  failStatus(text) {
+    this._pipelineRunning = false;
+    this.progress.end(text, { success: false });
+    this.setStatusError(true);
+  }
+
+  setStatusError(isError) {
+    document.getElementById('statusText')?.classList?.toggle('error', Boolean(isError));
   }
 
   _waitForStageData(stage) {
@@ -1758,8 +1778,7 @@ export class LesionNetworkMappingApp {
   handleStepComplete(step) {
     this.updateOutput(`Worker step '${step}' complete.`);
     // Phase 14: a completed step ends the cancellable window.
-    const cancelBtn = document.getElementById('cancelButton');
-    if (cancelBtn) cancelBtn.disabled = true;
+    this.progress?.setCancellable(false);
     this._resolveStepComplete(step);
   }
 
@@ -2323,7 +2342,7 @@ export class LesionNetworkMappingApp {
     const pending = this._pendingMaskResume;
     this._pendingMaskResume = null;
     this.updateOutput('Resuming analysis with confirmed lesion mask...');
-    const status = await this._runPipelineStages(pending.pipeline, pending.nextStageIndex);
+    const status = await this._runPipelineWithStatus(pending.pipeline, pending.nextStageIndex, 'Resuming analysis…');
     if (status === 'complete') this.logPipelineComplete();
   }
 
@@ -3618,8 +3637,25 @@ export class LesionNetworkMappingApp {
 
     this._perfStats = [];
     this._perfRunStart = this._now();
-    const status = await this._runPipelineStages(pipeline, 0);
+    const status = await this._runPipelineWithStatus(pipeline, 0, 'Running analysis…');
     if (status === 'complete') this.logPipelineComplete();
+  }
+
+  async _runPipelineWithStatus(pipeline, startIndex, text) {
+    this.beginStatus(text);
+    let status;
+    try {
+      status = await this._runPipelineStages(pipeline, startIndex);
+    } catch (err) {
+      this.failStatus(`Analysis failed: ${err.message}`);
+      throw err;
+    }
+    if (!this._pipelineRunning) return status; // cancelled or failed by the worker
+    if (status === 'complete') this.endStatus('Complete');
+    else if (status === 'paused') this.endStatus('Review and confirm the lesion mask');
+    else if (status === 'failed') this.failStatus(this._lastStageFailure || 'Analysis failed');
+    else this.endStatus('Stopped');
+    return status;
   }
 
   async _runPipelineStages(pipeline, startIndex = 0) {
@@ -3640,6 +3676,7 @@ export class LesionNetworkMappingApp {
         }
       } catch (err) {
         this.updateOutput(`Stage '${stage.id}' (${stage.module}) failed: ${err.message}`);
+        this._lastStageFailure = `${stage.id} failed: ${err.message}`;
         return 'failed';
       }
       const elapsedMs = this._now() - stageStart;

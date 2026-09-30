@@ -1,4 +1,4 @@
-export const VERSION = '0.4.20260921';
+export const VERSION = '0.4.20260930';
 
 // Immutable model weights are published separately from the site artifact.
 export const MODEL_BASE_URL = 'https://huggingface.co/datasets/sbollmann/neurodesk-webapps-assets/resolve/a8cdbf8c2874e1a2f617ecc6695244a0810eac11/seedseg';
@@ -27,7 +27,11 @@ export const VIEWER_CONFIG = {
 };
 
 export const PROGRESS_CONFIG = {
-  animationSpeed: 0.5
+  animationSpeed: 0.5,
+  progressBarId: 'progress',
+  statusTextId: 'statusText',
+  elapsedId: 'elapsed',
+  cancelId: 'cancelButton'
 };
 
 export const STAGE_NAMES = {

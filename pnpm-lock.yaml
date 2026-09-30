@@ -7,9 +7,6 @@ settings:
 overrides:
   '@electron/osx-sign>isbinaryfile': 5.0.7
 
-patchedDependencies:
-  '@niivue/niivue@1.0.0-rc.11': f9748394ca2414090ff8580b3514639f284a8be82cc3b0152e59c96d4a48b3b6
-
 importers:
 
   .:
@@ -89,7 +86,7 @@ importers:
         version: link:../../packages/components
       '@niivue/niivue':
         specifier: 1.0.0-rc.11
-        version: 1.0.0-rc.11(patch_hash=f9748394ca2414090ff8580b3514639f284a8be82cc3b0152e59c96d4a48b3b6)
+        version: 1.0.0-rc.11
       onnxruntime-web:
         specifier: 1.29.0
         version: 1.29.0
@@ -107,8 +104,8 @@ importers:
   apps/brain2print:
     dependencies:
       '@brainchop/mindgrab':
-        specifier: 0.1.20260813
-        version: 0.1.20260813
+        specifier: 0.1.20260923
+        version: 0.1.20260923
       '@neurodesk/runtime-support':
         specifier: workspace:*
         version: link:../../packages/runtime-support
@@ -120,7 +117,7 @@ importers:
         version: 1.4.20260909
       '@niivue/niivue':
         specifier: 1.0.0-rc.11
-        version: 1.0.0-rc.11(patch_hash=f9748394ca2414090ff8580b3514639f284a8be82cc3b0152e59c96d4a48b3b6)
+        version: 1.0.0-rc.11
     devDependencies:
       '@playwright/test':
         specifier: ^1.44.0
@@ -151,7 +148,7 @@ importers:
         version: 1.4.20260909
       '@niivue/niivue':
         specifier: 1.0.0-rc.11
-        version: 1.0.0-rc.11(patch_hash=f9748394ca2414090ff8580b3514639f284a8be82cc3b0152e59c96d4a48b3b6)
+        version: 1.0.0-rc.11
     devDependencies:
       '@webgpu/types':
         specifier: ^0.1.52
@@ -190,6 +187,28 @@ importers:
       playwright:
         specifier: ^1.49.0
         version: 1.61.1
+
+  apps/carotid-flow:
+    dependencies:
+      '@neurodesk/runtime-support':
+        specifier: workspace:*
+        version: link:../../packages/runtime-support
+      '@neurodesk/webapp-components':
+        specifier: workspace:*
+        version: link:../../packages/components
+      '@niivue/niivue':
+        specifier: 1.0.0-rc.14
+        version: 1.0.0-rc.14
+    devDependencies:
+      '@playwright/test':
+        specifier: ^1.44.0
+        version: 1.61.1
+      eslint:
+        specifier: ^9.0.0
+        version: 9.39.5(jiti@2.7.0)
+      vite:
+        specifier: ^5.0.0
+        version: 5.4.21(@types/node@24.13.3)(lightningcss@1.32.0)
 
   apps/deface:
     dependencies:
@@ -367,6 +386,31 @@ importers:
         specifier: ^3.2.4
         version: 3.2.7(@types/debug@4.1.13)(@types/node@24.13.3)(@vitest/ui@3.2.7)(jsdom@26.1.0)(lightningcss@1.32.0)
 
+  apps/disconnectome:
+    dependencies:
+      '@neurodesk/nii2tvx':
+        specifier: workspace:*
+        version: link:../../packages/nii2tvx
+      '@neurodesk/runtime-support':
+        specifier: workspace:*
+        version: link:../../packages/runtime-support
+      '@neurodesk/webapp-components':
+        specifier: workspace:*
+        version: link:../../packages/components
+      '@niivue/niivue':
+        specifier: 1.0.0-rc.13
+        version: 1.0.0-rc.13
+    devDependencies:
+      '@playwright/test':
+        specifier: ^1.44.0
+        version: 1.61.1
+      eslint:
+        specifier: ^9.0.0
+        version: 9.39.5(jiti@2.7.0)
+      vite:
+        specifier: ^6.3.2
+        version: 6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0)
+
   apps/dwi2trx:
     dependencies:
       '@brainchop/mindgrab':
@@ -389,7 +433,7 @@ importers:
         version: file:apps/dwi2trx/vendor/niimath
       '@niivue/niivue':
         specifier: 1.0.0-rc.11
-        version: 1.0.0-rc.11(patch_hash=f9748394ca2414090ff8580b3514639f284a8be82cc3b0152e59c96d4a48b3b6)
+        version: 1.0.0-rc.11
       fflate:
         specifier: ^0.8.3
         version: 0.8.3
@@ -626,7 +670,7 @@ importers:
         version: link:../../packages/components
       '@niivue/niivue':
         specifier: 1.0.0-rc.11
-        version: 1.0.0-rc.11(patch_hash=f9748394ca2414090ff8580b3514639f284a8be82cc3b0152e59c96d4a48b3b6)
+        version: 1.0.0-rc.11
       fflate:
         specifier: ^0.8.2
         version: 0.8.3
@@ -654,7 +698,7 @@ importers:
         version: link:../../packages/components
       '@niivue/niivue':
         specifier: 1.0.0-rc.11
-        version: 1.0.0-rc.11(patch_hash=f9748394ca2414090ff8580b3514639f284a8be82cc3b0152e59c96d4a48b3b6)
+        version: 1.0.0-rc.11
     devDependencies:
       '@playwright/test':
         specifier: ^1.44.0
@@ -679,7 +723,7 @@ importers:
         version: link:../../packages/components
       '@niivue/niivue':
         specifier: 1.0.0-rc.11
-        version: 1.0.0-rc.11(patch_hash=f9748394ca2414090ff8580b3514639f284a8be82cc3b0152e59c96d4a48b3b6)
+        version: 1.0.0-rc.11
       onnxruntime-web:
         specifier: 1.29.0
         version: 1.29.0
@@ -741,14 +785,45 @@ importers:
         specifier: ^24.0.0
         version: 24.1.3
 
+  apps/white-matter-lesions:
+    dependencies:
+      '@neurodesk/runtime-support':
+        specifier: workspace:*
+        version: link:../../packages/runtime-support
+      '@neurodesk/synthsr':
+        specifier: workspace:*
+        version: link:../../packages/synthsr
+      '@neurodesk/synthstrip':
+        specifier: workspace:*
+        version: link:../../packages/synthstrip
+      '@neurodesk/webapp-components':
+        specifier: workspace:*
+        version: link:../../packages/components
+      '@niivue/niivue':
+        specifier: 1.0.0-rc.11
+        version: 1.0.0-rc.11
+      onnxruntime-web:
+        specifier: 1.29.0
+        version: 1.29.0
+    devDependencies:
+      '@playwright/test':
+        specifier: ^1.44.0
+        version: 1.61.1
+      eslint:
+        specifier: ^9.0.0
+        version: 9.39.5(jiti@2.7.0)
+      vite:
+        specifier: ^6.3.2
+        version: 6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0)
+
   apps/zarro:
     dependencies:
       '@neurodesk/webapp-components':
         specifier: workspace:*
         version: link:../../packages/components
       '@niivue/niivue':
-        specifier: 1.0.0-rc.11
-        version: 1.0.0-rc.11(patch_hash=f9748394ca2414090ff8580b3514639f284a8be82cc3b0152e59c96d4a48b3b6)
+        specifier: 1.0.0-rc.14
+        version: 1.0.0-rc.14
       zarrita:
         specifier: ^0.7.3
         version: 0.7.4
@@ -792,6 +867,8 @@ importers:
       onnxruntime-web:
         specifier: 1.29.0
         version: 1.29.0
+
+  packages/nii2tvx: {}
 
   packages/registration: {}
 
@@ -1079,6 +1156,9 @@ packages:
 
   '@brainchop/mindgrab@0.1.20260813':
     resolution: {integrity: sha512-HpushBfOzG5yhzgKmhjy1q+8DYxLdM96LeeciF+W2wwStKFzNW1ABY87fwGZjFXcivoWVv+HWPfakBe/GrQPsA==}
+
+  '@brainchop/mindgrab@0.1.20260923':
+    resolution: {integrity: sha512-U6u1UPNxIn/mudogTtUgaDi5zWzwtxQxiPAgOu3dT9zvqRS9hWaGRyLX3zPXFb07/WGJA/OrmVsGGsT/PzdqZw==}
 
   '@cbor-extract/cbor-extract-darwin-arm64@2.2.2':
     resolution: {integrity: sha512-ZKZ/F8US7JR92J4DMct6cLW/Y66o2K576+zjlEN/MevH70bFIsB10wkZEQPLzl2oNh2SMGy55xpJ9JoBRl5DOA==}
@@ -2298,6 +2378,9 @@ packages:
 
   '@niivue/niivue@1.0.0-rc.13':
     resolution: {integrity: sha512-YpahB/wRst5yPv4fztV7z2fREc99uGyDz5KEMFxowXWtT74y0Df9A/TRotMmpAKxg6g4kWX7wQJY/2rjf7nBBQ==}
+
+  '@niivue/niivue@1.0.0-rc.14':
+    resolution: {integrity: sha512-QJtugUVRxTb0dpOyVxK65ufXK0zF5xp7uMw9S+aIDfXgd6ffJvRSJuqwyfgnNzMwH8TKHE+znApYW00sCiVECQ==}
 
   '@niivue/niivue@1.0.0-rc.9':
     resolution: {integrity: sha512-CPu6+KTONESagpbYn+BF/TWy27twmPgqpLNam9x24tl9XDWKfJTLhkjqBZSCVOyWqu1eYMdJFt/nQeDbTGdWvA==}
@@ -6560,6 +6643,10 @@ snapshots:
     dependencies:
       '@webgpu/types': 0.1.71
 
+  '@brainchop/mindgrab@0.1.20260923':
+    dependencies:
+      '@webgpu/types': 0.1.71
+
   '@cbor-extract/cbor-extract-darwin-arm64@2.2.2':
     optional: true
 
@@ -7724,7 +7811,7 @@ snapshots:
     optionalDependencies:
       '@rollup/rollup-linux-x64-gnu': 4.62.2
 
-  '@niivue/niivue@1.0.0-rc.11(patch_hash=f9748394ca2414090ff8580b3514639f284a8be82cc3b0152e59c96d4a48b3b6)':
+  '@niivue/niivue@1.0.0-rc.11':
     dependencies:
       cbor-x: 1.6.4
       clipper2-ts: 2.0.1-18
@@ -7733,6 +7820,15 @@ snapshots:
       nifti-reader-js: 0.8.0
 
   '@niivue/niivue@1.0.0-rc.13':
+    dependencies:
+      cbor-x: 1.6.4
+      clipper2-ts: 2.0.1-18
+      earcut: 3.2.3
+      gl-matrix: 3.4.4
+      nifti-reader-js: 0.8.0
+      zarrita: 0.7.4
+
+  '@niivue/niivue@1.0.0-rc.14':
     dependencies:
       cbor-x: 1.6.4
       clipper2-ts: 2.0.1-18

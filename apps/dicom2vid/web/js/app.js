@@ -1,4 +1,4 @@
-import { createExampleSelector } from '../vendor/webapp-components/src/ui/index.js';
+import { bindInfoTooltips, createConsole, createExampleSelector } from '../vendor/webapp-components/src/ui/index.js';
 // MRI2VID controller. Runs entirely on the client: ingest files, group DICOM
 // series, read the selected volume, window and preview it, and encode a video.
 // Public examples download on request; user-selected image data stays local.
@@ -45,14 +45,41 @@ const S = {
 let loadGen = 0;
 
 // ---- utilities ----
+// Status lives in the footer; every message is mirrored into the technical log,
+// which opens itself on errors.
+const technicalLog = createConsole({ id: 'technicalLog' });
+$('viewerCard').append(technicalLog);
+const READY = 'Ready · choose an example or open a volume';
+let lastStatus = '';
 function setStatus(msg, isErr = false) {
-  const el = $('status');
-  el.textContent = msg || '';
-  el.classList.toggle('err', !!isErr);
+  const text = msg || (S.volume ? 'Ready' : READY);
+  const el = $('statusText');
+  el.textContent = text;
+  el.classList.toggle('error', !!isErr);
+  if (msg && (msg !== lastStatus || isErr)) technicalLog.log(msg, isErr ? 'error' : 'info');
+  lastStatus = msg || '';
+}
+function logLine(msg, level = 'info') {
+  technicalLog.log(msg, level);
 }
 function setProgress(p) {
-  $('progressWrap').classList.toggle('hidden', p <= 0 || p >= 1);
-  $('progressBar').style.width = `${Math.round(p * 100)}%`;
+  $('progress').value = Math.max(0, Math.min(1, p || 0));
+}
+// Elapsed m:ss beside the status while an encode runs.
+let elapsedTimer = null;
+function formatElapsed(ms) {
+  const s = Math.floor(ms / 1000);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+function startElapsed() {
+  const t0 = performance.now();
+  const tick = () => { $('elapsed').textContent = formatElapsed(performance.now() - t0); };
+  tick();
+  elapsedTimer = setInterval(tick, 1000);
+}
+function stopElapsed() {
+  clearInterval(elapsedTimer);
+  elapsedTimer = null;
 }
 function parseIntOrNull(v) {
   const s = String(v).trim();
@@ -71,8 +98,10 @@ async function handleFiles(fileRecs) {
   setStatus('Reading files...');
   stopPlay();
 
+  logLine(`Received ${fileRecs.length} file(s).`);
   const dicomFiles = [];
   const volumeFiles = [];
+  let unreadable = 0;
   for (const rec of fileRecs) {
     const kind = detectKind(rec.name);
     if (kind === 'dicom') dicomFiles.push(rec);
@@ -81,7 +110,7 @@ async function handleFiles(fileRecs) {
       try {
         const prefix = await readPrefix(rec.file, 200);
         if (sniffDicom(new Uint8Array(prefix))) dicomFiles.push(rec);
-      } catch (_) { /* ignore unreadable */ }
+      } catch (_) { unreadable++; }
     }
   }
 
@@ -96,7 +125,11 @@ async function handleFiles(fileRecs) {
         if (!h.rows || !h.cols) continue; // skip DICOMDIR / non-image DICOM
         headers.push(h);
         byName.set(rec.name, rec);
-      } catch (_) { /* skip unreadable/compressed at grouping time */ }
+      } catch (e) {
+        // Skip unreadable or compressed DICOM at grouping time.
+        unreadable++;
+        logLine(`Skipped ${rec.name}: ${e.message}`, 'warning');
+      }
     }
     if (headers.length) {
       const { series, defaultIndex } = groupSeries(headers);
@@ -122,6 +155,8 @@ async function handleFiles(fileRecs) {
     sources.push({ id: `vol-${i}`, kind, label: rec.name, recs: [rec] });
   }
 
+  if (unreadable) logLine(`${unreadable} file(s) could not be read and were skipped.`, 'warning');
+  logLine(`Found ${sources.length} series or volume(s).`);
   if (!sources.length) { setStatus('No readable DICOM, NIfTI, or MGZ files found.', true); return; }
   if (gen !== loadGen) return;
 
@@ -213,7 +248,8 @@ async function selectSource(id) {
     S.volume = volume;
     S.volumeBase = baseName(src.label);
     onVolumeLoaded(gen);
-    setStatus('');
+    const [x, y, z] = volume.dims;
+    setStatus(`Loaded ${src.label} · ${x}×${y}×${z}${volume.channels === 3 ? ' RGB' : ''}`);
   } catch (e) {
     if (gen === loadGen) setStatus(`Could not load: ${e.message}`, true);
   }
@@ -275,7 +311,7 @@ async function loadIntoViewer(vol, gen = loadGen) {
   // always describes the volume that is actually loaded.
   const ready = vol.channels === 1
     ? `${notePrefix}Set the window with the histogram below.`
-    : `${notePrefix}Color (RGB) volume. The intensity window does not apply; use "Normalize color channels" in Video options.`;
+    : `${notePrefix}Color (RGB) volume: windowing is off; see Normalize color channels.`;
   note.textContent = ready;
   try {
     if (!S.nv) {
@@ -297,6 +333,7 @@ async function loadIntoViewer(vol, gen = loadGen) {
     setTimeout(() => { if (S.nvUrl === url) { URL.revokeObjectURL(url); S.nvUrl = null; } }, 4000);
   } catch (e) {
     if (gen === loadGen) {
+      logLine(`3D viewer unavailable: ${e.message}`, 'warning');
       note.textContent = `${notePrefix}3D viewer unavailable in this browser (no WebGL). Windowing and preview still work.`;
     }
   }
@@ -514,12 +551,14 @@ function refreshRange() {
     slider.max = String(idxs.length - 1);
     slider.value = String(S.preview.idx);
     $('generate').disabled = false;
-    setStatus('');
+    if (S.rangeError) setStatus('');
+    S.rangeError = false;
     drawScrub();
     syncReconButtons();
     updateOutputSize();
   } catch (e) {
     $('generate').disabled = true;
+    S.rangeError = true;
     setStatus(e.message, true);
   }
 }
@@ -570,7 +609,7 @@ function setOrientation(value) { $('orientation').value = value; refreshRange();
 function syncReconButtons() {
   const cur = $('orientation').value || 'sagittal';
   const base = baseOf(cur);
-  for (const btn of document.querySelectorAll('.btn.ori')) {
+  for (const btn of document.querySelectorAll('.ori')) {
     btn.classList.toggle('active', btn.dataset.ori === base);
   }
   $('flipOri').checked = cur.endsWith('_flipped');
@@ -608,9 +647,11 @@ async function generate() {
   S.running = true;
   S.stopFlag = false;
   $('generate').disabled = true;
-  $('stop').classList.remove('hidden');
-  setStatus('Encoding...');
-  setProgress(0.001);
+  $('cancelButton').hidden = false;
+  logLine(`Encoding ${sliceIndices.length} frames, ${opts.orientation}, ${opts.fps} fps, ${opts.format.toUpperCase()}.`);
+  setStatus('Encoding video…');
+  setProgress(0);
+  startElapsed();
 
   try {
     const first = frameProvider(0);
@@ -625,15 +666,17 @@ async function generate() {
       shouldStop: () => S.stopFlag,
     });
     showResult(res, opts, first, sliceIndices.length);
-    setStatus('Done.');
+    setStatus(`Video ready · ${$('resultInfo').textContent}`);
+    setProgress(1);
   } catch (e) {
-    if (e.stopped) setStatus('Stopped.');
+    setProgress(0);
+    if (e.stopped) setStatus('Encoding stopped.');
     else setStatus(`Encode failed: ${e.message}`, true);
   } finally {
     S.running = false;
+    stopElapsed();
     $('generate').disabled = false;
-    $('stop').classList.add('hidden');
-    setProgress(0);
+    $('cancelButton').hidden = true;
   }
 }
 
@@ -650,70 +693,13 @@ function showResult(res, opts, firstFrame, nFrames) {
   $('resultPanel').classList.remove('hidden');
 }
 
-// ---- guided tour ----
-const TOUR = [
-  { sel: '#dropZone', title: '1. Add your images', body:
-    'Drag a <b>DICOM folder</b>, a full <b>DICOMDIR</b> export, an entire <b>BIDS</b> subject-session directory, or a single <b>.nii / .nii.gz / .mgz</b> file. Nothing is uploaded; everything is read in this tab.' },
-  { sel: '#seriesPanel', title: '2. Pick a series', body:
-    'A whole directory is grouped by SeriesInstanceUID and the most likely <b>structural scan</b> is selected first. Click any series to switch.', mayHide: true },
-  { sel: '#viewerCard', title: '3. Window the volume', body:
-    'The viewer shows the loaded volume. Drag the two handles on the <b>histogram</b> to set the intensity window; it maps to 0-255 in the output. <b>Reset windowing</b> returns to the full range.' },
-  { sel: '#optionsPanel', title: '4. Set options', body:
-    'Choose the <b>orientation</b>, <b>frames per second</b>, <b>slice range</b>, output <b>format</b>, and whether to overlay slice numbers. '
-    + '<b>Upscale</b> enlarges the frames before encoding, which helps low-resolution scans such as EPI and B1 maps; pick the <b>interpolation</b> to suit '
-    + '(nearest keeps hard voxel edges, Lanczos is sharpest). For a Siemens mosaic run (fMRI or diffusion) a <b>4D series</b> control appears, choosing whether '
-    + 'the video uses the first volume, the mean, or a maximum intensity projection.' },
-  { sel: '#previewBtn', title: '5. Preview and reconstruct', body:
-    'Open <b>Preview</b> to see the actual frames, choose the reconstruction (<b>axial, sagittal, coronal</b>, flip), and <b>Rotate</b> the frames upright.' },
-  { sel: '#generate', title: '6. Generate and download', body:
-    'Encode the <b>MP4 or WebM</b> in the page and download it.' },
-  { sel: '.badge', title: 'Privacy', body:
-    'Your images and all processing stay in this browser tab and are never uploaded. Neurodesk hosting uses Google Analytics for page views only, sends no custom events, and makes no analytics request when Do Not Track or Global Privacy Control is enabled.' },
-];
-let tourStep = 0;
-let tourSpotEl = null;
-function tourClearSpot() { if (tourSpotEl) { tourSpotEl.classList.remove('tour-spot'); tourSpotEl = null; } }
-function tourPositionPop(el) {
-  const pop = $('tourPop');
-  pop.style.visibility = 'hidden';
-  pop.style.display = 'block';
-  const pw = pop.offsetWidth;
-  const ph = pop.offsetHeight;
-  const m = 14;
-  let top, left;
-  if (el) {
-    const r = el.getBoundingClientRect();
-    top = r.bottom + m; left = r.left;
-    if (top + ph > innerHeight - 8) top = r.top - ph - m;
-    top = Math.max(8, Math.min(top, innerHeight - ph - 8));
-    left = Math.max(8, Math.min(left, innerWidth - pw - 8));
-  } else {
-    top = Math.max(8, (innerHeight - ph) / 2);
-    left = (innerWidth - pw) / 2;
-  }
-  pop.style.top = `${top}px`;
-  pop.style.left = `${left}px`;
-  pop.style.visibility = 'visible';
-}
-function showTourStep(i) {
-  tourClearSpot();
-  tourStep = Math.max(0, Math.min(TOUR.length - 1, i));
-  const s = TOUR[tourStep];
-  const el = document.querySelector(s.sel);
-  const visible = !!(el && el.offsetParent !== null && el.getClientRects().length);
-  $('tourStepNo').textContent = `Step ${tourStep + 1} of ${TOUR.length}`;
-  $('tourTitle').textContent = s.title;
-  $('tourBody').innerHTML = s.body + (!visible && s.mayHide ? '<br><span class="note">(this appears once you load a directory with more than one series)</span>' : '');
-  $('tourBack').style.visibility = tourStep === 0 ? 'hidden' : 'visible';
-  $('tourNext').textContent = tourStep === TOUR.length - 1 ? 'Done' : 'Next';
-  if (visible) { el.classList.add('tour-spot'); tourSpotEl = el; el.scrollIntoView({ block: 'center' }); }
-  tourPositionPop(visible ? el : null);
-  $('tourNext').focus();
-}
-function startTour() { $('tour').classList.remove('hidden'); showTourStep(0); }
-function endTour() { tourClearSpot(); $('tour').classList.add('hidden'); }
-
 // ---- wire up ----
+function ingest(recsOrPromise) {
+  return Promise.resolve(recsOrPromise)
+    .then(handleFiles)
+    .catch((e) => setStatus(`Could not read files: ${e.message}`, true));
+}
+
 function init() {
   const dz = $('dropZone');
   dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('drag'); });
@@ -721,10 +707,10 @@ function init() {
   dz.addEventListener('drop', async (e) => {
     e.preventDefault();
     dz.classList.remove('drag');
-    handleFiles(await collectFromDrop(e.dataTransfer));
+    ingest(collectFromDrop(e.dataTransfer));
   });
-  $('pickDir').addEventListener('change', (e) => handleFiles(collectFromPicker(e.target.files)));
-  $('pickFiles').addEventListener('change', (e) => handleFiles(collectFromPicker(e.target.files)));
+  $('pickDir').addEventListener('change', (e) => ingest(collectFromPicker(e.target.files)));
+  $('pickFiles').addEventListener('change', (e) => ingest(collectFromPicker(e.target.files)));
 
   for (const id of ['orientation', 'startSlice', 'endSlice', 'sliceStep']) {
     $(id).addEventListener('change', refreshRange);
@@ -751,7 +737,10 @@ function init() {
   $('scrubSlider').addEventListener('input', (e) => { S.preview.idx = parseInt(e.target.value, 10) || 0; drawScrub(); });
   $('playBtn').addEventListener('click', togglePlay);
   $('generate').addEventListener('click', generate);
-  $('stop').addEventListener('click', () => { S.stopFlag = true; });
+  $('cancelButton').addEventListener('click', () => {
+    S.stopFlag = true;
+    $('statusText').textContent = 'Stopping…';
+  });
 
   $('previewBtn').addEventListener('click', openPreview);
   $('previewClose').addEventListener('click', closePreview);
@@ -759,7 +748,7 @@ function init() {
   $('scaleX').addEventListener('input', onStretch);
   $('scaleY').addEventListener('input', onStretch);
   $('resetScale').addEventListener('click', () => { $('scaleX').value = '1'; $('scaleY').value = '1'; onStretch(); });
-  for (const btn of document.querySelectorAll('.btn.ori')) {
+  for (const btn of document.querySelectorAll('.ori')) {
     btn.addEventListener('click', () => {
       const flip = $('flipOri').checked;
       setOrientation(flip ? `${btn.dataset.ori}_flipped` : btn.dataset.ori);
@@ -771,28 +760,19 @@ function init() {
   });
   $('previewModal').addEventListener('click', (e) => { if (e.target === $('previewModal')) closePreview(); });
 
-  // Tour.
-  $('tutorialBtn').addEventListener('click', startTour);
-  $('tourNext').addEventListener('click', () => { tourStep === TOUR.length - 1 ? endTour() : showTourStep(tourStep + 1); });
-  $('tourBack').addEventListener('click', () => showTourStep(tourStep - 1));
-  $('tourSkip').addEventListener('click', endTour);
   window.addEventListener('resize', () => {
-    if (!$('tour').classList.contains('hidden')) tourPositionPop(tourSpotEl);
     if (S.volume && S.volume.channels === 1) drawHistogram();
     drawScrub();
   });
   document.addEventListener('keydown', (e) => {
-    if (!$('tour').classList.contains('hidden')) {
-      if (e.key === 'Escape') endTour();
-      else if (e.key === 'ArrowRight') { tourStep === TOUR.length - 1 ? endTour() : showTourStep(tourStep + 1); }
-      else if (e.key === 'ArrowLeft') showTourStep(tourStep - 1);
-      return;
-    }
     if (e.key === 'Escape') closePreview();
   });
 }
 
 init();
+bindInfoTooltips();
+window.addEventListener('error', (e) => logLine(`Unexpected error: ${e.message}`, 'error'));
+window.addEventListener('unhandledrejection', (e) => logLine(`Unexpected error: ${e.reason?.message || e.reason}`, 'error'));
 
 for (const kind of ['about', 'privacy']) {
   document.getElementById(`${kind}Button`).addEventListener('click', () => document.getElementById(`${kind}Dialog`).showModal());

@@ -53,7 +53,17 @@ jobs:
       - name: Validate the app catalog and generated plans
         run: pnpm test:registry && node --test test/app-plan.test.mjs test/independent-workflows.test.mjs
       - name: Validate date releases and app scaffolding
-        run: node --test test/app-versions.test.mjs test/new-app.test.mjs test/app-examples.test.mjs
+        run: node --test test/app-versions.test.mjs test/new-app.test.mjs test/app-examples.test.mjs test/disconnectome-assets.test.mjs
+      - name: Enforce the design system and workspace contract
+        # Shared vocabulary, status footer, collapsed technical log, no start
+        # pages, help text within 90 characters and one primary per sidebar.
+        run: node --test test/design-system.test.mjs
+      - name: Check native tract conversion and WebAssembly parity
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zlib1g-dev
+          make -C exes/nii2tvx test
+          pnpm --filter @neurodesk/nii2tvx test
       - name: Lint every workspace package
         run: pnpm lint
 
@@ -81,6 +91,9 @@ jobs:
       - name: Install wasm-pack 0.13.1
         if: matrix.rust_wasm
         run: cargo install wasm-pack --version 0.13.1 --locked
+      - name: Set up wasm-opt
+        if: matrix.rust_wasm
+        uses: ./.github/actions/setup-wasm-opt
       - uses: actions/setup-python@v7
         if: matrix.python_reference
         with:
@@ -123,6 +136,8 @@ jobs:
         run: rustup toolchain install nightly-2025-11-15 --component rust-src --target wasm32-unknown-unknown
       - name: Install wasm-pack 0.13.1
         run: cargo install wasm-pack --version 0.13.1 --locked
+      - name: Set up wasm-opt
+        uses: ./.github/actions/setup-wasm-opt
       - run: pnpm install --frozen-lockfile
       - name: Install browser
         run: |
@@ -180,6 +195,9 @@ jobs:
         run: |
           rustup toolchain install nightly-2025-11-15 --component rust-src --target wasm32-unknown-unknown
           cargo install wasm-pack --version 0.13.1 --locked
+      - name: Set up wasm-opt
+        if: matrix.rust_wasm
+        uses: ./.github/actions/setup-wasm-opt
       - uses: actions/setup-python@v7
         if: matrix.python_reference
         with:

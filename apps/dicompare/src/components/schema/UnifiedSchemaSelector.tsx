@@ -7,6 +7,7 @@ import DeleteConfirmModal from './DeleteConfirmModal';
 import { DraggableSchema, DraggableAcquisition } from './DraggableComponents';
 import { isAnalysisTag, getAnalysisTagDisplayName, splitTagsWithCounts } from '../../utils/tagUtils';
 import { fetchExternalSchema } from '../../utils/externalSchemaFetch';
+import { log, logError } from '../../utils/technicalLog';
 
 interface AcquisitionScore {
   schemaId: string;
@@ -115,6 +116,7 @@ const UnifiedSchemaSelector: React.FC<UnifiedSchemaSelectorProps> = ({
       await onSchemaUpload(new File([text], filename, { type: 'application/json' }));
       setUrlInput('');
     } catch (e) {
+      logError('Schema import from URL failed', e);
       setUrlError(e instanceof Error ? e.message : 'Failed to import schema from URL');
     } finally {
       setUrlImporting(false);
@@ -629,6 +631,7 @@ const UnifiedSchemaSelector: React.FC<UnifiedSchemaSelectorProps> = ({
           a.click();
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
+          log(`Exported schema ${a.download}.`, 'success');
         }
       } catch (error) {
         console.error('Failed to download schema:', error);

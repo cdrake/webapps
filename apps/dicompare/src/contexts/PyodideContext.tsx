@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { dicompareWorkerAPI } from '../services/DicompareWorkerAPI';
+import { log, logError } from '../utils/technicalLog';
 
 export interface PyodideStatus {
   isLoading: boolean;
@@ -45,6 +46,7 @@ export const PyodideProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     initializingRef.current = true;
 
+    log('Preparing analysis engine (Pyodide and dicompare)…');
     setStatus(prev => ({
       ...prev,
       isLoading: true,
@@ -54,7 +56,12 @@ export const PyodideProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }));
 
     try {
+      let lastOperation = '';
       await dicompareWorkerAPI.ensureInitialized((progress) => {
+        if (progress.currentOperation && progress.currentOperation !== lastOperation) {
+          lastOperation = progress.currentOperation;
+          log(lastOperation);
+        }
         setStatus(prev => ({
           ...prev,
           progress: progress.percentage,
@@ -63,6 +70,7 @@ export const PyodideProvider: React.FC<{ children: React.ReactNode }> = ({ child
       });
 
       initializedRef.current = true;
+      log('Analysis engine ready.', 'success');
       setStatus({
         isLoading: false,
         isReady: true,
@@ -71,6 +79,7 @@ export const PyodideProvider: React.FC<{ children: React.ReactNode }> = ({ child
         error: null,
       });
     } catch (error) {
+      logError('Analysis engine failed to start', error);
       initializingRef.current = false;
       setStatus(prev => ({
         ...prev,

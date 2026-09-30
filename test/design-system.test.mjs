@@ -22,9 +22,8 @@ const shellApps = registry.apps.filter((app) => app.shell === 'imaging-workspace
 const LEGACY_CSS_RATCHET = new Map(Object.entries({
   browserqc: { colourLiterals: 0, cssLines: 72 },
   deface: { colourLiterals: 0, cssLines: 0 },
-  niimath: { colourLiterals: 9, cssLines: 155 },
-  surfannotate: { colourLiterals: 57, cssLines: 912 },
-  zarro: { colourLiterals: 40, cssLines: 1223 },
+  surfannotate: { colourLiterals: 48, cssLines: 559 },
+  zarro: { colourLiterals: 39, cssLines: 1118 },
 }));
 
 // What a vocabulary app may still put in its own stylesheet.
@@ -187,4 +186,108 @@ test('the shared stylesheet defines the whole vocabulary the template and docs r
   ]) {
     assert.ok(css.includes(selector), `imaging-workspace.css must define ${selector}`);
   }
+});
+
+// ---------------------------------------------------------------------------
+// Catalog-wide workspace contract (every shell, including static-html and
+// react apps). Found by the 20 September 2026 UI audit: status shown in the
+// sidebar instead of the taskbar, apps without a technical log, marketing
+// start pages before the workspace, paragraphs of help in the sidebar and
+// several primary buttons per sidebar. Each is a failing assertion here; the
+// interface audit checks the same rules against the rendered page.
+// ---------------------------------------------------------------------------
+
+import { JSDOM } from 'jsdom';
+
+export const HINT_MAX_CHARS = 90;
+const HINT_SELECTOR = '.nd-hint, .hint, .step-description, .option-description, .panel-heading p, p, small';
+const SIDEBAR_SELECTOR = '#controls, .nd-imaging-controls, .app-sidebar, .sidebar, .control-panel, aside';
+const PRIMARY_SELECTOR = '.nd-btn-primary, .btn-primary';
+const START_PAGE_MARKERS = [/class="[^"]*\bstart-page\b/, /id="startPage"/, /id="landingPage"/, /class="[^"]*\blanding-overlay\b/, /id="enterAppButton"/, /id="landingLaunch"/, /id="welcomeLater"/];
+
+async function appEntryHtml(app) {
+  const candidates = ['index.html', 'src/index.html', 'web/index.html', 'public/index.html'];
+  for (const candidate of candidates) {
+    const path = join(repoRoot, 'apps', app.id, candidate);
+    try { await stat(path); return { path: relative(repoRoot, path), html: await readFile(path, 'utf8') }; } catch { /* next */ }
+  }
+  return null;
+}
+
+async function appSources(app, extensions) {
+  const files = await collect(join(repoRoot, 'apps', app.id), extensions);
+  return Promise.all(files.map(async (path) => ({ path: relative(repoRoot, path), text: await readFile(path, 'utf8') })));
+}
+
+// Text the user sees in the workspace: everything except dialogs, modals and
+// templates, which hold About, Privacy and Standalone content by design.
+function workspaceDocument(html) {
+  const { document } = new JSDOM(html).window;
+  for (const node of document.querySelectorAll('template, dialog, script, style, [class*="modal"], [id$="Modal"], [id$="Dialog"], .nd-dialog, [hidden]')) node.remove();
+  return document;
+}
+
+// A hint's own words: an inline info icon's tooltip is help on demand, not clutter.
+function visibleText(node) {
+  const copy = node.cloneNode(true);
+  for (const tip of copy.querySelectorAll('.nd-info-tooltip, .info-tooltip')) tip.remove();
+  return copy.textContent.replace(/\s+/g, ' ').trim();
+}
+
+test('every app shows status in the shared footer and keeps a collapsed technical log', async () => {
+  const failures = [];
+  for (const app of registry.apps) {
+    const entry = await appEntryHtml(app);
+    const sources = await appSources(app, ['.js', '.ts', '.tsx', '.html']);
+    const text = sources.map((source) => source.text).join('\n');
+    const label = entry?.path ?? `apps/${app.id}`;
+    const hasFooter = /<footer[^>]*\bid="status"/.test(text) && /class(Name)?="nd-status-text"/.test(text) && /<progress[\s>]/.test(text);
+    if (!hasFooter) failures.push(`${label}: status goes in <footer id="status"> with #statusText.nd-status-text and a native <progress>; not in the sidebar`);
+    const collapsedConsole = [...text.matchAll(/class(?:Name)?="([^"]*)"/g)]
+      .some(([, classes]) => /\b(?:nd-)?console-container\b/.test(classes) && /\bcollapsed\b/.test(classes));
+    const hasConsole = /createConsole\(/.test(text) || /<nd-console/.test(text) || collapsedConsole;
+    if (!hasConsole) failures.push(`${label}: add a technical log (createConsole() or .nd-console-container.collapsed) below the viewer, collapsed by default`);
+    const sidebarStatus = /class="[^"]*\bsidebar-status\b/.test(text);
+    if (sidebarStatus) failures.push(`${label}: .sidebar-status is retired; status lives in the footer`);
+  }
+  assert.deepEqual(failures, []);
+});
+
+test('no app shows a start page, landing overlay or welcome modal before the workspace', async () => {
+  const failures = [];
+  for (const app of registry.apps) {
+    const sources = await appSources(app, ['.js', '.ts', '.tsx', '.html']);
+    for (const { path, text } of sources) {
+      for (const marker of START_PAGE_MARKERS) {
+        if (marker.test(text)) failures.push(`${path}: ${marker} — the workspace is the first screen; move copy to About or Privacy`);
+      }
+    }
+  }
+  assert.deepEqual(failures, []);
+});
+
+test(`sidebar help stays under ${HINT_MAX_CHARS} characters and each sidebar has one primary action`, async () => {
+  const failures = [];
+  for (const app of registry.apps) {
+    const entry = await appEntryHtml(app);
+    if (!entry) continue; // react apps are checked by the rendered interface audit
+    const document = workspaceDocument(entry.html);
+    const sidebars = [...document.querySelectorAll(SIDEBAR_SELECTOR)];
+    const scope = sidebars.length ? sidebars : [document.body];
+    const seen = new Set();
+    for (const root of scope) {
+      for (const node of root.querySelectorAll(HINT_SELECTOR)) {
+        if (node.closest('.nd-info-tooltip, .info-tooltip, .help-popover, [role="tooltip"], label')) continue;
+        const words = visibleText(node);
+        if (words.length <= HINT_MAX_CHARS || seen.has(words)) continue;
+        seen.add(words);
+        failures.push(`${entry.path}: ${words.length}-char help "${words.slice(0, 60)}…" — shorten to ${HINT_MAX_CHARS} characters or move it into an nd-info-icon tooltip or About`);
+      }
+    }
+    const primaries = [...document.querySelectorAll(PRIMARY_SELECTOR)];
+    if (primaries.length > 1) {
+      failures.push(`${entry.path}: ${primaries.length} primary buttons (${primaries.map((node) => visibleText(node) || node.id).join(', ')}); one .nd-btn-primary per sidebar, the rest secondary`);
+    }
+  }
+  assert.deepEqual(failures, []);
 });

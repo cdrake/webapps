@@ -14,6 +14,7 @@ import remarkGfm from 'remark-gfm';
 import CodeMirror from '@uiw/react-codemirror';
 import { json } from '@codemirror/lang-json';
 import WelcomeTab from './schemaInfo/WelcomeTab';
+import { beginActivity } from '../../../utils/technicalLog';
 
 export type SchemaInfoTab = 'welcome' | 'metadata' | 'preview';
 
@@ -158,6 +159,7 @@ const SchemaInfoPanel: React.FC<SchemaInfoPanelProps> = ({
         onUpdateSchemaMetadata({ description: editedReadme });
       }
 
+      const done = beginActivity('Generating schema JSON');
       try {
         const { acquisitions } = await workspace.getSchemaExport(getSchemaContent);
         const result = await generateSchemaJson({
@@ -170,6 +172,8 @@ const SchemaInfoPanel: React.FC<SchemaInfoPanelProps> = ({
       } catch (err) {
         console.error('Failed to generate schema:', err);
         return;
+      } finally {
+        done();
       }
     }
 

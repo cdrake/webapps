@@ -51,4 +51,24 @@ export function bindInfoTooltips(root?: ParentNode): void;
 export function renderInfoIcon(text: string, config?: { label?: string; id?: string }, doc?: Document): HTMLSpanElement;
 export function bindSectionDisclosure(section: Element, root?: ParentNode): MutationObserver;
 
+/** Drives footer#status: message, progress, elapsed time and the cancel ×. */
+export class ProgressManager {
+  constructor(options?: {
+    barElement?: Element | null; progressBarId?: string;
+    textElement?: Element | null; statusTextId?: string;
+    elapsedElement?: Element | null; elapsedId?: string;
+    cancelElement?: HTMLButtonElement | null; cancelId?: string;
+    animationSpeed?: number;
+  });
+  setProgress(value: number, text?: string | null): void;
+  setIndeterminate(text?: string): void;
+  setText(text: string): void;
+  setCancellable(cancellable: boolean): void;
+  startTimer(): void;
+  stopTimer(clear?: boolean): void;
+  begin(text?: string, options?: { cancellable?: boolean }): void;
+  end(text: string, options?: { success?: boolean }): void;
+  reset(text?: string): void;
+}
+
 export * from './elements/index.js';

@@ -16,77 +16,81 @@
   <header>
     <div class="head-in">
       <div class="mark"><span>▶</span></div>
-      <div>
-        <h1>MRI<span class="g">2VID</span></h1>
-        <div class="tag">Turn a DICOM, NIfTI, or MGZ volume into a scrolling video, entirely in your browser.</div>
-      </div>
-      <span class="badge" title="Your images and all processing stay in this browser tab and are never uploaded. Only anonymous usage stats (page views) are collected.">Your images never leave your browser</span>
+      <h1>MRI<span class="g">2VID</span></h1>
       <a href="../" class="header-link" title="More Neurodesk web apps">More Apps</a>
-      <button class="tutbtn" id="tutorialBtn" type="button" title="Step-by-step walkthrough of the app.">Tutorial</button>
     </div>
   <button type="button" id="aboutButton" data-neurodesk-control="about">About</button><button type="button" id="privacyButton" data-neurodesk-control="privacy">Privacy</button></header>
-
-
 
   <main>
     <div class="col">
       <div class="card">
         <h2>Input</h2>
         <div id="dropZone">
-          <p><strong>Drop a DICOM folder here.</strong></p>
-          <p class="small">DICOM folders, DICOMDIR exports, BIDS sessions, NIfTI and MGZ files.</p>
+          <p><strong>Drop a DICOM folder, NIfTI or MGZ file</strong></p>
           <div class="pick-row">
-            <label class="btn secondary">Choose folder
+            <label class="nd-btn nd-btn-secondary">Choose folder
               <input id="pickDir" type="file" data-neurodesk-input="image" webkitdirectory directory multiple hidden>
             </label>
-            <label class="btn secondary">Choose files
+            <label class="nd-btn nd-btn-secondary">Choose files
               <input id="pickFiles" type="file" data-neurodesk-input="image" multiple hidden>
             </label>
           </div>
-          <p class="small">Files stay in your browser. Convert compressed DICOM locally before importing.</p>
         </div>
       </div>
 
       <div id="seriesPanel" class="card hidden">
-        <h2>Series <span class="i" tabindex="0" role="button" aria-label="info about series"
-          data-tip="Files are grouped by SeriesInstanceUID. The most likely structural scan (for example a T1w) is selected first; pick any other.">i</span></h2>
+        <h2>Series
+          <span class="nd-info-icon" tabindex="0" aria-label="About series">i<span class="nd-info-tooltip">Files are grouped by SeriesInstanceUID. The most likely structural scan (for example a T1w) is selected first; pick any other.</span></span>
+        </h2>
         <div id="seriesList" class="series-list"></div>
       </div>
 
       <div id="optionsPanel" class="card hidden">
         <h2>Video options</h2>
         <div class="grid2">
-          <label class="nd-field">Orientation
-            <span class="i" tabindex="0" role="button" aria-label="info about orientation"
-              data-tip="How the stack is resliced. Same as MRI2vid.py: sagittal, coronal, axial and their flipped variants. You can also set this with the buttons in Preview.">i</span>
+          <div class="nd-field">
+            <label for="orientation">Orientation
+              <span class="nd-info-icon" tabindex="0" aria-label="About orientation">i<span class="nd-info-tooltip">How the stack is resliced: sagittal, coronal, axial and their flipped variants. The Preview buttons set this too.</span></span>
+            </label>
             <select id="orientation"></select>
-          </label>
-          <label class="nd-field">Frames per second
-            <span class="i" tabindex="0" role="button" aria-label="info about fps" data-tip="Playback speed of the output video. Default 20.">i</span>
+          </div>
+          <div class="nd-field">
+            <label for="fps">Frames per second
+              <span class="nd-info-icon" tabindex="0" aria-label="About frames per second">i<span class="nd-info-tooltip">Playback speed of the output video. Default 20.</span></span>
+            </label>
             <input id="fps" type="number" min="1" max="120" step="1" value="20">
-          </label>
-          <label class="nd-field">Start slice
-            <span class="i" tabindex="0" role="button" aria-label="info about start slice" data-tip="First slice to include (0-based). Blank means the first slice. Negative counts from the end.">i</span>
+          </div>
+          <div class="nd-field">
+            <label for="startSlice">Start slice
+              <span class="nd-info-icon" tabindex="0" aria-label="About start slice">i<span class="nd-info-tooltip">First slice to include (0-based). Blank means the first slice. Negative counts from the end.</span></span>
+            </label>
             <input id="startSlice" type="number" step="1" placeholder="0">
-          </label>
-          <label class="nd-field">End slice (exclusive)
-            <span class="i" tabindex="0" role="button" aria-label="info about end slice" data-tip="Stop before this slice. Blank means all slices. Negative counts from the end.">i</span>
+          </div>
+          <div class="nd-field">
+            <label for="endSlice">End slice (exclusive)
+              <span class="nd-info-icon" tabindex="0" aria-label="About end slice">i<span class="nd-info-tooltip">Stop before this slice. Blank means all slices. Negative counts from the end.</span></span>
+            </label>
             <input id="endSlice" type="number" step="1" placeholder="all">
-          </label>
-          <label class="nd-field">Slice step
-            <span class="i" tabindex="0" role="button" aria-label="info about slice step" data-tip="Take every Nth slice. Use values above 1 to subsample a long stack.">i</span>
+          </div>
+          <div class="nd-field">
+            <label for="sliceStep">Slice step
+              <span class="nd-info-icon" tabindex="0" aria-label="About slice step">i<span class="nd-info-tooltip">Take every Nth slice. Use values above 1 to subsample a long stack.</span></span>
+            </label>
             <input id="sliceStep" type="number" min="1" step="1" value="1">
-          </label>
-          <label class="nd-field">Format
-            <span class="i" tabindex="0" role="button" aria-label="info about format" data-tip="MP4 (H.264) or WebM (VP9). The app falls back automatically if your browser lacks one.">i</span>
+          </div>
+          <div class="nd-field">
+            <label for="format">Format
+              <span class="nd-info-icon" tabindex="0" aria-label="About format">i<span class="nd-info-tooltip">MP4 (H.264) or WebM (VP9). The app falls back automatically if your browser lacks one.</span></span>
+            </label>
             <select id="format">
               <option value="mp4">MP4 (H.264)</option>
               <option value="webm">WebM (VP9)</option>
             </select>
-          </label>
-          <label class="nd-field">Upscale
-            <span class="i" tabindex="0" role="button" aria-label="info about upscale"
-              data-tip="Resample every frame to a larger size before encoding. Low-resolution scans (EPI, B1 maps) look much better upscaled. It adds no detail, it just interpolates.">i</span>
+          </div>
+          <div class="nd-field">
+            <label for="upscale">Upscale
+              <span class="nd-info-icon" tabindex="0" aria-label="About upscale">i<span class="nd-info-tooltip">Resample every frame to a larger size before encoding. Low-resolution scans (EPI, B1 maps) look better upscaled; it interpolates, it adds no detail.</span></span>
+            </label>
             <select id="upscale">
               <option value="1">1x (original)</option>
               <option value="1.5">1.5x</option>
@@ -96,53 +100,52 @@
               <option value="6">6x</option>
               <option value="8">8x</option>
             </select>
-          </label>
-          <label class="nd-field">Interpolation
-            <span class="i" tabindex="0" role="button" aria-label="info about interpolation"
-              data-tip="How new pixels are filled in. Nearest keeps hard voxel edges, bilinear is smooth, bicubic is sharper, Lanczos is sharpest. Applies to upscaling and to the Stretch tool.">i</span>
+          </div>
+          <div class="nd-field">
+            <label for="interpolation">Interpolation
+              <span class="nd-info-icon" tabindex="0" aria-label="About interpolation">i<span class="nd-info-tooltip">How new pixels are filled in. Nearest keeps hard voxel edges, bilinear is smooth, bicubic is sharper, Lanczos is sharpest. Applies to upscaling and Stretch.</span></span>
+            </label>
             <select id="interpolation">
               <option value="bilinear">Bilinear (smooth)</option>
               <option value="nearest">Nearest (blocky)</option>
               <option value="bicubic">Bicubic (sharper)</option>
               <option value="lanczos">Lanczos (sharpest)</option>
             </select>
-          </label>
+          </div>
         </div>
 
         <p id="outputSize" class="small note"></p>
 
         <div id="mosaicRow" class="hidden">
-          <label>4D series
-            <span class="i" tabindex="0" role="button" aria-label="info about 4D handling"
-              data-tip="This series is a Siemens mosaic: each file is a whole volume, so the run is 4D (fMRI timepoints or diffusion directions). Pick how the volumes are collapsed into the one 3D volume the video scrolls through.">i</span>
+          <div class="nd-field">
+            <label for="mosaicReduce">4D series
+              <span class="nd-info-icon" tabindex="0" aria-label="About 4D handling">i<span class="nd-info-tooltip">Siemens mosaic: each file is a whole volume, so the run is 4D (fMRI timepoints or diffusion directions). Choose how the volumes collapse into the one 3D volume the video scrolls through.</span></span>
+            </label>
             <select id="mosaicReduce">
               <option value="first">First volume</option>
               <option value="mean">Mean across volumes</option>
               <option value="max">Maximum intensity across volumes</option>
             </select>
-          </label>
+          </div>
           <p id="mosaicNote" class="small note"></p>
         </div>
 
         <label class="check"><input id="annotate" type="checkbox"> Overlay slice numbers
-          <span class="i" tabindex="0" role="button" aria-label="info about annotation" data-tip="Draw 'Slice N/total' in the corner of each frame, like the --annotate-slices option.">i</span>
+          <span class="nd-info-icon" tabindex="0" aria-label="About annotation">i<span class="nd-info-tooltip">Draw 'Slice N/total' in the corner of each frame, like the --annotate-slices option.</span></span>
         </label>
 
         <label id="colorNormRow" class="check hidden"><input id="colorNormalize" type="checkbox"> Normalize color channels (per channel)
-          <span class="i" tabindex="0" role="button" aria-label="info about color normalize" data-tip="For RGB inputs such as color-FA. Off keeps the original 8-bit colors; on rescales each channel.">i</span>
+          <span class="nd-info-icon" tabindex="0" aria-label="About color normalize">i<span class="nd-info-tooltip">For RGB inputs such as color-FA. Off keeps the original 8-bit colors; on rescales each channel.</span></span>
         </label>
 
         <div class="actions">
-          <button id="previewBtn" class="secondary" type="button">Preview</button>
-          <button id="generate" type="button">Generate video</button>
-          <button id="stop" class="secondary hidden" type="button">Stop</button>
+          <button id="previewBtn" class="nd-btn nd-btn-secondary" type="button">Preview</button>
+          <button id="generate" class="nd-btn nd-btn-primary" type="button">Generate video</button>
         </div>
-        <div id="progressWrap" class="progress hidden"><div id="progressBar"></div></div>
-        <div id="status" class="status" role="status" aria-live="polite"></div>
 
         <div id="resultPanel" class="result hidden">
           <video id="resultVideo" controls loop playsinline></video>
-          <a id="downloadLink" class="btn" download>Download video</a>
+          <a id="downloadLink" class="nd-btn nd-btn-secondary" download>Download video</a>
           <p id="resultInfo" class="small note"></p>
         </div>
       </div>
@@ -151,18 +154,16 @@
     <div class="col viewer-col">
       <div id="viewerCard" class="card">
         <h2>Volume viewer
-          <span class="i" tabindex="0" role="button" aria-label="info about the viewer"
-            data-tip="A NiiVue view of the loaded volume for quality control. Set the display window below with the histogram; it applies to the output video too.">i</span>
+          <span class="nd-info-icon" tabindex="0" aria-label="About the viewer">i<span class="nd-info-tooltip">A NiiVue view of the loaded volume for quality control. Set the display window below with the histogram; it applies to the output video too.</span></span>
         </h2>
         <div class="nv-wrap"><canvas id="nvCanvas"></canvas></div>
         <p id="nvNote" class="small note"></p>
 
         <div class="win-head">
           <h3>Window
-            <span class="i" tabindex="0" role="button" aria-label="info about windowing"
-              data-tip="Drag the two handles on the histogram to set the intensity window. It maps to 0-255 in the output. Grayscale only.">i</span>
+            <span class="nd-info-icon" tabindex="0" aria-label="About windowing">i<span class="nd-info-tooltip">Drag the two handles on the histogram to set the intensity window. It maps to 0-255 in the output. Grayscale only.</span></span>
           </h3>
-          <button id="resetWindow" class="secondary small" type="button">Reset windowing</button>
+          <button id="resetWindow" class="nd-btn nd-btn-secondary nd-btn-sm" type="button">Reset windowing</button>
         </div>
         <canvas id="hist"></canvas>
         <div class="win-readout"><span id="winLoOut">-</span><span id="winHiOut">-</span></div>
@@ -170,69 +171,69 @@
     </div>
   </main>
 
+  <footer id="status" class="nd-imaging-status">
+    <span class="nd-status-label">Status</span>
+    <span id="statusText" class="nd-status-text" role="status" aria-live="polite">Ready · choose an example or open a volume</span>
+    <span id="elapsed" class="nd-status-elapsed"></span>
+    <progress id="progress" max="1" value="0" aria-label="Encoding progress"></progress>
+    <button id="cancelButton" class="nd-btn-cancel" type="button" title="Stop encoding" aria-label="Stop encoding" hidden>×</button>
+  </footer>
+
   <dialog class="nd-app-dialog" id="aboutDialog"><div class="nd-app-dialog__panel"><h2>About MRI2VID</h2>
+    <p>Turns a DICOM, NIfTI or MGZ volume into a scrolling video, entirely in your browser. Based on <code>MRI2vid.py</code>.</p>
+    <div class="card">
+      <h2>How to use</h2>
+      <ul class="about-steps">
+        <li>Drop a DICOM folder, a DICOMDIR export, a BIDS subject-session directory, or a single .nii / .nii.gz / .mgz file.</li>
+        <li>A directory is grouped by SeriesInstanceUID and the most likely structural scan is selected first; click any series to switch.</li>
+        <li>Drag the two histogram handles to set the intensity window; it maps to 0-255 in the output. Reset windowing returns to the full range.</li>
+        <li>Upscale enlarges frames before encoding (helps EPI and B1 maps); pick the interpolation to suit. Siemens mosaic runs get a 4D series control (first volume, mean or maximum projection).</li>
+        <li>Preview shows the actual frames; choose the reconstruction (axial, sagittal, coronal, flip), rotate or stretch them, then Generate the MP4 or WebM and download it.</li>
+      </ul>
+    </div>
     <div class="card">
       <h2>Credits</h2>
       <p>Developed by <a href="https://about.uq.edu.au/experts/30967" target="_blank" rel="noopener noreferrer">Thomas Shaw</a>, University of Queensland, in part with Claude.</p>
       <p>Based on <a href="https://github.com/neurodesk/webapps/tree/main/apps/qsmbly" target="_blank" rel="noopener noreferrer">QSMbly</a>, Ashley Stewart's in-browser quantitative susceptibility mapping tool.</p>
       <p>Open source under the BSD 3-Clause license in the <a href="https://github.com/neurodesk/webapps/tree/main/apps/dicom2vid" target="_blank" rel="noopener noreferrer">Neurodesk webapps monorepo</a>.</p>
     </div>
-  <p>Based on <code>MRI2vid.py</code>.</p><form method="dialog"><button class="nd-app-dialog__close">Close</button></form></div></dialog>
+  <form method="dialog"><button class="nd-app-dialog__close">Close</button></form></div></dialog>
 <dialog class="nd-app-dialog" id="privacyDialog"><div class="nd-app-dialog__panel"><h2>Privacy</h2>
     <p><strong>Runs in your browser.</strong> Your images and all processing stay on your computer and
       are never uploaded; the video is made right here in this tab. On Neurodesk hosting, Google Analytics
       records page views only unless Do Not Track or Global Privacy Control is enabled; it never sees your images.</p>
   <form method="dialog"><button class="nd-app-dialog__close">Close</button></form></div></dialog>
 
-
-
   <!-- Preview modal: the actual video frames, reconstruction choice, and rotation. -->
   <div id="previewModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Video preview">
     <div class="modal-box">
       <div class="modal-head">
         <h2>Video preview</h2>
-        <button id="previewClose" class="secondary small" type="button">Close</button>
+        <button id="previewClose" class="nd-btn nd-btn-secondary nd-btn-sm" type="button">Close</button>
       </div>
       <div class="recon-row">
         <span class="recon-label">Reconstruction:</span>
-        <button class="btn small ori" data-ori="axial" type="button">Axial</button>
-        <button class="btn small ori" data-ori="sagittal" type="button">Sagittal</button>
-        <button class="btn small ori" data-ori="coronal" type="button">Coronal</button>
+        <button class="nd-btn nd-btn-secondary nd-btn-sm ori" data-ori="axial" type="button">Axial</button>
+        <button class="nd-btn nd-btn-secondary nd-btn-sm ori" data-ori="sagittal" type="button">Sagittal</button>
+        <button class="nd-btn nd-btn-secondary nd-btn-sm ori" data-ori="coronal" type="button">Coronal</button>
         <label class="check inline"><input id="flipOri" type="checkbox"> Flip</label>
-        <button id="rotateBtn" class="secondary small" type="button" title="Rotate the frames 90 degrees clockwise">Rotate 90&deg;</button>
+        <button id="rotateBtn" class="nd-btn nd-btn-secondary nd-btn-sm" type="button" title="Rotate the frames 90 degrees clockwise">Rotate 90&deg;</button>
       </div>
       <div class="recon-row">
         <span class="recon-label">Stretch
-          <span class="i" tabindex="0" role="button" aria-label="info about stretch"
-            data-tip="Resize the frames along X and Y. Use it to correct a squished aspect ratio (for example anisotropic slice spacing). Applies to the video too.">i</span>
+          <span class="nd-info-icon" tabindex="0" aria-label="About stretch">i<span class="nd-info-tooltip">Resize the frames along X and Y. Use it to correct a squished aspect ratio (for example anisotropic slice spacing). Applies to the video too.</span></span>
         </span>
         <label class="stretch">X <input id="scaleX" type="range" min="0.25" max="4" step="0.05" value="1"><span id="scaleXOut">1.00x</span></label>
         <label class="stretch">Y <input id="scaleY" type="range" min="0.25" max="4" step="0.05" value="1"><span id="scaleYOut">1.00x</span></label>
-        <button id="resetScale" class="secondary small" type="button">Reset</button>
+        <button id="resetScale" class="nd-btn nd-btn-secondary nd-btn-sm" type="button">Reset</button>
       </div>
       <div class="scrub-wrap">
         <canvas id="scrubCanvas" class="scrub"></canvas>
       </div>
       <div class="scrub-controls">
-        <button id="playBtn" class="secondary small" type="button">Play</button>
+        <button id="playBtn" class="nd-btn nd-btn-secondary nd-btn-sm" type="button">Play</button>
         <input id="scrubSlider" type="range" min="0" max="0" value="0" step="1">
         <span id="scrubLabel" class="small note"></span>
-      </div>
-      <p class="small note">This is exactly what the video will contain. Set the reconstruction and rotation, then Generate.</p>
-    </div>
-  </div>
-
-  <!-- Guided tour. -->
-  <div id="tour" class="hidden">
-    <div id="tourBlock"></div>
-    <div id="tourPop" role="dialog" aria-modal="true" aria-label="Tutorial step">
-      <div id="tourStepNo"></div>
-      <h3 id="tourTitle"></h3>
-      <div id="tourBody"></div>
-      <div id="tourBtns">
-        <button id="tourBack" class="secondary" type="button">Back</button>
-        <button id="tourNext" type="button">Next</button>
-        <button id="tourSkip" class="secondary" type="button">Skip</button>
       </div>
     </div>
   </div>

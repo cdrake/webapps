@@ -883,7 +883,7 @@
   }
 
   [data-neurodesk-app] :is(.viewer-toolbar, .viewer-actions, .window-controls, .view-tabs,
-      .nd-viewer-toolbar, .nd-viewer-actions, .nd-window-controls, .nd-view-tabs, .app-footer) {
+      .nd-viewer-toolbar, .nd-viewer-actions, .nd-window-controls, .nd-view-tabs) {
     flex-wrap: wrap;
     min-width: 0;
   }
@@ -942,7 +942,8 @@
     min-height: 360px;
   }
 
-  [data-neurodesk-app] .nd-imaging-status {
+  /* Only the shared workspace grid; .app-container apps place their own footer. */
+  [data-neurodesk-app] .nd-imaging-workspace > .nd-imaging-status {
     grid-column: 1;
     grid-row: 4;
     flex-wrap: wrap;

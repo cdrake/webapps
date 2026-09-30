@@ -50,6 +50,39 @@ try {
     await expect(page.locator('#runButton')).toBeDisabled();
     await expect(page.locator('#technicalLog')).not.toHaveAttribute('open', '');
   });
+  await check('carotid-flow', async page => {
+    await expect(page.locator('#statusText')).toContainText('Ready · choose', { timeout: 60000 });
+    const advanced = page.locator('#advancedSettings > summary');
+    await advanced.tap();
+    await page.locator('#candidatePercentile').fill('99.5');
+    const task = page.locator('#taskSection > summary');
+    await task.tap();
+    await expect(page.locator('#candidatePercentile')).toBeHidden();
+    await task.tap();
+    await expect(page.locator('#candidatePercentile')).toHaveValue('99.5');
+    await page.locator('#imageInput').setInputFiles(nifti('interface-volume.nii'));
+    await expect(page.locator('#statusText')).toContainText('has 16 slices');
+    await expect(page.locator('#runButton')).toBeDisabled();
+    await expect(page.locator('#outputSection')).not.toHaveAttribute('open', '');
+  });
+  await check('disconnectome', async page => {
+    await expect(page.locator('#statusText')).toContainText('Ready · choose', { timeout: 60000 });
+    await page.locator('#imageInput').setInputFiles(nifti('interface-lesion.nii'));
+    await expect(page.locator('#runButton')).toBeEnabled();
+    const inputs = page.locator('#inputSection > summary');
+    await inputs.tap();
+    await expect(page.locator('#imageInput')).toBeHidden();
+    await inputs.tap();
+    await expect(page.locator('#lesionInfo')).toContainText('interface-lesion.nii');
+    await expect(page.locator('#runButton')).toBeEnabled();
+    const outputs = page.locator('#outputSection > summary');
+    await outputs.tap();
+    await page.locator('#threshold').fill('60');
+    await outputs.tap();
+    await outputs.tap();
+    await expect(page.locator('#threshold')).toHaveValue('60');
+    await expect(page.locator('#saveButton')).toBeDisabled();
+  });
   await check('syncro', async page => {
     await expect(page.locator('#runButton')).toBeDisabled();
     await expect(page.locator('#results')).not.toHaveAttribute('open','');

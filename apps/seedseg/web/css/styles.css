@@ -194,18 +194,6 @@
   color: var(--nd-color-text-muted);
 }
 
-/* Footer */
-.app-footer {
-  grid-column: 1 / -1;
-  background: var(--nd-color-surface);
-  border-top: 1px solid var(--nd-color-border);
-  padding: var(--nd-space-xs) var(--nd-space-lg);
-  font-size: 0.65rem;
-  color: var(--nd-color-text-dim);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
 
 /* Stage Buttons Grid (Results sidebar) */
 .stage-buttons-grid {

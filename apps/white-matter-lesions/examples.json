@@ -1,0 +1,15 @@
+[
+  {
+    "id": "ms-flair",
+    "label": "Multiple sclerosis FLAIR",
+    "description": "Clinical 2D FLAIR (1 × 1 × 2.3 mm) of a patient with multiple sclerosis, from the MSLesSeg test set.",
+    "expectedResult": "A lesion mask over periventricular and deep white matter lesions, a probability map and a lesion table.",
+    "files": [
+      {
+        "role": "image",
+        "name": "MSLesSeg_P57_T1_FLAIR.nii.gz",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/d16b3a04f7b7799420bbcd4ab3c7890b11d7f700/white-matter-lesions/examples/MSLesSeg_P57_T1_FLAIR.nii.gz"
+      }
+    ]
+  }
+]

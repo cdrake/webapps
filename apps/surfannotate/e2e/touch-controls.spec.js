@@ -9,7 +9,6 @@ test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
 test('populated ROI list keeps touch actions reachable in both themes', async ({ page }, testInfo) => {
   await page.goto('./');
   await page.addStyleTag({ path: theme });
-  await page.locator('#enterAppButton').click();
   await page.setInputFiles('#surfaceInput', surface);
   await expect(page.locator('#statusText')).toContainText('1,681 vertices');
   await page.locator('#roiPanel > summary').click();

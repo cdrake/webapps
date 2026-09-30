@@ -8,6 +8,7 @@ import { mountImagingWorkspace } from '@neurodesk/webapp-components/core/mount-i
 import { createElement } from '@neurodesk/webapp-components/core';
 import { downloadArrayBuffer, downloadFile } from '@neurodesk/webapp-components/file-io';
 import {
+  bindInfoTooltips,
   createResultList,
   bindFileDrop,
   createInfoDialog,
@@ -29,6 +30,7 @@ mountImagingWorkspace({
 });
 const log = createConsole({ id: 'technicalLog' });
 $('viewer').append(log);
+bindInfoTooltips(document);
 const info = createInfoDialog({ id: 'infoDialog' });
 $('aboutBtn').onclick = () => info.open('About TopoFit', $('aboutContent'));
 $('privacyBtn').onclick = () => info.open('Privacy', $('privacyContent'));
@@ -583,6 +585,7 @@ $('patchRegion').onchange = () => { $('patchRoiField').hidden = $('patchRegion')
 async function run(analysisOnly = false) {
   if (!source || busy || viewerBusy || (analysisOnly && !reconstruction)) return;
   if (analysisOnly && !$('estimateNormals').checked && !$('findPatches').checked) {
+    $('surfaceAnalysisSettings').open = true;
     status('Choose normals, flat patches, or both.', true);
     return;
   }
@@ -606,6 +609,7 @@ async function run(analysisOnly = false) {
       roiBuffer = await images[0].arrayBuffer();
     } catch (error) {
       if (preparation !== currentPreparation) return;
+      $('surfaceAnalysisSettings').open = true;
       $('patchQuality').open = true;
       status(error.message, true);
       setBusy(false);

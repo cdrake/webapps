@@ -56,7 +56,13 @@ class MuscleMapApp {
       },
       mirror: (text) => console.log(text),
     });
-    this.progress = new ProgressManager(Config.PROGRESS_CONFIG);
+    this.progress = new ProgressManager({
+      ...Config.PROGRESS_CONFIG,
+      progressBarId: 'progress',
+      statusTextId: 'statusText',
+      elapsedId: 'elapsed',
+      cancelId: 'cancelButton'
+    });
     this.muscleLegend = new MuscleLegend('muscleLegend');
     this.metricsSummary = new MuscleMapMetricsPanel('metricsSummary');
 
@@ -95,8 +101,6 @@ class MuscleMapApp {
     // Version display
     const versionEl = document.getElementById('appVersion');
     if (versionEl) versionEl.textContent = `v${Config.VERSION}`;
-    const footerVersionEl = document.getElementById('footerVersion');
-    if (footerVersionEl) footerVersionEl.textContent = `v${Config.VERSION}`;
     const aboutVersionEl = document.getElementById('aboutAppVersion');
     if (aboutVersionEl) aboutVersionEl.textContent = `v${Config.VERSION}`;
     const modelSelect = document.getElementById('modelSelect');
@@ -184,7 +188,6 @@ class MuscleMapApp {
     this.setupEventListeners();
     await this.setupExamples();
     this.setupInfoTooltips();
-    this.setupStartPage();
 
     // Start ONNX initialization in background
     this.inferenceExecutor.initialize();
@@ -476,27 +479,6 @@ class MuscleMapApp {
     if (closePrivacy) closePrivacy.addEventListener('click', () => this.privacyModal.close());
   }
 
-  setupStartPage() {
-    const startPage = document.getElementById('startPage');
-    const enterButton = document.getElementById('enterAppButton');
-    if (!startPage || !enterButton) return;
-
-    enterButton.addEventListener('click', () => {
-      startPage.classList.add('hidden');
-      document.getElementById('fileInput')?.focus();
-    });
-    enterButton.disabled = false;
-
-    const startPrivacyButton = document.getElementById('startPrivacyButton');
-    if (startPrivacyButton) startPrivacyButton.addEventListener('click', () => this.privacyModal.open());
-
-    const inlinePrivacyButton = document.getElementById('startPrivacyInlineButton');
-    if (inlinePrivacyButton) inlinePrivacyButton.addEventListener('click', () => this.privacyModal.open());
-
-    const startCitationsButton = document.getElementById('startCitationsButton');
-    if (startCitationsButton) startCitationsButton.addEventListener('click', () => this.citationsModal.open());
-  }
-
   setupDropZone() {
     const zone = document.getElementById('fileDropZone');
     if (!zone) return;
@@ -751,11 +733,10 @@ class MuscleMapApp {
     return Config.MODELS.find(model => model.labelSpaceId === selectedLabelSpaceId) || Config.MODELS[0];
   }
 
-  setWorkerButtonsBusy(busy) {
+  setWorkerButtonsBusy(busy, statusLabel = 'Processing...') {
     const runBtn = document.getElementById('runSegmentation');
     const consolidateBtn = document.getElementById('consolidateSegmentations');
     const calculateMetricsBtn = document.getElementById('calculateMetrics');
-    const cancelBtn = document.getElementById('cancelButton');
     const consolidationSourceCount = this.getAvailableSegmentationSources()
       .filter(source => source.type !== 'consolidated')
       .length;
@@ -763,7 +744,17 @@ class MuscleMapApp {
     if (runBtn) runBtn.disabled = busy || this.fileIOController.getSegmentEntries().length === 0;
     if (consolidateBtn) consolidateBtn.disabled = busy || consolidationSourceCount <= 1;
     if (calculateMetricsBtn) calculateMetricsBtn.disabled = busy || !this.getSelectedMetricsSegmentationSource();
-    if (cancelBtn) cancelBtn.disabled = !busy;
+    if (busy) {
+      this.setStatusError(false);
+      this.progress.begin(statusLabel);
+    } else {
+      this.progress.stopTimer();
+      this.progress.setCancellable(false);
+    }
+  }
+
+  setStatusError(isError) {
+    document.getElementById('statusText')?.classList.toggle('error', Boolean(isError));
   }
 
   async cloneResultFile(file, name) {
@@ -899,9 +890,7 @@ class MuscleMapApp {
       this.syncPostprocessingControls();
       const firstResult = this.segmentationResults[0];
       if (firstResult) await this.showSegmentationSource(firstResult.id);
-      this.setProgress(1, 'Complete');
-      const statusText = document.getElementById('statusText');
-      if (statusText) statusText.textContent = 'Ready';
+      this.progress.end('Complete');
     } catch (error) {
       this._suppressIntermediateResults = false;
       this._activeWorkerTask = null;
@@ -1166,6 +1155,7 @@ class MuscleMapApp {
       this._suppressIntermediateResults = false;
       this._activeWorkerTask = null;
       this.updateOutput('Consolidated segmentation ready for inspection and metrics.');
+      this.progress.end('Consolidated');
       this.refreshResultsPanel();
       this.syncPostprocessingControls();
       await this.showSegmentationSource(consolidated.id);
@@ -1309,9 +1299,9 @@ class MuscleMapApp {
     this._suppressIntermediateResults = false;
     this._activeWorkerTask = null;
     const runBtn = document.getElementById('runSegmentation');
-    const cancelBtn = document.getElementById('cancelButton');
     if (runBtn) runBtn.disabled = this.fileIOController.getSegmentEntries().length === 0;
-    if (cancelBtn) cancelBtn.disabled = true;
+    this.setStatusError(false);
+    this.progress.reset('Cancelled');
     this.syncPostprocessingControls();
   }
 
@@ -1588,11 +1578,8 @@ class MuscleMapApp {
     if (this._suppressIntermediateResults) return;
 
     const runBtn = document.getElementById('runSegmentation');
-    const cancelBtn = document.getElementById('cancelButton');
-    const statusText = document.getElementById('statusText');
     if (runBtn) runBtn.disabled = this.fileIOController.getSegmentEntries().length === 0;
-    if (cancelBtn) cancelBtn.disabled = true;
-    if (statusText) statusText.textContent = 'Ready';
+    this.progress.end('Complete');
 
     if (this._activeWorkerTask === 'metrics') {
       this.syncPostprocessingControls();
@@ -1619,11 +1606,10 @@ class MuscleMapApp {
 
   onInferenceError(msg) {
     const runBtn = document.getElementById('runSegmentation');
-    const cancelBtn = document.getElementById('cancelButton');
-    const statusText = document.getElementById('statusText');
     if (runBtn) runBtn.disabled = this.fileIOController.getSegmentEntries().length === 0;
-    if (cancelBtn) cancelBtn.disabled = true;
-    if (statusText) statusText.textContent = 'Error';
+    if (msg === 'Cancelled') return;
+    this.setStatusError(true);
+    this.progress.end(msg ? `Error: ${msg}` : 'Error', { success: false });
   }
 
   disableAllResultTabs() {
@@ -1680,13 +1666,8 @@ class MuscleMapApp {
   }
 
   setProgress(value, text) {
-    this.progress.setProgress(value);
-    const statusText = document.getElementById('statusText');
-    if (statusText) {
-      if (value >= 1) statusText.textContent = 'Complete';
-      else if (text) statusText.textContent = text;
-      else if (value > 0) statusText.textContent = 'Processing...';
-    }
+    const label = value >= 1 ? 'Complete' : text || (value > 0 ? 'Processing...' : null);
+    this.progress.setProgress(value, label);
   }
 
   clearFiles() {

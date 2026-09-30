@@ -18,6 +18,7 @@ export function bindInfoTooltips(root = globalThis.document) {
     const tooltip = icon.querySelector('.nd-info-tooltip');
     if (!tooltip) continue;
     bound.add(icon);
+    keepControlName(icon);
     const win = icon.ownerDocument.defaultView;
     if (!icon.hasAttribute('tabindex')) icon.tabIndex = 0;
     tooltip.setAttribute('role', 'tooltip');
@@ -40,6 +41,22 @@ export function bindInfoTooltips(root = globalThis.document) {
     icon.addEventListener('blur', hide);
     icon.addEventListener('keydown', (event) => { if (event.key === 'Escape') hide(); });
   }
+}
+
+// An icon inside a <label> would otherwise join the control's accessible
+// name ("Zoom level About zoom levels"). Name the control from the label's
+// own text instead, unless the app already named it.
+function keepControlName(icon) {
+  const label = icon.closest('label');
+  const control = label?.control;
+  if (!control || control.hasAttribute('aria-label') || control.hasAttribute('aria-labelledby')) return;
+  const text = [...label.childNodes]
+    .filter((node) => node !== icon && !(node.contains && node.contains(icon)) && node !== control)
+    .map((node) => node.textContent)
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (text) control.setAttribute('aria-label', text);
 }
 
 export function renderInfoIcon(text, config = {}, doc = globalThis.document) {

@@ -1,31 +1,61 @@
-import './style.css'
 import '@neurodesk/webapp-components/styles/imaging-workspace.css'
 import { mountImagingWorkspace } from '@neurodesk/webapp-components/core/mount-imaging-workspace'
-import { bindFileDrop, createExampleSelector } from '@neurodesk/webapp-components/ui'
+import { bindFileDrop, createConsole, createExampleSelector, createInfoDialog, createViewerToolbar } from '@neurodesk/webapp-components/ui'
 import { readImageFiles } from '@neurodesk/runtime-support/dcm2niix-client'
 import { Niivue, SLICE_TYPE, SHOW_RENDER, MULTIPLANAR_TYPE } from '@niivue/niivue'
 import { Niimath } from "@niivue/niimath"
 
 import examples from './examples.json'
 
+const $ = (id) => document.getElementById(id)
+
 mountImagingWorkspace({
-  controls: 'body > header',
-  viewer: 'body > main',
-  status: 'body > footer',
+  controls: '#controls',
+  viewer: '#viewer',
+  status: '#status',
   title: 'NiiMath',
   subtitle: 'Interactive browser-native neuroimaging maths',
   mark: 'N',
+  controlsContract: { about: '#aboutBtn', privacy: '#privacyBtn' },
 })
 
+// About and Privacy open one shared dialog from the app bar.
+const info = createInfoDialog()
+$('aboutBtn').onclick = () => info.open('About NiiMath', $('aboutContent'))
+$('privacyBtn').onclick = () => info.open('Privacy', $('privacyContent'))
+
+// Technical log below the canvas: collapsed until an error opens it.
+const log = createConsole({ id: 'technicalLog' })
+$('viewer').append(log)
+
 // create niivue instance but don't setup the scene just yet
-const nv = new Niivue({
-  logLevel: 'debug'
-});
+const nv = new Niivue({ loadingText: "" });
+
+// Layout tabs above the canvas, as in every other imaging app.
+const layouts = {
+  multiplanar: SLICE_TYPE.MULTIPLANAR,
+  axial: SLICE_TYPE.AXIAL,
+  coronal: SLICE_TYPE.CORONAL,
+  sagittal: SLICE_TYPE.SAGITTAL,
+  render: SLICE_TYPE.RENDER,
+}
+const toolbar = createViewerToolbar({
+  window: false, overlay: false, colormap: false, download: false, screenshot: false,
+  views: [
+    { id: 'multiplanar', label: '3-Plane', active: true },
+    { id: 'axial', label: 'Axial' },
+    { id: 'coronal', label: 'Coronal' },
+    { id: 'sagittal', label: 'Sagittal' },
+    { id: 'render', label: '3D' },
+  ].map((view) => ({ ...view, onClick: () => {
+    nv.setSliceType(layouts[view.id])
+    toolbar.setActive(view.id)
+  } })),
+})
+$('viewer').prepend(toolbar)
 
 // create niimath instance (will be initialized later)
 const niimath = new Niimath();
-console.log(niimath);
-
 
 // store a reference to an unedited image for
 // use when the user wants to change the command from the dropdown
@@ -33,16 +63,54 @@ let uneditedImage;
 let imageBusy = false;
 let imageProcessingReady = false;
 
+// ---------------------------------------------------------------------------
+// Status footer: one line of text, elapsed time and the shared progress bar.
+// niimath runs in a worker that cannot be interrupted, so the cancel × stays hidden.
+function status(message, error = false) {
+  $('statusText').textContent = message
+  $('statusText').classList.toggle('error', error)
+  log.log(message, error ? 'error' : 'info')
+}
+
+function formatElapsed(ms) {
+  const seconds = Math.floor(ms / 1000)
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
+}
+
+let workStart = 0
+let elapsedTimer = null
+function beginWork(message) {
+  workStart = performance.now()
+  $('elapsed').textContent = '0:00'
+  clearInterval(elapsedTimer)
+  elapsedTimer = setInterval(() => { $('elapsed').textContent = formatElapsed(performance.now() - workStart) }, 1000)
+  $('progress').removeAttribute('value') // indeterminate while running
+  status(message)
+}
+
+function endWork(message, error = false) {
+  clearInterval(elapsedTimer)
+  elapsedTimer = null
+  const seconds = ((performance.now() - workStart) / 1000).toFixed(1)
+  $('elapsed').textContent = formatElapsed(performance.now() - workStart)
+  $('progress').value = error ? 0 : 1
+  status(error ? message : `${message} · ${seconds} s`, error)
+}
+
+function errorMessage(error) {
+  return error instanceof Error ? error.message : String(error)
+}
+
 function updateImageControls() {
   const disabled = imageBusy || !imageProcessingReady;
-  for (const control of document.querySelectorAll('#niftiInput, #dicomInput, #dicomPick, #moreCommands')) {
+  for (const control of document.querySelectorAll('#niftiInput, #dicomPick')) {
     control.disabled = disabled;
   }
   exampleControl.setDisabled(disabled);
-  document.getElementById("moreCommands").disabled = disabled || !uneditedImage;
-  document.getElementById("processButton").disabled = disabled || !uneditedImage;
-  document.getElementById("saveButton").disabled = disabled || !uneditedImage;
-  document.getElementById("resetButton").disabled = disabled || !uneditedImage;
+  $("moreCommands").disabled = disabled || !uneditedImage;
+  $("processButton").disabled = disabled || !uneditedImage;
+  $("saveButton").disabled = disabled || !uneditedImage;
+  $("resetButton").disabled = disabled || !uneditedImage;
 }
 
 async function runImageTask(task) {
@@ -58,27 +126,24 @@ async function runImageTask(task) {
 }
 
 async function processImage(isOverlay) {
-  loadingCircle.classList.remove('hidden')
+  const cmd = $('command').value.trim();
+  beginWork(`Running niimath ${cmd} …`)
   try {
     const imageIndex = 0;
     const niiBuffer = await nv.saveImage({ volumeByIndex: imageIndex })
     const niiFile = new File([niiBuffer], 'image.nii')
-    const input = document.getElementById('command');
-    const cmd = input.value;
     const imageProcessor = niimath.image(niiFile)
     // check if "mesh" is in the command, and set isMesh
     const isMesh = cmd.includes('mesh')
     // check if "bitmap" is in the command, and set isBitmap
     const isBitmap = cmd.includes('bitmap')
     // create array of commands by separating on spaces
-    // trim any leading or trailing whitespace
-    const commands = cmd.split(' ').map((c) => c.trim())
+    const commands = cmd.split(/\s+/).filter(Boolean)
     imageProcessor.commands = [...commands]
     const outName = isMesh ? 'mesh.mz3' : isBitmap ? 'bitmap.png' : 'image.nii.gz'
-    console.log('ismesh', isMesh);
-    console.log(imageProcessor);
+    log.log(`niimath ${commands.join(' ')} → ${outName}`, 'info')
     const processedBlob = await imageProcessor.run(outName)
-    console.log(processedBlob);
+    log.log(`niimath produced ${outName} (${processedBlob.size} bytes)`, 'info')
 
     const arrayBuffer = await processedBlob.arrayBuffer()
     if (!isOverlay) {
@@ -90,7 +155,6 @@ async function processImage(isOverlay) {
       await nv.loadVolumes([{ url: arrayBuffer, name: outName }])
     } else {
       // For meshes and nifti files, use loadFromArrayBuffer
-      console.log('arrayBuffer', arrayBuffer);
       await nv.loadFromArrayBuffer(arrayBuffer, outName)
     }
 
@@ -98,24 +162,22 @@ async function processImage(isOverlay) {
     if (isOverlay) {
       setOverlayColor();
     }
-    loadingCircle.classList.add('hidden')
-    document.getElementById('outputSection').open = true;
+    $('outputSection').open = true;
+    endWork(`${outName} ready${isOverlay ? ' as overlay' : ''}`)
   } catch (error) {
-    loadingCircle.classList.add('hidden')
-    console.error(error)
+    endWork(`niimath failed: ${errorMessage(error)}`, true)
   }
 }
 
 // respond to our button press
 function buttonProcessImage() {
-  const isOverlay = overlayCheck.checked;
+  const isOverlay = $('overlayCheck').checked;
   void runImageTask(() => processImage(isOverlay));
 }
 
 // set overlay opacity
 function setOverlayOpacity() {
-  const opacityString = overlayOpacity.value;
-  const opacity = parseFloat(opacityString);
+  const opacity = parseFloat($('overlayOpacity').value);
   if (nv.volumes.length > 1) {
     nv.setOpacity(1, opacity);
   }
@@ -123,7 +185,7 @@ function setOverlayOpacity() {
 
 // set overlay color
 function setOverlayColor() {
-  const overlayColor = document.getElementById('overlayColor');
+  const overlayColor = $('overlayColor');
   // get the text value of the selected option
   const colormap = overlayColor.options[overlayColor.selectedIndex].text;
   if (nv.volumes.length > 1) {
@@ -136,36 +198,32 @@ function setOverlayColor() {
   }
 }
 
-// on reset button click
-function reset() {
-  // reload the page
-  location.reload();
+// remove every processed result (meshes, overlays, bitmaps) and show the unedited image again
+function restoreOriginal() {
+  for (const mesh of [...nv.meshes]) nv.removeMesh(mesh)
+  for (const volume of [...nv.volumes]) nv.removeVolume(volume)
+  nv.addVolume(uneditedImage)
 }
 
-// when overlay checkbox is checked hide or show the opacity slider and the color dropdown
+// on reset button click
+function reset() {
+  if (!uneditedImage) return
+  restoreOriginal()
+  $('outputSection').open = false
+  $('progress').value = 0
+  $('elapsed').textContent = ''
+  status('Original image restored')
+}
+
+// when overlay checkbox is checked hide or show the overlay appearance settings
 function overlayChecked() {
-  const overlayOpacity = document.getElementById('overlayOpacity');
-  const overlayColor = document.getElementById('overlayColor');
-  // get the labels too
-  const overlayOpacityLabel = document.getElementById('overlayOpacityLabel');
-  const overlayColorLabel = document.getElementById('overlayColorLabel');
-  if (overlayCheck.checked) {
-    overlayOpacity.style.display = 'inline';
-    overlayColor.style.display = 'inline';
-    overlayOpacityLabel.style.display = 'inline';
-    overlayColorLabel.style.display = 'inline';
-  } else {
-    overlayOpacity.style.display = 'none';
-    overlayColor.style.display = 'none';
-    overlayOpacityLabel.style.display = 'none';
-    overlayColorLabel.style.display = 'none';
-  }
+  $('overlaySettings').hidden = !$('overlayCheck').checked
 }
 
 // populate overlay color dropdown
 function populateOverlayColors() {
   const colormaps = nv.colormaps()
-  const overlayColor = document.getElementById('overlayColor')
+  const overlayColor = $('overlayColor')
   for (let i = 0; i < colormaps.length; i++) {
     let option = document.createElement("option");
     option.text = colormaps[i];
@@ -178,7 +236,7 @@ function populateOverlayColors() {
 
 // populate moreCommands dropdown with some niimath command strings for users to try
 function populateMoreCommands() {
-  const moreCommands = document.getElementById('moreCommands');
+  const moreCommands = $('moreCommands');
   const commands = [
     '-dehaze -5 -dog 2 3.2',
     '-dehaze -5',
@@ -204,32 +262,10 @@ function populateMoreCommands() {
 
 // when the user selects a command from the moreCommands dropdown
 function moreCommandsSelected() {
-  const moreCommands = document.getElementById('moreCommands');
-  const command = moreCommands.options[moreCommands.selectedIndex].text;
-  const input = document.getElementById('command');
-  input.value = command;
-
-  // if a mesh is there, remove it
-  if (nv.meshes.length > 0) {
-    // loop through all meshes and remove them
-    for (let i = 0; i < nv.meshes.length; i++) {
-      nv.removeMesh(nv.meshes[i]);
-    }
-  }
-
-  // if an overlay is there, remove it
-  if (nv.volumes.length > 1) {
-    // loop over all volumes from 1 to the end
-    for (let i = 1; i < nv.volumes.length; i++) {
-      nv.removeVolume(nv.volumes[i]);
-    }
-  } else {
-    // restore the unedited image
-    nv.removeVolume(nv.volumes[0]);
-    nv.addVolume(uneditedImage);
-  }
-
-  // then click the process button
+  const moreCommands = $('moreCommands');
+  $('command').value = moreCommands.options[moreCommands.selectedIndex].text;
+  // start again from the unedited image, then process
+  restoreOriginal()
   buttonProcessImage();
 }
 
@@ -242,13 +278,33 @@ async function loadFile(file, signal) {
   signal?.throwIfAborted()
   uneditedImage = nv.volumes[0]
   nv.updateGLVolume()
+  $('emptyState').hidden = true
+  $('fileInfo').hidden = false
+  $('fileInfo').textContent = file.name
+  $('inputDropZone').classList.add('has-files')
+  $('outputSection').open = false
+}
+
+async function loadImage(file, signal, description = file.name) {
+  beginWork(`Loading ${description} …`)
+  try {
+    await loadFile(file, signal)
+    endWork(`${file.name} loaded (${nv.volumes[0].dims.slice(1, 4).join(' × ')})`)
+  } catch (error) {
+    endWork(signal?.aborted ? 'Loading cancelled' : `Could not load ${file.name}: ${errorMessage(error)}`, true)
+    throw error
+  }
 }
 
 async function loadDicomFiles(files) {
-  loadingCircle.classList.remove('hidden')
+  const needsConversion = files.some((file) => !/\.nii(\.gz)?$/i.test(file.name))
+  beginWork(needsConversion
+    ? `Converting ${files.length} DICOM file${files.length === 1 ? '' : 's'} with dcm2niix …`
+    : `Loading ${files.length} file${files.length === 1 ? '' : 's'} …`)
   try {
     const converted = await readImageFiles(files)
     if (converted.length === 0) throw new Error('No NIfTI image was found in this folder.')
+    const dicomPick = $('dicomPick')
     dicomPick.replaceChildren()
     for (const [index, file] of converted.entries()) {
       const option = document.createElement('option')
@@ -256,28 +312,33 @@ async function loadDicomFiles(files) {
       option.textContent = file.name
       dicomPick.append(option)
     }
-    dicomPick.classList.toggle('hidden', converted.length < 2)
+    $('dicomPickField').hidden = converted.length < 2
+    if (needsConversion) log.log(`dcm2niix produced ${converted.length} image${converted.length === 1 ? '' : 's'}: ${converted.map((file) => file.name).join(', ')}`, 'info')
     await loadFile(converted[0])
-    dicomPick.onchange = () => void runImageTask(() => loadFile(converted[Number(dicomPick.value)]))
+    endWork(`${converted[0].name} loaded (${nv.volumes[0].dims.slice(1, 4).join(' × ')})`)
+    dicomPick.onchange = () => void runImageTask(() => loadImage(converted[Number(dicomPick.value)]).catch(() => {}))
   } catch (error) {
-    console.error(error)
-    window.alert(error instanceof Error ? error.message : String(error))
-  } finally {
-    loadingCircle.classList.add('hidden')
+    endWork(`Could not load image: ${errorMessage(error)}`, true)
   }
 }
 
 
 const exampleControl = createExampleSelector({
   examples,
-  onLoad: async (_example, { fetchFiles, signal, assertCurrent }) => {
+  onLoad: async (example, { fetchFiles, signal, assertCurrent }) => {
+    beginWork(`Downloading ${example.label} …`)
     const [file] = await fetchFiles()
     assertCurrent()
     if (imageBusy || !imageProcessingReady) throw new Error("Wait for the current image operation to finish.")
-    await runImageTask(() => loadFile(file, signal))
+    await runImageTask(() => loadImage(file, signal, 'example'))
   },
 })
-document.getElementById('exampleControl').append(exampleControl)
+$('exampleControl').append(exampleControl)
+exampleControl.addEventListener('nd-example-status', (event) => {
+  const { state, message } = event.detail
+  if (state === 'error') endWork(message, true)
+  if (state === 'cancelled') endWork(message)
+})
 exampleControl.setDisabled(true)
 
 async function main() {
@@ -288,65 +349,55 @@ async function main() {
   // populate moreCommands dropdown
   populateMoreCommands();
 
-  // set overlay opacity
-  overlayOpacity.oninput = setOverlayOpacity;
-
-  // set overlay color
-  overlayColor.onchange = setOverlayColor;
-
-  // when overlay checkbox is checked
-  overlayCheck.onchange = overlayChecked;
-
-  // on reset button click
-  resetButton.onclick = reset;
-
-  // when the user selects a command from the moreCommands dropdown
-  moreCommands.onchange = moreCommandsSelected;
+  $('overlayOpacity').oninput = setOverlayOpacity;
+  $('overlayColor').onchange = setOverlayColor;
+  $('overlayCheck').onchange = overlayChecked;
+  $('resetButton').onclick = reset;
+  $('moreCommands').onchange = moreCommandsSelected;
 
   // enable our button after our WASM has been initialize
   function initializeImageProcessing() {
-    // await initWasm();
-    let button = document.getElementById('processButton');
     imageProcessingReady = true;
     updateImageControls();
-    button.onclick = buttonProcessImage;
+    $('processButton').onclick = buttonProcessImage;
   }
-  saveButton.onclick = function () {
-    if (nv.volumes.length < 2)
-      nv.saveImage({ filename: "niimath.nii.gz", isSaveDrawing: false, volumeByIndex: 0 });
-    else
-      nv.saveImage({ filename: "niimath.nii.gz", isSaveDrawing: false, volumeByIndex: 1 });
+  $('saveButton').onclick = function () {
+    const volumeByIndex = nv.volumes.length < 2 ? 0 : 1
+    nv.saveImage({ filename: "niimath.nii.gz", isSaveDrawing: false, volumeByIndex });
+    status('niimath.nii.gz saved')
   }
+  const niftiInput = $('niftiInput')
   niftiInput.onchange = async function () {
     const files = Array.from(niftiInput.files ?? [])
     if (files.length) await runImageTask(() => loadDicomFiles(files))
     niftiInput.value = ''
   }
-  dicomInput.onchange = async function () {
-    const files = Array.from(dicomInput.files ?? [])
-    if (files.length > 0) await runImageTask(() => loadDicomFiles(files))
-    dicomInput.value = ''
-  }
-  bindFileDrop(document.getElementById('inputDropZone'), (pending) => runImageTask(async () => {
+  bindFileDrop($('inputDropZone'), (pending) => runImageTask(async () => {
     const files = await pending
     if (files.length) await loadDicomFiles(files)
   }))
-  helpButton.onclick = function () {
+  $('helpButton').onclick = function () {
     // open link in new tab
     const link = "https://github.com/rordenlab/niimath/blob/9f3a301be72c331b90ef5baecb7a0232e9b47ba4/src/niimath.c#L259"
     window.open(link, '_blank');
   }
 
   updateImageControls();
-  let canvas = document.getElementById('gl');
   nv.setInterpolation(true);
-  nv.attachToCanvas(canvas);
+  nv.attachToCanvas($('gl'));
   nv.setSliceType(SLICE_TYPE.MULTIPLANAR)
   nv.setMultiplanarLayout(MULTIPLANAR_TYPE.GRID)
   nv.opts.multiplanarShowRender = SHOW_RENDER.ALWAYS
   // initialize niimath (loads wasm and sets up worker)
-  await niimath.init();
-  console.log(niimath);
+  status('Loading niimath WebAssembly …')
+  try {
+    await niimath.init();
+  } catch (error) {
+    status(`niimath failed to initialise: ${errorMessage(error)}`, true)
+    return
+  }
+  log.log('niimath worker ready', 'info')
+  status('Ready · choose an example or open an image')
 
   // enable our button after our WASM has been setup
   initializeImageProcessing();

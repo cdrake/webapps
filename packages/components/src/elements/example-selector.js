@@ -1,4 +1,5 @@
 import { defineElement, upgradeProperties } from './define.js';
+import { bindInfoTooltips, renderInfoIcon } from '../ui/bindInfoTooltips.js';
 
 let nextId = 0;
 
@@ -11,6 +12,7 @@ export function defineExampleSelector(view = globalThis.window) {
     #boundScope;
     #select;
     #message;
+    #info;
     #cancelButton;
     #active = null;
 
@@ -86,7 +88,18 @@ export function defineExampleSelector(view = globalThis.window) {
       this.#select.id = `nd-example-${++nextId}`;
       this.#select.dataset.neurodeskExample = '';
       label.htmlFor = this.#select.id;
-      label.textContent = 'Example';
+      // Name the select from this span alone so the info icon below never
+      // becomes part of its accessible name ("Example", not "Example About…").
+      const name = doc.createElement('span');
+      name.id = `${this.#select.id}-label`;
+      name.textContent = 'Example';
+      label.append(name);
+      this.#select.setAttribute('aria-labelledby', name.id);
+      // The loaded example's description and expected result live in a
+      // tooltip beside the label; the visible hint stays one short line.
+      this.#info = renderInfoIcon('', { label: 'About this example' }, doc);
+      this.#info.hidden = true;
+      label.append(' ', this.#info);
       this.#message = doc.createElement('p');
       this.#message.className = 'nd-hint';
       this.#message.id = `${this.#select.id}-status`;
@@ -98,6 +111,7 @@ export function defineExampleSelector(view = globalThis.window) {
       this.#cancelButton.className = 'nd-btn nd-btn-secondary nd-btn-sm';
       this.#cancelButton.textContent = 'Cancel example download';
       this.append(label, this.#select, this.#message, this.#cancelButton);
+      bindInfoTooltips(this);
       this.#renderOptions();
       this.#select.addEventListener('change', () => this.#load());
       this.#cancelButton.addEventListener('click', () => this.cancel());
@@ -137,17 +151,25 @@ export function defineExampleSelector(view = globalThis.window) {
         delete this.dataset.exampleId;
         this.dataset.exampleState = 'idle';
         this.#message.textContent = '';
+        this.#describe(null);
       }
     };
 
-    #status(state, text, error = false) {
+    #describe(example) {
+      if (!this.#info) return;
+      const text = example ? [example.description, example.expectedResult].filter(Boolean).join(' ') : '';
+      this.#info.querySelector('.nd-info-tooltip').textContent = text;
+      this.#info.hidden = !text;
+    }
+
+    #status(state, text, error = false, extra = {}) {
       this.dataset.exampleState = state;
       this.#message.textContent = text;
       this.#onStatus?.(text, error);
       this.dispatchEvent(new view.CustomEvent('nd-example-status', {
         bubbles: true,
         composed: true,
-        detail: { state, message: text, error },
+        detail: { state, message: text, error, ...extra },
       }));
     }
 
@@ -209,7 +231,8 @@ export function defineExampleSelector(view = globalThis.window) {
         });
         assertCurrent();
         this.dataset.exampleId = example.id;
-        this.#status('ready', `${example.description} ${example.expectedResult}`);
+        this.#describe(example);
+        this.#status('ready', `${example.label} loaded.`, false, { description: example.description, expectedResult: example.expectedResult });
       } catch (error) {
         if (this.#active === controller && !controller.signal.aborted) {
           controller.abort();

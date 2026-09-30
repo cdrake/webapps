@@ -7,6 +7,7 @@ import { filesToFileList } from '../utils/workspaceHelpers';
 import { FileHandleManager, ManagedFileHandle } from '../utils/fileHandleManager';
 import { readFileHandle } from '../utils/fileSystemAccessUtils';
 import { dicomFileCache } from '../utils/dicomFileCache';
+import { log } from '../utils/technicalLog';
 
 // Batch config - based on Pyodide's buffer size limits (~2GB safe limit)
 const BATCH_SIZE_BYTES = 1 * 1024 * 1024 * 1024; // 1GB per batch - safe margin under Pyodide's ~2GB limit
@@ -208,6 +209,7 @@ export function useFileProcessing(): UseFileProcessingReturn {
       const gradientFiles = fileArray.filter(f => getGradientFileType(f.name) !== null);
       const protocolFiles = fileArray.filter(f => getGradientFileType(f.name) === null && getProtocolFileType(f.name) !== null);
       const dicomFiles = fileArray.filter(f => getGradientFileType(f.name) === null && getProtocolFileType(f.name) === null);
+      log(`Processing ${fileArray.length} file(s): ${dicomFiles.length} DICOM, ${protocolFiles.length} protocol, ${gradientFiles.length} gradient.`);
 
       const acquisitions: Acquisition[] = [];
       let dicomFileBatchId: string | undefined;
@@ -238,6 +240,7 @@ export function useFileProcessing(): UseFileProcessingReturn {
             console.warn(`[useFileProcessing] Skipping unrecognised protocol file: ${file.name}`);
             continue;
           }
+          log(`Reading ${fileType} protocol ${file.name}`);
 
           let result: Acquisition[] = [];
           if (fileType === 'pro') {
@@ -272,6 +275,7 @@ export function useFileProcessing(): UseFileProcessingReturn {
           }
         );
 
+        log(`Read ${fileObjects.length} DICOM file(s); analysing acquisitions…`);
         const result = await dicompareAPI.analyzeFilesForUI(fileObjects, (progress) => {
           setProcessingProgress({
             currentFile: progress.currentFile,
@@ -292,11 +296,13 @@ export function useFileProcessing(): UseFileProcessingReturn {
           currentOperation: 'Deriving diffusion gradient descriptors...',
           percentage: 95
         }));
+        log('Deriving diffusion gradient descriptors…');
         await bindGradientFiles(acquisitions, gradientFiles);
       } else if (gradientFiles.length > 0) {
         console.warn('[useFileProcessing] Gradient file(s) dropped without a protocol/DICOM acquisition to attach to; ignored');
       }
 
+      log(`Found ${acquisitions.length} acquisition(s).`, 'success');
       return { acquisitions, dicomFileBatchId };
     } catch (error) {
       console.error('Failed to process files:', error);
@@ -342,10 +348,12 @@ export function useFileProcessing(): UseFileProcessingReturn {
 
     // Decide if we need batching (only based on size)
     const needsBatching = totalSize > NO_BATCH_THRESHOLD_BYTES;
+    log(`Processing ${totalFiles} DICOM file(s) from a folder (${manager.totalSizeGB.toFixed(2)} GB).`);
 
     if (!needsBatching) {
       // Small dataset - load all at once
       const acquisitions = await processAllFilesAtOnce(handles, totalFiles);
+      if (acquisitions.length) log(`Found ${acquisitions.length} acquisition(s).`, 'success');
       return { acquisitions, dicomFileBatchId };
     }
 
@@ -394,12 +402,12 @@ export function useFileProcessing(): UseFileProcessingReturn {
         allResults.push(batchResult);
         processedFiles += batch.length;
 
-        console.log(`[useFileProcessing] Batch ${batchIndex + 1}/${batches.length} complete: ${batchResult.length} acquisitions`);
+        log(`Batch ${batchIndex + 1}/${batches.length} complete: ${batchResult.length} acquisition(s).`);
       }
 
       // Aggregate results
       const aggregated = dicompareAPI.aggregateAcquisitions(allResults);
-      console.log(`[useFileProcessing] Done: ${aggregated.length} acquisitions from ${batches.length} batches`);
+      log(`Found ${aggregated.length} acquisition(s) in ${batches.length} batches.`, 'success');
 
       return { acquisitions: aggregated, dicomFileBatchId };
     } catch (error) {
@@ -471,7 +479,7 @@ export function useFileProcessing(): UseFileProcessingReturn {
         });
       });
 
-      console.log(`[useFileProcessing] Loaded ${fileObjects.length} files, analyzing...`);
+      log(`Read ${fileObjects.length} DICOM file(s); analysing acquisitions…`);
 
       const result = await dicompareAPI.analyzeFilesForUI(fileObjects, (progress) => {
         setProcessingProgress({

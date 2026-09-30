@@ -19,6 +19,7 @@ import { fetchAndParseSchema } from '../../utils/schemaHelpers';
 import { getItemFlags } from '../../utils/workspaceHelpers';
 import { dicomFileCache } from '../../utils/dicomFileCache';
 import { generatePrintReportHtml, openPrintWindow, isElectron, exportToPdf, PrintSectionOptions } from '../../utils/printReportGenerator';
+import { beginActivity, log, logError } from '../../utils/technicalLog';
 import PrintOptionsModal from '../common/PrintOptionsModal';
 import { useDropZone } from '../../hooks/useDropZone';
 import GradientDropZone from './GradientDropZone';
@@ -253,6 +254,8 @@ const WorkspaceDetailPanel: React.FC<WorkspaceDetailPanelProps> = ({
     if (!selectedItem) return;
 
     setPdfExporting(true);
+    const name = selectedItem.acquisition.protocolName || 'acquisition';
+    const done = beginActivity(`Exporting report for ${name}`);
     try {
       const html = await generatePrintReportHtml({
         selectedItem,
@@ -272,16 +275,23 @@ const WorkspaceDetailPanel: React.FC<WorkspaceDetailPanelProps> = ({
       if (isElectron()) {
         const filename = `${selectedItem.acquisition.protocolName || 'acquisition'}-report.pdf`;
         const result = await exportToPdf(html, filename);
-        if (!result.success && result.message !== 'Export cancelled') {
+        if (result.success) log(`Exported ${filename}.`, 'success');
+        else if (result.message !== 'Export cancelled') {
+          log(result.message || 'Failed to export PDF', 'error');
           alert(result.message || 'Failed to export PDF');
         }
       } else {
         // In browser, open print window
-        if (!openPrintWindow(html)) {
+        if (openPrintWindow(html)) log(`Opened the print report for ${name}.`, 'success');
+        else {
+          log('The print window was blocked; allow popups to print the acquisition.', 'error');
           alert('Please allow popups to print the acquisition.');
         }
       }
+    } catch (error) {
+      logError('Report export failed', error);
     } finally {
+      done();
       setPdfExporting(false);
       setShowPrintOptions(false);
     }

@@ -14,7 +14,7 @@ async function createShareUrl(page) {
   await openTools(page);
   await page.getByRole("button", { name: "Create share link" }).click();
   await expect(page.locator("#shareLink")).toBeVisible();
-  await expect(page.locator("#shareStatus")).toContainText("Share link ready");
+  await expect(page.locator("#technicalLogOutput")).toContainText("Share link ready");
   return page.locator("#shareLink").inputValue();
 }
 
@@ -96,9 +96,41 @@ async function downloadAndVerifyNifti(page, expectedFilename) {
   expect(header.version).toBe(estimate.version);
   expect(header.shape).toEqual(estimate.shape);
   expect(header.voxelOffset).toBe(estimate.version === 1 ? 352 : 544);
-  await expect(page.locator("#niftiProgress")).toBeHidden();
-  await expect(page.locator("#cancelNifti")).toBeDisabled();
+  await expect(page.locator("#cancelButton")).toBeHidden();
   return { estimate, bytes, header };
+}
+
+// Auto contrast sets the window controls synchronously, then redraws behind an
+// unawaited setVolume(). The window min and max already match before that
+// redraw lands, so wait on this counter to know it happened.
+async function windowCommitCount(page) {
+  const commits = await page.locator("#nv-canvas").getAttribute("data-window-commits");
+  return Number(commits ?? 0);
+}
+
+// Canvas capture is not synchronized with NiiVue's redraw, so one sample can
+// catch an unsettled frame. Poll instead: only a canvas that never settles back
+// to `anchor` fails.
+async function expectCanvasUnchanged(locator, anchor) {
+  await expect
+    .poll(async () => (await locator.screenshot()).equals(anchor), { timeout: 10_000 })
+    .toBe(true);
+}
+
+// `data-loading` reaches 0 once uploads finish, but bricks can still be
+// cross-fading in. A reference captured mid-fade never recurs, so wait for two
+// identical consecutive frames before using one.
+async function settledCanvasScreenshot(locator) {
+  let previous = await locator.screenshot();
+  await expect
+    .poll(async () => {
+      const next = await locator.screenshot();
+      const settled = next.equals(previous);
+      previous = next;
+      return settled;
+    }, { timeout: 10_000 })
+    .toBe(true);
+  return previous;
 }
 
 async function clickKnownCanvasPointUntilLocationChanges(
@@ -169,9 +201,10 @@ test("app boots", async ({ page }) => {
   await expect(topBar).toHaveCount(1);
   await expect(topBar.locator(".nd-app-bar__identity")).toContainText("ZARRo");
   await expect(topBar.locator(".nd-app-bar__version")).toHaveText(/^v\d+\.\d+/);
-  for (const name of ["About", "Cite", "Standalone", "Privacy", "More Apps", "GitHub"]) {
-    await expect(topBar.getByRole(["More Apps", "GitHub"].includes(name) ? "link" : "button", { name })).toBeVisible();
+  for (const name of ["About", "Cite", "Standalone", "Privacy", "Support", "More Apps", "GitHub"]) {
+    await expect(topBar.getByRole(["Support", "More Apps", "GitHub"].includes(name) ? "link" : "button", { name })).toBeVisible();
   }
+  await expect(topBar.getByRole("link", { name: "Support" })).toHaveAttribute("href", /github\.com\/neurodesk\/webapps\/issues\/new\?/);
   await expect(topBar.locator("[data-neurodesk-theme-toggle]")).toBeVisible();
   await expect(page.getByText("Export area", { exact: true })).toHaveCount(0);
   await expect(page.locator("#exportMode")).toHaveCount(0);
@@ -180,14 +213,13 @@ test("app boots", async ({ page }) => {
   await expect(page.getByText("Only visible chunks are fetched from the source.")).toHaveCount(0);
   await expect(page.getByText("Volume data stays in this browser tab.")).toHaveCount(0);
   await expect(page.getByText("Chunk spacing", { exact: true })).toHaveCount(0);
-  await expect(page.locator("#status")).toBeHidden();
+  await expect(page.locator("#status")).toBeVisible();
   await expect(page.getByText("Active detail", { exact: true })).toHaveCount(0);
   await expect(page.locator("#niftiLevel")).toBeDisabled();
   await expect(page.locator("#niftiEstimate")).toHaveText(
     "Load a volume to estimate the export.",
   );
-  await expect(page.locator("#niftiProgress")).toBeHidden();
-  await expect(page.locator("#cancelNifti")).toBeDisabled();
+  await expect(page.locator("#cancelButton")).toBeHidden();
 });
 
 test("page is cross-origin isolated (COOP/COEP active)", async ({ page }) => {
@@ -323,17 +355,14 @@ test("large NIfTI export reports progress and can be cancelled", async ({ page }
 
   await openTools(page);
   await page.locator("#downloadNifti").click();
-  await expect(page.locator("#niftiProgress")).toBeVisible();
-  await expect(page.locator("#niftiProgressText")).toContainText(
-    "Fetching tile 1 of",
-  );
-  await expect(page.locator("#cancelNifti")).toBeEnabled();
-  await page.locator("#cancelNifti").click();
-  await expect(page.locator("#downloadStatus")).toHaveText(
+  // Progress is reported per tile; a fast machine may already be past tile 1.
+  await expect(page.locator("#statusText")).toContainText(/Fetching tile \d+ of/);
+  await expect(page.locator("#cancelButton")).toBeVisible();
+  await page.locator("#cancelButton").click();
+  await expect(page.locator("#technicalLogOutput")).toContainText(
     "Download cancelled",
   );
-  await expect(page.locator("#niftiProgress")).toBeHidden();
-  await expect(page.locator("#cancelNifti")).toBeDisabled();
+  await expect(page.locator("#cancelButton")).toBeHidden();
   expect(await page.evaluate(() => window.__niftiWriterAborted)).toBe(true);
   expect(await page.evaluate(() => window.__niftiWriterWrites)).toBe(1);
 });
@@ -500,7 +529,6 @@ test("translated OME-Zarr URLs load as one composite volume", async ({ page }) =
   ]);
   await expect(page.locator("#axialSlice")).toHaveAttribute("min", "0");
   await expect(page.locator("#axialSlice")).toHaveAttribute("max", "15");
-  await expect(page.locator("#axialSliceHelp")).toContainText("current Zarr level");
   await expect(page.locator("#nv-canvas")).toHaveAttribute(
     "data-streaming-screen-layout",
     /^0:/,
@@ -655,7 +683,7 @@ test("translated OME-Zarr URLs load as one composite volume", async ({ page }) =
     "title",
     /Composite of 2 translated stores/,
   );
-  await expect(page.locator("#fallback")).toHaveAttribute("aria-hidden", "true");
+  await expect(page.locator("#statusText")).not.toHaveClass(/error/);
   await expect(page).toHaveURL(/url=.*test-mosaic%2Fleft.*url=.*test-mosaic%2Fright/);
   await expect(page.locator("#downloadNifti")).toBeEnabled();
   await expect.poll(() => leftChunkRequests).toBeGreaterThan(0);
@@ -674,7 +702,7 @@ test("translated OME-Zarr URLs load as one composite volume", async ({ page }) =
     page,
     "left-L0-fov.nii",
   );
-  await expect(page.locator("#downloadStatus")).toHaveText(
+  await expect(page.locator("#technicalLogOutput")).toContainText(
     "Download started: left-L0-fov.nii",
   );
 
@@ -860,8 +888,8 @@ test("translated OME-Zarr URLs load as one composite volume", async ({ page }) =
   await expect(page.locator("#scaleIndicators")).toBeHidden();
   await page.locator("#showScaleBar").check();
   await expect(page.locator("#visibleLevel")).toBeVisible();
-  await expect(page.locator("#tileLoading")).toBeVisible();
-  await expect(page.locator("#tileLoading")).toHaveAttribute("data-loading", /\d+/);
+  await expect(page.locator("#status")).toBeVisible();
+  await expect(page.locator("#status")).toHaveAttribute("data-tiles-loading", /\d+/);
   await expect(page.locator("#nv-canvas")).toHaveAttribute(
     "data-crosshair-width",
     "2",
@@ -910,7 +938,7 @@ test("translated OME-Zarr URLs load as one composite volume", async ({ page }) =
   await expect(page.locator("#activeLevel")).toHaveAttribute("data-requested-level", "1");
   await expect.poll(() => delayedLevelOneChunkRequests).toBeGreaterThan(0);
   await expect.poll(async () => Number(
-    await page.locator("#tileLoading").getAttribute("data-loading"),
+    await page.locator("#status").getAttribute("data-tiles-loading"),
   )).toBeGreaterThan(0);
 
   // Start a newer LOD request while L1 chunks are still delayed. The latest
@@ -973,8 +1001,8 @@ test("translated OME-Zarr URLs load as one composite volume", async ({ page }) =
     "data-niivue-volume-opacities",
     "1,0",
   );
-  await expect(page.locator("#tileLoading")).toHaveAttribute(
-    "data-loading",
+  await expect(page.locator("#status")).toHaveAttribute(
+    "data-tiles-loading",
     "0",
     { timeout: 30_000 },
   );
@@ -990,12 +1018,14 @@ test("translated OME-Zarr URLs load as one composite volume", async ({ page }) =
   await expect(page.getByLabel(/Window width/)).toHaveValue("610");
   await expect(page.locator("#nv-canvas")).toHaveAttribute("data-window-min", "0");
   await expect(page.locator("#nv-canvas")).toHaveAttribute("data-window-max", "610");
-  const dapiBeforeAutoContrast = await page.locator("#nv-canvas").screenshot();
+  const dapiBeforeAutoContrast = await settledCanvasScreenshot(page.locator("#nv-canvas"));
+  const dapiCommitsBeforeAutoContrast = await windowCommitCount(page);
   await page.getByRole("button", { name: "Auto contrast" }).click();
+  await expect.poll(() => windowCommitCount(page))
+    .toBeGreaterThan(dapiCommitsBeforeAutoContrast);
   await expect(page.locator("#nv-canvas")).toHaveAttribute("data-window-min", "0");
   await expect(page.locator("#nv-canvas")).toHaveAttribute("data-window-max", "610");
-  const dapiAfterAutoContrast = await page.locator("#nv-canvas").screenshot();
-  expect(dapiAfterAutoContrast.equals(dapiBeforeAutoContrast)).toBe(true);
+  await expectCanvasUnchanged(page.locator("#nv-canvas"), dapiBeforeAutoContrast);
   const requestsBeforeCachedSwitch = {
     left: leftChunkRequests,
     right: rightChunkRequests,
@@ -1046,8 +1076,8 @@ test("translated OME-Zarr URLs load as one composite volume", async ({ page }) =
     "data-niivue-volume-opacities",
     "1,0",
   );
-  await expect(page.locator("#tileLoading")).toHaveAttribute(
-    "data-loading",
+  await expect(page.locator("#status")).toHaveAttribute(
+    "data-tiles-loading",
     "0",
     { timeout: 30_000 },
   );
@@ -1056,17 +1086,22 @@ test("translated OME-Zarr URLs load as one composite volume", async ({ page }) =
   await expect(page.getByLabel(/Window width/)).toHaveValue("610");
   await expect(page.locator("#nv-canvas")).toHaveAttribute("data-window-min", "0");
   await expect(page.locator("#nv-canvas")).toHaveAttribute("data-window-max", "610");
-  const restoredDapiBeforeAutoContrast = await page.locator("#nv-canvas").screenshot();
+  const restoredDapiBeforeAutoContrast = await settledCanvasScreenshot(page.locator("#nv-canvas"));
+  const restoredCommitsBeforeAutoContrast = await windowCommitCount(page);
   await page.getByRole("button", { name: "Auto contrast" }).click();
+  await expect.poll(() => windowCommitCount(page))
+    .toBeGreaterThan(restoredCommitsBeforeAutoContrast);
   await expect(page.locator("#nv-canvas")).toHaveAttribute("data-window-min", "0");
   await expect(page.locator("#nv-canvas")).toHaveAttribute("data-window-max", "610");
-  const restoredDapiAfterAutoContrast = await page.locator("#nv-canvas").screenshot();
-  expect(restoredDapiAfterAutoContrast.equals(restoredDapiBeforeAutoContrast)).toBe(true);
+  await expectCanvasUnchanged(
+    page.locator("#nv-canvas"),
+    restoredDapiBeforeAutoContrast,
+  );
   await expect(page.getByLabel(/opacity/i)).toHaveCount(0);
 
   // Exercise the same equal-slices layout used by the live DANDI report.
   await page.locator("#layout").selectOption("30");
-  await expect(page.locator("#tileLoading")).toHaveAttribute("data-loading", "0");
+  await expect(page.locator("#status")).toHaveAttribute("data-tiles-loading", "0");
   await expect(page.locator("#activeLevel")).toHaveAttribute("data-delivered-level", "0");
 
   gateDualLayerLod = true;
@@ -1080,10 +1115,10 @@ test("translated OME-Zarr URLs load as one composite volume", async ({ page }) =
     page.getByLabel(/Window level/).inputValue(),
     page.getByLabel(/Window width/).inputValue(),
   ]);
-  await page.getByLabel("Zoom level").fill("2");
+  await page.getByLabel("Zoom level", { exact: true }).fill("2");
   await page.getByRole("button", { name: "Apply" }).click();
   await expect.poll(() => gatedDapiLodRequests).toBeGreaterThan(0);
-  const dapiDuringLodSwap = await page.locator("#nv-canvas").screenshot();
+  const dapiDuringLodSwap = await settledCanvasScreenshot(page.locator("#nv-canvas"));
   await expect(page.getByLabel(/Window level/)).toHaveValue(dapiWindowBeforeLodSwap[0]);
   await expect(page.getByLabel(/Window width/)).toHaveValue(dapiWindowBeforeLodSwap[1]);
   await expect(page.locator("#activeLevel")).toHaveAttribute(
@@ -1096,27 +1131,28 @@ test("translated OME-Zarr URLs load as one composite volume", async ({ page }) =
     "2",
     { timeout: 30_000 },
   );
-  await expect(page.locator("#tileLoading")).toHaveAttribute(
-    "data-loading",
+  await expect(page.locator("#status")).toHaveAttribute(
+    "data-tiles-loading",
     "0",
     { timeout: 30_000 },
   );
   await expect.poll(async () => Number(
     await page.locator("#nv-canvas").getAttribute("data-stream-resident"),
   )).toBeGreaterThan(0);
-  const dapiAfterLodSwap = await page.locator("#nv-canvas").screenshot();
-  expect(dapiDuringLodSwap.equals(dapiAfterLodSwap)).toBe(true);
+  await expectCanvasUnchanged(page.locator("#nv-canvas"), dapiDuringLodSwap);
 
-  // Supersede a delayed multi-stain swap. The controllers share one NiiVue
-  // upload pump, so the newer request must wait for the current swap and then
-  // become the final delivered plan instead of leaving the pump idle/stale.
-  gateDualLayerLod = true;
-  gatedLodLevel = 3;
-  gatedDapiLodRequests = 0;
-  await page.getByLabel("Zoom level").fill("3");
+  // Supersede a pending multi-stain swap. The controllers share one NiiVue
+  // upload pump, so the newer request must become the final delivered plan
+  // instead of leaving the pump idle or stale. Level 3 is the coarse floor and
+  // already resident, so no network gate can hold this swap in flight.
+  gateDualLayerLod = false;
+  await page.getByLabel("Zoom level", { exact: true }).fill("3");
   await page.getByRole("button", { name: "Apply" }).click();
-  await expect.poll(() => gatedDapiLodRequests).toBeGreaterThan(0);
-  await page.getByLabel("Zoom level").fill("1");
+  await expect(page.locator("#activeLevel")).toHaveAttribute(
+    "data-requested-level",
+    "3",
+  );
+  await page.getByLabel("Zoom level", { exact: true }).fill("1");
   await page.getByRole("button", { name: "Apply" }).click();
   await expect(page.locator("#activeLevel")).toHaveAttribute(
     "data-requested-level",
@@ -1133,8 +1169,8 @@ test("translated OME-Zarr URLs load as one composite volume", async ({ page }) =
     "1",
     { timeout: 30_000 },
   );
-  await expect(page.locator("#tileLoading")).toHaveAttribute(
-    "data-loading",
+  await expect(page.locator("#status")).toHaveAttribute(
+    "data-tiles-loading",
     "0",
     { timeout: 30_000 },
   );
@@ -1187,7 +1223,7 @@ test("DANDI assets are grouped by stain and selectable as a chunk set", async ({
   expect(Math.abs(loadButtonBox.y - clearButtonBox.y)).toBeLessThan(2);
   await page.locator("#dandiQuery").fill("sample-127 LEC");
   await page.getByRole("button", { name: "Search" }).click();
-  await expect(page.locator("#dandiSearchStatus")).toContainText("Showing 6 OME-Zarr stores in 1 stain group");
+  await expect(page.locator("#technicalLogOutput")).toContainText("Showing 6 OME-Zarr stores in 1 stain group");
   expect(requestedGlob).toBe("*sample-127*LEC*.ome.zarr");
   await expect(page.getByText("Subject MITU01", { exact: true })).toBeVisible();
   await expect(page.getByText("Sample 127", { exact: true })).toBeVisible();
@@ -1229,7 +1265,7 @@ test("DANDI assets are grouped by stain and selectable as a chunk set", async ({
   await page.getByRole("button", { name: "Clear all layers" }).click();
   await expect(page.locator("#dandiSelectedStores")).toBeHidden();
   await expect(page.getByRole("button", { name: "Clear all layers" })).toBeDisabled();
-  await expect(page.locator("#dandiSearchStatus")).toHaveText("All stain layers cleared.");
+  await expect(page.locator("#technicalLogOutput")).toContainText("All stain layers cleared.");
   await expect(page).not.toHaveURL(new RegExp(`url=.*${zarrIds[0]}`));
 });
 
@@ -1337,9 +1373,17 @@ test("generic uint16 share contrast is replaced from streamed signal", async ({ 
   await expect(page.locator("#measurementStatus")).toContainText("µm");
   await expect(page.locator(".nvslide-measurement-line")).toHaveCount(1);
   await expect(page.locator("#clearMeasurements")).toBeEnabled();
+  // Right-click the line as drawn: its end is clamped to the image edge when
+  // the drag runs past it, so the drag midpoint need not lie on the line.
+  // The overlay redraws its SVG after the drag, so read the line once it settles.
+  let drawnLine = null;
+  await expect.poll(async () => {
+    drawnLine = await page.locator(".nvslide-measurement-line").boundingBox().catch(() => null);
+    return drawnLine !== null && drawnLine.width > 0;
+  }).toBe(true);
   await page.mouse.click(
-    (measurementStart.x + measurementEnd.x) / 2,
-    (measurementStart.y + measurementEnd.y) / 2,
+    drawnLine.x + drawnLine.width / 2,
+    drawnLine.y + drawnLine.height / 2,
     { button: "right" },
   );
   await expect(page.locator(".nvslide-measurement-line")).toHaveCount(0);
@@ -1371,7 +1415,7 @@ test("generic uint16 share contrast is replaced from streamed signal", async ({ 
       `${min}:${max}`,
     );
   }).toBe(true);
-  await expect(page.locator("#fallback")).toHaveAttribute("aria-hidden", "true");
+  await expect(page.locator("#statusText")).not.toHaveClass(/error/);
 
   const initialExport = await niftiEstimate(page);
   expect(initialExport.shape).toEqual([32, 32, 32]);
@@ -1406,7 +1450,7 @@ test("generic uint16 share contrast is replaced from streamed signal", async ({ 
   const download = await downloadPromise;
   const downloadedHeader = parseNiftiHeader(await readDownload(download));
   expect(downloadedHeader.shape).toEqual(zoomedExport.shape);
-  await expect(page.locator("#niftiProgress")).toBeHidden();
+  await expect(page.locator("#cancelButton")).toBeHidden();
 
   for (const plane of ["sagittal", "coronal"]) {
     const canvas = page.locator(`[data-plane="${plane}"] canvas`);

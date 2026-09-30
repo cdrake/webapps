@@ -430,6 +430,26 @@ apps:
       shared_runtime: false
       browser_test: true
       release: false
+  - id: disconnectome
+    path: disconnectome
+    title: Disconnectome
+    description: Score which white-matter bundles a lesion disconnects, in the browser.
+    categories: [segmentation-analysis]
+    keywords: [lesion, disconnection, tractography, white matter, ENIGMA, HCP1065, stroke]
+    legacy_domain: null
+    runtime: vite-webgpu
+    model_manifest: models/disconnectome.manifest.json
+    asset_manifest_schema: scientific-assets-v1
+    source: neurodesk/webapps@local
+    license: BSD-2-Clause
+    maintainers: [neurodesk]
+    support_status: experimental
+    shell: imaging-workspace
+    ci:
+      toolchains: [node]
+      shared_runtime: false
+      browser_test: true
+      release: true
   - id: greedy
     path: greedy
     title: Greedy
@@ -552,6 +572,47 @@ apps:
     app_scoped_runtime_families: [ort-web-asyncify, dcm2niix, mindgrab-cpu]
     ci:
       toolchains: [node, rust-wasm]
+      shared_runtime: false
+      browser_test: true
+      release: true
+  - id: carotid-flow
+    path: carotid-flow
+    title: Carotid Flow
+    description: Find the carotid arteries in a phase-contrast neck slice and extract their flow curves, in the browser.
+    categories: [quantitative-imaging]
+    keywords: [phase contrast, carotid, blood flow, PC-MRI, pulsatility, cardiac gating]
+    legacy_domain: null
+    runtime: react-vite
+    model_manifest: null
+    asset_manifest_schema: null
+    source: neurodesk/webapps@local
+    license: NOASSERTION
+    maintainers: [neurodesk]
+    support_status: experimental
+    shell: imaging-workspace
+    ci:
+      toolchains: [node]
+      shared_runtime: false
+      browser_test: true
+      release: true
+  - id: white-matter-lesions
+    path: white-matter-lesions
+    title: White matter lesions
+    description: Segment white matter lesions on a FLAIR image with FLAMeS, locally in your browser.
+    categories: [segmentation-analysis]
+    keywords: [FLAIR, white matter hyperintensities, WMH, multiple sclerosis, lesion segmentation, FLAMeS, nnU-Net]
+    legacy_domain: null
+    runtime: vite-wasm
+    model_manifest: models/white-matter-lesions.manifest.json
+    asset_manifest_schema: scientific-assets-v1
+    source: neurodesk/webapps@local
+    license: Apache-2.0
+    maintainers: [neurodesk]
+    support_status: experimental
+    shell: imaging-workspace
+    app_scoped_runtime_families: [ort-web-asyncify, dcm2niix]
+    ci:
+      toolchains: [node]
       shared_runtime: false
       browser_test: true
       release: true

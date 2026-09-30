@@ -1,5 +1,16 @@
 # @neurodesk/webapp-components
 
+## 0.5.2
+
+### Patch Changes
+
+- Release the experimental NeSVoR browser and remote compute workflows. Package the required ONNX runtime with gzip compression and omit unused runtime variants. Include shared compute connection recovery, cancellation and Linux server setup instructions.
+- Remove the static bottom bar (version, privacy sentence, duplicate More Apps and GitHub links) from the six inference-workspace apps. The shared app bar already shows the version and links, and Privacy has its own dialog. The unused `.app-footer` and `.nd-app-footer` rules leave the shared stylesheets and the hosted theme.
+- Add White matter lesions: FLAMeS lesion segmentation of a single FLAIR image in the browser, after SynthStrip brain extraction, with a lesion mask, probability map and lesion table. Result lists can mark a result as not viewable, which keeps its row and disables View.
+- Every app now opens on its workspace and shows live status only in the bottom bar: a short message, a progress bar, elapsed time and a cancel × that appears while a run can be cancelled. Start pages, landing overlays and welcome modals are gone, and their copy moved to About. Every app has a technical log below the viewer that starts collapsed. Sidebar help longer than 90 characters moved into info tooltips or About, and each sidebar has one primary action. `ProgressManager` now drives the design-system footer, including the elapsed counter and the cancel button.
+
+  The shared example selector shows one short line once an example loads; the description and expected result moved to a tooltip beside the Example label. NiiMath gained the shared layout tabs and About dialog and no longer ships app CSS.
+
 ## 0.5.1
 
 ### Patch Changes
@@ -15,6 +26,12 @@
   Fix paired job ownership, durable recovery and retention, content-checked idempotency, and cancellation that waits for runner termination. Keep credentials out of local storage, recover jobs after tab reload, import DICOM locally, and preserve examination identity during uploads, viewing and processing. Package the Linux backend with the production frontend and add a real CUDA validation command.
 
   Add an explicitly experimental browser CPU reference for small prealigned masked stacks, with per-case differentiable NeSVoR fitting, NIfTI output, provenance and worker cancellation. This is not the complete browser port: full SVoRT, WebGPU training, upstream numerical parity, and clinical-sized validation remain pending. Simulator tests do not establish scientific correctness.
+
+## 0.4.5
+
+### Patch Changes
+
+- 39a9ea5: New app: Carotid Flow finds both carotid arteries in a gated phase-contrast neck slice and plots their flow over the cardiac cycle, with peak, time average and pulsatility index, a CSV of the curves and a NIfTI of the carotid labels. Signed velocity gives flow in ml/min: arteries are told from veins by direction and pulse, and each carotid is the artery carrying most flow on its side; on the open example (PCMCalculator's test data) the right carotid is within 6 % of PCMCalculator's manual measurement. Unsigned speed images go through a port of the requesting lab's MATLAB script, which names left and right from the image orientation where the script called the patient's right carotid the left one. Shared file I/O gains `readNiftiFrames`, which reads every frame of a 4D NIfTI.
 
 ## 0.4.4
 

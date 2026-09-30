@@ -3,6 +3,9 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import { installConsoleCapture } from './utils/technicalLog';
+
+installConsoleCapture();
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement

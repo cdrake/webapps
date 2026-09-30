@@ -566,6 +566,27 @@
       "downloads": [],
       "containers": []
     },
+    "disconnectome": {
+      "desktop": true,
+      "profile": "interactive",
+      "assets": [],
+      "downloads": [],
+      "containers": []
+    },
+    "carotid-flow": {
+      "desktop": true,
+      "profile": "interactive",
+      "assets": [],
+      "downloads": [],
+      "containers": []
+    },
+    "white-matter-lesions": {
+      "desktop": true,
+      "profile": "interactive",
+      "assets": [],
+      "downloads": [],
+      "containers": []
+    },
     "nesvor": {
       "desktop": true,
       "profile": "interactive",

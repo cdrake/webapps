@@ -43,14 +43,12 @@ const UI_COVERAGE = Object.freeze([
   { id: 'fileList', behavior: 'displays and clears selected files', coveredBy: ['batch', 'static-dom'] },
   { id: 'modelSelect', behavior: 'selects supported SCT task and applies defaults', coveredBy: ['batch', 'worker', 'static-dom'] },
   { id: 'runSegmentation', behavior: 'starts worker inference', coveredBy: ['batch', 'worker', 'static-dom'] },
-  { id: 'abortInferenceBtn', behavior: 'aborts inference step', coveredBy: ['static-dom'] },
   { id: 'cancelButton', behavior: 'cancels active pipeline step', coveredBy: ['static-dom'] },
   { id: 'thresholdInput', behavior: 'passes probability threshold to inference', coveredBy: ['batch', 'worker', 'static-dom'] },
   { id: 'minSizeInput', behavior: 'passes connected-component cleanup threshold', coveredBy: ['batch', 'worker', 'static-dom'] },
   { id: 'ttaToggle', behavior: 'passes test-time augmentation setting', coveredBy: ['static-dom'] },
   { id: 'processingOperationSelect', behavior: 'selects SCT browser processing operation', coveredBy: ['processing', 'batch', 'static-dom'] },
   { id: 'runProcessingBtn', behavior: 'runs selected browser processing operation', coveredBy: ['processing', 'batch', 'static-dom'] },
-  { id: 'processingOutput', behavior: 'displays processing output text', coveredBy: ['processing', 'batch', 'static-dom'] },
   { id: 'stageButtons', behavior: 'renders result view/download controls', coveredBy: ['batch', 'static-dom'] },
   { id: 'metricsResults', behavior: 'renders tabular metrics result stages', coveredBy: ['lesion-analysis', 'static-dom'] },
   { id: 'resultsSection', behavior: 'shows available result stages', coveredBy: ['batch', 'static-dom'] },
@@ -74,10 +72,6 @@ const UI_COVERAGE = Object.freeze([
   { id: 'resetWindow', behavior: 'resets display window', coveredBy: ['static-dom'] },
   { id: 'copyConsole', behavior: 'copies console output', coveredBy: ['static-dom'] },
   { id: 'clearConsole', behavior: 'clears console output', coveredBy: ['static-dom'] },
-  { id: 'enterAppButton', behavior: 'dismisses the start page and enters the SCT workflow', coveredBy: ['static-dom'] },
-  { id: 'startPrivacyButton', behavior: 'opens Privacy modal from the start page header', coveredBy: ['static-dom'] },
-  { id: 'startPrivacyInlineButton', behavior: 'opens Privacy modal from the start page body', coveredBy: ['static-dom'] },
-  { id: 'startCitationsButton', behavior: 'opens Citations modal from the start page header', coveredBy: ['static-dom'] },
   { id: 'aboutButton', behavior: 'opens About modal', coveredBy: ['static-dom'] },
   { id: 'closeAbout', behavior: 'closes About modal', coveredBy: ['static-dom'] },
   { id: 'citationsButton', behavior: 'opens Citations modal', coveredBy: ['static-dom'] },
@@ -126,16 +120,15 @@ assert.ok(appJs.includes('this.renderFallbackPreview()'), 'viewer render path fa
 assert.match(effectiveStyles, /\.viewer-unavailable-message\[hidden\]\s*{\s*display:\s*none\s*!important;\s*}/, 'hidden viewer fallback message does not paint over a working canvas');
 assert.ok(appJs.includes('setViewerControlsEnabled(false)'), 'app disables viewer-only controls when the viewer is unavailable');
 assert.ok(appJs.includes('if (!this.isViewerAvailable()) return false;'), 'viewer render path is a no-op when WebGL2 is unavailable');
-assert.ok(indexHtml.includes('<section class="start-page" id="startPage"'), 'start page overlay exists');
-assert.ok(appJs.includes("startPage.classList.add('hidden')"), 'start page enters app by hiding overlay');
-assert.ok(appJs.includes("document.getElementById('fileInput')?.focus()"), 'start page handoff focuses the input workflow');
-assert.ok(appJs.includes("bindModalButton('startPrivacyButton', this.privacyModal)"), 'start page Privacy header button is wired');
-assert.ok(appJs.includes("bindModalButton('startPrivacyInlineButton', this.privacyModal)"), 'start page Privacy body button is wired');
-assert.ok(appJs.includes("bindModalButton('startCitationsButton', this.citationsModal)"), 'start page Citations button is wired');
-assert.ok(
-  indexHtml.includes(`onclick="document.getElementById('aboutButton').click()"`),
-  'start page About button opens the shared About modal'
-);
+assert.ok(!/start-page|id="startPage"|id="enterAppButton"/.test(indexHtml), 'the workspace is the first screen; no start page');
+assert.ok(!appJs.includes('bindStartPageControls'), 'no start-page handoff remains');
+assert.ok(/<footer id="status" class="nd-imaging-status">[\s\S]*id="statusText" class="nd-status-text"[\s\S]*<progress id="progress"[\s\S]*id="cancelButton" class="nd-btn-cancel"[^>]*hidden/.test(indexHtml), 'status lives in the shared footer with a native progress bar and a hidden cancel');
+assert.ok(!indexHtml.includes('sidebar-status'), 'the sidebar status block is retired');
+assert.ok(!indexHtml.includes('id="abortInferenceBtn"'), 'the footer cancel is the only abort control');
+assert.ok(!indexHtml.includes('id="processingOutput"'), 'processing output goes to the technical log');
+assert.equal((indexHtml.match(/class="btn btn-primary/g) || []).length, 1, 'the sidebar has one primary action');
+assert.ok(indexHtml.includes('id="taskInfoTooltip"') && appJs.includes("getElementById('taskInfoTooltip')"), 'task description lives in the SCT Task info tooltip');
+assert.ok(SpinalCordToolboxGuidanceLength(appJs) <= 90, 'viewer-unavailable guidance stays within 90 characters');
 assert.ok(indexHtml.includes('id="moreAppsLink"'), 'main app header More Apps link exists');
 assert.ok(indexHtml.includes('href="../"'), 'More Apps links return to the composite webapps start page');
 assert.ok(!indexHtml.includes('https://neurodesk.org/getting-started/hosted/webapps/'), 'More Apps links do not leave the composite site');
@@ -152,5 +145,10 @@ assert.ok(
   indexHtml.includes('SCT: Spinal Cord Toolbox, an open-source software for processing spinal cord MRI data'),
   'Citations modal includes the primary SCT NeuroImage citation'
 );
+
+function SpinalCordToolboxGuidanceLength(source) {
+  const match = source.match(/VIEWER_UNAVAILABLE_GUIDANCE =\s*'([^']*)'/);
+  return match ? match[1].length : Infinity;
+}
 
 console.log(`UI coverage contract passed: ${UI_COVERAGE.length} controls mapped`);

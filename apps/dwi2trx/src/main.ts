@@ -153,10 +153,22 @@ let inputAbortController: AbortController | null = null
 
 let exampleControl: ReturnType<typeof createExampleSelector> | undefined
 
-function setStatus(msg: string, error = false): void {
-  statusEl.textContent = msg
+// The status line stays one short sentence; `detail` and anything past
+// STATUS_MAX_CHARS go to the technical log only.
+const STATUS_MAX_CHARS = 90
+
+function statusLine(msg: string): string {
+  if (msg.length <= STATUS_MAX_CHARS) return msg
+  const first = msg.match(/^.*?[.;](?=\s)/)?.[0]
+  return first && first.length <= STATUS_MAX_CHARS
+    ? first
+    : `${msg.slice(0, STATUS_MAX_CHARS - 2).trimEnd()}…`
+}
+
+function setStatus(msg: string, error = false, detail?: string): void {
+  statusEl.textContent = statusLine(msg)
   statusEl.classList.toggle('error', error)
-  technicalLog.log(msg, error ? 'error' : 'info')
+  technicalLog.log(detail ? `${msg} ${detail}` : msg, error ? 'error' : 'info')
 }
 
 /** Show/hide the spinning busy indicator beside the status text during slow
@@ -863,8 +875,9 @@ try {
   await nvReady
 } catch (err) {
   setStatus(
-    `WebGPU unavailable — dwi2trx needs a recent desktop Chrome or Edge. (${(err as Error).message})`,
+    'WebGPU unavailable — dwi2trx needs a recent desktop Chrome or Edge.',
     true,
+    `(${(err as Error).message})`,
   )
   throw err
 }
@@ -964,9 +977,12 @@ async function runFit(): Promise<void> {
         )
       setStatus(
         outOfMemory
-          ? 'This dataset is too large for in-browser tensor fitting — a WebAssembly memory limit was reached. Try a cropped or lower-resolution acquisition, or a native pipeline.'
+          ? 'Too large for in-browser tensor fitting (WebAssembly memory limit).'
           : `Tensor fit failed: ${msg}`,
         true,
+        outOfMemory
+          ? 'Try a cropped or lower-resolution acquisition, or a native pipeline.'
+          : undefined,
       )
     }
   } finally {
@@ -1095,16 +1111,17 @@ async function runTrack(): Promise<void> {
     // below allocates a large cylinder mesh, and there is no need to hold both.
     lines.length = 0
     const note = truncated
-      ? ' PARTIAL (out of memory) — raise the Seed/Stop FA thresholds or lower Density for the full set.'
+      ? 'Out of memory: raise the Seed/Stop FA thresholds or lower Density for the full set.'
       : capped
-        ? ' Seeds capped at 100,000 — lower Density for full coverage.'
+        ? 'Seeds capped at 100,000 — lower Density for full coverage.'
         : ''
     const seedNote = truncated
       ? `${processedSeeds.toLocaleString()} of ${nSeeds.toLocaleString()} seeds`
       : `${nSeeds.toLocaleString()} seeds`
-    const summary =
-      `${count} streamlines from ${seedNote} ` +
-      `(mean ${meanLen} pts) — saved as TRX.${note}`
+    const summary = truncated
+      ? `Partial: ${count} streamlines from ${seedNote} (out of memory).`
+      : `${count} streamlines from ${seedNote} — saved as TRX.`
+    const detail = `Mean ${meanLen} points per streamline. ${note}`.trim()
     gotoTab(3)
     shownView = null // force the tract render to load
     // The TRX is already built and saveable. The 3D preview is separate: NiiVue
@@ -1115,7 +1132,7 @@ async function runTrack(): Promise<void> {
     try {
       await syncView()
       if (seq !== loadSeq) return
-      setStatus(summary)
+      setStatus(summary, false, detail)
     } catch (renderErr) {
       if (seq !== loadSeq) return
       console.warn('[dwi2trx] tract render failed:', renderErr)
@@ -1127,17 +1144,20 @@ async function runTrack(): Promise<void> {
       const oom = isOomError(renderErr)
       setStatus(
         oom
-          ? `${summary} The 3D preview ran out of memory — click “Save TRX” to download it, or raise the Seed/Stop FA thresholds to render fewer streamlines.`
-          : `${summary} The 3D preview failed (${msg}) — your TRX is saved; click “Save TRX” to download it.`,
+          ? 'TRX saved, but the 3D preview ran out of memory. Use “Save TRX” to download it.'
+          : 'TRX saved, but the 3D preview failed. Use “Save TRX” to download it.',
         true,
+        oom
+          ? `${summary} ${detail} Raise the Seed/Stop FA thresholds to render fewer streamlines.`
+          : `${summary} ${detail} Preview error: ${msg}`,
       )
     }
   } catch (err) {
     if (seq === loadSeq)
       setStatus(
-        `Streamline tracking failed: ${(err as Error).message} ` +
-          '(hint: raise the Seed and Stop FA thresholds, or lower Density/step size, to use less memory).',
+        `Streamline tracking failed: ${(err as Error).message}`,
         true,
+        'Raise the Seed and Stop FA thresholds, or lower Density/step size, to use less memory.',
       )
   } finally {
     device?.destroy() // free the WebGPU device on every path (incl. errors)

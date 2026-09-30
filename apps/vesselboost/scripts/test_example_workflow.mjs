@@ -25,8 +25,6 @@ try {
     const toggle = page.locator(`#${id} [data-disclosure-toggle]`);
     if (await toggle.getAttribute('aria-expanded') === 'false') await toggle.click();
   };
-  await page.locator('#enterAppButton').click();
-  console.log('Workspace opened');
   await page.locator('select[data-neurodesk-example]').selectOption('lausanne-tof');
   console.log('Example selected');
   await expect(page.locator('#skipDownsampleBtn')).toBeEnabled({ timeout: 180000 });

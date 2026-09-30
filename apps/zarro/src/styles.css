@@ -116,28 +116,13 @@ a:focus-visible {
 }
 
 .panel-heading {
-  display: grid;
-  grid-template-columns: 30px minmax(0, 1fr);
+  display: flex;
   gap: 0.65rem;
-  align-items: start;
+  align-items: center;
 }
 
 .panel-heading.compact {
   margin-bottom: -0.1rem;
-}
-
-.panel-number {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border: 1px solid var(--nd-color-border-light);
-  border-radius: 50%;
-  color: var(--nd-color-primary);
-  background: var(--nd-color-surface-elevated);
-  font-size: 0.66rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
 }
 
 .panel-heading h2 {
@@ -147,13 +132,6 @@ a:focus-visible {
   line-height: 1.2;
   letter-spacing: 0.055em;
   text-transform: uppercase;
-}
-
-.panel-heading p {
-  margin: 0.2rem 0 0;
-  color: var(--nd-color-text-muted);
-  font-size: 0.74rem;
-  line-height: 1.4;
 }
 
 .field,
@@ -194,44 +172,6 @@ a:focus-visible {
   color: var(--nd-color-text-muted);
   font-size: 0.72rem;
   line-height: 1.45;
-}
-
-.nifti-progress {
-  display: grid;
-  gap: 0.45rem;
-}
-
-.nifti-progress[hidden] {
-  display: none;
-}
-
-.nifti-progress progress {
-  width: 100%;
-  height: 0.55rem;
-  accent-color: var(--nd-color-accent);
-}
-
-.nifti-progress-detail {
-  display: flex;
-  gap: 0.6rem;
-  align-items: flex-start;
-  justify-content: space-between;
-}
-
-.nifti-progress-detail output {
-  color: var(--nd-color-text-muted);
-  font-size: 0.72rem;
-  line-height: 1.45;
-}
-
-#controls .nifti-cancel {
-  min-height: 30px;
-  padding: 0.3rem 0.65rem;
-  border: 1px solid var(--nd-color-border-light);
-  border-radius: var(--nd-radius-md);
-  color: var(--nd-color-text);
-  background: var(--nd-color-surface-elevated);
-  font-size: 0.72rem;
 }
 
 .zarr-url-list {
@@ -332,8 +272,7 @@ a:focus-visible {
   gap: 0.4rem;
 }
 
-#controls .dandi-search-row button,
-#controls #clearDandiSelection {
+#controls .dandi-search-row button {
   min-height: 38px;
   margin: 0;
   padding: 0.45rem 0.65rem;
@@ -342,10 +281,6 @@ a:focus-visible {
   color: var(--nd-color-text);
   background: var(--nd-color-surface-elevated);
   font-size: 0.7rem;
-}
-
-#controls #clearDandiSelection {
-  width: 100%;
 }
 
 .source-actions {
@@ -366,20 +301,9 @@ a:focus-visible {
   border-radius: var(--nd-radius-md);
 }
 
-.stain-layer-list-heading strong,
-.stain-layer-list-heading small {
-  display: block;
-}
-
 .stain-layer-list-heading strong {
   color: var(--nd-color-text);
   font-size: 0.7rem;
-}
-
-.stain-layer-list-heading small {
-  margin-top: 0.12rem;
-  color: var(--nd-color-text-dim);
-  font-size: 0.62rem;
 }
 
 #stainLayers {
@@ -433,14 +357,6 @@ a:focus-visible {
   color: var(--nd-color-text-dim);
   font-size: 0.61rem;
   font-weight: 400;
-}
-
-#dandiSearchStatus {
-  display: block;
-  color: var(--nd-color-text-dim);
-  font-size: 0.66rem;
-  font-weight: 400;
-  line-height: 1.35;
 }
 
 .dandi-results {
@@ -669,14 +585,6 @@ a:focus-visible {
 
 #zoom {
   direction: rtl;
-}
-
-.zoom-level-help {
-  display: block;
-  margin: -0.15rem 0 0.1rem;
-  color: var(--nd-color-text-dim);
-  font-size: 0.61rem;
-  line-height: 1.35;
 }
 
 #controls .zoom-field button {
@@ -935,15 +843,6 @@ a:focus-visible {
   border-color: var(--nd-color-primary-hover);
 }
 
-.download-status {
-  padding: 0.55rem 0.65rem;
-  color: var(--nd-color-text-muted);
-  background: var(--nd-color-bg);
-  border-radius: var(--nd-radius-md);
-  font-size: 0.68rem;
-  line-height: 1.35;
-}
-
 #shareLink {
   width: 100%;
   min-width: 0;
@@ -1033,11 +932,6 @@ a:focus-visible {
   display: none;
 }
 
-.tile-loading {
-  min-width: 6.4rem;
-  text-align: center;
-}
-
 .hud {
   position: absolute;
   top: 0.8rem;
@@ -1119,26 +1013,6 @@ a:focus-visible {
 .strip span.hit {
   background: #91c84a;
   border-color: #91c84a;
-}
-
-.fallback {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  display: none;
-  place-items: center;
-  padding: 2rem;
-  color: var(--nd-color-text-muted);
-  background:
-    radial-gradient(circle at 50% 42%, rgb(145 200 74 / 10%), transparent 34%),
-    var(--nd-color-bg);
-  text-align: center;
-  font-size: 0.85rem;
-  line-height: 1.5;
-}
-
-.fallback[aria-hidden="false"] {
-  display: grid;
 }
 
 @media (max-width: 900px) {

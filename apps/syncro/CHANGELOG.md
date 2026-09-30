@@ -1,22 +1,45 @@
 # syncro
 
-## 0.3.20260921
+## 0.3.20260930
 
 ### Patch Changes
+
+- Every app now opens on its workspace and shows live status only in the bottom bar: a short message, a progress bar, elapsed time and a cancel × that appears while a run can be cancelled. Start pages, landing overlays and welcome modals are gone, and their copy moved to About. Every app has a technical log below the viewer that starts collapsed. Sidebar help longer than 90 characters moved into info tooltips or About, and each sidebar has one primary action. `ProgressManager` now drives the design-system footer, including the elapsed counter and the cancel button.
+
+  The shared example selector shows one short line once an example loads; the description and expected result moved to a tooltip beside the Example label. NiiMath gained the shared layout tabs and About dialog and no longer ships app CSS.
 
 - Updated dependencies
-  - @neurodesk/webapp-components@0.5.1
-  - @neurodesk/greedy@0.3.20260921
-  - @neurodesk/synthsr@0.4.20260921
-  - @neurodesk/brain-extraction@0.1.8
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - @neurodesk/webapp-components@0.5.2
+  - @neurodesk/greedy@0.3.20260930
+  - @neurodesk/synthsr@0.4.20260930
+  - @neurodesk/brain-extraction@0.1.9
 
+## 0.3.20260924
 
 ### Patch Changes
 
-- Updated dependencies [94f7cac]
-  - @neurodesk/webapp-components@0.5.0
-  - @neurodesk/greedy@0.3.20260921
-  - @neurodesk/synthsr@0.4.20260921
+- Updated dependencies [39a9ea5]
+  - @neurodesk/webapp-components@0.4.5
+  - @neurodesk/greedy@0.3.20260924
+  - @neurodesk/synthsr@0.4.20260924
+  - @neurodesk/brain-extraction@0.1.8
+
+## 0.3.20260923
+
+### Patch Changes
+
+- 3e6b9a7: Add a Support action to the shared application bar, so every webapp offers one
+  route to the maintainers. It opens a GitHub issue on the monorepo that is
+  already filled in: the app and its build, the browser, the window size, whether
+  WebGPU and cross-origin isolation are available, and headings that ask for
+  reproduction steps or, for a feature suggestion, what the app should do instead.
+  The prefilled page address keeps only origin and path, because app state in a
+  query or fragment can name a user's own files.
+  - @neurodesk/greedy@0.3.20260923
+  - @neurodesk/synthsr@0.4.20260923
   - @neurodesk/brain-extraction@0.1.7
 
 ## 0.3.20260920

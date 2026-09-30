@@ -1,6 +1,6 @@
 {
   "name": "brain2print",
-  "version": "0.2.20260921",
+  "version": "0.3.20260930",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,7 +12,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@brainchop/mindgrab": "0.1.20260813",
+    "@brainchop/mindgrab": "0.1.20260923",
     "@neurodesk/runtime-support": "workspace:*",
     "@neurodesk/webapp-components": "workspace:*",
     "@niivue/niimath": "1.4.20260909",

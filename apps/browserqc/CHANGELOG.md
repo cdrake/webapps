@@ -1,17 +1,33 @@
 # browserqc
 
-## 1.2.20260921
+## 1.2.20260930
 
 ### Patch Changes
 
 - Updated dependencies
-  - @neurodesk/webapp-components@0.5.1
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - @neurodesk/webapp-components@0.5.2
 
+## 1.2.20260924
 
 ### Patch Changes
 
-- Updated dependencies [94f7cac]
-  - @neurodesk/webapp-components@0.5.0
+- Updated dependencies [39a9ea5]
+  - @neurodesk/webapp-components@0.4.5
+
+## 1.2.20260923
+
+### Patch Changes
+
+- 3e6b9a7: Add a Support action to the shared application bar, so every webapp offers one
+  route to the maintainers. It opens a GitHub issue on the monorepo that is
+  already filled in: the app and its build, the browser, the window size, whether
+  WebGPU and cross-origin isolation are available, and headings that ask for
+  reproduction steps or, for a feature suggestion, what the app should do instead.
+  The prefilled page address keeps only origin and path, because app state in a
+  query or fragment can name a user's own files.
 
 ## 1.2.20260920
 

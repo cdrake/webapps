@@ -10,7 +10,7 @@ import { expect } from '@playwright/test';
 import { verifyMuscleMapFullPipeline, createSyntheticMuscleMapNifti } from '../../test/musclemap-full-pipeline-smoke.mjs';
 import { startReferenceServer } from '../../test-utils/compute-reference-server.mjs';
 
-export const workflowApps = ['nesvor', 'musclemap', 'vesselboost', 'spinalcordtoolbox', 'calmar', 'qsmbly', 'seedseg', 'dicompare', 'deface', 'easy-mp2rage', 'niimath', 'dicom2vid', 'browserqc', 'surfannotate', 'zarro', 'synthsr', 'synthseg', 'syncro', 'dwi2trx', 'edgereg', 'greedy', 'ants', 'brain2print', 'topofit', 'fireants', 'brain-extraction'];
+export const workflowApps = ['nesvor', 'musclemap', 'vesselboost', 'spinalcordtoolbox', 'calmar', 'qsmbly', 'seedseg', 'dicompare', 'deface', 'easy-mp2rage', 'niimath', 'dicom2vid', 'browserqc', 'surfannotate', 'zarro', 'synthsr', 'synthseg', 'syncro', 'dwi2trx', 'edgereg', 'greedy', 'ants', 'brain2print', 'topofit', 'fireants', 'brain-extraction', 'disconnectome', 'carotid-flow', 'white-matter-lesions'];
 
 /**
  * Anything a workflow needs before the desktop app starts. NeSVoR computes on a
@@ -49,7 +49,7 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     assert.ok(bytes.length > 352, 'Output must contain image data');
     return { filename: data.filename, bytes: data.bytes.length };
   };
-  if (['deface', 'brain2print', 'dwi2trx', 'ants', 'greedy', 'edgereg', 'fireants'].includes(id)) {
+  if (['deface', 'brain2print', 'dwi2trx', 'ants', 'greedy', 'edgereg', 'fireants', 'disconnectome', 'carotid-flow', 'white-matter-lesions'].includes(id)) {
     const examples = JSON.parse(await readFile(join(root, 'apps', id, 'examples.json')));
     const selector = page.getByRole('combobox', { name: 'Example', exact: true });
     await expect(selector).toBeEnabled({ timeout: 120000 });
@@ -333,6 +333,43 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     await expect(page.locator(selector)).toBeEnabled({ timeout: 900000 });
     const result = await download(selector);
     return { filename: result.filename, bytes: result.bytes.length };
+  }
+  if (id === 'disconnectome') {
+    await expect(page.locator('#runButton')).toBeEnabled({ timeout: 120000 });
+    await page.locator('#runButton').click();
+    await expect(page.locator('#saveButton')).toBeEnabled({ timeout: 300000 });
+    const result = await download('#saveButton');
+    const [header, row] = result.bytes.toString('utf8').trim().split('\n').map(line => line.split('\t'));
+    // wM2017 on the default ENIGMA atlas: 65 bundles, 31 damaged (examples.json expectedResult).
+    assert.equal(header.length, 66);
+    assert.equal(row.slice(1).filter(value => Number(value) > 0).length, 31);
+    return { filename: result.filename, damaged: 31 };
+  }
+  if (id === 'carotid-flow') {
+    await expect(page.locator('#runButton')).toBeEnabled({ timeout: 60000 });
+    await page.locator('#runButton').click();
+    await expect(page.locator('#saveButton')).toBeEnabled({ timeout: 60000 });
+    const result = await download('#saveButton');
+    const rows = result.bytes.toString('utf8').trim().split('\n');
+    // The example's 28 cardiac frames; mean flow as examples.json's expectedResult states.
+    assert.equal(rows[0], 'frame,left_velocity_cm_s,left_flow_ml_min,right_velocity_cm_s,right_flow_ml_min');
+    assert.equal(rows.length, 29);
+    const flow = column => rows.slice(1).reduce((sum, row) => sum + Number(row.split(',')[column]), 0) / 28;
+    assert.equal(Math.round(flow(2)), 231);
+    assert.equal(Math.round(flow(4)), 211);
+    return { filename: result.filename, frames: rows.length - 1 };
+  }
+  if (id === 'white-matter-lesions') {
+    await expect(page.locator('#runButton')).toBeEnabled({ timeout: 60000 });
+    await page.locator('#runButton').click();
+    await expect(page.locator('#statusText')).toHaveText(/^Segmentation complete · \d+ lesions/, { timeout: 1200000 });
+    const mask = await download('#resultList .nd-volume-toggle:nth-child(2) .nd-download-btn');
+    const table = await download('#resultList .nd-volume-toggle:nth-child(4) .nd-download-btn');
+    const rows = table.bytes.toString('utf8').trim().split('\n');
+    assert.equal(rows[0], 'lesion\tvoxels\tvolume_ml\tx_mm\ty_mm\tz_mm');
+    // The MSLesSeg P57 example has dozens of periventricular and deep lesions.
+    assert.ok(rows.length > 10, `expected lesions, found ${rows.length - 1}`);
+    return { mask: nifti(mask), lesions: rows.length - 1 };
   }
   throw new Error(`No offline workflow test registered for ${id}`);
 }

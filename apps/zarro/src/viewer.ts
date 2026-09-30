@@ -3,6 +3,7 @@ import NiiVue, {
   type ChunkedVolumeSource,
   type ChunkPlan,
   chunkVolumeGrid,
+  createStreamingNVImage,
   DRAG_MODE,
   type NVChunkedVolume,
   type NVImage,
@@ -10,7 +11,11 @@ import NiiVue, {
   type VolumeChunkSource,
 } from '@niivue/niivue'
 import '@neurodesk/webapp-components/styles/imaging-workspace.css'
-import { createExampleSelector } from '@neurodesk/webapp-components/ui'
+import {
+  bindInfoTooltips,
+  createConsole,
+  createExampleSelector,
+} from '@neurodesk/webapp-components/ui'
 import examples from '../examples.json'
 import { mountImagingWorkspace } from '@neurodesk/webapp-components/core/mount-imaging-workspace'
 import * as zarr from 'zarrita'
@@ -56,7 +61,6 @@ import {
 } from './decoded_chunk_cache'
 import { anchoredSlicePan, pointOnSlicePlane } from './cursor_zoom'
 import {
-  buildLogicalVolume,
   niftiDatatype,
   type Shape3,
 } from './logical_volume'
@@ -76,7 +80,6 @@ import {
   type NiftiStreamProgress,
 } from './nifti_stream'
 import { LatestTaskQueue } from './latest_task_queue'
-import { measurementIndexAtCanvasPoint } from './measurement_hit_test'
 import {
   layoutTranslatedBlocks,
   spatialTransformMm,
@@ -397,7 +400,6 @@ const els = {
   ],
   axialSlice: el<HTMLInputElement>('axialSlice'),
   axialSliceValue: el<HTMLOutputElement>('axialSliceValue'),
-  axialSliceHelp: el<HTMLElement>('axialSliceHelp'),
   colormap: el<HTMLSelectElement>('colormap'),
   autoContrast: el<HTMLButtonElement>('autoContrast'),
   windowLevel: el<HTMLInputElement>('windowLevel'),
@@ -424,7 +426,6 @@ const els = {
   dandiVersion: el<HTMLInputElement>('dandiVersion'),
   dandiQuery: el<HTMLInputElement>('dandiQuery'),
   searchDandi: el<HTMLButtonElement>('searchDandi'),
-  dandiSearchStatus: el<HTMLOutputElement>('dandiSearchStatus'),
   dandiResults: el<HTMLDivElement>('dandiResults'),
   clearDandiSelection: el<HTMLButtonElement>('clearDandiSelection'),
   dandiSelectedStores: el<HTMLDivElement>('dandiSelectedStores'),
@@ -436,27 +437,103 @@ const els = {
   downloadNifti: el<HTMLButtonElement>('downloadNifti'),
   niftiLevel: el<HTMLSelectElement>('niftiLevel'),
   niftiEstimate: el<HTMLOutputElement>('niftiEstimate'),
-  niftiProgress: el<HTMLDivElement>('niftiProgress'),
-  niftiProgressBar: el<HTMLProgressElement>('niftiProgressBar'),
-  niftiProgressText: el<HTMLOutputElement>('niftiProgressText'),
-  cancelNifti: el<HTMLButtonElement>('cancelNifti'),
   createShareLink: el<HTMLButtonElement>('createShareLink'),
   shareLink: el<HTMLInputElement>('shareLink'),
-  shareStatus: el<HTMLOutputElement>('shareStatus'),
-  downloadStatus: el<HTMLOutputElement>('downloadStatus'),
   canvas: el<HTMLCanvasElement>('nv-canvas'),
   nvslideView: el<HTMLElement>('nvslideView'),
   viewer: el<HTMLElement>('viewer'),
   hud: el<HTMLDivElement>('hud'),
   chunkStrip: el<HTMLDivElement>('chunkStrip'),
-  fallback: el<HTMLDivElement>('fallback'),
+  emptyState: el<HTMLParagraphElement>('emptyState'),
+  status: el<HTMLElement>('status'),
+  statusText: el<HTMLSpanElement>('statusText'),
+  elapsed: el<HTMLSpanElement>('elapsed'),
+  progress: el<HTMLProgressElement>('progress'),
+  cancelButton: el<HTMLButtonElement>('cancelButton'),
   crosshairOverlay: el<SVGSVGElement>('crosshairOverlay'),
   crosshairOutline: el<SVGPathElement>('crosshairOutline'),
   crosshairLines: el<SVGPathElement>('crosshairLines'),
   scaleIndicators: el<HTMLDivElement>('scaleIndicators'),
   visibleLevel: el<HTMLOutputElement>('visibleLevel'),
-  tileLoading: el<HTMLOutputElement>('tileLoading'),
 }
+
+bindInfoTooltips(document)
+
+// Technical log below the viewer, collapsed until an error opens it.
+const technicalLog = createConsole({ id: 'technicalLog' })
+els.viewer.append(technicalLog)
+
+interface StatusOptions {
+  error?: boolean
+  /** A fraction marks a running task; null marks one without a known size. */
+  progress?: number | null
+  /** Shows the footer cancel button while the task runs. */
+  onCancel?: () => void
+  /** Tile streaming updates never replace a foreground task or reach the log. */
+  background?: boolean
+}
+
+let statusBusy = false
+let statusBackground = false
+let statusStartedAt = 0
+let statusTimer = 0
+let statusCancel: (() => void) | null = null
+let settledStatus = { message: els.statusText.textContent ?? '', error: false }
+
+function formatElapsed(ms: number): string {
+  const seconds = Math.floor(ms / 1000)
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
+}
+
+function renderElapsed(): void {
+  els.elapsed.textContent = formatElapsed(performance.now() - statusStartedAt)
+}
+
+/** The one place user-facing progress, results and errors are reported. */
+function status(message: string, options: StatusOptions = {}): void {
+  const running = options.progress !== undefined
+  if (options.background && statusBusy && !statusBackground) return
+  els.statusText.textContent = message
+  els.statusText.classList.toggle('error', Boolean(options.error))
+  if (running) {
+    if (!statusBusy) {
+      statusStartedAt = performance.now()
+      window.clearInterval(statusTimer)
+      statusTimer = window.setInterval(renderElapsed, 1000)
+      renderElapsed()
+    }
+    statusBusy = true
+    statusBackground = Boolean(options.background)
+    if (options.progress === null) els.progress.removeAttribute('value')
+    else els.progress.value = Math.max(0, Math.min(1, options.progress ?? 0))
+    if (options.onCancel) statusCancel = options.onCancel
+  } else {
+    if (statusBusy) renderElapsed()
+    window.clearInterval(statusTimer)
+    statusTimer = 0
+    els.progress.value = statusBusy && !options.error ? 1 : 0
+    statusBusy = false
+    statusBackground = false
+    statusCancel = null
+    if (!options.background) settledStatus = { message, error: Boolean(options.error) }
+  }
+  els.cancelButton.hidden = !statusCancel
+  if (!options.background && !(running && options.progress !== null)) {
+    technicalLog.log(message, options.error ? 'error' : 'info')
+  }
+}
+
+function errorText(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+
+function showEmptyState(message: string): void {
+  els.emptyState.textContent = message
+  els.emptyState.hidden = false
+  status(message)
+}
+
+els.cancelButton.addEventListener('click', () => statusCancel?.())
 
 let nv: NiiVue | null = null
 let activeSource: LoadedSource | null = null
@@ -503,6 +580,7 @@ const stainLayerDisplayQueue = new LatestTaskQueue(false)
 let initialSharedView: ViewState | null = null
 let initialSharedSettings: ShareableViewState | null = null
 let manualWindowRevision = 0
+let windowCommits = 0
 let autoWindowSession: AutoWindowSession | null = null
 const autoContrastStates = new WeakMap<
   OmezarrSource | OmezarrMosaicSource,
@@ -919,23 +997,15 @@ function showNiftiProgress(
   message: string,
   fraction: number | null,
 ): void {
-  els.niftiProgress.hidden = false
-  els.niftiProgressText.value = message
-  if (fraction === null) {
-    els.niftiProgressBar.removeAttribute('value')
-  } else {
-    els.niftiProgressBar.max = 1
-    els.niftiProgressBar.value = Math.max(0, Math.min(1, fraction))
-  }
-  els.cancelNifti.disabled =
-    !activeNiftiExportController || activeNiftiExportController.signal.aborted
+  status(message, { progress: fraction, onCancel: cancelNiftiExport })
 }
 
-function hideNiftiProgress(): void {
-  els.niftiProgress.hidden = true
-  els.niftiProgressBar.value = 0
-  els.niftiProgressText.value = 'Preparing export…'
-  els.cancelNifti.disabled = true
+function cancelNiftiExport(): void {
+  const controller = activeNiftiExportController
+  if (!controller || controller.signal.aborted) return
+  controller.abort()
+  status('Cancelling export…', { progress: null })
+  syncDownloadControl()
 }
 
 function renderNiftiStreamProgress(progress: NiftiStreamProgress): void {
@@ -1010,17 +1080,10 @@ function syncDownloadControl(): void {
     ? `preparing${levelLabel}...`
     : `download FOV${levelLabel}.nii`
   els.downloadNifti.disabled = downloadInProgress
-  els.cancelNifti.disabled =
-    !activeNiftiExportController || activeNiftiExportController.signal.aborted
   els.downloadNifti.title =
     bytes > MAX_IN_MEMORY_NIFTI_BYTES
       ? `Stream the ${formatBytes(bytes)} FOV export to a selected file`
       : `Download the current FOV as a 3D NIfTI (${formatBytes(bytes)})`
-}
-
-function setDownloadStatus(message: string): void {
-  els.downloadStatus.textContent = message
-  els.downloadStatus.hidden = message.length === 0
 }
 
 function html(value: string): string {
@@ -1114,6 +1177,10 @@ function commitAppliedWindow(
   }
   els.canvas.dataset.windowMin = String(win.min)
   els.canvas.dataset.windowMax = String(win.max)
+  // A commit often repeats the window already displayed, so the min and max
+  // alone cannot tell a caller that the redraw behind this one landed.
+  windowCommits++
+  els.canvas.dataset.windowCommits = String(windowCommits)
   syncNvSlideView()
 }
 
@@ -1187,9 +1254,7 @@ function observeChunkForAutoWindow(
           commitAppliedWindow(source, estimated)
         })
         .catch((error: unknown) => {
-          showFallback(
-            `Automatic contrast failed: ${error instanceof Error ? error.message : String(error)}`,
-          )
+          status(`Automatic contrast failed: ${errorText(error)}`, { error: true })
         })
     }, 0)
   }
@@ -1232,9 +1297,7 @@ function applyAutoContrast(): void {
       commitAppliedWindow(source, exactWindow)
     })
     .catch((error: unknown) => {
-      showFallback(
-        `Automatic contrast failed: ${error instanceof Error ? error.message : String(error)}`,
-      )
+      status(`Automatic contrast failed: ${errorText(error)}`, { error: true })
     })
 }
 
@@ -1272,9 +1335,7 @@ async function applyColormap(): Promise<void> {
     await nv.setVolume(volumeIndex, { colormap: els.colormap.value })
     updateUrlFromControls()
   } catch (error) {
-    showFallback(
-      `Colour map update failed: ${error instanceof Error ? error.message : String(error)}`,
-    )
+    status(`Colour map update failed: ${errorText(error)}`, { error: true })
   }
 }
 
@@ -1301,9 +1362,7 @@ function scheduleWindowUpdate(): void {
         commitAppliedWindow(source, win)
       })
       .catch((error: unknown) => {
-        showFallback(
-          `Window update failed: ${error instanceof Error ? error.message : String(error)}`,
-        )
+        status(`Window update failed: ${errorText(error)}`, { error: true })
       })
   }, 60)
 }
@@ -1468,21 +1527,8 @@ function waitForStainLayerUploads(signal?: AbortSignal): Promise<void> {
 
 async function waitForStainLayerRefocus(
   controller: NVChunkedVolume,
-  previousPlan: ChunkPlan,
 ): Promise<void> {
-  const startedAt = performance.now()
-  while (controller.currentPlan === previousPlan) {
-    if (performance.now() - startedAt > 10_000) {
-      throw new Error('Timed out waiting for a stain detail plan swap')
-    }
-    await new Promise((resolve) => window.setTimeout(resolve, 25))
-  }
-
-  // NVChunkedVolume debounces refocus and exposes no public completion promise.
-  // The pinned NiiVue implementation keeps the actual host swap in swapChain;
-  // await it so a second controller cannot enter the shared renderer mid-swap.
-  const internal = controller as unknown as { swapChain?: Promise<void> }
-  await internal.swapChain
+  await controller.whenRefocusIdle()
   await waitForStainLayerUploads()
 }
 
@@ -1630,7 +1676,7 @@ async function reloadAfterStoreRemoval(): Promise<void> {
   syncZarrLevelControl()
   syncActiveLodIndicator(null)
   syncDownloadControl()
-  showFallback(
+  showEmptyState(
     els.source.value === 'dandi'
       ? 'Search DANDI and select an OME-Zarr asset, then press Load volume'
       : 'Add an OME-Zarr store URL, then press Load volume',
@@ -1971,9 +2017,9 @@ function renderSelectedDandiStores(): void {
       renderStainLayers()
       renderSelectedDandiStores()
       syncDandiGroupActions()
-      els.dandiSearchStatus.value = 'Store removed. Updating the viewer…'
+      status('Store removed. Updating the viewer…', { progress: null })
       await reloadAfterStoreRemoval()
-      els.dandiSearchStatus.value = 'Store removed.'
+      if (activeSource) status('Store removed')
     })
     row.append(name, remove)
     scroll.append(row)
@@ -1988,9 +2034,9 @@ async function clearSelectedDandiAssets(): Promise<void> {
   renderStainLayers()
   renderSelectedDandiStores()
   syncDandiGroupActions()
-  els.dandiSearchStatus.value = 'All stain layers cleared. Updating the viewer…'
+  status('All stain layers cleared. Updating the viewer…', { progress: null })
   await reloadAfterStoreRemoval()
-  els.dandiSearchStatus.value = 'All stain layers cleared.'
+  status('All stain layers cleared.')
 }
 
 function createDandiChunkResult(
@@ -2037,15 +2083,15 @@ function addDandiAssets(name: string, assets: DandiZarrAsset[]): void {
     renderStainLayers()
     syncDandiGroupActions()
     updateUrlFromControls()
-    els.dandiSearchStatus.value = addedCount > 0
+    status(addedCount > 0
       ? `${addedCount} chunk${addedCount === 1 ? '' : 's'} added to the ${name} layer. Press Load volume when ready.`
-      : `${name} is already in the stain layer list.`
+      : `${name} is already in the stain layer list.`)
     return
   }
   const result = addLayer(name, 'dandi', assets.map(({ storeUrl }) => storeUrl))
-  els.dandiSearchStatus.value = result.added
+  status(result.added
     ? `${name} added as a stain layer. Press Load volume when ready.`
-    : `${name} is already in the stain layer list.`
+    : `${name} is already in the stain layer list.`)
 }
 
 function createDandiStainGroup(group: DandiZarrAssetGroup): HTMLElement {
@@ -2180,7 +2226,7 @@ async function searchDandiAssets(): Promise<void> {
   const controller = new AbortController()
   dandiSearchController = controller
   els.searchDandi.disabled = true
-  els.dandiSearchStatus.value = 'Searching DANDI…'
+  status('Searching DANDI…', { progress: null, onCancel: () => controller.abort() })
   els.dandiResults.replaceChildren()
   try {
     const result = await searchDandiZarrAssets(
@@ -2191,18 +2237,19 @@ async function searchDandiAssets(): Promise<void> {
     )
     if (controller.signal.aborted) return
     const hierarchy = renderDandiResults(result.assets)
-    els.dandiSearchStatus.value =
+    status(
       result.count === 0
         ? 'No matching OME-Zarr assets.'
         : result.complete
           ? `Showing ${result.assets.length.toLocaleString()} OME-Zarr stores in ${hierarchy.groupCount.toLocaleString()} stain group${hierarchy.groupCount === 1 ? '' : 's'}${hierarchy.ungroupedCount > 0 ? `, plus ${hierarchy.ungroupedCount.toLocaleString()} other result${hierarchy.ungroupedCount === 1 ? '' : 's'}` : ''}.`
-          : `Showing the first ${result.assets.length.toLocaleString()} of ${result.count.toLocaleString()} matching OME-Zarr stores. Refine the search to browse complete stain groups.`
+          : `Showing the first ${result.assets.length.toLocaleString()} of ${result.count.toLocaleString()} matching OME-Zarr stores. Refine the search to browse complete stain groups.`,
+    )
   } catch (error) {
     if (controller.signal.aborted) return
-    els.dandiSearchStatus.value =
-      error instanceof Error ? error.message : String(error)
+    status(`DANDI search failed: ${errorText(error)}`, { error: true })
   } finally {
     if (dandiSearchController === controller) {
+      if (controller.signal.aborted) status('DANDI search cancelled')
       dandiSearchController = null
       els.searchDandi.disabled = false
     }
@@ -2236,16 +2283,6 @@ function customStoreName(rawUrl: string): string {
   } catch {
     return 'Custom S3 OME-Zarr'
   }
-}
-
-function showFallback(message: string): void {
-  els.fallback.textContent = message
-  els.fallback.setAttribute('aria-hidden', 'false')
-}
-
-function hideFallback(): void {
-  els.fallback.textContent = ''
-  els.fallback.setAttribute('aria-hidden', 'true')
 }
 
 function syncSourceControls(): void {
@@ -3149,7 +3186,7 @@ function createOmezarrRenderCropVolume(
     STREAMING_CHUNK_HALO,
   )
   const win = parseWindow(source.defaultWindow)
-  const volume = buildLogicalVolume({
+  const volume = createStreamingNVImage({
     id: `${source.name} current FOV L${level.level}`,
     url:
       `client-zarr-crop://${source.id}/L${level.level}` +
@@ -3159,45 +3196,44 @@ function createOmezarrRenderCropVolume(
     shape: geometry.shape,
     spacing: geometry.spacing,
     datatypeCode: source.datatypeCode,
-    numBitsPerVoxel: source.numBitsPerVoxel,
     calMin: win.min,
     calMax: win.max,
     colormap: els.colormap.value,
-    chunkSource: async (request) => {
-      const signal = readSession.signalFor(request.signal)
-      const texOrigin = absoluteCropOrigin(
-        geometry.origin,
-        request.desc.texOrigin,
-      )
-      const texDims = request.desc.texDims
-      const key = omezarrRequestKey(level.level, texOrigin, texDims)
-      stats.requested.add(key)
-      renderHud()
-      try {
-        const bytes = await fetchOmezarrRegion(
-          level,
-          {
-            levelIndex: level.level,
-            texOrigin,
-            texDims,
-            bytesPerVoxel: request.bytesPerVoxel,
-          },
-          signal,
-        )
-        observeChunkForAutoWindow(source, bytes)
-        stats.completed.add(key)
-        stats.decodedBytes += bytes.byteLength
-        renderHud()
-        return bytes
-      } catch (error) {
-        if (!isAbortError(error)) {
-          stats.failures++
-          renderHud()
-        }
-        throw error
-      }
-    },
   })
+  volume.chunkSource = async (request) => {
+    const signal = readSession.signalFor(request.signal)
+    const texOrigin = absoluteCropOrigin(
+      geometry.origin,
+      request.desc.texOrigin,
+    )
+    const texDims = request.desc.texDims
+    const key = omezarrRequestKey(level.level, texOrigin, texDims)
+    stats.requested.add(key)
+    renderHud()
+    try {
+      const bytes = await fetchOmezarrRegion(
+        level,
+        {
+          levelIndex: level.level,
+          texOrigin,
+          texDims,
+          bytesPerVoxel: request.bytesPerVoxel,
+        },
+        signal,
+      )
+      observeChunkForAutoWindow(source, bytes)
+      stats.completed.add(key)
+      stats.decodedBytes += bytes.byteLength
+      renderHud()
+      return bytes
+    } catch (error) {
+      if (!isAbortError(error)) {
+        stats.failures++
+        renderHud()
+      }
+      throw error
+    }
+  }
   volume.chunkPlan = plan
   volume.chunkExplode = { enabled: false }
   return { volume, plan }
@@ -3228,7 +3264,6 @@ async function readOmezarrGeometry(
   selection.push(zarr.slice(originZ, originZ + shapeZ))
   selection.push(zarr.slice(originY, originY + shapeY))
   selection.push(zarr.slice(originX, originX + shapeX))
-  setDownloadStatus(`Fetching L${level.level} voxels...`)
   const view = await zarr.get(level.array, selection, { signal })
   const bytes = bytesFromZarrView(view)
   const expectedBytes = geometryByteLength(source, geometry)
@@ -3250,9 +3285,6 @@ async function readMosaicGeometry(
   if (!level) {
     throw new Error(`Translated mosaic level ${levelIndex} is unavailable`)
   }
-  setDownloadStatus(
-    `Fetching translated L${level.level} field of view...`,
-  )
   return fetchMosaicRegion(
     level,
     geometry.origin,
@@ -3276,8 +3308,9 @@ async function readWholeRangeSource(
     if (signal.aborted) throw signal.reason
     const chunk = plan.chunks[chunkIndex]
     if (!chunk) continue
-    setDownloadStatus(
-      `Fetching chunk ${chunkIndex + 1} of ${plan.chunks.length}...`,
+    showNiftiProgress(
+      `Fetching chunk ${chunkIndex + 1} of ${plan.chunks.length}…`,
+      chunkIndex / plan.chunks.length,
     )
     const bytes = await fetchByteRange(
       source.dataUrl,
@@ -3463,8 +3496,7 @@ async function streamUniformOmezarr(
         ? signal.reason
         : new DOMException('The export was cancelled', 'AbortError')
     }
-    showNiftiProgress('Finalizing NIfTI file…', 1)
-    setDownloadStatus(`Finalizing ${filename}...`)
+    showNiftiProgress(`Finalizing ${filename}…`, 1)
     await writable.close()
   } catch (error) {
     try {
@@ -3510,11 +3542,10 @@ async function downloadNifti(): Promise<void> {
           ? await readOmezarrGeometry(source, geometry, exportSignal)
           : await readWholeRangeSource(source, exportSignal)
       if (exportSignal.aborted) throw exportSignal.reason
-      showNiftiProgress('Creating NIfTI file…', null)
-      setDownloadStatus('Writing NIfTI header...')
+      showNiftiProgress('Writing NIfTI file…', null)
       await saveInMemoryNifti(source, geometry, imageBytes, filename)
     }
-    setDownloadStatus(
+    status(
       streamsToSelectedFile
         ? `Saved ${filename}`
         : `Download started: ${filename}`,
@@ -3522,22 +3553,18 @@ async function downloadNifti(): Promise<void> {
   } catch (error) {
     const cancelled =
       error instanceof DOMException && error.name === 'AbortError'
-    setDownloadStatus(
-      cancelled
-        ? 'Download cancelled'
-        : `Download failed: ${error instanceof Error ? error.message : String(error)}`,
-    )
+    if (cancelled) status('Download cancelled')
+    else status(`Download failed: ${errorText(error)}`, { error: true })
   } finally {
     downloadInProgress = false
     activeNiftiExportController = null
-    hideNiftiProgress()
     syncDownloadControl()
   }
 }
 
 function createStreamingVolume(source: RangeSource): NVImage {
   const win = parseWindow(source.defaultWindow)
-  const vol = buildLogicalVolume({
+  const vol = createStreamingNVImage({
     id: source.name,
     url:
       `client-chunk://${source.id}` +
@@ -3548,12 +3575,11 @@ function createStreamingVolume(source: RangeSource): NVImage {
     shape: source.shape,
     spacing: source.spacing,
     datatypeCode: source.datatypeCode,
-    numBitsPerVoxel: source.numBitsPerVoxel,
     calMin: win.min,
     calMax: win.max,
     colormap: els.colormap.value,
-    chunkSource: createRangeChunkSource(source),
   })
+  vol.chunkSource = createRangeChunkSource(source)
   vol.chunkPlan = chunkPlan ?? undefined
   vol.chunkExplode = { enabled: false }
   return vol
@@ -3846,8 +3872,18 @@ function syncTileLoadingIndicator(): void {
   const count = loadingTileCount(stream?.pending, stream?.inFlight)
   if (count !== displayedLoadingTiles) {
     displayedLoadingTiles = count
-    els.tileLoading.value = `${count} tile${count === 1 ? '' : 's'} loading`
-    els.tileLoading.dataset.loading = String(count)
+    els.status.dataset.tilesLoading = String(count)
+    if (count > 0) {
+      status(`Streaming ${count} tile${count === 1 ? '' : 's'}…`, {
+        progress: null,
+        background: true,
+      })
+    } else {
+      status(settledStatus.message, {
+        error: settledStatus.error,
+        background: true,
+      })
+    }
   }
   syncScaleIndicatorVisibility()
 }
@@ -3932,35 +3968,20 @@ function sliceTypeForVolumePlane(plane: VolumePlane): number {
 function addNvSlideMeasurement(
   measurement: NvSlideMeasurementCreation,
 ): void {
-  if (!nv) return
-  nv.model.completedMeasurements.push({
-    startMM: [
-      measurement.startMM[0],
-      measurement.startMM[1],
-      measurement.startMM[2],
-    ],
-    endMM: [
-      measurement.endMM[0],
-      measurement.endMM[1],
-      measurement.endMM[2],
-    ],
-    distance: measurement.distance,
-    sliceIndex: 0,
-    sliceType: sliceTypeForVolumePlane(measurement.plane),
-    slicePosition: measurement.slicePosition,
-  })
-  nv.drawScene()
-  els.clearMeasurements.disabled = false
-  els.measurementStatus.value =
-    `${formatMeasuredDistance(measurement.distance)} · right-click to remove`
-  syncNvSlideView()
+  nv?.addMeasurement(
+    [...measurement.startMM],
+    [...measurement.endMM],
+    {
+      sliceType: sliceTypeForVolumePlane(measurement.plane),
+      slicePosition: measurement.slicePosition,
+    },
+  )
 }
 
-function removeNvSlideMeasurement(index: number): void {
+function removeMeasurement(index: number): void {
   if (!nv) return
-  nv.model.completedMeasurements.splice(index, 1)
-  nv.drawScene()
-  const remaining = nv.model.completedMeasurements.length
+  nv.removeMeasurement(index)
+  const remaining = nv.getMeasurements().length
   els.clearMeasurements.disabled = remaining === 0
   els.measurementStatus.value =
     remaining === 0
@@ -3970,35 +3991,14 @@ function removeNvSlideMeasurement(index: number): void {
 }
 
 function handleMeasurementContextMenu(event: MouseEvent): void {
-  if (!nv || event.shiftKey || nv.model.completedMeasurements.length === 0) return
-  const rect = els.canvas.getBoundingClientRect()
-  if (rect.width <= 0 || rect.height <= 0) return
-  const scaleX = els.canvas.width / rect.width
-  const scaleY = els.canvas.height / rect.height
-  const point: [number, number] = [
-    (event.clientX - rect.left) * scaleX,
-    (event.clientY - rect.top) * scaleY,
-  ]
-  const planeTolerance =
-    Math.max(...(activeSource?.crosshairSpacing ?? [1, 1, 1])) * 0.5
-  const index = measurementIndexAtCanvasPoint(
-    nv.model.completedMeasurements,
-    nv.view?.screenSlices ?? [],
-    point,
-    12 * Math.max(scaleX, scaleY),
-    planeTolerance,
-  )
-  if (index < 0) return
+  if (!nv || event.shiftKey) return
+  const point = nv.clientToCanvas(event.clientX, event.clientY)
+  if (!point) return
+  const cssToCanvas = els.canvas.width / Math.max(1, els.canvas.clientWidth)
+  const index = nv.pickMeasurement(point[0], point[1], 12 * cssToCanvas)
+  if (index === null) return
   event.preventDefault()
-  nv.model.completedMeasurements.splice(index, 1)
-  nv.drawScene()
-  const remaining = nv.model.completedMeasurements.length
-  els.clearMeasurements.disabled = remaining === 0
-  els.measurementStatus.value =
-    remaining === 0
-      ? 'drag across a structure'
-      : `${remaining} measurement${remaining === 1 ? '' : 's'} · right-click to remove`
-  syncNvSlideView()
+  removeMeasurement(index)
 }
 
 function resetRenderCropForSourceChange(): void {
@@ -4019,7 +4019,7 @@ function loadCustomSourceFromInput(): void {
   try {
     layer = commitCustomLayer()
   } catch (error) {
-    showFallback(error instanceof Error ? error.message : String(error))
+    status(errorText(error), { error: true })
     return
   }
   syncSourceControls()
@@ -4058,13 +4058,7 @@ function startHudPolling(): void {
 }
 
 function selectedLayoutConfig() {
-  const source = activeSource
-  const physicalExtents = source
-    ? source.shape.map(
-        (length, axis) => length * source.spacing[axis],
-      ) as Shape3
-    : undefined
-  return viewerLayoutConfig(Number(els.layout.value), physicalExtents)
+  return viewerLayoutConfig(Number(els.layout.value))
 }
 
 function selectedSliceType(): number {
@@ -4181,9 +4175,7 @@ async function applyLayoutControl(): Promise<void> {
     els.layout.value = String(DEFAULT_LAYOUT_ID)
     nv.sliceType = SLICE_TYPE.MULTIPLANAR
     await reloadVolume({ view })
-    showFallback(
-      `3D current FOV failed: ${error instanceof Error ? error.message : String(error)}`,
-    )
+    status(`3D current FOV failed: ${errorText(error)}`, { error: true })
   } finally {
     els.layout.disabled = false
   }
@@ -4228,11 +4220,6 @@ function currentShareState(): ShareableViewState {
   }
 }
 
-function setShareStatus(message: string): void {
-  els.shareStatus.value = message
-  els.shareStatus.hidden = message.length === 0
-}
-
 async function createShareLink(): Promise<void> {
   try {
     updateUrlFromControls()
@@ -4253,14 +4240,15 @@ async function createShareLink(): Promise<void> {
     els.shareLink.hidden = false
     els.shareLink.focus()
     els.shareLink.select()
-    setShareStatus('Share link ready and selected. Press Ctrl+C to copy it.')
+    status('Share link ready and selected. Press Ctrl+C to copy it.')
   } catch (error) {
     if (!els.shareLink.hidden) {
       els.shareLink.focus()
       els.shareLink.select()
     }
-    setShareStatus(
-      error instanceof Error ? error.message : 'Unable to create the share link',
+    status(
+      `Unable to create the share link: ${errorText(error)}`,
+      { error: true },
     )
   }
 }
@@ -4429,7 +4417,7 @@ function syncNvSlideView(): void {
       els.interactionTool.getAttribute('aria-pressed') === 'true'
         ? 'measurement'
         : 'navigation',
-    measurements: nv?.model.completedMeasurements ?? [],
+    measurements: nv?.getMeasurements() ?? [],
   }
   nvSlideView.update(state)
 }
@@ -4575,8 +4563,6 @@ function syncAxialSliceControl(): void {
   els.axialSlice.value = String(index)
   els.axialSlice.disabled = !axialSliceNavigationEnabled()
   els.axialSliceValue.value = count > 0 ? `${index + 1} / ${count}` : '—'
-  els.axialSliceHelp.textContent =
-    'Use the slider or arrow keys to move one slice at the current Zarr level.'
 }
 
 function setAxialSlice(index: number): void {
@@ -4967,9 +4953,7 @@ async function drainAdaptiveLodRequests(): Promise<void> {
       await applyAdaptiveLodRequest()
     }
   } catch (error) {
-    showFallback(
-      `Adaptive stain detail failed: ${error instanceof Error ? error.message : String(error)}`,
-    )
+    status(`Adaptive stain detail failed: ${errorText(error)}`, { error: true })
   } finally {
     adaptiveLodRunning = false
     syncViewControls()
@@ -5009,7 +4993,6 @@ async function applyAdaptiveLodRequest(): Promise<void> {
   if (requestKey !== primary.lastAdaptiveRequestKey) {
     primary.lastAdaptiveRequestKey = requestKey
     primary.readSession.renew()
-    const previousPlan = primary.chunkedVolume.currentPlan
     const targetChanged = updateAdaptiveLodDetail(
       primary.chunkedVolume,
       primary.detailLevel,
@@ -5022,7 +5005,7 @@ async function applyAdaptiveLodRequest(): Promise<void> {
       lastAdaptiveRequestKey = requestKey
       if (targetChanged) setActiveLodLoading(target)
     }
-    await waitForStainLayerRefocus(primary.chunkedVolume, previousPlan)
+    await waitForStainLayerRefocus(primary.chunkedVolume)
   }
 
   const active = activeStainRuntime()
@@ -5063,8 +5046,7 @@ async function refocusMultiStainVolumes(
       focus: focusFraction,
       bounds,
     })),
-    (controller, previousPlan) =>
-      waitForStainLayerRefocus(controller, previousPlan),
+    waitForStainLayerRefocus,
   )
 
   for (const { runtime, targetLevel, requestKey } of requests) {
@@ -5276,13 +5258,18 @@ async function performReloadVolume(
   if (!nv) return
   const firstVolume = !activeSource
   const targetLayerId = activeStainLayerId
-  hideFallback()
-  setDownloadStatus('')
   stats = freshStats()
   let view = options.view !== undefined ? options.view : null
   const cropGeometry = renderCropGeometry
   const nextReadSession = new ZarrReadSession(taskSignal)
   suppressAdaptiveEvents = true
+  const reportsLoad = Boolean(options.reloadSource) || firstVolume
+  const layerName = activeStainLayer()?.name
+  if (reportsLoad) {
+    status(`Reading ${layerName ? `${layerName} ` : ''}OME-Zarr metadata…`, {
+      progress: null,
+    })
+  }
   try {
     if (options.reloadSource) {
       nvSlideView?.update(
@@ -5385,6 +5372,14 @@ async function performReloadVolume(
     }
     applyLayout()
     syncViewControls()
+    els.emptyState.hidden = true
+    if (reportsLoad) {
+      const level = currentDetailLevel ?? (activeSource.kind === 'synthetic' ? null : activeSource.baseLevel)
+      status(
+        `${layerName ?? activeSource.name} loaded · ${activeSource.shape.join(' × ')} ${activeSource.dtype}` +
+          (level !== null ? ` · L${level}` : ''),
+      )
+    }
   } catch (err) {
     if (taskSignal.aborted) {
       nextReadSession.abort('OME-Zarr reload superseded')
@@ -5403,7 +5398,7 @@ async function performReloadVolume(
       els.activeLevel.value = 'unavailable'
       els.activeLevel.title = 'The OME-Zarr volume did not load'
     }
-    showFallback(err instanceof Error ? err.message : String(err))
+    status(`Could not load the volume: ${errorText(err)}`, { error: true })
   } finally {
     suppressAdaptiveEvents = false
     syncDownloadControl()
@@ -5451,7 +5446,7 @@ async function main(): Promise<void> {
     {
       onCrosshairChange: applyNvSlideCrosshair,
       onMeasurementCreate: addNvSlideMeasurement,
-      onMeasurementRemove: removeNvSlideMeasurement,
+      onMeasurementRemove: removeMeasurement,
       onActivePaneChange: () => {
         syncDownloadControl()
       },
@@ -5526,6 +5521,21 @@ async function main(): Promise<void> {
     },
   })
   els.source.closest('label')?.before(exampleSelector)
+  exampleSelector.addEventListener('nd-example-status', (event) => {
+    const { state, message, error } = (event as CustomEvent<{
+      state: string
+      message: string
+      error: boolean
+    }>).detail
+    // The ready description stays beside the selector; the footer keeps the load result.
+    if (state === 'ready') {
+      technicalLog.log(message, 'info')
+      if (statusBusy && !statusBackground) status('Example loaded')
+    }
+    else if (state === 'loading') {
+      status(message, { progress: null, onCancel: () => exampleSelector.cancel() })
+    } else status(message, { error })
+  })
   window.addEventListener('pagehide', () => exampleSelector.destroy(), { once: true })
   for (const input of [els.source, els.zarrUrl, els.dandisetId, els.dandiVersion]) {
     input.addEventListener('input', () => exampleSelector.cancel())
@@ -5547,7 +5557,7 @@ async function main(): Promise<void> {
     syncSourceControls()
     updateUrlFromControls()
     if (currentStoreUrls().length === 0) {
-      showFallback(
+      showEmptyState(
         els.source.value === 'dandi'
           ? 'Search DANDI and select an OME-Zarr asset, then press Load volume'
           : 'Add an OME-Zarr store URL, then press Load volume',
@@ -5637,7 +5647,7 @@ async function main(): Promise<void> {
       try {
         customLayer = commitCustomLayer()
       } catch (error) {
-        showFallback(error instanceof Error ? error.message : String(error))
+        status(errorText(error), { error: true })
         return
       }
     }
@@ -5648,23 +5658,17 @@ async function main(): Promise<void> {
   els.downloadNifti.addEventListener('click', () => {
     void downloadNifti()
   })
-  els.cancelNifti.addEventListener('click', () => {
-    const controller = activeNiftiExportController
-    if (!controller || controller.signal.aborted) return
-    controller.abort()
-    showNiftiProgress('Cancelling export…', null)
-    setDownloadStatus('Cancelling export...')
-    syncDownloadControl()
-  })
-  els.niftiLevel.addEventListener('change', () => {
-    setDownloadStatus('')
-    syncDownloadControl()
-  })
+  els.niftiLevel.addEventListener('change', syncDownloadControl)
   els.createShareLink.addEventListener('click', () => {
     void createShareLink()
   })
 
-  await reloadVolume({ reloadSource: true, view: initialSharedView })
+  if (currentSourceKind() === 'omezarr' && currentStoreUrls().length === 0) {
+    syncDownloadControl()
+    syncZarrLevelControl()
+  } else {
+    await reloadVolume({ reloadSource: true, view: initialSharedView })
+  }
   if (initialSharedSettings && nv.volumes.length > 0) {
     const sharedWindow = windowFromLevelWidth(
       initialSharedSettings.windowLevel,
@@ -5701,5 +5705,5 @@ async function main(): Promise<void> {
 }
 
 main().catch((err: unknown) => {
-  showFallback(err instanceof Error ? err.message : String(err))
+  status(errorText(err), { error: true })
 })

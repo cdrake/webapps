@@ -4,6 +4,17 @@
 
 ### Patch Changes
 
+- Release the experimental NeSVoR browser and remote compute workflows. Package the required ONNX runtime with gzip compression and omit unused runtime variants. Include shared compute connection recovery, cancellation and Linux server setup instructions.
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - @neurodesk/webapp-components@0.5.2
+  - @neurodesk/nesvor@0.3.20260930
+
+
+### Patch Changes
+
 - Publish the experimental NeSVoR browser reconstruction with WebGPU brain masking, motion correction, N4 preprocessing, deformation and reconstruction, plus optional Linux NVIDIA remote compute. WebGPU is the default, progress is logged throughout processing, and acquisition thickness remains editable without a confirmation checkbox. Hardware GPU performance and full-acquisition CUDA parity remain unverified.
   - @neurodesk/nesvor@0.3.20260930
 

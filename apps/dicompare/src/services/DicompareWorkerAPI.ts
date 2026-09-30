@@ -8,6 +8,7 @@ import { SchemaTemplate } from '../types/schema';
 import { Acquisition as UIAcquisition, DicomField } from '../types';
 import { FileObject } from '../utils/fileUploadUtils';
 import { fieldToSchemaField } from '../utils/schemaFieldConverters';
+import { beginActivity, isActivityRunning } from '../utils/technicalLog';
 
 function transferableCopy(bytes: Uint8Array): ArrayBuffer {
   const copy = new Uint8Array(bytes.byteLength);
@@ -290,7 +291,39 @@ class DicompareWorkerAPI {
   /**
    * Validate an acquisition against a schema.
    */
+  /**
+   * Run one validation as a footer activity. A top-level validation logs its
+   * summary; validations nested inside a larger operation (matching) stay quiet.
+   */
+  private async trackValidation(name: string, run: () => Promise<any[]>): Promise<any[]> {
+    const nested = isActivityRunning();
+    const done = beginActivity(`Validating ${name}`, { silent: true });
+    try {
+      const results = await run();
+      const count = (status: string) => results.filter((result) => result?.status === status).length;
+      done(nested ? undefined : {
+        message: `Validated ${name}: ${count('pass')} pass, ${count('fail')} fail, ${count('warning')} warning.`,
+        level: count('fail') ? 'warning' : 'success',
+      });
+      return results;
+    } catch (error) {
+      // Callers report the error; the console capture logs it.
+      done();
+      throw error;
+    }
+  }
+
   async validateAcquisitionAgainstSchema(
+    acquisition: UIAcquisition,
+    schemaId: string,
+    getSchemaContent?: (id: string) => Promise<string | null>,
+    acquisitionIndex?: string
+  ): Promise<any[]> {
+    return this.trackValidation(acquisition.protocolName || 'acquisition', () =>
+      this.runSchemaValidation(acquisition, schemaId, getSchemaContent, acquisitionIndex));
+  }
+
+  private async runSchemaValidation(
     acquisition: UIAcquisition,
     schemaId: string,
     getSchemaContent?: (id: string) => Promise<string | null>,
@@ -331,6 +364,14 @@ class DicompareWorkerAPI {
    * Validate an acquisition against another acquisition (data-as-schema mode).
    */
   async validateAcquisitionAgainstAcquisition(
+    dataAcquisition: UIAcquisition,
+    schemaAcquisition: UIAcquisition
+  ): Promise<any[]> {
+    return this.trackValidation(dataAcquisition.protocolName || 'acquisition', () =>
+      this.runAcquisitionValidation(dataAcquisition, schemaAcquisition));
+  }
+
+  private async runAcquisitionValidation(
     dataAcquisition: UIAcquisition,
     schemaAcquisition: UIAcquisition
   ): Promise<any[]> {

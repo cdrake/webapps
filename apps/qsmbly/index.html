@@ -27,15 +27,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <!-- Tagify (load before our CSS so we can override) -->
-  <link rel="stylesheet" href="https://unpkg.com/@yaireo/tagify/dist/tagify.css">
-  <script src="https://unpkg.com/@yaireo/tagify"></script>
+  <link rel="stylesheet" href="https://unpkg.com/@yaireo/tagify@4.38.0/dist/tagify.css">
+  <script src="https://unpkg.com/@yaireo/tagify@4.38.0/dist/tagify.js"></script>
 
   <!-- Our styles last to override -->
   <link rel="stylesheet" href="vendor/webapp-components/src/styles/base.css">
   <link rel="stylesheet" href="css/modern-styles.css">
-  <link rel="stylesheet" href="css/landing.css">
 
-  <!-- Cross-project "ecosystem bar", shown atop the landing overlay
+  <!-- Cross-project "ecosystem bar", shown atop the app
        (canonical source: QSMxT/qsmxt.github.io → qsm-nav.js). -->
   <script>
     (function () {
@@ -47,18 +46,9 @@
       // no-cors subresources. GitHub Pages sends Access-Control-Allow-Origin: *,
       // so request it with CORS or the bar silently fails to load.
       s.crossOrigin = "anonymous";
-      s.dataset.current = "bly"; // mounts at the top of <body> — pinned above both landing and app
+      s.dataset.current = "bly"; // mounts at the top of <body>, pinned above the app
       document.head.appendChild(s);
     })();
-  </script>
-
-  <!-- The splash is always the front door. The app lives at "#app" (e.g.
-       /qsmbly/#app), so only skip straight to it when that hash is present
-       (avoids a flash of the welcome screen before the app JS loads). -->
-  <script>
-    if (location.hash === '#app') {
-      document.documentElement.classList.add('landing-seen');
-    }
   </script>
 
   <!-- NiiVue -->
@@ -69,97 +59,10 @@
   </script>
 </head>
 <body>
-  <!-- ==================================================================== -->
-  <!-- Landing / welcome overlay (shown on first visit, hidden after Launch) -->
-  <!-- ==================================================================== -->
-  <div class="landing-overlay" id="landingPage">
-    <div class="landing-scroll">
-      <nav class="landing-nav">
-        <div class="landing-nav-inner">
-          <div class="landing-brand">
-            <img src="icon.svg" alt="QSMbly" width="26" height="26">
-            <span>QSMbly</span>
-          </div>
-          <div class="landing-nav-links">
-            <a href="../" data-neurodesk-shell-link="more-apps" title="More Neurodesk web apps">More Apps</a>
-            <a href="https://github.com/neurodesk/webapps/tree/main/apps/qsmbly" data-neurodesk-shell-link="github" target="_blank" rel="noopener noreferrer">GitHub</a>
-            <a href="https://qsmxt.github.io/QSMxT/" target="_blank" rel="noopener noreferrer">QSMxT</a>
-            <a href="#" id="landingNavLaunch" class="landing-nav-launch">Launch &rarr;</a>
-          </div>
-        </div>
-      </nav>
-
-      <div class="landing-inner">
-        <header class="landing-hero">
-          <h1 class="grad">QSMbly</h1>
-          <p class="landing-tagline">Quantitative Susceptibility Mapping, in your browser.</p>
-          <p class="landing-sub">A complete QSM reconstruction pipeline that runs entirely on your machine. No installation, no servers, no data uploads &mdash; load your MRI phase data, choose your algorithms, and generate susceptibility maps, all client-side using WebAssembly.</p>
-          <div class="landing-cta">
-            <button class="landing-btn-primary" id="landingLaunch" type="button">
-              Launch QSMbly
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-            </button>
-            <button class="landing-btn-ghost" id="landingLaunchTour" type="button">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-              Take a guided tour
-            </button>
-          </div>
-          <p class="landing-badges">Powered by QSM.rs &middot; WebAssembly &middot; Private by design</p>
-        </header>
-
-        <section class="landing-section">
-          <h2>Why QSMbly?</h2>
-          <div class="landing-features">
-            <div class="landing-card">
-              <div class="landing-card-icon">
-                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              </div>
-              <h3>Completely private</h3>
-              <p>Your data never leaves your device, so there's no need to de-identify scans first.</p>
-            </div>
-            <div class="landing-card">
-              <div class="landing-card-icon">
-                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-              </div>
-              <h3>Zero installation</h3>
-              <p>No Python, MATLAB, or Docker. The whole pipeline is compiled to WebAssembly.</p>
-            </div>
-            <div class="landing-card">
-              <div class="landing-card-icon">
-                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
-              </div>
-              <h3>Every QSM.rs algorithm</h3>
-              <p>Phase unwrapping, background field removal, and two dozen dipole inversion methods. Mix and match to suit your data.</p>
-            </div>
-          </div>
-        </section>
-
-        <section class="landing-sibling">
-          <p>QSMbly runs the same reconstruction code as <a href="https://qsmxt.github.io/QSMxT/" target="_blank" rel="noopener noreferrer">QSMxT</a>, the command-line QSM pipeline: both are built on <a href="https://github.com/astewartau/QSM.rs" target="_blank" rel="noopener noreferrer">QSM.rs</a>. Try methods here, then scale up with QSMxT when you have a whole study to process.</p>
-          <button class="landing-btn-primary" id="landingLaunchBottom" type="button" onclick="document.getElementById('landingLaunch').click()">
-            Get started
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-          </button>
-        </section>
-
-        <footer class="landing-footer">
-          <span>&copy; QSMbly &middot; <span id="landingVersion"></span></span>
-          <span>
-            <a href="https://github.com/neurodesk/webapps/tree/main/apps/qsmbly" target="_blank" rel="noopener noreferrer">GitHub</a>
-            &nbsp;&middot;&nbsp;
-            <a href="https://github.com/astewartau/QSM.rs" target="_blank" rel="noopener noreferrer">QSM.rs</a>
-            &nbsp;&middot;&nbsp;
-            <a href="https://neurodesk.org/" target="_blank" rel="noopener noreferrer">Neurodesk</a>
-          </span>
-        </footer>
-      </div>
-    </div>
-  </div>
-
   <div class="app-container">
     <!-- Header -->
     <header class="app-header">
-      <div class="logo" id="appLogo" title="Back to welcome page" style="cursor: pointer;">
+      <div class="logo" id="appLogo">
         <div class="logo-icon">
           <img src="QSMbly.png" alt="QSMbly" width="20" height="20">
         </div>
@@ -195,11 +98,11 @@
           </svg>
           <span>Privacy</span>
         </button>
-        <a href="../" class="header-link" title="More Neurodesk web apps">
+        <a href="../" class="header-link" data-neurodesk-shell-link="more-apps" title="More Neurodesk web apps">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
           <span>More Apps</span>
         </a>
-        <a href="https://github.com/neurodesk/webapps/tree/main/apps/qsmbly" target="_blank" rel="noopener noreferrer" class="header-link" title="View on GitHub">
+        <a href="https://github.com/neurodesk/webapps/tree/main/apps/qsmbly" data-neurodesk-shell-link="github" target="_blank" rel="noopener noreferrer" class="header-link" title="View on GitHub">
           <svg viewBox="0 0 16 16" width="20" height="20" fill="white">
             <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
           </svg>
@@ -207,11 +110,6 @@
         </a>
       </div>
     </header>
-
-    <!-- Mobile progress bar (visible on non-controls tabs) -->
-    <div class="mobile-progress" id="mobileProgress">
-      <div class="mobile-progress-fill" id="mobileProgressFill" style="width: 0%"></div>
-    </div>
 
     <!-- Sidebar -->
     <aside class="app-sidebar" id="sidebar">
@@ -472,7 +370,7 @@
                 <button class="btn btn-secondary btn-sm" id="undoDraw" title="Undo last stroke">
                   Undo
                 </button>
-                <button class="btn btn-primary btn-sm" id="applyDrawing" title="Apply drawing to mask">
+                <button class="btn btn-secondary btn-sm" id="applyDrawing" title="Apply drawing to mask">
                   Apply
                 </button>
               </div>
@@ -501,7 +399,7 @@
               </svg>
               Advanced
             </button>
-            <button class="btn btn-primary" id="runSWI" style="flex: 3;">
+            <button class="btn btn-secondary" id="runSWI" style="flex: 3;">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polygon points="5 3 19 12 5 21 5 3"/>
               </svg>
@@ -510,7 +408,7 @@
           </div>
           <hr style="border: none; border-top: 1px solid var(--nd-color-border); margin: var(--nd-space-sm) 0;">
           <h5 style="margin: 0 0 var(--nd-space-xs); font-size: 0.8rem; color: var(--nd-color-text-muted);">T2* / R2*</h5>
-          <button class="btn btn-primary" id="runT2starR2star" style="width: 100%;">
+          <button class="btn btn-secondary" id="runT2starR2star" style="width: 100%;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polygon points="5 3 19 12 5 21 5 3"/>
             </svg>
@@ -655,24 +553,6 @@
         </div>
       </div>
 
-      <!-- Status Bar (fixed at bottom) -->
-      <div class="sidebar-status" id="statusBar">
-        <div class="status-header">
-          <span class="status-label">Status</span>
-          <div class="status-right">
-            <span class="status-value" id="progressText">Ready</span>
-            <button class="btn-status-cancel" id="cancelPipeline" title="Cancel pipeline" disabled>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="6" x2="6" y2="18"/>
-                <line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-        <div class="progress-bar">
-          <div class="progress-fill" id="progressFill" style="width: 0%"></div>
-        </div>
-      </div>
     </aside>
 
     <!-- Main Content -->
@@ -780,12 +660,6 @@
       </div>
     </main>
 
-    <!-- Footer (desktop only) -->
-    <footer class="app-footer">
-      <span>QSMbly | Browser-based Quantitative Susceptibility Mapping</span>
-      <span>Powered by Rust, WebAssembly &amp; NiiVue</span>
-    </footer>
-
     <!-- Mobile Tab Bar -->
     <nav class="mobile-tab-bar" id="mobileTabBar">
       <button class="mobile-tab active" data-tab="controls">
@@ -817,6 +691,14 @@
         <span>Console</span>
       </button>
     </nav>
+
+    <footer id="status" class="nd-imaging-status">
+      <span class="nd-status-label">Status</span>
+      <span id="statusText" class="nd-status-text" role="status" aria-live="polite">Ready</span>
+      <span id="elapsed" class="nd-status-elapsed"></span>
+      <progress id="progress" max="1" value="0" aria-label="Processing progress"></progress>
+      <button id="cancelPipeline" class="nd-btn-cancel" type="button" title="Cancel processing" aria-label="Cancel processing" hidden>×</button>
+    </footer>
   </div>
 
   <!-- Modals (outside app-container for proper z-index stacking) -->
@@ -1911,7 +1793,6 @@
   </div>
 
   <template id="hdBetSettingsTemplate">
-    <p class="nd-hint">HD-BET brain extraction can take several minutes. Stop cancels processing.</p>
     <p class="nd-hint" id="hdBetWeightsNote" hidden>First use downloads 123 MB of model weights under CC-BY-NC-4.0, then caches them in your browser.</p>
     <div class="nd-field">
       <label for="hdBetTileStep">Patch step</label>
@@ -1922,13 +1803,12 @@
       </select>
       <p class="nd-hint">Smaller steps overlap more patches to reduce seams.</p>
     </div>
-    <label class="nd-check"><input type="checkbox" id="hdBetTta"> Mirroring augmentation</label>
-    <p class="nd-hint">Averages eight mirrored predictions per patch and takes roughly eight times longer.</p>
+    <label class="nd-check" title="Averages eight mirrored predictions per patch and takes roughly eight times longer."><input type="checkbox" id="hdBetTta"> Mirroring augmentation</label>
     <p class="nd-hint">Patch size is fixed at 128 × 128 × 64 to fit browser memory.</p>
     <p class="nd-hint" id="hdBetEstimate"></p>
     <div class="nd-row">
       <button class="nd-btn nd-btn-secondary" id="resetHdBetSettings">Reset defaults</button>
-      <button class="nd-btn nd-btn-primary" id="runHdBetWithSettings">Run HD-BET</button>
+      <button class="nd-btn nd-btn-primary" id="runHdBetWithSettings" title="HD-BET brain extraction can take several minutes. Stop cancels processing.">Run HD-BET</button>
     </div>
   </template>
 
@@ -2019,26 +1899,6 @@
     </div>
   </div>
 
-  <!-- Welcome-tour prompt (shown once after first launch) -->
-  <div class="modal-overlay" id="welcomeModal">
-    <div class="modal welcome-modal">
-      <div class="modal-body">
-        <div class="welcome-modal-icon">
-          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        </div>
-        <h3>Welcome to QSMbly!</h3>
-        <p>New here? Take a quick guided tour and we'll walk you through building your first susceptibility map, step by step.</p>
-        <div class="welcome-modal-actions">
-          <button class="tour-btn tour-btn-ghost" id="welcomeLater" type="button">Maybe later</button>
-          <button class="tour-btn tour-btn-primary" id="welcomeStartTour" type="button">Start tour</button>
-        </div>
-        <label class="welcome-dontshow">
-          <input type="checkbox" id="welcomeDontShow"> Don't show this again
-        </label>
-      </div>
-    </div>
-  </div>
-
   <div class="modal-overlay" id="aboutModal">
     <div class="modal about-modal">
       <div class="modal-header">
@@ -2055,6 +1915,7 @@
         </div>
 
         <p>QSMbly is a browser-based application for Quantitative Susceptibility Mapping (QSM). It runs entirely in your web browser using WebAssembly, providing near-native performance without requiring any software installation or data upload.</p>
+        <p>QSMbly runs the same reconstruction code as <a href="https://qsmxt.github.io/QSMxT/" target="_blank" rel="noopener noreferrer">QSMxT</a>, the command-line QSM pipeline: both are built on <a href="https://github.com/astewartau/QSM.rs" target="_blank" rel="noopener noreferrer">QSM.rs</a>. Try methods here, then scale up with QSMxT when you have a whole study to process.</p>
 
         <h4>Version</h4>
         <div class="about-version-table">

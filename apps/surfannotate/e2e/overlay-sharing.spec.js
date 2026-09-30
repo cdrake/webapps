@@ -34,7 +34,6 @@ async function loadOverlay(page, reversed = false) {
 
 test.beforeEach(async ({ page }) => {
   await page.goto('./');
-  await page.locator('#enterAppButton').click();
   await loadSurface(page, 'lh.flat.surf.gii', 1);
 });
 

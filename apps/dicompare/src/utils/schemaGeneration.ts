@@ -6,6 +6,7 @@
 import { dicompareWorkerAPI as dicompareAPI } from '../services/DicompareWorkerAPI';
 import { SchemaMetadata } from '../contexts/WorkspaceContext';
 import { Acquisition } from '../types';
+import { log } from './technicalLog';
 
 export interface SchemaGenerationOptions {
   acquisitions: Acquisition[];
@@ -66,6 +67,7 @@ export function downloadSchemaJson(
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+  log(`Exported schema ${a.download}.`, 'success');
 }
 
 /**

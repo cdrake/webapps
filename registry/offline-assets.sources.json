@@ -347,11 +347,11 @@
         "kind": "runtime"
       },
       {
-        "url": "https://unpkg.com/@yaireo/tagify",
+        "url": "https://unpkg.com/@yaireo/tagify@4.38.0/dist/tagify.js",
         "kind": "runtime-cdn"
       },
       {
-        "url": "https://unpkg.com/@yaireo/tagify/dist/tagify.css",
+        "url": "https://unpkg.com/@yaireo/tagify@4.38.0/dist/tagify.css",
         "kind": "runtime-cdn"
       },
       {
@@ -2630,6 +2630,152 @@
         "kind": "example",
         "sha256": "8b763fcadd7a9ae677d4c5cab86b32831c03cddf146504291e7a5082fd9feee1",
         "bytes": 4294255
+      }
+    ],
+    "disconnectome": [
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/544f1362f367355e61a85e0694f5075aba2792b6/reg/templates/MNI152_T1_1mm_brain.nii.gz",
+        "kind": "example-template",
+        "sha256": "32d5be33460f995a5d305507053c8862c823d9ca6bfb543381308df14590f212",
+        "bytes": 3219212
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/251637c4e003d4841ea3e28a583bca7dc264a610/disconnectome/atlas/enigma_symmetric.tvx.gz",
+        "sha256": "878fcd273077cbf84e9a4491f438d62c8ba4a6b11dbb88a65bb99706425127f5",
+        "bytes": 7902214,
+        "kind": "atlas-template",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/251637c4e003d4841ea3e28a583bca7dc264a610/disconnectome/tracts/enigma_display.trx",
+        "sha256": "60e5e5c20eccf099ccb75a5b18dd1e4ae6c4e10a4aa3f1b9282f799ecda1c2c2",
+        "bytes": 2447095,
+        "kind": "geometry-or-model-data",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/251637c4e003d4841ea3e28a583bca7dc264a610/disconnectome/atlas/hcp1065_avg_tracts.tvx.gz",
+        "sha256": "8ab8de4423b2ee59e20ca5e7d73776f0a6f3de0569b64cc0597eb507526df458",
+        "bytes": 21795029,
+        "kind": "atlas-template"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/251637c4e003d4841ea3e28a583bca7dc264a610/disconnectome/tracts/hcp1065_display.trx",
+        "sha256": "8d6baf379e008d5d6fd8a6429c1a0b59b42e78f2c845a998958f9b57cfed19a8",
+        "bytes": 18878370,
+        "kind": "geometry-or-model-data"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/251637c4e003d4841ea3e28a583bca7dc264a610/disconnectome/examples/wM2017_T1w_lesion.nii.gz",
+        "sha256": "6cec7fd16d20bde36d219f02be88bdaf7fe2538c7069f6db51f0210a070b1b6f",
+        "bytes": 29321,
+        "kind": "example"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/251637c4e003d4841ea3e28a583bca7dc264a610/disconnectome/examples/wM2017_T1w.nii.gz",
+        "sha256": "aa8be671c4e662ec4d4a913e1f2d4080a488a1a3c7734a02b980e23effcbdd21",
+        "bytes": 2483322,
+        "kind": "example"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/251637c4e003d4841ea3e28a583bca7dc264a610/disconnectome/examples/wM2018_T2w_lesion.nii.gz",
+        "sha256": "160d5b208bc50b2709a194cc3af6e15566a239fcdd67f7a9a9d99138c55cc4b6",
+        "bytes": 14750,
+        "kind": "example"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/251637c4e003d4841ea3e28a583bca7dc264a610/disconnectome/examples/wM2018_T2w.nii.gz",
+        "sha256": "44364444f7522936ee21beef6fc9140e46b2664b09fbf6e9ec73368166fc024e",
+        "bytes": 2800195,
+        "kind": "example"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/251637c4e003d4841ea3e28a583bca7dc264a610/disconnectome/examples/wM2201_T2w_lesion.nii.gz",
+        "sha256": "01a7011a4a759eeaae083766e720d6e48d1a860b5a309674924c7e8c296f4c6a",
+        "bytes": 7355,
+        "kind": "example"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/251637c4e003d4841ea3e28a583bca7dc264a610/disconnectome/examples/wM2201_T2w.nii.gz",
+        "sha256": "d834d31fc6aad8d31fbbcacf8591c89699537a36f6fc4a5d69a2b7c3ffdd872d",
+        "bytes": 2516604,
+        "kind": "example"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/251637c4e003d4841ea3e28a583bca7dc264a610/disconnectome/examples/wM2208_T2w_lesion.nii.gz",
+        "sha256": "ff198fa6b071039cc9919e4aea13c178360d3089b983365b1a7813e1a56a0c31",
+        "bytes": 9667,
+        "kind": "example"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/251637c4e003d4841ea3e28a583bca7dc264a610/disconnectome/examples/wM2208_T2w.nii.gz",
+        "sha256": "3926f810853c2fa199ac4d50488a1c83c84789005ea96be2d95536dbd358c97b",
+        "bytes": 2472763,
+        "kind": "example"
+      }
+    ],
+    "carotid-flow": [
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/07cac5c3f89c82ba721163ea8c1fbf1df9625c7d/carotid-flow/examples/carotid_pc_mod.nii.gz",
+        "sha256": "43f5bf1894bce2be664d6fcaa274184a69890b0f17ffc3a64f3ff9da930cbdcb",
+        "bytes": 948401,
+        "kind": "example"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/07cac5c3f89c82ba721163ea8c1fbf1df9625c7d/carotid-flow/examples/carotid_pc_ph.nii.gz",
+        "sha256": "db0a041daecf042dcef5a67ebfe7c877a6a4bbe841f505a78c1ec1ea826aa142",
+        "bytes": 875770,
+        "kind": "example"
+      }
+    ],
+    "white-matter-lesions": [
+      {
+        "url": "https://huggingface.co/datasets/sbollmann/neurodesk-webapps-assets/resolve/e0a056b3d6b2b075bab5b780281af17fc9d6421d/syncro/synthstrip-browser.onnx",
+        "sha256": "dc9e11999b58d7949d77ddf1b2ed2910df66f8725c078a6b46ae08b8ebcc2800",
+        "bytes": 10296357,
+        "kind": "model",
+        "license": "Apache-2.0"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/ee0b2a1d563bec6821398d1ceaa0a474934d5013/white-matter-lesions/models/flames-fold0.onnx",
+        "sha256": "fe21c42078aa462091a5a553b7d2608bde0836647ab7866e1bad376744bcd0ec",
+        "bytes": 61642305,
+        "kind": "model",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/ee0b2a1d563bec6821398d1ceaa0a474934d5013/white-matter-lesions/models/flames-fold1.onnx",
+        "sha256": "f185f5dc5f4f5820be22678127f2614bda4ddcd89593006314106189c1ee69b5",
+        "bytes": 61642305,
+        "kind": "model",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/ee0b2a1d563bec6821398d1ceaa0a474934d5013/white-matter-lesions/models/flames-fold2.onnx",
+        "sha256": "e02192e2a74112740992c1716dacae1034c1526de78e7a001a517cae9d5e43bc",
+        "bytes": 61642305,
+        "kind": "model",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/ee0b2a1d563bec6821398d1ceaa0a474934d5013/white-matter-lesions/models/flames-fold3.onnx",
+        "sha256": "fd4903b2c4678cfa25fcc7098fd127fed40f4f7cc1022ad2df12b993d7c45a18",
+        "bytes": 61642305,
+        "kind": "model",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/ee0b2a1d563bec6821398d1ceaa0a474934d5013/white-matter-lesions/models/flames-fold4.onnx",
+        "sha256": "4214c079c83a6fef9aa3d662af9504118359fb943d00b932289b63ffffc1148a",
+        "bytes": 61642305,
+        "kind": "model",
+        "license": "CC-BY-4.0"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/d16b3a04f7b7799420bbcd4ab3c7890b11d7f700/white-matter-lesions/examples/MSLesSeg_P57_T1_FLAIR.nii.gz",
+        "kind": "example",
+        "sha256": "179472456b8591364c0a1d4912d95c69e2b5743c87a9397aa9409fb58436f70c",
+        "bytes": 1827303
       }
     ],
     "nesvor": [

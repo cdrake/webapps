@@ -37,10 +37,8 @@
       <details class="nd-sidebar-section" id="taskSection" open>
         <summary class="nd-section-title">Registration</summary>
         <div class="nd-section-content">
-          <label class="nd-check"><input id="useGpu" type="checkbox" /> Use GPU (WebGPU)</label>
+          <label class="nd-check"><input id="useGpu" type="checkbox" /> Use GPU (WebGPU) <span class="nd-info-icon" tabindex="0" aria-label="About GPU execution">i<span class="nd-info-tooltip">CPU and Greedy are the defaults and do not require WebGPU. GPU execution is explicit and never falls back; it remains subject to the browser and adapter's buffer limits.</span></span></label>
           <label class="nd-check"><input id="useSyn" type="checkbox" /> Use SyN (otherwise Greedy)</label>
-          <p class="nd-hint">CPU and Greedy are the defaults and do not require WebGPU. GPU execution is explicit and never falls back; it remains subject to the browser and adapter's buffer limits.</p>
-          <p class="nd-hint">Registration expects brain-only images: a scan that still includes scalp produces artifacts. Brain extract it with MindGrab using the button under the image; the examples are already brain-only.</p>
           <button id="runButton" class="nd-btn nd-btn-primary" type="button" disabled>Register images</button>
         </div>
       </details>
@@ -80,7 +78,7 @@
       <button id="cancelButton" class="nd-btn-cancel" type="button" title="Cancel registration" aria-label="Cancel registration" hidden>×</button>
     </footer>
     <template id="aboutContent">
-      <p>FireANTs registers a moving brain image to a stationary brain image using CPU or WebGPU execution and a Greedy or SyN transform preset. Custom images can be brain extracted locally with MindGrab before registration.</p>
+      <p>FireANTs registers a moving brain image to a stationary brain image using CPU or WebGPU execution and a Greedy or SyN transform preset. Registration expects brain-only images: scalp produces artifacts. Brain extract custom images locally with MindGrab using the button under each image; the examples are already brain-only.</p>
       <p>The FireANTs browser package includes a modified cfireants C/WebAssembly reimplementation. It is not endorsed by the FireANTs authors. Its <a href="./cfireants/LICENSE" target="_blank" rel="noreferrer">license</a> and <a href="./cfireants/THIRD_PARTY_NOTICES.md" target="_blank" rel="noreferrer">third-party notices</a> travel with this application.</p>
     </template>
     <template id="privacyContent"><p>Images are processed locally in this browser and are never uploaded.</p></template>

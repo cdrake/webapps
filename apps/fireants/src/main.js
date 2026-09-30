@@ -1,5 +1,5 @@
 import examples from '../examples.json';
-import { createExampleSelector } from '@neurodesk/webapp-components/ui';
+import { createExampleSelector, bindInfoTooltips } from '@neurodesk/webapp-components/ui';
 import NiiVue, { MULTIPLANAR_TYPE, SHOW_RENDER, SLICE_TYPE } from "@niivue/niivue";
 import { register as registerFireants } from "@fireants/fireants";
 import "@neurodesk/webapp-components/styles/imaging-workspace.css";
@@ -72,6 +72,7 @@ const toolbar = createViewerToolbar({
 });
 $("viewer").prepend(toolbar);
 const log = createConsole({ id: "technicalLog" });
+bindInfoTooltips(document);
 $("viewer").append(log);
 const info = createInfoDialog({ id: "infoDialog" });
 $("aboutBtn").onclick = () => info.open("About FireANTs", $("aboutContent"));
@@ -226,7 +227,7 @@ async function importSlot(name, filesPromise) {
     slot.series.replaceChildren(...images.map((file, index) => new Option(file.name, String(index))));
     slot.seriesField.hidden = images.length < 2;
     await loadSlot(name, images[0]);
-    status(`${images[0].name} loaded. Brain extract it before registering if it still includes scalp.`);
+    status(`${images[0].name} loaded.`);
   });
 }
 

@@ -6,23 +6,19 @@
 #
 # Shared statements (rendered by the shell, never repeated per app):
 #   builder   "The web application is developed and hosted by the Neurodesk team …"
-#   execution "It runs entirely in your browser." — an app whose processing runs
-#             elsewhere overrides this with its own `execution` sentence
 #   ecosystem "This app is part of the lightNIIng ecosystem (lightniing.org), which aims
 #              to make neuroimaging tools widely available for clinical translation."
 #   platform  Renton et al. 2024, Nature Methods (Neurodesk) — closes every Cite list.
 #
 # Per app:
 #   builders   optional sentence naming additional authors of the web application
-#   execution  optional sentence replacing the shared execution statement; it must
-#              say where processing happens (browser, compute server, …)
 #   about      optional paragraphs shown when the app has no About dialog of its own
 #   packages   libraries and runtimes under the hood: name, url, role
 #   citations  one entry per implemented method: group, title, reference, doi|url, code?
 
 shared:
-  builder: The web application is developed and hosted by the Neurodesk team at the University of Queensland and collaborators.
   execution: It runs entirely in your browser.
+  builder: The web application is developed and hosted by the Neurodesk team at the University of Queensland and collaborators, and runs entirely in your browser.
   ecosystem: This app is part of the lightNIIng ecosystem (lightniing.org), which aims to make neuroimaging tools widely available for clinical translation.
   ecosystem_name: lightNIIng
   ecosystem_url: https://lightniing.org
@@ -1073,6 +1069,96 @@ apps:
       reference: 'NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software].'
       url: https://github.com/niivue/niivue
 
+  disconnectome:
+    about:
+      - A lesion interrupts more of the brain than it destroys. This app intersects a lesion map with a population tractography atlas and reports, for each white-matter bundle, the fraction of streamlines passing through the lesion. Two atlases are offered, ENIGMA Symmetric (65 bundles, the default) and HCP1065 population-averaged (87 bundles). The arithmetic runs locally on the full-resolution atlas; the streamlines drawn are a decimated sample of the same atlas.
+    packages:
+      - { name: nii2tvx (WebAssembly), url: https://github.com/neurolabusc/nii2tvx, role: lesion-to-tract disconnection }
+      - { name: NiiVue, url: https://github.com/niivue/niivue, role: image and tract viewer }
+    citations:
+      - group: Tract atlas
+        title: ENIGMA Symmetric White Matter Tractography Atlas
+        reference: "Ba Gari I, Alibrando JD, Feng Y, Villalon-Reina JE, Cabalinan A, Nabulsi L, Thompson PM, Yeh FC, Chandio BQ, Nir TM, Jahanshad N. ENIGMA Symmetric White Matter Tractography Atlas v1.0.0. Zenodo; 2026."
+        doi: 10.5281/zenodo.19656193
+        url: https://zenodo.org/records/19656193
+      - group: Tract atlas
+        title: HCP1065 population-averaged tractography atlas
+        reference: "Yeh FC. Population-based tract-to-region connectome of the human brain and its hierarchical topology. Nature Communications. 2022;13:4933."
+        doi: 10.1038/s41467-022-32595-4
+        url: https://pubmed.ncbi.nlm.nih.gov/35995773/
+      - group: Disconnection
+        title: nii2tvx
+        reference: "Rorden C. nii2tvx: structural disconnection from voxel-based lesion maps [Computer software]."
+        url: https://github.com/neurolabusc/nii2tvx
+        code: https://github.com/neurolabusc/nii2tvx
+      - group: Visualization
+        title: NiiVue
+        reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
+        url: https://github.com/niivue/niivue
+
+  carotid-flow:
+    about:
+      - Carotid Flow finds both carotid arteries in a retrospectively gated phase-contrast slice through the neck and extracts their flow over the cardiac cycle, with peak, time average and pulsatility index. Signed velocity gives flow in ml/min; an unsigned speed image goes through a port of a MATLAB script from the requesting lab and gives intensity curves. Everything runs locally.
+      - The example is the open test data of PCMCalculator (Mark B. Vestergaard, MIT licence); on it the right carotid's flow is within 6 % of PCMCalculator's manual measurement.
+    packages:
+      - { name: dcm2niix (WebAssembly), url: https://github.com/rordenlab/dcm2niix, role: DICOM to NIfTI conversion }
+      - { name: NiiVue, url: https://github.com/niivue/niivue, role: image viewer }
+    citations:
+      - group: Example data and reference measurement
+        title: PCMCalculator
+        reference: "Vestergaard MB. PCMCalculator [Computer software]. Zenodo; 2026."
+        doi: 10.5281/zenodo.18712355
+        code: https://github.com/MarkVestergaard/PCMCalculator
+      - group: Pulsatility index
+        title: Arterial assessment by Doppler-shift ultrasound
+        reference: "Gosling RG, King DH. Arterial assessment by Doppler-shift ultrasound. Proceedings of the Royal Society of Medicine. 1974;67(6 Pt 1):447–449."
+        doi: 10.1177/00359157740676P113
+        url: https://pubmed.ncbi.nlm.nih.gov/4850636/
+      - group: DICOM conversion
+        title: dcm2niix
+        reference: "Li X, Morgan PS, Ashburner J, Smith J, Rorden C. The first step for neuroimaging data analysis: DICOM to NIfTI conversion. Journal of Neuroscience Methods. 2016;264:47–56."
+        doi: 10.1016/j.jneumeth.2016.03.001
+        code: https://github.com/rordenlab/dcm2niix
+      - group: Visualization
+        title: NiiVue
+        reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
+        url: https://github.com/niivue/niivue
+
+  white-matter-lesions:
+    packages:
+      - { name: FLAMeS, url: https://doi.org/10.5281/zenodo.17955359, role: lesion segmentation network (fold 0) }
+      - { name: SynthStrip, url: https://surfer.nmr.mgh.harvard.edu/docs/synthstrip/, role: brain extraction }
+      - { name: ONNX Runtime Web, url: https://onnxruntime.ai, role: inference on WebGPU or the CPU }
+      - { name: dcm2niix (WebAssembly), url: https://github.com/rordenlab/dcm2niix, role: DICOM to NIfTI conversion }
+      - { name: NiiVue, url: https://github.com/niivue/niivue, role: image viewer }
+    citations:
+      - group: Lesion segmentation
+        title: FLAMeS
+        reference: 'Dereskewicz E, La Rosa F, dos Santos Silva J, et al. FLAMeS: a robust deep learning model for automated multiple sclerosis lesion segmentation. medRxiv. 2025.'
+        doi: 10.1101/2025.05.19.25327707
+        code: https://doi.org/10.5281/zenodo.17955359
+      - group: Lesion segmentation
+        title: nnU-Net
+        reference: 'Isensee F, Jaeger PF, Kohl SAA, Petersen J, Maier-Hein KH. nnU-Net: a self-configuring method for deep learning-based biomedical image segmentation. Nature Methods. 2021;18(2):203–211.'
+        doi: 10.1038/s41592-020-01008-z
+        code: https://github.com/MIC-DKFZ/nnUNet
+      - group: Brain extraction
+        title: SynthStrip
+        reference: 'Hoopes A, Mora JS, Dalca AV, Fischl B, Hoffmann M. SynthStrip: skull-stripping for any brain image. NeuroImage. 2022;260:119474.'
+        doi: 10.1016/j.neuroimage.2022.119474
+        code: https://surfer.nmr.mgh.harvard.edu/docs/synthstrip/
+      - group: Example data
+        title: MSLesSeg
+        reference: 'Guarnera F, Rondinella A, Crispino E, et al. MSLesSeg: baseline and benchmarking of a new multiple sclerosis lesion segmentation dataset. Scientific Data. 2025;12:920.'
+        doi: 10.1038/s41597-025-05250-y
+      - group: DICOM conversion
+        title: dcm2niix
+        reference: 'Li X, Morgan PS, Ashburner J, Smith J, Rorden C. The first step for neuroimaging data analysis: DICOM to NIfTI conversion. Journal of Neuroscience Methods. 2016;264:47–56.'
+        doi: 10.1016/j.jneumeth.2016.03.001
+      - group: Visualization
+        title: NiiVue
+        reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
+        url: https://github.com/niivue/niivue
   nesvor:
     execution: Remote mode sends stacks to your chosen network server running the pinned NeSVoR container. Experimental WebGPU reconstruction and the reduced CPU reference keep images local. Browser methods include automatic fetal masking, N4 correction and deformable reconstruction. Full acquisition validation remains outstanding.
     packages:
@@ -1081,7 +1167,7 @@ apps:
       - { name: PyTorch and tiny-cuda-nn, url: https://github.com/NVlabs/tiny-cuda-nn, role: hash-grid implicit neural representation training on the GPU }
       - { name: SimpleITK, url: https://simpleitk.org, role: N4 bias field correction }
       - { name: NiiVue, url: https://github.com/niivue/niivue, role: image viewer }
-      - { name: ONNX Runtime Web, url: https://onnxruntime.ai, role: local WASM execution of exported SVoRT and MONAIfbs networks }
+      - { name: ONNX Runtime Web, url: https://onnxruntime.ai, role: local WASM SVoRT and WebGPU MONAIfbs inference }
       - { name: ITK, url: https://itk.org, role: N4 bias correction compiled to WebAssembly for local browser processing }
       - { name: NeSVoR browser engine, url: https://github.com/neurodesk/webapps/tree/main/packages/nesvor, role: experimental WebGPU fitting with upstream numerical fixtures and a small CPU reference }
       - { name: dcm2niix, url: https://github.com/rordenlab/dcm2niix, role: local DICOM series conversion }
