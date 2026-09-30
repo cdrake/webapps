@@ -325,10 +325,10 @@ function setCustomBasis(name, text) {
   recommend();
 }
 
-function renderBasisOptions(ranked) {
+function renderBasisOptions(ranked, assessed) {
   const select = $("basisSelect");
   const previous = select.value;
-  const options = ranked.map((r, k) => new Option(`${r.basis.label}${k === 0 && r.usable ? " (recommended)" : ""}${r.usable ? "" : " (unusable)"}`, r.basis.id));
+  const options = ranked.map((r, k) => new Option(`${r.basis.label}${assessed && k === 0 && r.usable ? " (recommended)" : ""}${r.usable ? "" : " (unusable)"}`, r.basis.id));
   options.push(new Option(customBasis ? `Your basis set: ${customBasis.name}` : "Your own .BASIS file…", CUSTOM));
   select.replaceChildren(...options);
   return previous;
@@ -337,7 +337,7 @@ function renderBasisOptions(ranked) {
 function recommend() {
   const header = currentHeader();
   const ranked = header ? rankBases(header, library) : library.map((basis) => ({ basis, usable: true, score: 0, level: "info", notes: [] }));
-  const previous = renderBasisOptions(ranked);
+  const previous = renderBasisOptions(ranked, Boolean(header));
   const select = $("basisSelect");
   if (customBasis && (previous === CUSTOM || !input)) select.value = CUSTOM;
   else if (customBasis && previous !== CUSTOM && !header) select.value = CUSTOM;
