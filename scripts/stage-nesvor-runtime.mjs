@@ -2,6 +2,7 @@ import { createRequire } from 'node:module';
 import { readFile, mkdir, copyFile, rm, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
+import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -31,7 +32,7 @@ if (source) {
 const n4Manifest = JSON.parse(await readFile(join(root, 'packages/nesvor/src/n4/manifest.json'), 'utf8'));
 const n4Output = join(root, 'apps/nesvor/public/n4');
 const n4Source = process.env.NESVOR_N4_DIR;
-const n4Cache = join(process.env.TMPDIR || '/storage/home/ubuntu/.tmp', 'nesvor-runtime-cache', 'n4');
+const n4Cache = join(process.env.TMPDIR || process.env.RUNNER_TEMP || join(homedir(), '.cache'), 'nesvor-runtime-cache', 'n4');
 await mkdir(n4Output, { recursive: true });
 await mkdir(n4Cache, { recursive: true });
 for (const record of n4Manifest.files) {
