@@ -151,7 +151,15 @@ function show(stage) {
     const nv = await ensureViewer();
     const layers = [{ url: source, name: source.name }];
     if (stage === "mask") layers.push({ url: outputs.mask.file, name: outputs.mask.file.name, colormap: "red", opacity: 0.7 });
-    if (stage === "probability") layers.push({ url: outputs.probability.file, name: outputs.probability.file.name, colormap: "warm", cal_min: 0.1, cal_max: 1, opacity: 0.7 });
+    if (stage === "probability") layers.push({
+      url: outputs.probability.file,
+      name: outputs.probability.file.name,
+      colormap: "warm",
+      calMin: 0.1,
+      calMax: 1,
+      isTransparentBelowCalMin: true,
+      opacity: 0.7,
+    });
     await nv.loadVolumes(layers);
     if (revision !== viewRevision) return;
     $("gl1").hidden = false;

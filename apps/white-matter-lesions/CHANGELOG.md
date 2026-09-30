@@ -4,11 +4,15 @@
 
 ### Patch Changes
 
+- 5909f26: Fix the lesion probability overlay by using NiiVue's supported display-range options. Probabilities below 0.1 stay transparent instead of tinting the entire FLAIR image orange; downloaded probabilities are unchanged. Open Advanced settings by default so skull stripping, model and processing options are immediately visible.
+
+
+### Patch Changes
+
 - Updated dependencies
 - Updated dependencies
   - @neurodesk/webapp-components@0.7.0
   - @neurodesk/synthsr@0.5.20260930
-
 
 ### Minor Changes
 
