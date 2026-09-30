@@ -8,6 +8,9 @@ const modelUrl = manifest.base_url + manifest.assets[0].filename;
 const bytesOf = (buffer) => buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
 
 async function download(page, index) {
+  if (!await page.locator("#outputSection").evaluate((element) => element.open)) {
+    await page.locator("#outputSection summary").click();
+  }
   const pending = page.waitForEvent("download");
   await page.locator("#resultList .nd-download-btn").nth(index).click();
   const file = await pending;
