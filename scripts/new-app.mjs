@@ -119,6 +119,7 @@ const REQUIRED = [
   'src/main.js',
   'src/config.js',
   'examples.json',
+  'automation.json',
   'test/config.test.js',
   'e2e/smoke.spec.js',
 ];

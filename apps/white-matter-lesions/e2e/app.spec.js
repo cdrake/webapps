@@ -8,13 +8,16 @@ const modelUrl = manifest.base_url + manifest.assets[0].filename;
 const bytesOf = (buffer) => buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
 
 async function download(page, index) {
+  if (!await page.locator("#outputSection").evaluate((element) => element.open)) {
+    await page.locator("#outputSection summary").click();
+  }
   const pending = page.waitForEvent("download");
   await page.locator("#resultList .nd-download-btn").nth(index).click();
   const file = await pending;
   return { name: file.suggestedFilename(), bytes: await readFile(await file.path()) };
 }
 
-test("the MS example is segmented into lesions on the input grid, falling back from a failed WebGPU", async ({ page }) => {
+test("automation segments the MS example on the input grid, falling back from a failed WebGPU", async ({ page }) => {
   test.setTimeout(20 * 60 * 1000);
   // The page sees an adapter, so Automatic picks WebGPU; the worker has none, so its session fails.
   await page.addInitScript(() => {
@@ -25,13 +28,26 @@ test("the MS example is segmented into lesions on the input grid, falling back f
   await expect(page.locator("[data-neurodesk-examples]")).toHaveAttribute("data-example-state", "ready", { timeout: 120000 });
   await expect(page.locator("#fileInfo")).toContainText("240 × 240 × 81 voxels");
   await expect(page.locator("#runButton")).toBeEnabled();
-  await page.locator("#runButton").click();
+  const inputFile = await download(page, 0);
+  await page.locator("#neurodesk-input-transfer").setInputFiles({ name: inputFile.name, mimeType: "application/gzip", buffer: inputFile.bytes });
+  await page.evaluate(async () => {
+    await window.neurodeskAutomation.dispatch("adopt", { role: "image" });
+    await window.neurodeskAutomation.dispatch("start", { operation: "segment" });
+  });
   await expect(page.locator("#cancelButton")).toBeVisible();
   await expect(page.locator("#statusText")).toHaveText(/^Segmentation complete · \d+ lesions · [\d.]+ ml$/, { timeout: 18 * 60 * 1000 });
   await expect(page.locator("#cancelButton")).toBeHidden();
+  await expect.poll(() => page.evaluate(() => window.neurodeskAutomation.dispatch("snapshot").then((value) => value.state))).toBe("succeeded");
+  const report = await page.evaluate(() => window.neurodeskAutomation.dispatch("snapshot").then((value) => value.report));
+  expect(Object.keys(report.artifacts).sort()).toEqual(["mask", "probability", "table"]);
+  expect(report.provenance.backend).toBe("wasm");
+  expect(report.provenance.models).toHaveLength(1);
+  for (const artifact of Object.values(report.artifacts)) expect(artifact.sha256).toMatch(/^[a-f0-9]{64}$/);
   const [, count, ml] = (await page.locator("#statusText").textContent()).match(/(\d+) lesions · ([\d.]+) ml/);
   expect(Number(count)).toBeGreaterThan(5);
   expect(Number(ml)).toBeGreaterThan(5);
+  expect(report.measurements.count).toBe(Number(count));
+  expect(report.measurements.totalMl.toFixed(2)).toBe(ml);
   await expect(page.locator("#technicalLog")).toContainText("continuing on the CPU");
   await expect(page.locator("#technicalLog")).toContainText("FLAMeS, fold 0, on WebAssembly");
   await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(4);
@@ -51,7 +67,7 @@ test("the MS example is segmented into lesions on the input grid, falling back f
   expect(rows.slice(1).reduce((sum, row) => sum + Number(row.split("\t")[1]), 0)).toBe(voxels);
 });
 
-test("a failed model download reports the error and leaves the run available", async ({ page }) => {
+test("automation reports a failed model download and leaves the run available", async ({ page }) => {
   test.setTimeout(5 * 60 * 1000);
   await page.route(modelUrl, (route) => route.fulfill({ status: 503, body: "" }));
   await page.goto("./");
@@ -59,9 +75,18 @@ test("a failed model download reports the error and leaves the run available", a
   await expect(page.locator("#runButton")).toBeEnabled({ timeout: 120000 });
   await page.locator("#advancedSettings summary").click();
   await page.locator("#skullStripped").check();
-  await page.locator("#runButton").click();
+  const input = await download(page, 0);
+  await page.locator("#neurodesk-input-transfer").setInputFiles({ name: input.name, mimeType: "application/gzip", buffer: input.bytes });
+  await page.evaluate(async () => {
+    await window.neurodeskAutomation.dispatch("adopt", { role: "image" });
+    await window.neurodeskAutomation.dispatch("start", { parameters: { skullStripped: true } });
+  });
   await expect(page.locator("#statusText")).toHaveText(/Model download failed \(503\)/, { timeout: 120000 });
   await expect(page.locator("#statusText")).toHaveClass(/error/);
+  await expect.poll(() => page.evaluate(() => window.neurodeskAutomation.dispatch("snapshot").then((value) => value.state))).toBe("failed");
+  const snapshot = await page.evaluate(() => window.neurodeskAutomation.dispatch("snapshot"));
+  expect(snapshot.error.message).toMatch(/Model download failed/);
+  expect(snapshot.report).toBeUndefined();
   await expect(page.locator("#cancelButton")).toBeHidden();
   await expect(page.locator("#runButton")).toBeEnabled();
   await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(1);
@@ -99,6 +124,39 @@ test("cancelling a run stops it and keeps the input ready", async ({ page }) => 
   await expect(page.locator("#cancelButton")).toBeHidden();
   await expect(page.locator("#runButton")).toBeEnabled();
   await expect(page.locator("#fileInfo")).toContainText("MSLesSeg_P57_T1_FLAIR.nii.gz");
+});
+
+test("automation cancellation stops the worker and permits a new run", async ({ page }) => {
+  test.setTimeout(5 * 60 * 1000);
+  await page.route(modelUrl, () => {});
+  await page.goto("./");
+  await page.getByLabel("Example", { exact: true }).selectOption(examples[0].id);
+  await expect(page.locator("#runButton")).toBeEnabled({ timeout: 120000 });
+  await page.locator("#advancedSettings summary").click();
+  await page.locator("#skullStripped").check();
+  const input = await download(page, 0);
+  await page.locator("#neurodesk-input-transfer").setInputFiles({ name: input.name, mimeType: "application/gzip", buffer: input.bytes });
+  await page.evaluate(async () => {
+    await window.neurodeskAutomation.dispatch("adopt", { role: "image" });
+    await window.neurodeskAutomation.dispatch("start", { parameters: { skullStripped: true } });
+  });
+  await expect(page.locator("#statusText")).toHaveText("Downloading FLAMeS model…", { timeout: 60000 });
+  await page.evaluate(() => window.neurodeskAutomation.dispatch("cancel"));
+  await expect(page.locator("#statusText")).toHaveText("Cancelled");
+  await expect(page.locator("#cancelButton")).toBeHidden();
+  await expect(page.locator("#runButton")).toBeEnabled();
+  const snapshot = await page.evaluate(() => window.neurodeskAutomation.dispatch("snapshot"));
+  expect(snapshot.state).toBe("cancelled");
+  expect(snapshot.report).toBeUndefined();
+  await page.unroute(modelUrl);
+  await page.route(modelUrl, (route) => route.fulfill({ status: 503, body: "" }));
+  await page.locator("#neurodesk-input-transfer").setInputFiles({ name: input.name, mimeType: "application/gzip", buffer: input.bytes });
+  await page.evaluate(async () => {
+    await window.neurodeskAutomation.dispatch("adopt", { role: "image" });
+    await window.neurodeskAutomation.dispatch("start", { parameters: { skullStripped: true } });
+  });
+  await expect.poll(() => page.evaluate(() => window.neurodeskAutomation.dispatch("snapshot").then((value) => value.state)), { timeout: 120000 }).toBe("failed");
+  await expect(page.locator("#statusText")).toHaveText(/Model download failed/);
 });
 
 test("advanced settings keep their values when the section closes", async ({ page }) => {

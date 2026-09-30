@@ -119,3 +119,7 @@ Cite the methods and software this app is built on:
 
 See also [NiiVue](https://github.com/niivue/niivue) (visualization) and
 [dcm2niix](https://github.com/rordenlab/dcm2niix) (DICOM conversion).
+
+## Agent automation
+
+Automation offers `fit` and `tractography`; the latter fits first and then tracks. Supply explicit `image`, `bval` and `bvec` roles with optional `metadata`; gradient filenames need not match the image basename. DICOM conversion can supply its associated gradient sidecars instead. The existing input validator checks gradient and volume counts. Both operations return FA and V1, and tractography also returns TRX. The UI and agent share the same tensor and tracking handlers; the tensor computation runs in a cancellable worker using the existing dtifit and MindGrab implementations. Reports state whether masking succeeded, any fallback reason, tracking settings, seed cap and partial/truncated results. The viewer exposes the input, tensor and streamlines stages actually available. Streamline tracking requires hardware WebGPU with subgroups; CPU tensor checks do not establish GPU tracking parity.

@@ -1,7 +1,8 @@
 import '@neurodesk/webapp-components/styles/imaging-workspace.css'
 import { mountImagingWorkspace } from '@neurodesk/webapp-components/core/mount-imaging-workspace'
 import { bindFileDrop, createConsole, createExampleSelector, createInfoDialog, createViewerToolbar } from '@neurodesk/webapp-components/ui'
-import { readImageFiles } from '@neurodesk/runtime-support/dcm2niix-client'
+import { readImageFiles, runDcm2niix } from '@neurodesk/runtime-support/dcm2niix-client'
+import { registerAppAutomation, runAbortable } from '@neurodesk/webapp-components/automation'
 import { Niivue, SLICE_TYPE, SHOW_RENDER, MULTIPLANAR_TYPE } from '@niivue/niivue'
 import { Niimath } from "@niivue/niimath"
 
@@ -39,6 +40,7 @@ const layouts = {
   sagittal: SLICE_TYPE.SAGITTAL,
   render: SLICE_TYPE.RENDER,
 }
+let currentLayout = 'multiplanar'
 const toolbar = createViewerToolbar({
   window: false, overlay: false, colormap: false, download: false, screenshot: false,
   views: [
@@ -49,13 +51,23 @@ const toolbar = createViewerToolbar({
     { id: 'render', label: '3D' },
   ].map((view) => ({ ...view, onClick: () => {
     nv.setSliceType(layouts[view.id])
+    currentLayout = view.id
     toolbar.setActive(view.id)
   } })),
 })
 $('viewer').prepend(toolbar)
 
 // create niimath instance (will be initialized later)
-const niimath = new Niimath();
+let niimath = new Niimath();
+let niimathInitialized;
+function ensureNiimath() {
+  return niimathInitialized ??= niimath.init();
+}
+function cancelNiimath() {
+  niimath.worker?.terminate();
+  niimath = new Niimath();
+  niimathInitialized = undefined;
+}
 
 // store a reference to an unedited image for
 // use when the user wants to change the command from the dropdown
@@ -118,34 +130,37 @@ async function runImageTask(task) {
   imageBusy = true;
   updateImageControls();
   try {
-    await task();
+    return await task();
   } finally {
     imageBusy = false;
     updateImageControls();
   }
 }
 
-async function processImage(isOverlay) {
-  const cmd = $('command').value.trim();
+async function processImage(isOverlay, { command = $('command').value, signal, throwOnError = false } = {}) {
+  const cmd = command.trim();
   beginWork(`Running niimath ${cmd} …`)
   try {
+    signal?.throwIfAborted();
+    await runAbortable(signal, ensureNiimath, cancelNiimath);
     const imageIndex = 0;
     const niiBuffer = await nv.saveImage({ volumeByIndex: imageIndex })
     const niiFile = new File([niiBuffer], 'image.nii')
     const imageProcessor = niimath.image(niiFile)
     // check if "mesh" is in the command, and set isMesh
-    const isMesh = cmd.includes('mesh')
+    const isMesh = cmd.split(/\s+/).includes('-mesh')
     // check if "bitmap" is in the command, and set isBitmap
-    const isBitmap = cmd.includes('bitmap')
+    const isBitmap = cmd.split(/\s+/).includes('-bitmap')
     // create array of commands by separating on spaces
     const commands = cmd.split(/\s+/).filter(Boolean)
     imageProcessor.commands = [...commands]
     const outName = isMesh ? 'mesh.mz3' : isBitmap ? 'bitmap.png' : 'image.nii.gz'
     log.log(`niimath ${commands.join(' ')} → ${outName}`, 'info')
-    const processedBlob = await imageProcessor.run(outName)
+    const processedBlob = await runAbortable(signal, () => imageProcessor.run(outName), cancelNiimath)
     log.log(`niimath produced ${outName} (${processedBlob.size} bytes)`, 'info')
 
     const arrayBuffer = await processedBlob.arrayBuffer()
+    signal?.throwIfAborted();
     if (!isOverlay) {
       nv.removeVolume(nv.volumes[0]);
     }
@@ -164,8 +179,10 @@ async function processImage(isOverlay) {
     }
     $('outputSection').open = true;
     endWork(`${outName} ready${isOverlay ? ' as overlay' : ''}`)
+    return { file: new File([processedBlob], outName), type: isMesh ? 'neuro:surface' : isBitmap ? 'file:image' : 'neuro:volume', commands };
   } catch (error) {
     endWork(`niimath failed: ${errorMessage(error)}`, true)
+    if (throwOnError) throw error;
   }
 }
 
@@ -391,7 +408,7 @@ async function main() {
   // initialize niimath (loads wasm and sets up worker)
   status('Loading niimath WebAssembly …')
   try {
-    await niimath.init();
+    await ensureNiimath();
   } catch (error) {
     status(`niimath failed to initialise: ${errorMessage(error)}`, true)
     return
@@ -403,4 +420,26 @@ async function main() {
   initializeImageProcessing();
 }
 
-main()
+const initialized = main()
+const automation = registerAppAutomation({ app: 'niimath', convertDicom: runDcm2niix, operations: {
+  process: async ({ inputs, parameters, signal, progress }) => {
+    await initialized;
+    if (!imageProcessingReady || imageBusy) throw new Error('NiiMath is not ready for a new image operation.');
+    return runImageTask(async () => {
+      progress('Loading input');
+      await loadImage(inputs.image[0], signal);
+      progress('Running NiiMath');
+      const result = await processImage(false, { command: parameters.command, signal, throwOnError: true });
+      return { artifacts: [{ role: 'result', file: result.file, type: result.type }],
+        provenance: { engine: 'niimath-wasm', commands: result.commands } };
+    });
+  },
+} });
+automation.registerViewer('main', {
+  state: () => ({ tabs: Object.keys(layouts).map(id => ({ id, label: id, active: currentLayout === id })),
+    dimensions: nv.volumes.map(volume => Array.from(volume.dims.slice(1, 4))) }),
+  tabs: {
+    list: () => Object.keys(layouts).map(id => ({ id, label: id, active: currentLayout === id })),
+    select(id) { currentLayout = id; nv.setSliceType(layouts[id]); toolbar.setActive(id); },
+  },
+});

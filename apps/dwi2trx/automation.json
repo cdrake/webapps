@@ -1,0 +1,192 @@
+{
+  "schemaVersion": 2,
+  "app": "dwi2trx",
+  "title": "dwi2trx",
+  "description": "dwi2trx scientific workflow automation.",
+  "defaultOperation": "tractography",
+  "operations": {
+    "fit": {
+      "title": "Fit diffusion tensor",
+      "description": "Fit diffusion tensor. Uses the same scientific processing handler as the interface.",
+      "mode": "batch",
+      "inputs": {
+        "image": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "description": "Input image for processing",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "bval": {
+          "source": "files",
+          "type": "neuro:gradients",
+          "formats": [
+            "bval",
+            "bvals"
+          ],
+          "description": "Explicit b values; required for NIfTI input unless DICOM supplies sidecars",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "bvec": {
+          "source": "files",
+          "type": "neuro:gradients",
+          "formats": [
+            "bvec",
+            "bvecs"
+          ],
+          "description": "Explicit FSL gradient vectors; required unless DICOM supplies sidecars",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "metadata": {
+          "source": "files",
+          "type": "neuro:metadata",
+          "formats": [
+            "json"
+          ],
+          "description": "Optional acquisition metadata JSON",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "parameters": {},
+      "artifacts": {
+        "fa": {
+          "type": "neuro:volume",
+          "mediaType": "application/gzip",
+          "minimum": 1,
+          "space": "input",
+          "maximum": 1
+        },
+        "v1": {
+          "type": "neuro:volume",
+          "mediaType": "application/gzip",
+          "minimum": 1,
+          "space": "input",
+          "maximum": 1
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    },
+    "tractography": {
+      "title": "Fit tensor and track streamlines",
+      "description": "Fit tensor and track streamlines. Uses the same scientific processing handler as the interface.",
+      "mode": "batch",
+      "inputs": {
+        "image": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "description": "Input image for processing",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "bval": {
+          "source": "files",
+          "type": "neuro:gradients",
+          "formats": [
+            "bval",
+            "bvals"
+          ],
+          "description": "Explicit b values; required for NIfTI input unless DICOM supplies sidecars",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "bvec": {
+          "source": "files",
+          "type": "neuro:gradients",
+          "formats": [
+            "bvec",
+            "bvecs"
+          ],
+          "description": "Explicit FSL gradient vectors; required unless DICOM supplies sidecars",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "metadata": {
+          "source": "files",
+          "type": "neuro:metadata",
+          "formats": [
+            "json"
+          ],
+          "description": "Optional acquisition metadata JSON",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "parameters": {
+        "seedFa": {
+          "type": "number",
+          "default": 0.25,
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Minimum FA for seeding"
+        },
+        "stopFa": {
+          "type": "number",
+          "default": 0.1,
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Minimum FA for propagation"
+        },
+        "stepSize": {
+          "type": "number",
+          "default": 0.5,
+          "minimum": 0.1,
+          "maximum": 2,
+          "description": "Tracking step size in voxels"
+        },
+        "maxAngle": {
+          "type": "number",
+          "default": 60,
+          "minimum": 10,
+          "maximum": 90,
+          "description": "Maximum turn angle in degrees"
+        },
+        "density": {
+          "type": "integer",
+          "default": 1,
+          "minimum": 1,
+          "maximum": 4,
+          "description": "Seeds per voxel axis"
+        }
+      },
+      "artifacts": {
+        "fa": {
+          "type": "neuro:volume",
+          "mediaType": "application/gzip",
+          "minimum": 1,
+          "space": "input",
+          "maximum": 1
+        },
+        "v1": {
+          "type": "neuro:volume",
+          "mediaType": "application/gzip",
+          "minimum": 1,
+          "space": "input",
+          "maximum": 1
+        },
+        "tracts": {
+          "type": "neuro:tractogram",
+          "mediaType": "application/zip",
+          "minimum": 1,
+          "space": "RAS-mm",
+          "maximum": 1
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    }
+  }
+}

@@ -9,9 +9,10 @@
 // pnpm runs lifecycle scripts with cwd set to the selected app package.
 // Apps whose static root is not `web/` (e.g. qsmbly serves from the app root)
 // pass `--dest <dir>` to vendor into `<dir>/vendor/` instead.
-import { cp, rm, access } from "node:fs/promises";
+import { cp, rm, access, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
+import { publishAppContract } from './lib/app-automation.mjs';
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const appDir = process.cwd();
@@ -30,5 +31,7 @@ try {
 
 await rm(join(appDir, destRoot, "vendor"), { recursive: true, force: true });
 await cp(src, dest, { recursive: true });
+const appPackage = JSON.parse(await readFile(join(appDir, 'package.json'), 'utf8'));
+await publishAppContract({ app: { id: basename(appDir) }, version: appPackage.version, distDir: join(appDir, destRoot, 'vendor') });
 if (destRoot !== '.') await cp(join(appDir, 'examples.json'), join(appDir, destRoot, 'examples.json'));
 console.log(`Vendored @neurodesk/webapp-components -> ${dest.replace(repoRoot + "/", "")}`);

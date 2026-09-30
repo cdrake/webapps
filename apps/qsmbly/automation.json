@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 2,
+  "app": "qsmbly",
+  "title": "QSMbly",
+  "description": "Reconstruct quantitative susceptibility maps from explicitly paired MRI echoes.",
+  "defaultOperation": "reconstruct",
+  "operations": {
+    "reconstruct": {
+      "title": "Reconstruct susceptibility",
+      "description": "Run the UI masking, phase unwrapping, background removal and dipole inversion pipeline.",
+      "mode": "batch",
+      "inputs": {
+        "magnitude": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "space": "native",
+          "description": "Magnitude echoes in increasing echo-time order",
+          "minimum": 1
+        },
+        "phase": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "space": "native",
+          "description": "Corresponding phase echoes in matching order",
+          "minimum": 1
+        },
+        "mask": {
+          "source": "files",
+          "type": "neuro:mask",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "space": "native",
+          "description": "Optional brain mask in the same image geometry",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "parameters": {
+        "echoTimesMs": {
+          "type": "array",
+          "description": "Acquired echo times in milliseconds, in input order",
+          "items": {
+            "type": "number",
+            "description": "Echo time in milliseconds",
+            "minimum": 0.001
+          }
+        },
+        "fieldStrength": {
+          "type": "number",
+          "description": "Acquired magnetic field strength in tesla",
+          "minimum": 0.001
+        },
+        "unwrap": {
+          "type": "string",
+          "description": "Phase unwrapping method",
+          "enum": [
+            "romeo",
+            "laplacian"
+          ],
+          "default": "romeo"
+        },
+        "backgroundRemoval": {
+          "type": "string",
+          "description": "Background field removal method",
+          "enum": [
+            "vsharp",
+            "sharp",
+            "resharp",
+            "ismv",
+            "pdf",
+            "lbv",
+            "harperella",
+            "iharperella"
+          ],
+          "default": "vsharp"
+        },
+        "inversion": {
+          "type": "string",
+          "description": "Dipole inversion method",
+          "enum": [
+            "tkd",
+            "tsvd",
+            "tikhonov",
+            "tv",
+            "rts",
+            "nltv",
+            "medi",
+            "ndi",
+            "fansi",
+            "fansitgv",
+            "l1qsm",
+            "whqsm",
+            "hdqsm"
+          ],
+          "default": "rts"
+        },
+        "maskSource": {
+          "type": "string",
+          "description": "Source for robust threshold masking when no mask is supplied",
+          "enum": [
+            "phase_quality",
+            "first_echo"
+          ],
+          "default": "phase_quality"
+        }
+      },
+      "artifacts": {
+        "qsm": {
+          "type": "neuro:volume",
+          "mediaType": "application/x-nifti",
+          "space": "native",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "mask": {
+          "type": "neuro:mask",
+          "mediaType": "application/x-nifti",
+          "space": "native",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "intermediate": {
+          "type": "neuro:volume",
+          "mediaType": "application/x-nifti",
+          "space": "native",
+          "minimum": 0
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    }
+  }
+}

@@ -72,5 +72,10 @@ export async function startOfflineServer(root, { port = 0, resolveFile } = {}) {
       mounts.set(token, directory);
       return `${origin}/_local/${token}`;
     },
+    unmountDirectory(url) {
+      const source = new URL(url);
+      if (source.origin !== origin) throw new Error('Directory mount belongs to another server');
+      mounts.delete(source.pathname.split('/')[2]);
+    },
   };
 }

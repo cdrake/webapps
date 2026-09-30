@@ -10,6 +10,7 @@ import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { writeCoiServiceWorker } from "./lib/runtime-support.mjs";
 import { headersFile } from "./lib/vite-app-config.mjs";
+import { publishAppContract } from './lib/app-automation.mjs';
 
 // pnpm preserves the outer shell's INIT_CWD for `pnpm --filter app build`,
 // while the lifecycle process cwd is always the package being built.
@@ -63,3 +64,5 @@ if (config.coiServiceWorker) {
 console.log(`Assembled static site -> ${join(appDir, "dist")}`);
 await cp(join(appDir, 'examples.json'), join(dist, 'examples.json'));
 await cp(join(appDir, '../../packages/components/src'), join(dist, 'vendor/webapp-components/src'), { recursive: true });
+await publishAppContract({ app: { id: basename(appDir) }, version: manifest.version, distDir: dist });
+await publishAppContract({ app: { id: basename(appDir) }, version: manifest.version, distDir: join(dist, 'vendor') });

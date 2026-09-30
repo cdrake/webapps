@@ -12,7 +12,8 @@ import {
   ProgressManager,
 } from "@neurodesk/webapp-components/ui";
 import { downloadFile } from "@neurodesk/webapp-components/file-io";
-import { readImageFiles } from "@neurodesk/runtime-support/dcm2niix-client";
+import { registerAppAutomation, runAbortable } from "@neurodesk/webapp-components/automation";
+import { readImageFiles, runDcm2niix } from "@neurodesk/runtime-support/dcm2niix-client";
 import { readVolume } from "@neurodesk/synthsr";
 import { APP } from "./config.js";
 import examples from "../examples.json";
@@ -108,13 +109,18 @@ function begin(phase, message) {
   return job;
 }
 
-function end(current, message, { success = true, error = false } = {}) {
+function end(current, message, { success = true, error = false, result } = {}) {
   if (job !== current) return false;
   current.worker?.terminate();
   job = null;
   progress.end(message, { success });
   status(message, error);
   refreshControls();
+  if (current.completion) {
+    if (success) current.completion.resolve(result);
+    else current.completion.reject(current.controller.signal.aborted
+      ? current.controller.signal.reason : new Error(message));
+  }
   return true;
 }
 
@@ -232,21 +238,25 @@ async function resolveBackend(requested) {
   return adapter ? "webgpu" : "wasm";
 }
 
-$("runButton").addEventListener("click", async () => {
-  if (!source || job) return;
+async function segment(parameters, onProgress = () => {}) {
+  if (!source || job) throw new Error("Load a FLAIR image and wait for the current step to finish.");
   const current = begin("running", "Starting lesion segmentation…");
+  current.completion = Promise.withResolvers();
+  // Cancellation may settle the operation while adapter discovery is still pending.
+  void current.completion.promise.catch(() => {});
   const stem = source.name.replace(/\.nii(\.gz)?$/i, "");
   outputs = { flair: outputs.flair };
   renderOutputs();
   show("flair");
   try {
-    const backend = await resolveBackend($("backend").value);
-    if (job !== current) return;
+    const backend = await resolveBackend(parameters.backend);
+    if (job !== current) return current.completion.promise;
     current.worker = new Worker(new URL("./worker.js", import.meta.url), { type: "module" });
     current.worker.onmessage = ({ data }) => {
       if (job !== current) return;
       if (data.type === "progress") {
         progress.setProgress(data.value, data.message);
+        onProgress({ message: data.message, value: data.value });
         log.log(data.message);
       } else if (data.type === "log") {
         log.log(data.message);
@@ -260,17 +270,48 @@ $("runButton").addEventListener("click", async () => {
         outputs.table = { description: "Lesion table (TSV)", viewable: false, file: new File([data.tsv], `${stem}_lesions.tsv`, { type: "text/tab-separated-values" }) };
         renderOutputs();
         log.log(JSON.stringify(data.provenance));
-        end(current, `Segmentation complete · ${summary}`);
+        end(current, `Segmentation complete · ${summary}`, { result: {
+          artifacts: ["mask", "probability", "table"].map((role) => ({ role, file: outputs[role].file })),
+          measurements: data.summary,
+          provenance: data.provenance,
+        } });
         show("mask");
       }
     };
     current.worker.onerror = (event) => {
       end(current, event.message || "The processing worker failed. Reload and try again.", { success: false, error: true });
     };
-    current.worker.postMessage({ file: source, backend, folds: Number($("folds").value), skullStripped: $("skullStripped").checked });
+    current.worker.postMessage({ file: source, backend, folds: parameters.folds, skullStripped: parameters.skullStripped });
   } catch (error) {
     end(current, error.message, { success: false, error: true });
   }
+  return current.completion.promise;
+}
+
+$("runButton").addEventListener("click", () => {
+  void segment({
+    backend: $("backend").value,
+    folds: Number($("folds").value),
+    skullStripped: $("skullStripped").checked,
+  }).catch((error) => {
+    if (error.name !== "AbortError") status(error.message, true);
+  });
+});
+
+registerAppAutomation({
+  app: APP.id,
+  convertDicom: runDcm2niix,
+  operations: {
+    segment: async ({ inputs, parameters, signal, progress: reportProgress }) => {
+      exampleControl.cancel();
+      await loadFiles(Promise.resolve(inputs.image), signal);
+      signal.throwIfAborted();
+      $("backend").value = parameters.backend;
+      $("folds").value = String(parameters.folds);
+      $("skullStripped").checked = parameters.skullStripped;
+      return runAbortable(signal, () => segment(parameters, reportProgress), cancel);
+    },
+  },
 });
 
 function cancel() {

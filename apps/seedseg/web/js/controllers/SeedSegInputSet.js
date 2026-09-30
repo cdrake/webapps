@@ -23,7 +23,7 @@ export class SeedSegInputSet {
 
   setFile(file) {
     this.activeFile = file;
-    this.onFileLoaded(file);
+    return this.onFileLoaded(file);
   }
 
   clearFile() {

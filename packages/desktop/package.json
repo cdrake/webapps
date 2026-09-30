@@ -1,6 +1,6 @@
 {
   "name": "@neurodesk/desktop",
-  "version": "0.14.20260928",
+  "version": "0.17.20260930",
   "private": true,
   "type": "module",
   "main": "src/main.js",
@@ -64,5 +64,10 @@
       ]
     },
     "artifactName": "webapps-${version}-${os}-${arch}.${ext}"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "2.1.0",
+    "@neurodesk/webapp-components": "workspace:*",
+    "zod": "^4.6.5"
   }
 }

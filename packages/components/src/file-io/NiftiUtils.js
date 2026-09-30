@@ -13,6 +13,7 @@ export function parseNiftiHeader(headerBuffer) {
     voxelSize: [pixDims[1] || 1, pixDims[2] || 1, pixDims[3] || 1],
     datatype: view.getInt16(70, true),
     bitpix: view.getInt16(72, true),
+    xyztUnits: view.getUint8(123),
     voxOffset: view.getFloat32(108, true),
     sclSlope: view.getFloat32(112, true) || 1,
     sclInter: view.getFloat32(116, true) || 0,

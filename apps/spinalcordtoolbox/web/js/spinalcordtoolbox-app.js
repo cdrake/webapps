@@ -8,6 +8,7 @@ bindSectionDisclosures(document);
  * Pipeline is split into interactive steps that the user runs sequentially.
  */
 
+import { registerSctAutomation } from './automation.js';
 import { SctInputSessions } from './controllers/SctInputSessions.js';
 import { ViewerController } from '@neurodesk/webapp-components';
 import { SctPipeline } from './controllers/SctPipeline.js';
@@ -146,6 +147,7 @@ export class SpinalCordToolboxApp {
 
     // Start ONNX initialization in background
     this.inferenceExecutor.initialize();
+    this.automation = registerSctAutomation(this);
   }
 
   async setupViewer() {

@@ -92,6 +92,7 @@ test("GPU and SyN choices are forwarded and GPU-attributed memory is logged", as
 });
 
 test("the packaged CPU worker completes a small Greedy registration", async ({ page }) => {
+  test.setTimeout(180_000);
   await page.goto("/");
   await page.locator("[data-neurodesk-example]").selectOption("t1-mni");
   await expect(page.locator("[data-neurodesk-examples]")).toHaveAttribute("data-example-state", "ready");

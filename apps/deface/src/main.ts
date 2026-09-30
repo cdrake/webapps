@@ -19,7 +19,8 @@ import NiiVueGPU, {
 import { mountImagingWorkspace } from '@neurodesk/webapp-components/core/mount-imaging-workspace'
 import { bindFileDrop, createInfoDialog, createConsole, createExampleSelector } from '@neurodesk/webapp-components/ui'
 import '@neurodesk/webapp-components/styles/imaging-workspace.css'
-import { readImageFiles, traverseDataTransferItems } from '@neurodesk/runtime-support/dcm2niix-client'
+import { registerAppAutomation, registerViewer, createNiivueAdapter, runAbortable, type OperationContext } from '@neurodesk/webapp-components/automation'
+import { readImageFiles, runDcm2niix, traverseDataTransferItems } from '@neurodesk/runtime-support/dcm2niix-client'
 import { Niimath } from '@neurodesk/runtime-support/niimath'
 import examples from '../examples.json'
 import type { MindgrabInferer } from './mindgrab/index'
@@ -74,6 +75,7 @@ let ctx: ExtCtx | null = null
 
 async function attachNiiVue(): Promise<void> {
   await nv.attachTo('gl1')
+  registerViewer('main', createNiivueAdapter(nv))
   nv.multiplanarType = MULTIPLANAR_TYPE.GRID
   nv.sliceType = SLICE_TYPE.MULTIPLANAR
   nv.showRender = SHOW_RENDER.ALWAYS
@@ -87,6 +89,7 @@ async function attachNiiVue(): Promise<void> {
 
 // --- App state ---
 let isCleanedUp = false
+let initializationFailure: Error | null = null
 // The original loaded/dropped source image, fed to niimath. Apply always defaces
 // THIS (not the previous defaced output), so repeated Apply clicks or switching
 // methods re-run on the pristine source rather than degrading an already-cropped,
@@ -156,7 +159,8 @@ async function resetMaskGpu(): Promise<void> {
 // NVImage for the conform transform. `src` is the pristine source (conformed here by
 // prepareInput) or, for robustfov, an already-conformed 256³ crop. The caller reslices
 // the returned mask back onto the matching NATIVE-resolution image to keep input res.
-async function makeBrainMask(inferer: MindgrabInferer, src: File): Promise<File> {
+async function makeBrainMask(inferer: MindgrabInferer, src: File, signal: AbortSignal): Promise<File> {
+  signal.throwIfAborted()
   setStatus('Brain extraction (mindgrab)…')
   // Fail closed: clear hasDefaced BEFORE displaying the un-defaced source, so even if
   // loadVolumes rejects mid-swap the source can never be saved as defaced.nii.gz
@@ -164,11 +168,14 @@ async function makeBrainMask(inferer: MindgrabInferer, src: File): Promise<File>
   hasDefaced = false
   updateButtons()
   await nv.loadVolumes([{ url: src, name: src.name } as ImageFromUrlOptions])
+  signal.throwIfAborted()
   if (isCleanedUp) throw new Error('cleaned up during mindgrab')
   const srcImg = nv.volumes[0]
   const { prepareInput, buildMaskNifti } = await import('./mindgrab/index')
   const { conformed, img32 } = await prepareInput(maskCtx!, srcImg)
-  const [labels] = await inferer(img32)
+  signal.throwIfAborted()
+  const [labels] = await runAbortable(signal, () => inferer(img32), resetMaskGpu)
+  signal.throwIfAborted()
   return new File([buildMaskNifti(conformed, labels)], 'maskconf.nii')
 }
 
@@ -282,9 +289,21 @@ async function loadFromFile(file: File, asSource = true, signal?: AbortSignal): 
 }
 
 // --- Deface ---
-async function runDeface(): Promise<void> {
-  if (!sourceFile || !refFiles) return
-  const method = methodSelect.value // allineate | allineate_robustfov | allineate_hel | mindgrab[_robust][8]
+async function runDeface(method = methodSelect.value, options: { signal?: AbortSignal; progress?: OperationContext['progress'] } = {}): Promise<File | undefined> {
+  const signal = options.signal ?? new AbortController().signal
+  signal.throwIfAborted()
+  if (!sourceFile || !refFiles) throw new Error('Load an image and the MNI reference before defacing.')
+  const inputFile = sourceFile
+  const current = () => {
+    signal.throwIfAborted()
+    if (isCleanedUp) throw new Error('The Deface workspace has closed.')
+  }
+  const stage = <T>(task: () => Promise<T>) => runAbortable(signal, task, resetNiimathWorker)
+  const report = (message: string) => {
+    current()
+    setStatus(message)
+    options.progress?.({ message })
+  }
 
   // mindgrab needs WebGPU + shader-f16; if unavailable, explain rather than fail.
   if (method.startsWith('mindgrab')) {
@@ -301,7 +320,7 @@ async function runDeface(): Promise<void> {
     spin(true)
     // First-use model fetch + WebGPU pipeline compile is the heaviest setup; show
     // busy feedback before it (the UI is already disabled by enqueue()).
-    setStatus('Loading mindgrab model…')
+    report('Loading mindgrab model…')
     const t0 = performance.now()
     try {
       // Acquire INSIDE the try so a loadMindgrab failure (model fetch, pipeline
@@ -310,11 +329,12 @@ async function runDeface(): Promise<void> {
       const inferer = await getMaskInferer()
       if (!inferer) {
         webgpuDialog.open('MindGrab needs WebGPU', $('webgpuContent'))
-        setStatus('mindgrab needs WebGPU (shader-f16) — try an allineate method.')
+        report('mindgrab needs WebGPU (shader-f16) — try an allineate method.')
+        if (options.signal) throw new Error('MindGrab requires WebGPU with shader-f16.')
         return
       }
-      await ensureNiimath()
-      if (isCleanedUp) return
+      await stage(ensureNiimath)
+      current()
       // mindgrab segments in conformed 256³ 1 mm space, but — like the allineate deface —
       // the output should be at the INPUT resolution (e.g. 0.75 mm), cropped if robustfov
       // is used. So split the two roles (mirrors brainchop's `-i` inverse):
@@ -330,20 +350,20 @@ async function runDeface(): Promise<void> {
       // round trips. The blobs stay in-memory (NiiVue re-gzips only the final Save).
       const srcNative = useRobustfov
         ? new File(
-            [await niimath.image(sourceFile).gz(0).robustfov().run('robustfov.nii')],
+            [await stage(() => niimath.image(inputFile).gz(0).robustfov().run('robustfov.nii'))],
             'robustfov.nii',
           )
-        : sourceFile
-      if (isCleanedUp) return
+        : inputFile
+      current()
       const srcModel = useRobustfov
         ? new File(
-            [await niimath.image(srcNative).gz(0).conform().run('robustfov_conf.nii')],
+            [await stage(() => niimath.image(srcNative).gz(0).conform().run('robustfov_conf.nii'))],
             'robustfov_conf.nii',
           )
-        : sourceFile
-      if (isCleanedUp) return
-      const maskConf = await makeBrainMask(inferer, srcModel)
-      if (isCleanedUp) return
+        : inputFile
+      current()
+      const maskConf = await makeBrainMask(inferer, srcModel, signal)
+      current()
       // Reslice the conformed brain mask onto srcNative's grid (nearest-neighbour → back
       // to native resolution), then multiply srcNative by it so only brain voxels survive
       // — face and skull are zeroed. For an N mm border, grow the mask with `-close 1 N 0`
@@ -352,13 +372,15 @@ async function runDeface(): Promise<void> {
       // the output keeps its datatype (-odt input).
       const resliced = niimath.image(maskConf).gz(0).resliceNN(srcNative)
       const grown = borderMm > 0 ? resliced.close(1, borderMm, 0) : resliced.bin()
-      const maskNat = new File([await grown.run('masknat.nii')], 'masknat.nii')
-      if (isCleanedUp) return
-      const blob = await niimath.image(srcNative).gz(0).mulImage(maskNat).run('defaced.nii')
-      if (isCleanedUp) return
-      await loadFromFile(new File([blob], 'defaced.nii'), false)
+      const maskNat = new File([await stage(() => grown.run('masknat.nii'))], 'masknat.nii')
+      current()
+      const blob = await stage(() => niimath.image(srcNative).gz(0).mulImage(maskNat).run('defaced.nii'))
+      current()
+      const out = new File([blob], 'defaced.nii')
+      await loadFromFile(out, false, signal)
       const tag = `${useRobustfov ? 'robustfov + ' : ''}${borderMm > 0 ? `${borderMm} mm border` : 'tight'}`
-      setStatus(`Brain-extracted with mindgrab (${tag}) (${Math.round(performance.now() - t0)} ms)`)
+      report(`Brain-extracted with mindgrab (${tag}) (${Math.round(performance.now() - t0)} ms)`)
+      return out
     } catch (err) {
       // A failed run can corrupt the niimath heap and/or leave the GPU device in a
       // bad state; reset both so the next Apply starts clean. Rethrow so enqueue()
@@ -370,7 +392,6 @@ async function runDeface(): Promise<void> {
       spin(false)
       updateButtons()
     }
-    return
   }
 
   // Two orthogonal knobs in the method slug: `_robustfov` crops (neck/inferior) first,
@@ -382,28 +403,29 @@ async function runDeface(): Promise<void> {
   spin(true)
   // Hellinger is single-threaded in WASM (no OpenMP) and runs an exhaustive search, so it
   // is minutes on a full-head scan; set the expectation so a slow run doesn't look hung.
-  setStatus(
+  report(
     `Defacing with ${label}… ${useHel ? 'single-threaded, up to a few minutes' : '~5 s'}`,
   )
   const t0 = performance.now()
   try {
-    await ensureNiimath()
-    if (isCleanedUp) return
+    await stage(ensureNiimath)
+    current()
     // Register the bundled MNI template to the subject and zero the face voxels.
     // Always run on the pristine sourceFile so repeated Apply doesn't re-deface an
     // already-cropped/defaced output. gz(0): uncompressed .nii I/O for speed (NiiVue
     // re-gzips only on Save). `-cost hel` picks the exhaustive engine; omitting -cost
     // uses the fast default (with Hellinger fallback on degenerate inputs).
-    const base = niimath.image(sourceFile).gz(0)
+    const base = niimath.image(inputFile).gz(0)
     const chain = useRobustfov ? base.robustfov() : base
     const opts = useHel ? ['-cost', 'hel'] : []
     const defaced = chain.deface(refFiles.mni, refFiles.mask, opts)
-    const blob = await defaced.run('defaced.nii')
-    if (isCleanedUp) return
+    const blob = await stage(() => defaced.run('defaced.nii'))
+    current()
     const out = new File([blob], 'defaced.nii')
-    await loadFromFile(out, false) // display result; keep sourceFile pristine
+    await loadFromFile(out, false, signal) // display result; keep sourceFile pristine
     const ms = Math.round(performance.now() - t0)
-    setStatus(`Defaced with ${label} (${ms} ms)`)
+    report(`Defaced with ${label} (${ms} ms)`)
+    return out
   } catch (err) {
     // A failed/OOM run can leave the worker's WASM heap + MEMFS corrupt; recreate
     // it before the next Apply so a retry starts clean. Rethrow so enqueue() still
@@ -493,6 +515,7 @@ async function init(): Promise<void> {
   const noWebGpu =
     'This browser can’t initialize WebGPU. Use a recent desktop Chrome, Edge or Safari.'
   if (!navigator.gpu) {
+    initializationFailure = new Error(noWebGpu)
     document.querySelector('.nd-viewer-canvas-wrapper > [role="alert"]')?.remove()
     $('emptyState').hidden = false
     setStatus(noWebGpu)
@@ -504,6 +527,7 @@ async function init(): Promise<void> {
     // Almost always genuine WebGPU unavailability; warn (not error, so the smoke's
     // console.error gate stays meaningful) so a non-WebGPU init bug isn't silently
     // mislabeled. Either way return fail-closed: sourceFile/refFiles stay unset.
+    initializationFailure = new Error(noWebGpu, { cause: err })
     console.warn('deface: WebGPU init failed', err)
     document.querySelector('.nd-viewer-canvas-wrapper > [role="alert"]')?.remove()
     $('emptyState').hidden = false
@@ -563,7 +587,7 @@ dicomPick.addEventListener(
   },
   ac,
 )
-applyBtn.addEventListener('click', () => enqueue(runDeface), ac)
+applyBtn.addEventListener('click', () => enqueue(() => runDeface()), ac)
 saveBtn.addEventListener('click', () => void runSave(), ac)
 aboutBtn.addEventListener('click', () => aboutDialog.open('Deface', $('aboutContent')), ac)
 $<HTMLButtonElement>('privacyBtn').addEventListener('click', () => privacyDialog.open('Privacy', $('privacyContent')), ac)
@@ -648,5 +672,38 @@ window.addEventListener('pagehide', (e) => {
 }, { once: true, signal: listeners.signal })
 if (import.meta.hot) import.meta.hot.dispose(cleanup)
 
+registerAppAutomation({
+  app: 'deface',
+  convertDicom: runDcm2niix,
+  operations: {
+    async deface({ inputs, parameters, signal, progress }) {
+      const files = inputs.image
+      if (!Array.isArray(files) || files.length !== 1) throw new Error('Deface requires one selected image.')
+      const method = parameters.method
+      if (typeof method !== 'string') throw new Error('Choose a defacing method.')
+      inFlightCount++
+      updateButtons()
+      const job = pending.then(async () => {
+        signal.throwIfAborted()
+        if (initializationFailure) throw initializationFailure
+        if (!refFiles || !ctx) throw new Error('Deface could not initialize its viewer or MNI reference.')
+        await loadFromFile(files[0], true, signal)
+        const file = await runDeface(method, { signal, progress })
+        signal.throwIfAborted()
+        if (!file) throw new Error('Defacing completed without an output image.')
+        return { artifacts: [{ role: 'image', file }], provenance: { method, engine: method.startsWith('mindgrab') ? 'mindgrab-webgpu-niimath' : 'niimath-wasm', reference: MNI_URL, faceMask: MASK_URL } }
+      }).finally(() => { inFlightCount--; updateButtons() })
+      pending = job.catch(() => {})
+      return job
+    },
+  },
+})
+
 updateButtons()
-enqueue(init)
+enqueue(async () => {
+  try { await init() }
+  catch (error) {
+    initializationFailure = error instanceof Error ? error : new Error(String(error))
+    throw error
+  }
+})

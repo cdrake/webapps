@@ -1,4 +1,5 @@
 import { bindInfoTooltips, createConsole, createExampleSelector } from '../vendor/webapp-components/src/ui/index.js';
+import { registerAppAutomation } from '../vendor/webapp-components/src/automation/index.js';
 // MRI2VID controller. Runs entirely on the client: ingest files, group DICOM
 // series, read the selected volume, window and preview it, and encode a video.
 // Public examples download on request; user-selected image data stays local.
@@ -92,7 +93,8 @@ function baseName(name) {
 }
 
 // ---- ingest ----
-async function handleFiles(fileRecs) {
+async function handleFiles(fileRecs, { autoSelect = true, signal } = {}) {
+  signal?.throwIfAborted();
   if (!fileRecs || fileRecs.length === 0) return;
   const gen = ++loadGen;
   setStatus('Reading files...');
@@ -103,6 +105,7 @@ async function handleFiles(fileRecs) {
   const volumeFiles = [];
   let unreadable = 0;
   for (const rec of fileRecs) {
+    signal?.throwIfAborted();
     const kind = detectKind(rec.name);
     if (kind === 'dicom') dicomFiles.push(rec);
     else if (kind === 'nifti' || kind === 'mgz') volumeFiles.push({ rec, kind });
@@ -136,6 +139,7 @@ async function handleFiles(fileRecs) {
       series.forEach((s, i) => {
         sources.push({
           id: `dicom-${i}`,
+          seriesUid: s.seriesInstanceUID,
           kind: 'dicom-series',
           label: s.seriesDescription || `Series ${s.seriesNumber ?? i + 1}`,
           classification: s.classification,
@@ -157,13 +161,19 @@ async function handleFiles(fileRecs) {
 
   if (unreadable) logLine(`${unreadable} file(s) could not be read and were skipped.`, 'warning');
   logLine(`Found ${sources.length} series or volume(s).`);
-  if (!sources.length) { setStatus('No readable DICOM, NIfTI, or MGZ files found.', true); return; }
+  if (!sources.length) {
+    setStatus('No readable DICOM, NIfTI, or MGZ files found.', true);
+    if (!autoSelect) throw new Error('No readable DICOM, NIfTI, or MGZ files found.');
+    return;
+  }
+  signal?.throwIfAborted();
   if (gen !== loadGen) return;
 
   S.sources = sources;
   renderSeries(sources);
   const def = sources.find((s) => s.isDefault) || sources[0];
-  await selectSource(def.id);
+  if (autoSelect) await selectSource(def.id);
+  return sources;
 }
 
 // ---- series panel ----
@@ -222,7 +232,8 @@ function markSelected(id) {
 }
 
 // ---- load a source into a Volume ----
-async function selectSource(id) {
+async function selectSource(id, { signal, throwOnError = false, mosaicReduce = $('mosaicReduce').value } = {}) {
+  signal?.throwIfAborted();
   const src = S.sources.find((s) => s.id === id);
   if (!src) return;
   S.selectedId = id;
@@ -238,20 +249,23 @@ async function selectSource(id) {
     if (src.kind === 'dicom-series') {
       const files = [];
       for (const rec of src.recs) files.push({ name: rec.name, buffer: await rec.file.arrayBuffer() });
-      volume = readDicomSeries(files, { mosaicReduce: $('mosaicReduce').value });
+      volume = readDicomSeries(files, { mosaicReduce });
     } else if (src.kind === 'nifti') {
       volume = await readNifti(await src.recs[0].file.arrayBuffer(), src.label);
     } else if (src.kind === 'mgz') {
       volume = await readMgz(await src.recs[0].file.arrayBuffer(), src.label);
     }
     if (gen !== loadGen) return;
+    signal?.throwIfAborted();
     S.volume = volume;
     S.volumeBase = baseName(src.label);
     onVolumeLoaded(gen);
     const [x, y, z] = volume.dims;
     setStatus(`Loaded ${src.label} · ${x}×${y}×${z}${volume.channels === 3 ? ' RGB' : ''}`);
+    return volume;
   } catch (e) {
     if (gen === loadGen) setStatus(`Could not load: ${e.message}`, true);
+    if (throwOnError) throw e;
   }
 }
 
@@ -629,16 +643,20 @@ function openPreview() {
 function closePreview() { stopPlay(); $('previewModal').classList.add('hidden'); }
 
 // ---- generate ----
-async function generate() {
-  if (S.running || !S.volume) return;
+async function generate({ options, signal, throwOnError = false, progress } = {}) {
+  signal?.throwIfAborted();
+  if (S.running || !S.volume) {
+    if (throwOnError) throw new Error('Load a volume and finish the current encode before starting another.');
+    return;
+  }
   stopPlay();
   const vol = S.volume;
-  const opts = currentOptions();
+  const opts = options ?? currentOptions();
   const geo = orientationGeometry(vol.dims, opts.orientation);
 
   let sliceIndices;
   try { sliceIndices = resolveSliceIndices(geo.nFrames, opts); }
-  catch (e) { setStatus(e.message, true); return; }
+  catch (e) { setStatus(e.message, true); if (throwOnError) throw e; return; }
 
   const norm = currentNorm(vol, opts.colorNormalize);
   const total = geo.nFrames;
@@ -662,16 +680,21 @@ async function generate() {
       frameProvider,
       annotate: opts.annotate,
       total,
-      onProgress: setProgress,
-      shouldStop: () => S.stopFlag,
+      onProgress: value => { setProgress(value); progress?.({ value, message: 'Encoding video' }); },
+      shouldStop: () => S.stopFlag || Boolean(signal?.aborted),
     });
+    signal?.throwIfAborted();
     showResult(res, opts, first, sliceIndices.length);
     setStatus(`Video ready · ${$('resultInfo').textContent}`);
     setProgress(1);
+    return { file: new File([res.blob], `${S.volumeBase}_${opts.orientation}.${res.ext}`, { type: res.mime }),
+      summary: { codec: res.codecName, container: res.container, frames: sliceIndices.length, width: res.width, height: res.height, fps: opts.fps },
+      provenance: { parameters: opts, normalization: norm, dimensions: Array.from(vol.dims), sliceIndices } };
   } catch (e) {
     setProgress(0);
     if (e.stopped) setStatus('Encoding stopped.');
     else setStatus(`Encode failed: ${e.message}`, true);
+    if (throwOnError) throw e;
   } finally {
     S.running = false;
     stopElapsed();
@@ -795,3 +818,39 @@ async function setupExamples() {
   $('dropZone').before(selector);
 }
 void setupExamples().catch(error => setStatus(error.message, true));
+
+async function encodeOperation({ inputs, parameters, signal, progress }) {
+  if (S.running) throw new Error('Wait for the current encode to finish.');
+  const files = inputs.image ?? inputs.series;
+  progress('Reading volume files');
+  // Keep each transferred file distinct even when two DICOM series reuse slice names.
+  const records = files.map((file, index) => ({ file, name: inputs.series ? `${index}-${file.name}` : file.name }));
+  const sources = await handleFiles(records, { autoSelect: false, signal });
+  const candidates = parameters.seriesUid ? sources.filter(source => source.seriesUid === parameters.seriesUid) : sources;
+  if (candidates.length !== 1) {
+    const error = new Error('Choose one DICOM series by setting the seriesUid parameter.');
+    error.code = 'SERIES_SELECTION_REQUIRED';
+    error.candidates = sources.map(source => ({ seriesUid: source.seriesUid, description: source.label, slices: source.sliceCount, kind: source.kind }));
+    throw error;
+  }
+  const source = candidates[0];
+  await selectSource(source.id, { signal, throwOnError: true, mosaicReduce: parameters.mosaicReduce ?? 'first' });
+  signal.throwIfAborted();
+  progress('Encoding video');
+  const options = { ...parameters, start: parameters.start ?? null, end: parameters.end ?? null };
+  const result = await generate({ options, signal, progress, throwOnError: true });
+  return { artifacts: [{ role: 'video', file: result.file }], summary: result.summary,
+    provenance: { ...result.provenance, source: { kind: source.kind, seriesUid: source.seriesUid ?? null } } };
+}
+
+const automation = registerAppAutomation({ app: 'dicom2vid', contractUrl: 'vendor/automation.json',
+  operations: { 'encode-volume': encodeOperation, 'encode-dicom': encodeOperation },
+});
+automation.registerViewer('main', {
+  state: () => ({ dimensions: S.volume ? Array.from(S.volume.dims) : null, orientation: $('orientation').value,
+    slice: S.preview.idx, normalization: S.dataNorm }),
+  tabs: {
+    list: () => ORIENTATIONS.map(id => ({ id, label: id, active: $('orientation').value === id })),
+    select: setOrientation,
+  },
+});

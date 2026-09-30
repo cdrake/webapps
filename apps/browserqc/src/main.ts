@@ -17,8 +17,12 @@ import NiiVueGPU, {
 import { mountImagingWorkspace } from '@neurodesk/webapp-components/core/mount-imaging-workspace'
 import { bindFileDrop, createInfoDialog, createConsole, createExampleSelector } from '@neurodesk/webapp-components/ui'
 import '@neurodesk/webapp-components/styles/imaging-workspace.css'
-import { readImageFiles, traverseDataTransferItems } from '@neurodesk/runtime-support/dcm2niix-client'
+import { registerAppAutomation, registerViewer, createNiivueAdapter, runAbortable, summarizeLabels, type OperationContext } from '@neurodesk/webapp-components/automation'
+import { readNifti } from '@neurodesk/webapp-components/file-io'
+import { runSegmentation, type SegmentationBackend } from './segmentation'
+import { readImageFiles, runDcm2niix, traverseDataTransferItems } from '@neurodesk/runtime-support/dcm2niix-client'
 import { Niimath } from '@niivue/niimath'
+import { version as mindgrabVersion } from '@brainchop/mindgrab/package.json'
 import { CSF_LABELS, WM_LABELS, bindSidecar, readQcReport, renderQc } from './qc'
 import type { QcMetrics, QcReport } from './qc'
 import examples from '../examples.json'
@@ -70,6 +74,7 @@ let ctx: ExtCtx | null = null
 
 async function attachNiiVue(): Promise<void> {
   await nv.attachTo('gl1')
+  registerViewer('main', createNiivueAdapter(nv, { regions: { list: () => labelSummary?.labels ?? [] } }))
   nv.multiplanarType = MULTIPLANAR_TYPE.GRID
   nv.sliceType = SLICE_TYPE.MULTIPLANAR
   nv.showRender = SHOW_RENDER.ALWAYS
@@ -83,6 +88,8 @@ async function attachNiiVue(): Promise<void> {
 
 // --- App state ---
 let isCleanedUp = false
+let initializationFailure: Error | null = null
+let labelSummary: ReturnType<typeof summarizeLabels> | null = null
 // True while runSegment is mid-flight mutating the NiiVue scene (loadVolumes →
 // addVolume → setColormapLabel). The opacity slider must not re-enter NiiVue during
 // that window, so its handler no-ops while busy — see the #ovlSlider listener.
@@ -106,8 +113,6 @@ const ac = { signal: listeners.signal }
 // until reload. A timeout rejects instead so the queue moves on. Generous — these
 // finish in seconds; this only fires on a genuine stall.
 const WORKER_TIMEOUT_MS = 60_000
-// Segmentation on CPU or software GL takes minutes, not seconds.
-const SEGMENTATION_TIMEOUT_MS = 15 * 60_000
 function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms} ms`)), ms)
@@ -167,8 +172,8 @@ function resetNiimathWorker(): void {
   niimathReady = null
 }
 
-async function fetchFile(url: string, name: string): Promise<File> {
-  const res = await fetch(url)
+async function fetchFile(url: string, name: string, signal?: AbortSignal): Promise<File> {
+  const res = await fetch(url, { signal })
   if (!res.ok) throw new Error(`fetch ${name} failed: ${res.status}`)
   return new File([await res.blob()], name)
 }
@@ -177,33 +182,33 @@ async function fetchFile(url: string, name: string): Promise<File> {
 
 // MindGrab returns native-grid labels, so no conform/reslice implementation or model
 // files are shipped with this demo.
-const SEG_COLORMAP: ColorMap = {
+const SEG_COLORMAP = {
   R: [0, 245, 205, 120, 196, 220, 230, 0, 122, 236, 12, 204, 42, 119, 220, 103, 255, 165],
   G: [0, 245, 62, 18, 58, 248, 148, 118, 186, 13, 48, 182, 204, 159, 216, 255, 165, 42],
   B: [0, 245, 78, 134, 250, 164, 34, 14, 220, 176, 255, 142, 164, 176, 20, 255, 0, 42],
   labels: ['Unknown', 'Cerebral-White-Matter', 'Cerebral-Cortex', 'Lateral-Ventricle', 'Inferior-Lateral-Ventricle', 'Cerebellum-White-Matter', 'Cerebellum-Cortex', 'Thalamus', 'Caudate', 'Putamen', 'Pallidum', '3rd-Ventricle', '4th-Ventricle', 'Brain-Stem', 'Hippocampus', 'Amygdala', 'Accumbens-area', 'VentralDC'],
   I: [...Array(18).keys()],
   A: [0, ...Array(17).fill(255)],
-}
+} satisfies ColorMap
 
 // Post a raw `--qc` job straight to the niimath worker. The wrapper's chain run()
 // only models image→ops→image; --qc takes its own argv and writes a TSV, so we drive
 // the worker directly (it stages `blob`+`extraFiles` into MEMFS, runs `cmd`, reads
 // `outName` back). The app's single-flight queue guarantees no niimath run overlaps
 // this one-shot handler swap.
-async function runNiimathQc(t1: File, seg: File): Promise<QcReport> {
+async function runNiimathQc(t1: File, seg: File, signal: AbortSignal): Promise<QcReport> {
   const worker = niimathWorker()
   if (!worker) throw new Error('niimath worker unavailable')
-  const template = await fetchFile(TEMPLATE_URL, 'avg152T1.nii.gz')
+  const template = await fetchFile(TEMPLATE_URL, 'avg152T1.nii.gz', signal)
   if (worker !== niimathWorker()) throw new Error('QC cancelled')
   return new Promise((resolve, reject) => {
-    worker.onmessage = (e: MessageEvent) => {
+    worker.onmessage = (e: MessageEvent<unknown>) => {
       const d = e.data
-      if (d?.type === 'error') {
-        reject(new Error(d.message))
+      if (d && typeof d === 'object' && 'type' in d && d.type === 'error') {
+        reject(new Error('message' in d ? String(d.message) : 'QC worker failed.'))
         return
       }
-      if (d && 'blob' in d) {
+      if (d && typeof d === 'object' && 'blob' in d) {
         if (!(d.blob instanceof Blob)) {
           reject(new Error('QC worker returned an invalid report file.'))
           return
@@ -211,6 +216,8 @@ async function runNiimathQc(t1: File, seg: File): Promise<QcReport> {
         void readQcReport(d.blob).then(resolve, reject)
       }
     }
+    worker.onerror = event => reject(new Error(event.message || 'QC worker failed.'))
+    worker.onmessageerror = () => reject(new Error('QC worker returned an unreadable result.'))
     worker.postMessage({
       blob: t1, // staged in MEMFS under t1.name
       extraFiles: [{ name: seg.name, data: seg }, { name: template.name, data: template }],
@@ -227,23 +234,28 @@ async function runNiimathQc(t1: File, seg: File): Promise<QcReport> {
 // MRIQC-style QC on the native input + the native-space segmentation. The T1 is
 // serialized straight from NiiVue (volumes[0]) so it shares the exact grid of the
 // segmentation we built from that same volume — `--qc` requires identical geometry.
-async function computeQc(segBytes: Uint8Array): Promise<void> {
-  await ensureNiimath()
+async function computeQc(segBytes: Uint8Array, signal: AbortSignal): Promise<QcReport> {
+  await runAbortable(signal, ensureNiimath, resetNiimathWorker)
   const t1 = await nv.saveVolume({ volumeByIndex: 0, filename: '' })
   if (!(t1 instanceof Uint8Array)) throw new Error('could not serialize the input volume')
-  const report = await withTimeout(
+  signal.throwIfAborted()
+  const report = await runAbortable(signal, () => withTimeout(
     // Both inputs are uncompressed .nii (saveVolume with an empty filename does not
     // gzip; writeNifti emits raw) — no gunzip cost, and `--qc` writes a TSV so output
     // gz never applies. Name matches content so niimath doesn't attempt a gunzip.
-    runNiimathQc(new File([t1], 'qc_t1.nii'), new File([segBytes], 'qc_seg.nii')),
+    runNiimathQc(new File([t1], 'qc_t1.nii'), new File([segBytes], 'qc_seg.nii'), signal),
     WORKER_TIMEOUT_MS,
     'niimath --qc --air',
-  )
+  ), resetNiimathWorker)
+  signal.throwIfAborted()
   if (bidsMeta) report.bids_meta = bidsMeta
   report.provenance.segmentation = 'mindgrab 16chan18cls (Subcortical + GWM)'
   lastReport = report
   saveBtn.disabled = false
-  renderQc(qcBody, report as QcMetrics)
+  const metrics: QcMetrics = {}
+  for (const [key, value] of Object.entries(report)) if (typeof value === 'number') metrics[key] = value
+  renderQc(qcBody, metrics)
+  return report
 }
 
 // Load `file` as the displayed volume, segment it, and QC the result.
@@ -252,6 +264,7 @@ let viewerReady = false
 async function loadSource(file: File, signal?: AbortSignal): Promise<void> {
   signal?.throwIfAborted()
   sourceFile = null
+  labelSummary = null
   lastReport = null
   saveBtn.disabled = true
   $<HTMLButtonElement>('runButton').disabled = true
@@ -271,8 +284,18 @@ async function loadSource(file: File, signal?: AbortSignal): Promise<void> {
   setStatus('Image loaded. Run quality control when ready.')
 }
 
-async function runSegment(file: File): Promise<void> {
-  if (isCleanedUp) return // a job queued before cleanup() (HMR) must not touch a dead nv
+async function runSegment(file: File, options: { backend?: SegmentationBackend; signal?: AbortSignal; strictQc?: boolean; progress?: OperationContext['progress'] } = {}) {
+  const signal = options.signal ?? listeners.signal
+  const current = () => {
+    signal.throwIfAborted()
+    if (isCleanedUp) throw new Error('The BrowserQC workspace has closed.')
+  }
+  const reportProgress = (message: string) => {
+    current()
+    setStatus(message)
+    options.progress?.({ message })
+  }
+  current()
   spin(true)
   exampleControl.setDisabled(true)
   $<HTMLButtonElement>('runButton').disabled = true
@@ -284,30 +307,28 @@ async function runSegment(file: File): Promise<void> {
   renderQc(qcBody, null) // clear any prior QC while we recompute
   const t0 = performance.now()
   try {
-    setStatus(`Loading ${file.name}…`)
+    reportProgress(`Loading ${file.name}…`)
     await nv.loadVolumes([{ url: file, name: file.name } as ImageFromUrlOptions])
-    if (isCleanedUp) return
-    setStatus('Segmenting (Subcortical + GWM)… first run downloads the model')
-    const { segment } = await import('@brainchop/mindgrab')
+    current()
+    reportProgress('Segmenting (Subcortical + GWM)… first run downloads the model')
     const t1 = await nv.saveVolume({ volumeByIndex: 0, filename: '' })
     if (!(t1 instanceof Uint8Array)) throw new Error('could not serialize the input volume')
     // MindGrab's auto mode falls back to WebGL when WebGPU has no adapter; on a software GL
     // stack that never finishes, so adapter-less browsers use the CPU bundle instead.
     const adapter = navigator.gpu ? await navigator.gpu.requestAdapter().catch(() => null) : null
-    const backend = adapter ? 'auto' : 'cpu'
-    if (!adapter) setStatus('Segmenting on the CPU (no WebGPU adapter)… first run downloads the model')
-    const result = await withTimeout(segment(t1, {
-      model: '16chan18cls', worker: true, backend,
-      assetPath: `${import.meta.env.BASE_URL}brainchop/`,
-    }), SEGMENTATION_TIMEOUT_MS, 'segmentation')
+    const backend = options.backend ?? (adapter ? 'auto' : 'cpu')
+    if (!adapter) reportProgress('Segmenting on the CPU (no WebGPU adapter)… first run downloads the model')
+    const result = await runSegmentation(t1, backend, signal)
     const bytes = new Uint8Array(result.image)
-    if (isCleanedUp) return // teardown may have run during the reslice/nifti imports
+    const measurements = summarizeLabels(await readNifti(bytes), SEG_COLORMAP)
+    const labels = new File([bytes], 'labels.nii', { type: 'application/x-nifti' })
+    current()
     await nv.addVolume({
       url: new File([bytes], 'segmentation.nii'),
       name: 'segmentation.nii',
       opacity: Number(ovlSlider.value) / 255,
     } as ImageFromUrlOptions)
-    if (isCleanedUp) return
+    current()
 
     await nv.setColormapLabel(nv.volumes.length - 1, SEG_COLORMAP)
     // Scene mutation is done. Apply the latest slider value first — a drag during the
@@ -315,23 +336,27 @@ async function runSegment(file: File): Promise<void> {
     // sampled opacity may be stale — then release the lock so subsequent drags land
     // during the (scene-untouching) QC run below. `finally` still clears it if we
     // bailed earlier.
-    void nv.setVolume(nv.volumes.length - 1, { opacity: Number(ovlSlider.value) / 255 })
+    await nv.setVolume(nv.volumes.length - 1, { opacity: Number(ovlSlider.value) / 255 })
+    current()
+    labelSummary = measurements
     busy = false
 
     // QC on the result. Non-fatal: a QC failure must not discard the segmentation
     // display — reset the worker, surface it in the status bar, leave the panel empty.
     try {
-      setStatus('Computing image-quality metrics (niimath)…')
-      await computeQc(bytes)
+      reportProgress('Computing image-quality metrics (niimath)…')
+      const qc = await computeQc(bytes, signal)
       $<HTMLDetailsElement>('resultsSection').open = true
-      if (isCleanedUp) return
-      setStatus(`Segmentation + QC complete (${Math.round(performance.now() - t0)} ms)`)
+      current()
+      reportProgress(`Segmentation + QC complete (${Math.round(performance.now() - t0)} ms)`)
+      return { labels, qc, measurements, segmentation: { model: '16chan18cls', version: mindgrabVersion, backend: result.backend, elapsedMs: result.elapsedMs } }
     } catch (err) {
       console.warn('QC failed', err)
       resetNiimathWorker()
       renderQc(qcBody, null)
       $<HTMLDetailsElement>('resultsSection').open = true
-      setStatus(`Segmented — QC unavailable: ${err instanceof Error ? err.message : String(err)}`)
+      reportProgress(`Segmented — QC unavailable: ${err instanceof Error ? err.message : String(err)}`)
+      if (options.strictQc) throw err
     }
   } finally {
     busy = false
@@ -411,6 +436,7 @@ async function init(): Promise<void> {
   const noWebGpu =
     'This browser/GPU can’t initialize WebGPU — BrowserQC needs a recent desktop Chrome, Edge, or Safari.'
   if (!navigator.gpu) {
+    initializationFailure = new Error(noWebGpu)
     document.querySelector('.nd-viewer-canvas-wrapper > [role="alert"]')?.remove()
     $('emptyState').hidden = false
     setStatus(noWebGpu)
@@ -422,6 +448,7 @@ async function init(): Promise<void> {
     // Almost always genuine WebGPU unavailability; warn (not error, so the smoke's
     // console.error gate stays meaningful) so a non-WebGPU init bug isn't silently
     // mislabeled.
+    initializationFailure = new Error(noWebGpu, { cause: err })
     console.warn('BrowserQC: WebGPU init failed', err)
     document.querySelector('.nd-viewer-canvas-wrapper > [role="alert"]')?.remove()
     $('emptyState').hidden = false
@@ -541,4 +568,50 @@ window.addEventListener('pagehide', (e) => {
 }, { once: true, signal: listeners.signal })
 if (import.meta.hot) import.meta.hot.dispose(cleanup)
 
-enqueue(init)
+registerAppAutomation({
+  app: 'browserqc',
+  convertDicom: runDcm2niix,
+  operations: {
+    async 'quality-control'({ inputs, inputDetails, parameters, signal, progress }) {
+      const files = inputs.image
+      if (!Array.isArray(files) || files.length !== 1) throw new Error('BrowserQC requires one selected image.')
+      const backend = parameters.backend
+      if (backend !== 'auto' && backend !== 'cpu') throw new Error('Choose the auto or CPU segmentation backend.')
+      const sidecars = inputs.sidecar
+      if (!Array.isArray(sidecars)) throw new Error('The sidecar must be an uploaded JSON file.')
+      const sidecar = sidecars[0] ?? inputDetails.image.sidecars.find(file => file.name.toLowerCase().endsWith('.json'))
+      const metadata: unknown = sidecar ? JSON.parse(await sidecar.text()) : null
+      if (sidecar && (!metadata || typeof metadata !== 'object' || Array.isArray(metadata))) throw new Error('The BIDS sidecar must be a JSON object.')
+      const job = pending.then(async () => {
+        signal.throwIfAborted()
+        if (initializationFailure) throw initializationFailure
+        if (!viewerReady) throw new Error('The BrowserQC viewer is unavailable.')
+        exampleControl.cancel()
+        bidsMeta = metadata
+        stagedSidecar = null
+        await loadSource(files[0], signal)
+        const result = await runSegment(files[0], { backend, signal, progress, strictQc: true })
+        signal.throwIfAborted()
+        if (!result) throw new Error('BrowserQC completed without quality metrics.')
+        return {
+          artifacts: [
+            { role: 'labels', file: result.labels },
+            { role: 'qc', file: new File([JSON.stringify(result.qc, null, 2)], 'qc.json', { type: 'application/json' }) },
+          ],
+          provenance: { segmentation: result.segmentation, qc: result.qc.provenance, airTemplate: TEMPLATE_URL },
+          measurements: result.measurements,
+        }
+      })
+      pending = job.catch(() => {})
+      return job
+    },
+  },
+})
+
+enqueue(async () => {
+  try { await init() }
+  catch (error) {
+    initializationFailure = error instanceof Error ? error : new Error(String(error))
+    throw error
+  }
+})

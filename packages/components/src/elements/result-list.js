@@ -63,6 +63,7 @@ export function defineResultList(view = globalThis.window) {
           : viewButton();
         this.append(createElement('div', {
           className: 'nd-volume-toggle',
+          'data-stage': stage,
           ownerDocument: doc,
         }, [
           viewControl,

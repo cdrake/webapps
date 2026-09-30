@@ -3,7 +3,8 @@ import { createExampleSelector } from '@neurodesk/webapp-components/ui';
 import NiiVue, { MULTIPLANAR_TYPE, SLICE_TYPE, SHOW_RENDER } from '@niivue/niivue';
 import { mountImagingWorkspace } from '@neurodesk/webapp-components/core/mount-imaging-workspace';
 import { bindFileDrop, createInfoDialog, createConsole, createViewerToolbar } from '@neurodesk/webapp-components/ui';
-import { readImageFiles } from '@neurodesk/runtime-support/dcm2niix-client';
+import { readImageFiles, runDcm2niix } from '@neurodesk/runtime-support/dcm2niix-client';
+import { registerAppAutomation, registerViewer, createNiivueAdapter } from '@neurodesk/webapp-components/automation';
 import { readVolume } from './volume.js';
 import { configureNativeDownloads, nativeDownloads } from './native-release.js';
 import manifest from '../../../models/synthsr.manifest.json';
@@ -68,7 +69,8 @@ info.body.addEventListener('click', async (event) => {
 
 // ---- Workflow state ----
 let source, output, provenance, worker, viewer, viewerReady, busy = false, timer, started;
-let importAbort, importedImages = [];
+let importAbort, processingAbort, importedImages = [];
+let displayedOutput = false;
 const assetBase = import.meta.env.VITE_SYNTHSR_ASSET_BASE || manifest.base_url || `${import.meta.env.BASE_URL}model-assets/`;
 
 
@@ -97,12 +99,22 @@ async function ensureViewer() {
     layouts.multiplanar();
     viewer.isLegendVisible = false;
     viewer.createExtensionContext().on('locationChange', (event) => { $('location').textContent = event.detail.string; });
+    registerViewer('image', createNiivueAdapter(viewer, {
+      tabs: {
+        list: () => [
+          ...(source ? [{ id: 'input', label: 'Original image', active: !displayedOutput }] : []),
+          ...(output ? [{ id: 'synthetic', label: 'Synthetic T1', active: displayedOutput }] : []),
+        ],
+        select: (id) => id === 'synthetic' ? show(output, true) : show(source),
+      },
+    }));
     return viewer;
   })();
   return viewerReady;
 }
 
 function setDisplayed(isOutput) {
+  displayedOutput = isOutput;
   $('inputTab').classList.toggle('active', !isOutput);
   $('outputTab').classList.toggle('active', isOutput);
   $('imageLabel').textContent = isOutput ? 'Synthetic T1 · 1 mm' : (source?.name ?? '');
@@ -216,40 +228,96 @@ $('mode').onchange = () => {
 };
 $('modelInput').onchange = () => { $('modelInfo').textContent = $('modelInput').files[0]?.name || 'SynthSR v2 · downloads once and is cached'; };
 
-$('processButton').onclick = () => {
-  if (!source || busy) return;
+async function synthesize({
+  file = source,
+  options = { ct: $('modality').value === 'ct', backend: $('backend').value, tiled: $('mode').value === 'tiled', flip: $('flip').checked, sharpen: $('sharpen').checked },
+  modelFile = $('modelInput').files[0],
+  signal,
+  progress = () => {},
+} = {}) {
+  if (!file) throw new Error('Choose an input image.');
+  if (busy) throw new Error('Wait for the current operation to finish.');
+  signal?.throwIfAborted();
+  const controller = new AbortController();
+  const abort = () => controller.abort(signal.reason);
+  signal?.addEventListener('abort', abort, { once: true });
+  processingAbort = controller;
   clearOutput();
-  show(source);
-  const options = { ct: $('modality').value === 'ct', backend: $('backend').value, tiled: $('mode').value === 'tiled', flip: $('flip').checked, sharpen: $('sharpen').checked };
   setBusy(true);
   $('progress').value = 0;
   started = performance.now();
   timer = setInterval(() => { $('elapsed').textContent = `${Math.round((performance.now() - started) / 1000)} s`; }, 1000);
-  worker = new Worker(new URL('./inference-worker.js', import.meta.url), { type: 'module' });
-  worker.onmessage = async ({ data }) => {
-    if (data.type === 'progress') { status(data.message); $('progress').value = data.value; }
-    if (data.type === 'error') { setBusy(false); status(data.message, true); }
-    if (data.type === 'result') {
-      provenance = data.provenance;
-      const stem = source.name.replace(/\.nii(\.gz)?$/i, '');
-      output = new File([data.buffer], `${stem}_synthsr${options.tiled ? '_tiled' : ''}.nii`, { type: 'application/octet-stream' });
-      setBusy(false);
-      $('outputSection').open = true;
-      $('outputResult').hidden = false;
-      $('outputTab').disabled = false;
-      $('progress').value = 1;
-      await show(output, true);
-      status(`Synthetic T1 ready · ${provenance.outputShape.join(' × ')} · ${Math.round(provenance.seconds)} s${options.tiled ? ' · approximate tiled mode' : ''}`);
-    }
-  };
-  worker.onerror = (event) => { setBusy(false); status(`Processing stopped: ${event.message || 'The inference worker could not run. Reload the app and try again.'}`, true); };
-  const asset = manifest.assets.find((item) => item.filename === 'synthsr-v2.onnx');
-  worker.postMessage({ file: source, options, model: { ...asset, url: `${asset.url || `${assetBase}${asset.filename}`}?sha256=${asset.sha256}`, file: $('modelInput').files[0] } });
+  try {
+    await show(file);
+    controller.signal.throwIfAborted();
+    const data = await new Promise((resolve, reject) => {
+      const active = new Worker(new URL('./inference-worker.js', import.meta.url), { type: 'module' });
+      worker = active;
+      let closed = false;
+      const finish = (error, result) => {
+        if (closed) return;
+        closed = true;
+        controller.signal.removeEventListener('abort', cancel);
+        active.terminate();
+        if (worker === active) worker = null;
+        if (error) reject(error);
+        else resolve(result);
+      };
+      const cancel = () => finish(controller.signal.reason ?? new DOMException('Cancelled', 'AbortError'));
+      controller.signal.addEventListener('abort', cancel, { once: true });
+      active.onmessage = ({ data }) => {
+        if (closed) return;
+        if (data.type === 'progress') {
+          status(data.message);
+          $('progress').value = data.value;
+          progress({ message: data.message, value: data.value });
+        } else if (data.type === 'error') finish(new Error(data.message));
+        else if (data.type === 'result') finish(null, data);
+      };
+      active.onerror = (event) => finish(new Error(`Processing stopped: ${event.message || 'The inference worker could not run. Reload the app and try again.'}`));
+      active.onmessageerror = () => finish(new Error('The inference worker returned unreadable data.'));
+      const asset = manifest.assets.find((item) => item.filename === 'synthsr-v2.onnx');
+      active.postMessage({ file, options, model: { ...asset, url: `${asset.url || `${assetBase}${asset.filename}`}?sha256=${asset.sha256}`, file: modelFile } });
+    });
+    controller.signal.throwIfAborted();
+    const stem = file.name.replace(/\.nii(\.gz)?$/i, '');
+    const result = new File([data.buffer], `${stem}_synthsr${options.tiled ? '_tiled' : ''}.nii`, { type: 'application/octet-stream' });
+    provenance = data.provenance;
+    output = result;
+    $('outputSection').open = true;
+    $('outputResult').hidden = false;
+    $('outputTab').disabled = false;
+    $('progress').value = 1;
+    await show(result, true);
+    controller.signal.throwIfAborted();
+    status(`Synthetic T1 ready · ${provenance.outputShape.join(' × ')} · ${Math.round(provenance.seconds)} s${options.tiled ? ' · approximate tiled mode' : ''}`);
+    return { artifacts: [{ role: 'synthetic', file: result }], provenance };
+  } catch (error) {
+    clearOutput();
+    if (controller.signal.aborted) {
+      $('progress').value = 0;
+      status('Processing cancelled. Your original image is unchanged.');
+    } else status(error.message, true);
+    throw error;
+  } finally {
+    signal?.removeEventListener('abort', abort);
+    if (processingAbort === controller) processingAbort = null;
+    setBusy(false);
+  }
+}
+
+$('processButton').onclick = () => {
+  if (!source || busy) return;
+  void synthesize().catch(() => {});
 };
 
 $('cancelBtn').onclick = () => {
   exampleControl.cancel();
   importAbort?.abort();
+  if (processingAbort) {
+    processingAbort.abort();
+    return;
+  }
   setBusy(false);
   $('progress').value = 0;
   status('Processing cancelled. Your original image is unchanged.');
@@ -268,11 +336,34 @@ function download(blob, name) {
 $('saveBtn').onclick = () => output && download(output, output.name);
 $('reportBtn').onclick = () => provenance && download(new Blob([JSON.stringify(provenance, null, 2)], { type: 'application/json' }), output.name.replace('.nii', '.json'));
 
-void (async () => {
+const initialization = (async () => {
   // navigator.gpu can exist without a usable adapter (headless or blocklisted GPUs); check the adapter, not the API.
   const adapter = navigator.gpu ? await navigator.gpu.requestAdapter().catch(() => null) : null;
   if (adapter) return;
   $('backend').value = 'wasm';
   status('Ready · WebGPU unavailable; CPU processing selected');
 })();
-window.addEventListener('pagehide', () => { exampleControl.cancel(); importAbort?.abort(); worker?.terminate(); clearInterval(timer); });
+window.addEventListener('pagehide', () => { exampleControl.cancel(); importAbort?.abort(); processingAbort?.abort(); worker?.terminate(); clearInterval(timer); });
+
+
+registerAppAutomation({
+  app: 'synthsr',
+  convertDicom: runDcm2niix,
+  operations: {
+    synthesize: async ({ inputs, parameters, signal, progress }) => {
+      await initialization;
+      signal.throwIfAborted();
+      if (busy) throw new Error('Wait for the current operation to finish.');
+      exampleControl.cancel();
+      if (!await load(inputs.image[0], signal)) throw new Error('The input image could not be loaded.');
+      signal.throwIfAborted();
+      $('modality').value = parameters.ct ? 'ct' : 'mr';
+      $('backend').value = parameters.backend;
+      $('mode').value = parameters.tiled ? 'tiled' : 'full';
+      $('flip').checked = parameters.flip;
+      $('sharpen').checked = parameters.sharpen;
+      const options = { ct: parameters.ct, backend: parameters.backend, tiled: parameters.tiled, flip: parameters.flip, sharpen: parameters.sharpen };
+      return synthesize({ file: inputs.image[0], options, modelFile: inputs.model[0] ?? null, signal, progress });
+    },
+  },
+});

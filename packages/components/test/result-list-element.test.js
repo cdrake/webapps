@@ -100,6 +100,7 @@ test('render keeps explicit ordering and treats labels as plain text', () => {
   const { window } = new JSDOM();
   const element = createResultList({ stageLabels: { second: '<img src=x>' } }, window.document);
   element.render({ first: {}, second: {} }, ['second', 'first']);
+  assert.deepEqual([...element.querySelectorAll('[data-stage]')].map(row => row.dataset.stage), ['second', 'first']);
   window.document.body.append(element);
   assert.deepEqual([...element.querySelectorAll('.nd-stage-label')].map((label) => label.textContent), ['<img src=x>', 'first']);
   assert.equal(element.querySelector('img'), null);

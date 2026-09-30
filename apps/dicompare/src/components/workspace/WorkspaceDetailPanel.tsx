@@ -598,18 +598,18 @@ const WorkspaceDetailPanel: React.FC<WorkspaceDetailPanelProps> = ({
         {isElectron() ? 'Export PDF' : 'Print'}
       </button>
 
-      {/* Header with split layout - fixed height */}
+      {/* Reference and data panels stack when the viewport is narrow. */}
       <div className="px-6 py-4 border-b border-border flex-shrink-0">
         {/* Split layout: Schema (left) | Data (right) */}
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Left side - Schema */}
-          <div className="border-r border-border pr-6 flex flex-col">
-            <div className="flex items-center justify-between mb-3">
+          <div className="min-w-0 md:border-r border-border md:pr-6 flex flex-col">
+            <div className="nd-viewer-actions justify-between mb-3">
               {/* Left: label */}
               <div className="text-xs font-medium text-content-tertiary uppercase tracking-wider">Reference</div>
               {/* Right: README, Edit, and X buttons */}
               {isUsedAsSchema && (
-                <div className="flex items-center gap-1.5">
+                <div className="nd-viewer-actions">
                   {/* Images button */}
                   <button
                     onClick={() => setShowImageManager(true)}
@@ -693,13 +693,13 @@ const WorkspaceDetailPanel: React.FC<WorkspaceDetailPanelProps> = ({
           </div>
 
           {/* Right side - Data */}
-          <div className="pl-0 flex flex-col">
-            <div className="flex items-center justify-between mb-3">
+          <div className="min-w-0 flex flex-col">
+            <div className="nd-viewer-actions justify-between mb-3">
               {/* Left: label */}
               <div className="text-xs font-medium text-content-tertiary uppercase tracking-wider">Test data</div>
               {/* Right: View, Notes, and X buttons when data is attached */}
               {(hasAttachedData || (selectedItem.source === 'data' && selectedItem.dataUsageMode === 'validation-subject')) && (
-                <div className="flex items-center gap-1">
+                <div className="nd-viewer-actions">
                   {/* View test data images button */}
                   {(() => {
                     const testDataBatchId = selectedItem.source === 'data' && selectedItem.dataUsageMode === 'validation-subject'

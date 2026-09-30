@@ -1,4 +1,4 @@
-// Emit src/freesurfer-lut.json (NiiVue label colormap) for the 33 SynthSeg labels
+// Emit the shared FreeSurfer label colormap for the 33 SynthSeg labels
 // from FreeSurferColorLUT.txt. Usage: node scripts/freesurfer-lut.mjs /path/to/FreeSurferColorLUT.txt
 import { readFileSync, writeFileSync } from 'node:fs';
 
@@ -12,4 +12,4 @@ for (const i of LABELS) {
   const { name, r, g, b } = rows.get(i);
   lut.R.push(r); lut.G.push(g); lut.B.push(b); lut.A.push(i ? 255 : 0); lut.labels.push(name);
 }
-writeFileSync(new URL('../src/freesurfer-lut.json', import.meta.url), JSON.stringify(lut) + '\n');
+writeFileSync(new URL('../../../packages/components/src/automation/freesurfer-lut.json', import.meta.url), JSON.stringify(lut) + '\n');
