@@ -1,5 +1,6 @@
 import { defineElement, upgradeProperties } from './define.js';
 import { bindInfoTooltips, renderInfoIcon } from '../ui/bindInfoTooltips.js';
+import { fetchWithRetry } from '../net/fetchWithRetry.js';
 
 let nextId = 0;
 
@@ -206,6 +207,9 @@ export function defineExampleSelector(view = globalThis.window) {
       };
       this.#refresh();
       this.#status('loading', `Loading ${example.label}…`);
+      const onRetry = ({ status, delay }) => {
+        if (this.#active === controller) this.#status('loading', `The example host is busy (HTTP ${status}); retrying in ${Math.ceil(delay / 1000)} s…`);
+      };
       try {
         await this.#onLoad(example, {
           signal: controller.signal,
@@ -213,7 +217,7 @@ export function defineExampleSelector(view = globalThis.window) {
           async fetchFiles() {
             const files = await Promise.all(example.files.map(async asset => {
               assertCurrent();
-              const response = await fetch(asset.url, { signal: controller.signal });
+              const response = await fetchWithRetry(asset.url, { signal: controller.signal }, { onRetry });
               if (!response.ok) throw new Error(`Could not download ${asset.name} (HTTP ${response.status}).`);
               const bytes = await response.arrayBuffer();
               assertCurrent();

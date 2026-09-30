@@ -127,6 +127,21 @@ test('download failure aborts companion fetches, then permits retry', async t =>
   control.destroy();
 });
 
+test('a rate-limited example download is retried and loads', async t => {
+  const original = globalThis.fetch;
+  t.after(() => { globalThis.fetch = original; });
+  let calls = 0;
+  globalThis.fetch = async () => (++calls === 1
+    ? new Response('', { status: 429, headers: { 'Retry-After': '0' } })
+    : new Response('scan'));
+  const { control, choose } = setup(async (_example, { fetchFiles }) => { await fetchFiles(); });
+  choose();
+  await new Promise(resolve => setTimeout(resolve, 50));
+  assert.equal(calls, 2);
+  assert.equal(control.dataset.exampleState, 'ready');
+  control.destroy();
+});
+
 test('destroy aborts loading and detaches the control', () => {
   let signal;
   const { control, choose } = setup(async (_example, context) => {
