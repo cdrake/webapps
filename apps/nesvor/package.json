@@ -17,6 +17,9 @@
     "@neurodesk/runtime-support": "workspace:*",
     "@neurodesk/nesvor": "workspace:*"
   },
+  "neurodeskWebapp": {
+    "coiServiceWorker": true
+  },
   "devDependencies": {
     "@playwright/test": "^1.44.0",
     "eslint": "^9.0.0",
