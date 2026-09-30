@@ -55,7 +55,13 @@ try {
       const sections = await dialog.locator('section > h3').allTextContents();
       assert.ok(sections.includes('Webapp standalone'));
       assert.equal(sections.at(-1), 'Model pack · optional');
-      if (catalog.apps[app.id].containers.length) assert.equal(sections[0], 'Neurodesk containers');
+      const computeServer = catalog.apps[app.id].computeServer;
+      if (computeServer) {
+        assert.equal(sections[0], 'Compute server · Linux with NVIDIA GPU');
+        await expect(dialog.locator('#standalone-compute')).toBeVisible();
+      } else if (catalog.apps[app.id].containers.length) {
+        assert.equal(sections[0], 'Neurodesk containers');
+      }
       const openrecon = catalog.apps[app.id].openrecon;
       const scanner = dialog.locator('section[aria-labelledby="standalone-openrecon"]');
       await expect(scanner).toHaveCount(openrecon ? 1 : 0);
@@ -67,6 +73,9 @@ try {
         await expect(scanner.getByRole('link', { name: `${openrecon.label} recipe` })).toHaveAttribute('href', `https://github.com/neurodesk/openrecon/tree/main/recipes/${openrecon.recipe}`);
       }
       const links = await dialog.locator('a').evaluateAll(elements => elements.map(element => element.href));
+      if (computeServer?.download) {
+        assert.ok(links.includes(computeServer.download.url), `${app.id}: missing compute-server download`);
+      }
       for (const download of [...catalog.suite.downloads, catalog.suite.models, ...catalog.apps[app.id].downloads]) {
         for (const file of download.parts || [download]) {
           assert.ok(links.includes(file.url), `${app.id}: missing visible ${download.platform} download ${file.url}`);

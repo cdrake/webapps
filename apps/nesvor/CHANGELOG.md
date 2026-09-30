@@ -4,9 +4,14 @@
 
 ### Patch Changes
 
-- Register stack loading and viewer inspection with the shared automation contract. Opening stacks replaces prior inputs and waits for the viewer; reconstruction remains an interactive operation.
+- Enable the shared cross-origin isolation fallback on static hosts such as GitHub Pages so N4 can use SharedArrayBuffer. Include NeSVoR in deployed isolation checks and verify its compute-server-first standalone download layout.
   - @neurodesk/nesvor@0.3.20260930
 
+
+### Patch Changes
+
+- Register stack loading and viewer inspection with the shared automation contract. Opening stacks replaces prior inputs and waits for the viewer; reconstruction remains an interactive operation.
+  - @neurodesk/nesvor@0.3.20260930
 
 ### Patch Changes
 
