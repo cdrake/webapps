@@ -4,7 +4,8 @@
     python3 make_basis.py <simulation dir> <output dir>
 
 <simulation dir>/<set id>/<metabolite>.{json,bin} are FID-A structures
-exported by simulate_library.m (via fida/validation/export_fida.m). For each
+exported by simulate_library.m and simulate_mega.m (via
+fida/validation/export_fida.m). For each
 set in library.json this writes <output dir>/<set id>.basis.
 
 Conventions, taken from LCModel.f (MYBASI) and FID-A (io_writelcm):
@@ -65,7 +66,8 @@ def write_basis(set_def, metabolites, sim_dir, out_path):
     lines.append(f" ECHOT = {set_def['te_ms']:.2f},")
     lines.append(f" SEQ = '{seq}' $END")
     lines.append(" $BASIS1")
-    lines.append(f" IDBASI = 'FID-A {set_def['id']}',")
+    edit = f" {set_def['edit']}" if set_def.get("edit") else ""
+    lines.append(f" IDBASI = 'FID-A {set_def['id']}{edit}',")
     lines.append(" FMTBAS = '(6E13.5)',")
     lines.append(f" BADELT = {first['dwelltime']:.8e},")
     lines.append(f" NDATAB = {n} $END")
@@ -90,9 +92,9 @@ def main():
     out_dir = Path(sys.argv[2])
     out_dir.mkdir(parents=True, exist_ok=True)
     lib = json.loads((HERE / "library.json").read_text())
-    for set_def in lib["sets"]:
+    for set_def in lib["sets"] + lib.get("mega", []):
         out = out_dir / f"{set_def['id']}.basis"
-        write_basis(set_def, lib["metabolites"], sim_dir, out)
+        write_basis(set_def, set_def.get("metabolites", lib["metabolites"]), sim_dir, out)
         print(out, out.stat().st_size)
 
 

@@ -35,12 +35,12 @@
 
 use serde_json::{json, Value};
 
-use super::align::{op_align_averages, op_align_averages_fd, op_align_isis, AlignTo};
+use super::align::{op_align_averages, op_align_averages_fd, op_align_isis, op_align_mp_subspecs, op_align_mp_subspecs_fd, AlignTo};
 use super::averaging::{op_averaging, op_rmbadaverages, Domain};
 use super::basic::{op_addphase, op_autophase, op_filter, op_freqshift, op_leftshift, op_ppmref, op_zeropad};
 use super::coils::{op_addrcvrs, op_getcoilcombos, CoilCombos, CoilMode};
 use super::quality::{op_get_lw, op_get_snr};
-use super::subspecs::{op_combinesubspecs, CombineMode};
+use super::subspecs::{op_combinesubspecs, op_takesubspec, CombineMode};
 use super::util::{find_max, phase1, polyfit, spec};
 use crate::spectra::Spectra;
 
@@ -676,4 +676,175 @@ pub fn run_specialproc_auto(raw: &Spectra, raww: Option<&Spectra>, opts: &Specia
     quality(&mut report, &out, out_w.as_ref());
     hooks.step("Done", 1.0)?;
     Ok(PipelineOutput { out, outw: out_w, out_noproc, outw_noproc: out_w_noproc, report })
+}
+
+/// Options of `run_megapressproc_auto`.
+#[derive(Clone, Copy, Debug)]
+pub struct MegaOptions {
+    pub coils: CoilOptions,
+    pub rm_bad_averages: RmBadOptions,
+    pub drift: DriftOptions,
+    /// tmax of the water reference's alignment (0.2 s).
+    pub water_tmax: f64,
+    pub leftshift: bool,
+    /// Zero-order phase on creatine of the edit-ON subspectrum (2.9-3.1 ppm).
+    pub autophase: bool,
+    /// Align edit-ON to edit-OFF (op_alignMPSubspecs).
+    pub align_subspecs: bool,
+    /// Creatine of the edit-OFF subspectrum to 3.027 ppm.
+    pub ppmref: bool,
+}
+
+impl Default for MegaOptions {
+    fn default() -> Self {
+        MegaOptions {
+            coils: CoilOptions { mode: CoilMode::W, point: 1 },
+            rm_bad_averages: RmBadOptions { enabled: true, nsd: 4.0, domain: Domain::Time },
+            drift: DriftOptions { enabled: true, domain: DriftDomain::Freq, tmax: 0.25, ppmmin: 1.6, ppmmax: 4.0, max_iterations: 20 },
+            water_tmax: 0.2,
+            leftshift: true,
+            autophase: true,
+            align_subspecs: true,
+            ppmref: true,
+        }
+    }
+}
+
+/// Result of `run_megapressproc_auto`.
+pub struct MegaOutput {
+    /// Edit-ON minus edit-OFF.
+    pub diff: Spectra,
+    pub sum: Spectra,
+    /// FID-A's subSpec1 (phased by 180 degrees and referenced) and subSpec2.
+    pub sub1: Spectra,
+    pub sub2: Spectra,
+    pub outw: Option<Spectra>,
+    /// The difference without removal of bad averages or drift correction.
+    pub diff_noproc: Spectra,
+    pub report: Report,
+}
+
+/// Deterministic run_megapressproc_auto (avgAlignDomain 'f', alignSS 2): coil
+/// combination, removal of bad averages, per-subspectrum drift correction,
+/// phasing on the edit-ON creatine, alignment of the subspectra, and the
+/// difference, sum and individual subspectra, referenced on creatine.
+/// Fixed registration windows replace FID-A's random draws, as in
+/// `run_pressproc_auto`; validation/megapressproc_det.m is the same in FID-A.
+pub fn run_megapressproc_auto(raw: &Spectra, raww: Option<&Spectra>, opts: &MegaOptions, progress: &mut dyn FnMut(&str, f32), cancelled: &dyn Fn() -> bool) -> Result<MegaOutput, String> {
+    let mut hooks = Hooks { progress, cancelled };
+    let mut report = Report { pipeline: "run_megapressproc_auto".into(), ..Default::default() };
+    if raw.dims.sub_specs == 0 || raw.size(raw.dims.sub_specs) != 2 {
+        return Err("MEGA-PRESS data need two subspectra (edit-ON and edit-OFF).".into());
+    }
+    report.averages_raw = if raw.dims.averages > 0 { raw.size(raw.dims.averages) } else { 1 };
+    hooks.step("Combining receiver channels", 0.0)?;
+    let co = &opts.coils;
+    let (cc, outw_cc) = match raww {
+        Some(w) => {
+            let cc = op_getcoilcombos(w, co.point, co.mode)?;
+            let r = op_addrcvrs(w, co.point, co.mode, Some(&cc), false)?;
+            (cc, Some(r.out))
+        }
+        None => (op_getcoilcombos(&op_averaging(&op_combinesubspecs(raw, CombineMode::Summ)?), co.point, co.mode)?, None),
+    };
+    let r = op_addrcvrs(raw, co.point, co.mode, Some(&cc), false)?;
+    report.coils = coil_report(&r.coilcombos, raww.is_some());
+    let out_cc = r.out;
+    let mut diff_noproc = op_combinesubspecs(&op_averaging(&out_cc), CombineMode::Diff)?;
+
+    let out_rm = if opts.rm_bad_averages.enabled && out_cc.dims.averages > 0 {
+        let (o, rep) = rm_bad_loop(&out_cc, &opts.rm_bad_averages, &mut hooks, 0.2)?;
+        report.rm_bad_averages = Some(rep);
+        o
+    } else {
+        out_cc.clone()
+    };
+    drop(out_cc);
+
+    let d = &opts.drift;
+    let (out_av, outw_av) = if d.enabled && out_rm.dims.averages > 0 {
+        hooks.step("Aligning the water reference", 0.3)?;
+        let outw_aa = match outw_cc.as_ref() {
+            Some(w) => Some(op_align_averages(w, Some(opts.water_tmax), AlignTo::Best)?.out),
+            None => None,
+        };
+        let na = out_rm.size(out_rm.dims.averages);
+        let ns = out_rm.size(out_rm.dims.sub_specs);
+        let mut fscum = vec![0.0; na * ns];
+        let mut phscum = vec![0.0; na * ns];
+        let mut cur = out_rm;
+        let mut p = 100.0f64;
+        let mut iter = 0;
+        while p.abs() > 0.0003 && iter < d.max_iterations {
+            iter += 1;
+            hooks.step(&format!("Correcting frequency drift (pass {iter})"), 0.3 + 0.5 * iter as f32 / d.max_iterations as f32)?;
+            let a = match d.domain {
+                DriftDomain::Time => op_align_averages(&cur, Some(d.tmax), AlignTo::Median)?,
+                DriftDomain::Freq => op_align_averages_fd(&cur, d.ppmmin, d.ppmmax, d.tmax, AlignTo::Median)?,
+            };
+            // polyfit(repmat(1:na, 1, ns), fs, 1): one line through every subspectrum.
+            let x: Vec<f64> = (0..na * ns).map(|k| (k % na + 1) as f64).collect();
+            p = polyfit(&x, &a.fs, 1)[0];
+            for k in 0..na * ns {
+                fscum[k] += a.fs[k];
+                phscum[k] += a.phs[k];
+            }
+            cur = a.out;
+        }
+        if p.abs() > 0.0003 {
+            report.warnings.push(format!("Drift correction stopped after {iter} passes with a residual trend of {p:.4} Hz per average."));
+        }
+        let first = fscum[..na].to_vec();
+        let first_ph = phscum[..na].to_vec();
+        report.drift = Some(DriftReport { iterations: iter, total_freq_drift: span(&first), total_phase_drift: span(&first_ph), freq: fscum, phase: phscum });
+        (op_averaging(&cur), outw_aa.as_ref().map(op_averaging))
+    } else {
+        (op_averaging(&out_rm), outw_cc.as_ref().map(op_averaging))
+    };
+    drop(outw_cc);
+
+    hooks.step("Left shift, phasing and subspectrum alignment", 0.85)?;
+    let (out_ls, outw_ls) = if opts.leftshift {
+        (leftshift_by_own(&out_av)?, outw_av.as_ref().map(leftshift_by_own).transpose()?)
+    } else {
+        (out_av, outw_av)
+    };
+    let ph0 = if opts.autophase { op_autophase(&op_takesubspec(&out_ls, &[1])?, 2.9, 3.1, 0.0, None)?.1 } else { 0.0 };
+    report.ph0 = ph0;
+    let out_ph = op_addphase(&out_ls, ph0, 0.0, 4.65);
+    diff_noproc = op_addphase(&diff_noproc, ph0, 0.0, 4.65);
+    let out = if opts.align_subspecs && out_ph.dims.sub_specs > 0 {
+        let (o, fs, phs) = op_align_mp_subspecs(&out_ph, false, None, None)?;
+        report.isis_freq = vec![fs];
+        report.isis_phase = vec![phs];
+        o
+    } else {
+        out_ph
+    };
+    let outw_as = match outw_ls {
+        Some(w) if w.dims.sub_specs > 0 => Some(op_align_mp_subspecs_fd(&w, 3.0, 6.5, true, None)?.0),
+        other => other,
+    };
+    let diff = op_combinesubspecs(&out, CombineMode::Diff)?;
+    let sum = op_combinesubspecs(&out, CombineMode::Summ)?;
+    let sub1 = op_addphase(&op_takesubspec(&out, &[0])?, 180.0, 0.0, 4.65);
+    let sub2 = op_takesubspec(&out, &[1])?;
+    let (sub1, frq) = if opts.ppmref { op_ppmref(&sub1, 2.9, 3.1, 3.027, None)? } else { (sub1, 0.0) };
+    report.freq_shift = frq;
+    let diff = op_freqshift(&diff, frq);
+    let sum = op_freqshift(&sum, frq);
+    let sub2 = op_freqshift(&sub2, frq);
+    let outw = match outw_as {
+        Some(w) => {
+            let w = if w.dims.sub_specs > 0 { op_combinesubspecs(&w, CombineMode::Diff)? } else { w };
+            let ph = -phase1(w.fids[0]) * 180.0 / std::f64::consts::PI;
+            report.ph0_water = Some(ph);
+            Some(op_addphase(&w, ph, 0.0, 4.65))
+        }
+        None => None,
+    };
+    hooks.step("Measuring SNR and linewidth", 0.95)?;
+    quality(&mut report, &sum, outw.as_ref());
+    hooks.step("Done", 1.0)?;
+    Ok(MegaOutput { diff, sum, sub1, sub2, outw, diff_noproc, report })
 }

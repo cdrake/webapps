@@ -413,3 +413,47 @@ pub fn op_align_mp_subspecs(input: &Spectra, in_phase: bool, init: Option<[f64; 
     out.flags.freqcorrected = true;
     Ok((out, p[0], p[1] + ph_shift))
 }
+
+/// op_alignMPSubspecs_fd: as `op_align_mp_subspecs`, fitting only the
+/// spectra between `minppm` and `maxppm` (FID-A fits subspectrum 2's
+/// band-limited FID against subspectrum 1's band, then applies the shift and
+/// phase to the full subspectrum 2). `in_phase` is FID-A's `'i'` mode.
+pub fn op_align_mp_subspecs_fd(input: &Spectra, minppm: f64, maxppm: f64, in_phase: bool, init: Option<[f64; 2]>) -> Result<(Spectra, f64, f64), String> {
+    check_combined(input)?;
+    if input.dims.sub_specs == 0 {
+        return Err("op_alignMPSubspecs_fd needs multiple subspectra.".into());
+    }
+    if input.dims.averages != 0 {
+        return Err("Average the data before op_alignMPSubspecs_fd.".into());
+    }
+    let nt = input.n();
+    let ph_shift = if in_phase { 0.0 } else { 180.0 };
+    let base1 = op_freqrange(&op_takesubspec(input, &[0])?, minppm, maxppm)?;
+    let base = stack(&spec(&base1.fids[..base1.n()]));
+    let range = op_freqrange(input, minppm, maxppm)?;
+    let nr = range.n();
+    let x = range.fids[nr..2 * nr].to_vec();
+    let dt = range.dwelltime;
+    let mut model = |p: &[f64], out: &mut [f64]| {
+        let z = phasor_deg(p[1]);
+        let sh: Vec<C> = x.iter().enumerate().map(|(k, v)| v * C::new(0.0, -(k as f64 * dt) * p[0] * 2.0 * PI).exp() * z).collect();
+        let s = spec(&sh);
+        for k in 0..nr {
+            out[k] = s[k].re;
+            out[k + nr] = s[k].im;
+        }
+    };
+    let opts = NlinOpts { max_iter: 100000, ..NlinOpts::fida_align() };
+    let fit = nlinfit(&base, &mut model, &init.unwrap_or([0.0, 0.0]), &opts, None);
+    let p = fit.beta;
+    let z = phasor_deg(p[1] + ph_shift);
+    let full = &input.fids[nt..2 * nt];
+    let a: Vec<C> = full.iter().zip(&input.t).map(|(v, tk)| v * C::new(0.0, -tk * p[0] * 2.0 * PI).exp() * z).collect();
+    let mut out = input.clone();
+    out.fids = input.fids[..nt].to_vec();
+    out.fids.extend(a);
+    out.sz = vec![nt, 2];
+    out.flags.writtentostruct = true;
+    out.flags.freqcorrected = true;
+    Ok((out, p[0], p[1] + ph_shift))
+}
