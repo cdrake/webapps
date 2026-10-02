@@ -263,6 +263,7 @@ export async function validateRequest(contract, value) {
       if (!isAbsolute(path)) throw new Error(`Input path must be absolute: ${path}`);
       if (!/\.nii(?:\.gz)?$/i.test(path)) throw new Error(`Input must be NIfTI: ${path}`);
       if (!(await stat(path)).isFile()) throw new Error(`Input is not a file: ${path}`);
+      await validateNiftiEncoding(path);
     }
   }
   return request;

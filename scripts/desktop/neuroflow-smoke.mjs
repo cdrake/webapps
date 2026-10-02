@@ -73,8 +73,8 @@ try {
   assert.equal(run.steps.first.status, 'completed');
   assert.equal(run.steps.second.status, 'completed');
   const checked = run.steps.second.qualifierChecks.find(item =>
-    item.binding === 'steps.second.inputs.input_image' && item.check.qualifier === 'formats');
-  assert.equal(checked?.check.outcome, 'compatible');
+    item.binding === 'steps.second.inputs.input_image');
+  assert.equal(checked?.checks.find(check => check.qualifier === 'formats')?.outcome, 'compatible');
   assert.equal(checked.evidence.producer.step, 'first');
   assert.equal(typeof completed.outputs.output_mask.uri, 'string');
   assert.equal(typeof completed.outputs.output_brain.uri, 'string');

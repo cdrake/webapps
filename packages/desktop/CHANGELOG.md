@@ -1,5 +1,11 @@
 # @neurodesk/desktop
 
+## 0.21.20261002
+
+### Patch Changes
+
+- Validate NIfTI encoding for legacy automation contracts before starting a run, matching schema-version-2 preflight checks.
+
 ## 0.20.20261002
 
 ### Minor Changes
