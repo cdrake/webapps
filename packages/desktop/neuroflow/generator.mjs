@@ -3,6 +3,7 @@ import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import { parseContract } from '../src/contracts.js';
 import { canonical, contractHash } from './runtime/contract.mjs';
+import { qualifiers } from './qualifiers.mjs';
 
 const ajv = new Ajv2020({ allErrors: true, strict: false });
 addFormats(ajv);
@@ -12,6 +13,7 @@ for (const name of ['common', 'events', 'tool', 'neuroflow-mcp']) {
 const schemaId = 'https://niivue.github.io/neuroflow-spec/schemas/0.1/tool.schema.json';
 const validate = ajv.getSchema(schemaId);
 const validateMcp = ajv.getSchema('https://niivue.github.io/neuroflow-spec/schemas/0.1/extensions/neuroflow-mcp.schema.json');
+const validateQualifierType = ajv.getSchema('https://niivue.github.io/neuroflow-spec/schemas/0.1/common.schema.json#/$defs/typeQualifierRules');
 const artifactTypes = new Set([
   'neuro:volume', 'neuro:mask', 'neuro:label-map', 'neuro:transform',
   'neuro:surface', 'neuro:report', 'neuro:ome-zarr',
@@ -26,29 +28,6 @@ const aliases = {
   'neuro:displacement-field': { type: 'neuro:transform', formats: ['displacement-field'] },
 };
 
-// RFC 0010 registered format tokens, and the contract spellings that map onto
-// one. A spelling that names a category rather than an encoding (surface) is
-// dropped; every other unregistered spelling keeps a neurodesk: prefix.
-const formatTokens = new Set([
-  'nifti', 'nii', 'nii-gz', 'nii-pair', 'analyze', 'mgh', 'mgz', 'nrrd', 'seg-nrrd', 'minc', 'mha', 'mif',
-  'brik-head', 'ecat', 'npy', 'dicom', 'dicom-seg', 'ome-zarr', 'gifti', 'freesurfer-surface',
-  'freesurfer-annot', 'freesurfer-label', 'mz3', 'obj', 'ply', 'stl', 'vtk', 'cifti', 'cifti-dtseries',
-  'cifti-dscalar', 'cifti-dlabel', 'cifti-dconn', 'cifti-pconn', 'cifti-ptseries', 'cifti-pscalar', 'trk',
-  'tck', 'trx', 'bval-bvec', 'bval', 'bvec', 'fsl-mat', 'fnirt-coef', 'fnirt-field', 'x5', 'itk-transform',
-  'displacement-field', 'spm-deformation', 'mrtrix-warp', 'afni-1d', 'lta', 'xfm', 'matlab-mat',
-  'freesurfer-lut', 'onnx', 'dseg-tsv', 'json', 'tsv', 'csv',
-]);
-const formatSpellings = { gii: 'gifti', bvals: 'bval', bvecs: 'bvec', surface: null };
-// Spaces the RFC 0010 migration table leaves to the app owner. Until an owner
-// names the template (a BIDS label) or the input each one means, they are
-// vendor-prefixed: compared literally, never mistaken for a registered label.
-const vendorSpaces = new Set(['MNI152-1mm', 'atlas', 'analysis', 'lesion-reference', 'RAS-mm', 'scanner-RAS-mm', 'registration-sphere']);
-const labelSystems = { FreeSurfer: 'freesurfer' };
-const spatialTypes = new Set(['neuro:volume', 'neuro:mask', 'neuro:label-map', 'neuro:surface', 'neuro:tract']);
-const griddedTypes = new Set(['neuro:volume', 'neuro:mask', 'neuro:label-map']);
-const labelledTypes = new Set(['neuro:label-map']);
-const contractSpatialTypes = new Set(['neuro:volume', 'neuro:mask', 'neuro:label-map', 'neuro:surface']);
-
 function mapType(type) {
   if (Array.isArray(type)) return { type: 'core:file' };
   if (artifactTypes.has(type) || type.startsWith('file:')) return { type };
@@ -61,57 +40,7 @@ function parameterType(field) {
   return `core:array<${item}>`;
 }
 
-const unique = values => [...new Set(values)];
-const allows = (set, type) => type.startsWith('neurodesk:') || set.has(type);
-
-function promoteFormats(formats) {
-  return unique(formats.map(token => {
-    if (formatTokens.has(token)) return token;
-    if (token in formatSpellings) return formatSpellings[token];
-    return `neurodesk:${token}`;
-  }).filter(Boolean));
-}
-
-// The one file input whose space an artifact declared as `input` inherits.
-function spatialInput(operation) {
-  const roles = Object.entries(operation.inputs)
-    .filter(([, field]) => field.source === 'files' && contractSpatialTypes.has(field.type)).map(([role]) => role);
-  return roles.length === 1 ? roles[0] : undefined;
-}
-
-function promoteSpace(space, kind, operation) {
-  if (space === 'native') return 'individual';
-  if (kind === 'artifacts') {
-    if (space === 'input' || space === 'subject-1mm') {
-      const role = spatialInput(operation);
-      return role && `inputs.input_${role}`;
-    }
-    if (space === 'fixed' || space === 'moving') {
-      const field = operation.inputs[space];
-      return field?.source === 'files' && contractSpatialTypes.has(field.type) ? `inputs.input_${space}` : undefined;
-    }
-  }
-  return vendorSpaces.has(space) ? `neurodesk:${space}` : undefined;
-}
-
-// RFC 0010 qualifiers for one declaration, by the RFC's migration mapping.
-// A value the mapping does not cover stays in the neurodesk/data extension.
-function qualifiers(field, kind, operation, mapped) {
-  const result = {};
-  const formats = [...(mapped.formats ?? []), ...promoteFormats(field.formats ?? [])];
-  if (formats.length) result.formats = unique(formats);
-  if (field.space !== undefined && allows(spatialTypes, mapped.type)) {
-    const space = promoteSpace(field.space, kind, operation);
-    if (space) result.space = space;
-    if (space && field.space === 'subject-1mm' && allows(griddedTypes, mapped.type)) result.resolution = 1;
-  }
-  if (field.labelSystem !== undefined && allows(labelledTypes, mapped.type)) {
-    result.labelSystem = labelSystems[field.labelSystem] ?? `neurodesk:${field.labelSystem}`;
-  }
-  return result;
-}
-
-function dataDeclaration(field, description, kind, operation) {
+function dataDeclaration(field, description, kind, operation, context) {
   const mapped = mapType(field.type);
   const scalar = field.source === 'url' ? 'core:string'
     : field.source === 'directory' ? (mapped.type === 'neuro:ome-zarr' ? mapped.type : 'core:directory')
@@ -121,7 +50,7 @@ function dataDeclaration(field, description, kind, operation) {
     description,
     optional: field.minimum === 0,
     // A URL is a core:string, which carries no qualifier; its formats stay in the extension.
-    ...(scalar !== 'core:string' && qualifiers(field, kind, operation, mapped)),
+    ...(scalar !== 'core:string' && qualifiers(field, kind, operation, mapped, context)),
     extensions: { 'neurodesk/data': structuredClone(field) },
   };
 }
@@ -129,17 +58,34 @@ function dataDeclaration(field, description, kind, operation) {
 const qualifierKeys = ['formats', 'space', 'resolution', 'density', 'labelSystem'];
 const qualified = declarations => Object.values(declarations).some(declaration => qualifierKeys.some(key => key in declaration));
 
-// The two RFC 0010 rules the schemas cannot express: a qualified document
-// declares 0.1.1, and an inputs.<id> reference names an input of the tool.
+// Cross-declaration inheritance and version rules require the complete tool.
 function qualifierErrors(tool) {
   const errors = [];
   if ((qualified(tool.inputs ?? {}) || qualified(tool.outputs ?? {})) && tool.neuroflow !== '0.1.1') {
     errors.push(`a document with type qualifiers declares 0.1.1, not ${tool.neuroflow}`);
   }
-  for (const [name, declaration] of Object.entries(tool.outputs ?? {})) {
-    for (const key of qualifierKeys) {
-      const match = /^inputs\.(.+)$/.exec(typeof declaration[key] === 'string' ? declaration[key] : '');
-      if (match && !(match[1] in (tool.inputs ?? {}))) errors.push(`outputs/${name}/${key} references undeclared input ${match[1]}`);
+  for (const kind of ['inputs', 'outputs']) {
+    for (const [name, declaration] of Object.entries(tool[kind] ?? {})) {
+      for (const key of qualifierKeys) {
+        const match = /^inputs\.(.+)$/.exec(typeof declaration[key] === 'string' ? declaration[key] : '');
+        if (!match) continue;
+        const path = `${kind}/${name}/${key}`;
+        if (kind === 'inputs') {
+          errors.push(`${path}: qualifier inheritance is only allowed on outputs`);
+          continue;
+        }
+        if (!Object.hasOwn(tool.inputs ?? {}, match[1])) {
+          errors.push(`${path} references undeclared input ${match[1]}`);
+          continue;
+        }
+        const source = tool.inputs[match[1]];
+        if (!validateQualifierType({ type: source.type, [key]: declaration[key] })) {
+          errors.push(`${path}: ${key} does not apply to input ${match[1]} of type ${source.type}`);
+        }
+        if (source.type.startsWith('core:array<') && !declaration.type.startsWith('core:array<')) {
+          errors.push(`${path}: this generator does not support a scalar output inheriting ${key} from collection input ${match[1]}`);
+        }
+      }
     }
   }
   return errors;
@@ -166,7 +112,7 @@ export function generateTools(value) {
     for (const [role, field] of Object.entries(operation.inputs)) {
       const name = `input_${role}`;
       bindings.inputs[role] = name;
-      inputs[name] = dataDeclaration(field, field.description, 'inputs', operation);
+      inputs[name] = dataDeclaration(field, field.description, 'inputs', operation, { app: contract.app, operationId: id });
     }
     for (const [key, field] of Object.entries(operation.parameters)) {
       const name = `param_${key}`;
@@ -189,7 +135,7 @@ export function generateTools(value) {
     for (const [role, field] of Object.entries(operation.artifacts)) {
       const name = `output_${role}`;
       bindings.artifacts[role] = name;
-      outputs[name] = dataDeclaration(field, `${operation.title}: ${role}`, 'artifacts', operation);
+      outputs[name] = dataDeclaration(field, `${operation.title}: ${role}`, 'artifacts', operation, { app: contract.app, operationId: id });
     }
     outputs.report = { type: 'neuro:report', description: 'Verified Neurodesk run report, including provenance, measurements and artifact hashes.' };
     const tool = {

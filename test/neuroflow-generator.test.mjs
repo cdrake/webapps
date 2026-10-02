@@ -99,7 +99,7 @@ test('RFC 0010 qualifiers are promoted by the migration mapping and the document
   const [tool] = generateTools(value);
   assert.equal(tool.neuroflow, '0.1.1');
   assert.deepEqual(tool.inputs.input_image.formats, ['nifti', 'gifti', 'neurodesk:custom']);
-  assert.equal(tool.inputs.input_image.space, 'individual');
+  assert.equal(tool.inputs.input_image.space, undefined);
   assert.equal(tool.inputs.input_fixed.space, undefined);
   assert.deepEqual(tool.inputs.input_bval, { ...tool.inputs.input_bval, type: 'neuro:gradient-table', formats: ['bval'] });
   assert.equal(tool.inputs.input_store.type, 'core:string');
@@ -113,7 +113,7 @@ test('RFC 0010 qualifiers are promoted by the migration mapping and the document
   assert.deepEqual(tool.outputs.output_warp.formats, ['displacement-field']);
   assert.equal(tool.outputs.output_warp.space, undefined);
   assert.equal(tool.outputs.output_affine.space, undefined);
-  assert.equal(tool.outputs.output_atlas.space, 'neurodesk:MNI152-1mm');
+  assert.equal(tool.outputs.output_atlas.space, undefined);
   assert.equal(tool.outputs.output_atlas.labelSystem, undefined);
   assert.deepEqual(tool.outputs.output_atlas.extensions['neurodesk/data'], operation.artifacts.atlas);
   delete value.operations.run.inputs.fixed;

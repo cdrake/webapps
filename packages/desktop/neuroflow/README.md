@@ -95,9 +95,10 @@ scalar to an array. The launcher widens a scalar input to the one-element list
 the desktop takes and narrows a single-file output to one path (omitting an
 absent optional one). A role without a maximum stays an array. Cardinality on
 DICOM inputs counts logical images after series selection, not the number of
-slice files. A multi-series input that needs a selection fails with the desktop's
-diagnostic; this adapter does not guess a series. Select or convert that series
-before running it through this interface.
+slice files. A scalar NeuroFlow input accepts one file, not a directory or a
+list of DICOM slices. Convert a multi-file series to NIfTI before binding it.
+The generator does not expose desktop series-selection controls; it does not
+guess a series. DICOM execution also requires a runtime with a DICOM inspector.
 
 The generator uses standard artifact types when their representation matches,
 including `core:tabular` for `neuro:table`, `neuro:tract` for
@@ -112,7 +113,10 @@ boundary, with their full schema still enforced by desktop validation.
 
 Before executing, the launcher checks the installed contract against a
 canonical SHA-256 of the complete source contract, then calls `apps_validate`.
-A same-version contract change also requires regeneration. It calls
+A same-version contract change also requires regeneration. For schema-2 NIfTI
+inputs, desktop preflight checks the actual NIfTI-1 or NIfTI-2 header, including
+gzip and either byte order. This encoding check does not establish spatial
+identity or validate the whole voxel payload. It calls
 `runs_start`, polls `runs_get`, and reads completed artifacts as MCP resources.
 Artifacts above the desktop's 64 MiB resource limit are streamed from that
 run's verified local output directory, with the same size and hash checks.
@@ -132,33 +136,41 @@ Use the desktop MCP viewer controls directly when an agent needs that session.
 adds `formats`, `space`, `resolution`, `density` and `labelSystem` to type
 declarations, and a document that carries any of them declares
 `"neuroflow": "0.1.1"`. The generator promotes a contract annotation to a
-qualifier only where the RFC's migration mapping gives it a portable meaning;
+qualifier only where source evidence establishes its meaning;
 everything else stays in `neurodesk/data` as documentation, which no validator
 may report as checked.
 
 | Contract value | Qualifier |
 | --- | --- |
 | `formats` spellings | RFC tokens as they are (`nifti`, `dicom`, `json`, ...); `gii` becomes `gifti`, `bvals`/`bvecs` become `bval`/`bvec`; `surface` is a category, not a token, and is dropped; any other spelling keeps a `neurodesk:` prefix |
-| `space: native` | `individual` |
+| `space: native` on an input | retained as metadata; these apps also accept images in other frames |
 | `space: input` or `subject-1mm` on an artifact | `inputs.input_<role>` of the operation's one spatial file input; two spatial inputs leave it in the extension. `subject-1mm` adds `resolution: 1` |
 | `space: fixed` or `moving` on an artifact | `inputs.input_fixed` / `inputs.input_moving` |
 | `space: fixed`, `moving` or `input` on an input | none: the input defines that frame |
 | `space` on a transform (`moving-to-fixed`, warps) | none: RFC 0010 excludes `space` from `neuro:transform` |
-| `MNI152-1mm`, `atlas`, `analysis`, `lesion-reference`, `RAS-mm`, `scanner-RAS-mm`, `registration-sphere` | `neurodesk:<value>`, compared literally, until the app owner names the BIDS template label or the input it means |
+| SYNcro/disconnectome `MNI152-1mm` | `MNI152NLin6Asym`, `resolution: 1`, tied to their identical pinned FSL template |
+| TopoFit `scanner-RAS-mm`, dwi2trx `RAS-mm`, VesselBoost `analysis` outputs | `inputs.input_image`; a frame relationship, not a grid-equivalence claim |
+| SYNcro native-synthetic output | `inputs.input_primary` |
+| `atlas`, `lesion-reference`, `registration-sphere`, unverified labels | extension only; a vendor prefix would not establish a shared frame |
 | `labelSystem: FreeSurfer` | `freesurfer` |
 | other `labelSystem` values | `neurodesk:<value>` |
 
-The generator checks the two rules the schemas cannot: a qualified document
-declares 0.1.1, and an `inputs.<id>` reference names an input of the tool.
-Desktop preflight still enforces only the checks its contracts support; a
-qualifier states what the desktop promises, and the NeuroFlow runtime that
-binds the tools decides whether two declarations are compatible, incompatible,
-or need a runtime check.
+The generator checks version and inheritance rules beyond JSON Schema, including
+the referenced input's type and cardinality. [Catalog mapping tests](../../../test/neuroflow-qualifiers.test.mjs)
+pin the template checksum and the app-specific decisions. TopoFit's optional
+ROI does not change the output frame; that frame comes from its anatomical input.
+
+Use a runtime that evaluates qualifier compatibility and enforces unresolved
+checks before launching consumers. Accepting the `0.1.1` envelope or emitting a
+warning is insufficient. Header inspection can establish encoding and spacing,
+but not a named template or label-table revision. Such claims need trusted,
+artifact-bound provenance; unsupported checks must fail. The desktop continues
+to enforce its own app-specific checks and the SynthSeg 2 GiB resource limit.
 
 ## Verification
 
 ```sh
-node --test test/neuroflow-generator.test.mjs
+node --test test/neuroflow-generator.test.mjs test/neuroflow-qualifiers.test.mjs
 ```
 
 The tests cover the full catalog, deterministic generation, upstream schemas,
@@ -184,8 +196,9 @@ NEUROFLOW_MCP_BIN=/absolute/path/to/neuroflow-mcp \
 
 Use `node` without `xvfb-run -a` on a Mac with a graphical session. Linux
 containers that require Electron's sandbox override can set
-`NEURODESK_CONTAINER=1`. The check runs the actual upstream runtime, generated
-launcher, desktop MCP server and BET worker. It compares the binary mask with
+`NEURODESK_CONTAINER=1`. The check runs two chained BET steps through the actual upstream runtime,
+generated launcher, and desktop MCP server. The second step consumes the first
+step's scalar brain artifact. It compares the binary mask with
 the pinned voxel count and SHA-256 golden, verifies geometry and artifact
 hashes, and keeps evidence outside the checkout. It does not test WebGPU
 inference or native Metal.

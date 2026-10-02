@@ -1,7 +1,7 @@
 # NeuroFlow schema snapshot
 
 These unmodified NeuroFlow 0.1 schemas come from
-[cdrake/neuroflow-spec at 32796814708abdee2b845d1b00b473bdac976422](https://github.com/cdrake/neuroflow-spec/tree/32796814708abdee2b845d1b00b473bdac976422/schemas/0.1),
+[cdrake/neuroflow-spec at 370193d04d061fa7c88b51b25f36cc45510cef4c](https://github.com/cdrake/neuroflow-spec/tree/370193d04d061fa7c88b51b25f36cc45510cef4c/schemas/0.1),
 the RFC 0010 branch ([cdrake/neuroflow-spec#1](https://github.com/cdrake/neuroflow-spec/pull/1)).
 They add the type qualifiers `formats`, `space`, `resolution`, `density` and
 `labelSystem` and the `0.1.1` envelope value a qualified document declares.
