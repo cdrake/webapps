@@ -359,8 +359,6 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     return { filename: result.filename, frames: rows.length - 1 };
   }
   if (id === 'white-matter-lesions') {
-    // The macOS runner's virtual GPU returns empty FLAMeS logits without failing; SwiftShader's WebGPU matches the CPU.
-    await page.locator('#backend').selectOption('wasm');
     await expect(page.locator('#runButton')).toBeEnabled({ timeout: 60000 });
     await page.locator('#runButton').click();
     await expect(page.locator('#statusText')).toHaveText(/^Segmentation complete · \d+ lesions/, { timeout: 1200000 });

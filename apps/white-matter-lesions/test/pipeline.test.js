@@ -4,6 +4,7 @@ import {
   fromNetworkOrder,
   networkGrid,
   brainBox,
+  checkLogits,
   gaussianWeights,
   labelLesions,
   lesionTable,
@@ -154,4 +155,16 @@ test("folds are averaged: two folds that disagree cancel to probability one half
   assert.deepEqual(progress, [[1, 4], [2, 4], [3, 4], [4, 4]]);
   assert.ok(Math.abs(probability[0] - 0.5) < 1e-6);
   assert.ok(Math.abs(probability[probability.length - 1] - 0.5) < 1e-6);
+});
+
+test("blank or non-finite network output is rejected so WebGPU can fall back to the CPU", async () => {
+  assert.throws(() => checkLogits(new Float32Array(8)), /same score for every voxel/);
+  assert.throws(() => checkLogits(Float32Array.of(1, Number.NaN, 2, 3)), /non-finite/);
+  assert.doesNotThrow(() => checkLogits(Float32Array.of(8.9, 8.7, -8.9, -8.7)));
+  const dims = [120, 130, 40];
+  const affine = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 2.25, 0], [0, 0, 0, 1]];
+  const data = new Float32Array(dims[0] * dims[1] * dims[2]).fill(1);
+  const brainMask = new Uint8Array(data.length).fill(1);
+  const runPatch = async (tile) => new Float32Array(tile.length * 2);
+  await assert.rejects(segmentFlair({ volume: { dims, affine, data }, brainMask, runPatch }), /same score for every voxel/);
 });
