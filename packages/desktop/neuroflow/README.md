@@ -160,7 +160,9 @@ the referenced input's type and cardinality. [Catalog mapping tests](../../../te
 pin the template checksum and the app-specific decisions. TopoFit's optional
 ROI does not change the output frame; that frame comes from its anatomical input.
 
-Use a runtime that evaluates qualifier compatibility and enforces unresolved
+[Runtime enforcement PR #4](https://github.com/cdrake/neuroflow/pull/4) is the
+implementation used for the integration check. Use a runtime that evaluates
+qualifier compatibility and enforces unresolved
 checks before launching consumers. Accepting the `0.1.1` envelope or emitting a
 warning is insufficient. Header inspection can establish encoding and spacing,
 but not a named template or label-table revision. Such claims need trusted,

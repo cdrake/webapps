@@ -10,7 +10,9 @@ They are used under the included MIT license. Generation and tests validate
 against this local snapshot without fetching a schema at runtime.
 
 The launcher follows the script session contract implemented by
-[cdrake/neuroflow at a47266dbe80357cfffaee1906179d81411765de6](https://github.com/cdrake/neuroflow/tree/a47266dbe80357cfffaee1906179d81411765de6).
+[cdrake/neuroflow at a4ef7e4264b07d2b2cc4236017942a39f1862324](https://github.com/cdrake/neuroflow/tree/a4ef7e4264b07d2b2cc4236017942a39f1862324).
+That implementation is proposed in [neuroflow#4](https://github.com/cdrake/neuroflow/pull/4).
+The earlier envelope-only support does not enforce qualifier constraints.
 It uses `core:result-file` and `neuroflow/launch`, and writes absolute artifact
 paths to `result.json`. The upstream MCP runtime resolves the launch script
 relative to the tool document and requires it to remain inside the registry.
