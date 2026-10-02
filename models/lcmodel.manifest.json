@@ -174,6 +174,98 @@
         "NAA",
         "NAAG"
       ]
+    },
+    {
+      "id": "press-1.5t-te35",
+      "label": "PRESS, 1.5 T, TE 35 ms",
+      "sequence": "PRESS",
+      "fieldT": 1.5,
+      "hzpppm": 63.865,
+      "teMs": 35,
+      "file": "basis/press-1.5t-te35.basis.gz",
+      "simulation": {
+        "te1_ms": 10,
+        "te2_ms": 25,
+        "points": 8192,
+        "bandwidth_Hz": 4000,
+        "linewidth_Hz": 1.0
+      }
+    },
+    {
+      "id": "press-1.5t-te144",
+      "label": "PRESS, 1.5 T, TE 144 ms",
+      "sequence": "PRESS",
+      "fieldT": 1.5,
+      "hzpppm": 63.865,
+      "teMs": 144,
+      "file": "basis/press-1.5t-te144.basis.gz",
+      "simulation": {
+        "te1_ms": 10,
+        "te2_ms": 134,
+        "points": 8192,
+        "bandwidth_Hz": 4000,
+        "linewidth_Hz": 1.0
+      }
+    },
+    {
+      "id": "steam-1.5t-te20",
+      "label": "STEAM, 1.5 T, TE 20 ms",
+      "sequence": "STEAM",
+      "fieldT": 1.5,
+      "hzpppm": 63.865,
+      "teMs": 20,
+      "file": "basis/steam-1.5t-te20.basis.gz",
+      "simulation": {
+        "tm_ms": 10,
+        "points": 8192,
+        "bandwidth_Hz": 4000,
+        "linewidth_Hz": 1.0
+      }
+    },
+    {
+      "id": "press-3t-te80",
+      "label": "PRESS, 3 T, TE 80 ms",
+      "sequence": "PRESS",
+      "fieldT": 3.0,
+      "hzpppm": 127.731,
+      "teMs": 80,
+      "file": "basis/press-3t-te80.basis.gz",
+      "simulation": {
+        "te1_ms": 10,
+        "te2_ms": 70,
+        "points": 8192,
+        "bandwidth_Hz": 6000,
+        "linewidth_Hz": 1.5
+      }
+    },
+    {
+      "id": "steam-3t-te8",
+      "label": "STEAM, 3 T, TE 8 ms",
+      "sequence": "STEAM",
+      "fieldT": 3.0,
+      "hzpppm": 127.731,
+      "teMs": 8,
+      "file": "basis/steam-3t-te8.basis.gz",
+      "simulation": {
+        "tm_ms": 32,
+        "points": 8192,
+        "bandwidth_Hz": 6000,
+        "linewidth_Hz": 1.5
+      }
+    },
+    {
+      "id": "slaser-3t-te35",
+      "label": "semi-LASER, 3 T, TE 35 ms",
+      "sequence": "sLASER",
+      "fieldT": 3.0,
+      "hzpppm": 127.731,
+      "teMs": 35,
+      "file": "basis/slaser-3t-te35.basis.gz",
+      "simulation": {
+        "points": 8192,
+        "bandwidth_Hz": 6000,
+        "linewidth_Hz": 1.5
+      }
     }
   ],
   "metabolites": [
@@ -253,6 +345,36 @@
       "filename": "basis/megapress-3t-te68-diff.basis.gz",
       "bytes": 362382,
       "sha256": "e87c6c3d6aa461f7a4078d00909148b4f1d701102c6ac59548fb15dd47f06681"
+    },
+    {
+      "filename": "basis/press-1.5t-te35.basis.gz",
+      "bytes": 1049630,
+      "sha256": "54cc7ef257f60eab9e110fe0ff0f792d68a7d6b04c22c58299c9fba6d5674c21"
+    },
+    {
+      "filename": "basis/press-1.5t-te144.basis.gz",
+      "bytes": 1070005,
+      "sha256": "82c34efa0fa8581383cdf0d24df6c655c9f93eecac49d5c43c21de3b1aed6e42"
+    },
+    {
+      "filename": "basis/steam-1.5t-te20.basis.gz",
+      "bytes": 962398,
+      "sha256": "e3f1521631f5994eb985ccddb048e3f4d8913fa4817ef8021ceec02720ba19a5"
+    },
+    {
+      "filename": "basis/press-3t-te80.basis.gz",
+      "bytes": 1096804,
+      "sha256": "f09ad4b8e4aa60a2e091ef3e444c1c2c703554d6201940f815eaf0c4348594b4"
+    },
+    {
+      "filename": "basis/steam-3t-te8.basis.gz",
+      "bytes": 924374,
+      "sha256": "26c82b250f6279f82a3a000da33face80e4edd3bb2a8f123b84702772a4ad094"
+    },
+    {
+      "filename": "basis/slaser-3t-te35.basis.gz",
+      "bytes": 1019840,
+      "sha256": "7b7d5cb6173b6f45bb57ba2613039e727d8534a2fc2e191a41b2da3152ae651d"
     }
   ],
   "examples": [
@@ -293,7 +415,7 @@
     }
   ],
   "repository": "neurodeskorg/webapps",
-  "revision": "12dc25c811c711eb01f7bba063510a77b366be6c",
+  "revision": "91f69629415335ef6fcb88a8b8a05677328b916f",
   "prefix": "lcmodel/",
-  "base_url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/12dc25c811c711eb01f7bba063510a77b366be6c/lcmodel/"
+  "base_url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/91f69629415335ef6fcb88a8b8a05677328b916f/lcmodel/"
 }

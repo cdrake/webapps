@@ -1,5 +1,11 @@
 # lcmodel
 
+## 0.3.20261002
+
+### Minor Changes
+
+- Six more FID-A basis sets: PRESS at 1.5 T (TE 35 and 144 ms), STEAM at 1.5 T (TE 20 ms), and at 3 T PRESS TE 80 ms, STEAM TE 8 ms and semi-LASER TE 35 ms. The library now has fifteen sets plus the MEGA-PRESS difference set, and the recommendation picks among them. The app also publishes a typed automation contract (`fit`): preprocess and fit with a library or supplied basis set, returning the concentrations, LCModel's outputs and FID-A's report.
+
 ## 0.2.20261002
 
 ### Minor Changes

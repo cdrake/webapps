@@ -2,7 +2,7 @@
 // without a browser (see test/config.test.js).
 export const APP = Object.freeze({
   id: "lcmodel",
-  version: "0.2.20261002",
+  version: "0.3.20261002",
 });
 
 /**

@@ -8,7 +8,7 @@
       {
         "role": "spectrum",
         "name": "P17920.7",
-        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/12dc25c811c711eb01f7bba063510a77b366be6c/lcmodel/examples/ge-press-phantom/P17920.7"
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/91f69629415335ef6fcb88a8b8a05677328b916f/lcmodel/examples/ge-press-phantom/P17920.7"
       }
     ]
   },
@@ -21,12 +21,12 @@
       {
         "role": "spectrum",
         "name": "specialDLPFC.dat",
-        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/12dc25c811c711eb01f7bba063510a77b366be6c/lcmodel/examples/siemens-special/specialDLPFC.dat"
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/91f69629415335ef6fcb88a8b8a05677328b916f/lcmodel/examples/siemens-special/specialDLPFC.dat"
       },
       {
         "role": "water",
         "name": "specialDLPFC_w.dat",
-        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/12dc25c811c711eb01f7bba063510a77b366be6c/lcmodel/examples/siemens-special/specialDLPFC_w.dat"
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/91f69629415335ef6fcb88a8b8a05677328b916f/lcmodel/examples/siemens-special/specialDLPFC_w.dat"
       }
     ]
   },
@@ -39,7 +39,7 @@
       {
         "role": "spectrum",
         "name": "megapressDLPFC.dat",
-        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/12dc25c811c711eb01f7bba063510a77b366be6c/lcmodel/examples/siemens-megapress/megapressDLPFC.dat"
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/91f69629415335ef6fcb88a8b8a05677328b916f/lcmodel/examples/siemens-megapress/megapressDLPFC.dat"
       }
     ]
   },
@@ -52,17 +52,17 @@
       {
         "role": "spectrum",
         "name": "data.raw",
-        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/12dc25c811c711eb01f7bba063510a77b366be6c/lcmodel/examples/lcmodel-test/data.raw"
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/91f69629415335ef6fcb88a8b8a05677328b916f/lcmodel/examples/lcmodel-test/data.raw"
       },
       {
         "role": "basis",
         "name": "3t.basis",
-        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/12dc25c811c711eb01f7bba063510a77b366be6c/lcmodel/examples/lcmodel-test/3t.basis"
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/91f69629415335ef6fcb88a8b8a05677328b916f/lcmodel/examples/lcmodel-test/3t.basis"
       },
       {
         "role": "control",
         "name": "control.file",
-        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/12dc25c811c711eb01f7bba063510a77b366be6c/lcmodel/examples/lcmodel-test/control.file"
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/91f69629415335ef6fcb88a8b8a05677328b916f/lcmodel/examples/lcmodel-test/control.file"
       }
     ]
   }

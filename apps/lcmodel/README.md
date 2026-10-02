@@ -12,8 +12,8 @@ fitting, both as Rust ports compiled to WebAssembly (`packages/lcmodel`).
   `run_megapressproc_auto` for GABA-edited MEGA-PRESS, whose difference
   spectrum LCModel fits with `sptype='mega-press-3'`. Coil-combined data are
   aligned and averaged only; `.RAW` goes straight to LCModel.
-* Basis sets: nine FID-A simulations (PRESS, STEAM, semi-LASER, SPECIAL at 1.5,
-  3 and 7 T) and a MEGA-PRESS difference set (3 T, TE 68 ms, shaped editing
+* Basis sets: fifteen FID-A simulations (PRESS at TE 30 to 144 ms, STEAM,
+  semi-LASER and SPECIAL, at 1.5, 3 and 7 T) and a MEGA-PRESS difference set (3 T, TE 68 ms, shaped editing
   pulses) from `models/lcmodel.manifest.json`, ranked for the data by
   `src/basis-select.js` from its field strength, sequence and echo time.
   Users can supply their own `.BASIS`.
