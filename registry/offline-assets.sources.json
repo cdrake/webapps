@@ -2853,45 +2853,69 @@
     ],
     "lcmodel": [
       {
-        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/91f69629415335ef6fcb88a8b8a05677328b916f/lcmodel/examples/ge-press-phantom/P17920.7",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/c4906fb8ac2acab28b81e648833e90b26f35478b/lcmodel/examples/ge-press-phantom/P17920.7",
         "sha256": "e2c9aec2b310567ebf91239c96e5b25b875ccdbd96f8d338133d1267f11d20f5",
         "bytes": 20080220,
         "kind": "example"
       },
       {
-        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/91f69629415335ef6fcb88a8b8a05677328b916f/lcmodel/examples/siemens-special/specialDLPFC.dat",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/c4906fb8ac2acab28b81e648833e90b26f35478b/lcmodel/examples/siemens-special/specialDLPFC.dat",
         "sha256": "2ffbf866b159c2090afcc6cb595181632b07956bbbe6591e1270cf8a74df5731",
         "bytes": 168955936,
         "kind": "example"
       },
       {
-        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/91f69629415335ef6fcb88a8b8a05677328b916f/lcmodel/examples/siemens-special/specialDLPFC_w.dat",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/c4906fb8ac2acab28b81e648833e90b26f35478b/lcmodel/examples/siemens-special/specialDLPFC_w.dat",
         "sha256": "857a102e6e0153f5ea1be7b9eb606c26139f819a9ac5df43eea50912ca3e0aa5",
         "bytes": 8949792,
         "kind": "example"
       },
       {
-        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/91f69629415335ef6fcb88a8b8a05677328b916f/lcmodel/examples/siemens-megapress/megapressDLPFC.dat",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/c4906fb8ac2acab28b81e648833e90b26f35478b/lcmodel/examples/siemens-megapress/megapressDLPFC.dat",
         "sha256": "d29c2a2b181873f66615433de0d7ff369af17d252202e6447c0624cfc7712e70",
         "bytes": 86369696,
         "kind": "example"
       },
       {
-        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/91f69629415335ef6fcb88a8b8a05677328b916f/lcmodel/examples/lcmodel-test/data.raw",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/c4906fb8ac2acab28b81e648833e90b26f35478b/lcmodel/examples/lcmodel-test/data.raw",
         "sha256": "b5c55a2b43249a15a2eb19620833e631ba3986d463006dd0e2ff792eddfec560",
         "bytes": 31835,
         "kind": "example"
       },
       {
-        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/91f69629415335ef6fcb88a8b8a05677328b916f/lcmodel/examples/lcmodel-test/3t.basis",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/c4906fb8ac2acab28b81e648833e90b26f35478b/lcmodel/examples/lcmodel-test/3t.basis",
         "sha256": "bdad9e7fbf607c39d269a03e6f16a0f726f47553f3b76006f65633f643c36671",
         "bytes": 468081,
         "kind": "example"
       },
       {
-        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/91f69629415335ef6fcb88a8b8a05677328b916f/lcmodel/examples/lcmodel-test/control.file",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/c4906fb8ac2acab28b81e648833e90b26f35478b/lcmodel/examples/lcmodel-test/control.file",
         "sha256": "ee1547fe2d46116aff671652aba39d41e13c89266a3a8435c748774104627184",
         "bytes": 121,
+        "kind": "example"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/c4906fb8ac2acab28b81e648833e90b26f35478b/lcmodel/examples/philips-megapress/sub-01_megapress_act.sdat",
+        "sha256": "8d62c50e7b71f4babcecd0d24254059fa4874d522b668753b47b9c462c18ad26",
+        "bytes": 5242880,
+        "kind": "example"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/c4906fb8ac2acab28b81e648833e90b26f35478b/lcmodel/examples/philips-megapress/sub-01_megapress_act.spar",
+        "sha256": "90d05989a05e69996f68cc0a436f82d63083137ffe369d7dd89d288c8fd21698",
+        "bytes": 3085,
+        "kind": "example"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/c4906fb8ac2acab28b81e648833e90b26f35478b/lcmodel/examples/philips-megapress/sub-01_megapress_ref.sdat",
+        "sha256": "b0e1f8186bfe4353aaf543b6b3a7aea978424c5bcbbfb09e197f6465678d3766",
+        "bytes": 5242880,
+        "kind": "example"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/c4906fb8ac2acab28b81e648833e90b26f35478b/lcmodel/examples/philips-megapress/sub-01_megapress_ref.spar",
+        "sha256": "e311b2b2c08116010c7c1ea29a29e91b1a414f146fd71213245ebd26c9e3bfda",
+        "bytes": 3085,
         "kind": "example"
       }
     ]
