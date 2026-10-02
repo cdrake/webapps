@@ -1,0 +1,39 @@
+@@HEAD
+
+
+
+~10~LCModel (Version 6.3-1N) Copyright: S.W. Provencher.~10~Ref.: Magn. Reson. Med. 30:672-679 (1993).~16~
+
+  
+
+  
+
+ Tue Sep 29 17:53:01 2026
+
+
+
+
+&LCMODL
+@@MEMBER NRATIO
+ NRATIO=12~9~,
+@@MEMBER ECHOT
+ ECHOT=  60.0000000~4~,
+@@MEMBER FWHMBA
+ FWHMBA=  1.99999996E-02,
+@@TAIL
+ /
+
+
+
+~10~Input changes to Control Variables
+  fwhmba=.02~63~
+  echot=60.~64~
+  mermes=8000~62~
+  filps='out.ps'~59~
+  filpri='out.print'~55~
+  lprint=8~65~
+  filraw='data.raw'~56~
+  filbas='missing.basis'~51~
+  hzpppm=127.786142~56~
+  deltat=5e-04~61~
+  nunfil=1024~62~

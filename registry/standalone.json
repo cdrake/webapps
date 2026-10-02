@@ -544,7 +544,7 @@
           "apptainerSource": "https://raw.githubusercontent.com/neurodesk/neurocommand/main/cvmfs/log.txt",
           "url": "https://hub.docker.com/r/vnmd/topofit_0.5.1",
           "dockerImage": "vnmd/topofit_0.5.1:candidate-1c960cec82947541d270e06099ab415933c9ea07",
-          "dockerLabel": "Docker Hub \u00b7 candidate build"
+          "dockerLabel": "Docker Hub · candidate build"
         }
       ],
       "openrecon": {
@@ -614,6 +614,13 @@
           "sha256": "6c2bf4eb4294666cf1dee063a1204665d4bb28ab0dadca9317362cd92da6b244"
         }
       }
+    },
+    "lcmodel": {
+      "desktop": true,
+      "profile": "interactive",
+      "assets": [],
+      "downloads": [],
+      "containers": []
     }
   }
 }

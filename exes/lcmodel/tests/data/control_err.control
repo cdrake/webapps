@@ -1,0 +1,15 @@
+ $LCMODL
+ key=210387309
+ nunfil=1024
+ deltat=5e-04
+ hzpppm=127.786142
+ filbas='3t.basis'
+ filraw='data.raw'
+ lprint=6
+ filpri='out.print'
+ lcoord=9
+ filcoo='out.coord'
+ ltable=7
+ filtab='out.table'
+ title='A test title (with parens) 100% ok'
+ $END

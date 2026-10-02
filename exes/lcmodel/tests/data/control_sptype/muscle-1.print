@@ -1,0 +1,113 @@
+@@HEAD
+
+
+
+~10~LCModel (Version 6.3-1N) Copyright: S.W. Provencher.~10~Ref.: Magn. Reson. Med. 30:672-679 (1993).~16~
+
+  
+
+  
+
+ Tue Sep 29 17:51:12 2026
+
+
+
+
+&LCMODL
+@@MEMBER CHCOMB
+ CHCOMB="I13d+I13c+I13b+I13a~331~","E15d+E15c+E15b+E15a~331~","Cr2+Cr1~343~","tau5+tau4+tau3+tau2+tau1~326~","cho4+cho3+cho2+cho1~331~",
+ "cr28e+cr28d+cr28c+cr28b+cr28a~321~","I09~347~","E11~347~","I21~347~","E23~347~","Cre+PCr~343~",
+ "Glu+Gln~343~","Lip13a+Lip13b~337~","MM14+Lip13a+Lip13b+MM12~327~","MM09+Lip09~340~","MM20+Lip20~340~", 84*"~350~",
+ 
+@@MEMBER CHCOM2
+ CHCOM2="IMCL13~344~","EMCL15~344~","Cr~348~","tau~347~","cho~347~",
+ "cr28~346~","I09~347~","E11~347~","I21~347~","E23~347~", 90*"~350~",
+ 
+@@MEMBER CHGRSH
+ CHGRSH="E15   ","I13   ","Cr~4~", 37*"~6~",
+@@MEMBER CHNOT1
+ CHNOT1="tau1  ","tau2  ","tau3  ","tau4  ","tau5  ",
+ "Cit   ","-CrCH2","Eth   ","Fuc   ","GABA  ","Gcn   ",
+ "Gcr   ","Glc   ","Gly   ","Glyc  ","Gua   ","Ilc   ",
+ "Leu   ","Lip20 ","MM12  ","MM14  ","MM17  ","MM20  ",
+ "NAAG  ","Pal   ","Pgc   ","Pyr   ","Scyllo","Suc   ",
+ "notTau","Thr   ","TMPO  ","Val   ", 467*"~6~",
+@@MEMBER CHNOT2
+ CHNOT2="E15e  ","E15f  ","I13e  ","I13f  ", 496*"~6~",
+ 
+@@MEMBER CHSIMU
+ CHSIMU="E15a @1.52+-.01 FWHM=.19<.2+-.006 AMP=2.~488~","E15b @1.52+-.01 FWHM=.16<.17+-.006 AMP=2.~487~","E15c @1.52+-.01 FWHM=.13<.14+-.006 AMP=2.~487~","E15d @1.52+-.01 FWHM=.10<.11+-.006 AMP=2.~487~","E15e @1.54+-.01 FWHM=.16<.17+-.03 AMP=2.~488~",
+ "E15f @1.50+-.01 FWHM=.16<.17+-.03 AMP=2.~488~","I13a @1.27+-.01 FWHM=.13<.14+-.004 AMP=2.~487~","I13b @1.27+-.01 FWHM=.10<.11+-.004 AMP=2.~487~","I13c @1.27+-.01 FWHM=.07<.08+-.004 AMP=2.~487~","I13d @1.27+-.01 FWHM=.04<.05+-.004AMP=2.~488~","I13e @1.29+-.01 FWHM=.10<.11+-.02 AMP=2.~488~",
+ "I13f @1.25+-.01 FWHM=.10<.11+-.02 AMP=2.~488~","E11 @1.07+-.02 FWHM=.07<.08+-.02 AMP=3.~489~","I09 @.89+-.02 FWHM=.07<.08+-.02 AMP=3.~490~","E23 @2.33+-.03 FWHM=.25<.3+-.03 AMP=1.~29~@1.8 FWHM=.74 AMP=1.~441~","I21 @2.15+-.03 FWHM=.23<.28+-.03 AMP=1.1111~23~@1.6 FWHM=.74 AMP=.8889~439~","cr28a @2.90+-.004 FWHM=.03<.04+-.004 AMP=3.~485~",
+ "cr28b @2.86+-.004 FWHM=.03<.04+-.004 AMP=3.~485~","cr28c @2.82+-.004 FWHM=.03<.04+-.004 AMP=3.~485~","cr28d @2.78+-.004 FWHM=.03<.04+-.004 AMP=3.~485~","cr28e @2.74+-.004 FWHM=.03<.04+-.004 AMP=3.~485~","cho1@3.24+-.003 FWHM=.025<.03+-.003  AMP=9.~485~","cho2@3.21+-.003 FWHM=.025<.03+-.003  AMP=9.~485~",
+ "cho3@3.18+-.003 FWHM=.025<.03+-.003  AMP=9.~485~","cho4@3.15+-.003 FWHM=.025<.03+-.003  AMP=9.~485~","Cr1@3.03+-.004 FWHM=.025<.03+-.003  AMP=3.~486~","Cr2@3.03+-.004 FWHM=.03<.04+-.005  AMP=3.~487~","tau1 @3.58+-.006 FWHM=.04<.06+-.01 AMP=3.~487~","tau2 @3.52+-.006 FWHM=.04<.06+-.01 AMP=3.~487~",
+ "tau3 @3.46+-.006 FWHM=.04<.06+-.01 AMP=3.~487~","tau4 @3.40+-.006 FWHM=.04<.06+-.01 AMP=3.~487~","tau5 @3.34+-.006 FWHM=.04<.06+-.01 AMP=3.~487~", 68*"~528~",
+@@MEMBER SPTYPE
+ SPTYPE="muscle-1~8~",
+@@MEMBER INCSMX
+ INCSMX=1~10~,
+@@MEMBER NCOMBI
+ NCOMBI=10~9~,
+@@MEMBER NGRSH
+ NGRSH=3~10~,
+@@MEMBER NNOT1
+ NNOT1=5~10~,
+@@MEMBER NNOT2
+ NNOT2=4~10~,
+@@MEMBER NRATIO
+ NRATIO=0~10~,
+@@MEMBER NREFPK
+ NREFPK= 2*1~10~,
+@@MEMBER NSIDMN
+ NSIDMN=1~10~,
+@@MEMBER NSIDMX
+ NSIDMX=1~10~,
+@@MEMBER NSIMUL
+ NSIMUL=32~9~,
+@@MEMBER BADREF
+ BADREF=T,
+@@MEMBER ENDPHA
+ ENDPHA=T,
+@@MEMBER NOBASI
+ NOBASI=T,
+@@MEMBER ONLYCO
+ ONLYCO=T,
+@@MEMBER VITRO
+ VITRO=T,
+@@MEMBER ALPBMN
+ ALPBMN= 0.87039999999999995~5~,
+@@MEMBER ALPBMX
+ ALPBMX=  430.07999999999998~5~,
+@@MEMBER ALPBPN
+ ALPBPN=  1.07519996~4~,
+@@MEMBER ALPBST
+ ALPBST=  1.27999997~4~,
+@@MEMBER PPMEND
+ PPMEND= -1.00000000~4~,
+@@MEMBER PPMREF
+ PPMREF=  4.65000010~4~, 9*0.00000000~6~, 2*3.02999997~6~,  3.22000003~4~,  3.55999994~4~,
+  6*0.00000000~6~,
+@@MEMBER PPMST
+ PPMST=  3.79999995~4~,
+@@MEMBER PPM_TRUNCATE_MAX
+ PPM_TRUNCATE_MAX=  3.50000000~4~,
+@@MEMBER PPM_TRUNCATE_MIN
+ PPM_TRUNCATE_MIN=  2.20000005~4~,
+@@MEMBER SDGRSH
+ SDGRSH= 2*2.00000009E-03  ,  1.00000005E-03, 37*0.00000000~6~,
+@@TAIL
+ /
+
+
+
+~10~Input changes to Control Variables
+  sptype='muscle-1'~56~
+  mermes=8000~62~
+  filps='out.ps'~59~
+  filpri='out.print'~55~
+  lprint=8~65~
+  filraw='data.raw'~56~
+  filbas='missing.basis'~51~
+  hzpppm=127.786142~56~
+  deltat=5e-04~61~
+  nunfil=1024~62~

@@ -1,0 +1,48 @@
+name: lcmodel-native
+
+# The Rust ports behind apps/lcmodel: LCModel (exes/lcmodel) must keep
+# writing the same .TABLE/.COORD numbers as the Fortran on LCModel's test
+# case, FID-A (exes/fida) its unit and synthetic tests, and the committed
+# WebAssembly module (packages/lcmodel) the same table as native LCModel.
+on:
+  pull_request:
+    paths:
+      - 'exes/lcmodel/**'
+      - 'exes/fida/**'
+      - 'packages/lcmodel/**'
+      - '.github/workflows/lcmodel-native.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'exes/lcmodel/**'
+      - 'exes/fida/**'
+      - 'packages/lcmodel/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lcmodel-native-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: LCModel port (parity with the Fortran on its test case)
+        run: cargo test --release --manifest-path exes/lcmodel/Cargo.toml
+      - name: FID-A port
+        run: cargo test --release --manifest-path exes/fida/Cargo.toml
+      - name: WebAssembly builds
+        run: |
+          cargo build --release --target wasm32-unknown-unknown --lib --manifest-path exes/fida/Cargo.toml
+          cargo build --release --target wasm32-unknown-unknown --manifest-path packages/lcmodel/wasm/Cargo.toml
+      - name: Committed WebAssembly module matches native LCModel
+        run: node --test packages/lcmodel/test/lcmodel-wasm.test.js

@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 2,
+  "app": "lcmodel",
+  "title": "LCModel",
+  "description": "Preprocess single-voxel MR spectroscopy with FID-A and quantify metabolites with LCModel.",
+  "defaultOperation": "fit",
+  "operations": {
+    "fit": {
+      "title": "Preprocess and fit",
+      "description": "FID-A preprocessing of raw spectroscopy data (or an LCModel .RAW as is), then an LCModel fit with a library or supplied basis set.",
+      "mode": "batch",
+      "inputs": {
+        "spectra": {
+          "source": "files",
+          "type": "neuro:spectroscopy",
+          "formats": [
+            "twix",
+            "ge-pfile",
+            "siemens-rda",
+            "siemens-dicom",
+            "philips-sdat",
+            "nifti-mrs",
+            "bruker",
+            "lcmodel-raw",
+            "lcmodel-control"
+          ],
+          "description": "One acquisition with its water reference: raw files, a DICOM folder, or an LCModel .RAW/.H2O pair.",
+          "minimum": 1,
+          "maximum": 512
+        },
+        "basis": {
+          "source": "files",
+          "type": "file:lcmodel-basis",
+          "formats": [
+            "lcmodel-basis"
+          ],
+          "description": "Optional LCModel .BASIS file; overrides basisSet.",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "parameters": {
+        "basisSet": {
+          "type": "string",
+          "description": "Library basis set, or auto for the recommendation.",
+          "enum": [
+            "auto",
+            "press-3t-te30",
+            "press-3t-te35",
+            "press-3t-te144",
+            "steam-3t-te20",
+            "slaser-3t-te30",
+            "special-3t-te8.5",
+            "press-1.5t-te30",
+            "slaser-7t-te28",
+            "steam-7t-te8",
+            "megapress-3t-te68-diff"
+          ],
+          "default": "auto"
+        },
+        "removeBadAverages": {
+          "type": "boolean",
+          "description": "Remove bad averages (FID-A op_rmbadaverages).",
+          "default": true
+        },
+        "badAverageSd": {
+          "type": "number",
+          "description": "Bad-average threshold in standard deviations; FID-A's default when absent.",
+          "minimum": 1,
+          "maximum": 10
+        },
+        "driftCorrection": {
+          "type": "boolean",
+          "description": "Correct frequency and phase drift.",
+          "default": true
+        },
+        "phaseAndReference": {
+          "type": "boolean",
+          "description": "Phase and reference to creatine.",
+          "default": true
+        },
+        "waterScaling": {
+          "type": "boolean",
+          "description": "Scale to the water reference when there is one.",
+          "default": true
+        },
+        "eddyCurrentCorrection": {
+          "type": "boolean",
+          "description": "Eddy-current correction with the water reference.",
+          "default": true
+        },
+        "ppmStart": {
+          "type": "number",
+          "description": "Upper end of the fit range in ppm; 4.0 (4.2 for MEGA-PRESS) when absent.",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "ppmEnd": {
+          "type": "number",
+          "description": "Lower end of the fit range in ppm; 0.2 (1.95 for MEGA-PRESS) when absent.",
+          "minimum": -1,
+          "maximum": 10
+        },
+        "frequencyMHz": {
+          "type": "number",
+          "description": "Spectrometer frequency for a .RAW without one.",
+          "minimum": 10,
+          "maximum": 1000
+        },
+        "dwellTimeMs": {
+          "type": "number",
+          "description": "Dwell time for a .RAW without one.",
+          "minimum": 0.001,
+          "maximum": 10
+        }
+      },
+      "artifacts": {
+        "concentrations": {
+          "type": "neuro:table",
+          "mediaType": "text/csv",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "table": {
+          "type": "file:lcmodel-table",
+          "mediaType": "text/plain",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "coord": {
+          "type": "file:lcmodel-coord",
+          "mediaType": "text/plain",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "raw": {
+          "type": "file:lcmodel-raw",
+          "mediaType": "text/plain",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "control": {
+          "type": "file:lcmodel-control",
+          "mediaType": "text/plain",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "h2o": {
+          "type": "file:lcmodel-raw",
+          "mediaType": "text/plain",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "editOff": {
+          "type": "file:lcmodel-raw",
+          "mediaType": "text/plain",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "preprocessing": {
+          "type": "file:fida-report",
+          "mediaType": "application/json",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    }
+  }
+}

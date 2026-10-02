@@ -1,0 +1,52 @@
+@@HEAD
+
+
+
+~10~LCModel (Version 6.3-1N) Copyright: S.W. Provencher.~10~Ref.: Magn. Reson. Med. 30:672-679 (1993).~16~
+
+  
+
+  
+
+ Tue Sep 29 17:53:01 2026
+
+
+
+
+&LCMODL
+@@MEMBER CHUSE1
+ CHUSE1="Lac   ","Cr~4~","GPC   ","Glu   ","Ins   ",
+ "Lac   ","Glc   ","Gln   ","NAAG  ","Tau   ","Asp   ",
+ "Ala   ","GABA  ","Scyllo", 486*"~6~",
+@@MEMBER NREFPK
+ NREFPK=1~10~,5~10~,
+@@MEMBER NUSE1
+ NUSE1=1~10~,
+@@MEMBER REFLAC
+ REFLAC=T,
+@@MEMBER HZREF
+ HZREF= 10*0.00000000~6~, -3.59999990~4~,  3.59999990~4~, 8*0.00000000~6~,
+@@MEMBER PPMEND
+ PPMEND=  1.00000000~4~,
+@@MEMBER PPMREF
+ PPMREF=  4.65000010~4~, 9*0.00000000~6~, 2*1.33000004~6~,  2.00999999~4~,  3.02999997~4~,
+   3.22000003~4~, 5*0.00000000~6~,
+@@TAIL
+ /
+
+
+
+~10~Input changes to Control Variables
+  nuse1=1~66~
+  chuse1(1)='Lac'~58~
+  ppmend=1.~64~
+  reflac=T~65~
+  mermes=8000~62~
+  filps='out.ps'~59~
+  filpri='out.print'~55~
+  lprint=8~65~
+  filraw='data.raw'~56~
+  filbas='missing.basis'~51~
+  hzpppm=127.786142~56~
+  deltat=5e-04~61~
+  nunfil=1024~62~

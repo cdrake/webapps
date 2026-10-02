@@ -540,6 +540,25 @@ importers:
         specifier: ^5.0.0
         version: 5.4.21(@types/node@24.13.3)(lightningcss@1.32.0)
 
+  apps/lcmodel:
+    dependencies:
+      '@neurodesk/lcmodel':
+        specifier: workspace:*
+        version: link:../../packages/lcmodel
+      '@neurodesk/webapp-components':
+        specifier: workspace:*
+        version: link:../../packages/components
+    devDependencies:
+      '@playwright/test':
+        specifier: ^1.44.0
+        version: 1.61.1
+      eslint:
+        specifier: ^9.0.0
+        version: 9.39.5(jiti@2.7.0)
+      vite:
+        specifier: ^5.0.0
+        version: 5.4.21(@types/node@24.13.3)(lightningcss@1.32.0)
+
   apps/musclemap:
     dependencies:
       '@neurodesk/webapp-components':
@@ -880,6 +899,8 @@ importers:
         version: 26.15.3(electron-builder-squirrel-windows@26.15.3)
 
   packages/greedy: {}
+
+  packages/lcmodel: {}
 
   packages/nesvor:
     dependencies:

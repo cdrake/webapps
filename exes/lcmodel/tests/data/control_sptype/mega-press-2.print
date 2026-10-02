@@ -1,0 +1,99 @@
+@@HEAD
+
+
+
+~10~LCModel (Version 6.3-1N) Copyright: S.W. Provencher.~10~Ref.: Magn. Reson. Med. 30:672-679 (1993).~16~
+
+  
+
+  
+
+ Tue Sep 29 17:51:12 2026
+
+
+
+
+&LCMODL
+@@MEMBER CHCOMB
+ CHCOMB="GPC+PCh~343~","GPC+Cho~343~","PCh+Cho~343~","Cho+GPC+PCh~339~","NAA+NAAG~342~",
+ "Ins+Glyc~342~","mI+Glyc~343~","Ins+Gly~343~","mI+Gly~344~","Cr+PCr~344~","Cre+PCr~343~",
+ "Glu+Gln~343~","Lip13a+Lip13b~337~","MM14+Lip13a+Lip13b+MM12~327~","MM09+Lip09~340~","MM20+Lip20~340~","GSH+Glu+Gln~339~",
+  83*"~350~",
+@@MEMBER CHRATO
+ CHRATO="NAAG/NAA = .15 +- .15~243~","Lip20/Lip13* = .15 +- .07 +WT= MM12~229~","MM20/MM09* = 1.5 +- .375 +WT= Lip09*~228~","MM12/MM09* = .3 +- .1 +WT= Lip09*~231~","MM14/MM09* = .75 +- .45 +WT= Lip09*~229~",
+ "MM17/MM09* = .375 +- .3 +WT= Lip09*~229~","-CrCH2/totCr = .1 +- .25~240~","Asp/Big3 = .05 +- .05~243~","GABA/Big3 = .03 +- .03~242~","Glc/Big3 = .03 +- .03~243~","Scyllo/Big3 = .01 +- .01~240~",
+ "Tau/Big3 = .05 +- .05~243~","GSH/Gln+GSH = .286 +- .126~238~", 87*"~264~",
+@@MEMBER CHSIMU
+ CHSIMU="MM09 @ .91 +- .02 FWHM=.12 < .15 +- .015 AMP=3.~481~","Lip13b @ 1.28 +- .01 FWHM= .089 < .09 +- .035 AMP= 2.~475~","Lip13c @ 1.30 +- .01 FWHM= .089 < .09 +- .035 AMP= 2.~475~","Lip13d @ 1.26 +- .01 FWHM= .089 < .09 +- .035 AMP= 2.~475~","Lip09 @ .89 +- .02 FWHM= .14 < .19 +- .035 AMP= 3.~478~",
+ "MM09 @ .91 +- .02 FWHM= .14 < .17 +- .015 AMP= 3.~479~","Lip20 @ 2.04 +- .005 FWHM=.15 < .2 +- .025 AMP=1.33~17~@ 2.25 FWHM=.15 AMP=.67  @ 2.8 FWHM=.2 AMP=.87~414~","MM20 @ 2.08 +- .005 FWHM=.15 < .18 +- .01 AMP=1.33~18~@ 2.25 FWHM=.2 AMP=.33  @1.95 FWHM=.15 AMP=.33~20~@ 3. FWHM=.2 AMP=.4~375~","MM12 @ 1.21 +- .01 FWHM= .15 < .2 +- .02 AMP= 2.~480~","MM14 @ 1.43 +- .02 FWHM= .17 < .2 +- .02 AMP= 2.~480~","MM17 @ 1.67 +- .03 FWHM= .15 < .17 +- .02 AMP= 2.~479~",
+ "-CrCH2 @ 3.93 +- 0. FWHM= -9. < 0. +- 0. AMP= -2.~479~","Gua @ 3.78 +- 0. FWHM=-9.<0. +- 0. AMP=2.~487~","Glyc @ 3.55 +- 0. FWHM=-9.<0. +- 0. AMP=2.~486~", 86*"~528~",
+@@MEMBER CHUSE1
+ CHUSE1="NAA   ","Glu   ","GPC   ","Glu   ","Ins   ",
+ "Lac   ","Glc   ","Gln   ","NAAG  ","Tau   ","Asp   ",
+ "Ala   ","GABA  ","Scyllo", 486*"~6~",
+@@MEMBER NAMREL
+ NAMREL="NAA+NAAG~342~",
+@@MEMBER SPTYPE
+ SPTYPE="mega-press-2~4~",
+@@MEMBER WSMET
+ WSMET="NAA   ",
+@@MEMBER ISDBOL
+ ISDBOL=5~10~,
+@@MEMBER NCOMBI
+ NCOMBI=17~9~,
+@@MEMBER NRATIO
+ NRATIO=1~10~,
+@@MEMBER NREFPK
+ NREFPK= 2*1~10~,
+@@MEMBER NSIMUL
+ NSIMUL=1~10~,
+@@MEMBER NUSE1
+ NUSE1=2~10~,
+@@MEMBER NOBASE
+ NOBASE=T,
+@@MEMBER USEMXB
+ USEMXB=F,
+@@MEMBER ALPBMX
+ ALPBMX=  1.3599999999999999E-002,
+@@MEMBER ALPBPN
+ ALPBPN=  1.36013599E-02,
+@@MEMBER ALPBST
+ ALPBST=  1.36000002E-02,
+@@MEMBER ALSDSH
+ ALSDSH=  4.00000019E-03,  9.99999978E-03,  8.00000038E-03, 97*0.00000000~6~,
+@@MEMBER ATTH2O
+ ATTH2O= 0.430000007~4~,
+@@MEMBER DGPPMN
+ DGPPMN= -15.0000000~4~,
+@@MEMBER DGPPMX
+ DGPPMX=  15.0000000~4~,
+@@MEMBER PPMEND
+ PPMEND=  1.89999998~4~,
+@@MEMBER PPMST
+ PPMST=  4.19999981~4~,
+@@MEMBER RATIPM
+ RATIPM=  10.0000000~4~,
+@@MEMBER SDDEGP
+ SDDEGP=  4.00000000~4~,
+@@MEMBER SHIFMN
+ SHIFMN=-0.300000012~4~, -1.29999995~4~,
+@@MEMBER SHIFMX
+ SHIFMX= 0.300000012~4~,  1.29999995~4~,
+@@MEMBER WSPPM
+ WSPPM=  2.00999999~4~,
+@@TAIL
+ /
+
+
+
+~10~Input changes to Control Variables
+  sptype='mega-press-2'~52~
+  mermes=8000~62~
+  filps='out.ps'~59~
+  filpri='out.print'~55~
+  lprint=8~65~
+  filraw='data.raw'~56~
+  filbas='missing.basis'~51~
+  hzpppm=127.786142~56~
+  deltat=5e-04~61~
+  nunfil=1024~62~

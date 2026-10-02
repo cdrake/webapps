@@ -1124,6 +1124,31 @@ apps:
         reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
         url: https://github.com/niivue/niivue
 
+  lcmodel:
+    about:
+      - This app quantifies metabolites in single-voxel MR spectroscopy. Raw data are preprocessed with FID-A's automatic pipelines (coil combination, removal of bad averages, spectral registration, ISIS combination for SPECIAL, phasing and referencing) and fitted with LCModel. Both are Rust ports compiled to WebAssembly and run locally. On LCModel's own test case the port writes the same .TABLE and .COORD numbers as the Fortran; the FID-A port agrees with FID-A in GNU Octave to within 10^-5 Hz in drift estimates.
+      - The included basis sets were simulated with FID-A for PRESS, STEAM, semi-LASER and SPECIAL at 1.5, 3 and 7 T; the app recommends the one that matches the data's field strength, sequence and echo time, and accepts your own .BASIS file.
+    packages:
+      - { name: LCModel 6.3-1N (Rust port), url: https://github.com/schorschinho/LCModel, role: linear-combination model fitting }
+      - { name: FID-A (Rust port), url: https://github.com/CIC-methods/FID-A, role: preprocessing, file readers and basis-set simulation }
+    citations:
+      - group: Quantification
+        title: LCModel
+        reference: "Provencher SW. Estimation of metabolite concentrations from localized in vivo proton NMR spectra. Magn Reson Med. 1993;30(6):672-679."
+        doi: 10.1002/mrm.1910300604
+        url: https://pubmed.ncbi.nlm.nih.gov/8139448/
+        code: https://github.com/schorschinho/LCModel
+      - group: Preprocessing and simulation
+        title: FID-A
+        reference: "Simpson R, Devenyi GA, Jezzard P, Hennessy TJ, Near J. Advanced processing and simulation of MRS data using the FID appliance (FID-A)-An open source, MATLAB-based toolkit. Magn Reson Med. 2017;77(1):23-33."
+        doi: 10.1002/mrm.26091
+        url: https://pubmed.ncbi.nlm.nih.gov/26715192/
+        code: https://github.com/CIC-methods/FID-A
+      - group: Preprocessing and simulation
+        title: Spectral registration
+        reference: "Near J, Edden R, Evans CJ, Paquin R, Harris A, Jezzard P. Frequency and phase drift correction of magnetic resonance spectroscopy data by spectral registration in the time domain. Magn Reson Med. 2015;73(1):44-50."
+        doi: 10.1002/mrm.25094
+        url: https://pubmed.ncbi.nlm.nih.gov/24436292/
   white-matter-lesions:
     packages:
       - { name: FLAMeS, url: https://doi.org/10.5281/zenodo.17955359, role: lesion segmentation network (fold 0) }

@@ -1,0 +1,157 @@
+RBS  1 [tumoror                                 ]
+TUP  1 [  TUMOR                                 ]
+TLO  1 [  tumor                                 ]
+ILEN  1     7     3
+COMP  1   5 [tumorrrzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz]
+SPLT  1 [  tumor_                                 ] [                                         ]
+SPLP  1 [  tumor_                                 ] [                                         ]
+RBS  2 [MUSCLE-1                                ]
+TUP  2 [MUSCLE-1                                ]
+TLO  2 [muscle-1                                ]
+ILEN  2     8     1
+COMP  2   8 [MUSCLE-1zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz]
+SPLT  2 [MUSCLE-1_                                ] [                                         ]
+SPLP  2 [MUSCLE-1_                                ] [                                         ]
+RBS  3 [                                        ]
+TUP  3 [                                        ]
+TLO  3 [                                        ]
+ILEN  3     1    -1
+COMP  3   0 [ zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz]
+SPLT  3 [ _                                       ] [                                         ]
+SPLP  3 [ _                                       ] [                                         ]
+RBS  4 [abc  def                                ]
+TUP  4 [ABC  DEF                                ]
+TLO  4 [abc  def                                ]
+ILEN  4     8     1
+COMP  4   6 [abcdefffzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz]
+SPLT  4 [abc  def_                                ] [                                         ]
+SPLP  4 [abc  def_                                ] [                                         ]
+RBS  5 [x y zz                                  ]
+TUP  5 [ X Y Z                                  ]
+TLO  5 [ x y z                                  ]
+ILEN  5     6     2
+COMP  5   3 [xyzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz]
+SPLT  5 [ x y z_                                  ] [                                         ]
+SPLP  5 [ x y z_                                  ] [                                         ]
+RBS  6 [out.table                               ]
+TUP  6 [OUT.TABLE                               ]
+TLO  6 [out.table                               ]
+ILEN  6     9     1
+COMP  6   9 [out.tablezzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz]
+SPLT  6 [out_                                     ] [.table                                   ]
+SPLP  6 [out.table_                               ] [                                         ]
+RBS  7 [dir/table                               ]
+TUP  7 [DIR/TABLE                               ]
+TLO  7 [dir/table                               ]
+ILEN  7     9     1
+COMP  7   9 [dir/tablezzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz]
+SPLT  7 [dir/                                     ] [.table                                   ]
+SPLP  7 [dir/table_                               ] [                                         ]
+RBS  8 [dir/ps                                  ]
+TUP  8 [DIR/PS                                  ]
+TLO  8 [dir/ps                                  ]
+ILEN  8     6     1
+COMP  8   6 [dir/pszzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz]
+SPLT  8 [dir/ps_                                  ] [                                         ]
+SPLP  8 [dir/                                     ] [.ps                                      ]
+RBS  9 [noext                                   ]
+TUP  9 [NOEXT                                   ]
+TLO  9 [noext                                   ]
+ILEN  9     5     1
+COMP  9   5 [noextzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz]
+SPLT  9 [noext_                                   ] [                                         ]
+SPLP  9 [noext_                                   ] [                                         ]
+RBS 10 [a.PS                                    ]
+TUP 10 [A.PS                                    ]
+TLO 10 [a.ps                                    ]
+ILEN 10     4     1
+COMP 10   4 [a.PSzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz]
+SPLT 10 [a.PS_                                    ] [                                         ]
+SPLP 10 [a_                                       ] [.PS                                      ]
+RBS 11 [Liver-2 XX                              ]
+TUP 11 [ LIVER-2 X                              ]
+TLO 11 [ liver-2 x                              ]
+ILEN 11    10     2
+COMP 11   8 [Liver-2XXXzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz]
+SPLT 11 [ Liver-2 X_                              ] [                                         ]
+SPLP 11 [ Liver-2 X_                              ] [                                         ]
+RBS 12 [Q                                       ]
+TUP 12 [Q                                       ]
+TLO 12 [q                                       ]
+ILEN 12     1     1
+COMP 12   1 [Qzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz]
+SPLT 12 [Q_                                       ] [                                         ]
+SPLP 12 [Q_                                       ] [                                         ]
+CHS -531441  6 [-99999]
+CHS -177147  6 [-99999]
+CHS  -59049  6 [-59049]
+CHS  -19683  6 [-19683]
+CHS   -6561  5 [-6561 ]
+CHS   -2187  5 [-2187 ]
+CHS    -729  4 [-729  ]
+CHS    -243  4 [-243  ]
+CHS     -81  3 [-81   ]
+CHS     -27  3 [-27   ]
+CHS      -9  2 [-9    ]
+CHS      -3  2 [-3    ]
+CHS       1  1 [1     ]
+CHS       3  1 [3     ]
+CHS       9  1 [9     ]
+CHS      27  2 [27    ]
+CHS      81  2 [81    ]
+CHS     243  3 [243   ]
+CHS     729  3 [729   ]
+CHS    2187  4 [2187  ]
+CHS    6561  4 [6561  ]
+CHS   19683  5 [19683 ]
+CHS   59049  5 [59049 ]
+CHS  177147  6 [177147]
+CHS  531441  6 [531441]
+IGETP     -115687   104982026   557654867   578537217
+IGETP      -83101   140690927   102454702   569411041
+IGETP      -34677   111511766   609340702   958414727
+IGETP       29585   982555457   921687132   254451726
+IGETP      109685   141510745   490628801    69188320
+IGETP      205623   365354095    97484305   485795052
+IGETP      317399   654085508   742253644   504271925
+IGETP      445013     7704984   424936817   124618936
+IGETP      588465   426212523   145533825   346836087
+IGETP      747755   909608125   904044668   170923378
+IGETP      922883   457891789   700469346   596880808
+IGETP     1113849    71063517   534807858   624708377
+IGETP     1320653   749123308   407060205   254406086
+IGETP     1543295   492071161   317226386   485973934
+IGETP     1781775   299907078   265306403   319411921
+IGETP     2036093   172631057   251300254   754720048
+IGETP     2306249   110243099   275207939   791898315
+IGETP     2592243   112743204   337029460   430946720
+IGETP     2894075   180131373   436764815   671865266
+IGETP     3211745   312407604   574414004   514653950
+IGETP     3545253   509571898   749977029   959312774
+IGETP     3894599   771624254   963453888     5841738
+IGETP     4259783    98564674   214844582   654240840
+IGETP     4640805   490393157   504149110   904510083
+IGETP     5037665   947109702   831367473   756649464
+IGETP     5450363   468714311   196499671   210658985
+IGETP     5878899    55206982   599545704   266538646
+IGETP     6323273   706587717    40505571   924288445
+IGETP     6783485   422856514   519379273   183908385
+IGETP     7259535   204013374    36166810    45398463
+W
+  1062693540  1072220087  1054392996 -1069433393 -1063686774
+ -1076455598           0  1065174677  1062404402 -1076828300
+ -1065353380 -1070877682  1075927066           0  1059486020
+ -1089247216 -1070033252 -1069530957  1061148611  1085229334
+           0 -1139735275 -1076321817 -1070735619 -1090025672
+  1067534254 -1079865508  1067702026 -1079697736  1067869798
+ -1079529964  1068037570 -1079362192  1068205343 -1079194419
+  1068373115 -1079026647  1068540887 -1078858875  1068708659
+OUT
+  1062693540  1072220087  1054392996 -1069433393 -1063686774
+ -1076455598           0  1065174677  1062404402 -1076828300
+ -1065353380 -1070877682  1075927066           0  1059486020
+ -1089247216 -1070033252 -1069530957  1061148611  1085229334
+           0 -1139735275 -1076321817 -1070735619 -1090025672
+  1043888328           0           0           0           0
+           0           0           0   864026624           0
+           0           0           0           0           0
