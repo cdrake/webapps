@@ -62,11 +62,20 @@ export function assessBasis(data, basis) {
   }
   const dataSeq = sequenceFamily(data.sequence);
   const basisSeq = sequenceFamily(basis.sequence);
-  if (dataSeq && basisSeq) {
-    if (dataSeq === "MEGA-PRESS") {
-      score -= 30;
-      notes.push({ level: "warning", text: "Edited data need an edited basis; this fits the edit-off spectrum only." });
-    } else if (dataSeq !== basisSeq) {
+  // An edited difference spectrum and an unedited spectrum need different
+  // basis sets; one never stands in for the other.
+  const dataEdited = dataSeq === "MEGA-PRESS";
+  const basisEdited = basisSeq === "MEGA-PRESS";
+  if (dataEdited && !basisEdited) {
+    usable = false;
+    score -= 100;
+    notes.push({ level: "error", text: "Edited data are fitted as a difference spectrum and need a MEGA-PRESS basis." });
+  } else if (!dataEdited && basisEdited) {
+    usable = dataSeq === null;
+    score -= dataSeq === null ? 60 : 100;
+    notes.push({ level: dataSeq === null ? "warning" : "error", text: "This basis set is for edited (MEGA-PRESS) difference spectra." });
+  } else if (dataSeq && basisSeq) {
+    if (dataSeq !== basisSeq) {
       const similar = similarFamilies(dataSeq, basisSeq);
       score -= similar ? 15 : 35;
       notes.push({ level: "warning", text: `Basis is ${basisSeq}; the data are ${dataSeq}.` });

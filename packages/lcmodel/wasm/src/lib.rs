@@ -145,6 +145,7 @@ pub unsafe extern "C" fn mrs_process(ptr: *const u8, len: usize) {
                 "spectrum": session::spectrum_trace(&p.metab, -0.5, 8.5),
                 "unprocessed": session::spectrum_trace(&p.unprocessed, -0.5, 8.5),
                 "water": p.water.as_ref().map(|w| session::spectrum_trace(w, -0.5, 8.5)),
+                "editOff": p.edit_off.as_ref().map(|s| session::spectrum_trace(s, -0.5, 8.5)),
                 "header": session::header(&p.metab),
                 "lcmodel": inputs,
             });

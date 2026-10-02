@@ -20,6 +20,10 @@ test("control file names the inputs and enables water scaling only with water", 
   assert.match(water, /title='Mary''s scan'/);
   assert.match(buildControl({ nunfil: 2048, deltat: 2.5e-4, hzpppm: 123, water: true, ecc: false }), /doecc=F/);
   assert.throws(() => buildControl({ nunfil: 2048, deltat: Number.NaN, hzpppm: 123 }), /finite/);
+  const mega = buildControl({ nunfil: 2080, deltat: 4.167e-4, hzpppm: 123.247, sptype: "mega-press-3", ppmStart: 4.2, ppmEnd: 1.95 });
+  assert.match(mega, /\n sptype='mega-press-3'\n/);
+  assert.match(mega, /ppmend=1\.95/);
+  assert.doesNotMatch(plain, /sptype/);
   assert.throws(() => buildControl({ nunfil: 2048, deltat: 2e-4, hzpppm: 123, ppmStart: 0.2, ppmEnd: 4 }), /fit range/);
 });
 

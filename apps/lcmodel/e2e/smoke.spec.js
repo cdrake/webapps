@@ -10,7 +10,7 @@ test("app boots on the workspace", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("#viewer")).toBeVisible();
   await expect(page.locator("#runButton")).toBeDisabled();
-  await expect(page.locator("#basisSelect option")).toHaveCount(10);
+  await expect(page.locator("#basisSelect option")).toHaveCount(11);
 });
 
 test("shared app bar owns information actions and theme", async ({ page }) => {
@@ -97,6 +97,31 @@ test("the Siemens SPECIAL example preprocesses and fits (178 MB download)", asyn
   await page.locator("#runButton").click();
   await expect(page.locator("#statusText")).toContainText("Fit done", { timeout: 600000 });
   expect(Number(await concentration(page, "NAA"))).toBeGreaterThan(3);
+});
+
+test("the Siemens MEGA-PRESS example fits GABA on the difference spectrum (86 MB download)", async ({ page }) => {
+  test.skip(!process.env.LCMODEL_E2E_LARGE, "set LCMODEL_E2E_LARGE=1 to download the 86 MB twix example");
+  test.setTimeout(900000);
+  await page.goto("/");
+  await selectExample(page, "siemens-megapress");
+  await expect(page.locator("#datasetSummary")).toContainText("MEGA-PRESS");
+  await expect(page.locator("#basisSelect")).toHaveValue("megapress-3t-te68-diff");
+  await expect(page.locator("#basisAdvice")).toHaveClass(/success/);
+  await expect(page.locator("#ppmEnd")).toHaveValue("1.95");
+  await page.locator("#runButton").click();
+  await expect(page.locator("#statusText")).toContainText("Fit done", { timeout: 600000 });
+  await expect(page.locator("#ratioHeader")).toHaveText("/NAA+NAAG");
+  const gaba = page.locator("#concBody tr").filter({ has: page.locator("td:first-child", { hasText: /^GABA$/ }) });
+  const sd = Number((await gaba.locator("td").nth(2).textContent()).replace("%", ""));
+  expect(sd).toBeLessThan(20);
+  const ratio = Number(await gaba.locator("td").nth(3).textContent());
+  expect(ratio).toBeGreaterThan(0.05);
+  expect(ratio).toBeLessThan(0.4);
+  await page.locator(".nd-view-tab:has-text('Preprocessing')").click();
+  await expect(page.locator("#plotLabel")).toContainText("edit-OFF");
+  const download = page.waitForEvent("download");
+  await page.locator("#resultList .nd-volume-toggle").filter({ hasText: "Edit-OFF" }).getByRole("button", { name: "Download" }).click();
+  expect(readFileSync(await (await download).path(), "utf8")).toContain("$NMID");
 });
 
 test("a failed download can retry the same example", async ({ page }) => {

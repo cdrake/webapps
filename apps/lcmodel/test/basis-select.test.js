@@ -9,6 +9,7 @@ const lib = [
   { id: "steam-3t-te20", hzpppm: 127.73, teMs: 20, sequence: "STEAM" },
   { id: "special-3t-te8.5", hzpppm: 127.73, teMs: 8.5, sequence: "SPECIAL" },
   { id: "slaser-7t-te28", hzpppm: 298.03, teMs: 28, sequence: "sLASER" },
+  { id: "megapress-3t-te68-diff", hzpppm: 127.73, teMs: 68, sequence: "MEGA-PRESS" },
 ];
 
 test("sequence names map to families", () => {
@@ -34,8 +35,9 @@ test("Siemens 2.89 T SPECIAL TE 8.5 gets the SPECIAL basis within the field tole
 
 test("a 7 T basis is unusable for 3 T data and ranks last", () => {
   const ranked = rankBases({ hzpppm: 127.7, teMs: 30, sequence: "PRESS" }, lib);
-  assert.equal(ranked.at(-1).basis.id, "slaser-7t-te28");
-  assert.equal(ranked.at(-1).usable, false);
+  const sevenT = ranked.find((r) => r.basis.id === "slaser-7t-te28");
+  assert.equal(sevenT.usable, false);
+  assert.ok(ranked.indexOf(sevenT) > ranked.findLastIndex((r) => r.usable));
   assert.equal(ranked[0].basis.id, "press-3t-te30");
 });
 
@@ -54,4 +56,18 @@ test("reads a .BASIS header", () => {
   const h = parseBasisHeader(" $SEQPAR\n FWHMBA = 0.011743,\n HZPPPM = 127.731000,\n ECHOT = 30.00,\n SEQ = 'PRESS' $END\n $BASIS1\n IDBASI = 'FID-A press-3t-te30',\n $END\n $BASIS\n ID = 'Ala',\n METABO = 'Ala',\n $END\n $BASIS\n METABO = 'Asp',\n");
   assert.deepEqual([h.hzpppm, h.teMs, h.sequence, h.id], [127.731, 30, "PRESS", "FID-A press-3t-te30"]);
   assert.deepEqual(h.metabolites, ["Ala", "Asp"]);
+});
+
+test("edited data get the MEGA-PRESS difference basis and nothing else", () => {
+  const data = { hzpppm: 123.247, teMs: 68, sequence: "%CustomerSeq%\\jn_MEGA_GABA" };
+  const ranked = rankBases(data, lib);
+  assert.equal(ranked[0].basis.id, "megapress-3t-te68-diff");
+  assert.equal(ranked[0].level, "match");
+  assert.ok(ranked.slice(1).every((r) => !r.usable), "unedited basis sets are unusable for a difference spectrum");
+});
+
+test("unedited data never get the difference basis", () => {
+  const r = assessBasis({ hzpppm: 127.7, teMs: 68, sequence: "PRESS" }, lib.at(-1));
+  assert.equal(r.usable, false);
+  assert.notEqual(recommendBasis({ hzpppm: 127.7, teMs: 68, sequence: "PRESS" }, lib).basis.id, "megapress-3t-te68-diff");
 });

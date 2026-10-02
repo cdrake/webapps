@@ -138,6 +138,42 @@
         "bandwidth_Hz": 8000,
         "linewidth_Hz": 2.0
       }
+    },
+    {
+      "id": "megapress-3t-te68-diff",
+      "label": "MEGA-PRESS difference, 3 T, TE 68 ms",
+      "sequence": "MEGA-PRESS",
+      "edited": true,
+      "fieldT": 3.0,
+      "hzpppm": 127.731,
+      "teMs": 68,
+      "file": "basis/megapress-3t-te68-diff.basis.gz",
+      "simulation": {
+        "edit": "diff",
+        "taus_ms": [
+          5,
+          17,
+          17,
+          17,
+          12
+        ],
+        "points": 8192,
+        "bandwidth_Hz": 6000,
+        "linewidth_Hz": 1.5,
+        "edit_on_ppm": 1.88,
+        "edit_off_ppm": 7.5,
+        "edit_tp_ms": 14,
+        "simulation": "shaped-central",
+        "refoc_tp_ms": 5
+      },
+      "metabolites": [
+        "GABA",
+        "Glu",
+        "Gln",
+        "GSH",
+        "NAA",
+        "NAAG"
+      ]
     }
   ],
   "metabolites": [
@@ -212,6 +248,11 @@
       "filename": "basis/steam-7t-te8.basis.gz",
       "bytes": 934810,
       "sha256": "295cca5c7d7cf07611aa8834a26a2513fe592fcc21548ae32e2c1c2f4b47a408"
+    },
+    {
+      "filename": "basis/megapress-3t-te68-diff.basis.gz",
+      "bytes": 362382,
+      "sha256": "e87c6c3d6aa461f7a4078d00909148b4f1d701102c6ac59548fb15dd47f06681"
     }
   ],
   "examples": [
@@ -244,10 +285,15 @@
       "filename": "examples/lcmodel-test/control.file",
       "bytes": 121,
       "sha256": "ee1547fe2d46116aff671652aba39d41e13c89266a3a8435c748774104627184"
+    },
+    {
+      "filename": "examples/siemens-megapress/megapressDLPFC.dat",
+      "bytes": 86369696,
+      "sha256": "d29c2a2b181873f66615433de0d7ff369af17d252202e6447c0624cfc7712e70"
     }
   ],
   "repository": "neurodeskorg/webapps",
-  "revision": "6ea79339aa63e8d9485919da3e7afeaae8ee0170",
+  "revision": "12dc25c811c711eb01f7bba063510a77b366be6c",
   "prefix": "lcmodel/",
-  "base_url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/6ea79339aa63e8d9485919da3e7afeaae8ee0170/lcmodel/"
+  "base_url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/12dc25c811c711eb01f7bba063510a77b366be6c/lcmodel/"
 }

@@ -7,7 +7,7 @@ use fida::io::lcm;
 use fida::ops::align::{op_align_averages, AlignTo};
 use fida::ops::averaging::op_averaging;
 use fida::ops::basic::op_complex_conj;
-use fida::ops::pipeline::{run_pressproc_auto, run_specialproc_auto, PressOptions, SpecialOptions};
+use fida::ops::pipeline::{run_megapressproc_auto, run_pressproc_auto, run_specialproc_auto, MegaOptions, PressOptions, SpecialOptions};
 use fida::ops::quality::{op_get_lw, op_get_snr};
 use fida::Spectra;
 use serde_json::{json, Value};
@@ -134,10 +134,13 @@ impl Options {
 }
 
 pub struct Processed {
+    /// The spectrum LCModel fits: the difference spectrum for MEGA-PRESS.
     pub metab: Spectra,
     pub water: Option<Spectra>,
     pub unprocessed: Spectra,
     pub report: Value,
+    /// MEGA-PRESS only: FID-A's edit-OFF subspectrum.
+    pub edit_off: Option<Spectra>,
 }
 
 /// Run FID-A's pipeline for the dataset's sequence.
@@ -159,8 +162,23 @@ pub fn process(ds: &Dataset, opts: &Options, progress: &mut dyn FnMut(&str, f32)
     if !has_coils {
         return process_combined(metab, water, opts, progress);
     }
-    if metab.dims.sub_specs > 0 && fam != "SPECIAL" {
-        return Err("These data have subspectra (edited MEGA-PRESS?). Only non-edited and SPECIAL data can be preprocessed here; export the edit-off or summed spectrum as NIfTI-MRS or .RAW.".into());
+    if fam == "MEGA-PRESS" || (metab.dims.sub_specs > 0 && fam != "SPECIAL") {
+        if metab.dims.sub_specs == 0 || metab.size(metab.dims.sub_specs) != 2 {
+            return Err("Edited MEGA-PRESS data need two subspectra (edit-ON and edit-OFF); these have none.".into());
+        }
+        let mut o = MegaOptions::default();
+        o.rm_bad_averages.enabled = opts.remove_bad_averages;
+        if let Some(sd) = opts.bad_average_sd {
+            o.rm_bad_averages.nsd = sd;
+        }
+        o.drift.enabled = opts.drift_correction;
+        o.autophase = opts.phase_and_reference;
+        o.ppmref = opts.phase_and_reference;
+        let out = run_megapressproc_auto(metab, water, &o, progress, cancelled)?;
+        let mut report = out.report.to_json();
+        report["conjugated"] = json!(conj);
+        report["edited"] = json!(true);
+        return Ok(Processed { metab: out.diff, water: out.outw, unprocessed: out.diff_noproc, report, edit_off: Some(out.sub1) });
     }
     let out = if fam == "SPECIAL" {
         let mut o = SpecialOptions::default();
@@ -186,7 +204,7 @@ pub fn process(ds: &Dataset, opts: &Options, progress: &mut dyn FnMut(&str, f32)
     };
     let mut report = out.report.to_json();
     report["conjugated"] = json!(conj);
-    Ok(Processed { metab: out.out, water: out.outw, unprocessed: out.out_noproc, report })
+    Ok(Processed { metab: out.out, water: out.outw, unprocessed: out.out_noproc, report, edit_off: None })
 }
 
 fn apply_phase_ref_special(o: &mut SpecialOptions, on: bool) {
@@ -227,7 +245,7 @@ fn process_combined(metab: &Spectra, water: Option<&Spectra>, opts: &Options, pr
         "warnings": warnings,
         "conjugated": false,
     });
-    Ok(Processed { metab: out, water, unprocessed, report })
+    Ok(Processed { metab: out, water, unprocessed, report, edit_off: None })
 }
 
 /// The real part of a spectrum between `lo` and `hi` ppm, for plotting.
@@ -268,6 +286,11 @@ pub fn lcmodel_inputs(p: &Processed) -> Result<Value, String> {
         "deltat": p.metab.dwelltime,
         "hzpppm": p.metab.txfrq / 1e6,
         "teMs": p.metab.te,
+        "edited": p.edit_off.is_some(),
+        "editOff": match &p.edit_off {
+            Some(off) => json!(lcm::lcm_text(off, off.te)?),
+            None => Value::Null,
+        },
         "warnings": warnings,
     }))
 }
@@ -312,5 +335,42 @@ mod tests {
         std::fs::write(format!("{}/ge.raw", std::env::var("TMPDIR").unwrap()), &raw).ok();
         eprintln!("{table}");
         assert!(table.contains("NAA"));
+    }
+}
+
+#[cfg(test)]
+mod mega_tests {
+    use super::*;
+
+    #[test]
+    fn siemens_mega_press_example_fits_gaba() {
+        let root = std::env::var("FIDA_EXAMPLES").unwrap_or_else(|_| "/home/ubuntu/src/mrs/FID-A/exampleData".into());
+        let Ok(bytes) = std::fs::read(format!("{root}/Siemens/sample01_megapress/megapress/megapressDLPFC.dat")) else {
+            eprintln!("skipping: FID-A example data not found");
+            return;
+        };
+        let Ok(basis) = std::fs::read(format!("{}/basis-out/megapress-3t-te68-diff.basis", std::env::var("TMPDIR").unwrap_or_default())) else {
+            eprintln!("skipping: no MEGA-PRESS basis set in $TMPDIR/basis-out");
+            return;
+        };
+        let (ds, summary) = load(&[("megapressDLPFC.dat".to_string(), bytes.as_slice())]);
+        assert_eq!(ds.len(), 1, "{summary}");
+        assert_eq!(family(&ds[0].metab.seq), "MEGA-PRESS");
+        let p = process(&ds[0], &Options::from_json(&json!({})), &mut |_, _| {}, &|| false).unwrap();
+        let inputs = lcmodel_inputs(&p).unwrap();
+        assert_eq!(inputs["edited"], json!(true));
+        assert!(inputs["editOff"].is_string());
+        let control = format!(
+            " $LCMODL\n key=210387309\n lps=0\n sptype='mega-press-3'\n nunfil={}\n deltat={:e}\n hzpppm={}\n filbas='b.basis'\n filraw='d.raw'\n ltable=7\n filtab='out.table'\n $END\n",
+            inputs["nunfil"], inputs["deltat"].as_f64().unwrap(), inputs["hzpppm"]
+        );
+        let raw = inputs["raw"].as_str().unwrap().as_bytes().to_vec();
+        let r = lcmodel::run_lcmodel(&control, &[("b.basis", &basis), ("d.raw", &raw)], "");
+        assert!(r.error.is_none(), "{:?}", r.error);
+        let table = &r.outputs["out.table"];
+        eprintln!("{table}");
+        let gaba = table.lines().find(|l| l.trim_end().ends_with(" GABA")).expect("GABA row");
+        let sd: f64 = gaba.split_whitespace().nth(1).unwrap().trim_end_matches('%').parse().unwrap();
+        assert!(sd < 20.0, "GABA %SD {sd}");
     }
 }

@@ -23,9 +23,11 @@ function number(value) {
  * @param {{
  *   nunfil: number, deltat: number, hzpppm: number, teMs?: number,
  *   water?: boolean, ecc?: boolean, ppmStart?: number, ppmEnd?: number,
- *   title?: string, key?: number,
+ *   title?: string, sptype?: string,
  * }} options  `water` scales to the unsuppressed water reference (and
- *   enables eddy-current correction unless `ecc` is false).
+ *   enables eddy-current correction unless `ecc` is false). `sptype`
+ *   selects one of LCModel's special analyses: "mega-press-3" fits a
+ *   MEGA-PRESS difference spectrum (no baseline, NAA as the reference).
  */
 export function buildControl(options) {
   const {
@@ -38,6 +40,7 @@ export function buildControl(options) {
     ppmStart = 4.0,
     ppmEnd = 0.2,
     title = "",
+    sptype = "",
   } = options;
   if (!(nunfil >= 64)) throw new Error("The spectrum needs at least 64 points.");
   if (!(ppmStart > ppmEnd)) throw new Error("The fit range must run from a higher to a lower ppm.");
@@ -46,6 +49,9 @@ export function buildControl(options) {
     // LCModel 6.3's licence key, required by the released source.
     " key=210387309",
     " lps=0",
+  ];
+  if (sptype) lines.push(` sptype=${quote(sptype)}`);
+  lines.push(
     ` nunfil=${number(nunfil)}`,
     ` deltat=${number(deltat)}`,
     ` hzpppm=${number(hzpppm)}`,
@@ -61,7 +67,7 @@ export function buildControl(options) {
     ` filcsv=${quote(FILES.csv)}`,
     // Individual metabolite curves in the .COORD file.
     " neach=99",
-  ];
+  );
   if (Number.isFinite(teMs) && teMs > 0) lines.push(` echot=${number(teMs)}`);
   if (water) {
     lines.push(` filh2o=${quote(FILES.h2o)}`, " dows=T");
@@ -109,7 +115,9 @@ function parseConcentrations(lines, start, count) {
     const row = parseConcentrationRow(lines[k]);
     if (row) rows.push(row);
   }
-  return { ratioTo, rows };
+  // The column header is cut to seven characters ("/NAA+NA"); name it in full.
+  const full = ratioTo && rows.find((r) => r.name.startsWith(ratioTo))?.name;
+  return { ratioTo: full ?? ratioTo, rows };
 }
 
 /**

@@ -9,10 +9,12 @@ fitting, both as Rust ports compiled to WebAssembly (`packages/lcmodel`).
   water reference by `exes/fida/src/io/detect.rs`.
 * Preprocessing: FID-A's `run_pressproc_auto` (PRESS/STEAM/semi-LASER; GE with
   `run_pressproc_GEauto`'s phasing) or `run_specialproc_auto` (SPECIAL).
-  Coil-combined data are aligned and averaged only; `.RAW` goes straight to
-  LCModel. Edited MEGA-PRESS is refused.
+  `run_megapressproc_auto` for GABA-edited MEGA-PRESS, whose difference
+  spectrum LCModel fits with `sptype='mega-press-3'`. Coil-combined data are
+  aligned and averaged only; `.RAW` goes straight to LCModel.
 * Basis sets: nine FID-A simulations (PRESS, STEAM, semi-LASER, SPECIAL at 1.5,
-  3 and 7 T) from `models/lcmodel.manifest.json`, ranked for the data by
+  3 and 7 T) and a MEGA-PRESS difference set (3 T, TE 68 ms, shaped editing
+  pulses) from `models/lcmodel.manifest.json`, ranked for the data by
   `src/basis-select.js` from its field strength, sequence and echo time.
   Users can supply their own `.BASIS`.
 * Output: fit, metabolite and preprocessing plots (`src/spectrum-plot.js`), the
@@ -21,10 +23,10 @@ fitting, both as Rust ports compiled to WebAssembly (`packages/lcmodel`).
 
 Examples (Hugging Face `neurodeskorg/webapps`, `lcmodel/examples/`): FID-A's GE
 PRESS phantom (3 T, TE 35 ms), FID-A's Siemens SPECIAL in vivo data (2.89 T,
-TE 8.5 ms, 178 MB, header de-identified) and LCModel's synthetic test case,
+TE 8.5 ms, 178 MB) and MEGA-PRESS data (TE 68 ms, 86 MB), headers de-identified, and LCModel's synthetic test case,
 whose table the app reproduces exactly (`e2e/smoke.spec.js`).
 
 ```bash
 pnpm --filter lcmodel test        # basis selection, LCModel file parsing, plots
-pnpm --filter lcmodel test:e2e    # browser workflow; LCMODEL_E2E_LARGE=1 adds SPECIAL
+pnpm --filter lcmodel test:e2e    # browser workflow; LCMODEL_E2E_LARGE=1 adds SPECIAL and MEGA-PRESS
 ```

@@ -265,6 +265,11 @@ function acquisitionFromFields() {
   return { hzpppm: hz > 0 ? hz : null, deltat: dwellMs > 0 ? dwellMs / 1000 : null };
 }
 
+/** Edited MEGA-PRESS data: LCModel fits their difference spectrum. */
+function isEdited() {
+  return input?.kind === "fida" && input.datasets[input.index].header.family === "MEGA-PRESS";
+}
+
 function hasWater() {
   if (!input) return false;
   return input.kind === "raw" ? Boolean(input.water) : Boolean(input.datasets[input.index].water);
@@ -301,6 +306,13 @@ function showDataset() {
     summary.hidden = false;
     summary.textContent = parts.join(", ");
   }
+  // LCModel's MEGA-PRESS analysis (sptype mega-press-3) fits 4.2-1.95 ppm.
+  const range = isEdited() ? ["4.2", "1.95"] : ["4.0", "0.2"];
+  const editedRange = ["4.2", "1.95"];
+  const plainRange = ["4.0", "0.2"];
+  const current = [$("ppmStart").value, $("ppmEnd").value];
+  const untouched = [editedRange, plainRange].some((r) => r[0] === current[0] && r[1] === current[1]);
+  if (untouched) [$("ppmStart").value, $("ppmEnd").value] = range;
   const water = hasWater();
   $("waterScaling").disabled = !water;
   $("waterScaling").checked = water;
@@ -417,6 +429,7 @@ async function run() {
       ppmStart: Number($("ppmStart").value),
       ppmEnd: Number($("ppmEnd").value),
       title: describeInput(),
+      sptype: lcm.edited ? "mega-press-3" : "",
     });
     const files = { [FILES.raw]: lcm.raw };
     if (water) files[FILES.h2o] = lcm.h2o;
@@ -496,9 +509,10 @@ function showResults() {
     concentrations: { description: "Concentrations (.csv)", file: text(`${stem}_concentrations.csv`, concentrationsCsv(rows, ratioTo), "text/csv"), viewable: false },
     table: { description: "LCModel table (.table)", file: text(`${stem}.table`, fit.table), viewable: false },
     coord: { description: "LCModel fit curves (.coord)", file: text(`${stem}.coord`, fit.outputs[FILES.coord] ?? "") },
-    raw: { description: "Spectrum for LCModel (.RAW)", file: text(`${stem}.RAW`, fit.lcm.raw), viewable: false },
+    raw: { description: fit.lcm.edited ? "Difference spectrum for LCModel (.RAW)" : "Spectrum for LCModel (.RAW)", file: text(`${stem}.RAW`, fit.lcm.raw), viewable: false },
     control: { description: "LCModel control file", file: text(`${stem}.control`, fit.control), viewable: false },
   };
+  if (fit.lcm.editOff) entries.editOff = { description: "Edit-OFF spectrum for LCModel (.RAW)", file: text(`${stem}_edit_off.RAW`, fit.lcm.editOff), viewable: false };
   if (fit.water) entries.h2o = { description: "Water reference for LCModel (.H2O)", file: text(`${stem}.H2O`, fit.lcm.h2o), viewable: false };
   if (processed) entries.preprocessing = { description: "FID-A report (.json)", file: text(`${stem}_fida.json`, JSON.stringify(processed.report, null, 2), "application/json") };
   results.render(entries);
@@ -519,7 +533,18 @@ function showView(id) {
   const notice = $("viewerNotice");
   notice.hidden = true;
   const range = [Number($("ppmStart").value) + 0.2, Math.max(-0.5, Number($("ppmEnd").value) - 0.2)];
-  if (id === "preprocessing" && processed) {
+  if (id === "preprocessing" && processed?.editOff) {
+    // Edited data: FID-A's edit-OFF subspectrum above the difference spectrum it fits.
+    const off = processed.editOff.real;
+    const diff = processed.spectrum.real;
+    const lift = Math.max(...diff) - Math.min(...off) + (Math.max(...off) - Math.min(...off)) * 0.1;
+    const series = [
+      { values: diff, kind: "fit", label: "Difference (edit-ON minus edit-OFF)" },
+      { values: off, kind: "reference", label: "Edit-OFF", offset: lift },
+    ];
+    plot.innerHTML = spectrumSvg({ ppm: processed.spectrum.ppm, series, range: [4.5, 0.5], ariaLabel: "MEGA-PRESS edit-OFF and difference spectra after FID-A preprocessing" });
+    $("plotLabel").textContent = `FID-A: edit-OFF (top) and the difference spectrum LCModel fits (bottom). ${summarizeReport(processed.report)}`;
+  } else if (id === "preprocessing" && processed) {
     const series = [{ values: processed.spectrum.real, kind: "fit", label: "Preprocessed (FID-A)" }];
     const raw = processed.unprocessed;
     if (raw?.real?.length === processed.spectrum.real.length) series.unshift({ values: raw.real, kind: "reference", label: "Coil-combined and averaged, no correction" });

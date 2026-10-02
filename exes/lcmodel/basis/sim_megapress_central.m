@@ -56,7 +56,9 @@ function [on, off] = sim_megapress_central(set, sys)
   end
   on = op_ampScale(on, 1 / 16);
   off = op_ampScale(off, 1 / 16);
-  shift = (centreFreq - 4.65) * set.field_T * gamma / 1e6;
+  shift = (4.65 - centreFreq) * set.field_T * gamma / 1e6;
   on = op_freqshift(on, shift);
   off = op_freqshift(off, shift);
+  on.ppm = on.ppm + (4.65 - centreFreq);
+  off.ppm = off.ppm + (4.65 - centreFreq);
 end

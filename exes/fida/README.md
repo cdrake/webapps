@@ -17,8 +17,8 @@ the automatic pipelines. `apps/lcmodel` runs it in the browser through
   of bad averages, spectral registration in time and frequency domain, ISIS and
   MEGA subspectra, shifts, phasing, referencing, HSVD water removal, Klose
   eddy-current correction, SNR and linewidth) and `pipeline`: deterministic
-  `run_pressproc_auto` (with `run_pressproc_GEauto`'s phasing as an option) and
-  `run_specialproc_auto`, with a JSON report, progress and cancellation.
+  `run_pressproc_auto` (with `run_pressproc_GEauto`'s phasing as an option),
+  `run_specialproc_auto` and `run_megapressproc_auto`, with a JSON report, progress and cancellation.
 
 ```bash
 cargo test --release                                 # unit and synthetic-signal tests
