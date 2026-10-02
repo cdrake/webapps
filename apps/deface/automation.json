@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 2,
+  "app": "deface",
+  "description": "Remove facial voxels with the app's affine registration or MindGrab brain extraction pipeline.",
+  "defaultOperation": "deface",
+  "operations": {
+    "deface": {
+      "description": "Deface one selected anatomical volume using an explicit method.",
+      "mode": "batch",
+      "inputs": {
+        "image": {
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "source": "files",
+          "description": "Anatomical MRI or DICOM series",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "parameters": {
+        "method": {
+          "type": "string",
+          "enum": [
+            "allineate",
+            "allineate_robustfov",
+            "allineate_hel",
+            "allineate_hel_robustfov",
+            "mindgrab",
+            "mindgrab_robust",
+            "mindgrab8",
+            "mindgrab_robust8"
+          ],
+          "default": "allineate",
+          "description": "Defacing pipeline"
+        }
+      },
+      "artifacts": {
+        "image": {
+          "type": "neuro:volume",
+          "mediaType": "application/x-nifti",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "title": "Deface an image",
+      "engines": [
+        "browser"
+      ]
+    }
+  },
+  "title": "Deface"
+}

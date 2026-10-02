@@ -214,6 +214,7 @@ apps:
     keywords: [MP2RAGE, T1 mapping, B1 correction, UNI, denoising, MRI]
     legacy_domain: thomshaw92.github.io/Easy-MP2RAGE-T1-Map
     runtime: rust-wasm
+    app_scoped_runtime_families: [dcm2niix]
     model_manifest: null
     asset_manifest_schema: null
     source: thomshaw92/Easy-MP2RAGE-T1-Map@f421f4a946523ad88a936b939d3bc4c967df9ea5
@@ -612,6 +613,48 @@ apps:
     shell: imaging-workspace
     ci:
       toolchains: [node, rust-wasm]
+      shared_runtime: false
+      browser_test: true
+      release: true
+  - id: white-matter-lesions
+    path: white-matter-lesions
+    title: White matter lesions
+    description: Segment white matter lesions on a FLAIR image with FLAMeS, locally in your browser.
+    categories: [segmentation-analysis]
+    keywords: [FLAIR, white matter hyperintensities, WMH, multiple sclerosis, lesion segmentation, FLAMeS, nnU-Net]
+    legacy_domain: null
+    runtime: vite-wasm
+    model_manifest: models/white-matter-lesions.manifest.json
+    asset_manifest_schema: scientific-assets-v1
+    source: neurodesk/webapps@local
+    license: Apache-2.0
+    maintainers: [neurodesk]
+    support_status: experimental
+    shell: imaging-workspace
+    app_scoped_runtime_families: [ort-web-asyncify, dcm2niix]
+    ci:
+      toolchains: [node]
+      shared_runtime: false
+      browser_test: true
+      release: true
+  - id: nesvor
+    path: nesvor
+    title: NeSVoR
+    description: Reconstruct an isotropic 3D fetal or neonatal brain volume from motion-corrupted 2D MRI stacks in the browser with WebGPU or on a GPU compute server in your network.
+    categories: [data-preparation]
+    keywords: [NeSVoR, SVoRT, fetal MRI, slice-to-volume reconstruction, motion correction, neonatal MRI]
+    legacy_domain: null
+    runtime: static-esm
+    model_manifest: null
+    asset_manifest_schema: null
+    source: neurodesk/webapps
+    license: NOASSERTION
+    maintainers: [neurodesk]
+    support_status: experimental
+    shell: imaging-workspace
+    app_scoped_runtime_families: [dcm2niix]
+    ci:
+      toolchains: [node]
       shared_runtime: false
       browser_test: true
       release: true

@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 2,
+  "app": "niimath",
+  "title": "NiiMath",
+  "description": "Apply NiiMath image operations and export the exact output.",
+  "defaultOperation": "process",
+  "operations": {
+    "process": {
+      "title": "Process image",
+      "description": "Run space-separated NiiMath arguments on an image. Mesh and bitmap commands return their corresponding output types.",
+      "mode": "batch",
+      "inputs": {
+        "image": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "description": "Input image.",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "parameters": {
+        "command": {
+          "type": "string",
+          "description": "NiiMath command arguments, executed by the WebAssembly worker.",
+          "default": "-s 2"
+        }
+      },
+      "artifacts": {
+        "result": {
+          "type": [
+            "neuro:volume",
+            "neuro:surface",
+            "file:image"
+          ],
+          "mediaType": "application/octet-stream",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    }
+  }
+}

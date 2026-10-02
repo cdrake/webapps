@@ -39,6 +39,13 @@ const checks = [
     await expect(page.locator('#statusText')).toContainText('one complete DICOM series for this slot');
     await expect(page.locator('#runButton')).toBeDisabled();
   }],
+  ['nesvor', '#imageInput', async page => {
+    await expect(page.locator('#fileInfo')).toContainText('1 stack loaded');
+    await expect(page.locator('#stackRows [data-stack]')).toHaveCount(1);
+    await expect(page.locator('#imageInput')).toBeEnabled();
+    await page.locator('#imageInput').setInputFiles([...dicomSeries({ extension: '' }), ...dicomSeries({ series: 2, extension: '' })]);
+    await expect(page.locator('#stackRows [data-stack]')).toHaveCount(3);
+  }],
   ['synthsr', '#imageInput', async page => expect(page.locator('#fileInfo')).toContainText('16 × 16 × 4')],
   ['niimath', '#niftiInput', async page => {
     await expect(page.locator('#dicomPick option')).toHaveCount(1);

@@ -15,6 +15,7 @@ export async function loadStandalone(registry, root = repoRoot) {
       if (!Array.isArray(app[key])) throw new Error(`${id}: missing ${key}`);
     }
     validateDownloads(app.downloads, id);
+    if (app.computeServer) validateComputeServer(app.computeServer, id);
     if (app.openrecon && (typeof app.openrecon.label !== 'string' || !app.openrecon.label.trim() || typeof app.openrecon.recipe !== 'string' || !/^[a-z0-9][a-z0-9_-]*$/.test(app.openrecon.recipe))) {
       throw new Error(`${id}: OpenRecon requires a package label and recipe name`);
     }
@@ -44,5 +45,18 @@ export async function stageStandaloneAssets(destination) {
   for (const directory of ['core', 'ui', 'styles']) await mkdir(join(components, directory), { recursive: true });
   for (const name of ['core/dom.js', 'ui/renderInfoDialog.js', 'ui/renderStandalone.js', 'styles/imaging-workspace.css', 'styles/base.css']) {
     await cp(join(repoRoot, 'packages/components/src', name), join(components, name));
+  }
+}
+
+export function validateComputeServer(server, id) {
+  if (server.name !== 'neurodesk-compute' || !/^https:\/\/github\.com\/neurodesk\/webapps\//.test(server.documentation)) throw new Error(`${id}: invalid compute server metadata`);
+  if (!server.download) return;
+  const file = server.download;
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]*\.tar\.gz$/.test(file.filename) || !Number.isSafeInteger(file.bytes) || file.bytes <= 0 || !/^[a-f0-9]{64}$/.test(file.sha256)) throw new Error(`${id}: compute server download requires a safe filename, size and checksum`);
+  const previewPath = `/${id}/downloads/${file.filename}`;
+  if (file.preview === true) {
+    if (file.url !== previewPath || file.checksumUrl !== `${previewPath}.sha256`) throw new Error(`${id}: preview compute download must use its own app path`);
+  } else if (!/^https:\/\/github\.com\/neurodesk\/webapps\/releases\/download\//.test(file.url)) {
+    throw new Error(`${id}: compute server release must use the verified release catalog`);
   }
 }

@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 2,
+  "app": "dicompare",
+  "title": "dicompare",
+  "description": "Analyze DICOM acquisition metadata and compare it with an explicit protocol schema.",
+  "defaultOperation": "analyze",
+  "operations": {
+    "analyze": {
+      "title": "Analyze DICOM",
+      "description": "Parse acquisition metadata using the app scientific worker.",
+      "mode": "batch",
+      "inputs": {
+        "dicom": {
+          "source": "files",
+          "type": "neuro:dicom-series",
+          "formats": [
+            "dicom"
+          ],
+          "description": "DICOM instances to group and analyze",
+          "minimum": 1
+        }
+      },
+      "parameters": {},
+      "artifacts": {
+        "acquisitions": {
+          "type": "neuro:acquisition-report",
+          "mediaType": "application/json",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    },
+    "compare": {
+      "title": "Compare DICOM to schema",
+      "description": "Validate each acquisition against the selected schema acquisition index.",
+      "mode": "batch",
+      "inputs": {
+        "dicom": {
+          "source": "files",
+          "type": "neuro:dicom-series",
+          "formats": [
+            "dicom"
+          ],
+          "description": "DICOM instances to group and analyze",
+          "minimum": 1
+        },
+        "schema": {
+          "source": "files",
+          "type": "neuro:protocol-schema",
+          "formats": [
+            "json"
+          ],
+          "description": "dicompare acquisition schema",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "parameters": {
+        "schemaIndex": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "Zero-based acquisition index in the supplied schema"
+        }
+      },
+      "artifacts": {
+        "comparison": {
+          "type": "neuro:compliance-report",
+          "mediaType": "application/json",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    }
+  }
+}

@@ -3,8 +3,26 @@
 // (see playwright.config.js) so it exercises the built, header-served output.
 import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 
 const examples = JSON.parse(readFileSync(new URL("../examples.json", import.meta.url), "utf8"));
+
+test("the automation operation downloads exactly its declared input copy", async ({ page }) => {
+  const bytes = Buffer.from("template pass-through example");
+  await page.goto("/");
+  await page.locator("#neurodesk-input-transfer").setInputFiles({ name: "input.nii", mimeType: "application/octet-stream", buffer: bytes });
+  await page.evaluate(async () => {
+    await globalThis.neurodeskAutomation.dispatch("adopt", { role: "image" });
+    await globalThis.neurodeskAutomation.dispatch("start", {});
+  });
+  await expect.poll(() => page.evaluate(async () => (await globalThis.neurodeskAutomation.dispatch("snapshot")).state)).toBe("succeeded");
+  const report = await page.evaluate(async () => (await globalThis.neurodeskAutomation.dispatch("snapshot")).report);
+  expect(report.provenance.scientificProcessing).toBe(false);
+  expect(report.artifacts.output.sha256).toBe(createHash("sha256").update(bytes).digest("hex"));
+  const download = page.waitForEvent("download");
+  await page.evaluate(() => globalThis.neurodeskAutomation.dispatch("download", { artifactId: "output" }));
+  expect(readFileSync(await (await download).path())).toEqual(bytes);
+});
 
 test("app boots", async ({ page }) => {
   await page.goto("/");

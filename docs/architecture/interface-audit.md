@@ -12,7 +12,7 @@ All 16 registered apps were reviewed on 9 September 2026, starting from `e6ef75e
 | Spinal Cord Toolbox | Task selection and Run remain available. Advanced segmentation settings and later processing start collapsed. Disabled steps are inert. Threshold values survive closing and reopening after import. Footer navigation is consolidated. |
 | CALMaR | Empty Results start collapsed, open after analysis, and close on reset. Section buttons support keyboard activation. Existing advanced settings and detailed log remain collapsible. Footer navigation is consolidated. |
 | SeedSeg | Compact inference defaults remain. Native section buttons replace mouse-only headings, the technical log starts collapsed, and footer navigation is consolidated. |
-| dicompare | Runtime status occupies normal document space instead of covering the phone workspace. Loading details start collapsed. Workflow cards expose expanded state, and acquisition titles are keyboard-accessible buttons with truncated long names. |
+| dicompare | Runtime status occupies normal document space instead of covering the phone workspace. Loading details start collapsed. Workflow cards expose expanded state, and acquisition titles are keyboard-accessible buttons with truncated long names. Populated reference and test-data headers stack on phones and wrap their actions; real DICOM imports at 320 and 390 px verify that headings and buttons remain visible without overlap. |
 | Deface | Shared input picker, workflow sections, information dialogs and a console below the viewer. Output opens when processing completes. App CSS is empty. |
 | Easy MP2RAGE | Shared imaging workspace with Input, Processing and Output in the sidebar, persistent three-plane viewer, slice controls, collapsed histogram and technical console, and status footer. Sequence parameters, output settings and workflow help start closed. BIDS sessions use the same viewer. Results use shared View/Download rows; About and Privacy use the shared dialog. Browser coverage exercises ordinary scrolling, the pinned example, T1/B1 maps, downloads and desktop/phone layouts. |
 | NiiMath | Input and Processing use native disclosures. Overlay appearance, Output, and Example images start closed. Processing reveals Output on success. The shared About action retains the scientific documentation handler. |
@@ -217,6 +217,19 @@ SynthSR and brain extraction check for a WebGPU adapter rather than the API, and
 MuscleMap starts at 50 % overlap without WebGPU. VesselBoost's hosted example
 workflow now runs as part of its browser tests.
 
+## NeSVoR review, 21 September 2026
+
+NeSVoR uses the shared imaging workspace, connection panel, example control,
+console and result list. Inputs are locked during processing and staged before
+commit. The shared DICOM importer preserves multiple series. The execution
+selector separates the remote container from an explicitly reduced, unvalidated
+browser CPU reference. Server jobs can be reopened after tab reload and deleted
+explicitly after saving downloads.
+
+A fresh production build passed the NeSVoR-scoped desktop/phone interface audit,
+mobile layout suite, retained-settings workflow and DICOM upload workflow.
+Desktop, 390 px phone, 320 px phone, light-theme and DICOM-loaded screenshots were
+reviewed. Scientific CUDA/parity validation remains separate and outstanding.
 ## Workspace status contract, 28 September 2026
 
 A 20 September review of all apps found live status in the sidebar instead of the

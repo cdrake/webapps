@@ -1,5 +1,58 @@
 # @neurodesk/desktop
 
+## 0.19.20260930
+
+### Minor Changes
+
+- Add a repository CLI that generates schema-validated NeuroFlow tool bundles from automation contracts, with a shared desktop MCP launcher, portable tool names, verified artifact delivery and cancellation. Document the mapping and draft a portable data-constraint RFC.
+
+## 0.18.20260930
+
+### Patch Changes
+
+- Updated dependencies
+- Updated dependencies
+  - @neurodesk/webapp-components@0.7.0
+
+## 0.17.20260930
+
+### Patch Changes
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.6.2
+
+## 0.17.20260928
+
+### Patch Changes
+
+- Use portable underscore MCP tool names, explicit input cardinality, and declared SynthSeg browser geometry limits for preflight validation. Preserve duplicate DICOM filenames during conversion, release viewer sessions when their windows close, and prevent cancellation/retry races.
+
+  Resolve QSM voxel-dependent defaults for supplied masks before reconstruction, so generated-mask and supplied-mask runs produce the same output. Add complete Mac scientific validation commands and evidence checks. The SynthSeg GPU buffer ceiling remains unchanged.
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.6.1
+
+## 0.16.20260928
+
+### Minor Changes
+
+- Expose typed operations across the application catalog, including multiple inputs, DICOM series selection, variable artifacts and viewer workflows. Share awaited processing and cancellation between each app and its agent adapter. Publish verified result reports and scientific provenance.
+
+  Add bounded desktop viewer sessions and MCP controls using public viewer APIs. Native SynthSeg now reports per-label counts and physical volumes. Include real-model CPU checks and a Mac runner for Metal, WebGPU and buffer-planning evidence without raising the validated SynthSeg limit.
+
+### Patch Changes
+
+- Updated dependencies
+- Updated dependencies [93381e8]
+- Updated dependencies [93381e8]
+  - @neurodesk/webapp-components@0.6.0
+
+## 0.15.20260928
+
+### Minor Changes
+
+- Publish versioned app automation contracts and checksummed run reports for brain extraction and SynthSeg. Add shared run identities, explicit completion and cancellation, and SynthSeg label-volume summaries. Generate browser jobs from the contracts and expose discovery, validation, asynchronous execution, cancellation and artifact resources through the desktop's local MCP server, with an optional native SynthSeg engine.
+
 ## 0.14.20260928
 
 ### Patch Changes

@@ -134,3 +134,7 @@ if (mismatches.length > 0) {
 }
 
 console.log(`Manifest consistency OK: ${manifestIds.length} tasks match across web/js/app/sct-tasks.js and web/models/manifest.json`);
+
+const automation = JSON.parse(fs.readFileSync(path.join(ROOT, 'automation.json'), 'utf8'));
+const supportedTasks = live.tasks.filter(task => task.supportStatus === 'supported' && !task.processingOnly).map(task => task.id).sort();
+assert.deepEqual(automation.operations.segment.parameters.task.enum.toSorted(), supportedTasks, 'Automation must expose exactly the runnable model tasks.');

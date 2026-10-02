@@ -4,7 +4,8 @@ import NiiVue, { MULTIPLANAR_TYPE, SHOW_RENDER, SLICE_TYPE } from '@niivue/niivu
 import { createElement } from '@neurodesk/webapp-components/core';
 import { mountImagingWorkspace } from '@neurodesk/webapp-components/core/mount-imaging-workspace';
 import { bindInfoTooltips, createInfoDialog, createConsole, createFileField, createViewerToolbar } from '@neurodesk/webapp-components/ui';
-import { readImageFiles } from '@neurodesk/runtime-support/dcm2niix-client';
+import { readImageFiles, runDcm2niix } from '@neurodesk/runtime-support/dcm2niix-client';
+import { registerAppAutomation, registerViewer, createNiivueAdapter } from '@neurodesk/webapp-components/automation';
 import { readVolume } from '@neurodesk/synthsr';
 import { zip } from 'fflate';
 import { templateAsset } from '../../../packages/syncro/src/assets.js';
@@ -124,6 +125,7 @@ let busy = false;
 let timer;
 let started;
 let importAbort;
+let processingAbort;
 let viewRevision = 0;
 let viewTask = Promise.resolve();
 let zipTask;
@@ -160,6 +162,16 @@ async function getViewer() {
       await viewer.attachTo('gl1');
       layouts.multiplanar();
       viewer.isLegendVisible = false;
+      registerViewer('image', createNiivueAdapter(viewer, {
+        tabs: {
+          list: () => [...viewItems].map(([id, item]) => ({ id, label: item.label, active: id === $('viewSelect').value })),
+          select: (id) => {
+            $('viewSelect').value = id;
+            updateDownloadSelected();
+            return show(viewItems.get(id));
+          },
+        },
+      }));
       return viewer;
     })();
   }
@@ -408,8 +420,19 @@ $('viewSelect').onchange = () => {
   void show(viewItems.get($('viewSelect').value));
 };
 
-$('runButton').onclick = () => {
-  if (!inputs.primary || busy) return;
+async function normalize({
+  scanInputs = inputs,
+  settings = { ct: $('ct').checked, keepSynth: $('keepSynth').checked, synthsrBackend: $('synthsrBackend').value, brainExtractor: $('brainExtractor').value, normalization: $('normalization').value },
+  signal,
+  progress = () => {},
+} = {}) {
+  if (!scanInputs.primary) throw new Error('Choose a primary image.');
+  if (busy) throw new Error('Wait for the current operation to finish.');
+  signal?.throwIfAborted();
+  const controller = new AbortController();
+  const abort = () => controller.abort(signal.reason);
+  signal?.addEventListener('abort', abort, { once: true });
+  processingAbort = controller;
   clearResults();
   rebuildViewItems('input:primary');
   setBusy(true);
@@ -420,11 +443,6 @@ $('runButton').onclick = () => {
   timer = setInterval(() => {
     $('elapsed').textContent = `${Math.round((performance.now() - started) / 1000)} s`;
   }, 1000);
-  worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
-  worker.onerror = (event) => {
-    setStatus(event.message ? `Processing failed: ${event.message}` : 'Could not load the processing worker. Reload the page and try again.', true);
-    setBusy(false);
-  };
   const stageRanges = {
     'pathological-registration': [0, 0.1],
     synthsr: [0.1, 0.4],
@@ -439,52 +457,92 @@ $('runButton').onclick = () => {
     synthsr: 'Synthesizing T1…',
     mindgrab: 'Extracting brain with MindGrab…',
     synthstrip: 'Extracting brain with SynthStrip…',
-    registration: `Registering to MNI with ${$('normalization').value === 'greedy' ? 'Greedy' : 'ANTs'}…`,
+    registration: `Registering to MNI with ${settings.normalization === 'greedy' ? 'Greedy' : 'ANTs'}…`,
     resampling: 'Warping input images…',
   };
-  worker.onmessage = ({ data }) => {
-    if (data.type === 'log') {
-      technicalLog.log(data.message);
-      return;
-    }
-    if (data.type === 'error') {
-      setStatus(data.message, true);
-      $('inputSection').open = true;
-      setBusy(false);
-      return;
-    }
-    if (data.type === 'progress') {
-      const [offset, span] = stageRanges[data.stage] || [0, 0];
-      if (data.value !== null) $('progress').value = offset + span * data.value;
-      setStatus(data.message || stageLabels[data.stage] || data.stage);
-      return;
-    }
-    if (data.type === 'result') {
-      outputs = data.outputs;
-      setBusy(false);
-      $('progress').value = 1;
-      $('results').open = true;
-      $('download').disabled = false;
-      const normalizedPrimary = prefixed('w', inputs.primary.name);
-      rebuildViewItems(`output:${normalizedPrimary}`);
-      setStatus('Normalization complete · review the MNI-space outputs');
-    }
-  };
-  worker.postMessage({
-    input: inputs.primary,
-    lesion: inputs.lesion,
-    pathological: inputs.pathological,
-    ct: $('ct').checked,
-    keepSynth: $('keepSynth').checked,
-    synthsrBackend: $('synthsrBackend').value,
-    brainExtractor: $('brainExtractor').value,
-    normalization: $('normalization').value,
-    modelBase: import.meta.env.VITE_SYNCRO_MODEL_BASE,
-    mindgrabAssetPath: new URL('mindgrab/', base).href,
-    templateURL: templateAsset.url,
-    greedyURL: new URL('greedy-wasm/greedy_rs_wasm.js', base).href,
-    registrationURL: new URL('registration/syncro-registration.mjs', base).href,
-  });
+  try {
+    const data = await new Promise((resolve, reject) => {
+      const active = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
+      worker = active;
+      let closed = false;
+      const finish = (error, data) => {
+        if (closed) return;
+        closed = true;
+        controller.signal.removeEventListener('abort', cancel);
+        active.terminate();
+        if (worker === active) worker = null;
+        if (error) reject(error);
+        else resolve(data);
+      };
+      const cancel = () => finish(controller.signal.reason);
+      controller.signal.addEventListener('abort', cancel, { once: true });
+      active.onmessage = ({ data }) => {
+        if (closed) return;
+        if (data.type === 'log') technicalLog.log(data.message);
+        else if (data.type === 'error') finish(new Error(data.message));
+        else if (data.type === 'progress') {
+          const [offset, span] = stageRanges[data.stage] || [0, 0];
+          const value = data.value === null ? undefined : offset + span * data.value;
+          if (value !== undefined) $('progress').value = value;
+          const message = data.message || stageLabels[data.stage] || data.stage;
+          setStatus(message);
+          progress({ message, value });
+        } else if (data.type === 'result') finish(null, data);
+      };
+      active.onerror = (event) => finish(new Error(event.message ? `Processing failed: ${event.message}` : 'Could not load the processing worker.'));
+      active.onmessageerror = () => finish(new Error('The processing worker returned unreadable data.'));
+      active.postMessage({
+        input: scanInputs.primary,
+        lesion: scanInputs.lesion,
+        pathological: scanInputs.pathological,
+        ...settings,
+        modelBase: import.meta.env.VITE_SYNCRO_MODEL_BASE,
+        mindgrabAssetPath: new URL('mindgrab/', base).href,
+        templateURL: templateAsset.url,
+        greedyURL: new URL('greedy-wasm/greedy_rs_wasm.js', base).href,
+        registrationURL: new URL('registration/syncro-registration.mjs', base).href,
+      });
+    });
+    controller.signal.throwIfAborted();
+    outputs = data.outputs;
+    $('progress').value = 1;
+    $('results').open = true;
+    rebuildViewItems(`output:${prefixed('w', scanInputs.primary.name)}`);
+    await viewTask;
+    controller.signal.throwIfAborted();
+    setStatus('Normalization complete · review the MNI-space outputs');
+    const roles = new Map([
+      [prefixed('w', scanInputs.primary.name), 'normalized-primary'],
+      [prefixed('wb', scanInputs.primary.name), 'normalized-brain'],
+      [prefixed('wbt1', scanInputs.primary.name), 'synthetic-brain'],
+      [prefixed('t1', scanInputs.primary.name), 'native-synthetic'],
+      ['provenance.json', 'details'],
+      ...(scanInputs.lesion ? [[prefixed('w', scanInputs.lesion.name), 'lesion']] : []),
+      ...(scanInputs.pathological ? [[prefixed('w', scanInputs.pathological.name), 'pathological']] : []),
+    ]);
+    return {
+      artifacts: Object.entries(data.outputs).map(([name, bytes]) => {
+        const role = roles.get(name);
+        if (!role) throw new Error(`Normalization returned an unexpected output: ${name}`);
+        return { role, file: new File([bytes], name) };
+      }),
+      provenance: data.provenance,
+    };
+  } catch (error) {
+    clearResults();
+    $('inputSection').open = true;
+    setStatus(controller.signal.aborted ? 'Processing cancelled' : error.message, !controller.signal.aborted);
+    throw error;
+  } finally {
+    signal?.removeEventListener('abort', abort);
+    if (processingAbort === controller) processingAbort = null;
+    setBusy(false);
+  }
+}
+
+$('runButton').onclick = () => {
+  if (!inputs.primary || busy) return;
+  void normalize().catch(() => {});
 };
 
 $('cancel').onclick = () => {
@@ -492,6 +550,10 @@ $('cancel').onclick = () => {
   importAbort = null;
   exampleControl.cancel();
   $('tutorial').value = '';
+  if (processingAbort) {
+    processingAbort.abort();
+    return;
+  }
   setBusy(false);
   setStatus('Processing cancelled');
   $('progress').value = 0;
@@ -531,8 +593,44 @@ $('download').onclick = () => {
 rebuildViewItems();
 window.addEventListener('pagehide', () => {
   importAbort?.abort();
+  processingAbort?.abort();
   exampleControl.cancel();
   worker?.terminate();
   zipTask?.();
   clearInterval(timer);
+});
+
+
+registerAppAutomation({
+  app: 'syncro',
+  convertDicom: runDcm2niix,
+  operations: {
+    normalize: async ({ inputs: supplied, parameters, signal, progress }) => {
+      signal.throwIfAborted();
+      if (busy) throw new Error('Wait for the current operation to finish.');
+      exampleControl.cancel();
+      clearResults();
+      setBusy(true);
+      try {
+        inputs = { primary: null, lesion: null, pathological: null };
+        for (const slot of ['primary', 'lesion', 'pathological']) {
+          if (supplied[slot][0]) commitInput(slot, await inspectInput(supplied[slot][0]));
+          else {
+            fileFields[slot].setHasFiles(false);
+            $(`${slot}Info`).hidden = true;
+            if (slot !== 'primary') $(slot === 'lesion' ? 'clearLesion' : 'clearPathological').hidden = true;
+          }
+          signal.throwIfAborted();
+        }
+        $('ct').checked = parameters.ct;
+        $('keepSynth').checked = parameters.keepSynth;
+        $('synthsrBackend').value = parameters.synthsrBackend;
+        $('brainExtractor').value = parameters.brainExtractor;
+        $('normalization').value = parameters.normalization;
+      } finally {
+        setBusy(false);
+      }
+      return normalize({ scanInputs: { ...inputs }, settings: parameters, signal, progress });
+    },
+  },
 });

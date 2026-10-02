@@ -2,6 +2,12 @@
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": [
     "packages/runtime-support/src/**",
+    "packages/components/src/automation/**",
+    "packages/desktop/src/contracts.js",
+    "packages/desktop/src/resource-limits.js",
+    "scripts/build-static.mjs",
+    "scripts/lib/app-automation.mjs",
+    "scripts/vendor-components.mjs",
     "scripts/lib/isolation-fallback-plugin.mjs",
     "scripts/lib/runtime-support.mjs",
     "scripts/vendor-runtime-support.mjs"
@@ -37,6 +43,18 @@
       "dependsOn": [
         "^build",
         "qsmbly#build"
+      ],
+      "outputs": [
+        "dist/**"
+      ]
+    },
+    "nesvor#build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "env": [
+        "NESVOR_MODEL_DIR",
+        "NESVOR_N4_DIR"
       ],
       "outputs": [
         "dist/**"

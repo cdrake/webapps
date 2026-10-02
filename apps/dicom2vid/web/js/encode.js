@@ -71,7 +71,7 @@ function bitrateFor(width, height, fps) {
 }
 
 // frameProvider(i) returns { frame, fW, fH, channels, sliceIndex } for i in [0, nFrames).
-// Returns { blob, mime, ext, codecName, container }.
+// Returns the encoded file metadata, including the codec's padded dimensions.
 export async function encodeVideo({
   nFrames,
   fps,
@@ -196,6 +196,8 @@ async function encodeWebCodecs({
     ext: container,
     codecName: codec.name,
     container,
+    width,
+    height,
   };
 }
 
@@ -245,5 +247,7 @@ async function encodeMediaRecorder({
     ext: 'webm',
     codecName: 'MediaRecorder WebM',
     container: 'webm',
+    width,
+    height,
   };
 }

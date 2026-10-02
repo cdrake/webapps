@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 2,
+  "app": "disconnectome",
+  "title": "Disconnectome",
+  "description": "Measure the fraction of each atlas bundle intersecting an explicitly supplied lesion on the MNI152 1 mm grid.",
+  "defaultOperation": "analyze",
+  "operations": {
+    "analyze": {
+      "title": "Disconnectome",
+      "description": "Measure the fraction of each atlas bundle intersecting an explicitly supplied lesion on the MNI152 1 mm grid.",
+      "mode": "batch",
+      "inputs": {
+        "lesion": {
+          "source": "files",
+          "type": "neuro:mask",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "space": "MNI152-1mm",
+          "description": "Lesion mask in the required reference grid",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "anatomical": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "space": "MNI152-1mm",
+          "description": "Optional anatomical background image",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "parameters": {
+        "atlas": {
+          "type": "string",
+          "enum": [
+            "enigma",
+            "hcp1065"
+          ],
+          "default": "enigma",
+          "description": "Full-resolution query atlas"
+        }
+      },
+      "artifacts": {
+        "table": {
+          "type": "neuro:table",
+          "mediaType": "text/tab-separated-values",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    }
+  }
+}

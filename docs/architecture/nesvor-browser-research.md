@@ -1,0 +1,53 @@
+# Browser-native NeSVoR reconstruction
+
+Research date: 2026-09-21. Browser reconstruction and the Linux/NVIDIA backend belong to the same port. This document analyzes the numerical work required for the browser engine. No kernels, model exports, or reconstructions were tested.
+
+All NeSVoR source references below identify `v0.5.0`, commit `730ddaa3711a2304386de34193ea4b957892fe7b`.
+
+## What must run locally
+
+The browser engine must fit a representation to the user's examination, including rigid slice motion refinement. A pretrained inference export cannot replace that optimization. The rigid training objective also includes slice intensity scales, slice and pixel uncertainty, learned slice embeddings, and image regularization. Bias-field learning is optional and off by default. Preserve the source's detached gradient paths around the bias and scale contributions to variance. [Model and objective](https://github.com/daviddmc/NeSVoR/blob/730ddaa3711a2304386de34193ea4b957892fe7b/nesvor/inr/models.py).
+
+The default configuration has 6,000 optimization steps, 4,096 observed pixels per batch, and 256 PSF samples per pixel. That means 1,048,576 coordinate queries per full batch before network activations and gradients. The default regularizer uses finite differences between paired PSF samples. Automatic-differentiation image regularization and experimental deformation are separate options. [Training defaults](https://github.com/daviddmc/NeSVoR/blob/730ddaa3711a2304386de34193ea4b957892fe7b/nesvor/cli/parsers.py).
+
+Training centers coordinates, scales distances by 30, constructs optimizer parameter groups, applies AdamW with betas `0.9, 0.99` and epsilon `1e-15`, and changes learning rate at iteration milestones. The default CUDA path uses mixed precision and gradient scaling. Browser f32 is a proposed first implementation, not a promise of identical arithmetic. Record every effective optimizer setting, including inherited framework defaults, in the reference export. [Training loop](https://github.com/daviddmc/NeSVoR/blob/730ddaa3711a2304386de34193ea4b957892fe7b/nesvor/inr/train.py).
+
+## Required numerical components
+
+| Component | Proposed browser implementation and evidence |
+| --- | --- |
+| Geometry and input preparation | Reuse repository NIfTI support. Port masked physical coordinates, slice associations, bounding box, robust intensity mean, and batch ordering from [PointDataset](https://github.com/daviddmc/NeSVoR/blob/730ddaa3711a2304386de34193ea4b957892fe7b/nesvor/inr/data.py). Keep geometry calculations in CPU f64 where the shared code already requires it. |
+| Hash encoding | Implement multilevel interpolation, parameter gradients, and coordinate gradients in WGSL. The [PyTorch fallback](https://github.com/daviddmc/NeSVoR/blob/730ddaa3711a2304386de34193ea4b957892fe7b/nesvor/inr/hash_grid_torch.py) exposes the equations. It does not establish byte-compatible layout, indexing, initialization, or numerical parity with tiny-cuda-nn. Compare both against the installed container before choosing reference semantics. |
+| Networks and loss | Implement explicit forward and reverse passes for the density and uncertainty networks, embeddings, nonlinearities, PSF averaging, motion, scale, variance, and regularizers. Optional bias adds its own network. Preserve the exact dependencies in the [NeSVoR graph](https://github.com/daviddmc/NeSVoR/blob/730ddaa3711a2304386de34193ea4b957892fe7b/nesvor/inr/models.py). |
+| Rigid transforms | Implement axis-angle conversion, point transforms, composition, inverse, and required derivatives. Compare near-zero rotations and conventions against the [transform implementation](https://github.com/daviddmc/NeSVoR/blob/730ddaa3711a2304386de34193ea4b957892fe7b/nesvor/transform/transform_convert.py). |
+| Optimizer | Keep parameters, accumulated gradients, moments, and step count on the GPU. Apply the pinned [optimizer and schedule](https://github.com/daviddmc/NeSVoR/blob/730ddaa3711a2304386de34193ea4b957892fe7b/nesvor/inr/train.py) once per logical batch, including after cancellation-safe sub-batch accumulation. |
+| Registration and reconstruction operators | Implement PSF slice acquisition, its adjoint, required derivatives, weighting, and equalization from the [custom operator contract](https://github.com/daviddmc/NeSVoR/blob/730ddaa3711a2304386de34193ea4b957892fe7b/nesvor/slice_acquisition/slice_acq.py). These operators support registration and SRR. The neural fit instead samples coordinates directly. |
+| SVoRT v2 | Export supported learned subgraphs for inference and keep custom geometry and iterative reconstruction in browser code. SVoRT v2 invokes slice acquisition, the adjoint, and SRR internally, so whole-model ONNX export is an experiment, not an assumed solution. [SVoRT models](https://github.com/daviddmc/NeSVoR/blob/730ddaa3711a2304386de34193ea4b957892fe7b/nesvor/svort/models.py). |
+| Registration selection | Port SVoRT preprocessing, prediction correction and propagation, stack registration, simulated slices, and NCC selection. `svort` compares two candidates. A browser path that only runs its learned model changes the selected method. [Registration orchestration](https://github.com/daviddmc/NeSVoR/blob/730ddaa3711a2304386de34193ea4b957892fe7b/nesvor/svort/inference.py). |
+| Stack registration and SRR | Preserve multilevel registration, interpolation conventions, objective evaluation, update rules, and conjugate-gradient reconstruction. [Registration](https://github.com/daviddmc/NeSVoR/blob/730ddaa3711a2304386de34193ea4b957892fe7b/nesvor/svr/registration.py), [reconstruction](https://github.com/daviddmc/NeSVoR/blob/730ddaa3711a2304386de34193ea4b957892fe7b/nesvor/svr/reconstruction.py). |
+
+These are proposed implementation boundaries. They do not establish browser performance. A fixed-pose phantom is an early diagnostic fixture. It does not satisfy release acceptance for reconstruction from initially unregistered fetal stacks.
+
+## Browser training and memory constraints
+
+ONNX Runtime Web supports training through `onnxruntime-web/training`. Its official example generates training artifacts offline and loads WebAssembly binaries in the browser. That evidence does not establish support for this NeSVoR graph, its custom gradients, or GPU training. Use ONNX Runtime Web as a candidate for SVoRT's supported inference subgraphs. Benchmark the actual exported operators before selecting it for any training component. [ORT Web documentation](https://onnxruntime.ai/docs/get-started/with-javascript/web.html), [official web training example](https://github.com/microsoft/onnxruntime-training-examples/tree/master/on_device_training/web).
+
+WGSL scalar atomics use integer types. A direct translation of CUDA floating-point scatter accumulation cannot assume `atomic<f32>`. Hash-table gradient collisions and adjoint slice accumulation need a deliberate reduction algorithm. Compare partial reductions with grouped or sorted scatter reduction. Integer compare-exchange over float bit patterns is another candidate, but contention, retry behavior, and numerical variation need measurement. Prefer a bounded-memory reduction that gives reproducible diagnostic fixtures. [WGSL atomic types](https://www.w3.org/TR/WGSL/#atomic-types), [atomic built-ins](https://www.w3.org/TR/WGSL/#atomic-builtin-functions).
+
+The fallback hash layout allocates `2^19 × 2` parameters per level with the defaults above. An f32 implementation therefore needs 4 MiB per level for parameters alone. Parameters, gradients, and two Adam moments total 16 MiB per level before activations, images, registration buffers, and viewer memory. This is a design estimate derived from the fallback layout, not a measured allocation for tiny-cuda-nn or the future browser engine.
+
+Tile PSF queries and networks while preserving the logical batch. Accumulate correctly weighted gradients and update Adam once. Keep PSF sample identities and finite-difference pairs stable across tiles. Do not silently lower PSF sample count, grid resolution, iteration count, or remove motion optimization to fit a device. Measure adapter limits and peak allocations, then reject unsupported cases before fitting or offer an explicit user-selected change.
+
+Automatic-differentiation image regularization differentiates through spatial gradients. Deformation regularization differentiates through a Jacobian. Both require higher-order derivatives, beyond the default rigid finite-difference objective. Keep them out of the first supported preset and label unsupported options explicitly. Their eventual implementation needs separate derivative and convergence gates.
+
+## Evidence required before either path is called equivalent
+
+1. Resolve the immutable container image and installed tiny-cuda-nn revision. Export effective settings, parameter layouts, intermediate tensors, and operation outputs from that environment.
+2. Compare transforms, interpolation, hash collisions and boundary coordinates, PSF operators, and their required gradients against the pinned runtime. Add finite-difference derivative checks away from discontinuities and the adjoint inner-product check with equalization disabled.
+3. Compare every loss term, detached dependency, gradient, and one optimizer update using identical initial parameters, batch indices, and PSF samples. A shared seed alone does not align different random-number generators.
+4. Compare tiled and untiled updates, including global reductions and regularization. Freeze tolerances from measured reference variation before accepting optimized kernels.
+5. Compare SVoRT intermediate outputs, stack-registration transforms, NCC scores, candidate selection, and final coordinate space on the same fetal fixtures. Define behavior for near-tied NCC candidates.
+6. Run complete browser and pinned-container reconstructions on synthetic geometry fixtures and approved fetal multi-stack data. Measure geometry, finite values, reconstructed intensity, slice consistency, and registration error where ground truth exists. Set scientific acceptance thresholds with domain review before claiming parity.
+7. Measure runtime, peak CPU and GPU memory, cancellation, device loss, tab suspension, and responsive viewing on the published desktop browser/GPU matrix. No runtime or minimum-memory target is established by this analysis.
+
+The completion criterion is an end-to-end local browser workflow with no remote execution, plus the independently validated Linux/NVIDIA backend. Browser limitations remain visible in capability checks; they do not silently redirect patient data to a server.

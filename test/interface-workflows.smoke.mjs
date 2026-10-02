@@ -36,6 +36,44 @@ async function check(id, workflow) {
   finally { await page.close(); }
 }
 try {
+  await check('nesvor', async page => {
+    await page.locator('#imageInput').setInputFiles(nifti('stack.nii'));
+    await expect(page.locator('#fileInfo')).toContainText('1 stack loaded');
+    await page.locator('#thickness-0').fill('3.2');
+    await page.locator('#inputSection > summary').tap();
+    await page.locator('#inputSection > summary').tap();
+    await expect(page.locator('#thickness-0')).toHaveValue('3.2');
+    await page.locator('#executionMode').selectOption('browser-reference');
+    await page.locator('#computeSection > summary').tap();
+    await page.locator('#computeSection > summary').tap();
+    await expect(page.locator('#executionMode')).toHaveValue('browser-reference');
+    await expect(page.locator('#runButton')).toBeDisabled();
+    await expect(page.locator('#technicalLog')).not.toHaveAttribute('open', '');
+  });
+  await check('brain-extraction', async page => {
+    await page.locator('#imageInput').setInputFiles(nifti('automation-input.nii'));
+    await expect(page.locator('#statusText')).toHaveAttribute('data-neurodesk-state', 'ready');
+    await page.locator('#method').selectOption('bet');
+    await page.locator('#advancedSettings > summary').tap();
+    await page.locator('#threshold').fill('0.4');
+    await page.locator('#advancedSettings > summary').tap();
+    await page.locator('#advancedSettings > summary').tap();
+    await expect(page.locator('#threshold')).toHaveValue('0.4');
+    await expect(page.locator('#reportBtn')).toBeDisabled();
+    await expect(page.locator('#outputSection')).not.toHaveAttribute('open', '');
+  });
+  await check('synthseg', async page => {
+    await page.locator('#imageInput').setInputFiles(nifti('automation-input.nii'));
+    await expect(page.locator('#fileInfo')).toContainText('automation-input.nii');
+    await expect(page.locator('#mode')).toBeEnabled();
+    await page.locator('#mode').selectOption('fast');
+    const section = page.locator('#mode').locator('xpath=ancestor::details[1]');
+    await section.locator(':scope > summary').tap();
+    await section.locator(':scope > summary').tap();
+    await expect(page.locator('#mode')).toHaveValue('fast');
+    await expect(page.locator('#reportBtn')).toBeDisabled();
+    await expect(page.locator('#outputSection')).not.toHaveAttribute('open', '');
+  });
   await check('carotid-flow', async page => {
     await expect(page.locator('#statusText')).toContainText('Ready · choose', { timeout: 60000 });
     const advanced = page.locator('#advancedSettings > summary');

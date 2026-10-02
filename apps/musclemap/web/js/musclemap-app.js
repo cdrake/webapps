@@ -20,6 +20,7 @@ import { MuscleLegend } from './modules/ui/MuscleLegend.js';
 import { MuscleMapMetricsPanel } from './modules/ui/MuscleMapMetricsPanel.js';
 import { FallbackNiftiPreview } from './modules/fallback-nifti-preview.js';
 import * as Config from './app/config.js';
+import { registerMuscleMapAutomation } from './automation.js';
 import { generateNiivueColormap, getLabelName, getLabelColor, getMuscleLabels, getLabelsForModel, getLabelsForLabelSpace } from './app/labels.js';
 
 class MuscleMapApp {
@@ -191,6 +192,7 @@ class MuscleMapApp {
 
     // Start ONNX initialization in background
     this.inferenceExecutor.initialize();
+    this.automation = registerMuscleMapAutomation(this);
   }
 
   async setupViewer() {
@@ -763,7 +765,7 @@ class MuscleMapApp {
     return new File([buffer], name || file.name, { type: file.type || 'application/octet-stream' });
   }
 
-  async runSegmentation() {
+  async runSegmentation({ throwOnError = false, signal } = {}) {
     const entries = this.fileIOController.getEntries();
     if (entries.length === 0) {
       this.updateOutput('No input volume loaded');
@@ -851,6 +853,7 @@ class MuscleMapApp {
     this._activeWorkerTask = 'segmentation';
     try {
       for (const entry of segmentEntries) {
+        signal?.throwIfAborted();
         this.updateOutput(`Segmenting ${entry.file.name}...`);
         this._lastDetectedLabelIndices = [];
         const inputData = await entry.file.arrayBuffer();
@@ -891,11 +894,13 @@ class MuscleMapApp {
       const firstResult = this.segmentationResults[0];
       if (firstResult) await this.showSegmentationSource(firstResult.id);
       this.progress.end('Complete');
+      return generatedSegmentations;
     } catch (error) {
       this._suppressIntermediateResults = false;
       this._activeWorkerTask = null;
       this.updateOutput(`Error: ${error.message}`);
       this.onInferenceError(error.message);
+      if (throwOnError) throw error;
       return;
     } finally {
       this._suppressIntermediateResults = false;
@@ -1172,7 +1177,8 @@ class MuscleMapApp {
     }
   }
 
-  async calculateMetrics() {
+  async calculateMetrics({ throwOnError = false, signal } = {}) {
+    signal?.throwIfAborted();
     const segmentationSource = this.getSelectedMetricsSegmentationSource();
     if (!segmentationSource) {
       this.updateOutput('Choose a segmentation label map before calculating metrics.');
@@ -1182,6 +1188,7 @@ class MuscleMapApp {
       this.requireSegmentationContract(segmentationSource);
     } catch (error) {
       this.updateOutput(error.message);
+      if (throwOnError) throw error;
       return;
     }
 
@@ -1241,9 +1248,11 @@ class MuscleMapApp {
         }
       }
       this.updateOutput('Metrics ready.');
+      signal?.throwIfAborted();
     } catch (error) {
       this.updateOutput(`Error: ${error.message}`);
       this.onInferenceError(error.message);
+      if (throwOnError) throw error;
     } finally {
       this._activeWorkerTask = null;
       this.setWorkerButtonsBusy(false);
@@ -1666,6 +1675,7 @@ class MuscleMapApp {
   }
 
   setProgress(value, text) {
+    this.automationProgress?.({ value, message: text });
     const label = value >= 1 ? 'Complete' : text || (value > 0 ? 'Processing...' : null);
     this.progress.setProgress(value, label);
   }

@@ -72,5 +72,24 @@ export async function startOfflineServer(root, { port = 0, resolveFile } = {}) {
       mounts.set(token, directory);
       return `${origin}/_local/${token}`;
     },
+    unmountDirectory(url) {
+      const source = new URL(url);
+      if (source.origin !== origin) throw new Error('Directory mount belongs to another server');
+      mounts.delete(source.pathname.split('/')[2]);
+    },
   };
+}
+
+/** Origins of user-named compute servers; only absolute http(s) origins count. */
+export function parseComputeOrigins(value) {
+  const origins = new Set();
+  for (const entry of String(value || '').split(',')) {
+    const text = entry.trim();
+    if (!text) continue;
+    let url;
+    try { url = new URL(text); } catch { throw new Error(`NEURODESK_COMPUTE_ORIGINS entry is not a URL: ${text}`); }
+    if (!['http:', 'https:'].includes(url.protocol)) throw new Error(`NEURODESK_COMPUTE_ORIGINS entry must be http or https: ${text}`);
+    origins.add(url.origin);
+  }
+  return origins;
 }

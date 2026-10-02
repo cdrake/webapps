@@ -42,6 +42,31 @@
                 <input id="headPercentile" type="number" min="1" max="80" step="1" value="20" />
                 <p class="nd-hint">Amplitude pixels above this percentile form the head, which sets the search band.</p>
               </div>
+              <p class="nd-hint">Unsigned images only: search geometry follows the estimated head tilt.</p>
+              <div class="nd-field">
+                <label for="tiltLimit">Tilt search limit <small>± degrees</small></label>
+                <input id="tiltLimit" type="number" min="0.5" max="60" step="0.5" value="30" />
+              </div>
+              <div class="nd-field">
+                <label for="posterior">Posterior extent <small>head height</small></label>
+                <input id="posterior" type="number" min="0" max="0.5" step="0.01" value="0.15" />
+              </div>
+              <div class="nd-field">
+                <label for="anterior">Anterior extent <small>head height</small></label>
+                <input id="anterior" type="number" min="0" max="0.5" step="0.01" value="0.1" />
+              </div>
+              <div class="nd-field">
+                <label for="lateral">Lateral extent <small>head width</small></label>
+                <input id="lateral" type="number" min="0.01" max="0.5" step="0.01" value="0.3" />
+              </div>
+              <div class="nd-field">
+                <label for="midline">Midline exclusion <small>head width</small></label>
+                <input id="midline" type="number" min="0" max="0.49" step="0.01" value="0.08" />
+              </div>
+              <div class="nd-field">
+                <label for="minSeparation">Minimum pair separation <small>pixels</small></label>
+                <input id="minSeparation" type="number" min="1" max="100" step="1" value="5" />
+              </div>
             </div>
           </details>
           <button id="runButton" class="nd-btn nd-btn-primary" type="button" disabled>Detect carotids</button>
@@ -51,6 +76,7 @@
       <details class="nd-sidebar-section" id="outputSection">
         <summary class="nd-section-title">Flow curves</summary>
         <div class="nd-section-content">
+          <p id="qcSummary" class="nd-message warning" hidden></p>
           <div id="flowChart"></div>
           <div class="nd-table-scroll">
             <table class="nd-data-table" id="metricsTable" hidden>
@@ -87,7 +113,8 @@
     <template id="aboutContent">
       <p>Carotid Flow finds both carotid arteries in a retrospectively gated phase-contrast slice through the neck and plots their flow over the cardiac cycle. Left and right are the patient’s, read from the image orientation; the downloaded carotid labels image codes the left carotid 1 and the right 2.</p>
       <p><strong>Signed velocity</strong> (phase scaled to cm/s, or raw phase with its VENC). Vessels are regions of fast mean flow in either direction. The arteries are the direction whose flow pulses more, since neck veins pulse far less, and each carotid is the artery carrying the most flow on its side of the neck. Curves are flow in ml/min through a fixed region, with mean velocity in the CSV. On the example, the right carotid’s flow is within 6 % of PCMCalculator’s manual measurement, with the same waveform.</p>
-      <p><strong>Unsigned speed images</strong>, as some scanners export the phase series, carry no direction. They go through a port of the lab’s MATLAB script, <code>standalone_automatic_carotid_flow.m</code>, which selects the same vessels: pixels whose signal varies most over the cycle, inside a band beside the spine and airway, paired as the two blobs furthest apart and level with each other. The script named the vessel on the image’s left as the left carotid; on the scanner’s radiological grid that is the patient’s right, so this app swaps them. These curves are image intensities, not velocities.</p>
+      <p><strong>Unsigned phase images</strong> go through the updated lab script, <code>standalone_automatic_carotid_flow.m</code>. Head symmetry estimates in-plane tilt in 0.5-degree steps. The search band and pair alignment follow that tilt. Candidate blobs must share the most pulsatile blob’s signal polarity relative to static tissue. Curves subtract the static-tissue baseline and orient arterial signal positively. They remain image intensities, not velocities. Amplitude and phase stay on the same stored grid; patient left and right come from the NIfTI affine.</p>
+      <p>Advanced settings control the head and candidate thresholds, tilt search limit, search-band fractions and minimum pair separation. Posterior and anterior extents are fractions of the head height; lateral extent and midline exclusion are fractions of its width, measured from its centre after tilt correction. Defaults follow the supplied MATLAB script. Quality checks flag a tilt at the search limit, peaks more than one frame apart, or pair asymmetry or anterior–posterior offset above 0.3 of the pair separation. These checks prompt visual review; they do not establish accuracy.</p>
       <p>Research use only. Check the detected vessels on the image before using a curve. Aliased (wrapped) velocities are not corrected: choose a VENC above the peak carotid velocity.</p>
     </template>
     <template id="privacyContent"><p>Images are processed in this browser and are never uploaded. The example is downloaded from Hugging Face at a pinned revision.</p></template>

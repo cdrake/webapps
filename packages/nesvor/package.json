@@ -1,0 +1,19 @@
+{
+  "name": "@neurodesk/nesvor",
+  "version": "0.3.20260930",
+  "private": true,
+  "type": "module",
+  "description": "NeSVoR browser numerical port",
+  "exports": {
+    "./training": "./src/training/index.js",
+    "./browser": "./src/browser.js"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js src/registration/*.test.js src/output/*.test.js src/preprocessing/*.test.js src/masking/*.test.js src/deformation/*.test.js src/reference-workflow.test.js",
+    "test:gpu": "node src/gpu/verify.mjs",
+    "test:workflow": "node src/gpu/verify-workflow.mjs"
+  },
+  "dependencies": {
+    "onnxruntime-web": "1.29.0"
+  }
+}

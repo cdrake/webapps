@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 2,
+  "app": "calmar",
+  "title": "CALMaR",
+  "description": "Map an explicitly supplied lesion or prepare an unconfirmed candidate for manual review.",
+  "defaultOperation": "map-lesion",
+  "operations": {
+    "map-lesion": {
+      "title": "Map supplied lesion",
+      "description": "Require an atlas-grid lesion, then compute direct overlap, group connectivity and the threshold mask.",
+      "mode": "batch",
+      "inputs": {
+        "lesion": {
+          "source": "files",
+          "type": "neuro:mask",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "space": "atlas",
+          "description": "Reviewed lesion on the selected atlas overlap grid, with matching affine",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "parameters": {
+        "atlas": {
+          "type": "string",
+          "description": "Atlas and matching connectivity pack",
+          "enum": [
+            "schaefer400",
+            "yeo7"
+          ],
+          "default": "schaefer400"
+        },
+        "topPercent": {
+          "type": "number",
+          "description": "Keep the strongest percentage of network-map voxels",
+          "minimum": 0,
+          "maximum": 10,
+          "multipleOf": 0.1,
+          "default": 5
+        },
+        "symmetric": {
+          "type": "boolean",
+          "description": "Threshold the magnitude of connectivity values",
+          "default": true
+        },
+        "minimumClusterSize": {
+          "type": "integer",
+          "description": "Minimum retained connected-component size in voxels",
+          "minimum": 0,
+          "default": 30
+        }
+      },
+      "artifacts": {
+        "networkMap": {
+          "type": "neuro:volume",
+          "mediaType": "application/x-nifti",
+          "space": "atlas",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "thresholdMask": {
+          "type": "neuro:mask",
+          "mediaType": "application/x-nifti",
+          "space": "atlas",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "overlap": {
+          "type": "neuro:table",
+          "mediaType": "text/csv",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    },
+    "prepare-lesion": {
+      "title": "Prepare lesion candidate for review",
+      "description": "Run brain extraction, prealignment and lesion segmentation; leave the native-space candidate unconfirmed.",
+      "mode": "batch",
+      "inputs": {
+        "structural": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "space": "native",
+          "description": "Structural T1 MRI for candidate lesion segmentation",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "parameters": {},
+      "artifacts": {
+        "candidate": {
+          "type": "neuro:mask",
+          "mediaType": "application/x-nifti",
+          "space": "native",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "brainMask": {
+          "type": "neuro:mask",
+          "mediaType": "application/x-nifti",
+          "space": "native",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    }
+  }
+}

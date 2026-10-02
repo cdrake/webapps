@@ -36,3 +36,22 @@ test('an open surface is not manifold; a flipped face is not consistent', () => 
   ;[indices[1], indices[2]] = [indices[2], indices[1]]
   assert.equal(inspectMesh({ positions, indices }).consistent, false)
 })
+
+test('STL and MZ3 retain the corrected displayed geometry', async () => {
+  const { writeStl, writeMz3, readMz3 } = await import('@neurodesk/topofit/results')
+  const indices = flipWinding(cube())
+  if (inspectMesh({ positions, indices }).signedVolume < 0) flipWinding(indices)
+  const mz3 = await readMz3(writeMz3(positions, indices))
+  assert.deepEqual([...mz3.vertices], [...positions])
+  assert.deepEqual([...mz3.faces], [...indices])
+  assert.equal(inspectMesh({ positions: mz3.vertices, indices: mz3.faces }).signedVolume, 1)
+  const stl = new DataView(writeStl(positions, indices))
+  assert.equal(stl.getUint32(80, true), indices.length / 3)
+  for (let triangle = 0; triangle < indices.length / 3; triangle++) {
+    for (let corner = 0; corner < 3; corner++) {
+      for (let axis = 0; axis < 3; axis++) {
+        assert.equal(stl.getFloat32(84 + triangle * 50 + 12 + corner * 12 + axis * 4, true), positions[indices[triangle * 3 + corner] * 3 + axis])
+      }
+    }
+  }
+})

@@ -2,6 +2,7 @@ import { cp, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { injectCompositeTheme } from './composite-theme.mjs';
 import { stageStandaloneAssets } from './standalone.mjs';
+import { publishAppContract } from './app-automation.mjs';
 
 export async function applyAppTheme({
   app, information, version, measurementId, distDir, themeFile, themeScriptFile, shellFile, shellAdaptersDir, analyticsFile, iconFile,
@@ -30,6 +31,7 @@ export async function applyAppTheme({
   await cp(shellFile, join(distDir, 'app-shell.js'));
   if (shellAdaptersDir) await cp(shellAdaptersDir, join(distDir, 'shell-adapters'), { recursive: true });
   await stageStandaloneAssets(distDir);
+  await publishAppContract({ app, version, distDir });
   await cp(analyticsFile, join(distDir, 'analytics.js'));
   if (themed.includes('data-neurodesk-app-icon')) {
     await cp(iconFile, join(distDir, 'neurodesk-logo.svg'));

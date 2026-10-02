@@ -1,3 +1,4 @@
+import { registerAppAutomation, createNiivueAdapter } from '@neurodesk/webapp-components/automation';
 import '@neurodesk/webapp-components/styles/imaging-workspace.css';
 import './styles.css';
 import {
@@ -716,6 +717,16 @@ async function init() {
     loadingText: ''
   });
   await state.nv.attachToCanvas(ui.canvas);
+  automation.registerViewer('main', createNiivueAdapter(state.nv, {
+    tabs: {
+      list: () => state.surfaces.map(entry => ({ id: `surface-${entry.id}`, label: entry.name, active: activeSurface()?.id === entry.id })),
+      select: id => activateSurface(Number(id.slice('surface-'.length))),
+    },
+    regions: { list: () => savedRois().map(roi => ({
+      id: String(roi.id), name: roi.name, vertices: roi.mask ? maskToIndices(roi.mask).length : 0,
+      visible: roi.visible, error: roi.error ?? null,
+    })) },
+  }));
   registerExtraColormaps(state.nv);
   state.nv.setSliceType(state.nv.sliceTypeRender);
 
@@ -2744,9 +2755,12 @@ function exportSession() {
  * belong to this surface: every number in it is a vertex index, so a mismatch
  * is refused rather than mapped.
  */
-async function importRois(file) {
+async function importRois(file, { rethrow = false } = {}) {
   const entry = activeSurface();
-  if (!entry) return;
+  if (!entry) {
+    if (rethrow) throw new Error('Load a surface before importing ROI definitions.');
+    return;
+  }
   setStatus(`Loading ROIs from ${file.name}…`, { busy: true });
   let session;
   try {
@@ -2754,6 +2768,7 @@ async function importRois(file) {
     if (/\.gii$/i.test(file.name)) {
       text = sessionFromGiftiMetadata(text);
       if (!text) {
+        if (rethrow) throw new Error(`${file.name} carries no SurfAnnotate border points`);
         setStatus(`${file.name} carries no SurfAnnotate border points`, {
           error: true,
           detail: 'Only sessions and .label.gii files this app exported can be loaded for now.'
@@ -2763,6 +2778,7 @@ async function importRois(file) {
     }
     session = readSession(text);
   } catch (error) {
+    if (rethrow) throw error;
     setStatus(`Could not load ${file.name}: ${error.message}`, { error: true });
     return;
   }
@@ -2770,6 +2786,7 @@ async function importRois(file) {
     vertexCount: entry.geometry.vertexCount, topologyKey: entry.topologyKey
   });
   if (!fit.ok) {
+    if (rethrow) throw new Error(fit.reason);
     setStatus(`Not loaded: ${fit.reason}`, {
       error: true,
       detail: 'Load the surface it was drawn on and try again.'
@@ -2829,6 +2846,7 @@ async function importRois(file) {
   const failed = recomputeParcellation();
   syncControls();
   scheduleMarkers();
+  if (rethrow && failed.length) throw new Error('Some imported ROIs could not be reconstructed on this surface.');
   const n = session.rois.length;
   setStatus(`Loaded ${n} ROI${n === 1 ? '' : 's'} and ${landmarks} landmark${landmarks === 1 ? '' : 's'}`, {
     detail: `From ${file.name}.` +
@@ -2901,7 +2919,30 @@ function exportPoints() {
   setStatus(`Exported ${state.session.points.length} landmark(s) as ${filename}`);
 }
 
-init().catch((error) => setStatus(`Startup failed: ${error.message}`, { error: true }));
+const automation = registerAppAutomation({
+  app: 'surfannotate',
+  operations: {
+    'open-surface': async ({ inputs, signal, progress }) => {
+      await initialized;
+      await enqueueLoad(async () => {
+        for (const file of inputs.surfaces) {
+          signal.throwIfAborted();
+          progress({ message: `Indexing ${file.name}` });
+          await loadSurface(file, { assertCurrent: () => signal.throwIfAborted(), rethrow: true });
+        }
+        if (inputs.regions.length) await importRois(inputs.regions[0], { rethrow: true });
+      });
+      signal.throwIfAborted();
+      if (!activeSurface()) throw new Error('No surface was loaded.');
+      return { artifacts: [], summary: {
+        surfaces: state.surfaces.map(entry => ({ ...entry.identity, topologyKey: entry.topologyKey, active: entry.id === activeSurface().id })),
+        regions: savedRois().map(roi => ({ name: roi.name, vertices: roi.mask ? maskToIndices(roi.mask).length : 0 })),
+      } };
+    },
+  },
+});
+const initialized = init();
+void initialized.catch(error => setStatus(`Startup failed: ${error.message}`, { error: true }));
 
 // Exposed for the e2e smoke test, which drives the pipeline without a mouse.
 // The serialisers are re-exported here because the production build bundles the

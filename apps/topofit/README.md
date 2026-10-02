@@ -91,3 +91,7 @@ becomes available after a successful reconstruction. It uses a separate worker
 and does not run the neural models again. New analysis results replace previous
 analysis results and update the processing manifest; cancellation or failure
 keeps the previous outputs. Loading another scan clears the saved reconstruction.
+
+## Agent automation
+
+The `reconstruct` operation accepts an explicit `image` and optional `roi` as NIfTI or DICOM. Parameters expose the existing conforming, overlay thickness, normals and flat-patch controls. An ROI requires `findPatches`. The operation awaits the same worker as the interface and returns all actual files: eight surface files including registration spheres, source-grid QC, provenance and requested analysis tables, patch surfaces and metadata. Variable patch counts remain variable. The report retains model and asset checksums from the scientific pipeline. The image viewer exposes actual source/output stages and measured patches. Cancellation terminates the worker. Full model inference requires the published model assets and an adequate browser backend; routing/unit checks alone do not verify scientific inference.

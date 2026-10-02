@@ -44,22 +44,38 @@ background, no direction. It carries no velocity, so this path ports the lab's
    percentile, eroded by MATLAB's `strel('disk', 3)` octagon.
 2. The temporal standard deviation of the phase frames, zeroed outside the head. Pixels above
    its 99.9th percentile (MATLAB `prctile` interpolation) are candidates.
-3. Candidates are kept inside a band from 0.15 head-heights behind to 0.10 in front of the head
-   centre, within 0.30 head-widths laterally, outside a 0.08 head-width midline strip.
-4. Among the 8-connected blobs, the carotids are the pair maximising lateral separation over
-   one plus the squared anterior–posterior offset, with side-by-side and at least 5 pixels apart.
-5. Each curve is the mean phase over its blob, sign-flipped if its trough outweighs its peak.
+3. Bilateral amplitude symmetry estimates head tilt over ±30 degrees in 0.5-degree steps.
+   The band extends 0.15 head-heights posteriorly and 0.10 anteriorly, within 0.30 head-widths
+   laterally and outside a 0.08 head-width midline strip, in the head-aligned frame.
+4. Static tissue is the least-variable half of the head. Its median temporal mean supplies
+   the baseline. Blobs must share the net-signal sign of the most pulsatile blob.
+5. The pair maximises lateral separation divided by one plus squared anterior–posterior
+   offset in the head-aligned frame, with at least 5 pixels of separation.
+6. Curves subtract the static baseline and multiply by the arterial sign.
+7. QC flags tilt at the search limit, circular peak lag over one frame, pair off-centre ratio
+   over 0.3, or anterior–posterior offset divided by separation over 0.3. Frame counts are
+   taken from the input rather than fixed at 32. Symmetry contrast is recorded in the log.
 
-Differences from the script, both deliberate:
+Advanced settings expose the thresholds, tilt search limit, four band fractions and minimum
+separation. These geometry controls apply only to the variability method. QC thresholds and
+symmetry sampling stay fixed. The output shows tilt and review flags; automation measurements
+include all QC values, the baseline and arterial sign.
 
-- The band and the blob geometry use the stored voxel grid with the anterior and left
-  directions read from the affine. The script transposed the image and assumed the nose points
-  down; it also sampled the head mask from a left–right mirrored copy of the amplitude.
-- Left and right are the patient's, from the world x of each blob. The script labelled the
-  image-left vessel as left, which on the scanner's radiological grid is the patient's right.
+Differences from the updated script are deliberate:
 
-The script's `shape_score` and `score_blob` were computed but never used to select vessels, so
-they are not ported.
+- Amplitude, phase and output masks stay on the same stored voxel grid. The affine supplies
+  anatomical axes and patient left/right, including flipped or transposed storage. No image
+  is mirrored independently. The old script's amplitude flip and image-side labels are gone
+  in the supplied revision too.
+- Symmetry evaluation combines centring and rotation into one bilinear interpolation instead
+  of MATLAB's separate `imtranslate` and `imrotate`. This avoids a second interpolation but
+  can shift the optimum by a sampling step on real data; exact MATLAB numerical parity has
+  not been established.
+- The search band uses continuous head-aligned coordinates, as the updated script does,
+  instead of the previous port's rounded axis-aligned bounds.
+- The script's shape score remains diagnostic only and does not select vessels, so it is
+  not calculated. Curves remain arbitrary signal units; baseline-relative polarity does not
+  turn an unsigned speed image into calibrated velocity.
 
 On the open example the port fails (at most one candidate in its band): the velocity SD there
 is dominated by CSF pulsation and phase noise in low-signal tissue, which the lab's speed images

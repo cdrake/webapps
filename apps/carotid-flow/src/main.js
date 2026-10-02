@@ -2,6 +2,7 @@ import NiiVue, { lookupColorMap, SLICE_TYPE } from '@niivue/niivue';
 import '@neurodesk/webapp-components/styles/imaging-workspace.css';
 import { mountImagingWorkspace } from '@neurodesk/webapp-components/core/mount-imaging-workspace';
 import {
+  ProgressManager,
   bindFileDrop,
   bindInfoTooltips,
   createConsole,
@@ -19,7 +20,8 @@ import {
   extractNiftiHeader,
   readNiftiFrames,
 } from '@neurodesk/webapp-components/file-io';
-import { readImageFiles } from '@neurodesk/runtime-support/dcm2niix-client';
+import { readImageFiles, runDcm2niix } from '@neurodesk/runtime-support/dcm2niix-client';
+import { registerAppAutomation, createNiivueAdapter } from '@neurodesk/webapp-components/automation';
 import { curvesCsv, detectCarotids, meanFrames, splitSeries } from './carotid.js';
 import { flowChartSvg } from './chart.js';
 import { APP, assignSeries, stem } from './config.js';
@@ -27,6 +29,8 @@ import examples from '../examples.json';
 import './styles.css';
 
 const $ = (id) => document.getElementById(id);
+const progress = new ProgressManager();
+const geometryFields = ['tiltLimit', 'posterior', 'anterior', 'lateral', 'midline', 'minSeparation'];
 
 mountImagingWorkspace({
   controls: '#controls',
@@ -84,7 +88,7 @@ function statusLine(message) {
 }
 
 function status(message, error = false) {
-  $('statusText').textContent = statusLine(message);
+  progress.setText(statusLine(message));
   $('statusText').classList.toggle('error', error);
   log.log(message, error ? 'error' : 'info');
 }
@@ -96,7 +100,7 @@ function refreshActions() {
 
 function setBusy(value) {
   busy = value;
-  for (const id of ['imageInput', 'candidatePercentile', 'headPercentile', 'venc']) $(id).disabled = value;
+  for (const id of ['imageInput', 'candidatePercentile', 'headPercentile', 'venc', ...geometryFields]) $(id).disabled = value;
   exampleControl.setDisabled(value);
   refreshActions();
 }
@@ -170,10 +174,11 @@ function clearOutputs() {
   $('metricsBody').replaceChildren();
   results.render();
   $('outputSection').open = false;
-  $('progress').value = 0;
+  progress.setProgress(0);
+  $('qcSummary').hidden = true;
 }
 
-async function loadFiles(files, { signal, assertCurrent = () => {}, label } = {}) {
+async function loadFiles(files, { signal, assertCurrent = () => {}, label, chosen } = {}) {
   if (loading) throw new Error('A series is still loading. Wait or cancel, then retry.');
   const controller = new AbortController();
   const abort = () => controller.abort(signal.reason);
@@ -181,13 +186,13 @@ async function loadFiles(files, { signal, assertCurrent = () => {}, label } = {}
   signal?.addEventListener('abort', abort, { once: true });
   loading = controller;
   setBusy(true);
-  $('cancelButton').hidden = false;
+  progress.begin('Reading the series…');
   status('Reading the series…');
   try {
     const images = await readImageFiles(await files, { signal: controller.signal });
     controller.signal.throwIfAborted();
     assertCurrent();
-    const next = await readSeries(assignSeries(images));
+    const next = await readSeries(chosen ?? assignSeries(images));
     controller.signal.throwIfAborted();
     assertCurrent();
     try {
@@ -208,7 +213,9 @@ async function loadFiles(files, { signal, assertCurrent = () => {}, label } = {}
   } finally {
     signal?.removeEventListener('abort', abort);
     loading = null;
-    $('cancelButton').hidden = true;
+    progress.stopTimer();
+    progress.setCancellable(false);
+    progress.setProgress(0);
     setBusy(false);
   }
 }
@@ -281,7 +288,38 @@ const UNITS = {
   variability: { axis: 'Phase signal (a.u.)', column: 'a.u.', digits: 1 },
 };
 
+function readGeometry() {
+  const values = {};
+  for (const id of geometryFields) {
+    const input = $(id);
+    if (!input.value.trim() || !input.checkValidity()) {
+      $('advancedSettings').open = true;
+      input.focus();
+      throw new Error(`${input.labels[0].firstChild.textContent.trim()} must be ${input.min} to ${input.max}, in steps of ${input.step}.`);
+    }
+    values[id] = Number(input.value);
+  }
+  if (values.midline >= values.lateral) {
+    $('advancedSettings').open = true;
+    $('midline').focus();
+    throw new Error('Midline exclusion must be smaller than the lateral extent.');
+  }
+  return values;
+}
+
 function renderOutputs() {
+  const qc = result.found.qc;
+  $('qcSummary').hidden = !qc;
+  if (qc) {
+    const reasons = [];
+    if (qc.tiltAtEdge) reasons.push('tilt at search limit');
+    if (Math.abs(qc.peakLag) > 1) reasons.push('peaks differ by more than one frame');
+    if (qc.pairOffcentre > 0.3) reasons.push('pair off centre');
+    if (qc.pairVshift > 0.3) reasons.push('pair offset');
+    $('qcSummary').textContent = `Tilt ${qc.tiltDegrees.toFixed(1)}° · ${reasons.length ? `Review: ${reasons.join('; ')}` : 'No automatic QC flags'}`;
+    $('qcSummary').className = `nd-message ${qc.flag ? 'warning' : 'info'}`;
+    log.log(`Quality checks: ${JSON.stringify(qc)}; static baseline ${result.found.baseline}`);
+  }
   const sides = ['left', 'right'];
   const unit = UNITS[result.found.method];
   $('flowChart').innerHTML = flowChartSvg(
@@ -315,28 +353,36 @@ function renderOutputs() {
   });
 }
 
-$('runButton').onclick = async () => {
-  if (!series || busy) return;
+async function runDetection({ options: explicitOptions, signal, throwOnError = false } = {}) {
+  signal?.throwIfAborted();
+  if (!series || busy) {
+    if (throwOnError) throw new Error('Load a series and wait for processing to finish before detecting carotids.');
+    return;
+  }
   const source = series;
   let options;
   try {
     // Validate while the fields are still enabled, so the one at fault can take focus.
-    options = {
+    options = explicitOptions ?? {
       candidatePercentile: readSetting('candidatePercentile', 50, 100),
       headPercentile: readSetting('headPercentile', 0, 100),
       venc: readVenc(),
+      ...readGeometry(),
     };
   } catch (error) {
     status(error.message, true);
+    if (throwOnError) throw error;
     return;
   }
   setBusy(true);
   clearOutputs();
+  progress.begin('Detecting carotids…', { cancellable: false });
   status('Detecting carotids…');
   const started = performance.now();
   try {
     // Let the status paint before the synchronous detection.
     await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve)));
+    signal?.throwIfAborted();
     const found = detectCarotids(source, options);
     const base = stem(source.name);
     const perSide = (value) => found.mask.map((label) => (label === value ? 1 : 0));
@@ -352,24 +398,30 @@ $('runButton').onclick = async () => {
     };
     background = 'mask';
     await showImages();
+    signal?.throwIfAborted();
     renderOutputs();
     $('outputSection').open = true;
-    $('progress').value = 1;
+    progress.end('Detection complete');
     const { left, right } = found;
     const summary = found.method === 'velocity'
       ? `left ${Math.round(left.mean)} ml/min, right ${Math.round(right.mean)} ml/min`
       : `left ${left.pixels.length} px, right ${right.pixels.length} px`;
     status(`Both carotids found · ${summary} · systolic peak at frame ${right.peakFrame + 1}`);
+    if (found.qc?.flag) status('Review flagged carotid pair · see quality checks in Flow curves');
     log.log(`Detection took ${Math.round(performance.now() - started)} ms`);
+    return result;
   } catch (error) {
     // Drop the previous run's overlays with its numbers: they described other settings.
     clearOutputs();
+    progress.end('Detection failed', { success: false });
     await showImages().catch(() => {});
     status(error instanceof Error ? error.message : String(error), true);
+    if (throwOnError) throw error;
   } finally {
     setBusy(false);
   }
-};
+}
+$('runButton').onclick = () => { void runDetection(); };
 
 $('saveButton').onclick = () => {
   if (!result) return;
@@ -398,6 +450,50 @@ window.addEventListener('pagehide', () => {
   exampleControl.destroy();
   loading?.abort();
 });
-void init();
+const initialized = init();
+
+function measurements(found) {
+  return {
+    method: found.method,
+    ...(found.qc ? { qc: found.qc, baseline: found.baseline, arterialSign: found.arterialSign } : {}),
+    curveUnit: found.method === 'velocity' ? 'ml/min' : 'a.u.',
+    vessels: Object.fromEntries(['left', 'right'].map(side => {
+      const vessel = found[side];
+      return [side, { areaMm2: vessel.areaMm2, pixelCount: vessel.pixels.length, mean: vessel.mean,
+        peak: vessel.peak, peakFrame: vessel.peakFrame, pulsatility: vessel.pulsatility, curve: Array.from(vessel.curve) }];
+    })),
+  };
+}
+
+async function detectOperation({ inputs, parameters, signal, progress }) {
+  await initialized;
+  if (!ready) throw new Error('Carotid Flow viewer could not initialize.');
+  const chosen = inputs.series ? { combined: inputs.series[0] } : { amplitude: inputs.amplitude[0], phase: inputs.phase[0] };
+  progress('Reading the phase-contrast series');
+  await loadFiles(Object.values(chosen), { signal, chosen });
+  progress('Detecting carotids');
+  const completed = await runDetection({ options: parameters, signal, throwOnError: true });
+  const csv = new File([curvesCsv(completed.found)], `${stem(completed.source.name)}_carotid_curves.csv`, { type: 'text/csv' });
+  return {
+    artifacts: [
+      { role: 'labels', file: completed.files.mask },
+      { role: 'variability', file: completed.files.variability },
+      { role: 'curves', file: csv },
+    ],
+    measurements: measurements(completed.found),
+    provenance: { method: completed.found.method, parameters, phases: completed.source.phases, affine: completed.source.affine },
+  };
+}
+
+const automation = registerAppAutomation({ app: APP.id, convertDicom: runDcm2niix,
+  operations: { 'detect-combined': detectOperation, 'detect-pair': detectOperation },
+});
+automation.registerViewer('main', createNiivueAdapter(viewer, {
+  tabs: {
+    list: () => result ? ['mask', 'variability'].map(id => ({ id, label: id === 'mask' ? 'Carotid labels' : 'Temporal variability', active: background === id })) : [],
+    async select(id) { background = id; await showImages(); },
+  },
+  regions: { list: () => result ? measurements(result.found).vessels : {} },
+}));
 
 export default Object.freeze({ APP, SIDES });

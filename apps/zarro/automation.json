@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 2,
+  "app": "zarro",
+  "title": "ZARRo",
+  "description": "Open and inspect multiscale OME-Zarr volumes.",
+  "defaultOperation": "open-url",
+  "operations": {
+    "open-url": {
+      "title": "Open OME-Zarr url",
+      "description": "Read multiscale metadata and load the selected volume into the live viewer.",
+      "mode": "viewer",
+      "inputs": {
+        "store": {
+          "source": "url",
+          "type": "neuro:multiscale-volume",
+          "formats": [
+            "ome-zarr"
+          ],
+          "description": "OME-Zarr store url",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "parameters": {},
+      "artifacts": {},
+      "engines": [
+        "browser"
+      ]
+    },
+    "open-directory": {
+      "title": "Open OME-Zarr directory",
+      "description": "Read multiscale metadata and load the selected volume into the live viewer.",
+      "mode": "viewer",
+      "inputs": {
+        "store": {
+          "source": "directory",
+          "type": "neuro:multiscale-volume",
+          "formats": [
+            "ome-zarr"
+          ],
+          "description": "OME-Zarr store directory",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "parameters": {},
+      "artifacts": {},
+      "engines": [
+        "browser"
+      ]
+    }
+  }
+}

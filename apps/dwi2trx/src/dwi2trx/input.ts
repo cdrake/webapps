@@ -251,3 +251,18 @@ async function readHeaderBytes(file: File, n: number): Promise<Uint8Array> {
   }
   return out
 }
+
+
+/** Validate roles already selected by a caller, without inferring a pairing from names. */
+export async function resolveExplicitInput(
+  files: Pick<DwiInput, 'nifti' | 'bval' | 'bvec' | 'json'>,
+  signal?: AbortSignal,
+): Promise<ResolvedInput> {
+  assertInputSize([files.nifti, files.bval, files.bvec, ...(files.json ? [files.json] : [])])
+  signal?.throwIfAborted()
+  const directions = countDirections(await files.bval.text(), await files.bvec.text())
+  const volumes = await niftiVolumeCount(files.nifti)
+  if (directions !== volumes) throw new Error(`Volume mismatch: ${files.nifti.name} has ${volumes} volumes but its bval/bvec list ${directions} directions.`)
+  signal?.throwIfAborted()
+  return { ...files, directions, source: 'nifti' }
+}

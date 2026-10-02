@@ -100,8 +100,22 @@ test('render keeps explicit ordering and treats labels as plain text', () => {
   const { window } = new JSDOM();
   const element = createResultList({ stageLabels: { second: '<img src=x>' } }, window.document);
   element.render({ first: {}, second: {} }, ['second', 'first']);
+  assert.deepEqual([...element.querySelectorAll('[data-stage]')].map(row => row.dataset.stage), ['second', 'first']);
   window.document.body.append(element);
   assert.deepEqual([...element.querySelectorAll('.nd-stage-label')].map((label) => label.textContent), ['<img src=x>', 'first']);
   assert.equal(element.querySelector('img'), null);
+  window.close();
+});
+
+test('a result marked not viewable keeps its row but disables View', () => {
+  const { window } = new JSDOM();
+  const element = createResultList({}, window.document);
+  window.document.body.append(element);
+  element.render({ mask: { description: 'Lesion mask' }, table: { description: 'Lesion table', viewable: false } });
+  const [mask, table] = element.querySelectorAll('.nd-view-btn');
+  assert.equal(mask.disabled, false);
+  assert.equal(table.disabled, true);
+  assert.equal(table.title, 'Download to open');
+  assert.equal(element.querySelectorAll('.nd-download-btn').length, 2);
   window.close();
 });

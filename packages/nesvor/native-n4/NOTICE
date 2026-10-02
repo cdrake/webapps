@@ -1,0 +1,20 @@
+NeSVoR N4 WebAssembly wrapper
+Copyright 2026 Neurodesk contributors
+SPDX-License-Identifier: MIT
+
+Algorithm: ITK N4BiasFieldCorrectionImageFilter, ITK 5.4.6.
+ITK is copyright the Insight Software Consortium and contributors and licensed
+under Apache-2.0. https://github.com/InsightSoftwareConsortium/ITK
+
+The processing sequence follows NeSVoR v0.5.0, commit
+730ddaa3711a2304386de34193ea4b957892fe7b, nesvor/preprocessing/bias_field.py.
+NeSVoR is copyright Junshen Xu and contributors, licensed under MIT.
+https://github.com/daviddmc/NeSVoR
+
+N4 method: Tustison et al., N4ITK: Improved N3 Bias Correction,
+IEEE Transactions on Medical Imaging 29(6), 2010, 1310-1320.
+DOI: 10.1109/TMI.2010.2046908.
+
+Generated runtime includes Emscripten runtime support, copyright Emscripten
+contributors, licensed under MIT or the University of Illinois/NCSA license.
+https://github.com/emscripten-core/emscripten

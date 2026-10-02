@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 2,
+  "app": "seedseg",
+  "title": "SeedSeg",
+  "description": "Segment prostate fiducial markers using the existing SeedSeg model ensemble.",
+  "defaultOperation": "segment",
+  "operations": {
+    "segment": {
+      "title": "Segment fiducial markers",
+      "description": "Run bias correction, selected ONNX models, probability averaging and marker selection.",
+      "mode": "batch",
+      "inputs": {
+        "image": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "description": "T1-weighted prostate MRI containing fiducial markers",
+          "space": "native",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "parameters": {
+        "models": {
+          "type": "array",
+          "description": "One or more distinct model seeds",
+          "items": {
+            "type": "integer",
+            "description": "Model seed",
+            "enum": [
+              42,
+              123,
+              456,
+              789
+            ]
+          },
+          "default": [
+            42,
+            123,
+            456,
+            789
+          ]
+        },
+        "threshold": {
+          "type": "number",
+          "description": "Marker probability threshold",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.1
+        },
+        "markers": {
+          "type": "integer",
+          "description": "Maximum number of marker components retained",
+          "minimum": 1,
+          "maximum": 10,
+          "default": 3
+        }
+      },
+      "artifacts": {
+        "markers": {
+          "type": "neuro:mask",
+          "mediaType": "application/x-nifti",
+          "space": "native",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "probability": {
+          "type": "neuro:volume",
+          "mediaType": "application/x-nifti",
+          "space": "native",
+          "minimum": 2,
+          "maximum": 5
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    }
+  }
+}

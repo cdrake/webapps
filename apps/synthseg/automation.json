@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 2,
+  "app": "synthseg",
+  "title": "SynthSeg",
+  "description": "Segment a head image into FreeSurfer labels with SynthSeg 2.0.",
+  "defaultOperation": "segment",
+  "operations": {
+    "segment": {
+      "title": "Segment brain",
+      "description": "Segment a head image into FreeSurfer labels with SynthSeg 2.0.",
+      "mode": "batch",
+      "inputs": {
+        "image": {
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "space": "native",
+          "description": "One anatomical head image",
+          "source": "files",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "parameters": {
+        "mode": {
+          "type": "string",
+          "description": "Fast mode skips flip averaging and topology postprocessing",
+          "enum": [
+            "default",
+            "fast"
+          ],
+          "default": "default"
+        },
+        "ct": {
+          "type": "boolean",
+          "description": "Input is CT in Hounsfield units; omitted uses the app's intensity detection"
+        }
+      },
+      "artifacts": {
+        "labels": {
+          "type": "neuro:label-map",
+          "mediaType": "application/gzip",
+          "space": "subject-1mm",
+          "labelSystem": "FreeSurfer",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "engines": [
+        "browser",
+        "native"
+      ],
+      "limits": {
+        "browser": {
+          "inputs": {
+            "image": {
+              "geometry": "synthseg-1mm-ras-padded-v1",
+              "targetVoxelSizeMm": [1, 1, 1],
+              "resamplingToleranceMm": [0.95, 1.05],
+              "paddingMultiple": 32,
+              "minimumShape": [128, 128, 128],
+              "spatialUnitsPolicy": "numeric-values-as-mm",
+              "maxBufferBytes": 2147483647,
+              "bytesPerPaddedVoxel": 288,
+              "maxPaddedVoxels": 7456540,
+              "deferredFormats": ["dicom"],
+              "description": "Browser limit on the largest activation buffer after SynthSeg resampling, RAS alignment and padding; source file size is not the limit. NIfTI is checked before a run. DICOM is checked by the existing runtime after conversion. The native engine is exempt."
+            }
+          }
+        }
+      }
+    }
+  }
+}

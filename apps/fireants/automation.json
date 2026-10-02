@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 2,
+  "app": "fireants",
+  "title": "FireANTs",
+  "description": "Register a moving image to a fixed image with FireANTs.",
+  "defaultOperation": "register",
+  "operations": {
+    "register": {
+      "title": "Register images",
+      "description": "Run FireANTs registration and reslice the moving image onto the fixed grid.",
+      "mode": "batch",
+      "inputs": {
+        "moving": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "description": "Moving image to register",
+          "space": "moving",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "fixed": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "description": "Fixed reference image",
+          "space": "fixed",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "parameters": {
+        "backend": {
+          "type": "string",
+          "enum": [
+            "cpu",
+            "webgpu"
+          ],
+          "default": "cpu",
+          "description": "Scientific registration execution device"
+        },
+        "transform": {
+          "type": "string",
+          "enum": [
+            "greedy",
+            "syn"
+          ],
+          "default": "greedy",
+          "description": "Deformable registration method"
+        }
+      },
+      "artifacts": {
+        "registered": {
+          "type": "neuro:volume",
+          "mediaType": "application/gzip",
+          "space": "fixed",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    }
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 2,
+  "app": "white-matter-lesions",
+  "title": "White matter lesions",
+  "description": "Segment white matter lesions from a FLAIR image with FLAMeS.",
+  "defaultOperation": "segment",
+  "operations": {
+    "segment": {
+      "title": "Segment lesions",
+      "description": "Return a native-grid lesion mask, probability image and per-lesion table.",
+      "mode": "batch",
+      "inputs": {
+        "image": {
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "space": "native",
+          "description": "One FLAIR image",
+          "source": "files",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "parameters": {
+        "backend": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "webgpu",
+            "wasm"
+          ],
+          "default": "auto",
+          "description": "Requested inference backend; WebGPU failures fall back to WASM CPU."
+        },
+        "folds": {
+          "type": "integer",
+          "enum": [
+            1,
+            5
+          ],
+          "default": 1,
+          "description": "One model or the five-fold ensemble"
+        },
+        "skullStripped": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use nonzero input voxels as the brain mask instead of SynthStrip"
+        }
+      },
+      "artifacts": {
+        "mask": {
+          "type": "neuro:mask",
+          "mediaType": "application/x-nifti",
+          "minimum": 1,
+          "maximum": 1,
+          "space": "native"
+        },
+        "probability": {
+          "type": "neuro:volume",
+          "mediaType": "application/x-nifti",
+          "minimum": 1,
+          "maximum": 1,
+          "space": "native"
+        },
+        "table": {
+          "type": "neuro:table",
+          "mediaType": "text/tab-separated-values",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    }
+  }
+}

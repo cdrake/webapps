@@ -1,5 +1,59 @@
 # qsmbly
 
+## 0.29.20260930
+
+### Patch Changes
+
+- Updated dependencies
+- Updated dependencies
+  - @neurodesk/webapp-components@0.7.0
+
+
+### Patch Changes
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.6.2
+
+## 0.29.20260928
+
+### Patch Changes
+
+- Use portable underscore MCP tool names, explicit input cardinality, and declared SynthSeg browser geometry limits for preflight validation. Preserve duplicate DICOM filenames during conversion, release viewer sessions when their windows close, and prevent cancellation/retry races.
+
+  Resolve QSM voxel-dependent defaults for supplied masks before reconstruction, so generated-mask and supplied-mask runs produce the same output. Add complete Mac scientific validation commands and evidence checks. The SynthSeg GPU buffer ceiling remains unchanged.
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.6.1
+
+### Minor Changes
+
+- Expose typed operations across the application catalog, including multiple inputs, DICOM series selection, variable artifacts and viewer workflows. Share awaited processing and cancellation between each app and its agent adapter. Publish verified result reports and scientific provenance.
+
+  Add bounded desktop viewer sessions and MCP controls using public viewer APIs. Native SynthSeg now reports per-label counts and physical volumes. Include real-model CPU checks and a Mac runner for Metal, WebGPU and buffer-planning evidence without raising the validated SynthSeg limit.
+
+### Patch Changes
+
+- 93381e8: Remove the static bottom bar (version, privacy sentence, duplicate More Apps and GitHub links) from the six inference-workspace apps. The shared app bar already shows the version and links, and Privacy has its own dialog. The unused `.app-footer` and `.nd-app-footer` rules leave the shared stylesheets and the hosted theme.
+- 93381e8: Every app now opens on its workspace and shows live status only in the bottom bar: a short message, a progress bar, elapsed time and a cancel × that appears while a run can be cancelled. Start pages, landing overlays and welcome modals are gone, and their copy moved to About. Every app has a technical log below the viewer that starts collapsed. Sidebar help longer than 90 characters moved into info tooltips or About, and each sidebar has one primary action. `ProgressManager` now drives the design-system footer, including the elapsed counter and the cancel button.
+
+  The shared example selector shows one short line once an example loads; the description and expected result moved to a tooltip beside the Example label. NiiMath gained the shared layout tabs and About dialog and no longer ships app CSS.
+
+- Updated dependencies
+- Updated dependencies [93381e8]
+- Updated dependencies [93381e8]
+  - @neurodesk/webapp-components@0.6.0
+
+## 0.28.20260928
+
+### Minor Changes
+
+- Update the shared webapp components to 0.5.0. Advance the minor version so the changed bundle does not reuse the existing 0.27.20260928 release version.
+
+### Patch Changes
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.5.0
+
 ## 0.27.20260928
 
 ### Patch Changes

@@ -8,10 +8,22 @@ import { verifyNiftiOffset } from './check-nifti.mjs';
 import { dicomSeries } from '../../test-utils/dicom-fixture.mjs';
 import { expect } from '@playwright/test';
 import { verifyMuscleMapFullPipeline, createSyntheticMuscleMapNifti } from '../../test/musclemap-full-pipeline-smoke.mjs';
+import { startReferenceServer } from '../../test-utils/compute-reference-server.mjs';
 
-export const workflowApps = ['musclemap', 'vesselboost', 'spinalcordtoolbox', 'calmar', 'qsmbly', 'seedseg', 'dicompare', 'deface', 'easy-mp2rage', 'niimath', 'dicom2vid', 'browserqc', 'surfannotate', 'zarro', 'synthsr', 'synthseg', 'syncro', 'dwi2trx', 'edgereg', 'greedy', 'ants', 'brain2print', 'topofit', 'fireants', 'brain-extraction', 'disconnectome', 'carotid-flow', 'lcmodel'];
+export const workflowApps = ['nesvor', 'musclemap', 'vesselboost', 'spinalcordtoolbox', 'calmar', 'qsmbly', 'seedseg', 'dicompare', 'deface', 'easy-mp2rage', 'niimath', 'dicom2vid', 'browserqc', 'surfannotate', 'zarro', 'synthsr', 'synthseg', 'syncro', 'dwi2trx', 'edgereg', 'greedy', 'ants', 'brain2print', 'topofit', 'fireants', 'brain-extraction', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel'];
 
-export async function verifyWorkflow(id, page, { root, resources, desktop }) {
+/**
+ * Anything a workflow needs before the desktop app starts. NeSVoR computes on a
+ * remote server, so its workflow runs the protocol's reference server on
+ * loopback and admits that origin through NEURODESK_COMPUTE_ORIGINS.
+ */
+export async function prepareWorkflow(id) {
+  if (id !== 'nesvor') return null;
+  const compute = await startReferenceServer({ stageDelayMs: 50 });
+  return { env: { NEURODESK_COMPUTE_ORIGINS: compute.origin }, context: { compute }, close: () => compute.close() };
+}
+
+export async function verifyWorkflow(id, page, { root, resources, desktop, compute }) {
   const fixture = join(root, 'exes/synthseg/test/fixtures/small.nii.gz');
   const download = async selector => {
     const count = await desktop.evaluate(() => globalThis.neurodeskOffline.downloads.length);
@@ -37,12 +49,39 @@ export async function verifyWorkflow(id, page, { root, resources, desktop }) {
     assert.ok(bytes.length > 352, 'Output must contain image data');
     return { filename: data.filename, bytes: data.bytes.length };
   };
-  if (['deface', 'brain2print', 'dwi2trx', 'ants', 'greedy', 'edgereg', 'fireants', 'disconnectome', 'carotid-flow', 'lcmodel'].includes(id)) {
+  if (['deface', 'brain2print', 'dwi2trx', 'ants', 'greedy', 'edgereg', 'fireants', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel'].includes(id)) {
     const examples = JSON.parse(await readFile(join(root, 'apps', id, 'examples.json')));
     const selector = page.getByRole('combobox', { name: 'Example', exact: true });
     await expect(selector).toBeEnabled({ timeout: 120000 });
     await selector.selectOption(examples[0].id);
     await expect(page.locator('[data-neurodesk-examples]')).toHaveAttribute('data-example-state', 'ready', { timeout: 120000 });
+  }
+  if (id === 'nesvor') {
+    assert.ok(compute, 'the nesvor workflow needs the reference compute server from prepareWorkflow');
+    const examples = JSON.parse(await readFile(join(root, 'apps', id, 'examples.json')));
+    const selector = page.getByRole('combobox', { name: 'Example', exact: true });
+    await expect(selector).toBeEnabled({ timeout: 120000 });
+    await selector.selectOption(examples[0].id);
+    await expect(page.locator('[data-neurodesk-examples]')).toHaveAttribute('data-example-state', 'ready', { timeout: 120000 });
+    await page.locator('#executionMode').selectOption('remote');
+    await page.locator('#thicknessConfirmed').check();
+    await expect(page.locator('#stackRows input[type=number]')).toHaveCount(examples[0].files.length);
+    const panel = page.locator('#computeConnection');
+    await panel.locator('input[type="text"]').fill(compute.origin);
+    await panel.locator('input[type="password"]').fill(compute.token);
+    await panel.getByRole('button', { name: 'Connect', exact: true }).click();
+    await expect(panel).toHaveAttribute('data-state', 'simulated', { timeout: 30000 });
+    await expect(page.locator('#runButton')).toBeEnabled({ timeout: 60000 });
+    await page.locator('#runButton').click();
+    const button = '#resultList button:has-text("Download") >> nth=0';
+    await expect(page.locator(button)).toBeEnabled({ timeout: 300000 });
+    const result = nifti(await download(button));
+    const credentialPersisted = await page.evaluate(code => Object.values(localStorage).some(value => value.includes(code) || /"token"\s*:/.test(value)), compute.token);
+    assert.equal(credentialPersisted, false, 'Pairing codes and client credentials must not be saved to localStorage');
+    await panel.getByRole('button', { name: 'Disconnect', exact: true }).click();
+    await expect(panel).toHaveAttribute('data-state', 'idle');
+    await expect(panel.locator('input[type="password"]')).toHaveValue('');
+    return { ...result, simulated: true };
   }
   if (id === 'musclemap') return verifyMuscleMapFullPipeline(page, page.url());
   if (id === 'brain-extraction') {
@@ -319,6 +358,18 @@ export async function verifyWorkflow(id, page, { root, resources, desktop }) {
     assert.equal(Math.round(flow(2)), 231);
     assert.equal(Math.round(flow(4)), 211);
     return { filename: result.filename, frames: rows.length - 1 };
+  }
+  if (id === 'white-matter-lesions') {
+    await expect(page.locator('#runButton')).toBeEnabled({ timeout: 60000 });
+    await page.locator('#runButton').click();
+    await expect(page.locator('#statusText')).toHaveText(/^Segmentation complete · \d+ lesions/, { timeout: 1200000 });
+    const mask = await download('#resultList .nd-volume-toggle:nth-child(2) .nd-download-btn');
+    const table = await download('#resultList .nd-volume-toggle:nth-child(4) .nd-download-btn');
+    const rows = table.bytes.toString('utf8').trim().split('\n');
+    assert.equal(rows[0], 'lesion\tvoxels\tvolume_ml\tx_mm\ty_mm\tz_mm');
+    // The MSLesSeg P57 example has dozens of periventricular and deep lesions.
+    assert.ok(rows.length > 10, `expected lesions, found ${rows.length - 1}`);
+    return { mask: nifti(mask), lesions: rows.length - 1 };
   }
   if (id === 'lcmodel') {
     // GE PRESS phantom: FID-A preprocessing, then LCModel with the TE 35 ms basis set.

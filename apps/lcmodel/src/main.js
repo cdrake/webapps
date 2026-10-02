@@ -16,6 +16,7 @@ import {
   ProgressManager,
 } from "@neurodesk/webapp-components/ui";
 import { downloadFile } from "@neurodesk/webapp-components/file-io";
+import { registerAppAutomation } from "@neurodesk/webapp-components/automation";
 import manifest from "../../../models/lcmodel.manifest.json" with { type: "json" };
 import examples from "../examples.json" with { type: "json" };
 import { APP, basisLibrary } from "./config.js";
@@ -395,8 +396,11 @@ function preprocessingOptions() {
   };
 }
 
-async function run() {
-  if (!input || busy) return;
+async function run({ throwOnError = false } = {}) {
+  if (!input || busy) {
+    if (throwOnError) throw new Error(busy ? "Another job is running." : "No spectroscopy data loaded.");
+    return null;
+  }
   setBusy(true);
   clearResults();
   progress.begin("Preparing…");
@@ -444,7 +448,13 @@ async function run() {
     const seconds = ((performance.now() - started) / 1000).toFixed(1);
     progress.end(`Fit done in ${seconds} s`);
     status(`Fit done in ${seconds} s`);
+    return fit;
   } catch (error) {
+    if (throwOnError) {
+      progress.end(error.message, { success: false });
+      status(error.message, true);
+      throw error;
+    }
     if (error.name === "AbortError") {
       progress.reset("Cancelled");
       status("Cancelled");
@@ -456,6 +466,7 @@ async function run() {
   } finally {
     setBusy(false);
   }
+  return null;
 }
 
 function summarizeReport(r) {
@@ -503,6 +514,15 @@ function showResults() {
   for (const d of coord.diagnostics) log.log(`LCModel: ${d}`, "info");
   setViewEnabled("fit", true);
   setViewEnabled("metabolites", coord.metabolites.length > 0);
+  const entries = resultFiles(rows, ratioTo);
+  results.render(entries);
+  $("outputSection").open = true;
+  $("emptyState").hidden = true;
+  showView("fit");
+}
+
+/** The fit's downloads, keyed by result stage (also the automation artifact roles). */
+function resultFiles(rows, ratioTo) {
   const stem = (describeInput().split(" ")[0] || "lcmodel").replace(/\.[^.]+$/, "");
   const text = (name, body, type = "text/plain") => new File([body], name, { type });
   const entries = {
@@ -515,10 +535,7 @@ function showResults() {
   if (fit.lcm.editOff) entries.editOff = { description: "Edit-OFF spectrum for LCModel (.RAW)", file: text(`${stem}_edit_off.RAW`, fit.lcm.editOff), viewable: false };
   if (fit.water) entries.h2o = { description: "Water reference for LCModel (.H2O)", file: text(`${stem}.H2O`, fit.lcm.h2o), viewable: false };
   if (processed) entries.preprocessing = { description: "FID-A report (.json)", file: text(`${stem}_fida.json`, JSON.stringify(processed.report, null, 2), "application/json") };
-  results.render(entries);
-  $("outputSection").open = true;
-  $("emptyState").hidden = true;
-  showView("fit");
+  return entries;
 }
 
 function formatConc(x) {
@@ -623,6 +640,67 @@ const exampleControl = createExampleSelector({
 });
 $("exampleControl").append(exampleControl);
 recommend();
+
+// Typed automation: the same load and fit, with parameters applied to the controls.
+async function fitOperation({ inputs, parameters, signal, progress: report }) {
+  exampleControl.cancel();
+  customBasis = null;
+  $("basisDrop").classList.remove("has-files");
+  const p = parameters;
+  if (p.frequencyMHz) $("hzpppmInput").value = String(p.frequencyMHz);
+  if (p.dwellTimeMs) $("dwellInput").value = String(p.dwellTimeMs);
+  $("removeBad").checked = p.removeBadAverages ?? true;
+  $("badSd").value = p.badAverageSd ? String(p.badAverageSd) : "";
+  $("driftCorrection").checked = p.driftCorrection ?? true;
+  $("phaseReference").checked = p.phaseAndReference ?? true;
+  report("Reading the spectroscopy data");
+  await loadFiles([...inputs.spectra, ...(inputs.basis ?? [])], signal);
+  if (!input) throw new Error("No spectroscopy data found among the files.");
+  const edited = isEdited();
+  $("ppmStart").value = String(p.ppmStart ?? (edited ? 4.2 : 4.0));
+  $("ppmEnd").value = String(p.ppmEnd ?? (edited ? 1.95 : 0.2));
+  if (!$("waterScaling").disabled) $("waterScaling").checked = p.waterScaling ?? true;
+  if (!$("ecc").disabled) $("ecc").checked = p.eddyCurrentCorrection ?? true;
+  if (!inputs.basis?.length && p.basisSet && p.basisSet !== "auto") {
+    $("basisSelect").value = p.basisSet;
+    showBasisAdvice();
+  }
+  const choice = $("basisSelect").value;
+  if (choice !== CUSTOM && !library.some((b) => b.id === choice)) throw new Error("No usable basis set for these data; supply a .BASIS file.");
+  const assessment = currentHeader() && assessBasis(currentHeader(), choice === CUSTOM ? { id: CUSTOM, ...customBasis.header } : library.find((b) => b.id === choice));
+  if (assessment?.level === "error") throw new Error(`Basis set ${choice} does not fit these data: ${assessment.notes.map((n) => n.text).join(" ")}`);
+  signal.throwIfAborted();
+  const abort = () => cancelWorker();
+  signal.addEventListener("abort", abort, { once: true });
+  report("Preprocessing and fitting");
+  let completed;
+  try {
+    completed = await run({ throwOnError: true });
+  } finally {
+    signal.removeEventListener("abort", abort);
+  }
+  const table = parseTable(completed.table);
+  const rows = table.rows.length ? table.rows : completed.coord.rows;
+  const ratioTo = table.ratioTo ?? completed.coord.ratioTo;
+  const artifacts = Object.entries(resultFiles(rows, ratioTo)).map(([role, entry]) => ({ role, file: entry.file }));
+  return {
+    artifacts,
+    measurements: {
+      unit: completed.water ? "mM" : "a.u.",
+      ratioTo: ratioTo ?? null,
+      metabolites: Object.fromEntries(rows.map((r) => [r.name, { concentration: r.concentration, sdPercent: r.sdPercent, ratio: r.ratio ?? null }])),
+      ...completed.coord.summary,
+    },
+    provenance: {
+      basisSet: choice === CUSTOM ? customBasis.name : choice,
+      pipeline: processed?.report.pipeline ?? "LCModel .RAW, no preprocessing",
+      sptype: completed.lcm.edited ? "mega-press-3" : null,
+      control: completed.control,
+    },
+  };
+}
+
+registerAppAutomation({ app: APP.id, operations: { fit: fitOperation } });
 
 window.addEventListener("pagehide", () => {
   exampleControl.destroy();

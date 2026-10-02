@@ -39,3 +39,7 @@ pnpm --filter brain2print test:e2e # needs a WebGPU-capable Chromium
 `dev` and `build` first run `scripts/copy-brainchop.mjs`, which stages
 MindGrab's WebGPU, WebGL2 and CPU assets into `public/brainchop/<version>/`
 (gitignored, regenerated each run).
+
+## Agent automation
+
+The `create-mesh` operation accepts an `image` as NIfTI or DICOM and the existing model, simplification, smoothing, largest-component and bubble-fill settings. It runs the same segmentation and meshing handlers as the interface. Outputs are the segmentation or partial-volume image, STL and MZ3. Both mesh files serialize the exact displayed vertices and triangle winding after the existing manifold check and correction. The report records the selected model, actual backend, mesh settings, signed volume and correction decision. Cancellation terminates inference or disposes niimath. The registered image viewer exposes slice/3D tabs and discrete labels when applicable. Full model validation requires hardware WebGPU; pure geometry round-trip tests also run in Node.

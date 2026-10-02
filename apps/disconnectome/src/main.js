@@ -4,7 +4,8 @@ import { mountImagingWorkspace } from '@neurodesk/webapp-components/core/mount-i
 import { bindFileDrop, bindInfoTooltips, createConsole, createExampleSelector, createInfoDialog, createViewerToolbar } from '@neurodesk/webapp-components/ui';
 import { downloadBlob } from '@neurodesk/webapp-components/file-io';
 import { fetchModel } from '@neurodesk/webapp-components/worker';
-import { readImageFiles } from '@neurodesk/runtime-support/dcm2niix-client';
+import { readImageFiles, runDcm2niix } from '@neurodesk/runtime-support/dcm2niix-client';
+import { registerAppAutomation, registerViewer, createNiivueAdapter } from '@neurodesk/webapp-components/automation';
 import { toTsv } from '@neurodesk/nii2tvx';
 import { APP, ATLASES, DEFAULT_ATLAS, GRID, TEMPLATE, assignInputs, damagedBundles } from './config.js';
 import examples from '../examples.json';
@@ -161,10 +162,16 @@ async function loadInputs(files, describe, { signal, assertCurrent = () => {} } 
   assertCurrent();
   const chosen = assignInputs(images);
   if (chosen.error) throw new Error(chosen.error);
+  return loadChosenInputs(chosen, describe, { signal, assertCurrent });
+}
+
+async function loadChosenInputs(chosen, describe, { signal, assertCurrent = () => {} } = {}) {
+  signal?.throwIfAborted();
   try {
     await showImages(chosen);
     if (drawnAtlas) await viewer.setTractOptions(0, { groupColors: {} });
     assertCurrent();
+    signal?.throwIfAborted();
   } catch (error) {
     // NiiVue changes its volume stack while loading. Restore the committed input on
     // failure or cancellation before allowing another import or analysis to start.
@@ -257,9 +264,10 @@ $('threshold').oninput = () => {
 
 /** The manifest carries the display atlas's checksum, so verify it rather than handing an
  *  unchecked download straight to the mesh parser. */
-async function loadTracts(source) {
+async function loadTracts(source, signal) {
   const { url, bytes, sha256, filename } = source.trx;
   const data = await fetchModel({ url, integrity: { bytes, sha256 } }, {
+    signal,
     onProgress: ({ fraction }) => status(`Loading the tract geometry · ${((fraction ?? 0) * 100).toFixed(0)}%`),
   });
   // loadMeshes takes a File as well as a URL, and NiiVue picks the reader from the extension:
@@ -270,30 +278,54 @@ async function loadTracts(source) {
 
 /** One worker for the session: it holds each opened atlas, so switching back and forth does
  *  not inflate and parse the same file again. */
-function runDisconnectome(scored, job) {
+function runDisconnectome(scored, job, signal, progress = () => {}) {
+  signal?.throwIfAborted();
   worker ??= new Worker(new URL('./disconnect-worker.js', import.meta.url), { type: 'module' });
+  const active = worker;
   return new Promise((resolve, reject) => {
-    worker.onmessage = ({ data }) => {
-      if (data.type === 'progress') { $('progress').value = data.value; status(data.message); }
-      if (data.type === 'error') reject(new Error(data.message));
-      if (data.type === 'result') resolve(data);
+    let closed = false;
+    const finish = (error, result) => {
+      if (closed) return;
+      closed = true;
+      signal?.removeEventListener('abort', cancel);
+      if (error) reject(error);
+      else resolve(result);
     };
-    worker.onerror = (event) => reject(new Error(event.message || 'The disconnection worker could not run.'));
-    scored.arrayBuffer().then((bytes) => worker.postMessage({ atlas: job, lesion: bytes }, [bytes]), reject);
+    const cancel = () => {
+      active.terminate();
+      if (worker === active) worker = null;
+      finish(signal.reason);
+    };
+    signal?.addEventListener('abort', cancel, { once: true });
+    active.onmessage = ({ data }) => {
+      if (closed) return;
+      if (data.type === 'progress') {
+        $('progress').value = data.value;
+        status(data.message);
+        progress({ message: data.message, value: data.value });
+      }
+      if (data.type === 'error') finish(new Error(data.message));
+      if (data.type === 'result') finish(null, data);
+    };
+    active.onerror = (event) => finish(new Error(event.message || 'The disconnection worker could not run.'));
+    active.onmessageerror = () => finish(new Error('The disconnection worker returned unreadable data.'));
+    scored.arrayBuffer().then((bytes) => {
+      if (!closed) active.postMessage({ atlas: job, lesion: bytes }, [bytes]);
+    }, (error) => finish(error));
   });
 }
 
-$('runButton').onclick = () => void runTask('Starting…', async () => {
+async function analyze({ scored = lesion, runAtlas = atlas, signal, progress } = {}) {
+  signal?.throwIfAborted();
   const started = performance.now();
   timer = setInterval(() => { $('elapsed').textContent = `${Math.round((performance.now() - started) / 1000)} s`; }, 1000);
   $('progress').value = 0;
   // Pin the inputs for this run: an example can finish downloading while it is in flight, and
   // labelling one lesion's fractions with another lesion's name is worse than any crash.
-  const scored = lesion;
-  const runAtlas = atlas;
   let data;
   try {
-    data = await runDisconnectome(scored, runAtlas.tvx);
+    data = await runDisconnectome(scored, runAtlas.tvx, signal, progress);
+    signal?.throwIfAborted();
   } catch (error) {
     // The core reports a grid mismatch by name; say what to do about it.
     // The status line gives the advice; the header detail goes to the technical log.
@@ -305,7 +337,8 @@ $('runButton').onclick = () => void runTask('Starting…', async () => {
 
   if (drawnAtlas !== runAtlas.id) {
     status('Loading the tract geometry…');
-    await loadTracts(runAtlas);
+    await loadTracts(runAtlas, signal);
+    signal?.throwIfAborted();
     drawnAtlas = runAtlas.id;
   }
   // Load-bearing, not cosmetic: the 3D volume render is opaque, so without a clip plane every
@@ -318,8 +351,17 @@ $('runButton').onclick = () => void runTask('Starting…', async () => {
   await paintTracts();
   $('progress').value = 1;
   const damaged = damagedBundles(result.tracts, result.fractions, Number.EPSILON);
+  signal?.throwIfAborted();
   status(`${damaged.length} of ${result.tracts.length} bundles disconnected · ${((performance.now() - started) / 1000).toFixed(1)} s`);
-});
+  const tsv = toTsv(result.tracts, [{ id: result.id, fractions: result.fractions }]);
+  return {
+    artifacts: [{ role: 'table', file: new File([tsv], `${result.id}_${runAtlas.id}_disconnectome.tsv`, { type: 'text/tab-separated-values' }) }],
+    provenance: { algorithm: 'nii2tvx', atlas: { id: runAtlas.id, label: runAtlas.label, sha256: runAtlas.tvx.sha256 }, grid: GRID, elapsedMs: performance.now() - started },
+    measurements: { bundles: result.tracts.map((name, index) => ({ name, fraction: Number.isFinite(result.fractions[index]) ? result.fractions[index] : null })) },
+  };
+}
+
+$('runButton').onclick = () => void runTask('Starting…', () => analyze());
 
 $('saveButton').onclick = () => {
   if (!result) return;
@@ -346,6 +388,41 @@ async function init() {
 }
 
 window.addEventListener('pagehide', () => { worker?.terminate(); clearInterval(timer); });
-void init();
+const initialization = init();
+
+registerAppAutomation({
+  app: 'disconnectome',
+  convertDicom: runDcm2niix,
+  operations: {
+    analyze: async ({ inputs, parameters, signal, progress }) => {
+      await initialization;
+      signal.throwIfAborted();
+      if (!ready) throw new Error('The image viewer is unavailable.');
+      if (busy) throw new Error('Wait for the current operation to finish.');
+      exampleControl.cancel();
+      setBusy(true);
+      try {
+        await loadChosenInputs({ lesion: inputs.lesion[0], anatomical: inputs.anatomical[0] ?? null }, 'Images loaded', { signal });
+        atlas = ATLASES.find((entry) => entry.id === parameters.atlas);
+        $('atlasSelect').value = atlas.id;
+        describeAtlas();
+        return await analyze({ scored: inputs.lesion[0], runAtlas: atlas, signal, progress });
+      } finally {
+        setBusy(false);
+      }
+    },
+  },
+});
+registerViewer('image', createNiivueAdapter(viewer, {
+  tabs: {
+    list: () => [{ id: 'multiplanar', label: '3-Plane', active: viewer.sliceType === SLICE_TYPE.MULTIPLANAR }, { id: 'render', label: '3D', active: viewer.sliceType === SLICE_TYPE.RENDER }],
+    select: (id) => {
+      viewer.sliceType = id === 'render' ? SLICE_TYPE.RENDER : SLICE_TYPE.MULTIPLANAR;
+      viewer.drawScene();
+      toolbar.setActive(id);
+    },
+  },
+  regions: { list: () => result ? result.tracts.map((name, index) => ({ id: name, name, fraction: Number.isFinite(result.fractions[index]) ? result.fractions[index] : null, atlas: result.atlas })) : [] },
+}));
 
 export default Object.freeze({ APP, viridis, paintTracts });

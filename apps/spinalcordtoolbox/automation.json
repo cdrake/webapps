@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 2,
+  "app": "spinalcordtoolbox",
+  "title": "SpinalCordToolbox",
+  "description": "Run supported SCT browser models with explicit task selection and label measurements.",
+  "defaultOperation": "segment",
+  "operations": {
+    "segment": {
+      "title": "Segment spinal anatomy",
+      "description": "Run the existing SCT worker and preserve every task output in the original image geometry.",
+      "mode": "batch",
+      "inputs": {
+        "image": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "description": "MRI contrast appropriate to the selected SCT task",
+          "space": "native",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "parameters": {
+        "task": {
+          "type": "string",
+          "description": "Supported SCT segmentation task",
+          "enum": [
+            "spinalcord",
+            "graymatter",
+            "lesion_sci_t2",
+            "spine"
+          ],
+          "default": "spinalcord"
+        },
+        "threshold": {
+          "type": "number",
+          "description": "Probability threshold; omitted uses the selected model default",
+          "minimum": 0.01,
+          "maximum": 0.5
+        },
+        "minimumComponentSize": {
+          "type": "integer",
+          "description": "Minimum connected-component voxel count; omitted uses model default",
+          "minimum": 0
+        },
+        "testTimeAugmentation": {
+          "type": "boolean",
+          "description": "Enable model test-time augmentation",
+          "default": false
+        }
+      },
+      "artifacts": {
+        "segmentation": {
+          "type": "neuro:label-map",
+          "mediaType": "application/x-nifti",
+          "space": "native",
+          "minimum": 1
+        },
+        "metrics": {
+          "type": "neuro:table",
+          "mediaType": "text/csv",
+          "minimum": 0
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    }
+  }
+}
