@@ -3,6 +3,7 @@
 % metabolite's FID with export_fida.m for make-basis.
 %
 %   FIDA=/path/to/FID-A OUT=/path/to/out octave --no-gui simulate_library.m
+%   (SET restricts the run to one set.)
 %
 % FID-A: https://github.com/CIC-methods/FID-A (BSD-3-Clause).
 warning('off', 'all');
@@ -16,6 +17,7 @@ S = load('spinSystems.mat');
 for s = 1:numel(lib.sets)
   set = lib.sets(s);
   if iscell(set), set = set{1}; end
+  if ~isempty(getenv('SET')) && ~strcmp(getenv('SET'), set.id), continue; end
   d = fullfile(outdir, set.id);
   mkdir(d);
   for m = 1:numel(lib.metabolites)

@@ -113,6 +113,68 @@
       "points": 8192,
       "bandwidth_Hz": 8000,
       "linewidth_Hz": 2.0
+    },
+    {
+      "id": "press-1.5t-te35",
+      "sequence": "PRESS",
+      "field_T": 1.5,
+      "te_ms": 35,
+      "te1_ms": 10,
+      "te2_ms": 25,
+      "points": 8192,
+      "bandwidth_Hz": 4000,
+      "linewidth_Hz": 1.0
+    },
+    {
+      "id": "press-1.5t-te144",
+      "sequence": "PRESS",
+      "field_T": 1.5,
+      "te_ms": 144,
+      "te1_ms": 10,
+      "te2_ms": 134,
+      "points": 8192,
+      "bandwidth_Hz": 4000,
+      "linewidth_Hz": 1.0
+    },
+    {
+      "id": "steam-1.5t-te20",
+      "sequence": "STEAM",
+      "field_T": 1.5,
+      "te_ms": 20,
+      "tm_ms": 10,
+      "points": 8192,
+      "bandwidth_Hz": 4000,
+      "linewidth_Hz": 1.0
+    },
+    {
+      "id": "press-3t-te80",
+      "sequence": "PRESS",
+      "field_T": 3.0,
+      "te_ms": 80,
+      "te1_ms": 10,
+      "te2_ms": 70,
+      "points": 8192,
+      "bandwidth_Hz": 6000,
+      "linewidth_Hz": 1.5
+    },
+    {
+      "id": "steam-3t-te8",
+      "sequence": "STEAM",
+      "field_T": 3.0,
+      "te_ms": 8,
+      "tm_ms": 32,
+      "points": 8192,
+      "bandwidth_Hz": 6000,
+      "linewidth_Hz": 1.5
+    },
+    {
+      "id": "slaser-3t-te35",
+      "sequence": "sLASER",
+      "field_T": 3.0,
+      "te_ms": 35,
+      "points": 8192,
+      "bandwidth_Hz": 6000,
+      "linewidth_Hz": 1.5
     }
   ],
   "mega": [
