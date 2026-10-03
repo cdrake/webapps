@@ -65,7 +65,8 @@ fitting, both as Rust ports compiled to WebAssembly (`packages/lcmodel`).
   values come from the same fit. On the unedited examples it raises
   water-scaled Cr+PCr by 9-22 % and NAA+NAAG by 5-16 %, moves NAA+NAAG/Cr+PCr
   by 3-7 %, and raises no %SD below 20 % by more than 6 points (Ins on Philips
-  sub-02, 7 to 13 %); LCModel reports no new warnings. MEGA-PRESS difference
+  sub-02, 7 to 13 %); LCModel adds no warnings, only an informational
+  FINOUT 9 on two fits. MEGA-PRESS difference
   fits keep LCModel's values: there the widened prior moved GABA+/NAA+NAAG by
   +16 % (Siemens) and +31 % (Philips) and Philips' water-scaled NAA+NAAG by
   -27 %, with nothing to validate it for the mega-press-3 analysis, so the
