@@ -243,7 +243,8 @@ test("a mixed group keeps the macromolecule model for MEGA-PRESS, and tissue-cor
   await page.locator("#fGm").fill("0.60");
   await page.locator("#fWm").fill("0.27");
   await page.locator("#fCsf").fill("0.13");
-  await page.locator("#fCsf").dispatchEvent("change");
+  // Tab commits the value (change) before the next click, as a user's would.
+  await page.locator("#fCsf").press("Tab");
   await expect(page.locator("#corrHeader")).toBeVisible();
   rows = table((await download(page, "Group table (.csv)")).bytes.toString());
   const naa = rows.find((r) => r.dataset.startsWith("sub-02_PRESS") && r.metabolite === "NAA+NAAG");
