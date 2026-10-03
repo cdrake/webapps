@@ -24,6 +24,7 @@ import { rankBases, assessBasis, parseBasisHeader } from "./basis-select.js";
 import { buildControl, parseCoord, parseTable, concentrationsCsv, FILES } from "./lcmodel-io.js";
 import { sortInputs, textHead, parseRaw, parseControl } from "./inputs.js";
 import { spectrumSvg, fitSeries, metaboliteSeries } from "./spectrum-plot.js";
+import { createTissuePanel } from "./tissue-panel.js";
 
 const $ = (id) => document.getElementById(id);
 const CUSTOM = "custom";
@@ -41,6 +42,7 @@ const VIEWS = [
   { id: "fit", label: "Fit" },
   { id: "metabolites", label: "Metabolites" },
   { id: "preprocessing", label: "Preprocessing" },
+  { id: "voxel", label: "Voxel" },
 ];
 const toolbar = createViewerToolbar({
   views: VIEWS.map((v) => ({ ...v, disabled: true, onClick: () => showView(v.id) })),
@@ -57,6 +59,16 @@ $("viewer").append(log);
 const progress = new ProgressManager();
 bindInfoTooltips(document);
 
+// Optional tissue correction: T1, segmentation, voxel fractions (tissue-panel.js).
+const tissue = createTissuePanel({
+  status: (message, error) => status(message, error),
+  log,
+  progress,
+  setBusy: (value) => setBusy(value),
+  onChange: () => fit && renderConcentrations(),
+  onViewAvailable: (available) => setViewEnabled("voxel", available),
+});
+
 const info = createInfoDialog();
 $("aboutBtn").onclick = () => info.open("About LCModel", $("aboutContent"));
 $("privacyBtn").onclick = () => info.open("Privacy", $("privacyContent"));
@@ -64,7 +76,7 @@ $("privacyBtn").onclick = () => info.open("Privacy", $("privacyContent"));
 const library = basisLibrary(manifest);
 const results = createResultList({
   element: $("resultList"),
-  onView: (stage) => showView(stage === "preprocessing" ? "preprocessing" : "fit"),
+  onView: (stage) => showView(stage === "preprocessing" ? "preprocessing" : stage === "voxelMask" ? "voxel" : "fit"),
   onDownload: (_stage, result) => result?.file && downloadFile(result.file),
 });
 
@@ -145,6 +157,7 @@ function setBusy(value) {
   busy = value;
   $("dataInput").disabled = value;
   $("basisInput").disabled = value;
+  tissue.setDisabled(value);
   exampleControl.setDisabled(value);
   updateRunButton();
 }
@@ -165,7 +178,10 @@ function clearResults() {
   $("plot").replaceChildren();
   $("viewerNotice").hidden = true;
   $("plotLabel").textContent = "";
-  for (const v of VIEWS) setViewEnabled(v.id, false);
+  $("tissueAdvice").hidden = true;
+  $("corrHeader").hidden = true;
+  tissue.hide();
+  for (const v of VIEWS) if (v.id !== "voxel") setViewEnabled(v.id, false);
 }
 
 async function loadFiles(files, signal) {
@@ -216,6 +232,17 @@ async function loadFiles(files, signal) {
     throw error;
   } finally {
     signal?.removeEventListener("abort", abort);
+    setBusy(false);
+  }
+}
+
+/** A structural image for the tissue correction (example or automation input). */
+async function loadT1Files(files, signal) {
+  setBusy(true);
+  try {
+    await tissue.loadT1(files, signal);
+    $("tissueSection").open = true;
+  } finally {
     setBusy(false);
   }
 }
@@ -328,6 +355,7 @@ function showDataset() {
   $("waterScaling").checked = water;
   $("ecc").disabled = !water;
   $("preprocessingSettings").hidden = input?.kind === "raw";
+  tissue.setDataset(input?.kind === "fida" ? input.datasets[input.index].header : null);
   recommend();
   updateRunButton();
 }
@@ -465,6 +493,15 @@ async function run({ throwOnError = false } = {}) {
     status("Fitting with LCModel…");
     const out = await runJob({ type: "fit", control, files, basis, fdate: new Date().toString() });
     fit = { coord: parseCoord(out.outputs[FILES.coord] ?? ""), table: out.outputs[FILES.table] ?? "", outputs: out.outputs, control, lcm, water };
+    if (water && tissue.needsSegmentation) {
+      progress.setIndeterminate("Segmenting the T1 image…");
+      try {
+        await tissue.measure();
+      } catch (error) {
+        if (error.name === "AbortError") throw error;
+        log.log(`Tissue correction skipped: ${error.message}`, "warning");
+      }
+    }
     showResults();
     const seconds = ((performance.now() - started) / 1000).toFixed(1);
     progress.end(`Fit done in ${seconds} s`);
@@ -510,18 +547,26 @@ function setViewEnabled(id, enabled) {
   if (tab) tab.disabled = !enabled;
 }
 
-function showResults() {
+/** The concentration table and downloads, with the tissue correction when it applies. */
+function renderConcentrations() {
   const { coord } = fit;
   const table = parseTable(fit.table);
   const rows = table.rows.length ? table.rows : coord.rows;
   const ratioTo = table.ratioTo ?? coord.ratioTo;
+  const correction = tissue.correct(rows, { waterScaled: fit.water, edited: Boolean(fit.lcm.edited) });
+  fit.correction = correction?.rows ? correction : null;
+  $("tissueAdvice").hidden = !correction?.reason;
+  $("tissueAdvice").textContent = correction?.reason ?? "";
+  $("corrHeader").hidden = !fit.correction;
   $("concHeader").textContent = fit.water ? "Conc. (mM)" : "Conc. (a.u.)";
   $("ratioHeader").textContent = ratioTo ? `/${ratioTo}` : "Ratio";
-  $("concBody").replaceChildren(...rows.map((r) => {
+  $("concBody").replaceChildren(...rows.map((r, k) => {
     const tr = document.createElement("tr");
     if (r.combination) tr.className = "lcm-combination";
     if (r.sdPercent > 20) tr.classList.add("lcm-uncertain");
-    for (const text of [r.name, formatConc(r.concentration), `${r.sdPercent}%`, r.ratio == null ? "" : formatConc(r.ratio)]) {
+    const cells = [r.name, formatConc(r.concentration), `${r.sdPercent}%`, r.ratio == null ? "" : formatConc(r.ratio)];
+    if (fit.correction) cells.push(formatConc(fit.correction.rows[k].corrected));
+    for (const text of cells) {
       const td = document.createElement("td");
       td.textContent = text;
       tr.append(td);
@@ -529,14 +574,18 @@ function showResults() {
     return tr;
   }));
   $("concTable").hidden = false;
+  results.render(resultFiles(rows, ratioTo));
+}
+
+function showResults() {
+  const { coord } = fit;
+  renderConcentrations();
   const s = coord.summary;
   $("fitSummary").hidden = false;
   $("fitSummary").textContent = [s.fwhmPpm != null && `FWHM ${s.fwhmPpm} ppm`, s.snr != null && `S/N ${s.snr}`, s.shiftPpm != null && `shift ${s.shiftPpm} ppm`, coord.diagnostics.length && `${coord.diagnostics.length} LCModel messages`].filter(Boolean).join(" · ");
   for (const d of coord.diagnostics) log.log(`LCModel: ${d}`, "info");
   setViewEnabled("fit", true);
   setViewEnabled("metabolites", coord.metabolites.length > 0);
-  const entries = resultFiles(rows, ratioTo);
-  results.render(entries);
   $("outputSection").open = true;
   $("emptyState").hidden = true;
   showView("fit");
@@ -556,6 +605,7 @@ function resultFiles(rows, ratioTo) {
   if (fit.lcm.editOff) entries.editOff = { description: "Edit-OFF spectrum for LCModel (.RAW)", file: text(`${stem}_edit_off.RAW`, fit.lcm.editOff), viewable: false };
   if (fit.water) entries.h2o = { description: "Water reference for LCModel (.H2O)", file: text(`${stem}.H2O`, fit.lcm.h2o), viewable: false };
   if (processed) entries.preprocessing = { description: "FID-A report (.json)", file: text(`${stem}_fida.json`, JSON.stringify(processed.report, null, 2), "application/json") };
+  Object.assign(entries, tissue.resultFiles(fit.correction, stem, ratioTo));
   return entries;
 }
 
@@ -570,6 +620,13 @@ function showView(id) {
   const plot = $("plot");
   const notice = $("viewerNotice");
   notice.hidden = true;
+  if (id === "voxel") {
+    plot.replaceChildren();
+    $("emptyState").hidden = true;
+    void tissue.show();
+    return;
+  }
+  tissue.hide();
   const range = [Number($("ppmStart").value) + 0.2, Math.max(-0.5, Number($("ppmEnd").value) - 0.2)];
   if (id === "preprocessing" && processed?.editOff) {
     // Edited data: FID-A's edit-OFF subspectrum above the difference spectrum it fits.
@@ -611,6 +668,7 @@ function importFiles(files) {
 
 $("cancelButton").onclick = () => {
   exampleControl.cancel();
+  tissue.cancel();
   cancelWorker();
 };
 $("dataInput").addEventListener("change", (event) => {
@@ -660,12 +718,18 @@ const exampleControl = createExampleSelector({
   examples,
   onStatus: status,
   scope: $("inputSection"),
-  onLoad: async (_example, { fetchFiles, assertCurrent, signal }) => {
+  onLoad: async (example, { fetchFiles, assertCurrent, signal }) => {
     const files = await fetchFiles();
     assertCurrent();
     customBasis = null;
     $("basisDrop").classList.remove("has-files");
-    await loadFiles(files, signal);
+    // The structural image goes to the tissue section, the rest to FID-A.
+    const isT1 = (k) => example.files[k].role === "t1";
+    tissue.reset();
+    await loadFiles(files.filter((_, k) => !isT1(k)), signal);
+    assertCurrent();
+    const t1 = files.filter((_, k) => isT1(k));
+    if (t1.length) await loadT1Files(t1, signal);
     assertCurrent();
   },
 });
@@ -684,9 +748,20 @@ async function fitOperation({ inputs, parameters, signal, progress: report }) {
   $("badSd").value = p.badAverageSd ? String(p.badAverageSd) : "";
   $("driftCorrection").checked = p.driftCorrection ?? true;
   $("phaseReference").checked = p.phaseAndReference ?? true;
+  const fractionKeys = ["fractionGM", "fractionWM", "fractionCSF"];
+  const given = fractionKeys.filter((k) => typeof p[k] === "number");
+  if (given.length && given.length < 3) throw new Error("Give all three tissue fractions (fractionGM, fractionWM, fractionCSF), or none.");
+  if (given.length && inputs.t1?.length) throw new Error("Give either a T1 image or tissue fractions, not both.");
+  $("metabRelax").checked = p.metaboliteRelaxation ?? true;
+  tissue.reset();
   report("Reading the spectroscopy data");
   await loadFiles([...inputs.spectra, ...(inputs.basis ?? [])], signal);
   if (!input) throw new Error("No spectroscopy data found among the files.");
+  if (inputs.t1?.length) {
+    report("Reading the T1 image");
+    await loadT1Files(inputs.t1, signal);
+  }
+  if (given.length) tissue.setFractions({ gm: p.fractionGM, wm: p.fractionWM, csf: p.fractionCSF });
   if (typeof p.edited === "boolean" && input.kind === "fida" && input.datasets[input.index].header.editing) {
     input.datasets[input.index].editOverride = p.edited;
     showDataset();
@@ -718,6 +793,8 @@ async function fitOperation({ inputs, parameters, signal, progress: report }) {
   const rows = table.rows.length ? table.rows : completed.coord.rows;
   const ratioTo = table.ratioTo ?? completed.coord.ratioTo;
   const artifacts = Object.entries(resultFiles(rows, ratioTo)).map(([role, entry]) => ({ role, file: entry.file }));
+  const corrected = completed.correction;
+  if (inputs.t1?.length && !corrected) throw new Error($("tissueAdvice").textContent || "The tissue correction could not be applied to these data.");
   return {
     artifacts,
     measurements: {
@@ -725,6 +802,16 @@ async function fitOperation({ inputs, parameters, signal, progress: report }) {
       ratioTo: ratioTo ?? null,
       metabolites: Object.fromEntries(rows.map((r) => [r.name, { concentration: r.concentration, sdPercent: r.sdPercent, ratio: r.ratio ?? null }])),
       ...completed.coord.summary,
+      tissue: corrected
+        ? {
+          unit: corrected.constants.unit,
+          method: corrected.constants.method,
+          fractions: corrected.fractions,
+          source: tissue.source,
+          metaboliteRelaxation: corrected.constants.metaboliteRelaxation,
+          metabolites: Object.fromEntries(corrected.rows.map((r) => [r.name, { corrected: r.corrected, alphaCorrected: r.alphaCorrected ?? null }])),
+        }
+        : null,
     },
     provenance: {
       basisSet: choice === CUSTOM ? customBasis.name : choice,
@@ -739,6 +826,7 @@ registerAppAutomation({ app: APP.id, operations: { fit: fitOperation } });
 
 window.addEventListener("pagehide", () => {
   exampleControl.destroy();
+  tissue.cancel();
   cancelWorker();
 });
 

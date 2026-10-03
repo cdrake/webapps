@@ -97,13 +97,45 @@
         </div>
       </details>
 
+      <details class="nd-sidebar-section" id="tissueSection">
+        <summary class="nd-section-title">Tissue correction</summary>
+        <div class="nd-section-content">
+          <label class="nd-file" id="t1Drop">
+            <input id="t1Input" type="file" data-neurodesk-input="image" multiple aria-label="Choose the T1-weighted image" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span>Drop the T1 from the same session: NIfTI or DICOM</span>
+          </label>
+          <p id="t1Info" class="nd-file-info" hidden></p>
+          <button id="measureButton" class="nd-btn nd-btn-secondary" type="button" disabled>Segment and measure the voxel</button>
+          <div class="nd-row">
+            <div class="nd-field">
+              <label for="fGm">GM
+                <span class="nd-info-icon" tabindex="0" aria-label="About tissue fractions">i<span class="nd-info-tooltip">Volume fractions of grey matter, white matter and CSF in the voxel. The T1 is segmented in the browser (MindMap partial-volume maps) and the voxel box, placed from the spectroscopy header, is sampled on the T1 grid. Or enter fractions from another tool; they are scaled to sum to 1.</span></span>
+              </label>
+              <input id="fGm" type="number" min="0" max="1" step="0.01" inputmode="decimal" />
+            </div>
+            <div class="nd-field">
+              <label for="fWm">WM</label>
+              <input id="fWm" type="number" min="0" max="1" step="0.01" inputmode="decimal" />
+            </div>
+            <div class="nd-field">
+              <label for="fCsf">CSF</label>
+              <input id="fCsf" type="number" min="0" max="1" step="0.01" inputmode="decimal" />
+            </div>
+          </div>
+          <p id="tissueSummary" class="nd-hint" hidden></p>
+          <label class="nd-check"><input id="metabRelax" type="checkbox" checked /> Correct metabolite T1 and T2 <span class="nd-info-icon" tabindex="0" aria-label="About relaxation correction">i<span class="nd-info-tooltip">Gasparovic et al. 2006 with Osprey's constants: water T1/T2 per tissue and literature metabolite T1/T2 at 3 T or 7 T, averaged over grey and white matter. Off, only the water signal is relaxation-corrected. Results are in mmol per kg tissue water.</span></span></label>
+          <p id="tissueAdvice" class="nd-message warning" hidden></p>
+        </div>
+      </details>
+
       <details class="nd-sidebar-section" id="outputSection">
         <summary class="nd-section-title">Results</summary>
         <div class="nd-section-content">
           <p id="fitSummary" class="nd-hint" hidden></p>
           <div class="nd-table-scroll">
             <table class="nd-data-table lcm-conc" id="concTable" hidden>
-              <thead><tr><th>Metabolite</th><th id="concHeader">Conc.</th><th>SD</th><th id="ratioHeader">Ratio</th></tr></thead>
+              <thead><tr><th>Metabolite</th><th id="concHeader">Conc.</th><th>SD</th><th id="ratioHeader">Ratio</th><th id="corrHeader" hidden>Tissue <small>mmol/kg</small></th></tr></thead>
               <tbody id="concBody"></tbody>
             </table>
           </div>
@@ -118,6 +150,7 @@
     <main id="viewer">
       <div class="nd-viewer-canvas-wrapper">
         <div id="plot" class="lcm-plot-host" aria-live="polite"></div>
+        <canvas id="t1Canvas" aria-label="T1 image with the spectroscopy voxel" hidden></canvas>
         <p id="emptyState" class="nd-viewer-empty">Choose an example or drop spectroscopy data to begin.</p>
         <p id="viewerNotice" class="nd-viewer-notice" hidden></p>
       </div>
@@ -138,6 +171,7 @@
       <p><strong>Fitting.</strong> LCModel 6.3-1N was translated from Stephen Provencher's Fortran subprogram by subprogram, keeping its precision and order of operations. On LCModel's own test case, the port's .TABLE and .COORD outputs are identical to those of the Fortran compiled with gfortran. Concentrations are scaled to the unsuppressed water reference when there is one (LCModel's WCONC and ATTH2O defaults); without water they are in arbitrary units, and the ratios to creatine are the useful numbers. %SD is LCModel's Cramér-Rao estimate; values above about 20% are unreliable.</p>
       <p><strong>Basis sets.</strong> The included basis sets were simulated with FID-A's ideal-pulse density-matrix simulations for 20 metabolites. LCModel adds macromolecules and lipids itself. Choose the one that matches the data's field strength, sequence and echo time, or supply your own .BASIS file. Ideal pulses ignore the slice profiles of real pulses, which matter most for semi-LASER and long echo times.</p>
       <p><strong>MEGA-PRESS.</strong> GABA-edited data go through FID-A's <code>run_megapressproc_auto</code>: coil combination, removal of bad averages, drift correction per subspectrum and alignment of edit-ON to edit-OFF. LCModel then fits the difference spectrum with its MEGA-PRESS analysis (<code>sptype='mega-press-3'</code>, 4.2 to 1.95 ppm, no baseline, scaled to NAA) and the difference basis set. That basis set was simulated with FID-A's shaped 14 ms editing pulses at the voxel centre, because real editing pulses nearly erase the NAA singlet in the edit-ON scan, which instantaneous pulses cannot reproduce. GABA from the difference spectrum includes co-edited macromolecules (GABA+). Ratios are to NAA+NAAG; the edit-OFF spectrum is a separate download. GE and Philips files do not record editing or which transient is edit-ON, so the app compares alternate transients, as Osprey does: the editing pulse nearly erases the NAA peak in edit-ON. Data that the scanner averaged in edit-ON/OFF pairs cannot be separated.</p>
+      <p><strong>Tissue correction.</strong> LCModel scales to the water reference as if the voxel were pure white matter (WCONC 35880 mM, ATTH2O 0.7). With a T1 image from the same session, the app segments it in the browser with MindMap's partial-volume grey matter, white matter and CSF maps (brainchop, on WebGPU, WebGL2 or CPU), places the voxel from the spectroscopy header (spec2nii's conventions for Siemens, Philips and NIfTI-MRS), and samples the oblique voxel box on the T1 grid. The Voxel view shows the box on the T1: check it covers the region you planned. Concentrations are then corrected as in Gasparovic et al. 2006, in mmol per kg tissue water, with Osprey's constants: tissue water contents of 0.78, 0.65 and 0.97, water T1 and T2 per tissue and metabolite T1 and T2 from the literature at 3 T and 7 T. For GABA-edited data, GABA and Glx are also given with Harris et al.'s alpha correction (alpha 0.5). Fractions from another tool can be typed in. GE P-files, Bruker and .RAW files do not carry the voxel position here.</p>
       <p>Research use only.</p>
     </template>
     <template id="privacyContent"><p>Spectroscopy files are processed in this browser and are never uploaded. Basis sets and examples are downloaded from Hugging Face at a pinned revision and verified by checksum.</p></template>

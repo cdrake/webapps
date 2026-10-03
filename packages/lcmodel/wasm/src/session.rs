@@ -126,6 +126,15 @@ pub fn load(files: &[(String, &[u8])]) -> (Vec<Dataset>, Value) {
         };
         let edit = if splits_editing(format) { detect_editing(&metab, water.as_ref()) } else { None };
         let mut h = header(&metab);
+        // FID-A's NIfTI-MRS reader keeps TE and TR in seconds (the other readers in ms).
+        let ms = if format == Format::NiftiMrs { 1000.0 } else { 1.0 };
+        h["teMs"] = json!(metab.te * ms);
+        h["trMs"] = json!(metab.tr * ms);
+        // The water scan's timing, for relaxation-corrected water scaling.
+        if let Some(w) = &water {
+            h["waterTeMs"] = json!(w.te * ms);
+            h["waterTrMs"] = json!(w.tr * ms);
+        }
         // Where the voxel sits (RAS mm affine), when the format records it.
         if let Some(v) = &voxel {
             h["voxel"] = v.to_json();
