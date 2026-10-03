@@ -13,6 +13,39 @@
     ]
   },
   {
+    "id": "philips-press-t1",
+    "label": "Philips PRESS 3 T, TE 35 ms, with T1 (tissue correction)",
+    "description": "Philips SDAT/SPAR from Osprey (MIT): PRESS at 3 T, TE 35 ms, 30 mm voxel in the posterior cingulate, water reference, and the same session's T1 (defaced).",
+    "expectedResult": "LCModel fits with the PRESS TE 35 ms basis; MindMap segments the T1, the Voxel view shows the box on it, and the table adds tissue-corrected concentrations (mmol/kg) from its GM, WM and CSF fractions.",
+    "files": [
+      {
+        "role": "spectrum",
+        "name": "sub-01_PRESS_35_act.sdat",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/698a5aa0f5b571c7b6e86ac60246c0d90c010d0b/lcmodel/examples/philips-press-t1/sub-01_PRESS_35_act.sdat"
+      },
+      {
+        "role": "spectrum",
+        "name": "sub-01_PRESS_35_act.spar",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/698a5aa0f5b571c7b6e86ac60246c0d90c010d0b/lcmodel/examples/philips-press-t1/sub-01_PRESS_35_act.spar"
+      },
+      {
+        "role": "water",
+        "name": "sub-01_PRESS_35_ref.sdat",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/698a5aa0f5b571c7b6e86ac60246c0d90c010d0b/lcmodel/examples/philips-press-t1/sub-01_PRESS_35_ref.sdat"
+      },
+      {
+        "role": "water",
+        "name": "sub-01_PRESS_35_ref.spar",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/698a5aa0f5b571c7b6e86ac60246c0d90c010d0b/lcmodel/examples/philips-press-t1/sub-01_PRESS_35_ref.spar"
+      },
+      {
+        "role": "t1",
+        "name": "sub-01_T1w_defaced.nii.gz",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/698a5aa0f5b571c7b6e86ac60246c0d90c010d0b/lcmodel/examples/philips-press-t1/sub-01_T1w_defaced.nii.gz"
+      }
+    ]
+  },
+  {
     "id": "siemens-special",
     "label": "Siemens SPECIAL 3 T, TE 8.5 ms (in vivo)",
     "description": "Siemens raw data (twix) from FID-A: SPECIAL at 2.89 T, TE 8.5 ms, 32 channels, 80 ISIS pairs, left DLPFC, with a separate water reference. 178 MB.",

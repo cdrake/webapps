@@ -70,11 +70,26 @@ fitting, both as Rust ports compiled to WebAssembly (`packages/lcmodel`).
   a.u.) and ratio reference (Cr+PCr, NAA+NAAG) can differ per dataset; a wide
   CSV and a zip of reports are also offered. Automation: `fit-group`.
 
+* Tissue correction (optional, `src/tissue-panel.js`): the voxel geometry comes
+  from the header (`exes/fida/src/io/geometry.rs`: twix, Siemens DICOM, RDA,
+  SPAR, NIfTI-MRS; spec2nii's conventions, checked against spec2nii). A T1 from
+  the same session (NIfTI, or DICOM through the shared dcm2niix import) is
+  segmented with MindMap's partial-volume maps (`@brainchop/mindgrab`
+  `segmentTissues`; WebGPU, hardware WebGL2, else the threaded CPU module).
+  `src/voxel.js` samples the oblique voxel box on the T1 grid (5 x 5 x 5 points
+  per T1 voxel) for Osprey-style fractions; the Voxel view draws it on the T1.
+  `src/tissue.js` is Osprey's `quantTiss`/`quantAlpha` (Gasparovic 2006, Harris
+  2015) on LCModel's water-scaled output, tested against Osprey's own code in
+  Octave. Fractions can also be typed in. GE, Bruker and .RAW carry no voxel
+  position here.
+
 Examples (Hugging Face `neurodeskorg/webapps`, `lcmodel/examples/`): FID-A's GE
 PRESS phantom (3 T, TE 35 ms), FID-A's Siemens SPECIAL in vivo data (2.89 T,
 TE 8.5 ms, 178 MB) and MEGA-PRESS data (TE 68 ms, 86 MB), headers de-identified,
 Osprey's Philips MEGA-PRESS data (SDAT, TE 68 ms, MIT), Osprey's Philips PRESS
-data of two subjects (TE 35 ms, MIT, the group example), and LCModel's synthetic test case,
+data of two subjects (TE 35 ms, MIT, the group example), Osprey's Philips PRESS
+sub-01 (TE 35 ms) with its T1, defaced with the Deface app's
+`niimath -deface avg152T1 avg152T1mask` (the published T1 has no face), and LCModel's synthetic test case,
 whose table the app reproduces exactly (`e2e/smoke.spec.js`).
 
 ```bash

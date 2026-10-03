@@ -7,7 +7,7 @@
   "operations": {
     "fit": {
       "title": "Preprocess and fit",
-      "description": "FID-A preprocessing of raw spectroscopy data (or an LCModel .RAW as is), then an LCModel fit with a library or supplied basis set.",
+      "description": "FID-A preprocessing of raw spectroscopy data (or an LCModel .RAW as is), then an LCModel fit with a library or supplied basis set; optionally tissue-corrected concentrations from a T1 segmentation or given fractions.",
       "mode": "batch",
       "inputs": {
         "spectra": {
@@ -37,6 +37,18 @@
           "description": "Optional LCModel .BASIS file; overrides basisSet.",
           "minimum": 0,
           "maximum": 1
+        },
+        "t1": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "description": "Optional T1-weighted image from the same session; segmented to measure the voxel's tissue fractions.",
+          "minimum": 0,
+          "maximum": 1,
+          "space": "native"
         }
       },
       "parameters": {
@@ -140,6 +152,29 @@
           "description": "Dwell time for a .RAW without one.",
           "minimum": 0.001,
           "maximum": 10
+        },
+        "fractionGM": {
+          "type": "number",
+          "description": "Grey matter volume fraction in the voxel, instead of segmenting a T1; give all three.",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "fractionWM": {
+          "type": "number",
+          "description": "White matter volume fraction in the voxel; give all three.",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "fractionCSF": {
+          "type": "number",
+          "description": "CSF volume fraction in the voxel; give all three.",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "metaboliteRelaxation": {
+          "type": "boolean",
+          "description": "Tissue correction: also correct metabolite T1 and T2 (literature values at 3 T and 7 T).",
+          "default": true
         }
       },
       "artifacts": {
@@ -194,6 +229,46 @@
         "preprocessing": {
           "type": "file:fida-report",
           "mediaType": "application/json",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "tissueConcentrations": {
+          "type": "neuro:table",
+          "mediaType": "text/csv",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "tissueReport": {
+          "type": "file:tissue-correction",
+          "mediaType": "application/json",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "voxelMask": {
+          "type": "neuro:mask",
+          "mediaType": "application/octet-stream",
+          "space": "native",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "gmMap": {
+          "type": "neuro:volume",
+          "mediaType": "application/octet-stream",
+          "space": "native",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "wmMap": {
+          "type": "neuro:volume",
+          "mediaType": "application/octet-stream",
+          "space": "native",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "csfMap": {
+          "type": "neuro:volume",
+          "mediaType": "application/octet-stream",
+          "space": "native",
           "minimum": 0,
           "maximum": 1
         }
