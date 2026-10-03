@@ -51,6 +51,28 @@ fitting, both as Rust ports compiled to WebAssembly (`packages/lcmodel`).
   "none". The table and CSV lead with GABA+; GABA and MM3co carry a
   model-dependent note (CSV column `Note`, `measurements.metabolites[].note`),
   and the automation provenance records `macromoleculeModel`.
+* Line-broadening prior (`LINE_BROADENING` in `src/lcmodel-io.js`): unedited
+  fits use DESDT2 = 2 and RFWBAS = 80 by default ("widened"). The library's
+  basis sets have 1.5 Hz Lorentzian lines. With LCModel's defaults (DESDT2 0.4,
+  RFWBAS 10) the fit cannot follow the broadened Lorentzian tails and the
+  reference singlet is integrated over +-5 basis linewidths only, so
+  water-scaled concentrations come out 13 % low on synthetic spectra of known
+  concentration (`test/water-scaling.test.js`, also in the `lcmodel-native` CI
+  job) and 8-15 % below spant's ABfit with the same basis on the same real
+  PRESS files (`exes/lcmodel/tools/spant_water_scaled.R`, PR #120). Widened
+  recovers the synthetic concentrations to 1 % and agrees with spant to about
+  5 %. It applies with or without a water reference, so ratios and absolute
+  values come from the same fit. On the unedited examples it raises
+  water-scaled Cr+PCr by 9-22 % and NAA+NAAG by 5-16 %, moves NAA+NAAG/Cr+PCr
+  by 3-7 %, and raises no %SD below 20 % by more than 6 points (Ins on Philips
+  sub-02, 7 to 13 %); LCModel reports no new warnings. MEGA-PRESS difference
+  fits keep LCModel's values: there the widened prior moved GABA+/NAA+NAAG by
+  +16 % (Siemens) and +31 % (Philips) and Philips' water-scaled NAA+NAAG by
+  -27 %, with nothing to validate it for the mega-press-3 analysis, so the
+  setting is disabled for edited data. "LCModel defaults" (automation
+  `lineBroadening: "lcmodel"`) matches other LCModel analyses and reproduces
+  LCModel's test case exactly. The control file, the provenance, the report and
+  the group CSV record the prior used.
 * Output: fit, metabolite and preprocessing plots (`src/spectrum-plot.js`), the
   concentration table, and downloads of the concentrations (.csv), LCModel's
   `.table`/`.coord`, the `.RAW`/`.H2O`, the control file and FID-A's report.
@@ -68,7 +90,12 @@ fitting, both as Rust ports compiled to WebAssembly (`packages/lcmodel`).
   continues. The group table (`src/group-view.js`) sits in the viewer's Group
   tab. The primary CSV is long (dataset x metabolite rows), because unit (mM or
   a.u.) and ratio reference (Cr+PCr, NAA+NAAG) can differ per dataset; a wide
-  CSV and a zip of reports are also offered. Automation: `fit-group`.
+  CSV and a zip of reports are also offered. Every row also carries the
+  macromolecule model, the line-broadening prior, and, for a corrected
+  dataset, the tissue fractions, their source and the tissue- and
+  alpha-corrected concentrations (`SETTING_COLUMNS`, `METABOLITE_FIELDS`); the
+  Group tab can show the corrected values. MEGA-PRESS datasets in a group
+  follow the macromolecule model setting. Automation: `fit-group`.
 
 * Tissue correction (optional, `src/tissue-panel.js`): the voxel geometry comes
   from the header (`exes/fida/src/io/geometry.rs`: twix, Siemens DICOM, RDA,
@@ -81,7 +108,10 @@ fitting, both as Rust ports compiled to WebAssembly (`packages/lcmodel`).
   `src/tissue.js` is Osprey's `quantTiss`/`quantAlpha` (Gasparovic 2006, Harris
   2015) on LCModel's water-scaled output, tested against Osprey's own code in
   Octave. Fractions can also be typed in. GE, Bruker and .RAW carry no voxel
-  position here.
+  position here. In a group, a loaded T1 is taken to be the session's: the run
+  measures each dataset's own voxel on it. Typed fractions describe one voxel,
+  so they correct only the dataset on display. Under the co-edited MM model,
+  GABA+ (GABA+MM3co) is alpha-corrected as Osprey's GABAplus.
 
 Examples (Hugging Face `neurodeskorg/webapps`, `lcmodel/examples/`): FID-A's GE
 PRESS phantom (3 T, TE 35 ms), FID-A's Siemens SPECIAL in vivo data (2.89 T,
