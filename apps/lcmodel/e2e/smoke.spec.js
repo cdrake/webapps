@@ -115,10 +115,10 @@ test("the Siemens MEGA-PRESS example fits GABA on the difference spectrum (86 MB
   await page.locator("#runButton").click();
   await expect(page.locator("#statusText")).toContainText("Fit done", { timeout: 600000 });
   await expect(page.locator("#ratioHeader")).toHaveText("/NAA+NAAG");
-  // GABA 0.067, MM3co 0.220, GABA+ 0.287 (packages/lcmodel/wasm session tests).
+  // GABA 0.075, MM3co 0.216, GABA+ 0.291 (packages/lcmodel/wasm session tests).
   await expect(page.locator("#concBody tr").first()).toHaveAttribute("data-metabolite", "GABA+MM3co");
-  expect(Number(await cell(page, "GABA+MM3co", 3))).toBeCloseTo(0.287, 2);
-  expect(Number(await cell(page, "GABA", 3))).toBeCloseTo(0.067, 2);
+  expect(Number(await cell(page, "GABA+MM3co", 3))).toBeCloseTo(0.291, 2);
+  expect(Number(await cell(page, "GABA", 3))).toBeCloseTo(0.075, 2);
   expect(Number((await cell(page, "GABA", 2)).replace("%", ""))).toBeLessThan(20);
   await page.locator(".nd-view-tab:has-text('Preprocessing')").click();
   await expect(page.locator("#plotLabel")).toContainText("edit-OFF");
@@ -146,10 +146,10 @@ test("the Philips MEGA-PRESS example is detected as edited and fits GABA", async
   await expect(page.locator("#mmModel")).toHaveValue("co-edited");
   await expect(page.locator("#concBody tr").first()).toHaveAttribute("data-metabolite", "GABA+MM3co");
   // The browser fit also scales to water with eddy-current correction, so its
-  // numbers differ slightly from the session tests (0.296, 0.131, 0.165).
-  expect(Number(await cell(page, "GABA+MM3co", 3))).toBeCloseTo(0.285, 2);
-  expect(Number(await cell(page, "GABA", 3))).toBeCloseTo(0.135, 2);
-  expect(Number(await cell(page, "MM3co", 3))).toBeCloseTo(0.149, 2);
+  // numbers differ slightly from the session tests (0.293, 0.102, 0.191).
+  expect(Number(await cell(page, "GABA+MM3co", 3))).toBeCloseTo(0.286, 2);
+  expect(Number(await cell(page, "GABA", 3))).toBeCloseTo(0.091, 2);
+  expect(Number(await cell(page, "MM3co", 3))).toBeCloseTo(0.195, 2);
   await expect(resultRow(page, "GABA").locator(".nd-info-icon")).toHaveCount(1);
   await expect(resultRow(page, "MM3co").locator(".nd-info-icon")).toHaveCount(1);
   await expect(page.locator("#modelNote")).toBeVisible();

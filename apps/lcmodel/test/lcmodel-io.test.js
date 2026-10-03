@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { buildControl, parseCoord, parseTable, concentrationsCsv, presentRows, FILES } from "../src/lcmodel-io.js";
-import { spectrumSvg, fitSeries, metaboliteSeries, visibleIndices, tickStep } from "../src/spectrum-plot.js";
+import { spectrumSvg, fitSeries, metaboliteSeries, visibleIndices, tickStep, splitAtGaps } from "../src/spectrum-plot.js";
 
 const native = new URL("../../../exes/lcmodel/tests/data/test_lcm/", import.meta.url);
 
@@ -101,4 +101,9 @@ test("spectrum plot scales ppm right to left and escapes labels", async () => {
   assert.equal(tickStep(4, 8), 0.5);
   const idx = visibleIndices([5, 4, 3, 2, 1, 0], [0, 0, 0, 0, 0, 0], 1, 4);
   assert.deepEqual(idx, [1, 2, 3, 4]);
+  // A PPMGAP window is missing from the .COORD axis; no line crosses it.
+  const gapped = [2.2, 2.1, 2.0, 1.9, 1.1, 1.0, 0.9];
+  assert.deepEqual(splitAtGaps(gapped, [0, 1, 2, 3, 4, 5, 6]), [[0, 1, 2, 3], [4, 5, 6]]);
+  const gapSvg = spectrumSvg({ ppm: gapped, series: [{ values: [0, 1, 0, 1, 0, 1, 0], kind: "data", label: "d" }], range: [2.2, 0.9], ariaLabel: "gap" });
+  assert.equal((gapSvg.match(/<polyline/g) || []).length, 2);
 });
