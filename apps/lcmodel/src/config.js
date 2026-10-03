@@ -20,6 +20,9 @@ export function basisLibrary(manifest) {
       sequence: set.sequence,
       hzpppm: set.hzpppm,
       teMs: set.teMs,
+      shapedPulses: set.pulses === "shaped",
+      coEditedMM: set.coEditedMM === true,
+      mmSuppressed: set.mmSuppressed === true,
       library: { url: manifest.base_url + set.file, bytes: asset.bytes, sha256: asset.sha256, label: set.label },
     };
   });

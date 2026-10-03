@@ -54,13 +54,37 @@
             "press-1.5t-te30",
             "slaser-7t-te28",
             "steam-7t-te8",
-            "megapress-3t-te68-diff"
+            "megapress-3t-te68-diff",
+            "press-1.5t-te35",
+            "press-1.5t-te144",
+            "steam-1.5t-te20",
+            "press-3t-te80",
+            "steam-3t-te8",
+            "slaser-3t-te35",
+            "slaser-3t-te30-shaped",
+            "slaser-3t-te35-shaped",
+            "press-3t-te30-shaped",
+            "press-3t-te35-shaped",
+            "press-3t-te80-shaped",
+            "press-3t-te144-shaped",
+            "slaser-7t-te28-shaped",
+            "megapress-3t-te80-diff",
+            "megapress-3t-te80-mmsup-diff"
           ],
           "default": "auto"
         },
         "edited": {
           "type": "boolean",
           "description": "GE and Philips: alternate transients are edit-ON/OFF MEGA-PRESS pairs; detected from the data when absent."
+        },
+        "macromoleculeModel": {
+          "type": "string",
+          "description": "MEGA-PRESS: co-edited fits MM09 and MM3co to 0.5 ppm (1.2-1.95 ppm excluded, as Osprey) and reports GABA, MM3co and GABA+; none is LCModel's mega-press-3 as before (GABA+ only, to 1.95 ppm). MM-suppressed basis sets always use none.",
+          "enum": [
+            "co-edited",
+            "none"
+          ],
+          "default": "co-edited"
         },
         "removeBadAverages": {
           "type": "boolean",
@@ -101,7 +125,7 @@
         },
         "ppmEnd": {
           "type": "number",
-          "description": "Lower end of the fit range in ppm; 0.2 (1.95 for MEGA-PRESS) when absent.",
+          "description": "Lower end of the fit range in ppm; 0.2 when absent (MEGA-PRESS: 0.5 with the co-edited MM model, 1.95 without).",
           "minimum": -1,
           "maximum": 10
         },

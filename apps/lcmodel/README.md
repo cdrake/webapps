@@ -14,12 +14,43 @@ fitting, both as Rust ports compiled to WebAssembly (`packages/lcmodel`).
   record editing: `exes/fida/src/ops/editing.rs` detects edit-ON/OFF pairs from
   the data (NAA/Cr of alternate transients), and the user can override it. Coil-combined data are
   aligned and averaged only; `.RAW` goes straight to LCModel.
-* Basis sets: fifteen FID-A simulations (PRESS at TE 30 to 144 ms, STEAM,
-  semi-LASER and SPECIAL, at 1.5, 3 and 7 T) and a MEGA-PRESS difference set (3 T, TE 68 ms, shaped editing
-  pulses) from `models/lcmodel.manifest.json`, ranked for the data by
-  `src/basis-select.js` from its field strength, sequence and echo time.
-  Users can drop their own `.BASIS` (plain or gzipped) in the basis section or
-  with the data.
+* Basis sets (`models/lcmodel.manifest.json`, built by `exes/lcmodel/basis/`):
+  FID-A simulations with ideal pulses (PRESS at TE 30 to 144 ms, STEAM,
+  semi-LASER and SPECIAL, at 1.5, 3 and 7 T), PRESS and semi-LASER sets with
+  real refocusing pulse shapes across the voxel (`-shaped`), and MEGA-PRESS
+  difference sets (3 T; TE 68 and 80 ms; TE 80 ms with macromolecule
+  suppression), ranked for the data by `src/basis-select.js` from its field
+  strength, sequence and echo time. A shaped set ranks above the ideal set with
+  the same parameters; an MM-suppressed MEGA set ranks below the standard one,
+  with a warning, because no header records the edit-OFF frequency. Users can
+  drop their own `.BASIS` (plain or gzipped) in the basis section or with the
+  data.
+* GABA and co-edited macromolecules: MEGA-PRESS difference spectra are fitted
+  from 4.2 to 0.5 ppm, leaving out 1.2-1.95 ppm as Osprey's MEGA-PRESS LCModel
+  jobs do (PPMGAP), with two LCModel simulated components, MM09 (0.915 ppm)
+  and MM3co (3.0 ppm, 14 Hz, 2 protons), tied by the soft constraint
+  MM3co/MM09 = 1 ± 0.2 (Zöllner et al., NMR Biomed 2022;35:e4618, "MM09soft").
+  The table reports GABA, MM3co and GABA+MM3co (GABA+), each with %SD. GABA+
+  is robust; separating GABA from MM3co relies on the model's assumptions
+  (MM3co line width, its ratio to MM09), and the split moves when they move.
+  On the examples, relative to NAA+NAAG: Siemens GABA 0.075 (17 %), MM3co 0.216
+  (11 %), GABA+ 0.291 (7 %); Philips GABA 0.102 (14 %), MM3co 0.191 (9 %),
+  GABA+ 0.293 (5 %). GABA is 26 % and 35 % of GABA+, against the ~50 % usually
+  assumed. Fitted through 1.2-1.95 ppm, a broad signal there stays unmodelled
+  (largest on Philips: positive at 1.3-1.6 ppm, negative near 1.1 ppm,
+  residual RMS 3.1 % of the NAA peak; nothing in the model represents the
+  macromolecules and lipids the editing pulse hits there, and mega-press-3
+  has no baseline). Leaving it out changes GABA+ by 1 % but moves the Philips
+  split from 0.131/0.165 to 0.102/0.191. GABA+ is higher than what a GABA-only fit (no MM model, 4.2 to
+  1.95 ppm) reported (0.153 and 0.241, so 1.9 and 1.2 times): that fit leaves
+  the broad co-edited signal at 3 ppm in the residual, as Zöllner et al. found.
+  The co-edited model is the default; LCModel settings keep that previous
+  analysis as macromolecule model "none" (automation parameter
+  `macromoleculeModel`), which reproduces 0.153 and 0.241. The fit range
+  follows the model unless the user typed one. MM-suppressed sets always use
+  "none". The table and CSV lead with GABA+; GABA and MM3co carry a
+  model-dependent note (CSV column `Note`, `measurements.metabolites[].note`),
+  and the automation provenance records `macromoleculeModel`.
 * Output: fit, metabolite and preprocessing plots (`src/spectrum-plot.js`), the
   concentration table, and downloads of the concentrations (.csv), LCModel's
   `.table`/`.coord`, the `.RAW`/`.H2O`, the control file and FID-A's report.
