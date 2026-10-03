@@ -27,7 +27,7 @@ body { margin: 0 auto; max-width: 190mm; padding: 8mm 0; font: 9pt/1.35 system-u
 h1 { font-size: 14pt; margin: 0; }
 h2 { font-size: 10pt; margin: 10pt 0 4pt; border-bottom: 0.5pt solid gray; padding-bottom: 2pt; }
 .meta { color: dimgray; margin: 2pt 0 8pt; }
-.top { display: grid; grid-template-columns: minmax(0, 1fr) 58mm; gap: 6mm; align-items: start; }
+.top { display: grid; grid-template-columns: minmax(0, 1fr) 72mm; gap: 6mm; align-items: start; }
 .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 0 6mm; }
 figure { margin: 0; break-inside: avoid; }
 figcaption { color: dimgray; font-size: 8pt; }
@@ -35,6 +35,7 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
 th, td { padding: 0.6pt 3pt; text-align: right; white-space: nowrap; }
 th { border-bottom: 0.5pt solid black; font-weight: 600; }
 td:last-child, th:last-child { text-align: left; }
+.conc { font-size: 8pt; }
 .conc tr.combination td:last-child { font-weight: 600; }
 .conc tr.uncertain td { color: gray; }
 .conc tr.uncertain td:nth-child(2)::after { content: " *"; }
@@ -43,6 +44,7 @@ dt { color: dimgray; }
 dd { margin: 0; overflow-wrap: anywhere; }
 ul { margin: 0; padding-left: 12pt; }
 pre { font-size: 7.5pt; white-space: pre-wrap; margin: 0; }
+pre.control { columns: 3; }
 .note { color: dimgray; font-size: 8pt; }
 .page { break-before: page; }
 svg { display: block; width: 100%; height: auto; }
@@ -157,11 +159,11 @@ export function buildReport({ generated, versions, dataset, basis, control, prep
   const s = coord.summary ?? {};
   const title = `LCModel fit: ${dataset.name}`;
   const fitPlot = coord.ppm.length
-    ? spectrumSvg({ ppm: coord.ppm, series: fitSeries(coord), range: fit.range, height: 380, ariaLabel: "LCModel fit: data, fit, baseline and residual" })
+    ? spectrumSvg({ ppm: coord.ppm, series: fitSeries(coord), range: fit.range, height: 640, ariaLabel: "LCModel fit: data, fit, baseline and residual" })
     : "<p>LCModel wrote no fit curves.</p>";
   const metabolites = metaboliteSeries(coord, { limit: 16 });
   const metabolitePlot = metabolites.length
-    ? `<figure>${spectrumSvg({ ppm: coord.ppm, series: metabolites, range: fit.range, height: 520, ariaLabel: "Fitted metabolite spectra" })}<figcaption>Each fitted metabolite's contribution, baseline removed, largest at the bottom.</figcaption></figure>`
+    ? `<figure>${spectrumSvg({ ppm: coord.ppm, series: metabolites, range: fit.range, height: 440, ariaLabel: "Fitted metabolite spectra" })}<figcaption>Each fitted metabolite's contribution, baseline removed, largest at the bottom.</figcaption></figure>`
     : "";
   const fitSummary = definitionList([
     ["FWHM", s.fwhmPpm != null && `${s.fwhmPpm} ppm`],
@@ -216,7 +218,7 @@ ${basisList}
 <div class="columns"><div>${preprocessingSection(preprocessing)}</div><div>${preprocessingPlot(spectra)}</div></div>
 ${metabolitePlot ? `<h2>Metabolites</h2>${metabolitePlot}` : ""}
 <h2>LCModel control file</h2>
-<pre>${escapeHtml(control)}</pre>
+<pre class="control">${escapeHtml(control)}</pre>
 ${coord.misc?.length ? `<h2>LCModel miscellaneous output</h2><pre>${escapeHtml(coord.misc.join("\n"))}</pre>` : ""}
 </section>
 </body>

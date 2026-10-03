@@ -135,7 +135,8 @@ test("the report downloads, opens in its own tab and prints on A4", async ({ pag
   await expect(viewer.locator("svg")).toHaveCount(3);
   const naa = viewer.locator("table.conc tr").filter({ has: viewer.locator("td:last-child", { hasText: /^NAA$/ }) });
   await expect(naa).toHaveCount(1);
-  await viewer.setViewportSize({ width: 900, height: 1300 });
+  await viewer.emulateMedia({ media: "print" });
+  await viewer.setViewportSize({ width: 794, height: 1123 });
   await viewer.screenshot({ path: join(shots, "report.png"), fullPage: true });
   const pdf = await viewer.pdf({ format: "A4", printBackground: true });
   writeFileSync(join(shots, "report.pdf"), pdf);

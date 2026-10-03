@@ -37,4 +37,36 @@ test("fit reproduces LCModel's native table on its test case", async ({ page, re
   const bytes = await readFile(await (await download).path());
   expect(createHash("sha256").update(bytes).digest("hex")).toBe(report.artifacts.concentrations.sha256);
   expect(bytes.toString()).toContain("\nNAA,0.00000191,5,1.047\n");
+  expect(report.artifacts.fitReport.mediaType).toBe("text/html");
+});
+
+test("fit-group fits every dataset and returns the group table and a report each", async ({ page, request }) => {
+  test.setTimeout(300000);
+  const group = examples.find((e) => e.id === "philips-press-group");
+  await page.goto("/");
+  await expect(page.locator("#neurodesk-input-transfer")).toHaveCount(1);
+  const spectra = [];
+  for (const file of group.files) {
+    const response = await request.get(file.url);
+    expect(response.ok()).toBe(true);
+    spectra.push({ name: file.name, mimeType: "application/octet-stream", buffer: await response.body() });
+  }
+  await page.locator("#neurodesk-input-transfer").setInputFiles(spectra);
+  await dispatch(page, "adopt", { role: "spectra" });
+  await dispatch(page, "start", { operation: "fit-group" });
+  await expect.poll(async () => (await dispatch(page, "snapshot")).state, { timeout: 280000 }).not.toBe("running");
+  const snapshot = await dispatch(page, "snapshot");
+  expect(snapshot.state, JSON.stringify(snapshot.error)).toBe("succeeded");
+  const { report } = snapshot;
+  expect(report.measurements.datasets.map((d) => [d.name, d.status, d.basisSet, d.unit])).toEqual([
+    ["sub-01_PRESS_35_act", "fitted", "press-3t-te35", "mM"],
+    ["sub-02_PRESS_35_act", "fitted", "press-3t-te35", "mM"],
+  ]);
+  expect(report.provenance.basisSelection).toBe("recommended");
+  expect(Object.keys(report.artifacts).sort()).toEqual(["groupTable", "groupWide", "reports-1", "reports-2"]);
+  const download = page.waitForEvent("download");
+  await dispatch(page, "download", { artifactId: "groupTable" });
+  const bytes = await readFile(await (await download).path());
+  expect(createHash("sha256").update(bytes).digest("hex")).toBe(report.artifacts.groupTable.sha256);
+  expect(bytes.toString().split("\n")[0]).toMatch(/^dataset,file,status,error,format,basis,edited,unit,ratio_to,/);
 });
