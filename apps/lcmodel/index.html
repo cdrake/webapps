@@ -80,6 +80,16 @@
           <details class="nd-sidebar-section" id="fitSettings">
             <summary class="nd-section-title">LCModel settings</summary>
             <div class="nd-section-content">
+              <div class="nd-field" id="mmModelField" hidden>
+                <label for="mmModel">Macromolecule model
+                  <span class="nd-info-icon" tabindex="0" aria-label="About the macromolecule model">i<span class="nd-info-tooltip">GABA editing also edits a macromolecule signal at 3.0 ppm (MM3co). Co-edited MM fits it as a 14 Hz Gaussian tied to the 0.915 ppm macromolecule peak (Zöllner et al. 2022), from 4.2 to 0.5 ppm, and reports GABA, MM3co and their sum GABA+. The split rests on that model; GABA+ does not. None is LCModel's mega-press-3 analysis as before: 4.2 to 1.95 ppm, and GABA there is GABA+. Macromolecule-suppressed basis sets always use none.</span></span>
+                </label>
+                <select id="mmModel">
+                  <option value="co-edited">Co-edited MM: GABA, MM3co, GABA+</option>
+                  <option value="none">None: GABA+ only, as before</option>
+                </select>
+                <p class="nd-hint" id="mmModelHint" hidden>MM-suppressed basis: no co-edited MM to model.</p>
+              </div>
               <div class="nd-row">
                 <div class="nd-field">
                   <label for="ppmStart">From <small>ppm</small></label>
@@ -101,6 +111,9 @@
         <summary class="nd-section-title">Results</summary>
         <div class="nd-section-content">
           <p id="fitSummary" class="nd-hint" hidden></p>
+          <p id="modelNote" class="nd-hint" hidden>GABA and MM3co depend on the macromolecule model; GABA+ does not.
+            <span class="nd-info-icon" tabindex="0" aria-label="About model-dependent results">i<span class="nd-info-tooltip">The fit separates GABA from co-edited macromolecules (MM3co) by assuming the MM3co line width and its ratio to the 0.915 ppm macromolecule peak. Change those assumptions and the split changes, while GABA+ = GABA + MM3co hardly moves. Report GABA+ as the primary result.</span></span>
+          </p>
           <div class="nd-table-scroll">
             <table class="nd-data-table lcm-conc" id="concTable" hidden>
               <thead><tr><th>Metabolite</th><th id="concHeader">Conc.</th><th>SD</th><th id="ratioHeader">Ratio</th></tr></thead>

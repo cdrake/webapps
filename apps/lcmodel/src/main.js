@@ -13,6 +13,7 @@ import {
   createViewerToolbar,
   createExampleSelector,
   bindInfoTooltips,
+  renderInfoIcon,
   ProgressManager,
 } from "@neurodesk/webapp-components/ui";
 import { downloadFile } from "@neurodesk/webapp-components/file-io";
@@ -21,7 +22,7 @@ import manifest from "../../../models/lcmodel.manifest.json" with { type: "json"
 import examples from "../examples.json" with { type: "json" };
 import { APP, basisLibrary } from "./config.js";
 import { rankBases, assessBasis, parseBasisHeader } from "./basis-select.js";
-import { buildControl, parseCoord, parseTable, concentrationsCsv, FILES } from "./lcmodel-io.js";
+import { buildControl, parseCoord, parseTable, concentrationsCsv, presentRows, FILES } from "./lcmodel-io.js";
 import { sortInputs, textHead, parseRaw, parseControl } from "./inputs.js";
 import { spectrumSvg, fitSeries, metaboliteSeries } from "./spectrum-plot.js";
 
@@ -75,11 +76,11 @@ const results = createResultList({
 /** The loaded input: FID-A datasets or an LCModel .RAW (direct). */
 let input = null;
 let customBasis = null; // { name, text, header }
-// Fit ranges, ppm. A MEGA-PRESS difference spectrum is fitted down to 0.5 ppm
-// so that the co-edited MM at 0.915 ppm constrains MM3co under GABA
-// (Zöllner et al. 2022); LCModel's mega-press-3 preset stops at 1.95 ppm.
-const EDITED_RANGE = ["4.2", "0.5"];
-const PLAIN_RANGE = ["4.0", "0.2"];
+// Fit ranges, ppm. With the co-edited macromolecule model a MEGA-PRESS
+// difference spectrum is fitted down to 0.5 ppm so that the co-edited MM at
+// 0.915 ppm constrains MM3co under GABA (Zöllner et al. 2022); without it,
+// LCModel's mega-press-3 preset range, 4.2 to 1.95 ppm.
+const RANGES = { plain: ["4.0", "0.2"], "co-edited": ["4.2", "0.5"], none: ["4.2", "1.95"] };
 let processed = null; // FID-A result for the current dataset
 let fit = null; // parsed LCModel output
 let view = "fit";
@@ -321,16 +322,13 @@ function showDataset() {
     summary.textContent = parts.join(", ");
   }
   showEditing();
-  const range = isEdited() ? EDITED_RANGE : PLAIN_RANGE;
-  const current = [$("ppmStart").value, $("ppmEnd").value];
-  const untouched = [EDITED_RANGE, PLAIN_RANGE].some((r) => r[0] === current[0] && r[1] === current[1]);
-  if (untouched) [$("ppmStart").value, $("ppmEnd").value] = range;
   const water = hasWater();
   $("waterScaling").disabled = !water;
   $("waterScaling").checked = water;
   $("ecc").disabled = !water;
   $("preprocessingSettings").hidden = input?.kind === "raw";
   recommend();
+  showMacromoleculeModel();
   updateRunButton();
 }
 
@@ -361,11 +359,30 @@ function setCustomBasis(name, text) {
   recommend();
 }
 
-// MM-suppressed editing leaves no co-edited MM to model, and a user's own
+// The macromolecule model a MEGA-PRESS fit uses: the user's choice, except
+// that MM-suppressed editing leaves no co-edited MM to model and a user's own
 // basis that already has an MM3co spectrum must not get a second one.
-function modelsCoEditedMM(choice) {
-  if (choice === CUSTOM) return !customBasis.header.metabolites.some((m) => /^MM3/i.test(m));
-  return library.find((b) => b.id === choice)?.coEditedMM === true;
+function macromoleculeModel() {
+  const choice = $("basisSelect").value;
+  if (library.find((b) => b.id === choice)?.mmSuppressed) return "none";
+  if (choice === CUSTOM && customBasis?.header.metabolites.some((m) => /^MM3/i.test(m))) return "none";
+  return $("mmModel").value;
+}
+
+function rangeKey() {
+  return isEdited() ? macromoleculeModel() : "plain";
+}
+
+// The model control is shown for edited data; the fit range follows the
+// model unless the user typed their own.
+function showMacromoleculeModel() {
+  const suppressed = library.find((b) => b.id === $("basisSelect").value)?.mmSuppressed === true;
+  $("mmModelField").hidden = !isEdited();
+  $("mmModel").disabled = suppressed;
+  $("mmModelHint").hidden = !suppressed;
+  const current = [$("ppmStart").value, $("ppmEnd").value];
+  const untouched = Object.values(RANGES).some((r) => r[0] === current[0] && r[1] === current[1]);
+  if (untouched) [$("ppmStart").value, $("ppmEnd").value] = RANGES[rangeKey()];
 }
 
 function renderBasisOptions(ranked, assessed) {
@@ -465,7 +482,7 @@ async function run({ throwOnError = false } = {}) {
       ppmEnd: Number($("ppmEnd").value),
       title: describeInput(),
       sptype: lcm.edited ? "mega-press-3" : "",
-      coEditedMM: lcm.edited && modelsCoEditedMM(choice),
+      coEditedMM: lcm.edited && macromoleculeModel() === "co-edited",
     });
     const files = { [FILES.raw]: lcm.raw };
     if (water) files[FILES.h2o] = lcm.h2o;
@@ -474,7 +491,7 @@ async function run({ throwOnError = false } = {}) {
       : { name: FILES.basis, library: library.find((b) => b.id === choice).library };
     status("Fitting with LCModel…");
     const out = await runJob({ type: "fit", control, files, basis, fdate: new Date().toString() });
-    fit = { coord: parseCoord(out.outputs[FILES.coord] ?? ""), table: out.outputs[FILES.table] ?? "", outputs: out.outputs, control, lcm, water };
+    fit = { coord: parseCoord(out.outputs[FILES.coord] ?? ""), table: out.outputs[FILES.table] ?? "", outputs: out.outputs, control, lcm, water, macromoleculeModel: lcm.edited ? macromoleculeModel() : null };
     showResults();
     const seconds = ((performance.now() - started) / 1000).toFixed(1);
     progress.end(`Fit done in ${seconds} s`);
@@ -523,8 +540,9 @@ function setViewEnabled(id, enabled) {
 function showResults() {
   const { coord } = fit;
   const table = parseTable(fit.table);
-  const rows = table.rows.length ? table.rows : coord.rows;
+  const rows = presentRows(table.rows.length ? table.rows : coord.rows);
   const ratioTo = table.ratioTo ?? coord.ratioTo;
+  $("modelNote").hidden = !rows.some((r) => r.modelDependent);
   $("concHeader").textContent = fit.water ? "Conc. (mM)" : "Conc. (a.u.)";
   $("ratioHeader").textContent = ratioTo ? `/${ratioTo}` : "Ratio";
   $("concBody").replaceChildren(...rows.map((r) => {
@@ -533,11 +551,14 @@ function showResults() {
     if (r.sdPercent > 20) tr.classList.add("lcm-uncertain");
     for (const text of [r.name, formatConc(r.concentration), `${r.sdPercent}%`, r.ratio == null ? "" : formatConc(r.ratio)]) {
       const td = document.createElement("td");
-      td.textContent = text;
+      if (r.primary) td.append(Object.assign(document.createElement("strong"), { textContent: text }));
+      else td.textContent = text;
       tr.append(td);
     }
+    if (r.modelDependent) tr.cells[0].append(" ", renderInfoIcon(r.note, { label: `${r.name} depends on the macromolecule model` }));
     return tr;
   }));
+  bindInfoTooltips($("concBody"));
   $("concTable").hidden = false;
   const s = coord.summary;
   $("fitSummary").hidden = false;
@@ -654,7 +675,11 @@ $("editedToggle").addEventListener("change", () => {
   clearResults();
   showDataset();
 });
-$("basisSelect").addEventListener("change", showBasisAdvice);
+$("basisSelect").addEventListener("change", () => {
+  showBasisAdvice();
+  showMacromoleculeModel();
+});
+$("mmModel").addEventListener("change", showMacromoleculeModel);
 $("datasetSelect").addEventListener("change", () => {
   input.index = Number($("datasetSelect").value);
   clearResults();
@@ -701,15 +726,16 @@ async function fitOperation({ inputs, parameters, signal, progress: report }) {
     input.datasets[input.index].editOverride = p.edited;
     showDataset();
   }
-  const edited = isEdited();
-  $("ppmStart").value = String(p.ppmStart ?? (edited ? EDITED_RANGE : PLAIN_RANGE)[0]);
-  $("ppmEnd").value = String(p.ppmEnd ?? (edited ? EDITED_RANGE : PLAIN_RANGE)[1]);
-  if (!$("waterScaling").disabled) $("waterScaling").checked = p.waterScaling ?? true;
-  if (!$("ecc").disabled) $("ecc").checked = p.eddyCurrentCorrection ?? true;
+  $("mmModel").value = p.macromoleculeModel ?? "co-edited";
   if (!inputs.basis?.length && p.basisSet && p.basisSet !== "auto") {
     $("basisSelect").value = p.basisSet;
     showBasisAdvice();
   }
+  const range = RANGES[rangeKey()];
+  $("ppmStart").value = String(p.ppmStart ?? range[0]);
+  $("ppmEnd").value = String(p.ppmEnd ?? range[1]);
+  if (!$("waterScaling").disabled) $("waterScaling").checked = p.waterScaling ?? true;
+  if (!$("ecc").disabled) $("ecc").checked = p.eddyCurrentCorrection ?? true;
   const choice = $("basisSelect").value;
   if (choice !== CUSTOM && !library.some((b) => b.id === choice)) throw new Error("No usable basis set for these data; supply a .BASIS file.");
   const assessment = currentHeader() && assessBasis(currentHeader(), choice === CUSTOM ? { id: CUSTOM, ...customBasis.header } : library.find((b) => b.id === choice));
@@ -725,7 +751,7 @@ async function fitOperation({ inputs, parameters, signal, progress: report }) {
     signal.removeEventListener("abort", abort);
   }
   const table = parseTable(completed.table);
-  const rows = table.rows.length ? table.rows : completed.coord.rows;
+  const rows = presentRows(table.rows.length ? table.rows : completed.coord.rows);
   const ratioTo = table.ratioTo ?? completed.coord.ratioTo;
   const artifacts = Object.entries(resultFiles(rows, ratioTo)).map(([role, entry]) => ({ role, file: entry.file }));
   return {
@@ -733,13 +759,14 @@ async function fitOperation({ inputs, parameters, signal, progress: report }) {
     measurements: {
       unit: completed.water ? "mM" : "a.u.",
       ratioTo: ratioTo ?? null,
-      metabolites: Object.fromEntries(rows.map((r) => [r.name, { concentration: r.concentration, sdPercent: r.sdPercent, ratio: r.ratio ?? null }])),
+      metabolites: Object.fromEntries(rows.map((r) => [r.name, { concentration: r.concentration, sdPercent: r.sdPercent, ratio: r.ratio ?? null, ...(r.note ? { note: r.note } : {}) }])),
       ...completed.coord.summary,
     },
     provenance: {
       basisSet: choice === CUSTOM ? customBasis.name : choice,
       pipeline: processed?.report.pipeline ?? "LCModel .RAW, no preprocessing",
       sptype: completed.lcm.edited ? "mega-press-3" : null,
+      macromoleculeModel: completed.lcm.edited ? completed.macromoleculeModel : null,
       control: completed.control,
     },
   };

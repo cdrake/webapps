@@ -213,7 +213,28 @@ export function parseTable(text) {
 
 /** The metabolite table as CSV (the app's own download). */
 export function concentrationsCsv(rows, ratioTo) {
-  const header = ["Metabolite", "Concentration", "SD (%)", ratioTo ? `/${ratioTo}` : "Ratio"];
-  const cells = rows.map((r) => [r.name, r.concentration, r.sdPercent, r.ratio ?? ""]);
+  const notes = rows.some((r) => r.note);
+  const header = ["Metabolite", "Concentration", "SD (%)", ratioTo ? `/${ratioTo}` : "Ratio", ...(notes ? ["Note"] : [])];
+  const cells = rows.map((r) => [r.name, r.concentration, r.sdPercent, r.ratio ?? "", ...(notes ? [r.note ?? ""] : [])]);
   return [header, ...cells].map((row) => row.map((c) => (/[",]/.test(String(c)) ? `"${String(c).replace(/"/g, '""')}"` : c)).join(",")).join("\n") + "\n";
+}
+
+const GABA_PLUS = "GABA+MM3co";
+export const MODEL_NOTES = Object.freeze({
+  [GABA_PLUS]: "GABA+ (GABA + MM3co): primary result",
+  GABA: "model-dependent: split from MM3co by the macromolecule model",
+  MM3co: "model-dependent: co-edited macromolecules under GABA at 3.0 ppm",
+});
+
+/**
+ * Rows in the order to show them. A fit with the co-edited macromolecule
+ * model leads with GABA+, then GABA and MM3co, which carry a note because
+ * they rest on the model's assumptions; the rest keep LCModel's order.
+ */
+export function presentRows(rows) {
+  const plus = rows.find((r) => r.name === GABA_PLUS);
+  if (!plus) return rows;
+  const lead = [GABA_PLUS, "GABA", "MM3co"].map((name) => rows.find((r) => r.name === name)).filter(Boolean);
+  const rest = rows.filter((r) => !lead.includes(r));
+  return [...lead.map((r) => ({ ...r, note: MODEL_NOTES[r.name], primary: r.name === GABA_PLUS, modelDependent: r.name !== GABA_PLUS })), ...rest];
 }

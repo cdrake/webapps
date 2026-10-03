@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { buildControl, parseCoord, parseTable, concentrationsCsv, FILES } from "../src/lcmodel-io.js";
+import { buildControl, parseCoord, parseTable, concentrationsCsv, presentRows, FILES } from "../src/lcmodel-io.js";
 import { spectrumSvg, fitSeries, metaboliteSeries, visibleIndices, tickStep } from "../src/spectrum-plot.js";
 
 const native = new URL("../../../exes/lcmodel/tests/data/test_lcm/", import.meta.url);
@@ -36,8 +36,34 @@ test("a MEGA-PRESS fit can separate GABA from co-edited MM3co", () => {
   assert.match(mm, /chsimu\(2\)='MM3co @ 3\.0 \+- \.02 FWHM= 0\.085 < 0\.114 \+- \.02 AMP= 2\.'/);
   assert.match(mm, /chrato\(2\)='MM3co\/MM09 = 1\. \+- \.2'/);
   assert.match(mm, /\n ncombi=18\n chcomb\(18\)='GABA\+MM3co'\n/);
-  assert.doesNotMatch(buildControl(options), /MM3co/);
+  // Without the model: LCModel's mega-press-3 as before (its own MM09, no MM3co).
+  const old = buildControl({ ...options, ppmEnd: 1.95, coEditedMM: false });
+  assert.doesNotMatch(old, /MM3co|nsimul|chsimu|chrato|ncombi/);
+  assert.match(old, /ppmend=1\.95/);
   assert.throws(() => buildControl({ nunfil: 2048, deltat: 2e-4, hzpppm: 123, coEditedMM: true }), /MEGA-PRESS/);
+});
+
+test("results lead with GABA+ and mark GABA and MM3co as model-dependent", () => {
+  const rows = [
+    { name: "GABA", concentration: 1.3e-5, sdPercent: 12, ratio: 0.131, combination: false },
+    { name: "NAA", concentration: 8e-5, sdPercent: 1, ratio: 0.925, combination: false },
+    { name: "MM3co", concentration: 1.5e-5, sdPercent: 12, ratio: 0.165, combination: false },
+    { name: "NAA+NAAG", concentration: 8.8e-5, sdPercent: 1, ratio: 1, combination: true },
+    { name: "GABA+MM3co", concentration: 2.6e-5, sdPercent: 6, ratio: 0.296, combination: true },
+  ];
+  const shown = presentRows(rows);
+  assert.deepEqual(shown.map((r) => r.name), ["GABA+MM3co", "GABA", "MM3co", "NAA", "NAA+NAAG"]);
+  assert.equal(shown[0].primary, true);
+  assert.deepEqual(shown.map((r) => Boolean(r.modelDependent)), [false, true, true, false, false]);
+  const csv = concentrationsCsv(shown, "NAA+NAAG").split("\n");
+  assert.equal(csv[0], "Metabolite,Concentration,SD (%),/NAA+NAAG,Note");
+  assert.match(csv[1], /^GABA\+MM3co,.*,GABA\+ \(GABA \+ MM3co\): primary result$/);
+  assert.match(csv[2], /^GABA,.*,model-dependent: /);
+  assert.match(csv[4], /^NAA,0\.00008,1,0\.925,$/);
+  // Fits without the model keep LCModel's order and the four-column CSV.
+  const plain = rows.filter((r) => !r.name.includes("MM3co"));
+  assert.deepEqual(presentRows(plain), plain);
+  assert.doesNotMatch(concentrationsCsv(plain, "NAA+NAAG"), /Note/);
 });
 
 test("parses LCModel's own .COORD and .TABLE output", async () => {
