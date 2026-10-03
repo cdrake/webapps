@@ -61,6 +61,9 @@ export function preprocessingQc(report) {
   };
 }
 
+// Fractions are normalised to sum to 1; six digits hide the rounding.
+const sixDigits = (x) => (x == null ? null : Number(x.toPrecision(6)));
+
 /**
  * One dataset's line in the group table.
  * @param {{
@@ -91,9 +94,9 @@ export function groupRecord(parts) {
     ratioTo: parts.ratioTo ?? null,
     macromoleculeModel: parts.macromoleculeModel ?? null,
     lineBroadening: parts.lineBroadening ?? null,
-    fractionGM: correction?.fractions.gm ?? null,
-    fractionWM: correction?.fractions.wm ?? null,
-    fractionCSF: correction?.fractions.csf ?? null,
+    fractionGM: sixDigits(correction?.fractions.gm),
+    fractionWM: sixDigits(correction?.fractions.wm),
+    fractionCSF: sixDigits(correction?.fractions.csf),
     fractionSource: correction ? (correction.source?.kind ?? "entered") : null,
     ...preprocessingQc(parts.preprocessing),
     fwhmPpm: summary.fwhmPpm ?? null,

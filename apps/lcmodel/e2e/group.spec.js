@@ -56,7 +56,7 @@ test("a group of subjects is fitted in one run, tabulated and downloaded", async
   await page.goto("/");
   await selectGroupExample(page);
   await expect(page.locator("#datasetSummary")).toContainText("with water");
-  await expect(page.locator("#basisSelect")).toHaveValue("press-3t-te35");
+  await expect(page.locator("#basisSelect")).toHaveValue("press-3t-te35-shaped");
   await page.locator("#runButton").click();
   await expect(page.locator("#statusText")).toContainText("2 of 2 datasets fitted", { timeout: 240000 });
   await expect(page.locator(".nd-view-tab[data-view='group']")).toHaveClass(/active/);
@@ -64,7 +64,7 @@ test("a group of subjects is fitted in one run, tabulated and downloaded", async
   for (const subject of ["sub-01", "sub-02"]) {
     const row = groupRow(page, `${subject}_PRESS_35_act`);
     await expect(row.locator("td").nth(0)).toHaveText("fitted");
-    await expect(row.locator("td").nth(1)).toHaveText("press-3t-te35");
+    await expect(row.locator("td").nth(1)).toHaveText("press-3t-te35-shaped");
     await expect(row.locator("td").nth(3)).toHaveText("mM");
   }
   await page.screenshot({ path: join(shots, "group-desktop.png") });
@@ -203,6 +203,56 @@ test("a dataset that fails is listed with its error and the others are fitted", 
   // Its row shows the error rather than a fit.
   await zero.getByRole("button").click();
   await expect(page.locator("#viewerNotice")).toContainText("LCModel stopped");
+});
+
+test("a mixed group keeps the macromolecule model for MEGA-PRESS, and tissue-corrected values join the table", async ({ page, request }) => {
+  test.setTimeout(400000);
+  const mega = examples.find((e) => e.id === "philips-megapress");
+  const files = [];
+  for (const file of [...mega.files, ...group.files.filter((f) => f.name.startsWith("sub-02"))]) {
+    const response = await request.get(file.url);
+    expect(response.ok()).toBe(true);
+    files.push({ name: file.name, mimeType: "application/octet-stream", buffer: await response.body() });
+  }
+  await page.goto("/");
+  await page.locator("#dataInput").setInputFiles(files);
+  await expect(page.locator("#runButton")).toHaveText("Fit all 2 datasets");
+  const options = await page.locator("#datasetSelect option").allTextContents();
+  await page.locator("#datasetSelect").selectOption({ index: options.findIndex((o) => o.startsWith("sub-01_megapress")) });
+  await page.locator("#fitSettings > summary").click();
+  await expect(page.locator("#mmModelField")).toBeVisible();
+  await expect(page.locator("#lineBroadening")).toBeDisabled();
+  await expect(page.locator("#lineBroadeningHint")).toBeVisible();
+  await page.locator("#mmModel").selectOption("none");
+  await page.locator("#runButton").click();
+  await expect(page.locator("#statusText")).toContainText("2 of 2 datasets fitted", { timeout: 300000 });
+  let rows = table((await download(page, "Group table (.csv)")).bytes.toString());
+  const megaRows = rows.filter((r) => r.dataset.startsWith("sub-01_megapress"));
+  const pressRows = rows.filter((r) => r.dataset.startsWith("sub-02_PRESS"));
+  expect(megaRows[0].basis).toBe("megapress-3t-te68-diff");
+  expect(new Set(megaRows.map((r) => r.macromolecule_model))).toEqual(new Set(["none"]));
+  expect(new Set(megaRows.map((r) => r.line_broadening))).toEqual(new Set(["lcmodel"]));
+  expect(megaRows.some((r) => r.metabolite === "MM3co")).toBe(false);
+  expect(megaRows.some((r) => r.metabolite === "GABA")).toBe(true);
+  expect(new Set(pressRows.map((r) => r.macromolecule_model))).toEqual(new Set([""]));
+  expect(new Set(pressRows.map((r) => r.line_broadening))).toEqual(new Set(["widened"]));
+  expect(rows.every((r) => r.tissue_corrected_mmol_per_kg === "")).toBe(true);
+  // Fractions typed in for the PRESS subject correct that dataset's fit.
+  await groupRow(page, "sub-02_PRESS_35_act").getByRole("button").click();
+  await page.locator("#tissueSection > summary").click();
+  await page.locator("#fGm").fill("0.60");
+  await page.locator("#fWm").fill("0.27");
+  await page.locator("#fCsf").fill("0.13");
+  await page.locator("#fCsf").dispatchEvent("change");
+  await expect(page.locator("#corrHeader")).toBeVisible();
+  rows = table((await download(page, "Group table (.csv)")).bytes.toString());
+  const naa = rows.find((r) => r.dataset.startsWith("sub-02_PRESS") && r.metabolite === "NAA+NAAG");
+  expect(Number(naa.tissue_corrected_mmol_per_kg) / Number(naa.concentration)).toBeCloseTo(12.6215878899 / 12, 3);
+  expect([naa.fraction_gm, naa.fraction_wm, naa.fraction_csf, naa.fraction_source]).toEqual(["0.6", "0.27", "0.13", "entered"]);
+  expect(rows.filter((r) => r.dataset.startsWith("sub-01_megapress")).every((r) => r.tissue_corrected_mmol_per_kg === "")).toBe(true);
+  await page.locator(".nd-view-tab[data-view='group']").click();
+  await page.locator("#groupShow").selectOption("tissue");
+  await expect(groupRow(page, "sub-02_PRESS_35_act").locator("td").nth(3)).toHaveText("mmol/kg");
 });
 
 test("the group table fits a phone screen", async ({ page }) => {

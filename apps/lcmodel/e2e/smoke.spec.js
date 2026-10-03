@@ -52,6 +52,10 @@ test("the synthetic LCModel test case reproduces LCModel's native table", async 
   await selectExample(page, "lcmodel-test");
   await expect(page.locator("#basisSelect")).toHaveValue("custom");
   await expect(page.locator("#hzpppmInput")).toHaveValue("127.786142");
+  // The test case's control file leaves LCModel's own line-broadening prior.
+  await page.locator("#fitSettings > summary").click();
+  await expect(page.locator("#lineBroadening")).toHaveValue("widened");
+  await page.locator("#lineBroadening").selectOption("lcmodel");
   await page.locator("#runButton").click();
   await expect(page.locator("#statusText")).toContainText("Fit done", { timeout: 150000 });
   // Native gfortran LCModel on the same files (exes/lcmodel/tests/data/test_lcm/native.table).
@@ -66,6 +70,11 @@ test("the synthetic LCModel test case reproduces LCModel's native table", async 
   const csv = readFileSync(await (await download).path(), "utf8");
   expect(csv.split("\n")[0]).toBe("Metabolite,Concentration,SD (%),/Cr+PCr");
   expect(csv).toContain("\nNAA,0.00000191,5,1.047\n");
+  // The app's default, the widened prior, moves the same fit: NAA+NAAG 2.46e-6.
+  await page.locator("#lineBroadening").selectOption("widened");
+  await page.locator("#runButton").click();
+  await expect(page.locator("#statusText")).toContainText("Fit done", { timeout: 150000 });
+  expect(await concentration(page, "NAA+NAAG")).toBe("2.46e-6");
 });
 
 test("the GE PRESS phantom goes through FID-A and the recommended basis set", async ({ page }) => {

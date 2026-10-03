@@ -24,7 +24,8 @@ test("fit reproduces LCModel's native table on its test case", async ({ page, re
   await dispatch(page, "adopt", { role: "spectra" });
   await page.locator("#neurodesk-input-transfer").setInputFiles([basis]);
   await dispatch(page, "adopt", { role: "basis" });
-  await dispatch(page, "start", { operation: "fit" });
+  // LCModel's own line-broadening prior, as the test case's control file has it.
+  await dispatch(page, "start", { operation: "fit", parameters: { lineBroadening: "lcmodel" } });
   await expect.poll(async () => (await dispatch(page, "snapshot")).state, { timeout: 200000 }).not.toBe("running");
   const snapshot = await dispatch(page, "snapshot");
   expect(snapshot.state, JSON.stringify(snapshot.error)).toBe("succeeded");
@@ -32,6 +33,8 @@ test("fit reproduces LCModel's native table on its test case", async ({ page, re
   // Native gfortran LCModel on the same files (exes/lcmodel/tests/data/test_lcm/native.table).
   expect(report.measurements.metabolites.NAA.concentration).toBeCloseTo(1.91e-6, 8);
   expect(report.measurements.ratioTo).toBe("Cr+PCr");
+  expect(report.provenance.lineBroadening).toBe("lcmodel");
+  expect(report.provenance.control).not.toMatch(/desdt2|rfwbas/);
   const download = page.waitForEvent("download");
   await dispatch(page, "download", { artifactId: "concentrations" });
   const bytes = await readFile(await (await download).path());
@@ -59,16 +62,20 @@ test("fit-group fits every dataset and returns the group table and a report each
   expect(snapshot.state, JSON.stringify(snapshot.error)).toBe("succeeded");
   const { report } = snapshot;
   expect(report.measurements.datasets.map((d) => [d.name, d.status, d.basisSet, d.unit])).toEqual([
-    ["sub-01_PRESS_35_act", "fitted", "press-3t-te35", "mM"],
-    ["sub-02_PRESS_35_act", "fitted", "press-3t-te35", "mM"],
+    ["sub-01_PRESS_35_act", "fitted", "press-3t-te35-shaped", "mM"],
+    ["sub-02_PRESS_35_act", "fitted", "press-3t-te35-shaped", "mM"],
   ]);
+  expect(report.measurements.datasets.map((d) => d.lineBroadening)).toEqual(["widened", "widened"]);
   expect(report.provenance.basisSelection).toBe("recommended");
+  expect(report.provenance.lineBroadening).toBe("widened");
   expect(Object.keys(report.artifacts).sort()).toEqual(["groupTable", "groupWide", "reports-1", "reports-2"]);
   const download = page.waitForEvent("download");
   await dispatch(page, "download", { artifactId: "groupTable" });
   const bytes = await readFile(await (await download).path());
   expect(createHash("sha256").update(bytes).digest("hex")).toBe(report.artifacts.groupTable.sha256);
-  expect(bytes.toString().split("\n")[0]).toMatch(/^dataset,file,status,error,format,basis,edited,unit,ratio_to,/);
+  const header = bytes.toString().split("\n")[0];
+  expect(header).toMatch(/^dataset,file,status,error,format,basis,edited,unit,ratio_to,macromolecule_model,line_broadening,fraction_gm,fraction_wm,fraction_csf,fraction_source,/);
+  expect(header).toMatch(/,tissue_corrected_mmol_per_kg,alpha_corrected_mmol_per_kg$/);
 });
 
 test("fit takes tissue fractions as parameters and reports corrected concentrations", async ({ page, request }) => {
@@ -89,6 +96,8 @@ test("fit takes tissue fractions as parameters and reports corrected concentrati
   expect(snapshot.state, JSON.stringify(snapshot.error)).toBe("succeeded");
   const { tissue, metabolites } = snapshot.report.measurements;
   expect(tissue.source).toEqual({ kind: "entered" });
+  expect(snapshot.report.provenance.lineBroadening).toBe("widened");
+  expect(snapshot.report.provenance.control).toMatch(/\n desdt2=2\n rfwbas=80\n/);
   expect(tissue.unit).toBe("mmol/kg tissue water");
   // Osprey's quantTiss factor for tNAA at TE 35 / TR 2000 ms with these fractions.
   expect(tissue.metabolites["NAA+NAAG"].corrected / metabolites["NAA+NAAG"].concentration).toBeCloseTo(12.6215878899 / 12, 6);
