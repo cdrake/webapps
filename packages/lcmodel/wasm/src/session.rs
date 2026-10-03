@@ -424,10 +424,14 @@ mod mega_tests {
         let inputs = lcmodel_inputs(&p).unwrap();
         assert_eq!(inputs["edited"], json!(true));
         assert!(inputs["editOff"].is_string());
+        // The app's "none" macromolecule model: LCModel's mega-press-3 as is
+        // (4.2-1.95 ppm), where GABA is GABA+: 0.153 (9 %) of NAA+NAAG.
         let Some(table) = fit_mega(&p, "") else { return };
         eprintln!("{table}");
-        let (_, sd, _) = row(&table, "GABA");
-        assert!(sd < 20.0, "GABA %SD {sd}");
+        let (_, sd, ratio) = row(&table, "GABA");
+        assert!(sd <= 10.0, "GABA %SD {sd}");
+        assert!((ratio - 0.153).abs() < 0.002, "GABA+ {ratio}");
+        assert!(!table.contains("MM3co"));
     }
 
     /// The co-edited macromolecule model the app adds to a MEGA-PRESS fit
@@ -514,9 +518,10 @@ mod mega_tests {
         assert_eq!(p.report["editClassification"]["inverted"], json!(true));
         let Some(table) = fit_mega(&p, "") else { return };
         eprintln!("{table}");
+        // Without the co-edited MM model, GABA is GABA+: 0.241 (6 %), as before.
         let (_, sd, ratio) = row(&table, "GABA");
-        assert!(sd < 20.0, "GABA %SD {sd}");
-        assert!(ratio > 0.05 && ratio < 0.4, "GABA/NAA {ratio}");
+        assert!(sd <= 7.0, "GABA %SD {sd}");
+        assert!((ratio - 0.241).abs() < 0.002, "GABA+ {ratio}");
         // With the co-edited MM model: GABA 0.131 (12 %), MM3co 0.165 (12 %),
         // GABA+ 0.296 (6 %) of NAA+NAAG; GABA is 44 % of GABA+.
         let Some([gaba, mm3co, plus]) = gaba_mm3co(&p) else { return };

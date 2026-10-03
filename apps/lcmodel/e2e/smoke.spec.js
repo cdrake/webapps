@@ -37,6 +37,10 @@ async function selectExample(page, id) {
   await expect(page.locator("#runButton")).toBeEnabled();
 }
 
+// A row of the concentration table, by LCModel's metabolite name.
+const resultRow = (page, name) => page.locator(`#concBody tr[data-metabolite="${name}"]`);
+const cell = async (page, name, column) => (await resultRow(page, name).locator("td").nth(column).textContent()).trim();
+
 async function concentration(page, name) {
   const row = page.locator("#concBody tr").filter({ has: page.locator("td:first-child", { hasText: new RegExp(`^${name.replace(/[+]/g, "\\+")}$`) }) });
   return (await row.locator("td").nth(1).textContent()).trim();
@@ -111,12 +115,11 @@ test("the Siemens MEGA-PRESS example fits GABA on the difference spectrum (86 MB
   await page.locator("#runButton").click();
   await expect(page.locator("#statusText")).toContainText("Fit done", { timeout: 600000 });
   await expect(page.locator("#ratioHeader")).toHaveText("/NAA+NAAG");
-  const gaba = page.locator("#concBody tr").filter({ has: page.locator("td:first-child", { hasText: /^GABA$/ }) });
-  const sd = Number((await gaba.locator("td").nth(2).textContent()).replace("%", ""));
-  expect(sd).toBeLessThan(20);
-  const ratio = Number(await gaba.locator("td").nth(3).textContent());
-  expect(ratio).toBeGreaterThan(0.05);
-  expect(ratio).toBeLessThan(0.4);
+  // GABA 0.067, MM3co 0.220, GABA+ 0.287 (packages/lcmodel/wasm session tests).
+  await expect(page.locator("#concBody tr").first()).toHaveAttribute("data-metabolite", "GABA+MM3co");
+  expect(Number(await cell(page, "GABA+MM3co", 3))).toBeCloseTo(0.287, 2);
+  expect(Number(await cell(page, "GABA", 3))).toBeCloseTo(0.067, 2);
+  expect(Number((await cell(page, "GABA", 2)).replace("%", ""))).toBeLessThan(20);
   await page.locator(".nd-view-tab:has-text('Preprocessing')").click();
   await expect(page.locator("#plotLabel")).toContainText("edit-OFF");
   const download = page.waitForEvent("download");
@@ -138,17 +141,34 @@ test("the Philips MEGA-PRESS example is detected as edited and fits GABA", async
   await page.locator("#runButton").click();
   await expect(page.locator("#statusText")).toContainText("Fit done", { timeout: 240000 });
   await expect(page.locator("#ratioHeader")).toHaveText("/NAA+NAAG");
-  const gaba = page.locator("#concBody tr").filter({ has: page.locator("td:first-child", { hasText: /^GABA$/ }) });
-  expect(Number((await gaba.locator("td").nth(2).textContent()).replace("%", ""))).toBeLessThan(20);
-  const ratio = Number(await gaba.locator("td").nth(3).textContent());
-  expect(ratio).toBeGreaterThan(0.1);
-  expect(ratio).toBeLessThan(0.4);
-  // Co-edited macromolecules are fitted separately; GABA+ is their sum.
-  const row = (name) => page.locator("#concBody tr").filter({ has: page.locator("td:first-child", { hasText: new RegExp(`^${name.replace("+", "\\+")}$`) }) });
-  await expect(row("MM3co")).toHaveCount(1);
-  const plus = Number(await row("GABA+MM3co").locator("td").nth(3).textContent());
-  expect(plus).toBeGreaterThan(ratio);
-  expect(plus).toBeLessThan(0.4);
+  // Default: the co-edited MM model. GABA+ leads; GABA and MM3co are flagged.
+  await expect(page.locator("#mmModelField")).toBeVisible();
+  await expect(page.locator("#mmModel")).toHaveValue("co-edited");
+  await expect(page.locator("#concBody tr").first()).toHaveAttribute("data-metabolite", "GABA+MM3co");
+  expect(Number(await cell(page, "GABA+MM3co", 3))).toBeCloseTo(0.296, 2);
+  expect(Number(await cell(page, "GABA", 3))).toBeCloseTo(0.131, 2);
+  expect(Number(await cell(page, "MM3co", 3))).toBeCloseTo(0.165, 2);
+  await expect(resultRow(page, "GABA").locator(".nd-info-icon")).toHaveCount(1);
+  await expect(resultRow(page, "MM3co").locator(".nd-info-icon")).toHaveCount(1);
+  await expect(page.locator("#modelNote")).toBeVisible();
+  const csvDownload = page.waitForEvent("download");
+  await page.locator("#resultList .nd-volume-toggle").filter({ hasText: "Concentrations" }).getByRole("button", { name: "Download" }).click();
+  const csv = readFileSync(await (await csvDownload).path(), "utf8").split("\n");
+  expect(csv[0]).toBe("Metabolite,Concentration,SD (%),/NAA+NAAG,Note");
+  expect(csv[1]).toMatch(/^GABA\+MM3co,.*primary result$/);
+  // The previous analysis: LCModel's mega-press-3 to 1.95 ppm, GABA is GABA+.
+  await page.locator("#fitSettings > summary").click();
+  await page.locator("#mmModel").selectOption("none");
+  await expect(page.locator("#ppmEnd")).toHaveValue("1.95");
+  await page.locator("#runButton").click();
+  await expect(page.locator("#statusText")).toContainText("Fit done", { timeout: 240000 });
+  expect(Number(await cell(page, "GABA", 3))).toBeCloseTo(0.241, 2);
+  await expect(resultRow(page, "MM3co")).toHaveCount(0);
+  await expect(page.locator("#modelNote")).toBeHidden();
+  // A typed range survives switching back.
+  await page.locator("#ppmEnd").fill("0.7");
+  await page.locator("#mmModel").selectOption("co-edited");
+  await expect(page.locator("#ppmEnd")).toHaveValue("0.7");
   // Overriding the detection treats the transients as one unedited series.
   await page.locator("#editedToggle").uncheck();
   await expect(page.locator("#datasetSummary")).not.toContainText("MEGA-PRESS");

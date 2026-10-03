@@ -547,6 +547,7 @@ function showResults() {
   $("ratioHeader").textContent = ratioTo ? `/${ratioTo}` : "Ratio";
   $("concBody").replaceChildren(...rows.map((r) => {
     const tr = document.createElement("tr");
+    tr.dataset.metabolite = r.name;
     if (r.combination) tr.className = "lcm-combination";
     if (r.sdPercent > 20) tr.classList.add("lcm-uncertain");
     for (const text of [r.name, formatConc(r.concentration), `${r.sdPercent}%`, r.ratio == null ? "" : formatConc(r.ratio)]) {

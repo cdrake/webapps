@@ -37,8 +37,14 @@ fitting, both as Rust ports compiled to WebAssembly (`packages/lcmodel`).
   GABA+ 0.296 (6 %). GABA is 23 % and 44 % of GABA+, against the ~50 % usually
   assumed. GABA+ is higher than what a GABA-only fit (no MM model, 4.2 to
   1.95 ppm) reported (0.153 and 0.241, so 1.9 and 1.2 times): that fit leaves
-  the broad co-edited signal at 3 ppm in the residual, as Zöllner et al. found. MM-suppressed sets
-  get no MM3co.
+  the broad co-edited signal at 3 ppm in the residual, as Zöllner et al. found.
+  The co-edited model is the default; LCModel settings keep that previous
+  analysis as macromolecule model "none" (automation parameter
+  `macromoleculeModel`), which reproduces 0.153 and 0.241. The fit range
+  follows the model unless the user typed one. MM-suppressed sets always use
+  "none". The table and CSV lead with GABA+; GABA and MM3co carry a
+  model-dependent note (CSV column `Note`, `measurements.metabolites[].note`),
+  and the automation provenance records `macromoleculeModel`.
 * Output: fit, metabolite and preprocessing plots (`src/spectrum-plot.js`), the
   concentration table, and downloads of the concentrations (.csv), LCModel's
   `.table`/`.coord`, the `.RAW`/`.H2O`, the control file and FID-A's report.
