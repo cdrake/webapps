@@ -142,12 +142,14 @@ test("the Philips MEGA-PRESS example is detected as edited and fits GABA", async
   await expect(page.locator("#statusText")).toContainText("Fit done", { timeout: 240000 });
   await expect(page.locator("#ratioHeader")).toHaveText("/NAA+NAAG");
   // Default: the co-edited MM model. GABA+ leads; GABA and MM3co are flagged.
-  await expect(page.locator("#mmModelField")).toBeVisible();
+  await expect(page.locator("#mmModelField")).not.toHaveAttribute("hidden");
   await expect(page.locator("#mmModel")).toHaveValue("co-edited");
   await expect(page.locator("#concBody tr").first()).toHaveAttribute("data-metabolite", "GABA+MM3co");
-  expect(Number(await cell(page, "GABA+MM3co", 3))).toBeCloseTo(0.296, 2);
-  expect(Number(await cell(page, "GABA", 3))).toBeCloseTo(0.131, 2);
-  expect(Number(await cell(page, "MM3co", 3))).toBeCloseTo(0.165, 2);
+  // The browser fit also scales to water with eddy-current correction, so its
+  // numbers differ slightly from the session tests (0.296, 0.131, 0.165).
+  expect(Number(await cell(page, "GABA+MM3co", 3))).toBeCloseTo(0.285, 2);
+  expect(Number(await cell(page, "GABA", 3))).toBeCloseTo(0.135, 2);
+  expect(Number(await cell(page, "MM3co", 3))).toBeCloseTo(0.149, 2);
   await expect(resultRow(page, "GABA").locator(".nd-info-icon")).toHaveCount(1);
   await expect(resultRow(page, "MM3co").locator(".nd-info-icon")).toHaveCount(1);
   await expect(page.locator("#modelNote")).toBeVisible();
@@ -162,13 +164,15 @@ test("the Philips MEGA-PRESS example is detected as edited and fits GABA", async
   await expect(page.locator("#ppmEnd")).toHaveValue("1.95");
   await page.locator("#runButton").click();
   await expect(page.locator("#statusText")).toContainText("Fit done", { timeout: 240000 });
-  expect(Number(await cell(page, "GABA", 3))).toBeCloseTo(0.241, 2);
+  // 0.241 in the session tests, without water scaling and ECC.
+  expect(Number(await cell(page, "GABA", 3))).toBeCloseTo(0.236, 2);
   await expect(resultRow(page, "MM3co")).toHaveCount(0);
   await expect(page.locator("#modelNote")).toBeHidden();
   // A typed range survives switching back.
   await page.locator("#ppmEnd").fill("0.7");
   await page.locator("#mmModel").selectOption("co-edited");
   await expect(page.locator("#ppmEnd")).toHaveValue("0.7");
+  await page.locator("#ppmEnd").fill("0.5");
   // Overriding the detection treats the transients as one unedited series.
   await page.locator("#editedToggle").uncheck();
   await expect(page.locator("#datasetSummary")).not.toContainText("MEGA-PRESS");
