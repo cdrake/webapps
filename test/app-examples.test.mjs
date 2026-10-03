@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { loadAppsRegistry, repoRoot } from '../scripts/lib/apps-registry.mjs';
 import { loadAppExamples, exampleAssets } from '../scripts/lib/app-examples.mjs';
+import { modelManifestAssets } from '../scripts/lib/model-assets.mjs';
 
 const example = {
   id: 't1', label: 'T1-weighted head MRI',
@@ -48,6 +49,17 @@ test('every declared example is available in the locked offline inventory', asyn
       assert.match(lock.assets[example.url].sha256, /^[a-f0-9]{64}$/);
       assert.ok(lock.assets[example.url].bytes > 0);
     }
+  }
+});
+
+test('every model manifest asset is available in the locked offline inventory', async () => {
+  const sources = JSON.parse(await readFile(join(repoRoot, 'registry/offline-assets.sources.json')));
+  const lock = JSON.parse(await readFile(join(repoRoot, 'registry/offline-assets.lock.json')));
+  for (const asset of await modelManifestAssets()) {
+    const label = `${asset.manifest}: ${asset.name}`;
+    assert.ok(sources.apps[asset.app]?.some(source => source.url === asset.url), `${label} needs an offline source; run scripts/lock-example-assets.mjs`);
+    assert.ok(lock.apps[asset.app]?.includes(asset.url), `${label} needs an offline lock entry`);
+    assert.equal(lock.assets[asset.url]?.sha256, asset.sha256, `${label} lock checksum`);
   }
 });
 

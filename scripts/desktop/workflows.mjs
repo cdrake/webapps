@@ -77,6 +77,8 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     const result = nifti(await download(button));
     const credentialPersisted = await page.evaluate(code => Object.values(localStorage).some(value => value.includes(code) || /"token"\s*:/.test(value)), compute.token);
     assert.equal(credentialPersisted, false, 'Pairing codes and client credentials must not be saved to localStorage');
+    // The app collapses the compute section once a server connects.
+    await page.locator('#computeSection').evaluate(section => { section.open = true; });
     await panel.getByRole('button', { name: 'Disconnect', exact: true }).click();
     await expect(panel).toHaveAttribute('data-state', 'idle');
     await expect(panel.locator('input[type="password"]')).toHaveValue('');
