@@ -54,7 +54,22 @@
             "press-1.5t-te30",
             "slaser-7t-te28",
             "steam-7t-te8",
-            "megapress-3t-te68-diff"
+            "megapress-3t-te68-diff",
+            "press-1.5t-te35",
+            "press-1.5t-te144",
+            "steam-1.5t-te20",
+            "press-3t-te80",
+            "steam-3t-te8",
+            "slaser-3t-te35",
+            "slaser-3t-te30-shaped",
+            "slaser-3t-te35-shaped",
+            "press-3t-te30-shaped",
+            "press-3t-te35-shaped",
+            "press-3t-te80-shaped",
+            "press-3t-te144-shaped",
+            "slaser-7t-te28-shaped",
+            "megapress-3t-te80-diff",
+            "megapress-3t-te80-mmsup-diff"
           ],
           "default": "auto"
         },

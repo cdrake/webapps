@@ -10,7 +10,7 @@ test("app boots on the workspace", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("#viewer")).toBeVisible();
   await expect(page.locator("#runButton")).toBeDisabled();
-  await expect(page.locator("#basisSelect option")).toHaveCount(16);
+  await expect(page.locator("#basisSelect option")).toHaveCount(25);
 });
 
 test("shared app bar owns information actions and theme", async ({ page }) => {
@@ -70,7 +70,7 @@ test("the GE PRESS phantom goes through FID-A and the recommended basis set", as
   await selectExample(page, "ge-press-phantom");
   await expect(page.locator("#datasetSummary")).toContainText("TE 35 ms");
   await expect(page.locator("#datasetSummary")).toContainText("with water");
-  await expect(page.locator("#basisSelect")).toHaveValue("press-3t-te35");
+  await expect(page.locator("#basisSelect")).toHaveValue("press-3t-te35-shaped");
   await expect(page.locator("#basisAdvice")).toHaveClass(/success/);
   await expect(page.locator("#waterScaling")).toBeChecked();
   await page.locator("#runButton").click();
