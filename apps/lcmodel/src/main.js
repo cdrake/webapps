@@ -183,6 +183,7 @@ async function ensureLoaded() {
 function setBusy(value) {
   busy = value;
   $("dataInput").disabled = value;
+  $("folderInput").disabled = value;
   $("basisInput").disabled = value;
   $("editedToggle").disabled = value;
   exampleControl.setDisabled(value);
@@ -232,7 +233,9 @@ async function loadFiles(files, signal) {
   try {
     const read = await Promise.all(files.map(async (file) => {
       const bytes = new Uint8Array(await file.arrayBuffer());
-      return { name: file.webkitRelativePath || file.name, bytes, head: textHead(bytes), file };
+      // A folder keeps its relative paths (picker: webkitRelativePath; drop: bindFileDrop's
+      // _webkitRelativePath), so subjects with the same file names pair within their folders.
+      return { name: file.webkitRelativePath || file._webkitRelativePath || file.name, bytes, head: textHead(bytes), file };
     }));
     signal?.throwIfAborted();
     const sorted = sortInputs(read);
@@ -256,7 +259,7 @@ async function loadFiles(files, signal) {
       throw new Error("No spectroscopy data found among the files.");
     }
     $("fileInfo").hidden = false;
-    $("fileInfo").textContent = files.map((f) => f.name).join(", ");
+    $("fileInfo").textContent = files.length > 6 ? `${files.length} files` : files.map((f) => f.name).join(", ");
     $("dropZone").classList.add("has-files");
     $("emptyState").textContent = datasetCount() > 1
       ? "Data loaded. Check the basis set, then fit all datasets."
@@ -298,6 +301,7 @@ async function loadWithFida(files, signal) {
   signal?.throwIfAborted();
   for (const e of loaded.errors) log.log(`${e.file}: ${e.error}`, "warning");
   for (const e of loaded.ignored) log.log(`${e.file}: ${e.reason}`, "info");
+  for (const name of loaded.unpairedWater ?? []) log.log(`${name}: a water reference with no spectrum to pair it with`, "warning");
   if (!loaded.datasets.length) {
     const first = loaded.errors[0];
     throw new Error(first ? `${first.file}: ${first.error}` : "No readable spectroscopy data found.");
@@ -309,7 +313,15 @@ async function loadWithFida(files, signal) {
   });
   if (loaded.datasets.length > 1) log.log(`${loaded.datasets.length} datasets: ${loaded.datasets.map((d) => `${d.label}${d.water ? ` + ${d.water}` : ""}`).join(", ")}`);
   // The worker took the bytes; the File objects let it read them again.
-  return { kind: "fida", datasets: loaded.datasets, index: 0, files: files.map((f) => f.name), sources: files.map((f) => ({ name: f.name, file: f.file })) };
+  return {
+    kind: "fida",
+    datasets: loaded.datasets,
+    index: 0,
+    files: files.map((f) => f.name),
+    sources: files.map((f) => ({ name: f.name, file: f.file })),
+    // Files FID-A could not read: failed rows of a group table.
+    loadErrors: loaded.errors,
+  };
 }
 
 /** What the basis set is matched against, for dataset `k`. */
@@ -894,7 +906,7 @@ function openReport(result) {
 }
 
 function hasGroup() {
-  return datasetCount() > 1 && fits.size > 0;
+  return datasetCount() + (input?.loadErrors?.length ?? 0) > 1 && fits.size > 0;
 }
 
 /** Group table records, in dataset order. */
@@ -919,6 +931,11 @@ function groupRecords() {
       metabolites: f?.rows,
     });
   });
+  // Unreadable files are failed rows too, with no fit to select.
+  for (const e of input.loadErrors ?? []) {
+    indices.push(-1);
+    records.push(groupRecord({ name: e.file, status: STATUS.failed, error: e.error }));
+  }
   return { indices, records };
 }
 
@@ -963,6 +980,7 @@ function renderGroup() {
 
 /** A row of the group table, or the Dataset select: show that dataset's fit. */
 function selectDataset(k, { keepView = false } = {}) {
+  if (k < 0) return;
   input.index = k;
   showDataset();
   renderGroup();
@@ -1041,6 +1059,11 @@ $("dataInput").addEventListener("change", (event) => {
   if (files.length) void importFiles(files);
 });
 bindFileDrop($("dropZone"), async (files) => importFiles(await files));
+$("folderInput").addEventListener("change", (event) => {
+  const files = Array.from(event.target.files);
+  event.target.value = "";
+  if (files.length) void importFiles(files);
+});
 async function loadBasisFile(file) {
   if (!file || busy) return;
   try {

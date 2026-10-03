@@ -23,7 +23,8 @@ function cell(doc, tag, text, attributes = {}) {
  * @param {{
  *   indices: number[], selected: number, show: "concentration"|"ratio",
  *   onSelect: (index: number) => void,
- * }} options  `indices` maps each record to its dataset index.
+ * }} options  `indices` maps each record to its dataset index; -1 is a
+ *   file that could not be read.
  */
 export function renderGroupTable(host, records, { indices, selected, show, onSelect }) {
   const doc = host.ownerDocument;
@@ -47,17 +48,22 @@ export function renderGroupTable(host, records, { indices, selected, show, onSel
     const row = doc.createElement("tr");
     row.dataset.dataset = String(index);
     if (index === selected) row.setAttribute("aria-current", "true");
-    const name = cell(doc, "span", record.name, { role: "button", tabindex: "0", title: `Show the fit of ${record.name}` });
-    const select = () => onSelect(index);
-    name.addEventListener("click", select);
-    name.addEventListener("keydown", (event) => {
-      if (event.key !== "Enter" && event.key !== " ") return;
-      event.preventDefault();
-      select();
-    });
     const first = doc.createElement("th");
     first.scope = "row";
-    first.append(name);
+    if (index >= 0) {
+      const name = cell(doc, "span", record.name, { role: "button", tabindex: "0", title: `Show the fit of ${record.name}` });
+      const select = () => onSelect(index);
+      name.addEventListener("click", select);
+      name.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        select();
+      });
+      first.append(name);
+    } else {
+      // A file FID-A could not read: nothing to show but the error.
+      first.textContent = record.name;
+    }
     row.append(
       first,
       cell(doc, "td", record.status),

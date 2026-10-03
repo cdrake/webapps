@@ -81,7 +81,7 @@ function acquisition(dataset) {
     ["File", dataset.file],
     ["Water reference", dataset.waterFile ?? "none"],
     ["Format", dataset.format],
-    ["Sequence", [h.sequence, h.family && h.family !== h.sequence ? `(${h.family})` : ""].filter(Boolean).join(" ")],
+    ["Sequence", [h.sequence?.trim(), h.family && h.family !== h.sequence?.trim() ? `(${h.family})` : ""].filter(Boolean).join(" ")],
     ["Field", field && `${field}${h.hzpppm ? `, ${Number(h.hzpppm).toFixed(4)} MHz` : ""}`],
     ["TE / TR", h.teMs != null && `${h.teMs} ms${h.trMs ? ` / ${h.trMs} ms` : ""}`],
     ["Averages", h.averages],
