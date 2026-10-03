@@ -38,15 +38,24 @@ test("the voxel sits on the T1 and typed fractions correct the concentrations", 
   await page.locator("#fGm").fill("0.60");
   await page.locator("#fWm").fill("0.27");
   await page.locator("#fCsf").fill("0.13");
-  await page.locator("#fCsf").dispatchEvent("change");
   await page.locator("#runButton").click();
   await expect(page.locator("#statusText")).toContainText("Fit done", { timeout: 300000 });
   await expect(page.locator("#corrHeader")).toBeVisible();
   const lcm = Number(await row(page, "NAA+NAAG").locator("td").nth(1).textContent());
-  const corrected = Number(await row(page, "NAA+NAAG").locator("td").nth(4).textContent());
+  const corrected = Number(await row(page, "NAA+NAAG").locator("td").nth(3).textContent());
   expect(lcm).toBeGreaterThan(3);
   // tNAA's factor at TE 35 / TR 2000 ms with these fractions (Osprey quantTiss): 12.6216 / 12.
   expect(corrected / lcm).toBeCloseTo(12.6215878899 / 12, 2);
+  // The sidebar's last column switches between the tissue-corrected value and the ratio.
+  await page.locator("#concColumn").selectOption("ratio");
+  await expect(page.locator("#ratioHeader")).toBeVisible();
+  await expect(page.locator("#corrHeader")).toBeHidden();
+  expect(Number(await row(page, "NAA+NAAG").locator("td").nth(3).textContent())).toBeGreaterThan(1);
+  await page.locator("#concColumn").selectOption("tissue");
+  await expect(page.locator("#corrHeader")).toBeVisible();
+  // Four columns fit the sidebar: the table needs no sideways scrolling.
+  const fits = await page.locator("#concTable").evaluate((t) => t.scrollWidth <= t.parentElement.clientWidth + 1);
+  expect(fits).toBe(true);
   // Collapsing and reopening the section keeps the fractions.
   await page.locator("#tissueSection > summary").click();
   await page.locator("#tissueSection > summary").click();

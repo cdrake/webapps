@@ -351,8 +351,11 @@ export function createTissuePanel(hooks) {
     if (files.length) void importT1(files);
   });
   bindFileDrop($("t1Drop"), async (files) => importT1(await files));
+  // Update as the user types: waiting for "change" would re-render the results
+  // while the pointer is on its way to a Download button, and the table growing
+  // above it would move the button out from under the click.
   for (const id of Object.values(FIELDS)) {
-    $(id).addEventListener("change", () => {
+    $(id).addEventListener("input", () => {
       const f = fractionsFromFields();
       if (measured && f && Object.keys(FIELDS).some((k) => Math.abs(f[k] - measured[k]) > 5e-4)) {
         measured = null;

@@ -243,10 +243,10 @@ test("a mixed group keeps the macromolecule model for MEGA-PRESS, and tissue-cor
   await page.locator("#fGm").fill("0.60");
   await page.locator("#fWm").fill("0.27");
   await page.locator("#fCsf").fill("0.13");
-  // Tab commits the value (change) before the next click, as a user's would.
-  await page.locator("#fCsf").press("Tab");
-  await expect(page.locator("#corrHeader")).toBeVisible();
+  // Clicking Download straight from the field commits it (change) as the click
+  // starts; the re-rendered result list must not swallow that click.
   rows = table((await download(page, "Group table (.csv)")).bytes.toString());
+  await expect(page.locator("#corrHeader")).toBeVisible();
   const naa = rows.find((r) => r.dataset.startsWith("sub-02_PRESS") && r.metabolite === "NAA+NAAG");
   expect(Number(naa.tissue_corrected_mmol_per_kg) / Number(naa.concentration)).toBeCloseTo(12.6215878899 / 12, 3);
   expect([naa.fraction_gm, naa.fraction_wm, naa.fraction_csf, naa.fraction_source]).toEqual(["0.6", "0.27", "0.13", "entered"]);

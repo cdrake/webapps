@@ -158,6 +158,13 @@
           <p id="modelNote" class="nd-hint" hidden>GABA and MM3co depend on the macromolecule model; GABA+ does not.
             <span class="nd-info-icon" tabindex="0" aria-label="About model-dependent results">i<span class="nd-info-tooltip">The fit separates GABA from co-edited macromolecules (MM3co) by assuming the MM3co line width and its ratio to the 0.915 ppm macromolecule peak. Change those assumptions and the split changes, while GABA+ = GABA + MM3co hardly moves. Report GABA+ as the primary result.</span></span>
           </p>
+          <div class="nd-field" id="concColumnField" hidden>
+            <label for="concColumn">Last column</label>
+            <select id="concColumn">
+              <option value="tissue">Tissue-corrected (mmol/kg)</option>
+              <option value="ratio">Ratio</option>
+            </select>
+          </div>
           <div class="nd-table-scroll">
             <table class="nd-data-table lcm-conc" id="concTable" hidden>
               <thead><tr><th>Metabolite</th><th id="concHeader">Conc.</th><th>SD</th><th id="ratioHeader">Ratio</th><th id="corrHeader" hidden>Tissue <small>mmol/kg</small></th></tr></thead>

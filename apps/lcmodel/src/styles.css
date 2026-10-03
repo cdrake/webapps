@@ -13,6 +13,7 @@
 .lcm-plot .lcm-residual { stroke: var(--nd-color-text-muted); stroke-width: 0.8; }
 .lcm-plot .lcm-metabolite { stroke: var(--nd-color-primary); stroke-width: 1.2; }
 .lcm-conc td { white-space: nowrap; }
+.lcm-conc td:first-child { white-space: normal; }
 .lcm-combination td:first-child { font-weight: 600; }
 .lcm-uncertain td { color: var(--nd-color-text-dim); }
 /* The group table fills the viewer and scrolls within it; names and headers stay in view. */

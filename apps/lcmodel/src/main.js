@@ -231,6 +231,8 @@ function clearResults() {
   $("plotLabel").textContent = "";
   $("tissueAdvice").hidden = true;
   $("corrHeader").hidden = true;
+  $("ratioHeader").hidden = false;
+  $("concColumnField").hidden = true;
   tissue.hide();
   for (const v of VIEWS) if (v.id !== "group" && v.id !== "voxel") setViewEnabled(v.id, false);
   renderResultList();
@@ -927,13 +929,24 @@ function showEntry(entry, { view: next = "fit" } = {}) {
   $("viewerNotice").textContent = `${datasetLabel(entry.index)}: ${entry.error}`;
 }
 
+/** `text` as nodes with a line-break opportunity after each "+". */
+function breakablePlus(text) {
+  const parts = text.split("+");
+  return parts.flatMap((part, k) => (k < parts.length - 1 ? [`${part}+`, document.createElement("wbr")] : [part]));
+}
+
 /** The concentration table and downloads, with the tissue correction when it applies. */
 function renderConcentrations() {
   const { rows, ratioTo } = fit;
   const correction = setCorrection(fit, tissue.correct(rows, { waterScaled: fit.water, edited: Boolean(fit.lcm.edited) }));
   $("tissueAdvice").hidden = !correction?.reason;
   $("tissueAdvice").textContent = correction?.reason ?? "";
-  $("corrHeader").hidden = !fit.correction;
+  // The sidebar has room for one value column after %SD: the ratio, or the
+  // tissue-corrected value when there is one (the Group tab and the report show both).
+  $("concColumnField").hidden = !fit.correction;
+  const showTissue = Boolean(fit.correction) && $("concColumn").value === "tissue";
+  $("corrHeader").hidden = !showTissue;
+  $("ratioHeader").hidden = showTissue;
   $("modelNote").hidden = !rows.some((r) => r.modelDependent);
   $("concHeader").textContent = fit.water ? "Conc. (mM)" : "Conc. (a.u.)";
   $("ratioHeader").textContent = ratioTo ? `/${ratioTo}` : "Ratio";
@@ -942,14 +955,17 @@ function renderConcentrations() {
     tr.dataset.metabolite = r.name;
     if (r.combination) tr.className = "lcm-combination";
     if (r.sdPercent > 20) tr.classList.add("lcm-uncertain");
-    const cells = [r.name, formatConc(r.concentration), `${r.sdPercent}%`, r.ratio == null ? "" : formatConc(r.ratio)];
-    if (fit.correction) cells.push(formatConc(fit.correction.rows[k].corrected));
-    for (const text of cells) {
+    const last = showTissue ? formatConc(fit.correction.rows[k].corrected) : r.ratio == null ? "" : formatConc(r.ratio);
+    const cells = [r.name, formatConc(r.concentration), `${r.sdPercent}%`, last];
+    cells.forEach((text, column) => {
       const td = document.createElement("td");
-      if (r.primary) td.append(Object.assign(document.createElement("strong"), { textContent: text }));
-      else td.textContent = text;
+      // Combination names (MM14+Lip13a+Lip13b+MM12) may wrap after each "+", so the
+      // name column does not push the numbers out of the sidebar.
+      const content = column === 0 ? breakablePlus(text) : [text];
+      const target = r.primary ? td.appendChild(document.createElement("strong")) : td;
+      target.append(...content);
       tr.append(td);
-    }
+    });
     if (r.modelDependent) tr.cells[0].append(" ", renderInfoIcon(r.note, { label: `${r.name} depends on the macromolecule model` }));
     return tr;
   }));
@@ -1244,6 +1260,9 @@ groupShow.addEventListener("change", renderGroup);
 for (const id of ["hzpppmInput", "dwellInput"]) $(id).addEventListener("input", () => {
   recommend();
   updateRunButton();
+});
+$("concColumn").addEventListener("change", () => {
+  if (fit) renderConcentrations();
 });
 $("runButton").addEventListener("click", () => void (datasetCount() > 1 ? runGroup() : run()));
 $("runSelectedButton").addEventListener("click", () => void run());
