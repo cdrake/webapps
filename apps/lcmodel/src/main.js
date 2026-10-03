@@ -77,7 +77,8 @@ const results = createResultList({
 let input = null;
 let customBasis = null; // { name, text, header }
 // Fit ranges, ppm. With the co-edited macromolecule model a MEGA-PRESS
-// difference spectrum is fitted down to 0.5 ppm so that the co-edited MM at
+// difference spectrum is fitted down to 0.5 ppm (buildControl leaves out
+// 1.2-1.95 ppm) so that the co-edited MM at
 // 0.915 ppm constrains MM3co under GABA (Zöllner et al. 2022); without it,
 // LCModel's mega-press-3 preset range, 4.2 to 1.95 ppm.
 const RANGES = { plain: ["4.0", "0.2"], "co-edited": ["4.2", "0.5"], none: ["4.2", "1.95"] };

@@ -79,7 +79,7 @@
         },
         "macromoleculeModel": {
           "type": "string",
-          "description": "MEGA-PRESS: co-edited fits MM09 and MM3co to 0.5 ppm and reports GABA, MM3co and GABA+; none is LCModel's mega-press-3 as before (GABA+ only, to 1.95 ppm). MM-suppressed basis sets always use none.",
+          "description": "MEGA-PRESS: co-edited fits MM09 and MM3co to 0.5 ppm (1.2-1.95 ppm excluded, as Osprey) and reports GABA, MM3co and GABA+; none is LCModel's mega-press-3 as before (GABA+ only, to 1.95 ppm). MM-suppressed basis sets always use none.",
           "enum": [
             "co-edited",
             "none"
