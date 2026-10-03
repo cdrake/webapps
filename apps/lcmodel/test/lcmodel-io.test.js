@@ -36,9 +36,11 @@ test("a MEGA-PRESS fit can separate GABA from co-edited MM3co", () => {
   assert.match(mm, /chsimu\(2\)='MM3co @ 3\.0 \+- \.02 FWHM= 0\.085 < 0\.114 \+- \.02 AMP= 2\.'/);
   assert.match(mm, /chrato\(2\)='MM3co\/MM09 = 1\. \+- \.2'/);
   assert.match(mm, /\n ncombi=18\n chcomb\(18\)='GABA\+MM3co'\n/);
+  // Osprey's GAP.diff1: the region the editing pulse hits directly is not fitted.
+  assert.match(mm, /\n ppmgap\(1,1\)=1\.95\n ppmgap\(2,1\)=1\.2\n/);
   // Without the model: LCModel's mega-press-3 as before (its own MM09, no MM3co).
   const old = buildControl({ ...options, ppmEnd: 1.95, coEditedMM: false });
-  assert.doesNotMatch(old, /MM3co|nsimul|chsimu|chrato|ncombi/);
+  assert.doesNotMatch(old, /MM3co|nsimul|chsimu|chrato|ncombi|ppmgap/);
   assert.match(old, /ppmend=1\.95/);
   assert.throws(() => buildControl({ nunfil: 2048, deltat: 2e-4, hzpppm: 123, coEditedMM: true }), /MEGA-PRESS/);
 });

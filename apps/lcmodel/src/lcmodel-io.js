@@ -39,6 +39,12 @@ function coEditedMacromolecules(hzpppm) {
     " chrato(2)='MM3co/MM09 = 1. +- .2'",
     " ncombi=18",
     " chcomb(18)='GABA+MM3co'",
+    // 1.2-1.95 ppm is left out of the fit, as in Osprey's MEGA-PRESS LCModel
+    // jobs (GAP.diff1): the editing pulse hits the macromolecules there
+    // directly, and no basis spectrum, MM component or baseline (the
+    // mega-press-3 preset has none) models them.
+    " ppmgap(1,1)=1.95",
+    " ppmgap(2,1)=1.2",
   ];
 }
 

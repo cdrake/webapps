@@ -440,7 +440,7 @@ mod mega_tests {
     fn co_edited_mm(hzpppm: f64) -> String {
         let ppm = |hz: f64| format!("{:.3}", hz / hzpppm);
         format!(
-            " ppmend=0.5\n nsimul=2\n chsimu(1)='MM09 @ .915 +- .02 FWHM= .085 < .1 +- .35 AMP= 3.'\n chsimu(2)='MM3co @ 3.0 +- .02 FWHM= {} < {} +- .02 AMP= 2.'\n nratio=2\n chrato(2)='MM3co/MM09 = 1. +- .2'\n ncombi=18\n chcomb(18)='GABA+MM3co'\n",
+            " ppmend=0.5\n nsimul=2\n chsimu(1)='MM09 @ .915 +- .02 FWHM= .085 < .1 +- .35 AMP= 3.'\n chsimu(2)='MM3co @ 3.0 +- .02 FWHM= {} < {} +- .02 AMP= 2.'\n nratio=2\n chrato(2)='MM3co/MM09 = 1. +- .2'\n ncombi=18\n chcomb(18)='GABA+MM3co'\n ppmgap(1,1)=1.95\n ppmgap(2,1)=1.2\n",
             ppm(10.5),
             ppm(14.0)
         )
@@ -481,11 +481,11 @@ mod mega_tests {
     fn co_edited_mm_separates_gaba_from_mm3co_on_siemens_data() {
         let Some(p) = siemens_mega() else { return };
         let Some([gaba, mm3co, plus]) = gaba_mm3co(&p) else { return };
-        // GABA 0.067 (15 %), MM3co 0.220 (10 %), GABA+ 0.287 (7 %) of NAA+NAAG:
-        // GABA is 23 % of GABA+, below the ~50 % usually assumed.
-        assert!((plus.0 - 0.287).abs() < 0.01, "GABA+ {plus:?}");
-        assert!((gaba.0 - 0.067).abs() < 0.01 && gaba.1 <= 20.0, "GABA {gaba:?}");
-        assert!((mm3co.0 - 0.220).abs() < 0.01 && mm3co.1 <= 15.0, "MM3co {mm3co:?}");
+        // GABA 0.075 (17 %), MM3co 0.216 (11 %), GABA+ 0.291 (7 %) of NAA+NAAG:
+        // GABA is 26 % of GABA+, below the ~50 % usually assumed.
+        assert!((plus.0 - 0.291).abs() < 0.01, "GABA+ {plus:?}");
+        assert!((gaba.0 - 0.075).abs() < 0.01 && gaba.1 <= 20.0, "GABA {gaba:?}");
+        assert!((mm3co.0 - 0.216).abs() < 0.01 && mm3co.1 <= 15.0, "MM3co {mm3co:?}");
         assert!(plus.1 < gaba.1, "GABA+ is better determined than its parts");
     }
 
@@ -522,14 +522,14 @@ mod mega_tests {
         let (_, sd, ratio) = row(&table, "GABA");
         assert!(sd <= 7.0, "GABA %SD {sd}");
         assert!((ratio - 0.241).abs() < 0.002, "GABA+ {ratio}");
-        // With the co-edited MM model: GABA 0.131 (12 %), MM3co 0.165 (12 %),
-        // GABA+ 0.296 (6 %) of NAA+NAAG; GABA is 44 % of GABA+.
+        // With the co-edited MM model: GABA 0.102 (14 %), MM3co 0.191 (9 %),
+        // GABA+ 0.293 (5 %) of NAA+NAAG; GABA is 35 % of GABA+.
         let Some([gaba, mm3co, plus]) = gaba_mm3co(&p) else { return };
-        assert!((plus.0 - 0.296).abs() < 0.01 && plus.1 <= 8.0, "GABA+ {plus:?}");
-        assert!((gaba.0 - 0.131).abs() < 0.01 && gaba.1 <= 15.0, "GABA {gaba:?}");
-        assert!((mm3co.0 - 0.165).abs() < 0.01 && mm3co.1 <= 15.0, "MM3co {mm3co:?}");
+        assert!((plus.0 - 0.293).abs() < 0.01 && plus.1 <= 8.0, "GABA+ {plus:?}");
+        assert!((gaba.0 - 0.102).abs() < 0.01 && gaba.1 <= 15.0, "GABA {gaba:?}");
+        assert!((mm3co.0 - 0.191).abs() < 0.01 && mm3co.1 <= 15.0, "MM3co {mm3co:?}");
         let fraction = gaba.0 / plus.0;
-        assert!(fraction > 0.35 && fraction < 0.6, "GABA/GABA+ {fraction}");
+        assert!(fraction > 0.3 && fraction < 0.6, "GABA/GABA+ {fraction}");
         // Forcing "not edited" fits the alternate transients as one PRESS-like average.
         let p = process(&ds[0], &Options::from_json(&json!({"edited": false})), &mut |_, _| {}, &|| false).unwrap();
         assert!(p.edit_off.is_none());
