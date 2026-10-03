@@ -195,7 +195,7 @@
       "centre_ppm": 3.0,
       "thk_cm": 2,
       "fov_cm": 3,
-      "grid": 48
+      "grid": 32
     },
     {
       "id": "slaser-3t-te35-shaped",
@@ -216,7 +216,7 @@
       "centre_ppm": 3.0,
       "thk_cm": 2,
       "fov_cm": 3,
-      "grid": 48
+      "grid": 32
     },
     {
       "id": "press-3t-te144-shaped",
@@ -238,7 +238,7 @@
       "centre_ppm": 3.0,
       "thk_cm": 2,
       "fov_cm": 3,
-      "grid": 48
+      "grid": 32
     },
     {
       "id": "press-3t-te80-shaped",
@@ -260,7 +260,7 @@
       "centre_ppm": 3.0,
       "thk_cm": 2,
       "fov_cm": 3,
-      "grid": 48
+      "grid": 32
     },
     {
       "id": "slaser-7t-te28-shaped",
@@ -281,7 +281,7 @@
       "centre_ppm": 3.0,
       "thk_cm": 2,
       "fov_cm": 3,
-      "grid": 48
+      "grid": 32
     },
     {
       "id": "press-3t-te30-shaped",
@@ -303,7 +303,7 @@
       "centre_ppm": 3.0,
       "thk_cm": 2,
       "fov_cm": 3,
-      "grid": 48
+      "grid": 32
     },
     {
       "id": "press-3t-te35-shaped",
@@ -325,7 +325,7 @@
       "centre_ppm": 3.0,
       "thk_cm": 2,
       "fov_cm": 3,
-      "grid": 48
+      "grid": 32
     }
   ],
   "mega": [
