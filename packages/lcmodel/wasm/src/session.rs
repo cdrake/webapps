@@ -118,6 +118,7 @@ pub fn load(files: &[(String, &[u8])]) -> (Vec<Dataset>, Value) {
             _ => (None, None),
         };
         let format = pair.metabolite.format;
+        let voxel = metab.voxel;
         let (metab, water) = if splits_editing(format) {
             (drop_empty_transients(&metab.out), water.as_ref().map(drop_empty_transients))
         } else {
@@ -125,6 +126,10 @@ pub fn load(files: &[(String, &[u8])]) -> (Vec<Dataset>, Value) {
         };
         let edit = if splits_editing(format) { detect_editing(&metab, water.as_ref()) } else { None };
         let mut h = header(&metab);
+        // Where the voxel sits (RAS mm affine), when the format records it.
+        if let Some(v) = &voxel {
+            h["voxel"] = v.to_json();
+        }
         // GE and Philips do not record editing; the interface shows what the
         // data say and lets the user override it (Options::edited).
         if let Some(e) = &edit {
@@ -395,6 +400,35 @@ mod tests {
         std::fs::write(format!("{}/ge.raw", std::env::var("TMPDIR").unwrap()), &raw).ok();
         eprintln!("{table}");
         assert!(table.contains("NAA"));
+    }
+}
+
+#[cfg(test)]
+mod voxel_tests {
+    use super::*;
+
+    #[test]
+    fn philips_header_carries_the_voxel() {
+        // Osprey's MIT example (exampledata/sdat/UnEdited/sub-01), under $OSPREY_EXAMPLES.
+        let Ok(root) = std::env::var("OSPREY_EXAMPLES") else {
+            eprintln!("skipping: $OSPREY_EXAMPLES not set");
+            return;
+        };
+        let dir = format!("{root}/sdat/UnEdited/sub-01/ses-01/mrs");
+        let names = [
+            "sub-01_ses-01_press/sub-01_PRESS_35_act.sdat",
+            "sub-01_ses-01_press/sub-01_PRESS_35_act.spar",
+            "sub-01_ses-01_press-ref/sub-01_PRESS_35_ref.sdat",
+            "sub-01_ses-01_press-ref/sub-01_PRESS_35_ref.spar",
+        ];
+        let bytes: Vec<Vec<u8>> = names.iter().map(|n| std::fs::read(format!("{dir}/{n}")).unwrap()).collect();
+        let files: Vec<(String, &[u8])> = names.iter().zip(&bytes).map(|(n, b)| (n.rsplit('/').next().unwrap().to_string(), b.as_slice())).collect();
+        let (ds, summary) = load(&files);
+        assert_eq!(ds.len(), 1, "{summary}");
+        let v = &summary["datasets"][0]["header"]["voxel"];
+        assert_eq!(v["sizeMm"], json!([30.0, 30.0, 30.0]), "{v}");
+        assert!((v["centerMm"][1].as_f64().unwrap() + 45.03344727).abs() < 1e-6, "{v}");
+        assert_eq!(v["space"], "RAS");
     }
 }
 
