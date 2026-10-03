@@ -94,6 +94,7 @@
             </div>
           </details>
           <button id="runButton" class="nd-btn nd-btn-primary" type="button" disabled>Preprocess and fit</button>
+          <button id="runSelectedButton" class="nd-btn nd-btn-secondary" type="button" hidden>Fit selected dataset</button>
         </div>
       </details>
 
@@ -118,6 +119,7 @@
     <main id="viewer">
       <div class="nd-viewer-canvas-wrapper">
         <div id="plot" class="lcm-plot-host" aria-live="polite"></div>
+        <div id="groupView" class="lcm-group-host" hidden></div>
         <p id="emptyState" class="nd-viewer-empty">Choose an example or drop spectroscopy data to begin.</p>
         <p id="viewerNotice" class="nd-viewer-notice" hidden></p>
       </div>
@@ -138,6 +140,8 @@
       <p><strong>Fitting.</strong> LCModel 6.3-1N was translated from Stephen Provencher's Fortran subprogram by subprogram, keeping its precision and order of operations. On LCModel's own test case, the port's .TABLE and .COORD outputs are identical to those of the Fortran compiled with gfortran. Concentrations are scaled to the unsuppressed water reference when there is one (LCModel's WCONC and ATTH2O defaults); without water they are in arbitrary units, and the ratios to creatine are the useful numbers. %SD is LCModel's Cramér-Rao estimate; values above about 20% are unreliable.</p>
       <p><strong>Basis sets.</strong> The included basis sets were simulated with FID-A's ideal-pulse density-matrix simulations for 20 metabolites. LCModel adds macromolecules and lipids itself. Choose the one that matches the data's field strength, sequence and echo time, or supply your own .BASIS file. Ideal pulses ignore the slice profiles of real pulses, which matter most for semi-LASER and long echo times.</p>
       <p><strong>MEGA-PRESS.</strong> GABA-edited data go through FID-A's <code>run_megapressproc_auto</code>: coil combination, removal of bad averages, drift correction per subspectrum and alignment of edit-ON to edit-OFF. LCModel then fits the difference spectrum with its MEGA-PRESS analysis (<code>sptype='mega-press-3'</code>, 4.2 to 1.95 ppm, no baseline, scaled to NAA) and the difference basis set. That basis set was simulated with FID-A's shaped 14 ms editing pulses at the voxel centre, because real editing pulses nearly erase the NAA singlet in the edit-ON scan, which instantaneous pulses cannot reproduce. GABA from the difference spectrum includes co-edited macromolecules (GABA+). Ratios are to NAA+NAAG; the edit-OFF spectrum is a separate download. GE and Philips files do not record editing or which transient is edit-ON, so the app compares alternate transients, as Osprey does: the editing pulse nearly erases the NAA peak in edit-ON. Data that the scanner averaged in edit-ON/OFF pairs cannot be separated.</p>
+      <p><strong>Groups.</strong> Drop several acquisitions, or a folder of subjects, and the app fits each one in turn with the same settings. Every spectrum is paired with the water reference in its own folder. Each dataset gets the basis set recommended for its header, unless you chose a library basis set that suits all of them or dropped your own .BASIS file, which then fits every dataset. A dataset that fails is listed with its error and the rest continue. The group table shows each dataset's concentrations or ratios with their %SD, FID-A's SNR, linewidth and removed averages, and LCModel's FWHM, S/N and shift. Its CSV download is long, one row per dataset and metabolite, because units and ratio references can differ between datasets; the second CSV has one row per dataset.</p>
+      <p><strong>Reports.</strong> This port does not draw LCModel's PostScript page. Instead each fit has a printable HTML report with the same information: the fit with its baseline and residual, the concentration table with %SD above 20% marked, LCModel's diagnostics and fit quality, the data's header, FID-A's preprocessing summary, the basis set with its checksum, the control file and the versions used. Open it and print it to PDF from the browser.</p>
       <p>Research use only.</p>
     </template>
     <template id="privacyContent"><p>Spectroscopy files are processed in this browser and are never uploaded. Basis sets and examples are downloaded from Hugging Face at a pinned revision and verified by checksum.</p></template>
