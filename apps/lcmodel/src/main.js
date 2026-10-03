@@ -17,6 +17,7 @@ import {
 } from "@neurodesk/webapp-components/ui";
 import { downloadFile } from "@neurodesk/webapp-components/file-io";
 import { registerAppAutomation } from "@neurodesk/webapp-components/automation";
+import { runDcm2niix } from "@neurodesk/runtime-support/dcm2niix-client";
 import manifest from "../../../models/lcmodel.manifest.json" with { type: "json" };
 import examples from "../examples.json" with { type: "json" };
 import { APP, basisLibrary } from "./config.js";
@@ -822,7 +823,8 @@ async function fitOperation({ inputs, parameters, signal, progress: report }) {
   };
 }
 
-registerAppAutomation({ app: APP.id, operations: { fit: fitOperation } });
+// T1 DICOM inputs arrive converted, through the shared dcm2niix import.
+registerAppAutomation({ app: APP.id, convertDicom: runDcm2niix, operations: { fit: fitOperation } });
 
 window.addEventListener("pagehide", () => {
   exampleControl.destroy();
