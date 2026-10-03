@@ -18,16 +18,43 @@ function number(value) {
   return String(value);
 }
 
+// Co-edited macromolecules in a GABA-edited difference spectrum, after
+// Zöllner et al. (NMR Biomed 2022;35:e4618), "MM09soft": the 3.0 ppm MM
+// signal that the 1.9 ppm editing pulse co-edits with GABA (MM3co, a 14 Hz,
+// 2-proton Gaussian) and the non-overlapped co-edited MM at 0.915 ppm
+// (MM09, 3 protons) are separate simulated components (CHSIMU), tied by a
+// soft constraint on their ratio (CHRATO). A 3:2 area ratio, the composite
+// model of Osprey's LCModel wrapper, is a concentration ratio of 1; the SD
+// of 0.2 is the spread Zöllner et al. measured. GABA+ is GABA + MM3co
+// (CHCOMB). The split rests on these priors; GABA+ does not. LCModel's
+// mega-press-3 preset already sets 17 combinations and the NAAG/NAA ratio,
+// so these entries follow them.
+function coEditedMacromolecules(hzpppm) {
+  const ppm = (hz) => (hz / hzpppm).toFixed(3);
+  return [
+    " nsimul=2",
+    " chsimu(1)='MM09 @ .915 +- .02 FWHM= .085 < .1 +- .35 AMP= 3.'",
+    ` chsimu(2)='MM3co @ 3.0 +- .02 FWHM= ${ppm(10.5)} < ${ppm(14)} +- .02 AMP= 2.'`,
+    " nratio=2",
+    " chrato(2)='MM3co/MM09 = 1. +- .2'",
+    " ncombi=18",
+    " chcomb(18)='GABA+MM3co'",
+  ];
+}
+
 /**
  * The control file for one fit.
  * @param {{
  *   nunfil: number, deltat: number, hzpppm: number, teMs?: number,
  *   water?: boolean, ecc?: boolean, ppmStart?: number, ppmEnd?: number,
- *   title?: string, sptype?: string,
+ *   title?: string, sptype?: string, coEditedMM?: boolean,
  * }} options  `water` scales to the unsuppressed water reference (and
  *   enables eddy-current correction unless `ecc` is false). `sptype`
  *   selects one of LCModel's special analyses: "mega-press-3" fits a
  *   MEGA-PRESS difference spectrum (no baseline, NAA as the reference).
+ *   `coEditedMM` adds the co-edited macromolecule model to a MEGA-PRESS
+ *   fit, separating GABA from MM3co; leave it off for MM-suppressed
+ *   editing, whose difference spectrum has no co-edited MM.
  */
 export function buildControl(options) {
   const {
@@ -41,6 +68,7 @@ export function buildControl(options) {
     ppmEnd = 0.2,
     title = "",
     sptype = "",
+    coEditedMM = false,
   } = options;
   if (!(nunfil >= 64)) throw new Error("The spectrum needs at least 64 points.");
   if (!(ppmStart > ppmEnd)) throw new Error("The fit range must run from a higher to a lower ppm.");
@@ -68,6 +96,10 @@ export function buildControl(options) {
     // Individual metabolite curves in the .COORD file.
     " neach=99",
   );
+  if (coEditedMM) {
+    if (!sptype.startsWith("mega-press")) throw new Error("The co-edited macromolecule model is for MEGA-PRESS difference spectra.");
+    lines.push(...coEditedMacromolecules(hzpppm));
+  }
   if (Number.isFinite(teMs) && teMs > 0) lines.push(` echot=${number(teMs)}`);
   if (water) {
     lines.push(` filh2o=${quote(FILES.h2o)}`, " dows=T");
