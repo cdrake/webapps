@@ -51,7 +51,8 @@ The directory holds:
   carries no patient identifiers and ships unchanged.
 
 Archives are `inputs.tar.zst` (123 MB), `ref.tar.zst` (111 MB) and
-`ops.tar.zst` (302 MB), zstd `--long=31`; unpacked, the directory is 2.3 GB. A file identical to another (e.g. `ops/special/raw.bin` and
+`ops.tar.zst` (302 MB), zstd `--long=31`; unpacked, the directory is 2.3 GB.
+A file identical to another (e.g. `ops/special/raw.bin` and
 `ref/twix_special.bin`) is stored once and listed under `copies`.
 
 To publish new references, regenerate them (below), collect only the files
