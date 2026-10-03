@@ -90,7 +90,7 @@ Three kinds of simulation:
   positions per refocusing axis over 1.5 times the slice thickness (2 cm
   slices, 3 cm field), FID-A's defaults; the result does not depend on the
   slice thickness, because the gradient scales with it. Against a 96-point
-  grid (PRESS TE 144 ms, Glu) the 32-point spectrum differs by 0.16 % in shape
+  grid (Glu) the 32-point spectrum differs by 0.16 % in shape (PRESS TE 144 ms; under 1e-4 % for semi-LASER TE 30 ms)
   and 4 % in overall amplitude, which every metabolite shares. Zhang et al.'s
   factorisation (Med Phys 2017;44:4169) averages the density matrix over x
   before the y pulses: nX + nY pulse simulations instead of nX × nY.
@@ -106,7 +106,37 @@ Three kinds of simulation:
   not simulated. TE 68 ms: taus 5/17/17/17/12 ms, 14 ms editing pulses at
   1.88/7.5 ppm. TE 80 ms: taus 5/20/20/20/15 ms, 20 ms editing pulses at
   1.9 ppm (ON) and 7.5 ppm (OFF), or 1.5 ppm for macromolecule-suppressed
-  (symmetric) editing (Edden et al., MRM 2012;68:657).
+  (symmetric) editing (Edden et al., MRM 2012;68:657). With FID-A's sample
+  editing pulse, the 1.5 ppm edit-OFF pulse still touches GABA's 1.89 ppm
+  protons, which adds a central line to the 3.0 ppm GABA multiplet of the
+  MM-suppressed set; a scanner's own pulse may differ.
+
+Shaped against ideal pulses. There are no in-vivo PRESS or semi-LASER
+examples at these echo times, so each shaped set was summed at typical brain
+concentrations into a synthetic spectrum (4 Hz lines at 3 T, 8 Hz at 7 T,
+2048 points, light noise) and fitted by LCModel with the shaped set and with
+the ideal set of the same parameters. Ratios to Cr+PCr from the ideal fit,
+relative to the shaped fit:
+
+| set | NAA+NAAG | GPC+PCh | Ins | Glu | Gln | GABA | GSH | Lac |
+|---|---|---|---|---|---|---|---|---|
+| PRESS 3 T TE 30 | -0.1 % | +1.7 % | +2.6 % | +2.9 % | -11 % | -11 % | +17 % | -16 % |
+| PRESS 3 T TE 35 | -1.9 % | +3.4 % | +2.7 % | -0.8 % | -10 % | +0.7 % | +6.1 % | -23 % |
+| PRESS 3 T TE 80 | -4.7 % | +7.6 % | -14 % | -4.5 % | +31 % | +8.1 % | -55 % | -29 % |
+| PRESS 3 T TE 144 | -9.0 % | +4.0 % | -20 % | -25 % | -57 % | -53 % | +19 % | -37 % |
+| semi-LASER 3 T TE 30 | -0.7 % | +1.1 % | +1.4 % | +2.3 % | -8.3 % | -25 % | +9.0 % | -6.3 % |
+| semi-LASER 3 T TE 35 | +0.4 % | +2.9 % | +3.0 % | +4.9 % | -3.9 % | -29 % | +7.3 % | -15 % |
+| semi-LASER 7 T TE 28 | +0.4 % | 0.0 % | +1.2 % | +5.2 % | +22 % | +5.5 % | +12 % | +25 % |
+
+At short echo times the main metabolites agree within 5 %. At long-TE PRESS
+the ideal set is wrong by tens of percent: the Mao pulses' slice profiles and
+the chemical-shift displacement of the coupled partners leave less coupled
+signal than ideal pulses predict (relative to the Cr singlet, the shaped set's
+lactate is 0.55 at TE 144 ms and 0.67 at TE 80 ms; Glu and GABA about 0.8),
+the known anomalous J-modulation of PRESS. Semi-LASER's adiabatic pulses keep
+amplitudes within 3.5 % of the ideal ones, but the multiplet shapes of GABA, Gln
+and Asp differ by 4 to 15 % (norm of the difference). The shaped set is closer to a real scan; the
+pulses are FID-A's examples, so it is closer, not exact.
 
 A MEGA-PRESS difference basis has no macromolecule spectra. The app adds
 them as LCModel simulated components (CHSIMU, `apps/lcmodel/src/lcmodel-io.js`):
