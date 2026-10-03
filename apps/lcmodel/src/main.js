@@ -64,7 +64,7 @@ const groupShow = document.createElement("select");
 groupShow.id = "groupShow";
 groupShow.setAttribute("aria-label", "Group table values");
 groupShow.hidden = true;
-groupShow.append(new Option("Concentrations", "concentration"), new Option("Ratios", "ratio"));
+groupShow.append(new Option("Concentrations", "concentration"), new Option("Ratios", "ratio"), new Option("Tissue-corrected", "tissue"));
 const toolbar = createViewerToolbar({
   views: VIEWS.map((v) => ({ ...v, disabled: true, onClick: () => showView(v.id) })),
   viewsLabel: "Plot",
@@ -474,7 +474,11 @@ function rangeUntouched([start, end]) {
 // model unless the user typed their own.
 function showMacromoleculeModel() {
   const suppressed = library.find((b) => b.id === $("basisSelect").value)?.mmSuppressed === true;
-  $("mmModelField").hidden = !(input && isEdited());
+  const edited = Boolean(input && isEdited());
+  $("mmModelField").hidden = !edited;
+  // MEGA-PRESS keeps LCModel's own line-broadening prior (fitDataset).
+  $("lineBroadening").disabled = edited;
+  $("lineBroadeningHint").hidden = !edited;
   $("mmModel").disabled = suppressed;
   $("mmModelHint").hidden = !suppressed;
   const current = [$("ppmStart").value, $("ppmEnd").value];
@@ -626,6 +630,7 @@ function fitSettings() {
     ecc: $("ecc").disabled || $("ecc").checked,
     range: rangeUntouched(fields) ? null : fields.map(Number),
     mmModel: $("mmModel").value,
+    lineBroadening: $("lineBroadening").value,
   };
 }
 
@@ -652,6 +657,7 @@ async function fitDataset(k, { choice, range, settings, onStep }) {
   }
   const water = settings.scaleWater && Boolean(lcm.h2o);
   const mmModel = lcm.edited ? macromoleculeModel(choice, settings.mmModel) : null;
+  const lineBroadening = lcm.edited ? "lcmodel" : settings.lineBroadening;
   const control = buildControl({
     nunfil: lcm.nunfil,
     deltat: lcm.deltat,
@@ -664,6 +670,7 @@ async function fitDataset(k, { choice, range, settings, onStep }) {
     title: describeDataset(k),
     sptype: lcm.edited ? "mega-press-3" : "",
     coEditedMM: mmModel === "co-edited",
+    lineBroadening,
   });
   const files = { [FILES.raw]: lcm.raw };
   if (water) files[FILES.h2o] = lcm.h2o;
@@ -692,6 +699,7 @@ async function fitDataset(k, { choice, range, settings, onStep }) {
       unit: water ? "mM" : "a.u.",
       range,
       macromoleculeModel: mmModel,
+      lineBroadening,
     },
   };
 }
@@ -1047,6 +1055,9 @@ function groupRecords() {
       preprocessing: entry.processed?.report,
       summary: f?.coord.summary,
       metabolites: f?.rows,
+      macromoleculeModel: f?.macromoleculeModel,
+      lineBroadening: f?.lineBroadening,
+      correction: f?.correction,
     });
   });
   // Unreadable files are failed rows too, with no fit to select.
@@ -1092,6 +1103,11 @@ function renderGroup() {
     return;
   }
   const { indices, records } = groupRecords();
+  // Tissue-corrected values are offered once a dataset has them.
+  const tissueOption = groupShow.querySelector('option[value="tissue"]');
+  tissueOption.disabled = !records.some((r) => r.fractionSource);
+  tissueOption.hidden = tissueOption.disabled;
+  if (tissueOption.disabled && groupShow.value === "tissue") groupShow.value = "concentration";
   renderGroupTable($("groupView"), records, { indices, selected: input.index, show: groupShow.value, onSelect: selectDataset });
   renderResultList();
 }
@@ -1288,6 +1304,7 @@ async function prepareAutomation({ inputs, parameters: p, signal, progress: repo
     showDataset();
   }
   $("mmModel").value = p.macromoleculeModel ?? "co-edited";
+  $("lineBroadening").value = p.lineBroadening ?? "widened";
   if (!inputs.basis?.length && p.basisSet && p.basisSet !== "auto") {
     $("basisSelect").value = p.basisSet;
     showBasisAdvice();
@@ -1351,6 +1368,7 @@ async function fitOperation(context) {
       pipeline: entry.processed?.report.pipeline ?? "LCModel .RAW, no preprocessing",
       sptype: completed.lcm.edited ? "mega-press-3" : null,
       macromoleculeModel: completed.macromoleculeModel,
+      lineBroadening: completed.lineBroadening,
       control: completed.control,
     },
   };
@@ -1365,6 +1383,7 @@ async function fitGroupOperation(context) {
     ecc: p.eddyCurrentCorrection ?? true,
     range: p.ppmStart == null && p.ppmEnd == null ? null : [p.ppmStart ?? null, p.ppmEnd ?? null],
     mmModel: p.macromoleculeModel ?? "co-edited",
+    lineBroadening: p.lineBroadening ?? "widened",
   };
   report(`Fitting ${input.datasets.length} datasets`);
   const outcome = await whileCancellable(signal, () => runGroup({ settings, explicitBasis: Boolean(p.basisSet && p.basisSet !== "auto"), throwOnError: true }));
@@ -1395,12 +1414,17 @@ async function fitGroupOperation(context) {
         fidaSnr: r.fidaSnr,
         fidaLinewidthHz: r.fidaLinewidthHz,
         averagesRemoved: r.averagesRemoved,
-        metabolites: Object.fromEntries(r.metabolites.map((m) => [m.name, { concentration: m.concentration, sdPercent: m.sdPercent, ratio: m.ratio }])),
+        macromoleculeModel: r.macromoleculeModel,
+        lineBroadening: r.lineBroadening,
+        tissueFractions: r.fractionSource ? { gm: r.fractionGM, wm: r.fractionWM, csf: r.fractionCSF, source: r.fractionSource } : null,
+        metabolites: Object.fromEntries(r.metabolites.map((m) => [m.name, { concentration: m.concentration, sdPercent: m.sdPercent, ratio: m.ratio, tissueCorrected: m.tissueCorrected, alphaCorrected: m.alphaCorrected }])),
       })),
     },
     provenance: {
       basisSelection: outcome.plan.mode,
       basisNote: outcome.plan.description,
+      lineBroadening: settings.lineBroadening,
+      macromoleculeModel: settings.mmModel,
       fitted: outcome.fitted,
       failed: outcome.failed,
     },

@@ -38,6 +38,10 @@ test("alpha correction reproduces Osprey's quantAlpha for GABA and Glx", () => {
   const result = correctConcentrations(rows, { fractions: FRACTIONS, fieldT: 3, metabolite: { teMs: 68, trMs: 2000 }, water: { teMs: 68, trMs: 2000 }, alpha: true });
   for (const [name, value] of Object.entries(expected)) closeTo(result.rows.find((r) => r.name === name).alphaCorrected, value, name);
   assert.equal(result.rows.find((r) => r.name === "NAA").alphaCorrected, undefined);
+  // GABA+ under the co-edited MM model is alpha-corrected like Osprey's GABAplus.
+  const plus = correctConcentrations([{ name: "GABA+MM3co", concentration: 2 }, { name: "GABAplus", concentration: 2 }], { fractions: FRACTIONS, fieldT: 3, metabolite: { teMs: 68, trMs: 2000 }, water: { teMs: 68, trMs: 2000 }, alpha: true });
+  assert.equal(plus.rows[0].alphaCorrected, plus.rows[1].alphaCorrected);
+  assert.ok(plus.rows[0].alphaCorrected > 0);
 });
 
 test("LCModel's names map to Osprey's relaxation table", () => {

@@ -65,13 +65,53 @@ function definitionList(pairs) {
   return `<dl>${items.map(([term, value]) => `<dt>${escapeHtml(term)}</dt><dd>${escapeHtml(value)}</dd>`).join("")}</dl>`;
 }
 
-function concentrationTable(rows, { unit, ratioTo }) {
-  const head = `<tr><th>Conc. (${escapeHtml(unit)})</th><th>%SD</th><th>${escapeHtml(ratioTo ? `/${ratioTo}` : "Ratio")}</th><th>Metabolite</th></tr>`;
-  const body = rows.map((r) => {
+/** Macromolecule models of a MEGA-PRESS fit (main.js, lcmodel-io.js). */
+const MM_MODELS = {
+  "co-edited": "co-edited MM3co tied to MM09 (Zöllner et al. 2022), 4.2-0.5 ppm without 1.2-1.95 ppm",
+  none: "none: LCModel's mega-press-3 as is, 4.2-1.95 ppm, GABA is GABA+",
+};
+
+/** Line-broadening priors (lcmodel-io.js LINE_BROADENING). */
+const LINE_BROADENING = {
+  widened: "widened: DESDT2 2, RFWBAS 80 (the app's default)",
+  lcmodel: "LCModel defaults: DESDT2 0.4, RFWBAS 10",
+};
+
+function concentrationTable(rows, { unit, ratioTo, correction }) {
+  const tissue = correction?.rows ?? null;
+  const alpha = tissue?.some((r) => r.alphaCorrected != null);
+  const extra = tissue ? `<th>Tissue (mmol/kg)</th>${alpha ? "<th>Alpha</th>" : ""}` : "";
+  const head = `<tr><th>Conc. (${escapeHtml(unit)})</th><th>%SD</th><th>${escapeHtml(ratioTo ? `/${ratioTo}` : "Ratio")}</th>${extra}<th>Metabolite</th></tr>`;
+  const body = rows.map((r, k) => {
     const classes = [r.combination && "combination", r.sdPercent > SD_LIMIT && "uncertain"].filter(Boolean).join(" ");
-    return `<tr${classes ? ` class="${classes}"` : ""}><td>${formatConc(r.concentration)}</td><td>${escapeHtml(r.sdPercent)}%</td><td>${r.ratio == null ? "" : formatConc(r.ratio)}</td><td>${escapeHtml(r.name)}</td></tr>`;
+    const t = tissue?.[k];
+    const cells = tissue ? `<td>${formatConc(t?.corrected)}</td>${alpha ? `<td>${formatConc(t?.alphaCorrected)}</td>` : ""}` : "";
+    return `<tr${classes ? ` class="${classes}"` : ""}><td>${formatConc(r.concentration)}</td><td>${escapeHtml(r.sdPercent)}%</td><td>${r.ratio == null ? "" : formatConc(r.ratio)}</td>${cells}<td>${escapeHtml(r.name)}</td></tr>`;
   }).join("");
   return `<table class="conc"><thead>${head}</thead><tbody>${body}</tbody></table><p class="note">* %SD above ${SD_LIMIT}%: the Cramér-Rao bound says the value is unreliable.</p>`;
+}
+
+/** The tissue correction's inputs: fractions, their source and the constants. */
+function tissueSection(correction) {
+  if (!correction?.rows) return "";
+  const f = correction.fractions;
+  const c = correction.constants;
+  const source = correction.source?.kind === "segmentation"
+    ? `MindMap partial-volume maps of the T1 (${correction.source.backend ?? "?"}); unlabelled voxel share counted as CSF`
+    : "entered by the user";
+  const w = c.waterConcentration;
+  const list = definitionList([
+    ["Method", c.method],
+    ["Unit", c.unit],
+    ["Fractions", `GM ${fixed(f.gm, 3)}, WM ${fixed(f.wm, 3)}, CSF ${fixed(f.csf, 3)}`],
+    ["Fractions from", source],
+    ["Tissue water", w && `GM ${w.gm}, WM ${w.wm}, CSF ${w.csf} mmol/kg (pure water ${w.pure})`],
+    ["LCModel water scaling", c.lcmodel && `WCONC ${c.lcmodel.wconc}, ATTH2O ${c.lcmodel.atth2o}, ATTMET ${c.lcmodel.attmet}`],
+    ["Metabolite relaxation", c.metaboliteRelaxation ? "corrected (literature T1, T2)" : "not corrected"],
+    ["TE / TR", c.metabolite && `${c.metabolite.teMs} / ${c.metabolite.trMs} ms; water ${c.water.teMs} / ${c.water.trMs} ms`],
+    ["Alpha", c.alpha != null && `${c.alpha} (Harris et al. 2015), GABA and Glx`],
+  ]);
+  return `<h2>Tissue correction</h2>${list}`;
 }
 
 function acquisition(dataset) {
@@ -149,9 +189,11 @@ function preprocessingPlot(spectra) {
  *   control: string,
  *   preprocessing?: object|null,
  *   spectra?: {processed: {ppm: number[], real: number[]}, unprocessed?: {real: number[]}, editOff?: {real: number[]}|null}|null,
- *   fit: {coord: object, rows: object[], ratioTo: string|null, unit: string, range: [number, number]},
- * }} input  `preprocessing` is FID-A's report, `coord` the parsed .COORD file
- *   and `rows` the concentration table.
+ *   fit: {coord: object, rows: object[], ratioTo: string|null, unit: string, range: [number, number],
+ *     macromoleculeModel?: string|null, lineBroadening?: string|null, correction?: object|null},
+ * }} input  `preprocessing` is FID-A's report, `coord` the parsed .COORD file,
+ *   `rows` the concentration table and `correction` the tissue correction
+ *   (tissue.js), whose rows follow `rows`.
  * @returns {string} a complete HTML document
  */
 export function buildReport({ generated, versions, dataset, basis, control, preprocessing = null, spectra = null, fit }) {
@@ -172,6 +214,8 @@ export function buildReport({ generated, versions, dataset, basis, control, prep
     ["Phase", s.phase0Deg != null && `${s.phase0Deg} deg, ${s.phase1DegPerPpm ?? 0} deg/ppm`],
     ["Fit range", `${fit.range[0]} to ${fit.range[1]} ppm`],
     ["Analysis", dataset.edited ? "MEGA-PRESS difference spectrum (sptype mega-press-3)" : "standard"],
+    ["Macromolecule model", fit.macromoleculeModel && (MM_MODELS[fit.macromoleculeModel] ?? fit.macromoleculeModel)],
+    ["Line-broadening prior", fit.lineBroadening && (LINE_BROADENING[fit.lineBroadening] ?? fit.lineBroadening)],
   ]);
   const diagnostics = coord.diagnostics?.length
     ? `<ul>${coord.diagnostics.map((d) => `<li>${escapeHtml(d)}</li>`).join("")}</ul>`
@@ -211,6 +255,7 @@ ${diagnostics}
 ${acquisition(dataset)}
 <h2>Basis set</h2>
 ${basisList}
+${tissueSection(fit.correction)}
 </div>
 </section>
 <section class="page">

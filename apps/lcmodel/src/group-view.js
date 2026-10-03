@@ -21,13 +21,21 @@ function cell(doc, tag, text, attributes = {}) {
  * @param {HTMLElement} host  emptied and filled with the table
  * @param {ReturnType<import("./group.js").groupRecord>[]} records
  * @param {{
- *   indices: number[], selected: number, show: "concentration"|"ratio",
+ *   indices: number[], selected: number, show: "concentration"|"ratio"|"tissue",
  *   onSelect: (index: number) => void,
  * }} options  `indices` maps each record to its dataset index; -1 is a
- *   file that could not be read.
+ *   file that could not be read. "tissue" shows the tissue-corrected
+ *   concentrations (mmol/kg), empty for datasets without a correction.
  */
+const SHOWN = {
+  concentration: { key: "concentration", what: "concentration", unit: (r) => r.unit },
+  ratio: { key: "ratio", what: "ratio", unit: (r) => r.ratioTo },
+  tissue: { key: "tissueCorrected", what: "tissue-corrected concentration, mmol/kg", unit: (r) => (r.fractionSource ? "mmol/kg" : "") },
+};
+
 export function renderGroupTable(host, records, { indices, selected, show, onSelect }) {
   const doc = host.ownerDocument;
+  const shown = SHOWN[show] ?? SHOWN.concentration;
   const names = metaboliteNames(records);
   const table = doc.createElement("table");
   table.className = "nd-data-table lcm-group";
@@ -40,7 +48,7 @@ export function renderGroupTable(host, records, { indices, selected, show, onSel
     cell(doc, "th", "Edited"),
     cell(doc, "th", show === "ratio" ? "Ratio to" : "Unit"),
     ...QC_COLUMNS.map((c) => cell(doc, "th", c.label, { title: c.title })),
-    ...names.map((n) => cell(doc, "th", n, { title: `${n}: ${show === "ratio" ? "ratio" : "concentration"} (%SD)` })),
+    ...names.map((n) => cell(doc, "th", n, { title: `${n}: ${shown.what} (%SD)` })),
   );
   const body = doc.createElement("tbody");
   records.forEach((record, k) => {
@@ -69,7 +77,7 @@ export function renderGroupTable(host, records, { indices, selected, show, onSel
       cell(doc, "td", record.status),
       cell(doc, "td", record.basis ?? ""),
       cell(doc, "td", record.status === STATUS.fitted ? (record.edited ? "yes" : "no") : ""),
-      cell(doc, "td", (show === "ratio" ? record.ratioTo : record.unit) ?? ""),
+      cell(doc, "td", shown.unit(record) ?? ""),
     );
     if (record.status !== STATUS.fitted) {
       row.append(cell(doc, "td", record.error ?? record.status, { colspan: String(QC_COLUMNS.length + names.length), class: "lcm-error" }));
@@ -80,7 +88,7 @@ export function renderGroupTable(host, records, { indices, selected, show, onSel
     const byName = new Map(record.metabolites.map((m) => [m.name, m]));
     for (const n of names) {
       const m = byName.get(n);
-      const value = m ? (show === "ratio" ? m.ratio : m.concentration) : null;
+      const value = m ? m[shown.key] : null;
       const td = cell(doc, "td", value == null ? "" : `${formatConc(value)} (${m.sdPercent}%)`);
       if (m && m.sdPercent > SD_LIMIT) td.className = "lcm-uncertain";
       row.append(td);

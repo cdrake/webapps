@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { JSDOM } from "jsdom";
 import { parseCoord, parseTable } from "../src/lcmodel-io.js";
 import { buildReport, formatConc, SD_LIMIT } from "../src/report.js";
+import { correctConcentrations } from "../src/tissue.js";
 
 const native = new URL("../../../exes/lcmodel/tests/data/test_lcm/", import.meta.url);
 
@@ -101,6 +102,37 @@ test("edited data show the edit-OFF spectrum; .RAW input has no preprocessing", 
   const raw = parse(buildReport({ ...base, preprocessing: null, spectra: null, dataset: { ...base.dataset, waterFile: null } }));
   assert.ok(raw.body.textContent.includes("fitted without preprocessing"));
   assert.equal(raw.querySelectorAll("svg").length, 2);
+});
+
+test("the report states the fit settings and the tissue correction with its inputs", async () => {
+  const base = await input();
+  const plain = parse(buildReport({ ...base, fit: { ...base.fit, lineBroadening: "widened" } })).body.textContent.replace(/\s+/g, " ");
+  assert.ok(plain.includes("Line-broadening priorwidened: DESDT2 2, RFWBAS 80"));
+  assert.ok(!plain.includes("Macromolecule model"), "no MM model for unedited data");
+  assert.ok(!plain.includes("Tissue correction"), "no correction, no section");
+  const rows = base.fit.rows;
+  const correction = {
+    ...correctConcentrations(rows, { fractions: { gm: 0.55, wm: 0.35, csf: 0.1 }, fieldT: 3, metabolite: { teMs: 35, trMs: 2000 }, water: { teMs: 35, trMs: 2000 }, alpha: true }),
+    source: { kind: "segmentation", backend: "cpu" },
+  };
+  const doc = parse(buildReport({
+    ...base,
+    dataset: { ...base.dataset, edited: true },
+    fit: { ...base.fit, rows, correction, macromoleculeModel: "co-edited", lineBroadening: "lcmodel" },
+  }));
+  const text = doc.body.textContent.replace(/\s+/g, " ");
+  for (const expected of [
+    "Macromolecule modelco-edited MM3co tied to MM09", "Line-broadening priorLCModel defaults: DESDT2 0.4, RFWBAS 10",
+    "Tissue correction", "GM 0.550, WM 0.350, CSF 0.100", "MindMap partial-volume maps of the T1 (cpu)",
+    "mmol/kg tissue water", "WCONC 35880, ATTH2O 0.7", "0.5 (Harris et al. 2015)",
+  ]) assert.ok(text.includes(expected), `report shows ${expected}`);
+  const heads = [...doc.querySelectorAll("table.conc th")].map((th) => th.textContent);
+  assert.deepEqual(heads, ["Conc. (mM)", "%SD", "/Cr+PCr", "Tissue (mmol/kg)", "Alpha", "Metabolite"]);
+  const byName = (name) => [...doc.querySelectorAll("table.conc tbody tr")].find((r) => r.lastElementChild.textContent === name);
+  const k = rows.findIndex((r) => r.name === "NAA");
+  assert.equal(byName("NAA").children[3].textContent, formatConc(correction.rows[k].corrected));
+  assert.equal(byName("NAA").children[4].textContent, "", "alpha only for GABA and Glx");
+  assert.notEqual(byName("GABA").children[4].textContent, "");
 });
 
 test("concentrations are formatted as in the app", () => {

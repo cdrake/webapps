@@ -18,6 +18,22 @@ function number(value) {
   return String(value);
 }
 
+// LCModel's line-broadening prior. The library's FID-A basis sets have
+// 1.5 Hz Lorentzian lines, narrower than in vivo, so the fit has to broaden
+// them a lot. With LCModel's defaults it scales 8-15 % low: DESDT2 = 0.4
+// keeps the extra Lorentzian broadening from following the line tails, and
+// RFWBAS = 10 integrates the reference singlet (Cr, or NAA for MEGA-PRESS)
+// over +-5 basis linewidths only, 92 % of a narrow Lorentzian's area.
+// Synthetic spectra made from the basis are recovered exactly with DESDT2 = 2
+// and RFWBAS = 80 (packages/lcmodel/test/water-scaling.test.js), and on real
+// PRESS data that brings LCModel to within about 5 % of spant's ABfit with the
+// same basis (PR #120). "widened" is the app's default; "lcmodel" leaves
+// LCModel's own values, as LCModel's test case and other studies use them.
+export const LINE_BROADENING = Object.freeze({
+  widened: Object.freeze({ label: "Widened", namelist: Object.freeze([" desdt2=2", " rfwbas=80"]) }),
+  lcmodel: Object.freeze({ label: "LCModel defaults", namelist: Object.freeze([]) }),
+});
+
 // Co-edited macromolecules in a GABA-edited difference spectrum, after
 // Zöllner et al. (NMR Biomed 2022;35:e4618), "MM09soft": the 3.0 ppm MM
 // signal that the 1.9 ppm editing pulse co-edits with GABA (MM3co, a 14 Hz,
@@ -54,6 +70,7 @@ function coEditedMacromolecules(hzpppm) {
  *   nunfil: number, deltat: number, hzpppm: number, teMs?: number,
  *   water?: boolean, ecc?: boolean, ppmStart?: number, ppmEnd?: number,
  *   title?: string, sptype?: string, coEditedMM?: boolean,
+ *   lineBroadening?: keyof typeof LINE_BROADENING,
  * }} options  `water` scales to the unsuppressed water reference (and
  *   enables eddy-current correction unless `ecc` is false). `sptype`
  *   selects one of LCModel's special analyses: "mega-press-3" fits a
@@ -61,6 +78,7 @@ function coEditedMacromolecules(hzpppm) {
  *   `coEditedMM` adds the co-edited macromolecule model to a MEGA-PRESS
  *   fit, separating GABA from MM3co; leave it off for MM-suppressed
  *   editing, whose difference spectrum has no co-edited MM.
+ *   `lineBroadening` picks the prior on line broadening (LINE_BROADENING).
  */
 export function buildControl(options) {
   const {
@@ -75,7 +93,10 @@ export function buildControl(options) {
     title = "",
     sptype = "",
     coEditedMM = false,
+    lineBroadening = "widened",
   } = options;
+  const broadening = LINE_BROADENING[lineBroadening];
+  if (!broadening) throw new Error(`Unknown line-broadening prior ${lineBroadening}`);
   if (!(nunfil >= 64)) throw new Error("The spectrum needs at least 64 points.");
   if (!(ppmStart > ppmEnd)) throw new Error("The fit range must run from a higher to a lower ppm.");
   const lines = [
@@ -106,6 +127,7 @@ export function buildControl(options) {
     if (!sptype.startsWith("mega-press")) throw new Error("The co-edited macromolecule model is for MEGA-PRESS difference spectra.");
     lines.push(...coEditedMacromolecules(hzpppm));
   }
+  lines.push(...broadening.namelist);
   if (Number.isFinite(teMs) && teMs > 0) lines.push(` echot=${number(teMs)}`);
   if (water) {
     lines.push(` filh2o=${quote(FILES.h2o)}`, " dows=T");

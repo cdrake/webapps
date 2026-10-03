@@ -98,6 +98,15 @@
           ],
           "default": "co-edited"
         },
+        "lineBroadening": {
+          "type": "string",
+          "description": "LCModel's line-broadening prior for unedited spectra: widened (DESDT2 2, RFWBAS 80) recovers synthetic concentrations with the library's narrow-line basis sets, where LCModel's defaults (lcmodel: DESDT2 0.4, RFWBAS 10) scale 8-15 % low. MEGA-PRESS difference fits always use LCModel's values.",
+          "enum": [
+            "widened",
+            "lcmodel"
+          ],
+          "default": "widened"
+        },
         "removeBadAverages": {
           "type": "boolean",
           "description": "Remove bad averages (FID-A op_rmbadaverages).",
@@ -307,6 +316,18 @@
           "description": "Optional LCModel .BASIS file for every dataset; overrides basisSet.",
           "minimum": 0,
           "maximum": 1
+        },
+        "t1": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "description": "Optional T1-weighted image from the same session; segmented to measure the voxel's tissue fractions.",
+          "minimum": 0,
+          "maximum": 1,
+          "space": "native"
         }
       },
       "parameters": {
@@ -356,6 +377,15 @@
           ],
           "default": "co-edited"
         },
+        "lineBroadening": {
+          "type": "string",
+          "description": "LCModel's line-broadening prior for unedited spectra: widened (DESDT2 2, RFWBAS 80) recovers synthetic concentrations with the library's narrow-line basis sets, where LCModel's defaults (lcmodel: DESDT2 0.4, RFWBAS 10) scale 8-15 % low. MEGA-PRESS difference fits always use LCModel's values.",
+          "enum": [
+            "widened",
+            "lcmodel"
+          ],
+          "default": "widened"
+        },
         "removeBadAverages": {
           "type": "boolean",
           "description": "Remove bad averages (FID-A op_rmbadaverages).",
@@ -398,6 +428,11 @@
           "description": "Lower end of the fit range in ppm; 0.2 (1.95 for MEGA-PRESS) when absent.",
           "minimum": -1,
           "maximum": 10
+        },
+        "metaboliteRelaxation": {
+          "type": "boolean",
+          "description": "Tissue correction: also correct metabolite T1 and T2 (literature values at 3 T and 7 T).",
+          "default": true
         }
       },
       "artifacts": {

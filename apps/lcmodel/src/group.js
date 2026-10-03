@@ -23,14 +23,30 @@ export const QC_COLUMNS = Object.freeze([
   { key: "shiftPpm", header: "lcmodel_shift_ppm", label: "Shift (ppm)", title: "LCModel data shift (ppm)" },
 ]);
 
-/** Per-metabolite values; a new column (a corrected concentration) is one entry. */
+/**
+ * Per-metabolite values; a new column (a corrected concentration) is one
+ * entry. The tissue-corrected columns are empty for a dataset that was not
+ * corrected; `alphaCorrected` is GABA and Glx only (Harris et al. 2015).
+ */
 export const METABOLITE_FIELDS = Object.freeze([
   { key: "concentration", header: "concentration", suffix: "" },
   { key: "sdPercent", header: "sd_percent", suffix: "_sd_percent" },
   { key: "ratio", header: "ratio", suffix: "_ratio" },
+  { key: "tissueCorrected", header: "tissue_corrected_mmol_per_kg", suffix: "_tissue_corrected" },
+  { key: "alphaCorrected", header: "alpha_corrected_mmol_per_kg", suffix: "_alpha_corrected" },
 ]);
 
-const DATASET_HEADERS = ["dataset", "file", "status", "error", "format", "basis", "edited", "unit", "ratio_to"];
+/** Per-dataset fit settings and tissue fractions, after the identifying columns. */
+export const SETTING_COLUMNS = Object.freeze([
+  { key: "macromoleculeModel", header: "macromolecule_model" },
+  { key: "lineBroadening", header: "line_broadening" },
+  { key: "fractionGM", header: "fraction_gm" },
+  { key: "fractionWM", header: "fraction_wm" },
+  { key: "fractionCSF", header: "fraction_csf" },
+  { key: "fractionSource", header: "fraction_source" },
+]);
+
+const DATASET_HEADERS = ["dataset", "file", "status", "error", "format", "basis", "edited", "unit", "ratio_to", ...SETTING_COLUMNS.map((c) => c.header)];
 
 /** Quality numbers from FID-A's report (the full pipelines and the coil-combined path). */
 export function preprocessingQc(report) {
@@ -53,10 +69,16 @@ export function preprocessingQc(report) {
  *   unit?: string|null, ratioTo?: string|null,
  *   preprocessing?: object|null, summary?: {fwhmPpm?: number, snr?: number, shiftPpm?: number}|null,
  *   metabolites?: {name: string, concentration: number, sdPercent: number, ratio: number|null}[],
- * }} parts  `preprocessing` is FID-A's report, `summary` LCModel's misc table.
+ *   macromoleculeModel?: string|null, lineBroadening?: string|null,
+ *   correction?: {fractions: {gm: number, wm: number, csf: number}, source?: {kind: string}|null,
+ *     rows: {name: string, corrected: number, alphaCorrected?: number|null}[]}|null,
+ * }} parts  `preprocessing` is FID-A's report, `summary` LCModel's misc table,
+ *   `correction` the tissue correction (tissue.js) when one was applied.
  */
 export function groupRecord(parts) {
   const summary = parts.summary ?? {};
+  const correction = parts.correction ?? null;
+  const corrected = new Map((correction?.rows ?? []).map((r) => [r.name, r]));
   return {
     name: parts.name,
     file: parts.file ?? null,
@@ -67,11 +89,24 @@ export function groupRecord(parts) {
     edited: Boolean(parts.edited),
     unit: parts.unit ?? null,
     ratioTo: parts.ratioTo ?? null,
+    macromoleculeModel: parts.macromoleculeModel ?? null,
+    lineBroadening: parts.lineBroadening ?? null,
+    fractionGM: correction?.fractions.gm ?? null,
+    fractionWM: correction?.fractions.wm ?? null,
+    fractionCSF: correction?.fractions.csf ?? null,
+    fractionSource: correction ? (correction.source?.kind ?? "entered") : null,
     ...preprocessingQc(parts.preprocessing),
     fwhmPpm: summary.fwhmPpm ?? null,
     lcmSnr: summary.snr ?? null,
     shiftPpm: summary.shiftPpm ?? null,
-    metabolites: (parts.metabolites ?? []).map((m) => ({ name: m.name, concentration: m.concentration, sdPercent: m.sdPercent, ratio: m.ratio ?? null })),
+    metabolites: (parts.metabolites ?? []).map((m) => ({
+      name: m.name,
+      concentration: m.concentration,
+      sdPercent: m.sdPercent,
+      ratio: m.ratio ?? null,
+      tissueCorrected: corrected.get(m.name)?.corrected ?? null,
+      alphaCorrected: corrected.get(m.name)?.alphaCorrected ?? null,
+    })),
   };
 }
 
@@ -103,6 +138,7 @@ function datasetCells(record) {
     record.edited,
     record.unit,
     record.ratioTo,
+    ...SETTING_COLUMNS.map((c) => record[c.key]),
     ...QC_COLUMNS.map((c) => record[c.key]),
   ];
 }
@@ -126,7 +162,7 @@ export function groupCsvLong(records) {
   return `${lines.join("\n")}\n`;
 }
 
-/** The group table, wide: one row per dataset, three columns per metabolite. */
+/** The group table, wide: one row per dataset, a column per metabolite and field. */
 export function groupCsvWide(records) {
   const names = metaboliteNames(records);
   const header = [...DATASET_HEADERS, ...QC_COLUMNS.map((c) => c.header), ...names.flatMap((n) => METABOLITE_FIELDS.map((f) => `${n}${f.suffix}`))];

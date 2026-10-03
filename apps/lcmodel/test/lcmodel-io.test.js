@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { buildControl, parseCoord, parseTable, concentrationsCsv, presentRows, FILES } from "../src/lcmodel-io.js";
+import { buildControl, parseCoord, parseTable, concentrationsCsv, presentRows, FILES, LINE_BROADENING } from "../src/lcmodel-io.js";
 import { spectrumSvg, fitSeries, metaboliteSeries, visibleIndices, tickStep, splitAtGaps } from "../src/spectrum-plot.js";
 
 const native = new URL("../../../exes/lcmodel/tests/data/test_lcm/", import.meta.url);
@@ -25,6 +25,18 @@ test("control file names the inputs and enables water scaling only with water", 
   assert.match(mega, /ppmend=1\.95/);
   assert.doesNotMatch(plain, /sptype/);
   assert.throws(() => buildControl({ nunfil: 2048, deltat: 2e-4, hzpppm: 123, ppmStart: 0.2, ppmEnd: 4 }), /fit range/);
+});
+
+test("the line-broadening prior is widened by default and LCModel's own on request", () => {
+  const options = { nunfil: 2048, deltat: 2.5e-4, hzpppm: 123.247, water: true };
+  const widened = buildControl(options);
+  assert.match(widened, /\n desdt2=2\n rfwbas=80\n/);
+  assert.equal(buildControl({ ...options, lineBroadening: "widened" }), widened);
+  const lcmodel = buildControl({ ...options, lineBroadening: "lcmodel" });
+  assert.doesNotMatch(lcmodel, /desdt2|rfwbas/);
+  assert.equal(lcmodel, widened.replace(" desdt2=2\n rfwbas=80\n", ""), "nothing else changes");
+  assert.deepEqual(Object.keys(LINE_BROADENING), ["widened", "lcmodel"]);
+  assert.throws(() => buildControl({ ...options, lineBroadening: "wide" }), /line-broadening/);
 });
 
 test("a MEGA-PRESS fit can separate GABA from co-edited MM3co", () => {

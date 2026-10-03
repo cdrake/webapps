@@ -158,7 +158,8 @@ export function correctConcentrations(rows, options) {
   const molal = { gm: (f.gm * W.gm) / waterSum, wm: (f.wm * W.wm) / waterSum, csf: (f.csf * W.csf) / waterSum };
   const rw = Object.fromEntries(["gm", "wm", "csf"].map((t) => [t, attenuation(trW, teW, water[t].t1, water[t].t2)]));
   const scale = lcm.atth2o / (lcm.wconc * lcm.attmet);
-  const alphaNames = new Set(["GABA", "Glu", "Gln", "Glx", "Glu+Gln", "GABA+", "GABAplus"]);
+  // GABA+MM3co is GABA+ under the co-edited macromolecule model (lcmodel-io.js).
+  const alphaNames = new Set(["GABA", "Glu", "Gln", "Glx", "Glu+Gln", "GABA+", "GABAplus", "GABA+MM3co"]);
   const out = rows.map((row) => {
     const relax = metaboliteRelaxation(row.name, field);
     const rm = relaxMetabolites ? attenuation(tr, te, relax.t1, relax.t2) : 1;

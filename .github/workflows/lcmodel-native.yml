@@ -6,13 +6,17 @@ name: lcmodel-native
 # WebAssembly module (packages/lcmodel) the same table as native LCModel.
 # The fida-reference job compares the FID-A port with FID-A's own outputs
 # (exes/fida/validation/README.md), fetched from the pinned Hugging Face
-# revision in exes/fida/validation/reference.manifest.json.
+# revision in exes/fida/validation/reference.manifest.json, and checks that the
+# app's default control file recovers synthetic water-scaled concentrations
+# with the basis set fetched there.
 on:
   pull_request:
     paths:
       - 'exes/lcmodel/**'
       - 'exes/fida/**'
       - 'packages/lcmodel/**'
+      - 'apps/lcmodel/src/lcmodel-io.js'
+      - 'apps/lcmodel/test/water-scaling.test.js'
       - '.github/workflows/lcmodel-native.yml'
   push:
     branches: [main]
@@ -20,6 +24,8 @@ on:
       - 'exes/lcmodel/**'
       - 'exes/fida/**'
       - 'packages/lcmodel/**'
+      - 'apps/lcmodel/src/lcmodel-io.js'
+      - 'apps/lcmodel/test/water-scaling.test.js'
       - '.github/workflows/lcmodel-native.yml'
   workflow_dispatch:
 
@@ -59,6 +65,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
       - name: Cache the reference downloads
         uses: actions/cache@v6
         with:
@@ -73,3 +82,7 @@ jobs:
           export FIDA_TEST_DATA="$DATA" FIDA_EXAMPLES="$DATA" PHILIPS_MEGA="$DATA/Philips-MEGA" LCMODEL_BASIS_DIR="$DATA/basis"
           cargo test --release --manifest-path exes/fida/Cargo.toml -- --nocapture
           cargo test --release --manifest-path packages/lcmodel/wasm/Cargo.toml -- --nocapture
+      - name: The app's default control file recovers synthetic water-scaled concentrations
+        env:
+          FIDA_REQUIRE_REFERENCE: '1'
+        run: LCMODEL_BASIS_DIR="$DATA/basis" node --test apps/lcmodel/test/water-scaling.test.js

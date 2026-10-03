@@ -91,6 +91,16 @@
                 </select>
                 <p class="nd-hint" id="mmModelHint" hidden>MM-suppressed basis: no co-edited MM to model.</p>
               </div>
+              <div class="nd-field">
+                <label for="lineBroadening">Line-broadening prior
+                  <span class="nd-info-icon" tabindex="0" aria-label="About the line-broadening prior">i<span class="nd-info-tooltip">The included basis sets have 1.5 Hz lines, narrower than in vivo. With LCModel's defaults (DESDT2 0.4, RFWBAS 10) the fit cannot follow the broadened line tails and the reference singlet is integrated over too narrow a window, so water-scaled concentrations come out 8-15 % low: below synthetic data of known concentration, and below spant's ABfit with the same basis on the same files. Widened (DESDT2 2, RFWBAS 80) recovers the synthetic concentrations and agrees with spant within about 5 %. Ratios change less. MEGA-PRESS difference fits always keep LCModel's values: there the widened prior moved GABA+/NAA by up to 30 % without validation. Choose LCModel defaults to compare with other LCModel analyses.</span></span>
+                </label>
+                <select id="lineBroadening">
+                  <option value="widened">Widened (default)</option>
+                  <option value="lcmodel">LCModel defaults</option>
+                </select>
+                <p class="nd-hint" id="lineBroadeningHint" hidden>MEGA-PRESS fits keep LCModel's values.</p>
+              </div>
               <div class="nd-row">
                 <div class="nd-field">
                   <label for="ppmStart">From <small>ppm</small></label>
