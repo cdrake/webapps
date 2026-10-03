@@ -56,9 +56,53 @@ error with a negative index panics.
 ## Basis sets
 
 `basis/` holds the library the app offers: `library.json` (sequence, field, TE,
-sampling), `simulate_library.m` (FID-A ideal-pulse simulations in Octave;
-`sim_slaser_ideal.m` adds semi-LASER) and `make_basis.py`, which writes `.BASIS`
+sampling, pulses), `simulate_library.m` (FID-A simulations in Octave),
+`simulate_mega.m` (MEGA-PRESS) and `make_basis.py`, which writes `.BASIS`
 files: FID-A's FID conjugated as `io_writelcm` does, transformed with LCModel's
-forward FFT scaled by 1/sqrt(N). The files are published gzipped in the Hugging
-Face dataset `neurodeskorg/webapps` under `lcmodel/basis/`, pinned in
-`models/lcmodel.manifest.json`.
+forward FFT scaled by 1/sqrt(N). The files are published gzipped (`gzip -9n`)
+in the Hugging Face dataset `neurodeskorg/webapps` under `lcmodel/basis/`,
+pinned in `models/lcmodel.manifest.json`. Rebuilding the existing sets from
+their simulations reproduces the published `.BASIS` files byte for byte.
+
+```bash
+cd exes/lcmodel/basis
+FIDA=<FID-A> OUT=<sim> SET=<id> octave-cli simulate_library.m   # or simulate_mega.m; METABOLITE= limits it further
+python3 make_basis.py <sim> <out> <id> ...                       # all sets when no id is given
+```
+
+Three kinds of simulation:
+
+* **Ideal pulses** (the sets without a `simulation` field): instantaneous
+  pulses, FID-A's `sim_press`, `sim_steam`, `sim_spinecho` and
+  `sim_slaser_ideal.m`.
+* **Shaped pulses** (`"simulation": "shaped"`, ids ending in `-shaped`):
+  `sim_shaped.m`, real refocusing pulses applied across the voxel with
+  FID-A's `sim_shapedRF`, after `run_simPressShaped_fast.m` and
+  `run_simSemiLASERShaped_fast.m`. Excitation stays instantaneous, as in
+  FID-A. Pulses are FID-A's samples, not one scanner's: PRESS uses
+  `sampleRefocPulse.pta` (Mao 4-lobe refocusing pulse) for 3.5 ms;
+  semi-LASER uses `sampleAFPpulse_HS2_R15.RF` (HS2 adiabatic full passage,
+  R = 15, so 4.3 kHz at 3.5 ms) with B1max 1.5 kHz at its 5 ms reference
+  duration (2.1 kHz at 3.5 ms), 1.5 times the adiabatic threshold (Mz < -0.99
+  from 1.0 kHz). `w1max-input/input.m` answers the B1 question FID-A's loader
+  asks of adiabatic pulses. Transmitter at 3.0 ppm, so slices of other
+  resonances shift by the chemical-shift displacement. Spatial grid: 32
+  positions per refocusing axis over 1.5 times the slice thickness (2 cm
+  slices, 3 cm field), FID-A's defaults; the result does not depend on the
+  slice thickness, because the gradient scales with it. Against a 96-point
+  grid (PRESS TE 144 ms, Glu) the 32-point spectrum differs by 0.16 % in shape
+  and 4 % in overall amplitude, which every metabolite shares. Zhang et al.'s
+  factorisation (Med Phys 2017;44:4169) averages the density matrix over x
+  before the y pulses: nX + nY pulse simulations instead of nX × nY.
+* **MEGA-PRESS** (`mega` in `library.json`): `simulate_mega.m`. Difference
+  sets use FID-A's shaped editing and refocusing pulses at the voxel centre
+  with the 16-step phase cycle (`sim_megapress_central.m`); slice profiles are
+  not simulated. TE 68 ms: taus 5/17/17/17/12 ms, 14 ms editing pulses at
+  1.88/7.5 ppm. TE 80 ms: taus 5/20/20/20/15 ms, 20 ms editing pulses at
+  1.9 ppm (ON) and 7.5 ppm (OFF), or 1.5 ppm for macromolecule-suppressed
+  (symmetric) editing (Edden et al., MRM 2012;68:657).
+
+A MEGA-PRESS difference basis has no macromolecule spectra. The app adds
+them as LCModel simulated components (CHSIMU, `apps/lcmodel/src/lcmodel-io.js`):
+MM09 at 0.915 ppm and MM3co at 3.0 ppm, tied by CHRATO, after Zöllner et al.
+(NMR Biomed 2022;35:e4618). MM-suppressed sets get no MM3co.

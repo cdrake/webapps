@@ -107,7 +107,7 @@ test("the Siemens MEGA-PRESS example fits GABA on the difference spectrum (86 MB
   await expect(page.locator("#datasetSummary")).toContainText("MEGA-PRESS");
   await expect(page.locator("#basisSelect")).toHaveValue("megapress-3t-te68-diff");
   await expect(page.locator("#basisAdvice")).toHaveClass(/success/);
-  await expect(page.locator("#ppmEnd")).toHaveValue("1.95");
+  await expect(page.locator("#ppmEnd")).toHaveValue("0.5");
   await page.locator("#runButton").click();
   await expect(page.locator("#statusText")).toContainText("Fit done", { timeout: 600000 });
   await expect(page.locator("#ratioHeader")).toHaveText("/NAA+NAAG");
@@ -134,7 +134,7 @@ test("the Philips MEGA-PRESS example is detected as edited and fits GABA", async
   await expect(page.locator("#datasetSummary")).toContainText("MEGA-PRESS");
   await expect(page.locator("#datasetSummary")).toContainText("160 averages");
   await expect(page.locator("#basisSelect")).toHaveValue("megapress-3t-te68-diff");
-  await expect(page.locator("#ppmEnd")).toHaveValue("1.95");
+  await expect(page.locator("#ppmEnd")).toHaveValue("0.5");
   await page.locator("#runButton").click();
   await expect(page.locator("#statusText")).toContainText("Fit done", { timeout: 240000 });
   await expect(page.locator("#ratioHeader")).toHaveText("/NAA+NAAG");
@@ -143,6 +143,12 @@ test("the Philips MEGA-PRESS example is detected as edited and fits GABA", async
   const ratio = Number(await gaba.locator("td").nth(3).textContent());
   expect(ratio).toBeGreaterThan(0.1);
   expect(ratio).toBeLessThan(0.4);
+  // Co-edited macromolecules are fitted separately; GABA+ is their sum.
+  const row = (name) => page.locator("#concBody tr").filter({ has: page.locator("td:first-child", { hasText: new RegExp(`^${name.replace("+", "\\+")}$`) }) });
+  await expect(row("MM3co")).toHaveCount(1);
+  const plus = Number(await row("GABA+MM3co").locator("td").nth(3).textContent());
+  expect(plus).toBeGreaterThan(ratio);
+  expect(plus).toBeLessThan(0.4);
   // Overriding the detection treats the transients as one unedited series.
   await page.locator("#editedToggle").uncheck();
   await expect(page.locator("#datasetSummary")).not.toContainText("MEGA-PRESS");
