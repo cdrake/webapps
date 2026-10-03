@@ -3,6 +3,12 @@ name: standalone
 on:
   schedule:
     - cron: '23 3 * * *'
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the desktop release when every job passes
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -234,6 +240,7 @@ jobs:
 
   publish:
     needs: [bundle, desktop, models-offline]
+    if: github.event_name == 'schedule' || inputs.publish
     runs-on: ubuntu-22.04
     permissions:
       contents: write
