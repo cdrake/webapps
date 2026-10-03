@@ -1,5 +1,0 @@
----
-"lcmodel": minor
----
-
-Separate GABA from co-edited macromolecules in MEGA-PRESS fits, and add basis sets. By default the fit now models the macromolecule signal at 3.0 ppm (MM3co) that GABA editing co-edits, tied to the macromolecule peak at 0.915 ppm as Zöllner et al. (2022) recommend, fits edited data from 4.2 to 0.5 ppm without 1.2 to 1.95 ppm (as Osprey does), and reports GABA, MM3co and GABA+ with %SD. Results lead with GABA+, the robust number; GABA and MM3co are marked as model-dependent in the table and the CSV. The previous analysis (LCModel's mega-press-3, 4.2 to 1.95 ppm, GABA reported as GABA+) stays available as the macromolecule model "None" in the LCModel settings and as the automation parameter `macromoleculeModel`. New basis sets: MEGA-PRESS at TE 80 ms, with and without macromolecule suppression (edit-OFF at 1.5 ppm, always fitted without MM3co), and PRESS and semi-LASER sets simulated with real refocusing pulse shapes across the voxel, which the app now prefers to the ideal-pulse set with the same parameters.
