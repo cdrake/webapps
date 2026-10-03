@@ -61,12 +61,14 @@ function out = sim_shaped(set, sys)
   for X = 1:numel(pos)
     dsum = sim_dAdd(dsum, first(d0, pos(X)));
   end
-  out = struct([]);
+  % The readout is linear in the density matrix and costs more than all the
+  % pulses (8192 points), so sum over y first and read out once; FID-A reads
+  % out each y position and adds the spectra, which is the same sum.
+  dy = [];
   for Y = 1:numel(pos)
-    d = second(dsum, pos(Y));
-    [o, ~] = sim_readout(d, H, set.points, set.bandwidth_Hz, set.linewidth_Hz, 90);
-    out = op_addScans(out, o);
+    dy = sim_dAdd(dy, second(dsum, pos(Y)));
   end
+  [out, ~] = sim_readout(dy, H, set.points, set.bandwidth_Hz, set.linewidth_Hz, 90);
   % FID-A's normalisation: mean over positions, scaled to the voxel.
   out = op_ampScale(out, 1 / set.grid ^ 2);
   out = op_ampScale(out, (set.fov_cm / set.thk_cm) ^ 2);

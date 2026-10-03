@@ -94,6 +94,12 @@ Three kinds of simulation:
   and 4 % in overall amplitude, which every metabolite shares. Zhang et al.'s
   factorisation (Med Phys 2017;44:4169) averages the density matrix over x
   before the y pulses: nX + nY pulse simulations instead of nX × nY.
+  FID-A's readout (one matrix product per point, 8192 points) costs more
+  than all the pulses and is linear in the density matrix, so `sim_shaped.m`
+  and `sim_megapress_central.m` sum density matrices (over y positions, over
+  the phase cycle) and read out once. Re-simulating the published TE 68 ms
+  GABA difference spectrum this way agrees with the per-step readout to
+  1.3e-13 of its maximum, in 46 s instead of hours.
 * **MEGA-PRESS** (`mega` in `library.json`): `simulate_mega.m`. Difference
   sets use FID-A's shaped editing and refocusing pulses at the voxel centre
   with the 16-step phase cycle (`sim_megapress_central.m`); slice profiles are
