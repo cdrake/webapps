@@ -124,12 +124,15 @@ export function voxelWeights(voxelAffine, image, { samples = 5 } = {}) {
 
 /**
  * Tissue fractions in the voxel from partial-volume maps on the same grid.
- * As Osprey (OspreySeg): each is the weighted sum of its map over the sum of
- * all three, so fGM + fWM + fCSF = 1. `coverage` is the share of the voxel
- * the three maps account for (below 1 where the box leaves the head or the
- * segmentation).
+ * `coverage` is the share of the voxel the three maps account for.
+ *
+ * MindMap's CSF map holds the ventricles only: sulcal and interhemispheric
+ * CSF, which a cortical or midline voxel contains, is in none of the maps. By
+ * default (`unlabelled: "csf"`) that remainder counts as CSF, so fCSF is
+ * 1 - fGM - fWM. `unlabelled: "exclude"` is Osprey's rule for SPM's maps,
+ * whose CSF class reaches the skull: each map's sum over the sum of all three.
  */
-export function tissueFractions(weights, maps) {
+export function tissueFractions(weights, maps, { unlabelled = "csf" } = {}) {
   let gm = 0;
   let wm = 0;
   let csf = 0;
@@ -145,5 +148,10 @@ export function tissueFractions(weights, maps) {
   const all = gm + wm + csf;
   if (!(w > 0)) throw new Error("The spectroscopy voxel lies outside the structural image.");
   if (!(all > 0)) throw new Error("The segmentation finds no tissue inside the spectroscopy voxel.");
-  return { gm: gm / all, wm: wm / all, csf: csf / all, coverage: all / w };
+  if (unlabelled === "exclude") return { gm: gm / all, wm: wm / all, csf: csf / all, coverage: all / w };
+  // Maps that overlap (sum above 1) are scaled back; the rest of the voxel is CSF.
+  const scale = all > w ? w / all : 1;
+  const fgm = (gm * scale) / w;
+  const fwm = (wm * scale) / w;
+  return { gm: fgm, wm: fwm, csf: Math.max(0, 1 - fgm - fwm), coverage: all / w };
 }

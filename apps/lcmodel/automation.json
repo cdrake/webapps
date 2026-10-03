@@ -220,6 +220,27 @@
           "space": "native",
           "minimum": 0,
           "maximum": 1
+        },
+        "gmMap": {
+          "type": "neuro:volume",
+          "mediaType": "application/octet-stream",
+          "space": "native",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "wmMap": {
+          "type": "neuro:volume",
+          "mediaType": "application/octet-stream",
+          "space": "native",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "csfMap": {
+          "type": "neuro:volume",
+          "mediaType": "application/octet-stream",
+          "space": "native",
+          "minimum": 0,
+          "maximum": 1
         }
       },
       "engines": [

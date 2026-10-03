@@ -4,12 +4,11 @@
 // tissue-corrected concentrations. The page (main.js) calls in through the
 // object returned by createTissuePanel; the science lives in voxel.js and
 // tissue.js.
-import NiiVue, { SLICE_TYPE } from "@niivue/niivue";
 import { version as mindgrabVersion } from "@brainchop/mindgrab/package.json";
 import { readImageFiles } from "@neurodesk/runtime-support/dcm2niix-client";
 import { decodeNiftiBuffer, parseNiftiHeader, readNiftiImageData, extractNiftiHeader, createFloat32Nifti } from "@neurodesk/webapp-components/file-io";
 import { bindFileDrop } from "@neurodesk/webapp-components/ui";
-import { voxelWeights, tissueFractions, invert4, apply4 } from "./voxel.js";
+import { voxelWeights, tissueFractions } from "./voxel.js";
 import { correctConcentrations, correctedCsv, fieldKey } from "./tissue.js";
 
 const $ = (id) => document.getElementById(id);
@@ -123,13 +122,13 @@ export function createTissuePanel(hooks) {
     fillFields(f);
     const volume = (w.volumeMm3 / 1000).toFixed(1);
     const nominal = (w.nominalMm3 / 1000).toFixed(1);
-    summary(`MindMap (${maps.backend}): GM ${fixed(f.gm)}, WM ${fixed(f.wm)}, CSF ${fixed(f.csf)}; ${volume} of ${nominal} ml inside the T1, ${Math.round(f.coverage * 100)}% tissue`);
-    hooks.log.log(`Tissue fractions: GM ${f.gm.toFixed(4)}, WM ${f.wm.toFixed(4)}, CSF ${f.csf.toFixed(4)}, coverage ${f.coverage.toFixed(4)}, voxel ${volume}/${nominal} ml in the T1`);
+    summary(`MindMap: GM ${fixed(f.gm)}, WM ${fixed(f.wm)}, CSF ${fixed(f.csf)} (${Math.round((1 - f.coverage) * 100)}% unlabelled, as CSF)`);
+    hooks.log.log(`Tissue fractions (MindMap on ${maps.backend}): GM ${f.gm.toFixed(4)}, WM ${f.wm.toFixed(4)}, CSF ${f.csf.toFixed(4)}; the maps label ${(f.coverage * 100).toFixed(1)}% of the voxel and the rest counts as CSF; ${volume} of ${nominal} ml inside the T1`);
     if (w.volumeMm3 < 0.9 * w.nominalMm3) hooks.log.log("Part of the spectroscopy voxel lies outside the T1 image.", "warning");
     return f;
   }
 
-  function segment(signal) {
+  function segment(signal, backend) {
     return new Promise((resolve, reject) => {
       worker = new Worker(new URL("./tissue-worker.js", import.meta.url), { type: "module" });
       const stop = () => {
@@ -153,9 +152,27 @@ export function createTissuePanel(hooks) {
       };
       worker.postMessage({
         input: t1.buffer.slice(0),
-        options: { model: "mindmap", backend: "auto", gzipOutput: false, assetPath: `${import.meta.env.BASE_URL}brainchop/${mindgrabVersion}/` },
+        options: { model: "mindmap", backend, gzipOutput: false, assetPath: `${import.meta.env.BASE_URL}brainchop/${mindgrabVersion}/` },
       });
     });
+  }
+
+  /**
+   * mindgrab's `auto` takes WebGL2 whenever WebGPU is missing, even on a
+   * software renderer (SwiftShader, llvmpipe), where MindMap takes many
+   * minutes; its threaded CPU module is far faster there. Prefer WebGPU,
+   * then hardware WebGL2, then the CPU (the page is cross-origin isolated).
+   */
+  async function chooseBackend() {
+    const adapter = await navigator.gpu?.requestAdapter().catch(() => null);
+    if (adapter && !adapter.info?.isFallbackAdapter && adapter.features.has("shader-f16")) return "webgpu";
+    const gl = new OffscreenCanvas(1, 1).getContext("webgl2");
+    const debug = gl?.getExtension("WEBGL_debug_renderer_info");
+    const renderer = debug ? String(gl.getParameter(debug.UNMASKED_RENDERER_WEBGL)) : "";
+    gl?.getExtension("WEBGL_lose_context")?.loseContext();
+    const software = !gl || /swiftshader|llvmpipe|software|softpipe/i.test(renderer);
+    if (software && globalThis.crossOriginIsolated) return "cpu";
+    return gl ? "webgl2" : "cpu";
   }
 
   /** Segment the T1 (once per T1) and measure the voxel. */
@@ -169,14 +186,18 @@ export function createTissuePanel(hooks) {
       signal?.addEventListener("abort", () => controller.abort(), { once: true });
       let result;
       try {
-        result = await segment(controller.signal);
+        const backend = await chooseBackend();
+        hooks.log.log(`Segmenting with MindMap on ${backend}`);
+        result = await segment(controller.signal, backend);
       } finally {
         if (active === controller) active = null;
       }
       const read = (b) => readNiftiImageData(b).data;
-      const gm = read(result.tissues.gm);
+      // Own copies: the CPU module may hand back views of its shared memory.
+      const files = Object.fromEntries(["gm", "wm", "csf"].map((k) => [k, new Uint8Array(result.tissues[k]).slice().buffer]));
+      const gm = read(files.gm);
       if (gm.length !== t1.dims[0] * t1.dims[1] * t1.dims[2]) throw new Error("The tissue maps do not match the T1 grid.");
-      maps = { gm, wm: read(result.tissues.wm), csf: read(result.tissues.csf), backend: result.backend, elapsedMs: result.elapsedMs };
+      maps = { gm, wm: read(files.wm), csf: read(files.csf), backend: result.backend, elapsedMs: result.elapsedMs, files };
       hooks.log.log(`MindMap tissue maps on ${result.backend} in ${(result.elapsedMs / 1000).toFixed(1)} s`);
     }
     const f = measureFromMaps();
@@ -226,6 +247,13 @@ export function createTissuePanel(hooks) {
       tissueReport: { description: "Tissue correction inputs (.json)", file: new File([JSON.stringify(report, null, 2)], `${stem}_tissue_correction.json`, { type: "application/json" }), viewable: false },
     };
     if (t1 && dataset?.voxel) entries.voxelMask = { description: "Voxel mask in T1 space (.nii)", file: new File([maskNifti()], `${stem}_voxel_mask.nii`), viewable: true };
+    if (measured && maps?.files) {
+      // The partial-volume maps behind the fractions, for checking the segmentation.
+      const t1Stem = t1.name.replace(/\.nii(\.gz)?$/i, "");
+      for (const [key, label] of [["gm", "Grey matter"], ["wm", "White matter"], ["csf", "CSF"]]) {
+        entries[`${key}Map`] = { description: `${label} map (.nii)`, file: new File([maps.files[key]], `${t1Stem}_${key}.nii`), viewable: false };
+      }
+    }
     return entries;
   }
 
@@ -237,6 +265,8 @@ export function createTissuePanel(hooks) {
 
   async function ensureViewer() {
     viewerReady ??= (async () => {
+      // NiiVue loads with the first Voxel view, not with the page.
+      const { default: NiiVue, SLICE_TYPE } = await import("@niivue/niivue");
       viewer = new NiiVue({ isDragDropEnabled: false, backgroundColor: [0, 0, 0, 1] });
       await viewer.attachTo("t1Canvas");
       viewer.sliceType = SLICE_TYPE.MULTIPLANAR;
@@ -251,15 +281,8 @@ export function createTissuePanel(hooks) {
     const volumes = [{ url: new File([t1.buffer], t1.name.replace(/\.gz$/i, "")), name: t1.name.replace(/\.gz$/i, "") }];
     if (dataset?.voxel) volumes.push({ url: new File([maskNifti()], "voxel.nii"), name: "voxel.nii", colormap: "red", opacity: 0.45, calMin: 0, calMax: 1, isColorbarVisible: false });
     await viewer.loadVolumes(volumes);
-    if (dataset?.voxel) {
-      const frac2mm = viewer.volumes?.[0]?.frac2mm;
-      if (frac2mm) {
-        // gl-matrix is column-major: rows of the 4x4 are m[r + 4c].
-        const rows = [0, 1, 2, 3].map((r) => [0, 1, 2, 3].map((c) => frac2mm[r + 4 * c]));
-        const center = dataset.voxel.centerMm;
-        viewer.setCrosshairPos(apply4(invert4(rows), center));
-      }
-    }
+    // The crosshair (world mm) through the voxel centre, so all three planes cut it.
+    if (dataset?.voxel) viewer.setCrosshairPos(dataset.voxel.centerMm);
     const v = dataset?.voxel;
     $("plotLabel").textContent = v
       ? `Voxel ${v.sizeMm.map((s) => fixed(s, 0)).join(" × ")} mm at ${v.centerMm.map((c) => fixed(c, 1)).join(", ")} mm (RAS) on ${t1.name}`

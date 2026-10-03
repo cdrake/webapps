@@ -72,6 +72,14 @@ test("matrix helpers invert and compose", () => {
   assert.throws(() => tissueFractions(new Float32Array(3), { gm: [1, 1, 1], wm: [0, 0, 0], csf: [0, 0, 0] }), /outside/);
 });
 
+test("tissue the maps leave out counts as CSF unless excluded", () => {
+  // Four voxels: GM, WM, ventricle CSF, and one no map labels (a sulcus).
+  const weights = new Float32Array([1, 1, 1, 1]);
+  const maps = { gm: [1, 0, 0, 0], wm: [0, 1, 0, 0], csf: [0, 0, 1, 0] };
+  assert.deepEqual(tissueFractions(weights, maps), { gm: 0.25, wm: 0.25, csf: 0.5, coverage: 0.75 });
+  assert.deepEqual(tissueFractions(weights, maps, { unlabelled: "exclude" }), { gm: 1 / 3, wm: 1 / 3, csf: 1 / 3, coverage: 0.75 });
+});
+
 // Osprey's own voxel mask for its twix example (MIT, exampledata/twix/UnEdited/
 // sub-01, ses-01_T1w_overlay.nii.gz), with the voxel spec2nii writes for
 // sub-01_PRESS30.dat (exes/fida/tests/geometry.rs checks the reader gives it).
