@@ -130,9 +130,14 @@ pub fn load(files: &[(String, &[u8])]) -> (Vec<Dataset>, Value) {
         if let Some(e) = &edit {
             h["editing"] = json!({ "detected": e.edited(), "contrast": e.contrast, "offFirst": e.off_first });
         }
+        // The primary files as named on input (with their folder, for a
+        // directory drop), so the interface can tell subjects apart.
+        let path_of = |d: &detect::Dataset| d.files.first().map(|&i| files[i].0.clone());
         summary.push(json!({
             "index": datasets.len(),
             "name": pair.metabolite.name,
+            "path": path_of(&pair.metabolite),
+            "waterPath": water_name.as_ref().and(pair.water.as_ref()).and_then(path_of),
             "format": format.label(),
             "water": water_name,
             "header": h,

@@ -16,6 +16,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             <span>Drop spectroscopy files: twix, P-file, RDA, DICOM, SPAR/SDAT, NIfTI-MRS, .RAW</span>
           </label>
+          <label class="nd-file" id="folderPick">Or choose a folder of subjects<input id="folderInput" type="file" data-neurodesk-input="dataset" webkitdirectory multiple hidden /></label>
           <p id="fileInfo" class="nd-file-info" hidden></p>
           <div class="nd-field" id="datasetField" hidden>
             <label for="datasetSelect">Dataset</label>
@@ -104,6 +105,7 @@
             </div>
           </details>
           <button id="runButton" class="nd-btn nd-btn-primary" type="button" disabled>Preprocess and fit</button>
+          <button id="runSelectedButton" class="nd-btn nd-btn-secondary" type="button" hidden>Fit selected dataset</button>
         </div>
       </details>
 
@@ -131,6 +133,7 @@
     <main id="viewer">
       <div class="nd-viewer-canvas-wrapper">
         <div id="plot" class="lcm-plot-host" aria-live="polite"></div>
+        <div id="groupView" class="lcm-group-host" hidden></div>
         <p id="emptyState" class="nd-viewer-empty">Choose an example or drop spectroscopy data to begin.</p>
         <p id="viewerNotice" class="nd-viewer-notice" hidden></p>
       </div>
@@ -152,6 +155,8 @@
       <p><strong>Basis sets.</strong> The included basis sets were simulated with FID-A for 20 metabolites. LCModel adds macromolecules and lipids itself. Most use ideal (instantaneous) pulses. Sets marked "shaped pulses" use real refocusing pulse shapes across the voxel (FID-A's sample Mao refocusing pulse for PRESS, its HS2 adiabatic pulse for semi-LASER), which reproduce J-evolution during the pulses and the chemical-shift displacement of the slices; the app prefers them to the ideal set with the same parameters. Choose the set that matches the data's field strength, sequence and echo time, or supply your own .BASIS file. The pulses are FID-A's examples, not a particular scanner's.</p>
       <p><strong>MEGA-PRESS.</strong> GABA-edited data go through FID-A's <code>run_megapressproc_auto</code>: coil combination, removal of bad averages, drift correction per subspectrum and alignment of edit-ON to edit-OFF. LCModel then fits the difference spectrum with its MEGA-PRESS analysis (<code>sptype='mega-press-3'</code>, no baseline, scaled to NAA) and a difference basis set, simulated with FID-A's shaped editing and refocusing pulses at the voxel centre: real editing pulses nearly erase the NAA singlet in the edit-ON scan, which instantaneous pulses cannot reproduce. Sets exist for TE 68 ms (14 ms editing pulses) and TE 80 ms (20 ms), and for macromolecule-suppressed editing (TE 80 ms, edit-OFF at 1.5 ppm). Ratios are to NAA+NAAG; the edit-OFF spectrum is a separate download. GE and Philips files do not record editing or which transient is edit-ON, so the app compares alternate transients, as Osprey does. Data that the scanner averaged in edit-ON/OFF pairs cannot be separated.</p>
       <p><strong>GABA and co-edited macromolecules.</strong> The 1.9 ppm editing pulse also edits a macromolecule signal at 3.0 ppm (MM3co) under the GABA peak. The fit models it as Zöllner et al. (2022) recommend: a 14 Hz Gaussian at 3.0 ppm tied to the co-edited macromolecule peak at 0.915 ppm by a soft 3:2 area constraint, fitted from 4.2 to 0.5 ppm. As in Osprey's MEGA-PRESS LCModel jobs, 1.2 to 1.95 ppm is left out: macromolecules there, hit directly by the editing pulse, have no basis spectrum, and the analysis has no baseline. The table gives GABA, MM3co and their sum GABA+, each with %SD. GABA+ is robust; the split between GABA and MM3co is not a measurement but follows from the model's assumptions (the MM3co line width and its ratio to the 0.915 ppm peak), and changes when they change. The results therefore lead with GABA+ and mark GABA and MM3co as model-dependent; report GABA+ as the primary result. LCModel settings offer the previous analysis as the macromolecule model "None": LCModel's <code>mega-press-3</code> as is, 4.2 to 1.95 ppm, where GABA is GABA+. Macromolecule-suppressed data have no co-edited MM3co, so their sets always use it.</p>
+      <p><strong>Groups.</strong> Drop several acquisitions, or a folder of subjects, and the app fits each one in turn with the same settings. Every spectrum is paired with the water reference in its own folder. Each dataset gets the basis set recommended for its header, unless you chose a library basis set that suits all of them or dropped your own .BASIS file, which then fits every dataset. A dataset that fails is listed with its error and the rest continue. The group table shows each dataset's concentrations or ratios with their %SD, FID-A's SNR, linewidth and removed averages, and LCModel's FWHM, S/N and shift. Its CSV download is long, one row per dataset and metabolite, because units and ratio references can differ between datasets; the second CSV has one row per dataset.</p>
+      <p><strong>Reports.</strong> This port does not draw LCModel's PostScript page. Instead each fit has a printable HTML report with the same information: the fit with its baseline and residual, the concentration table with %SD above 20% marked, LCModel's diagnostics and fit quality, the data's header, FID-A's preprocessing summary, the basis set with its checksum, the control file and the versions used. Open it and print it to PDF from the browser.</p>
       <p>Research use only.</p>
     </template>
     <template id="privacyContent"><p>Spectroscopy files are processed in this browser and are never uploaded. Basis sets and examples are downloaded from Hugging Face at a pinned revision and verified by checksum.</p></template>

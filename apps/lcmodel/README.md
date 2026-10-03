@@ -54,14 +54,30 @@ fitting, both as Rust ports compiled to WebAssembly (`packages/lcmodel`).
 * Output: fit, metabolite and preprocessing plots (`src/spectrum-plot.js`), the
   concentration table, and downloads of the concentrations (.csv), LCModel's
   `.table`/`.coord`, the `.RAW`/`.H2O`, the control file and FID-A's report.
+* Report: LCModel's PostScript page is not ported (`lps=0`); `src/report.js`
+  writes a self-contained HTML report per fit instead (inline SVG plots, its own
+  print CSS, no external resources): fit, concentration table with %SD above
+  20 % marked, diagnostics, header, FID-A summary, basis set and checksum,
+  control file and versions. View opens it in a tab for printing to PDF.
+* Groups: several datasets (a folder of subjects; `detect.rs` pairs each
+  spectrum with the water reference closest in the folder tree) are fitted one
+  after the other by "Fit all N datasets". Basis per dataset (`planBases` in
+  `src/group.js`): a dropped .BASIS fits all; a library set picked over the
+  recommendation fits all if it suits all; otherwise each dataset gets its own
+  recommendation. Failures and unreadable files become failed rows; the run
+  continues. The group table (`src/group-view.js`) sits in the viewer's Group
+  tab. The primary CSV is long (dataset x metabolite rows), because unit (mM or
+  a.u.) and ratio reference (Cr+PCr, NAA+NAAG) can differ per dataset; a wide
+  CSV and a zip of reports are also offered. Automation: `fit-group`.
 
 Examples (Hugging Face `neurodeskorg/webapps`, `lcmodel/examples/`): FID-A's GE
 PRESS phantom (3 T, TE 35 ms), FID-A's Siemens SPECIAL in vivo data (2.89 T,
 TE 8.5 ms, 178 MB) and MEGA-PRESS data (TE 68 ms, 86 MB), headers de-identified,
-Osprey's Philips MEGA-PRESS data (SDAT, TE 68 ms, MIT), and LCModel's synthetic test case,
+Osprey's Philips MEGA-PRESS data (SDAT, TE 68 ms, MIT), Osprey's Philips PRESS
+data of two subjects (TE 35 ms, MIT, the group example), and LCModel's synthetic test case,
 whose table the app reproduces exactly (`e2e/smoke.spec.js`).
 
 ```bash
-pnpm --filter lcmodel test        # basis selection, LCModel file parsing, plots
+pnpm --filter lcmodel test        # basis selection, LCModel file parsing, plots, group table, report
 pnpm --filter lcmodel test:e2e    # browser workflow; LCMODEL_E2E_LARGE=1 adds SPECIAL and MEGA-PRESS
 ```

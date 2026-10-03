@@ -13,7 +13,8 @@
   },
   "dependencies": {
     "@neurodesk/webapp-components": "workspace:*",
-    "@neurodesk/lcmodel": "workspace:*"
+    "@neurodesk/lcmodel": "workspace:*",
+    "fflate": "^0.8.2"
   },
   "devDependencies": {
     "@playwright/test": "^1.44.0",

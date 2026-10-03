@@ -72,6 +72,54 @@
     ]
   },
   {
+    "id": "philips-press-group",
+    "label": "Philips PRESS 3 T, TE 35 ms, two subjects (group)",
+    "description": "Philips SDAT/SPAR from Osprey (MIT): PRESS at 3 T, TE 35 ms, 64 averages combined on the scanner, two subjects, each with a water reference. 80 kB.",
+    "expectedResult": "The app pairs each spectrum with its own water reference and fits both subjects with the PRESS TE 35 ms basis in one run; the group table compares water-scaled concentrations and quality measures, and each subject has a printable report.",
+    "files": [
+      {
+        "role": "spectrum",
+        "name": "sub-01_PRESS_35_act.sdat",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/06722850204dad69d8c0b57dc16272570df984bc/lcmodel/examples/philips-press-group/sub-01_PRESS_35_act.sdat"
+      },
+      {
+        "role": "spectrum",
+        "name": "sub-01_PRESS_35_act.spar",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/06722850204dad69d8c0b57dc16272570df984bc/lcmodel/examples/philips-press-group/sub-01_PRESS_35_act.spar"
+      },
+      {
+        "role": "water",
+        "name": "sub-01_PRESS_35_ref.sdat",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/06722850204dad69d8c0b57dc16272570df984bc/lcmodel/examples/philips-press-group/sub-01_PRESS_35_ref.sdat"
+      },
+      {
+        "role": "water",
+        "name": "sub-01_PRESS_35_ref.spar",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/06722850204dad69d8c0b57dc16272570df984bc/lcmodel/examples/philips-press-group/sub-01_PRESS_35_ref.spar"
+      },
+      {
+        "role": "spectrum",
+        "name": "sub-02_PRESS_35_act.sdat",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/06722850204dad69d8c0b57dc16272570df984bc/lcmodel/examples/philips-press-group/sub-02_PRESS_35_act.sdat"
+      },
+      {
+        "role": "spectrum",
+        "name": "sub-02_PRESS_35_act.spar",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/06722850204dad69d8c0b57dc16272570df984bc/lcmodel/examples/philips-press-group/sub-02_PRESS_35_act.spar"
+      },
+      {
+        "role": "water",
+        "name": "sub-02_PRESS_35_ref.sdat",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/06722850204dad69d8c0b57dc16272570df984bc/lcmodel/examples/philips-press-group/sub-02_PRESS_35_ref.sdat"
+      },
+      {
+        "role": "water",
+        "name": "sub-02_PRESS_35_ref.spar",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/06722850204dad69d8c0b57dc16272570df984bc/lcmodel/examples/philips-press-group/sub-02_PRESS_35_ref.spar"
+      }
+    ]
+  },
+  {
     "id": "lcmodel-test",
     "label": "LCModel test spectrum (Synthetic)",
     "description": "Synthetic: LCModel's own test case, a 3 T spectrum simulated with spant, with its basis set and control file. It checks the fit, not preprocessing.",

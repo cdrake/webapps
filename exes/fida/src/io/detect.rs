@@ -238,6 +238,12 @@ fn water_base(stem: &str) -> Option<String> {
     None
 }
 
+/// Leading directory components two paths share.
+fn shared_dirs(a: &str, b: &str) -> usize {
+    let parts = |p: &str| p.trim_start_matches("./").split(['/', '\\']).filter(|c| !c.is_empty()).map(str::to_ascii_lowercase).collect::<Vec<_>>();
+    parts(a).iter().zip(parts(b).iter()).take_while(|(x, y)| x == y).count()
+}
+
 fn bruker_file(file: &str) -> bool {
     matches!(file, "acqp" | "method" | "fid" | "fid.raw" | "rawdata.job0" | "fid.ref" | "fid.refscan" | "fid_refscan.64" | "acqus")
 }
@@ -353,14 +359,17 @@ pub fn detect(files: &[NamedFile]) -> Detection {
         }
     }
 
-    // pairing
+    // pairing: when several water datasets match by name (subjects in
+    // separate folders with the same file names), the one closest in the
+    // directory tree wins, so a folder of subjects pairs within each subject.
     let key = |ds: &Dataset| -> (Format, String) { (ds.format, ds.name.to_ascii_lowercase()) };
     let (water, metab): (Vec<Dataset>, Vec<Dataset>) = datasets.into_iter().partition(|d| d.is_water);
     let mut water: Vec<Option<Dataset>> = water.into_iter().map(Some).collect();
     for m in metab {
         let (fmt, mname) = key(&m);
-        let mdir = split_path(split_path(files[m.files[0]].name).0).1.to_ascii_lowercase();
-        let mut best: Option<usize> = None;
+        let mpath = split_path(files[m.files[0]].name).0;
+        let mdir = split_path(mpath).1.to_ascii_lowercase();
+        let mut best: Option<(usize, usize)> = None;
         for (wi, w) in water.iter().enumerate() {
             let Some(w) = w else { continue };
             if w.format != fmt {
@@ -381,11 +390,13 @@ pub fn detect(files: &[NamedFile]) -> Detection {
                 }
             };
             if hit {
-                best = Some(wi);
-                break;
+                let shared = shared_dirs(mpath, split_path(files[w.files[0]].name).0);
+                if best.is_none_or(|(_, s)| shared > s) {
+                    best = Some((wi, shared));
+                }
             }
         }
-        let w = best.and_then(|k| water[k].take());
+        let w = best.and_then(|(k, _)| water[k].take());
         det.pairs.push(Pairing { metabolite: m, water: w });
     }
     let mut unpaired: Vec<Dataset> = water.into_iter().flatten().collect();
@@ -546,6 +557,37 @@ mod tests {
         assert_eq!(d.ignored.len(), 1);
         let lcm = d.pairs.iter().find(|p| p.metabolite.format == Format::LcModelRaw).unwrap();
         assert_eq!(files[lcm.water.as_ref().unwrap().files[0]].name, "sub/metab.H2O");
+    }
+
+    #[test]
+    fn subjects_in_folders_pair_within_each_subject() {
+        let raw = b" $NMID\n $END\n 1 2\n".to_vec();
+        let rda = b">>> Begin of header <<<\r\n".to_vec();
+        // The same file names in every subject's folder, listed so that a
+        // name-only match would pair sub-02's spectrum with sub-01's water.
+        let files = [
+            nf("group/sub-01/svs_w.rda", &rda),
+            nf("group/sub-02/svs_w.rda", &rda),
+            nf("group/sub-02/svs.rda", &rda),
+            nf("group/sub-01/svs.rda", &rda),
+            nf("group/sub-01/ses-1/mrs/press/metab.RAW", &raw),
+            nf("group/sub-02/ses-1/mrs/press/metab.RAW", &raw),
+            nf("group/sub-02/ses-1/mrs/press_ref/metab.H2O", &raw),
+            nf("group/sub-01/ses-1/mrs/press_ref/metab.H2O", &raw),
+            nf("group/sub-01/svs_dicom/a.IMA", &raw),
+            nf("group/sub-01/svs_dicom_w/a.IMA", &raw),
+            nf("group/sub-02/svs_dicom/a.IMA", &raw),
+            nf("group/sub-02/svs_dicom_w/a.IMA", &raw),
+        ];
+        let d = detect(&files);
+        assert_eq!(d.pairs.len(), 6, "{d:#?}");
+        assert!(d.unpaired_water.is_empty(), "{d:#?}");
+        for p in &d.pairs {
+            let m = files[p.metabolite.files[0]].name;
+            let w = files[p.water.as_ref().expect("paired").files[0]].name;
+            let subject = |path: &str| path.split('/').nth(1).unwrap().to_string();
+            assert_eq!(subject(m), subject(w), "{m} paired with {w}");
+        }
     }
 
     #[test]
