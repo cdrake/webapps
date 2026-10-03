@@ -79,5 +79,6 @@ test("MindMap segments the T1 and measures the voxel", async ({ page }) => {
   await expect(page.locator("#corrHeader")).toBeVisible();
   const report = JSON.parse((await download(page, "Tissue correction inputs")).toString("utf8"));
   expect(report.fractionSource.method).toContain("MindMap");
-  expect((await download(page, "Grey matter map")).length).toBeGreaterThanOrEqual(352 + 256 * 256 * 204 * 4);
+  // MindMap writes 8-bit maps with a scale factor.
+  expect((await download(page, "Grey matter map")).length).toBeGreaterThanOrEqual(352 + 256 * 256 * 204);
 });
