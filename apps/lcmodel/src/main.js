@@ -75,6 +75,11 @@ const results = createResultList({
 /** The loaded input: FID-A datasets or an LCModel .RAW (direct). */
 let input = null;
 let customBasis = null; // { name, text, header }
+// Fit ranges, ppm. A MEGA-PRESS difference spectrum is fitted down to 0.5 ppm
+// so that the co-edited MM at 0.915 ppm constrains MM3co under GABA
+// (Zöllner et al. 2022); LCModel's mega-press-3 preset stops at 1.95 ppm.
+const EDITED_RANGE = ["4.2", "0.5"];
+const PLAIN_RANGE = ["4.0", "0.2"];
 let processed = null; // FID-A result for the current dataset
 let fit = null; // parsed LCModel output
 let view = "fit";
@@ -316,12 +321,9 @@ function showDataset() {
     summary.textContent = parts.join(", ");
   }
   showEditing();
-  // LCModel's MEGA-PRESS analysis (sptype mega-press-3) fits 4.2-1.95 ppm.
-  const range = isEdited() ? ["4.2", "1.95"] : ["4.0", "0.2"];
-  const editedRange = ["4.2", "1.95"];
-  const plainRange = ["4.0", "0.2"];
+  const range = isEdited() ? EDITED_RANGE : PLAIN_RANGE;
   const current = [$("ppmStart").value, $("ppmEnd").value];
-  const untouched = [editedRange, plainRange].some((r) => r[0] === current[0] && r[1] === current[1]);
+  const untouched = [EDITED_RANGE, PLAIN_RANGE].some((r) => r[0] === current[0] && r[1] === current[1]);
   if (untouched) [$("ppmStart").value, $("ppmEnd").value] = range;
   const water = hasWater();
   $("waterScaling").disabled = !water;
@@ -357,6 +359,13 @@ function setCustomBasis(name, text) {
   $("basisDrop").classList.add("has-files");
   $("basisSelect").value = CUSTOM;
   recommend();
+}
+
+// MM-suppressed editing leaves no co-edited MM to model, and a user's own
+// basis that already has an MM3co spectrum must not get a second one.
+function modelsCoEditedMM(choice) {
+  if (choice === CUSTOM) return !customBasis.header.metabolites.some((m) => /^MM3/i.test(m));
+  return library.find((b) => b.id === choice)?.coEditedMM === true;
 }
 
 function renderBasisOptions(ranked, assessed) {
@@ -444,6 +453,7 @@ async function run({ throwOnError = false } = {}) {
       lcm = { raw: input.text, h2o: input.water, nunfil: input.points, deltat: a.deltat, hzpppm: a.hzpppm, teMs: input.header.teMs };
     }
     const water = $("waterScaling").checked && Boolean(lcm.h2o);
+    const choice = $("basisSelect").value;
     const control = buildControl({
       nunfil: lcm.nunfil,
       deltat: lcm.deltat,
@@ -455,10 +465,10 @@ async function run({ throwOnError = false } = {}) {
       ppmEnd: Number($("ppmEnd").value),
       title: describeInput(),
       sptype: lcm.edited ? "mega-press-3" : "",
+      coEditedMM: lcm.edited && modelsCoEditedMM(choice),
     });
     const files = { [FILES.raw]: lcm.raw };
     if (water) files[FILES.h2o] = lcm.h2o;
-    const choice = $("basisSelect").value;
     const basis = choice === CUSTOM
       ? { name: FILES.basis, text: customBasis.text }
       : { name: FILES.basis, library: library.find((b) => b.id === choice).library };
@@ -692,8 +702,8 @@ async function fitOperation({ inputs, parameters, signal, progress: report }) {
     showDataset();
   }
   const edited = isEdited();
-  $("ppmStart").value = String(p.ppmStart ?? (edited ? 4.2 : 4.0));
-  $("ppmEnd").value = String(p.ppmEnd ?? (edited ? 1.95 : 0.2));
+  $("ppmStart").value = String(p.ppmStart ?? (edited ? EDITED_RANGE : PLAIN_RANGE)[0]);
+  $("ppmEnd").value = String(p.ppmEnd ?? (edited ? EDITED_RANGE : PLAIN_RANGE)[1]);
   if (!$("waterScaling").disabled) $("waterScaling").checked = p.waterScaling ?? true;
   if (!$("ecc").disabled) $("ecc").checked = p.eddyCurrentCorrection ?? true;
   if (!inputs.basis?.length && p.basisSet && p.basisSet !== "auto") {

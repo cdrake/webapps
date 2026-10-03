@@ -27,6 +27,19 @@ test("control file names the inputs and enables water scaling only with water", 
   assert.throws(() => buildControl({ nunfil: 2048, deltat: 2e-4, hzpppm: 123, ppmStart: 0.2, ppmEnd: 4 }), /fit range/);
 });
 
+test("a MEGA-PRESS fit can separate GABA from co-edited MM3co", () => {
+  const options = { nunfil: 2080, deltat: 4.167e-4, hzpppm: 123.247, sptype: "mega-press-3", ppmStart: 4.2, ppmEnd: 0.5 };
+  const mm = buildControl({ ...options, coEditedMM: true });
+  assert.match(mm, /\n nsimul=2\n/);
+  assert.match(mm, /chsimu\(1\)='MM09 @ \.915 /);
+  // 14 Hz at 123.247 MHz is 0.114 ppm; the minimum Gaussian width is 10.5 Hz.
+  assert.match(mm, /chsimu\(2\)='MM3co @ 3\.0 \+- \.02 FWHM= 0\.085 < 0\.114 \+- \.02 AMP= 2\.'/);
+  assert.match(mm, /chrato\(2\)='MM3co\/MM09 = 1\. \+- \.2'/);
+  assert.match(mm, /\n ncombi=18\n chcomb\(18\)='GABA\+MM3co'\n/);
+  assert.doesNotMatch(buildControl(options), /MM3co/);
+  assert.throws(() => buildControl({ nunfil: 2048, deltat: 2e-4, hzpppm: 123, coEditedMM: true }), /MEGA-PRESS/);
+});
+
 test("parses LCModel's own .COORD and .TABLE output", async () => {
   const coord = parseCoord(await readFile(new URL("native.coord", native), "utf8"));
   assert.equal(coord.ratioTo, "Cr+PCr");

@@ -406,53 +406,83 @@ mod mega_tests {
     }
     use super::*;
 
-    #[test]
-    fn siemens_mega_press_example_fits_gaba() {
-        let root = std::env::var("FIDA_EXAMPLES").unwrap_or_else(|_| "/home/ubuntu/src/mrs/FID-A/exampleData".into());
-        let Ok(bytes) = std::fs::read(format!("{root}/Siemens/sample01_megapress/megapress/megapressDLPFC.dat")) else {
+    /// FID-A's Siemens MEGA-PRESS sample, preprocessed, or None without it.
+    fn siemens_mega() -> Option<Processed> {
+        let Some(bytes) = example("Siemens/sample01_megapress/megapress/megapressDLPFC.dat") else {
             eprintln!("skipping: FID-A example data not found");
-            return;
-        };
-        let Ok(basis) = std::fs::read(format!("{}/basis-out/megapress-3t-te68-diff.basis", std::env::var("TMPDIR").unwrap_or_default())) else {
-            eprintln!("skipping: no MEGA-PRESS basis set in $TMPDIR/basis-out");
-            return;
+            return None;
         };
         let (ds, summary) = load(&[("megapressDLPFC.dat".to_string(), bytes.as_slice())]);
         assert_eq!(ds.len(), 1, "{summary}");
         assert_eq!(family(&ds[0].metab.seq), "MEGA-PRESS");
-        let p = process(&ds[0], &Options::from_json(&json!({})), &mut |_, _| {}, &|| false).unwrap();
+        Some(process(&ds[0], &Options::from_json(&json!({})), &mut |_, _| {}, &|| false).unwrap())
+    }
+
+    #[test]
+    fn siemens_mega_press_example_fits_gaba() {
+        let Some(p) = siemens_mega() else { return };
         let inputs = lcmodel_inputs(&p).unwrap();
         assert_eq!(inputs["edited"], json!(true));
         assert!(inputs["editOff"].is_string());
-        let control = format!(
-            " $LCMODL\n key=210387309\n lps=0\n sptype='mega-press-3'\n nunfil={}\n deltat={:e}\n hzpppm={}\n filbas='b.basis'\n filraw='d.raw'\n ltable=7\n filtab='out.table'\n $END\n",
-            inputs["nunfil"], inputs["deltat"].as_f64().unwrap(), inputs["hzpppm"]
-        );
-        let raw = inputs["raw"].as_str().unwrap().as_bytes().to_vec();
-        let r = lcmodel::run_lcmodel(&control, &[("b.basis", &basis), ("d.raw", &raw)], "");
-        assert!(r.error.is_none(), "{:?}", r.error);
-        let table = &r.outputs["out.table"];
+        let Some(table) = fit_mega(&p, "") else { return };
         eprintln!("{table}");
-        let gaba = table.lines().find(|l| l.trim_end().ends_with(" GABA")).expect("GABA row");
-        let sd: f64 = gaba.split_whitespace().nth(1).unwrap().trim_end_matches('%').parse().unwrap();
+        let (_, sd, _) = row(&table, "GABA");
         assert!(sd < 20.0, "GABA %SD {sd}");
     }
 
-    /// Fit a MEGA-PRESS difference spectrum with the library's difference basis.
-    fn fit_mega(p: &Processed) -> Option<String> {
+    /// The co-edited macromolecule model the app adds to a MEGA-PRESS fit
+    /// (apps/lcmodel/src/lcmodel-io.js, coEditedMacromolecules), with the
+    /// app's fit range for edited data.
+    fn co_edited_mm(hzpppm: f64) -> String {
+        let ppm = |hz: f64| format!("{:.3}", hz / hzpppm);
+        format!(
+            " ppmend=0.5\n nsimul=2\n chsimu(1)='MM09 @ .915 +- .02 FWHM= .085 < .1 +- .35 AMP= 3.'\n chsimu(2)='MM3co @ 3.0 +- .02 FWHM= {} < {} +- .02 AMP= 2.'\n nratio=2\n chrato(2)='MM3co/MM09 = 1. +- .2'\n ncombi=18\n chcomb(18)='GABA+MM3co'\n",
+            ppm(10.5),
+            ppm(14.0)
+        )
+    }
+
+    /// Fit a MEGA-PRESS difference spectrum with the library's difference
+    /// basis; `extra` adds namelist lines to LCModel's mega-press-3 analysis.
+    fn fit_mega(p: &Processed, extra: &str) -> Option<String> {
         let Ok(basis) = std::fs::read(format!("{}/basis-out/megapress-3t-te68-diff.basis", std::env::var("TMPDIR").unwrap_or_default())) else {
             eprintln!("skipping the fit: no MEGA-PRESS basis set in $TMPDIR/basis-out");
             return None;
         };
         let inputs = lcmodel_inputs(p).unwrap();
         let control = format!(
-            " $LCMODL\n key=210387309\n lps=0\n sptype='mega-press-3'\n nunfil={}\n deltat={:e}\n hzpppm={}\n filbas='b.basis'\n filraw='d.raw'\n ltable=7\n filtab='out.table'\n $END\n",
+            " $LCMODL\n key=210387309\n lps=0\n sptype='mega-press-3'\n nunfil={}\n deltat={:e}\n hzpppm={}\n filbas='b.basis'\n filraw='d.raw'\n ltable=7\n filtab='out.table'\n{extra} $END\n",
             inputs["nunfil"], inputs["deltat"].as_f64().unwrap(), inputs["hzpppm"]
         );
         let raw = inputs["raw"].as_str().unwrap().as_bytes().to_vec();
         let r = lcmodel::run_lcmodel(&control, &[("b.basis", &basis), ("d.raw", &raw)], "");
         assert!(r.error.is_none(), "{:?}", r.error);
         Some(r.outputs["out.table"].clone())
+    }
+
+    /// GABA, MM3co and GABA+ = GABA + MM3co, each relative to NAA+NAAG with
+    /// its %SD, under the co-edited MM model.
+    fn gaba_mm3co(p: &Processed) -> Option<[(f64, f64); 3]> {
+        let hzpppm = lcmodel_inputs(p).unwrap()["hzpppm"].as_f64().unwrap();
+        let table = fit_mega(p, &co_edited_mm(hzpppm))?;
+        eprintln!("{table}");
+        let pick = |name| {
+            let (_, sd, ratio) = row(&table, name);
+            (ratio, sd)
+        };
+        Some([pick("GABA"), pick("MM3co"), pick("GABA+MM3co")])
+    }
+
+    #[test]
+    fn co_edited_mm_separates_gaba_from_mm3co_on_siemens_data() {
+        let Some(p) = siemens_mega() else { return };
+        let Some([gaba, mm3co, plus]) = gaba_mm3co(&p) else { return };
+        // GABA 0.067 (15 %), MM3co 0.220 (10 %), GABA+ 0.287 (7 %) of NAA+NAAG:
+        // GABA is 23 % of GABA+, below the ~50 % usually assumed.
+        assert!((plus.0 - 0.287).abs() < 0.01, "GABA+ {plus:?}");
+        assert!((gaba.0 - 0.067).abs() < 0.01 && gaba.1 <= 20.0, "GABA {gaba:?}");
+        assert!((mm3co.0 - 0.220).abs() < 0.01 && mm3co.1 <= 15.0, "MM3co {mm3co:?}");
+        assert!(plus.1 < gaba.1, "GABA+ is better determined than its parts");
     }
 
     fn row(table: &str, name: &str) -> (f64, f64, f64) {
@@ -482,11 +512,19 @@ mod mega_tests {
         let p = process(&ds[0], &Options::from_json(&json!({})), &mut |_, _| {}, &|| false).unwrap();
         assert_eq!(p.report["edited"], json!(true));
         assert_eq!(p.report["editClassification"]["inverted"], json!(true));
-        let Some(table) = fit_mega(&p) else { return };
+        let Some(table) = fit_mega(&p, "") else { return };
         eprintln!("{table}");
         let (_, sd, ratio) = row(&table, "GABA");
         assert!(sd < 20.0, "GABA %SD {sd}");
         assert!(ratio > 0.05 && ratio < 0.4, "GABA/NAA {ratio}");
+        // With the co-edited MM model: GABA 0.131 (12 %), MM3co 0.165 (12 %),
+        // GABA+ 0.296 (6 %) of NAA+NAAG; GABA is 44 % of GABA+.
+        let Some([gaba, mm3co, plus]) = gaba_mm3co(&p) else { return };
+        assert!((plus.0 - 0.296).abs() < 0.01 && plus.1 <= 8.0, "GABA+ {plus:?}");
+        assert!((gaba.0 - 0.131).abs() < 0.01 && gaba.1 <= 15.0, "GABA {gaba:?}");
+        assert!((mm3co.0 - 0.165).abs() < 0.01 && mm3co.1 <= 15.0, "MM3co {mm3co:?}");
+        let fraction = gaba.0 / plus.0;
+        assert!(fraction > 0.35 && fraction < 0.6, "GABA/GABA+ {fraction}");
         // Forcing "not edited" fits the alternate transients as one PRESS-like average.
         let p = process(&ds[0], &Options::from_json(&json!({"edited": false})), &mut |_, _| {}, &|| false).unwrap();
         assert!(p.edit_off.is_none());
