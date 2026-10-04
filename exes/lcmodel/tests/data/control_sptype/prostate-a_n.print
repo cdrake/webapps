@@ -1,0 +1,122 @@
+@@HEAD
+
+
+
+~10~LCModel (Version 6.3-1N) Copyright: S.W. Provencher.~10~Ref.: Magn. Reson. Med. 30:672-679 (1993).~16~
+
+  
+
+  
+
+ Tue Sep 29 17:52:49 2026
+
+
+
+
+&LCMODL
+@@MEMBER CHCOMB
+ CHCOMB="Cho1+Cho2~341~","Cr1+Cr2~343~","PA1+PA2+PA3+PA4~335~","Cit1a+Cit2a+Cit3a+Cit4a+Cit1b+Cit2b+Cit3b+Cit4b+Cit1c+Cit2c+Cit3c+Cit4c~279~","PA1+PA2+PA3+PA4+Cr1+Cr2~327~",
+ "Cho1+Cho2+Cr1+Cr2~333~","Cho1+Cho2+PA1+PA2+PA3+PA4+Cr1+Cr2~317~","Ins+Gly~343~","mI+Gly~344~","Cr+PCr~344~","Cre+PCr~343~",
+ "Glu+Gln~343~","Lip13a+Lip13b~337~","MM14+Lip13a+Lip13b+MM12~327~","MM09+Lip09~340~","MM20+Lip20~340~", 84*"~350~",
+ 
+@@MEMBER CHCOM2
+ CHCOM2="Cho~347~","Cr~348~","PA~348~","Cit~347~","PA+Cr~345~",
+ "Cho+Cr~344~","Cho+PA+Cr~341~", 93*"~350~",
+@@MEMBER CHGRSH
+ CHGRSH="Cit1  ","Cit2  ","Cit3  ","Cit4  ","PA~4~",
+ "Cho   ","Cr~4~", 33*"~6~",
+@@MEMBER CHNOT1
+ CHNOT1="Cit1b ","Cit2b ","Cit3b ","Cit4b ","Cit1c ",
+ "Cit2c ","Cit3c ","Cit4c ","PA1   ","PA2   ","PA3   ",
+ "PA4   ","Cho2  ","Cr2   ","Glyc  ","Gua   ","Ilc   ",
+ "Leu   ","Lip20 ","MM12  ","MM14  ","MM17  ","MM20  ",
+ "NAAG  ","Pal   ","Pgc   ","Pyr   ","Scyllo","Suc   ",
+ "notTau","Thr   ","TMPO  ","Val   ", 467*"~6~",
+@@MEMBER CHNOT2
+ CHNOT2="PA0   ","Lip13d","Lip13e", 497*"~6~",
+@@MEMBER CHSIMU
+ CHSIMU="Cho1 @ 3.2 +- 0.015 FWHM= 0.03 < 0.04 +- 0.01 AMP=1.0~475~","Cho2 @ 3.2 +- 0.015 FWHM= 0.06 < 0.07 +- 0.01 AMP=1.0~475~","Cr1 @ 3.03 +- 0.015 FWHM= 0.03 < 0.04 +- 0.01 AMP=1.0~475~","Cr2 @ 3.03 +- 0.015 FWHM= 0.06 < 0.07 +- 0.01 AMP=1.0~475~","PA0 @ 3.11 +- 0.015 FWHM= 0.03 < 0.04 +- 0.01 AMP=1.0~475~",
+ "PA1 @ 3.11 +- 0.015 FWHM= 0.04 < 0.06 +- 0.01 AMP=1.0~475~","PA2 @ 3.11 +- 0.015 FWHM= 0.08 < 0.10 +- 0.01 AMP=1.0~475~","PA3 @ 3.11 +- 0.015 FWHM= 0.12 < 0.14 +- 0.01 AMP=1.0~475~","PA4 @ 3.11 +- 0.015 FWHM= 0.16 < 0.18 +- 0.01 AMP=1.0~475~","Cit1a @ 2.81 +- 0.03 FWHM= 0.03 < 0.05+-0.01 AMP=1.0~476~","Cit1b @ 2.81 +- 0.03 FWHM= 0.07 < 0.09+-0.01 AMP=1.0~476~",
+ "Cit1c @ 2.81 +- 0.03 FWHM= 0.11 < 0.13+-0.01 AMP=1.0~476~","Cit2a @ 2.66 +- 0.03 FWHM= 0.03 < 0.05+-0.01 AMP=1.0~476~","Cit2b @ 2.66 +- 0.03 FWHM= 0.07 < 0.09+-0.01 AMP=1.0~476~","Cit2c @ 2.66 +- 0.03 FWHM= 0.11 < 0.13+-0.01 AMP=1.0~476~","Cit3a @ 2.62 +- 0.03 FWHM= 0.03 < 0.05+-0.01 AMP=1.0~476~","Cit3b @ 2.62 +- 0.03 FWHM= 0.07 < 0.09+-0.01 AMP=1.0~476~",
+ "Cit3c @ 2.62 +- 0.03 FWHM= 0.11 < 0.13+-0.01 AMP=1.0~476~","Cit4a @ 2.47 +- 0.03 FWHM= 0.03 < 0.05+-0.01 AMP=1.0~476~","Cit4b @ 2.47 +- 0.03 FWHM= 0.07 < 0.09+-0.01 AMP=1.0~476~","Cit4c @ 2.47 +- 0.03 FWHM= 0.11 < 0.13+-0.01 AMP=1.0~476~", 79*"~528~",
+@@MEMBER FILH2O
+ FILH2O="x.h2o~250~",
+@@MEMBER NAMREL
+ NAMREL="Cit~347~",
+@@MEMBER SPTYPE
+ SPTYPE="prostate-a~6~",
+@@MEMBER INCSMX
+ INCSMX=1~10~,
+@@MEMBER NCOMBI
+ NCOMBI=7~10~,
+@@MEMBER NGRSH
+ NGRSH=7~10~,
+@@MEMBER NNOT1
+ NNOT1=14~9~,
+@@MEMBER NNOT2
+ NNOT2=1~10~,
+@@MEMBER NSIDMN
+ NSIDMN=1~10~,
+@@MEMBER NSIDMX
+ NSIDMX=1~10~,
+@@MEMBER NSIMUL
+ NSIMUL=21~9~,
+@@MEMBER BADREF
+ BADREF=T,
+@@MEMBER DOECC
+ DOECC=T,
+@@MEMBER DOREFS
+ DOREFS=T,F,
+@@MEMBER DOWS
+ DOWS=T,
+@@MEMBER ENDPHA
+ ENDPHA=T,
+@@MEMBER GAUSS_RT2
+ GAUSS_RT2=F,
+@@MEMBER NOBASI
+ NOBASI=T,
+@@MEMBER ONLYCO
+ ONLYCO=T,
+@@MEMBER VITRO
+ VITRO=T,
+@@MEMBER ALPBMN
+ ALPBMN= 0.87039999999999995~5~,
+@@MEMBER ALPBMX
+ ALPBMX=  430.07999999999998~5~,
+@@MEMBER ALPBPN
+ ALPBPN=  1.07519996~4~,
+@@MEMBER ALPBST
+ ALPBST=  1.27999997~4~,
+@@MEMBER ATTH2O
+ ATTH2O=  1.00000000~4~,
+@@MEMBER PPMEND
+ PPMEND= -1.50000000~4~,
+@@MEMBER PPMST
+ PPMST=  3.70000005~4~,
+@@MEMBER SDDEGP
+ SDDEGP=  6.00000000~4~,
+@@MEMBER SDGRSH
+ SDGRSH= 4*2.00000009E-03  ,  4.00000019E-03, 2*2.00000009E-03  , 33*0.00000000~6~,
+@@MEMBER WCONC
+ WCONC= 0.500000000~4~,
+@@TAIL
+ /
+
+
+
+~10~Input changes to Control Variables
+  filh2o='x.h2o'~59~
+  doecc=T~66~
+  dows=T~67~
+  ppmend=-1.5~62~
+  ppmst=3.7~64~
+  sptype='prostate-a'~54~
+  mermes=8000~62~
+  filps='out.ps'~59~
+  filpri='out.print'~55~
+  lprint=8~65~
+  filraw='data.raw'~56~
+  filbas='missing.basis'~51~
+  hzpppm=127.786142~56~
+  deltat=5e-04~61~
+  nunfil=1024~62~

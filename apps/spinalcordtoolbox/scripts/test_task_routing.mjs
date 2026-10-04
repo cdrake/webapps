@@ -1,13 +1,5 @@
 #!/usr/bin/env node --no-warnings
 
-// Asserts the SCT Segmentation task selector and the SCT Processing operation
-// selector route work to the right pipeline. The browser silently fell back to
-// the default model name when a user selected "Vertebral labeling" from the
-// segmentation dropdown — runInference() spent ~22 minutes producing a sparse
-// spinal cord segmentation, then claimed DONE without ever invoking the
-// vertebrae module. The fix marks vertebrae as processingOnly and filters it
-// from the segmentation dropdown; this test enforces the invariant.
-
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -36,8 +28,6 @@ for (const task of segmentationDropdownTasks) {
   assert.equal(getTaskModelUrl(task), asset.downloadUrl, `Task "${task.id}" runtime URL must resolve to the hosted model asset`);
 }
 
-// The vertebrae task is post-processing and must be hidden from the segmentation
-// dropdown but available from the SCT Processing operation dropdown.
 const vertebrae = SCT_TASKS.find(task => task.id === 'vertebrae');
 assert.ok(vertebrae, 'vertebrae task is defined');
 assert.equal(vertebrae.processingOnly, true, 'vertebrae must be flagged processingOnly');
@@ -86,20 +76,8 @@ assert.equal(spine.outputStages?.find(stage => stage.id === 'spine_discs')?.visi
 
 const indexHtml = fs.readFileSync(path.join(ROOT, 'web/index.html'), 'utf8');
 assert.doesNotMatch(indexHtml, /id="overlapSelect"/, 'sliding-window overlap is an SCT model default, not a user-facing control');
-const processingOptions = [...indexHtml.matchAll(/<select id="processingOperationSelect">([\s\S]*?)<\/select>/g)][0]?.[1] || '';
-assert.match(processingOptions, /value="vertebrae"/, 'processingOperationSelect must offer vertebrae');
-const exposedProcessingOptionValues = [...processingOptions.matchAll(/<option\s+value="([^"]+)"/g)].map(match => match[1]);
-assert.deepEqual(exposedProcessingOptionValues, ['vertebrae'], 'processingOperationSelect must only expose real pipeline operations');
-assert.doesNotMatch(
-  processingOptions,
-  /centerline|morphometry|mt|dmri|registration|metadata/i,
-  'processingOperationSelect must not expose pure helper/demo operations'
-);
-
-// runProcessingOperation must early-return on missing segmentation, and route
-// 'vertebrae' to runVertebralLabeling rather than to runInference.
 const appJs = fs.readFileSync(path.join(ROOT, 'web/js/spinalcordtoolbox-app.js'), 'utf8');
-assert.match(appJs, /operation === 'vertebrae'[\s\S]*?hasResult\('segmentation'\)[\s\S]*?runVertebralLabeling/, 'runProcessingOperation must route vertebrae to runVertebralLabeling, gated on segmentation');
+assert.doesNotMatch(indexHtml, /id="(stepProcessingSection|processingOperationSelect|runProcessingBtn)"/, 'the obsolete SCT Processing section stays removed');
 assert.match(appJs, /getTaskModelUrl\(selectedTask\)[\s\S]*?modelUrl:\s*modelUrl\s*\?/, 'runInference must pass the resolved per-asset model URL into the worker');
 assert.match(appJs, /const overlap\s*=\s*assetDefaults\.overlap\s*\?\?\s*Config\.INFERENCE_DEFAULTS\.overlap/, 'runSegmentation must read overlap from task metadata instead of a public selector');
 assert.match(appJs, /keepLargestComponent:\s*!!\(assetDefaults\.keepLargestComponent\s*\?\?\s*Config\.INFERENCE_DEFAULTS\.keepLargestComponent\)/, 'runSegmentation must pass SCT largest-component cleanup to the worker');

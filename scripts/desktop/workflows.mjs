@@ -10,7 +10,7 @@ import { expect } from '@playwright/test';
 import { verifyMuscleMapFullPipeline, createSyntheticMuscleMapNifti } from '../../test/musclemap-full-pipeline-smoke.mjs';
 import { startReferenceServer } from '../../test-utils/compute-reference-server.mjs';
 
-export const workflowApps = ['nesvor', 'musclemap', 'vesselboost', 'spinalcordtoolbox', 'calmar', 'qsmbly', 'seedseg', 'dicompare', 'deface', 'easy-mp2rage', 'niimath', 'dicom2vid', 'browserqc', 'surfannotate', 'zarro', 'synthsr', 'synthseg', 'syncro', 'dwi2trx', 'edgereg', 'greedy', 'ants', 'brain2print', 'topofit', 'fireants', 'brain-extraction', 'disconnectome', 'carotid-flow', 'white-matter-lesions'];
+export const workflowApps = ['nesvor', 'musclemap', 'vesselboost', 'spinalcordtoolbox', 'calmar', 'qsmbly', 'seedseg', 'dicompare', 'deface', 'easy-mp2rage', 'niimath', 'dicom2vid', 'browserqc', 'surfannotate', 'zarro', 'synthsr', 'synthseg', 'syncro', 'dwi2trx', 'edgereg', 'greedy', 'ants', 'brain2print', 'topofit', 'fireants', 'brain-extraction', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel'];
 
 /**
  * Anything a workflow needs before the desktop app starts. NeSVoR computes on a
@@ -49,7 +49,7 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     assert.ok(bytes.length > 352, 'Output must contain image data');
     return { filename: data.filename, bytes: data.bytes.length };
   };
-  if (['deface', 'brain2print', 'dwi2trx', 'ants', 'greedy', 'edgereg', 'fireants', 'disconnectome', 'carotid-flow', 'white-matter-lesions'].includes(id)) {
+  if (['deface', 'brain2print', 'dwi2trx', 'ants', 'greedy', 'edgereg', 'fireants', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel'].includes(id)) {
     const examples = JSON.parse(await readFile(join(root, 'apps', id, 'examples.json')));
     const selector = page.getByRole('combobox', { name: 'Example', exact: true });
     await expect(selector).toBeEnabled({ timeout: 120000 });
@@ -64,7 +64,6 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     await selector.selectOption(examples[0].id);
     await expect(page.locator('[data-neurodesk-examples]')).toHaveAttribute('data-example-state', 'ready', { timeout: 120000 });
     await page.locator('#executionMode').selectOption('remote');
-    await page.locator('#thicknessConfirmed').check();
     await expect(page.locator('#stackRows input[type=number]')).toHaveCount(examples[0].files.length);
     const panel = page.locator('#computeConnection');
     await panel.locator('input[type="text"]').fill(compute.origin);
@@ -78,6 +77,8 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     const result = nifti(await download(button));
     const credentialPersisted = await page.evaluate(code => Object.values(localStorage).some(value => value.includes(code) || /"token"\s*:/.test(value)), compute.token);
     assert.equal(credentialPersisted, false, 'Pairing codes and client credentials must not be saved to localStorage');
+    // The app collapses the compute section once a server connects.
+    await page.locator('#computeSection').evaluate(section => { section.open = true; });
     await panel.getByRole('button', { name: 'Disconnect', exact: true }).click();
     await expect(panel).toHaveAttribute('data-state', 'idle');
     await expect(panel.locator('input[type="password"]')).toHaveValue('');
@@ -370,6 +371,19 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     // The MSLesSeg P57 example has dozens of periventricular and deep lesions.
     assert.ok(rows.length > 10, `expected lesions, found ${rows.length - 1}`);
     return { mask: nifti(mask), lesions: rows.length - 1 };
+  }
+  if (id === 'lcmodel') {
+    // GE PRESS phantom: FID-A preprocessing, then LCModel with the shaped-pulse TE 35 ms basis set.
+    await expect(page.locator('#runButton')).toBeEnabled({ timeout: 120000 });
+    await expect(page.locator('#basisSelect')).toHaveValue('press-3t-te35-shaped');
+    await page.locator('#runButton').click();
+    await expect(page.locator('#statusText')).toContainText('Fit done', { timeout: 300000 });
+    const result = await download('#resultList .nd-volume-toggle:first-child .nd-download-btn');
+    const rows = result.bytes.toString('utf8').trim().split('\n');
+    assert.equal(rows[0], 'Metabolite,Concentration,SD (%),/Cr+PCr');
+    const naa = Number(rows.find(row => row.startsWith('NAA,')).split(',')[1]);
+    assert.ok(naa > 5 && naa < 12, `NAA ${naa} mM`);
+    return { filename: result.filename, naa };
   }
   throw new Error(`No offline workflow test registered for ${id}`);
 }

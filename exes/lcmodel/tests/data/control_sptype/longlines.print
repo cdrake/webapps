@@ -1,0 +1,46 @@
+@@HEAD
+
+
+
+~10~LCModel (Version 6.3-1N) Copyright: S.W. Provencher.~10~Ref.: Magn. Reson. Med. 30:672-679 (1993).~16~
+
+  
+
+ Some Owner
+
+ Tue Sep 29 17:53:01 2026
+
+
+
+
+&LCMODL
+@@MEMBER CHSIMU
+ CHSIMU="Lip13a @ 1.28 +- .01 FWHM= .15 < .2 +- .035 AMP= 2.~477~","Lip13b @ 1.28 +- .01 FWHM= .089 < .09 +- .035 AMP= 2.~475~","Lip @1.3 FWHM=.1 AMP=1. Lip @1.3 FWHM=.1 AMP=1. Lip @1.3 FWHM=.1 AMP=1. Lip @1.3 FWHM=.1 AMP=1. Lip @1.3 FWHM=.1 AMP=1. Lip @1.3 FWHM=.1 AMP=1. Lip @1.3 FWHM=.1 AMP=1. Lip @1.3 FWHM=.1 AMP=1.~337~","Lip13d @ 1.26 +- .01 FWHM= .089 < .09 +- .035 AMP= 2.~475~","Lip09 @ .89 +- .02 FWHM= .14 < .19 +- .035 AMP= 3.~478~",
+ "MM09 @ .91 +- .02 FWHM= .14 < .17 +- .015 AMP= 3.~479~","Lip20 @ 2.04 +- .005 FWHM=.15 < .2 +- .025 AMP=1.33~17~@ 2.25 FWHM=.15 AMP=.67  @ 2.8 FWHM=.2 AMP=.87~414~","MM20 @ 2.08 +- .005 FWHM=.15 < .18 +- .01 AMP=1.33~18~@ 2.25 FWHM=.2 AMP=.33  @1.95 FWHM=.15 AMP=.33~20~@ 3. FWHM=.2 AMP=.4~375~","MM12 @ 1.21 +- .01 FWHM= .15 < .2 +- .02 AMP= 2.~480~","MM14 @ 1.43 +- .02 FWHM= .17 < .2 +- .02 AMP= 2.~480~","MM17 @ 1.67 +- .03 FWHM= .15 < .17 +- .02 AMP= 2.~479~",
+ "-CrCH2 @ 3.93 +- 0. FWHM= -9. < 0. +- 0. AMP= -2.~479~","Gua @ 3.78 +- 0. FWHM=-9.<0. +- 0. AMP=2.~487~","Glyc @ 3.55 +- 0. FWHM=-9.<0. +- 0. AMP=2.~486~", 86*"~528~",
+@@MEMBER OWNER
+ OWNER="Some Owner~110~",
+@@MEMBER NCHLIN
+ NCHLIN=35~9~,40~9~,
+@@TAIL
+ /
+
+
+
+~10~Input changes to Control Variables
+  nchlin(2)=40~61~
+  chsimu(3)='Lip @1.3 FWHM=.1 AMP=1. Lip~35~
+~4~@1.3 FWHM=.1 AMP=1. Lip @1.3 FWHM=.1~35~
+~4~AMP=1. Lip @1.3 FWHM=.1 AMP=1. Lip @1~34~
+~4~.3 FWHM=.1 AMP=1. Lip @1.3 FWHM=.1 AM~34~
+~4~P=1. Lip @1.3 FWHM=.1 AMP=1. Lip @1.3~34~
+~5~FWHM=.1 AMP=1. '~54~
+  mermes=8000~62~
+  filps='out.ps'~59~
+  filpri='out.print'~55~
+  lprint=8~65~
+  filraw='data.raw'~56~
+  filbas='missing.basis'~51~
+  hzpppm=127.786142~56~
+  deltat=5e-04~61~
+  nunfil=1024~62~

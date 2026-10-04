@@ -1,0 +1,120 @@
+@@HEAD
+
+
+
+~10~LCModel (Version 6.3-1N) Copyright: S.W. Provencher.~10~Ref.: Magn. Reson. Med. 30:672-679 (1993).~16~
+
+  
+
+  
+
+ Tue Sep 29 17:51:33 2026
+
+
+
+
+&LCMODL
+@@MEMBER CHCOMB
+ CHCOMB="Cho1+Cho2+Cho3~336~","Cr1+Cr2+Cr3~339~","PA1+PA2+PA3~339~","Lef1a+Lef2a+Cit3a+Cit4a+Rgt5a+Rgt6a+Lef1b+Lef2b+Cit3b+Cit4b+Rgt5b+Rgt6b+Lef1c+Lef2c+Cit3c+Cit4c+Rgt5c+Rgt6c~243~","PA1+PA2+PA3+Cr1+Cr2+Cr3~327~",
+ "Cho1+Cho2+Cho3+Cr1+Cr2+Cr3~324~","Cho1+Cho2+Cho3+PA1+PA2+PA3+Cr1+Cr2+Cr3~312~","Ins+Gly~343~","mI+Gly~344~","Cr+PCr~344~","Cre+PCr~343~",
+ "Glu+Gln~343~","Lip13a+Lip13b~337~","MM14+Lip13a+Lip13b+MM12~327~","MM09+Lip09~340~","MM20+Lip20~340~", 84*"~350~",
+ 
+@@MEMBER CHCOM2
+ CHCOM2="Cho~347~","Cr~348~","PA~348~","Cit~347~","PA+Cr~345~",
+ "Cho+Cr~344~","Cho+PA+Cr~341~", 93*"~350~",
+@@MEMBER CHGRSH
+ CHGRSH="PA~4~","Cho   ","Cr~4~","Lef1  ","Lef2  ",
+ "Cit3  ","Cit4  ","Rgt5  ","Rgt6  ","Lef   ","Cit   ",
+ "Rgt   ", 28*"~6~",
+@@MEMBER CHNOT2
+ CHNOT2="PA0   ","Lip13d","Lip13e", 497*"~6~",
+@@MEMBER CHSIMU
+ CHSIMU="Cho1 @ 3.2 +- 0.015 FWHM= 0.03 < 0.04+-0.01 AMP=1.0~477~","Cho2 @ 3.2 +- 0.015 FWHM= 0.06 < 0.07+-0.01 AMP=1.0~477~","Cho3 @ 3.2 +- 0.015 FWHM= 0.09 < 0.11+-0.01 AMP=1.0~477~","Cr1 @ 3.03 +- 0.015 FWHM= 0.03 < 0.04 +- 0.01 AMP=1.0~475~","Cr2 @ 3.03 +- 0.015 FWHM= 0.06 < 0.07 +- 0.01 AMP=1.0~475~",
+ "Cr3 @ 3.03 +- 0.015 FWHM= 0.09 < 0.11 +- 0.01 AMP=1.0~475~","PA0 @ 3.11 +- 0.015 FWHM= 0.03 < 0.04 +- 0.01 AMP=1.0~475~","PA1 @ 3.11 +- 0.015 FWHM= 0.04 < 0.06 +- 0.01 AMP=1.0~475~","PA2 @ 3.11 +- 0.015 FWHM= 0.08 < 0.10 +- 0.01 AMP=1.0~475~","PA3 @ 3.11 +- 0.015 FWHM= 0.12 < 0.14+-0.01 AMP=1.0~477~","Lef1a @ 2.82 +- 0.03 FWHM= 0.03 < 0.05+-0.01 AMP=1.0~476~",
+ "Lef1b @ 2.82 +- 0.03 FWHM= 0.07 < 0.09+-0.01 AMP=1.0~476~","Lef1c @ 2.82 +- 0.03 FWHM= 0.11 < 0.13+-0.01 AMP=1.0~476~","Lef2a @ 2.77 +- 0.03 FWHM= 0.03 < 0.05+-0.01 AMP=1.0~476~","Lef2b @ 2.77 +- 0.03 FWHM= 0.07 < 0.09+-0.01 AMP=1.0~476~","Lef2c @ 2.77 +- 0.03 FWHM= 0.11 < 0.13+-0.01 AMP=1.0~476~","Cit3a @ 2.66 +- 0.03 FWHM= 0.03 < 0.05+-0.01 AMP=1.0~476~",
+ "Cit3b @ 2.66 +- 0.03 FWHM= 0.07 < 0.09+-0.01 AMP=1.0~476~","Cit3c @ 2.66 +- 0.03 FWHM= 0.11 < 0.13+-0.01 AMP=1.0~476~","Cit4a @ 2.62 +- 0.03 FWHM= 0.03 < 0.05+-0.01 AMP=1.0~476~","Cit4b @ 2.62 +- 0.03 FWHM= 0.07 < 0.09+-0.01 AMP=1.0~476~","Cit4c @ 2.62 +- 0.03 FWHM= 0.11 < 0.13+-0.01 AMP=1.0~476~","Rgt5a @ 2.51 +- 0.03 FWHM= 0.03 < 0.05+-0.01 AMP=1.0~476~",
+ "Rgt5b @ 2.51 +- 0.03 FWHM= 0.07 < 0.09+-0.01 AMP=1.0~476~","Rgt5c @ 2.51 +- 0.03 FWHM= 0.11 < 0.13+-0.01 AMP=1.0~476~","Rgt6a @ 2.46 +- 0.03 FWHM= 0.03 < 0.05+-0.01 AMP=1.0~476~","Rgt6b @ 2.46 +- 0.03 FWHM= 0.07 < 0.09+-0.01 AMP=1.0~476~","Rgt6c @ 2.46 +- 0.03 FWHM= 0.11 < 0.13+-0.01 AMP=1.0~476~", 72*"~528~",
+ 
+@@MEMBER CHUSE1
+ CHUSE1="Cho1  ","PA0   ","Cr1   ","Cit3a ","Cit4a ",
+ "Lac   ","Glc   ","Gln   ","NAAG  ","Tau   ","Asp   ",
+ "Ala   ","GABA  ","Scyllo", 486*"~6~",
+@@MEMBER NAMREL
+ NAMREL="Cit~347~",
+@@MEMBER SPTYPE
+ SPTYPE="prostate-g~6~",
+@@MEMBER IDGPPM
+ IDGPPM=2~10~,
+@@MEMBER INCSMX
+ INCSMX=1~10~,
+@@MEMBER NCOMBI
+ NCOMBI=7~10~,
+@@MEMBER NDGPPM
+ NDGPPM=21~9~,5~10~,
+@@MEMBER NGRSH
+ NGRSH=12~9~,
+@@MEMBER NNOT2
+ NNOT2=1~10~,
+@@MEMBER NSIDMN
+ NSIDMN=1~10~,
+@@MEMBER NSIDMX
+ NSIDMX=1~10~,
+@@MEMBER NSIMUL
+ NSIMUL=28~9~,
+@@MEMBER DOREFS
+ DOREFS=T,F,
+@@MEMBER GAUSS_RT2
+ GAUSS_RT2=F,
+@@MEMBER NOBASI
+ NOBASI=T,
+@@MEMBER ONLYCO
+ ONLYCO=T,
+@@MEMBER USEANY
+ USEANY=T,
+@@MEMBER VITRO
+ VITRO=T,
+@@MEMBER ALPBMN
+ ALPBMN= 0.79986260681152344~5~,
+@@MEMBER ALPBMX
+ ALPBMX=  395.22622924804688~5~,
+@@MEMBER ALPBPN
+ ALPBPN= 0.988065541~4~,
+@@MEMBER ALPBST
+ ALPBST=  1.17626846~4~,
+@@MEMBER ATTH2O
+ ATTH2O=  1.00000000~4~,
+@@MEMBER DDEGP3
+ DDEGP3=  10.0000000~4~,
+@@MEMBER DKNTMN
+ DKNTMN= 0.150000006~4~, 0.583333313~4~,
+@@MEMBER FH2OMX
+ FH2OMX= 0.800000012~4~,
+@@MEMBER PPMEND
+ PPMEND=  2.09999990~4~,
+@@MEMBER PPMST
+ PPMST=  3.84999990~4~,
+@@MEMBER RFWHCC
+ RFWHCC= 0.125000000~4~,
+@@MEMBER RSDGP3
+ RSDGP3=  1.04999995~4~,
+@@MEMBER SDGRSH
+ SDGRSH=  8.00000038E-03, 8*4.00000019E-03  ,  9.99999978E-03,  8.00000038E-03,  9.99999978E-03,
+  28*0.00000000~6~,
+@@MEMBER WCONC
+ WCONC= 0.500000000~4~,
+@@TAIL
+ /
+
+
+
+~10~Input changes to Control Variables
+  sptype='prostate-g'~54~
+  mermes=8000~62~
+  filps='out.ps'~59~
+  filpri='out.print'~55~
+  lprint=8~65~
+  filraw='data.raw'~56~
+  filbas='missing.basis'~51~
+  hzpppm=127.786142~56~
+  deltat=5e-04~61~
+  nunfil=1024~62~

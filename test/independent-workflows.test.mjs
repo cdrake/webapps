@@ -9,11 +9,14 @@ async function workflow(name) {
   return YAML.parse(await readFile(new URL(`../.github/workflows/${name}.yml`, import.meta.url), 'utf8'));
 }
 
-test('desktop builds and publication run only on the daily schedule', async () => {
+test('desktop builds run on the daily schedule or by hand, and publish only on schedule unless asked', async () => {
   const flow = await workflow('standalone');
-  assert.deepEqual(flow.on, { schedule: [{ cron: '23 3 * * *' }] });
+  assert.deepEqual(flow.on, {
+    schedule: [{ cron: '23 3 * * *' }],
+    workflow_dispatch: { inputs: { publish: { description: 'Publish the desktop release when every job passes', type: 'boolean', default: false } } },
+  });
   assert.equal(flow.concurrency['cancel-in-progress'], false);
-  assert.equal(flow.jobs.publish.if, undefined);
+  assert.equal(flow.jobs.publish.if, "github.event_name == 'schedule' || inputs.publish");
   assert.deepEqual(flow.jobs.publish.needs, ['bundle', 'desktop', 'models-offline']);
   assert.ok(flow.jobs.bundle.steps.some(step => step.run === 'pnpm build'));
   assert.equal(flow.jobs.bundle.outputs.release_date, '${{ steps.date.outputs.release_date }}');

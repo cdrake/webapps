@@ -277,6 +277,18 @@ function padCentered(image, shape, minimum) {
   return { image: out, shape: padded, before };
 }
 
+// A network never scores every voxel and class alike. Some virtual GPUs (GitHub's macOS runners)
+// complete a WebGPU run and return all zeros; failing here lets the worker retry on the CPU.
+export function checkLogits(logits) {
+  const first = logits[0];
+  let varies = false;
+  for (const value of logits) {
+    if (!Number.isFinite(value)) throw new Error("the network returned non-finite scores");
+    if (value !== first) varies = true;
+  }
+  if (!varies) throw new Error("the network returned the same score for every voxel");
+}
+
 // Runs the network over overlapping patches and returns the lesion probability on the
 // brain-cropped input grid. `runPatch(tile, fold)` resolves to logits [2, ...patch]. Folds run
 // one after another, so a caller holds one model at a time; their logits are averaged, as in nnU-Net.
@@ -305,6 +317,7 @@ export async function predictLesions({ image, shape, runPatch, folds = 1, onPatc
     }
     const logits = await runPatch(tile, fold);
     signal?.throwIfAborted();
+    checkLogits(logits);
     t = 0;
     for (let z = 0; z < patch[0]; z++) {
       for (let y = 0; y < patch[1]; y++) {

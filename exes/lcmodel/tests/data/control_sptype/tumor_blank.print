@@ -1,0 +1,69 @@
+@@HEAD
+
+
+
+~10~LCModel (Version 6.3-1N) Copyright: S.W. Provencher.~10~Ref.: Magn. Reson. Med. 30:672-679 (1993).~16~
+
+  
+
+  
+
+ Tue Sep 29 17:52:55 2026
+
+
+
+
+&LCMODL
+@@MEMBER CHRATO
+ CHRATO="Lip09/Lip13* = .267 +- .1 +WT= MM12~229~","Lip20/Lip13* = .15 +- .07 +WT= MM12~229~","MM20/MM09* = 1.5 +- .375 +WT= Lip09*~228~","MM12/MM09* = .3 +- .1 +WT= Lip09*~231~","MM14/MM09* = .75 +- .45 +WT= Lip09*~229~",
+ "MM17/MM09* = .375 +- .3 +WT= Lip09*~229~","-CrCH2/totCr = .1 +- .25~240~","Asp/Big3 = .05 +- .05~243~","GABA/Big3 = .03 +- .03~242~","Glc/Big3 = .03 +- .03~243~","Scyllo/Big3 = .01 +- .01~240~",
+ "Tau/Big3 = .05 +- .05~243~","NAAG/NAA = .15 +- .15~243~", 87*"~264~",
+@@MEMBER CHUSE1
+ CHUSE1="GPC   ","Cr~4~","GPC   ","Glu   ","Ins   ",
+ "Lac   ","Glc   ","Gln   ","NAAG  ","Tau   ","Asp   ",
+ "Ala   ","GABA  ","Scyllo", 486*"~6~",
+@@MEMBER NAMREL
+ NAMREL="GPC~347~",
+@@MEMBER SPTYPE
+ SPTYPE="tumoror~9~",
+@@MEMBER NREFPK
+ NREFPK=1~10~,4~10~,
+@@MEMBER NUSE1
+ NUSE1=2~10~,
+@@MEMBER BADREF
+ BADREF=T,
+@@MEMBER ALPBMN
+ ALPBMN= 0.17277035980224609~5~,
+@@MEMBER ALPBMX
+ ALPBMX=  85.368883666992190~5~,
+@@MEMBER ALPBPN
+ ALPBPN= 0.213422194~4~,
+@@MEMBER ALPBST
+ ALPBST= 0.254074067~4~,
+@@MEMBER DKNTMN
+ DKNTMN= 0.349999994~4~, 0.600000024~4~,
+@@MEMBER PPMREF
+ PPMREF=  4.65000010~4~, 9*0.00000000~6~,  3.02999997~4~,  3.22000003~4~,  1.27999997~4~,
+  0.899999976~4~, 6*0.00000000~6~,
+@@MEMBER RBACKG
+ RBACKG=  12.0000000~4~,  2.50000000~4~,
+@@MEMBER SHIFMN
+ SHIFMN=-0.300000012~4~, -7.00000003E-02,
+@@MEMBER SHIFMX
+ SHIFMX= 0.300000012~4~,  7.00000003E-02,
+@@TAIL
+ /
+
+
+
+~10~Input changes to Control Variables
+  sptype='  Tumor'~57~
+  mermes=8000~62~
+  filps='out.ps'~59~
+  filpri='out.print'~55~
+  lprint=8~65~
+  filraw='data.raw'~56~
+  filbas='missing.basis'~51~
+  hzpppm=127.786142~56~
+  deltat=5e-04~61~
+  nunfil=1024~62~

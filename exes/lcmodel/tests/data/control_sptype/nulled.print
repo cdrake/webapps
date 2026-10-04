@@ -1,0 +1,65 @@
+@@HEAD
+
+
+
+~10~LCModel (Version 6.3-1N) Copyright: S.W. Provencher.~10~Ref.: Magn. Reson. Med. 30:672-679 (1993).~16~
+
+  
+
+  
+
+ Tue Sep 29 17:51:39 2026
+
+
+
+
+&LCMODL
+@@MEMBER NAMREL
+ NAMREL="Lip13a+Lip13b~337~",
+@@MEMBER SPTYPE
+ SPTYPE="nulled~10~",
+@@MEMBER INCSMX
+ INCSMX=1~10~,
+@@MEMBER NRATIO
+ NRATIO=6~10~,
+@@MEMBER NREFPK
+ NREFPK=1~10~,2~10~,
+@@MEMBER NSIDMN
+ NSIDMN=1~10~,
+@@MEMBER NSIDMX
+ NSIDMX=1~10~,
+@@MEMBER NSIMUL
+ NSIMUL=11~9~,
+@@MEMBER BADREF
+ BADREF=T,
+@@MEMBER NOBASI
+ NOBASI=T,
+@@MEMBER VITRO
+ VITRO=T,
+@@MEMBER ALPBMN
+ ALPBMN= 0.87039999999999995~5~,
+@@MEMBER ALPBMX
+ ALPBMX=  430.07999999999998~5~,
+@@MEMBER ALPBPN
+ ALPBPN=  1.07519996~4~,
+@@MEMBER ALPBST
+ ALPBST=  1.27999997~4~,
+@@MEMBER PPMREF
+ PPMREF=  4.65000010~4~, 9*0.00000000~6~,  1.27999997~4~, 0.899999976~4~,  3.22000003~4~,
+   3.55999994~4~, 6*0.00000000~6~,
+@@TAIL
+ /
+
+
+
+~10~Input changes to Control Variables
+  sptype='nulled'~58~
+  mermes=8000~62~
+  filps='out.ps'~59~
+  filpri='out.print'~55~
+  lprint=8~65~
+  filraw='data.raw'~56~
+  filbas='missing.basis'~51~
+  hzpppm=127.786142~56~
+  deltat=5e-04~61~
+  nunfil=1024~62~

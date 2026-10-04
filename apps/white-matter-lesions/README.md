@@ -16,7 +16,8 @@ keeps the input grid and affine.
    112 × 128 × 160 patches at half overlap with Gaussian weighting, resample the lesion
    probability back and threshold at 0.5.
 3. `src/worker.js` runs the network with ONNX Runtime Web, on WebGPU when the browser has an
-   adapter and on WebAssembly threads otherwise.
+   adapter and on WebAssembly threads otherwise. A WebGPU run that fails, or returns non-finite
+   or constant scores (GitHub's macOS runners return all zeros), restarts on WebAssembly.
 
 The default model is FLAMeS fold 0. *Model* in the advanced settings switches to the published
 five-fold ensemble, which runs the folds one after another over every patch and averages their

@@ -132,7 +132,7 @@ Use the desktop MCP viewer controls directly when an agent needs that session.
 
 ## Type qualifiers
 
-[NeuroFlow RFC 0010](https://github.com/cdrake/neuroflow-spec/blob/rfc/0010-type-qualifiers/rfcs/0010-type-qualifiers.md)
+[NeuroFlow RFC 0010](https://github.com/cdrake/neuroflow-spec/blob/40ed9ce02184183237613318db48286b9f4c504f/rfcs/0010-type-qualifiers.md)
 adds `formats`, `space`, `resolution`, `density` and `labelSystem` to type
 declarations, and a document that carries any of them declares
 `"neuroflow": "0.1.1"`. The generator promotes a contract annotation to a

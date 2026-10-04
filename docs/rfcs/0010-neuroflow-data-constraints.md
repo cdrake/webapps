@@ -1,7 +1,7 @@
 # RFC draft: Encoding, spatial reference, and label-system constraints
 
-Status: Superseded by the consolidated upstream RFC proposal,
-[neuroflow-spec RFC 0010, type qualifiers](https://github.com/cdrake/neuroflow-spec/blob/rfc/0010-type-qualifiers/rfcs/0010-type-qualifiers.md)
+Status: Superseded by the consolidated upstream RFC,
+[neuroflow-spec RFC 0010, type qualifiers](https://github.com/cdrake/neuroflow-spec/blob/40ed9ce02184183237613318db48286b9f4c504f/rfcs/0010-type-qualifiers.md)
 ([cdrake/neuroflow-spec#1](https://github.com/cdrake/neuroflow-spec/pull/1)),
 which folds this draft into one document. What the consolidated RFC takes from
 here: the three binding outcomes, the resolve-or-fail executor, the
@@ -12,7 +12,7 @@ revision is optional on the producer and a consumer that declares one has
 the artifact verified at runtime, `resolution` and `density` are kept, and
 the version bump is the `0.1.1` envelope value in the 0.1 schemas rather
 than a 0.2 schema path. The generator in this repository
-implements the proposed RFC; upstream acceptance remains pending. This file
+implements the accepted RFC. This file
 records the original proposal and is not maintained.
 
 Date: 2026-09-30 (superseded the same day)

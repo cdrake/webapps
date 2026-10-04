@@ -596,6 +596,26 @@ apps:
       shared_runtime: false
       browser_test: true
       release: true
+  - id: lcmodel
+    path: lcmodel
+    title: LCModel
+    description: Preprocess single-voxel MR spectroscopy with FID-A and quantify metabolites with LCModel, in the browser.
+    categories: [quantitative-imaging]
+    keywords: [MRS, spectroscopy, LCModel, FID-A, metabolites, NAA, creatine, basis set, quantification]
+    legacy_domain: null
+    runtime: vite-wasm
+    model_manifest: models/lcmodel.manifest.json
+    asset_manifest_schema: scientific-assets-v1
+    source: neurodesk/webapps@local
+    license: BSD-3-Clause
+    maintainers: [neurodesk]
+    support_status: experimental
+    shell: imaging-workspace
+    ci:
+      toolchains: [node, rust-wasm]
+      shared_runtime: false
+      browser_test: true
+      release: true
   - id: white-matter-lesions
     path: white-matter-lesions
     title: White matter lesions

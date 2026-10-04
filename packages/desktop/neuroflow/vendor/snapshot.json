@@ -1,6 +1,6 @@
 {
   "repository": "https://github.com/cdrake/neuroflow-spec",
-  "commit": "370193d04d061fa7c88b51b25f36cc45510cef4c",
+  "commit": "40ed9ce02184183237613318db48286b9f4c504f",
   "files": {
     "common.schema.json": "b01249d885de3bcae7293b6bdd020bc79401d3d2ae362bd26f9ed0adb8c221d0",
     "events.schema.json": "ae04807fe85a1158bc8b858789607ad3dc520100f694ca12566a927012dab89e",
