@@ -23,7 +23,8 @@ add an explicit ban on `document` and `window`. The shared cross-origin
 isolation script is deliberately dual-purpose and receives the general globals. This check does not infer whether
 every browser API is safe in a worker.
 
-The initial inventory records existing diagnostics in
+The initial findings have been resolved; the baseline is currently empty.
+The gate can record reviewed existing diagnostics in
 `scripts/quality/lint-baseline.json`. Each entry fingerprints the file path,
 rule, message and offending source line, with a count for duplicate occurrences.
 Changing the defective line or adding a new occurrence fails. Moving an
@@ -71,3 +72,18 @@ encoded bytes once before streaming; compressed contents are unchanged. NiiVue 1
 return its `refocus` barrier, which resolves on supersede, failed swaps and
 disposal. Awaiting these methods does not turn cancelled chunk reads into
 viewer action errors.
+
+Intentional constructs have exact-file policies in the root configuration:
+`packages/topofit/src/conform.js` preserves the reference cubic-spline pole
+literal, including its existing IEEE-754 rounding; the scientific arithmetic is
+unchanged. The spinalcordtoolbox failure summarizer must match ANSI escape
+characters to strip terminal colours. SynthSeg's Playwright hook requires an
+object fixture parameter even when it uses only the second `testInfo` argument;
+its policy permits empty object parameters, while still rejecting other empty
+patterns. These files retain all other correctness rules.
+
+Best-effort catches describe their concrete fallback or cleanup purpose.
+Unavailable browser persistence does not prevent verified model downloads or
+in-memory theme selection. GPU error scopes always drain after an operation;
+cleanup errors cannot replace its original failure. A NeSVoR scope failure also
+poisons the engine so later calls cannot use invalid GPU state.
