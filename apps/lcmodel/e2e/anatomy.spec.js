@@ -114,6 +114,7 @@ test("segmentation displays a tissue map and independent voxel overlay", async (
   await page.locator("#measureButton").click();
   await expect(page.locator("#fGm")).toHaveValue("0.600");
   await expect(page.locator("#statusText")).toContainText("Tissue fractions");
+  await expect(page.locator("#outputSection #tissueMap")).toBeVisible();
   await expect(page.getByRole("combobox", { name: "Tissue map" })).toHaveValue("gm");
   expect((await colors(page)).green).toBeGreaterThan(1000);
   const redWithVoxel = (await colors(page)).red;
@@ -122,6 +123,12 @@ test("segmentation displays a tissue map and independent voxel overlay", async (
   await expect.poll(async () => (await colors(page)).red).toBeLessThan(redWithVoxel / 2);
   await page.getByRole("combobox", { name: "Tissue map" }).selectOption("wm");
   await expect.poll(async () => (await colors(page)).blue).toBeGreaterThan(1000);
+  await page.screenshot({ path: test.info().outputPath("tissue-output-desktop.png") });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator("#tissueMap").scrollIntoViewIfNeeded();
+  await page.screenshot({ path: test.info().outputPath("tissue-output-phone.png"), fullPage: true });
+  await page.locator("[data-neurodesk-theme-toggle]").click();
+  await page.screenshot({ path: test.info().outputPath("tissue-output-phone-light.png"), fullPage: true });
   await page.getByRole("combobox", { name: "Tissue map" }).selectOption("anatomy");
   await expect.poll(async () => (await colors(page)).gray).toBeGreaterThan(1000);
   await page.getByRole("button", { name: "Show spectroscopy voxel" }).click();

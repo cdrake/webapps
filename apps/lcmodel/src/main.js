@@ -113,9 +113,13 @@ const tissue = createTissuePanel({
   setBusy: (value) => setBusy(value),
   onChange: () => fit && renderConcentrations(),
   onViewAvailable: (available) => setViewEnabled("voxel", available),
-  onViewRequested: () => showView("voxel"),
+  onViewRequested: () => {
+    $("outputSection").open = true;
+    showView("voxel");
+  },
 });
 toolbar.actions.append(...tissue.viewControls);
+$("resultList").before(...tissue.outputControls);
 
 const info = createInfoDialog();
 $("aboutBtn").onclick = () => info.open("About LCModel", $("aboutContent"));

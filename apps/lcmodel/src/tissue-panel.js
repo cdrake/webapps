@@ -55,15 +55,26 @@ export function createTissuePanel(hooks) {
   mapSelect.setAttribute("aria-label", "Tissue map");
   mapSelect.append(new Option("Anatomy", "anatomy"));
   for (const [id, { label }] of Object.entries(MAPS)) mapSelect.append(new Option(label, id));
+  const mapField = document.createElement("div");
+  mapField.className = "nd-field";
+  mapField.hidden = true;
+  const mapLabel = document.createElement("label");
+  mapLabel.htmlFor = mapSelect.id;
+  mapLabel.textContent = "Image";
+  mapField.append(mapLabel, mapSelect);
+  const outputControls = [mapField];
   const voxelToggle = document.createElement("button");
   voxelToggle.type = "button";
   voxelToggle.className = "nd-btn nd-btn-secondary nd-btn-sm";
   voxelToggle.textContent = "Voxel";
   voxelToggle.setAttribute("aria-label", "Show spectroscopy voxel");
   voxelToggle.setAttribute("aria-pressed", "true");
-  const viewControls = [mapSelect, voxelToggle];
+  const viewControls = [voxelToggle];
   for (const control of viewControls) control.hidden = true;
-  mapSelect.addEventListener("change", () => void show());
+  mapSelect.addEventListener("change", () => {
+    hooks.onViewRequested();
+    void show();
+  });
   voxelToggle.addEventListener("click", () => {
     voxelToggle.setAttribute("aria-pressed", String(voxelToggle.getAttribute("aria-pressed") !== "true"));
     void show();
@@ -94,6 +105,7 @@ export function createTissuePanel(hooks) {
 
   function refresh() {
     $("measureButton").disabled = !canMeasure();
+    mapField.hidden = !t1;
     hooks.onViewAvailable(Boolean(t1));
     for (const option of mapSelect.options) option.disabled = option.value !== "anatomy" && !maps;
     voxelToggle.disabled = !dataset?.voxel;
@@ -474,6 +486,7 @@ export function createTissuePanel(hooks) {
   }
 
   return {
+    outputControls,
     viewControls,
     setDataset,
     reset,
