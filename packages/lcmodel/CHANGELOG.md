@@ -1,5 +1,11 @@
 # @neurodesk/lcmodel
 
+## 0.8.20261012
+
+### Minor Changes
+
+- Show anatomical images immediately and display the tissue segmentation with the spectroscopy voxel. Add a separate water-reference upload for the selected dataset, preserve usable data after failed imports, and separate anatomical and spectroscopy series in mixed session folders. Load the image viewer with the page to avoid a deferred module fetch after a deployment.
+
 ## 0.7.20261012
 
 ### Patch Changes
@@ -24,6 +30,7 @@
     `_ref` names; the water reference now pairs with its spectrum in every
     format, not only SDAT/SPAR, so these datasets are water-scaled and can be
     tissue-corrected.
+
 - Reject named Siemens DICOM water candidates when recorded study or patient identifiers conflict. Explicit filename matches remain available when identifiers are absent; arbitrary-series fallback still requires the same nonempty StudyInstanceUID. Limit the GE residual-water phasing description to multi-coil, unedited data processed by the PRESS pipeline.
 - Classify Philips SDAT water references with the shared naming rule. `_water_off`, `_nows`, `_wref` and `_h2o` now pair with their spectrum instead of being loaded as additional metabolite datasets.
 - 1ce9fe7: Fix three failures reported from multi-site data:

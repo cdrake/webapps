@@ -87,10 +87,18 @@ pub struct Pairing {
     pub water: Option<Dataset>,
 }
 
+/// An anatomical image or DICOM image series, using original file indices.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Image {
+    pub name: String,
+    pub files: Vec<usize>,
+}
+
 /// Result of [`detect`].
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Detection {
     pub pairs: Vec<Pairing>,
+    pub images: Vec<Image>,
     /// Water datasets with no metabolite partner.
     pub unpaired_water: Vec<Dataset>,
     /// (file name, reason) for files no reader applies to.
@@ -208,7 +216,7 @@ pub fn sniff(name: &str, bytes: &[u8]) -> Option<Format> {
         return Some(Format::SiemensRda);
     }
     if is_nifti(bytes) {
-        return Some(Format::NiftiMrs);
+        return (!super::niimrs::is_anatomical(bytes).unwrap_or(false)).then_some(Format::NiftiMrs);
     }
     if is_dicom(bytes) || ext == "ima" {
         return Some(Format::SiemensDicom);
@@ -264,7 +272,7 @@ fn dicom_has_spectrum(bytes: &[u8]) -> bool {
     }
 }
 
-fn dicom_identity(ds: &Dataset, files: &[NamedFile]) -> Option<(String, String)> {
+pub fn dicom_identity(ds: &Dataset, files: &[NamedFile]) -> Option<(String, String)> {
     if ds.format != Format::SiemensDicom {
         return None;
     }
@@ -273,7 +281,7 @@ fn dicom_identity(ds: &Dataset, files: &[NamedFile]) -> Option<(String, String)>
     Some((d.string(0x0020, 0x000d).unwrap_or_default(), d.string(0x0010, 0x0020).unwrap_or_default()))
 }
 
-fn conflicting_dicom_identity(a: Option<&(String, String)>, b: Option<&(String, String)>) -> bool {
+pub fn conflicting_dicom_identity(a: Option<&(String, String)>, b: Option<&(String, String)>) -> bool {
     let (Some((a_study, a_patient)), Some((b_study, b_patient))) = (a, b) else { return false };
     (!a_study.is_empty() && !b_study.is_empty() && a_study != b_study)
         || (!a_patient.is_empty() && !b_patient.is_empty() && a_patient != b_patient)
@@ -357,29 +365,51 @@ pub fn detect(files: &[NamedFile]) -> Detection {
         }
     }
 
-    // DICOM: one series per directory
-    let mut dicom_dirs: Vec<(String, Vec<usize>)> = Vec::new();
+
+    let mut dicom_groups: Vec<((bool, String, String, String), Vec<usize>, String)> = Vec::new();
     for i in 0..files.len() {
+        let (dir, file) = split_path(files[i].name);
+        if file.starts_with('.') {
+            used[i] = true;
+        }
         if used[i] || sniff(files[i].name, files[i].bytes) != Some(Format::SiemensDicom) {
             continue;
         }
         used[i] = true;
-        let (d, _) = split_path(files[i].name);
-        match dicom_dirs.iter_mut().find(|(x, _)| x == d) {
-            Some((_, v)) => v.push(i),
-            None => dicom_dirs.push((d.to_string(), vec![i])),
+        let parsed = super::dicom_siemens::parse_dicom(files[i].bytes).ok();
+        let tag = |group, element| parsed.as_ref().and_then(|d| d.string(group, element)).unwrap_or_default();
+        let study = tag(0x0020, 0x000d);
+        let series = tag(0x0020, 0x000e);
+        let patient = tag(0x0010, 0x0020);
+        let spectrum = dicom_has_spectrum(files[i].bytes);
+        let location = if series.is_empty() { format!("folder:{dir}") } else { format!("series:{series}") };
+        let key = (spectrum, study, location, patient);
+        let folder_name = if dir.is_empty() { stem_of(file) } else { split_path(dir).1.to_string() };
+        let description = tag(0x0008, 0x103e);
+        let name = if series.is_empty() || description.is_empty() || water_base(&folder_name).is_some() { folder_name } else { description };
+        match dicom_groups.iter_mut().find(|(k, _, _)| *k == key) {
+            Some((_, members, _)) => members.push(i),
+            None => dicom_groups.push((key, vec![i], name)),
         }
     }
-    for (d, v) in dicom_dirs {
-        // The reader skips dot-files (macOS `._` sidecars), so the check does too.
-        let first = v.iter().copied().find(|&i| !split_path(files[i].name).1.starts_with('.')).unwrap_or(v[0]);
-        if !dicom_has_spectrum(files[first].bytes) {
-            let reason = "DICOM without Siemens spectroscopy data (an image series, or a format FID-A does not read)";
-            det.ignored.extend(v.iter().map(|&i| (files[i].name.to_string(), reason.to_string())));
-            continue;
+    let mut spectroscopy_per_folder: HashMap<&str, usize> = HashMap::new();
+    for ((spectrum, _, _, _), members, _) in &dicom_groups {
+        if *spectrum {
+            *spectroscopy_per_folder.entry(split_path(files[members[0]].name).0).or_default() += 1;
         }
-        let name = if d.is_empty() { stem_of(split_path(files[v[0]].name).1) } else { split_path(&d).1.to_string() };
-        datasets.push(Dataset { format: Format::SiemensDicom, files: v, is_water: water_base(&name).is_some(), name });
+    }
+    for ((spectrum, _, _, _), members, mut name) in dicom_groups {
+        if spectrum {
+            let (dir, file) = split_path(files[members[0]].name);
+            if spectroscopy_per_folder.get(dir) == Some(&1) {
+                name = if dir.is_empty() { stem_of(file) } else { split_path(dir).1.to_string() };
+            }
+            let is_water = water_base(&name).is_some()
+                || members.iter().any(|&i| water_base(&stem_of(split_path(files[i].name).1)).is_some());
+            datasets.push(Dataset { format: Format::SiemensDicom, files: members, is_water, name });
+        } else {
+            det.images.push(Image { name, files: members });
+        }
     }
 
     // single-file formats
@@ -389,6 +419,10 @@ pub fn detect(files: &[NamedFile]) -> Detection {
         }
         let (d, file) = split_path(files[i].name);
         let ext = ext_lower(file);
+        if is_nifti(files[i].bytes) && super::niimrs::is_anatomical(files[i].bytes).unwrap_or(false) {
+            det.images.push(Image { name: stem_of(file), files: vec![i] });
+            continue;
+        }
         match sniff(files[i].name, files[i].bytes) {
             Some(fmt) => {
                 used[i] = true;
@@ -623,6 +657,94 @@ mod tests {
     }
 
     #[test]
+    fn mixed_dicom_folder_classifies_each_file_in_either_order() {
+        let image = dicom_stub(false);
+        let spectrum = dicom_stub(true);
+        for files in [
+            [nf("flat/image.dcm", &image), nf("flat/spec.dcm", &spectrum)],
+            [nf("flat/spec.dcm", &spectrum), nf("flat/image.dcm", &image)],
+        ] {
+            let d = detect(&files);
+            assert_eq!(d.pairs.len(), 1, "{d:?}");
+            let names: Vec<_> = d.pairs[0].metabolite.files.iter().map(|&i| files[i].name).collect();
+            assert_eq!(names, ["flat/spec.dcm"]);
+        }
+    }
+
+    fn dicom_series(spectrum: bool, study: &str, series: &str, patient: &str, description: &str) -> Vec<u8> {
+        let mut bytes = dicom_stub(spectrum);
+        for (group, element, value) in [(0x0020u16, 0x000du16, study), (0x0020, 0x000e, series), (0x0010, 0x0020, patient), (0x0008, 0x103e, description)] {
+            let mut value = value.as_bytes().to_vec();
+            if value.len() % 2 != 0 { value.push(b' '); }
+            bytes.extend_from_slice(&group.to_le_bytes());
+            bytes.extend_from_slice(&element.to_le_bytes());
+            bytes.extend_from_slice(b"LO");
+            bytes.extend_from_slice(&(value.len() as u16).to_le_bytes());
+            bytes.extend_from_slice(&value);
+        }
+        bytes
+    }
+
+    #[test]
+    fn flat_dicom_exports_group_by_series_and_pair_description_water() {
+        let image = dicom_series(false, "study", "t1", "patient", "T1");
+        let spectrum = dicom_series(true, "study", "spec", "patient", "press");
+        let water = dicom_series(true, "study", "water", "patient", "press_ref");
+        let files = [nf("flat/1.dcm", &image), nf("flat/2.dcm", &spectrum), nf("flat/3.dcm", &water), nf("flat/4.dcm", &spectrum), nf("flat/5.dcm", &image)];
+        let d = detect(&files);
+        assert_eq!(d.pairs.len(), 1, "{d:?}");
+        assert_eq!(d.pairs[0].metabolite.files, [1, 3]);
+        assert_eq!(d.pairs[0].water.as_ref().unwrap().files, [2]);
+        assert_eq!(d.images, [Image { name: "T1".into(), files: vec![0, 4] }]);
+    }
+
+    #[test]
+    fn dicom_series_descriptions_do_not_replace_existing_folder_water_names() {
+        let bytes: Vec<_> = ["a", "b", "aw", "bw"].iter()
+            .map(|series| dicom_series(true, "study", series, "patient", "PRESS")).collect();
+        let files = [nf("session/a_act/1.dcm", &bytes[0]), nf("session/b_act/1.dcm", &bytes[1]), nf("session/a_ref/1.dcm", &bytes[2]), nf("session/b_ref/1.dcm", &bytes[3])];
+        let d = detect(&files);
+        assert_eq!(d.pairs.len(), 2, "{d:?}");
+        assert_eq!(d.pairs[0].metabolite.name, "a_act");
+        assert_eq!(d.pairs[0].water.as_ref().unwrap().files, [2]);
+        assert_eq!(d.pairs[1].water.as_ref().unwrap().files, [3]);
+    }
+
+    #[test]
+    fn dicom_grouping_never_merges_conflicting_studies_or_patients() {
+        for series in ["series", ""] {
+            let a = dicom_series(true, "study", series, "a", "press");
+            let b = dicom_series(true, "other", series, "a", "press");
+            let c = dicom_series(true, "study", series, "b", "press");
+            let d = detect(&[nf("flat/a.dcm", &a), nf("flat/b.dcm", &b), nf("flat/c.dcm", &c)]);
+            assert_eq!(d.pairs.iter().map(|p| p.metabolite.files.clone()).collect::<Vec<_>>(), [vec![0], vec![1], vec![2]]);
+        }
+    }
+
+    #[test]
+    fn ordinary_nifti_is_anatomy_but_damaged_mrs_is_not() {
+        let mut bytes = nifti_stub();
+        bytes[40..42].copy_from_slice(&3i16.to_le_bytes());
+        bytes[70..72].copy_from_slice(&16i16.to_le_bytes());
+        bytes[108..112].copy_from_slice(&352f32.to_le_bytes());
+        let d = detect(&[nf("T1.nii", &bytes)]);
+        assert!(d.pairs.is_empty());
+        assert_eq!(d.images, [Image { name: "T1".into(), files: vec![0] }]);
+        bytes[328..331].copy_from_slice(b"mrs");
+        let d = detect(&[nf("broken.nii", &bytes)]);
+        assert!(d.images.is_empty());
+        assert_eq!(d.pairs.len(), 1);
+        bytes[328..331].fill(0);
+        bytes[348] = 1;
+        bytes[108..112].copy_from_slice(&368f32.to_le_bytes());
+        bytes.extend_from_slice(&16i32.to_le_bytes());
+        bytes.extend_from_slice(&44i32.to_le_bytes());
+        let d = detect(&[nf("truncated.nii", &bytes)]);
+        assert!(d.images.is_empty());
+        assert_eq!(d.pairs.len(), 1);
+    }
+
+    #[test]
     fn pairs_by_name() {
         let raw = b" $SEQPAR\n hzpppm= 1\n $END\n $NMID\n $END\n 1 2\n".to_vec();
         let rda = b">>> Begin of header <<<\r\n".to_vec();
@@ -681,6 +803,11 @@ mod tests {
     fn nifti_stub() -> Vec<u8> {
         let mut b = vec![0u8; 352];
         b[..4].copy_from_slice(&348i32.to_le_bytes());
+        for (i, dimension) in [4i16, 1, 1, 1, 1, 1, 1, 1].iter().enumerate() {
+            b[40 + i * 2..42 + i * 2].copy_from_slice(&dimension.to_le_bytes());
+        }
+        b[70..72].copy_from_slice(&32i16.to_le_bytes());
+        b[108..112].copy_from_slice(&352f32.to_le_bytes());
         b[344..348].copy_from_slice(b"n+1\0");
         b
     }
@@ -760,8 +887,8 @@ mod tests {
             assert!(p.metabolite.name.ends_with("_ave") && w.name.ends_with("_water_off"), "{p:#?}");
             assert_eq!(p.metabolite.name[..6], w.name[..6], "{p:#?}");
         }
-        assert_eq!(d.ignored.len(), 1, "{d:#?}");
-        assert!(d.ignored[0].0.contains("-21-"), "{d:#?}");
+        assert_eq!(d.images.len(), 1, "{d:#?}");
+        assert!(files[d.images[0].files[0]].name.contains("-21-"), "{d:#?}");
     }
 
     #[test]

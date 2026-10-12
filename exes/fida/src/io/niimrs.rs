@@ -23,6 +23,7 @@ pub struct NiftiHeader {
     /// `pixdim[0..8]`
     pub pixdim: [f64; 8],
     pub datatype: i16,
+    pub mrs_intent: bool,
     pub vox_offset: usize,
     pub big_endian: bool,
     /// (ecode, content) of every header extension.
@@ -82,16 +83,20 @@ fn parse_header(b: &Bytes) -> Res<NiftiHeader> {
             let esize = i32_(p)?;
             let ecode = i32_(p + 4)?;
             if esize < 8 || p + esize as usize > b.len() {
-                break;
+                return Err("This NIfTI file has a truncated header extension.".into());
             }
             extensions.push((ecode, b.b[p + 8..p + esize as usize].to_vec()));
             p += esize as usize;
+        }
+        if p != vox || extensions.is_empty() {
+            return Err("This NIfTI file has an incomplete header extension.".into());
         }
     }
     if !(1..=7).contains(&dim[0]) {
         return Err(format!("This NIfTI file declares {} dimensions.", dim[0]));
     }
-    Ok(NiftiHeader { dim, pixdim, datatype, vox_offset: vox, big_endian: big, extensions })
+    let mrs_intent = b.slice(if v2 { 508 } else { 328 }, 16)?.starts_with(b"mrs");
+    Ok(NiftiHeader { dim, pixdim, datatype, mrs_intent, vox_offset: vox, big_endian: big, extensions })
 }
 
 fn json_f64(v: &Value) -> Option<f64> {
@@ -108,6 +113,18 @@ fn json_strs(v: &Value) -> Vec<String> {
         Value::Array(a) => a.iter().filter_map(|x| x.as_str().map(String::from)).collect(),
         _ => Vec::new(),
     }
+}
+
+/// Classify anatomy without treating a damaged spectroscopy header as an image.
+pub fn is_anatomical(data: &[u8]) -> Res<bool> {
+    let raw = maybe_gunzip(data)?;
+    let h = parse_header(&Bytes::new(&raw, "NIfTI"))?;
+    Ok(!h.mrs_intent && !matches!(h.datatype, 32 | 1792)
+        && !h.extensions.iter().any(|(code, _)| *code == 44)
+        && !h.extensions.iter().any(|(_, bytes)| {
+            let text = String::from_utf8_lossy(bytes);
+            text.contains("SpectrometerFrequency") || text.contains("ResonantNucleus")
+        }))
 }
 
 /// The NIfTI-MRS JSON header extension of a file.
