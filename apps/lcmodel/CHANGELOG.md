@@ -21,6 +21,7 @@
     format, not only SDAT/SPAR, so these datasets are water-scaled and can be
     tissue-corrected.
 
+- Classify Philips SDAT water references with the shared naming rule. `_water_off`, `_nows`, `_wref` and `_h2o` now pair with their spectrum instead of being loaded as additional metabolite datasets.
 - Updated dependencies [8321cb9]
   - @neurodesk/lcmodel@0.7.20261012
 - 1ce9fe7: Fix three failures reported from multi-site data:

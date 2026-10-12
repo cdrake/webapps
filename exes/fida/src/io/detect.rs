@@ -342,8 +342,7 @@ pub fn detect(files: &[NamedFile]) -> Detection {
             Some(j) => {
                 used[i] = true;
                 used[j] = true;
-                let low = stem.to_ascii_lowercase();
-                let is_water = (low.ends_with("_w") && !low.ends_with("_ws")) || low.ends_with("_ref") || low.ends_with("_water");
+                let is_water = water_base(&stem).is_some();
                 datasets.push(Dataset { format: Format::PhilipsSdat, files: vec![i, j], name: stem, is_water });
             }
             None => {
@@ -785,6 +784,25 @@ mod tests {
                 assert!(d.pairs[0].water.is_none(), "{d:#?}");
                 assert_eq!(d.unpaired_water.len(), 1, "{d:#?}");
             }
+        }
+    }
+
+    #[test]
+    fn philips_water_suffixes_use_the_shared_naming_rule() {
+        for suffix in ["ref", "w", "water", "water_off", "nows", "wref", "h2o"] {
+            let water_data = format!("subject_{suffix}.sdat");
+            let water_header = format!("subject_{suffix}.spar");
+            let files = [
+                nf("subject_act.sdat", b"data"),
+                nf("subject_act.spar", b"! header"),
+                nf(&water_data, b"data"),
+                nf(&water_header, b"! header"),
+            ];
+            let d = detect(&files);
+            assert_eq!(d.pairs.len(), 1, "{suffix}: {d:#?}");
+            let water = d.pairs[0].water.as_ref().expect("water reference paired");
+            assert_eq!(files[water.files[0]].name, water_data);
+            assert!(d.unpaired_water.is_empty(), "{suffix}: {d:#?}");
         }
     }
 

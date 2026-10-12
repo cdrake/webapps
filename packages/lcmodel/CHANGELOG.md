@@ -20,6 +20,7 @@
     `_ref` names; the water reference now pairs with its spectrum in every
     format, not only SDAT/SPAR, so these datasets are water-scaled and can be
     tissue-corrected.
+- Classify Philips SDAT water references with the shared naming rule. `_water_off`, `_nows`, `_wref` and `_h2o` now pair with their spectrum instead of being loaded as additional metabolite datasets.
 - 1ce9fe7: Fix three failures reported from multi-site data:
 
   - Water references pair with `<stem>_act` and `<stem>_ws` spectra in every format, not only SDAT/SPAR, so spec2nii's conversions of Philips data (`_act`/`_ref`) are water-scaled. `_water_off` and `_nows` name a water reference. Unmatched Siemens DICOM series pair only when there is one spectrum and one water series in the folder, their nonempty StudyInstanceUIDs match, and their recorded PatientIDs do not disagree. Unmatched single-file inputs stay separate. DICOM series without spectroscopy data are skipped instead of counted as datasets.
