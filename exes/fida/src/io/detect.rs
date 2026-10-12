@@ -10,7 +10,8 @@
 //! vendors' and spec2nii's file names):
 //! * `<stem>_w`, `<stem>_ref`, `<stem>_wref`, `<stem>_water`, `<stem>_h2o`
 //!   (file stem or containing directory) pair with `<stem>`;
-//! * Philips `<stem>_w` pairs with `<stem>_ws`; `<stem>_ref` with `<stem>_act`;
+//! * Philips `<stem>_w` pairs with `<stem>_ws`; `<stem>_ref` with `<stem>_act`,
+//!   also after spec2nii has converted them to NIfTI-MRS (it keeps the names);
 //! * LCModel `<stem>.H2O` pairs with `<stem>.RAW`;
 //! * GE P-files carry their own water frames, and some twix sequences
 //!   (CMRR / Columbia sLASER) their own water scans.
@@ -386,7 +387,10 @@ pub fn detect(files: &[NamedFile]) -> Detection {
                     wb == Some(mb)
                 }
                 _ => {
-                    water_base(&wname).as_deref() == Some(&mname)
+                    let wb = water_base(&wname);
+                    let philips = mname.strip_suffix("_act").or_else(|| mname.strip_suffix("_ws"));
+                    wb.as_deref() == Some(&mname)
+                        || (philips.is_some() && wb.as_deref() == philips)
                         || (!mdir.is_empty() && water_base(&wdir).as_deref() == Some(&mdir))
                 }
             };
@@ -574,6 +578,22 @@ mod tests {
         assert_eq!(d.ignored.len(), 1);
         let lcm = d.pairs.iter().find(|p| p.metabolite.format == Format::LcModelRaw).unwrap();
         assert_eq!(files[lcm.water.as_ref().unwrap().files[0]].name, "sub/metab.H2O");
+    }
+
+    #[test]
+    fn act_and_ref_pair_in_every_format() {
+        // spec2nii keeps Philips' <stem>_act / <stem>_ref names in NIfTI-MRS;
+        // every format but SDAT goes through the same rule, as RDA does here.
+        let rda = b">>> Begin of header <<<\r\n".to_vec();
+        let files = [nf("sub-01_raw_act.rda", &rda), nf("sub-01_raw_ref.rda", &rda), nf("sub-02_ws.rda", &rda), nf("sub-02_w.rda", &rda)];
+        let d = detect(&files);
+        assert_eq!(d.pairs.len(), 2, "{d:#?}");
+        assert!(d.unpaired_water.is_empty(), "{d:#?}");
+        for p in &d.pairs {
+            let m = files[p.metabolite.files[0]].name;
+            let w = files[p.water.as_ref().expect("paired").files[0]].name;
+            assert_eq!(m[..6], w[..6], "{m} paired with {w}");
+        }
     }
 
     #[test]

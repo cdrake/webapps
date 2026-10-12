@@ -15,3 +15,7 @@ Tissue correction now works for GE P-files and for high-resolution T1 images.
   BRAVO), which surfaced as "the mindmap module exited cleanly but wrote no
   output". Those T1s now segment on the threaded CPU module, and a failed GPU
   run is retried there.
+- Philips spectra converted to NIfTI-MRS by spec2nii keep their `_act` and
+  `_ref` names; the water reference now pairs with its spectrum in every
+  format, not only SDAT/SPAR, so these datasets are water-scaled and can be
+  tissue-corrected.
