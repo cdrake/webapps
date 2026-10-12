@@ -58,6 +58,7 @@ test("automation refuses additions as spectra and preserves the resident fitted 
   await seed(page, { removeBadAverages: false, badAverageSd: 5, driftCorrection: false });
   await page.locator("#t1Input").setInputFiles(anatomy);
   await expect(page.locator("#t1Info")).toContainText("patient-A.nii");
+  await expect(page.locator("#dataInput")).toBeEnabled();
   const before = await resident(page);
   const csv = await download(page, "concentrations");
   for (const files of [[file("patient-B.nii", anatomy.buffer)], [basis], [file("patient-B.H2O", raw.buffer)]]) {
@@ -82,6 +83,7 @@ test("automation stages optional inputs and fractions before replacing the sessi
   await seed(page, { removeBadAverages: false, badAverageSd: 5, driftCorrection: false });
   await page.locator("#t1Input").setInputFiles(anatomy);
   await expect(page.locator("#t1Info")).toContainText("patient-A.nii");
+  await expect(page.locator("#dataInput")).toBeEnabled();
   const before = await resident(page);
   for (const request of [
     { basis: [file("bad.basis", Buffer.from("invalid basis"))] },
@@ -142,6 +144,7 @@ test("fit-group rejects anatomy, basis and unpaired water while keeping its fitt
   await seed(page);
   await page.locator("#t1Input").setInputFiles(anatomy);
   await expect(page.locator("#t1Info")).toContainText("patient-A.nii");
+  await expect(page.locator("#dataInput")).toBeEnabled();
   const group = await exampleFiles("philips-press-group");
   const spectra = await Promise.all(group.map(async entry => file(entry.name, await readFile(entry.path))));
   await adopt(page, "spectra", spectra);
@@ -169,6 +172,7 @@ test("cancelled automation anatomy selection preserves the old session and valid
   await seed(page, { driftCorrection: false });
   await page.locator("#t1Input").setInputFiles(anatomy);
   await expect(page.locator("#t1Info")).toContainText("patient-A.nii");
+  await expect(page.locator("#dataInput")).toBeEnabled();
   const before = await resident(page);
   const replacement = file("patient-B.RAW", raw.buffer);
   const replacementT1 = file("patient-B.nii", anatomy.buffer);
