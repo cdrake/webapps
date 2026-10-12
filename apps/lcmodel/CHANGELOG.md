@@ -1,5 +1,39 @@
 # lcmodel
 
+## 0.7.20261012
+
+### Patch Changes
+
+- 8321cb9: Tissue correction now works for GE P-files and for high-resolution T1 images.
+
+  - GE P-files record the voxel: its centre and size (`user8-13`) and the
+    prescription plane (`tlhc`, `trhc`, `brhc`) in the image header. The reader
+    now builds the voxel affine from them as spec2nii does, so a GE dataset can
+    be segmented and measured on its T1 instead of reporting that the format
+    does not record where the voxel is.
+  - MindMap's WebGPU and WebGL2 modules have a fixed 768 MiB heap and ran out of
+    memory on T1s larger than its 256³ grid (0.8 mm isotropic, GE's 512 x 512
+    BRAVO), which surfaced as "the mindmap module exited cleanly but wrote no
+    output". Those T1s now segment on the threaded CPU module, and a failed GPU
+    run is retried there.
+  - Philips spectra converted to NIfTI-MRS by spec2nii keep their `_act` and
+    `_ref` names; the water reference now pairs with its spectrum in every
+    format, not only SDAT/SPAR, so these datasets are water-scaled and can be
+    tissue-corrected.
+
+- Reject named Siemens DICOM water candidates when recorded study or patient identifiers conflict. Explicit filename matches remain available when identifiers are absent; arbitrary-series fallback still requires the same nonempty StudyInstanceUID. Limit the GE residual-water phasing description to multi-coil, unedited data processed by the PRESS pipeline.
+- Classify Philips SDAT water references with the shared naming rule. `_water_off`, `_nows`, `_wref` and `_h2o` now pair with their spectrum instead of being loaded as additional metabolite datasets.
+- Updated dependencies [8321cb9]
+  - @neurodesk/lcmodel@0.7.20261012
+- 1ce9fe7: Fix three failures reported from multi-site data:
+
+  - Water references pair with `<stem>_act` and `<stem>_ws` spectra in every format, not only SDAT/SPAR, so spec2nii's conversions of Philips data (`_act`/`_ref`) are water-scaled. `_water_off` and `_nows` name a water reference. Unmatched Siemens DICOM series pair only when there is one spectrum and one water series in the folder, their nonempty StudyInstanceUIDs match, and their recorded PatientIDs do not disagree. Unmatched single-file inputs stay separate. DICOM series without spectroscopy data are skipped instead of counted as datasets.
+  - NIfTI-MRS converted from GE data (`Manufacturer` GE) is phased on the residual water as GE P-files are (`run_pressproc_GEauto`), instead of being left about 60 degrees out of phase.
+  - When MindMap fails on the GPU, the technical log shows the module's own output and the voxel is segmented on the CPU instead.
+
+- Updated dependencies [1ce9fe7]
+  - @neurodesk/lcmodel@0.7.20261012
+
 ## 0.7.20261010
 
 ### Minor Changes

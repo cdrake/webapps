@@ -95,3 +95,62 @@ test("MindMap segments the T1 and measures the voxel", async ({ page }) => {
   // MindMap writes 8-bit maps with a scale factor.
   expect((await download(page, "Grey matter map")).length).toBeGreaterThanOrEqual(352 + 256 * 256 * 204);
 });
+
+test("a GPU run that fails is measured on the CPU instead", async ({ page }) => {
+  test.skip(!process.env.LCMODEL_E2E_LARGE, "set LCMODEL_E2E_LARGE=1: segmentation on the CPU takes minutes");
+  test.setTimeout(1200000);
+  await proxyAssets(page);
+  // The page sees a usable WebGPU adapter, so the app picks WebGPU, but
+  // MindMap's GPU build cannot be fetched in its worker: the GPU run fails
+  // the same way with or without a real GPU, as a driver or device limit can
+  // fail mid-run on a user's machine.
+  await page.context().route(/brainchop-mindmap-(gpu|gl)\.(js|wasm)$/, (route) => route.abort());
+  await page.addInitScript(() => {
+    const adapter = { info: { isFallbackAdapter: false }, features: new Set(["shader-f16"]), limits: {}, requestDevice: async () => { throw new Error("no device in this test"); } };
+    Object.defineProperty(navigator, "gpu", { value: { requestAdapter: async () => adapter, getPreferredCanvasFormat: () => "bgra8unorm" } });
+  });
+  await page.goto("/");
+  await page.getByRole("combobox", { name: "Example", exact: true }).selectOption(EXAMPLE);
+  await expect(page.locator("#t1Info")).toContainText("256 × 256 × 204", { timeout: 300000 });
+  await expect(page.locator("#measureButton")).toBeEnabled();
+  await page.locator("#measureButton").click();
+  const log = page.locator("#technicalLog");
+  await expect(log).toContainText("Segmenting with MindMap on webgpu");
+  await expect(log).toContainText("segmenting on the CPU instead", { timeout: 120000 });
+  await expect(page.locator("#tissueSummary")).toContainText("MindMap", { timeout: 1100000 });
+  await expect(log).toContainText("MindMap tissue maps on cpu");
+});
+
+test("both failed segmentation attempts retain their last 40 module log lines", async ({ page }) => {
+  test.setTimeout(400000);
+  await proxyAssets(page);
+  await page.context().route(/\/tissue-worker-[^/]+\.js$/, async (route) => {
+    const response = await route.fetch();
+    await route.fulfill({
+      response,
+      contentType: "text/javascript",
+      body: `self.onmessage = ({ data: { options } }) => {
+      const backend = options.backend;
+      const log = Array.from({ length: 45 }, (_, index) => backend + " module line " + index);
+      self.postMessage({ error: backend + " module failed", log });
+      };`,
+    });
+  });
+  await page.addInitScript(() => {
+    const adapter = { info: { isFallbackAdapter: false }, features: new Set(["shader-f16"]) };
+    Object.defineProperty(navigator, "gpu", { value: { requestAdapter: async () => adapter } });
+  });
+  await page.goto("/");
+  await page.getByRole("combobox", { name: "Example", exact: true }).selectOption(EXAMPLE);
+  await expect(page.locator("#measureButton")).toBeEnabled({ timeout: 300000 });
+  await page.locator("#measureButton").click();
+  await expect(page.locator("#statusText")).toContainText("Segmentation failed: cpu module failed");
+  const log = page.locator("#technicalLog");
+  for (const backend of ["webgpu", "cpu"]) {
+    await expect(log).toContainText(`MindMap: ${backend} module line 5`);
+    await expect(log).toContainText(`MindMap: ${backend} module line 44`);
+    await expect(log).not.toContainText(`MindMap: ${backend} module line 0`);
+  }
+  await expect(page.locator("#measureButton")).toBeEnabled();
+  for (const id of ["#fGm", "#fWm", "#fCsf"]) await expect(page.locator(id)).toHaveValue("");
+});
