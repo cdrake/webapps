@@ -8,9 +8,13 @@
 //!
 //! Water pairing (the conventions of FID-A's run_*proc scripts, and of the
 //! vendors' and spec2nii's file names):
-//! * `<stem>_w`, `<stem>_ref`, `<stem>_wref`, `<stem>_water`, `<stem>_h2o`
-//!   (file stem or containing directory) pair with `<stem>`;
-//! * Philips `<stem>_w` pairs with `<stem>_ws`; `<stem>_ref` with `<stem>_act`;
+//! * `<stem>_w`, `<stem>_ref`, `<stem>_wref`, `<stem>_water`, `<stem>_h2o`,
+//!   `<stem>_water_off`, `<stem>_nows` (file stem or containing directory)
+//!   pair with `<stem>`, `<stem>_ws` or `<stem>_act` (Philips' names, and
+//!   spec2nii's when it converts them);
+//! * when the names do not match, a water reference left over in a folder
+//!   pairs with the folder's one spectrum without water (a Siemens session
+//!   exports each series with its own number and description);
 //! * LCModel `<stem>.H2O` pairs with `<stem>.RAW`;
 //! * GE P-files carry their own water frames, and some twix sequences
 //!   (CMRR / Columbia sLASER) their own water scans.
@@ -225,7 +229,8 @@ pub fn sniff(name: &str, bytes: &[u8]) -> Option<Format> {
     None
 }
 
-const WATER_SUFFIXES: [&str; 5] = ["_w", "_ref", "_wref", "_water", "_h2o"];
+const WATER_SUFFIXES: [&str; 7] = ["_w", "_ref", "_wref", "_water", "_h2o", "_water_off", "_nows"];
+const METABOLITE_SUFFIXES: [&str; 2] = ["_ws", "_act"];
 
 fn water_base(stem: &str) -> Option<String> {
     let low = stem.to_ascii_lowercase();
@@ -237,6 +242,23 @@ fn water_base(stem: &str) -> Option<String> {
         }
     }
     None
+}
+
+/// The name a metabolite's water reference is named after: Philips (and
+/// spec2nii's conversions of Philips data) name the pair `<stem>_act` /
+/// `<stem>_ref` or `<stem>_ws` / `<stem>_w`.
+fn metabolite_base(name: &str) -> &str {
+    METABOLITE_SUFFIXES.iter().find_map(|s| name.strip_suffix(s).filter(|b| !b.is_empty())).unwrap_or(name)
+}
+
+/// Whether a parsed DICOM file holds spectroscopy data FID-A can read
+/// (XA SpectroscopyData or the CSA non-image element). Files that do not
+/// parse are kept, so the reader reports why.
+fn dicom_has_spectrum(bytes: &[u8]) -> bool {
+    match super::dicom_siemens::parse_dicom(bytes) {
+        Ok(d) => d.get(0x5600, 0x0020).is_some() || d.private(0x7fe1, "SIEMENS CSA NON-IMAGE", 0x10).is_some(),
+        Err(_) => true,
+    }
 }
 
 /// Leading directory components two paths share.
@@ -326,6 +348,11 @@ pub fn detect(files: &[NamedFile]) -> Detection {
         }
     }
     for (d, v) in dicom_dirs {
+        if !dicom_has_spectrum(files[v[0]].bytes) {
+            let reason = "DICOM without Siemens spectroscopy data (an image series, or a format FID-A does not read)";
+            det.ignored.extend(v.iter().map(|&i| (files[i].name.to_string(), reason.to_string())));
+            continue;
+        }
         let name = if d.is_empty() { stem_of(split_path(files[v[0]].name).1) } else { split_path(&d).1.to_string() };
         datasets.push(Dataset { format: Format::SiemensDicom, files: v, is_water: water_base(&name).is_some(), name });
     }
@@ -380,13 +407,10 @@ pub fn detect(files: &[NamedFile]) -> Detection {
             let wdir = split_path(split_path(files[w.files[0]].name).0).1.to_ascii_lowercase();
             let hit = match fmt {
                 Format::LcModelRaw => wname == mname || water_base(&wname).as_deref() == Some(&mname),
-                Format::PhilipsSdat => {
-                    let wb = wname.strip_suffix("_w").or_else(|| wname.strip_suffix("_ref")).or_else(|| wname.strip_suffix("_water"));
-                    let mb = mname.strip_suffix("_ws").or_else(|| mname.strip_suffix("_act")).unwrap_or(&mname);
-                    wb == Some(mb)
-                }
                 _ => {
-                    water_base(&wname).as_deref() == Some(&mname)
+                    let wb = water_base(&wname);
+                    wb.as_deref() == Some(&mname)
+                        || wb.as_deref() == Some(metabolite_base(&mname))
                         || (!mdir.is_empty() && water_base(&wdir).as_deref() == Some(&mdir))
                 }
             };
@@ -399,6 +423,27 @@ pub fn detect(files: &[NamedFile]) -> Detection {
         }
         let w = best.and_then(|(k, _)| water[k].take());
         det.pairs.push(Pairing { metabolite: m, water: w });
+    }
+    // A water reference whose name matched nothing pairs with the spectrum
+    // of its format in the same folder (for a series directory, the folder
+    // holding the series) when the folder holds one of each and nothing else
+    // claimed it: a session's series, never another subject's file.
+    let folder = |ds: &Dataset| {
+        let dir = split_path(files[ds.files[0]].name).0;
+        if ds.format == Format::SiemensDicom || ds.format == Format::Bruker { split_path(dir).0.to_string() } else { dir.to_string() }
+    };
+    let left: Vec<Option<(Format, String)>> = water.iter().map(|w| w.as_ref().map(|w| (w.format, folder(w)))).collect();
+    for (wi, place) in left.iter().enumerate() {
+        let Some((fmt, wf)) = place else { continue };
+        if left.iter().flatten().filter(|&(f, d)| f == fmt && d == wf).count() != 1 {
+            continue;
+        }
+        let here: Vec<usize> = (0..det.pairs.len()).filter(|&k| det.pairs[k].metabolite.format == *fmt && folder(&det.pairs[k].metabolite) == *wf).collect();
+        if let [k] = here[..] {
+            if det.pairs[k].water.is_none() {
+                det.pairs[k].water = water[wi].take();
+            }
+        }
     }
     let mut unpaired: Vec<Dataset> = water.into_iter().flatten().collect();
     // a lone water dataset is still data the user may want
@@ -605,6 +650,88 @@ mod tests {
             let subject = |path: &str| path.split('/').nth(1).unwrap().to_string();
             assert_eq!(subject(m), subject(w), "{m} paired with {w}");
         }
+    }
+
+    fn nifti_stub() -> Vec<u8> {
+        let mut b = vec![0u8; 352];
+        b[..4].copy_from_slice(&348i32.to_le_bytes());
+        b[344..348].copy_from_slice(b"n+1\0");
+        b
+    }
+
+    /// A DICOM file with one element after the preamble: SpectroscopyData
+    /// (5600,0020) or, for an image series, Modality (0008,0060).
+    fn dicom_stub(spectrum: bool) -> Vec<u8> {
+        let mut b = vec![0u8; 128];
+        b.extend_from_slice(b"DICM");
+        if spectrum {
+            b.extend_from_slice(&[0x00, 0x56, 0x20, 0x00, b'O', b'F', 0, 0, 8, 0, 0, 0]);
+            b.extend_from_slice(&[0u8; 8]);
+        } else {
+            b.extend_from_slice(&[0x08, 0x00, 0x60, 0x00, b'C', b'S', 2, 0, b'M', b'R']);
+        }
+        b
+    }
+
+    #[test]
+    fn act_and_ref_pair_in_every_format() {
+        // spec2nii keeps Philips' names when it converts SDAT/SPAR pairs. Two
+        // subjects share each folder, so only the names can pair them.
+        let nii = nifti_stub();
+        let rda = b">>> Begin of header <<<\r\n".to_vec();
+        let files = [
+            nf("mrs-nifti/sub-01_raw_act.nii.gz", &nii),
+            nf("mrs-nifti/sub-02_raw_ref.nii.gz", &nii),
+            nf("mrs-nifti/sub-01_raw_ref.nii.gz", &nii),
+            nf("mrs-nifti/sub-02_raw_act.nii.gz", &nii),
+            nf("rda/a_ws.rda", &rda),
+            nf("rda/b_w.rda", &rda),
+            nf("rda/a_w.rda", &rda),
+            nf("rda/b_ws.rda", &rda),
+        ];
+        let d = detect(&files);
+        assert_eq!(d.pairs.len(), 4, "{d:#?}");
+        assert!(d.unpaired_water.is_empty(), "{d:#?}");
+        for p in &d.pairs {
+            let w = p.water.as_ref().expect("paired");
+            assert_eq!(p.metabolite.name[..3], w.name[..3], "{p:#?}");
+        }
+    }
+
+    #[test]
+    fn a_session_folder_pairs_its_water_series() {
+        // Siemens series exported with their own numbers and descriptions; the
+        // water-unsuppressed series is named for its switched-off suppression,
+        // and an image series of the same session is not a dataset.
+        let spec = dicom_stub(true);
+        let image = dicom_stub(false);
+        let files = [
+            nf("sub-01/mrs/sub-01-20-PRESS_svs_se_30_ave/1.dcm", &spec),
+            nf("sub-01/mrs/sub-01-20-PRESS_svs_se_30_ave/2.dcm", &spec),
+            nf("sub-01/mrs/sub-01-21-PRESS_svs_se_30/1.dcm", &image),
+            nf("sub-01/mrs/sub-01-22-PRESS_svs_se_30_water_off/1.dcm", &spec),
+            nf("sub-02/mrs/sub-02-20-PRESS_svs_se_30_ave/1.dcm", &spec),
+            nf("sub-02/mrs/sub-02-22-PRESS_svs_se_30_water_off/1.dcm", &spec),
+        ];
+        let d = detect(&files);
+        assert_eq!(d.pairs.len(), 2, "{d:#?}");
+        assert!(d.unpaired_water.is_empty(), "{d:#?}");
+        for p in &d.pairs {
+            let w = p.water.as_ref().expect("paired");
+            assert!(p.metabolite.name.ends_with("_ave") && w.name.ends_with("_water_off"), "{p:#?}");
+            assert_eq!(p.metabolite.name[..6], w.name[..6], "{p:#?}");
+        }
+        assert_eq!(d.ignored.len(), 1, "{d:#?}");
+        assert!(d.ignored[0].0.contains("-21-"), "{d:#?}");
+    }
+
+    #[test]
+    fn a_folder_of_several_spectra_keeps_an_unmatched_water_apart() {
+        let rda = b">>> Begin of header <<<\r\n".to_vec();
+        let files = [nf("flat/sub-01_svs.rda", &rda), nf("flat/sub-02_svs.rda", &rda), nf("flat/sub-03_svs_w.rda", &rda)];
+        let d = detect(&files);
+        assert!(d.pairs.iter().all(|p| p.water.is_none()), "{d:#?}");
+        assert_eq!(d.unpaired_water.len(), 1, "{d:#?}");
     }
 
     #[test]

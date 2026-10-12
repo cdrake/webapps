@@ -95,3 +95,25 @@ test("MindMap segments the T1 and measures the voxel", async ({ page }) => {
   // MindMap writes 8-bit maps with a scale factor.
   expect((await download(page, "Grey matter map")).length).toBeGreaterThanOrEqual(352 + 256 * 256 * 204);
 });
+
+test("a GPU run that fails is measured on the CPU instead", async ({ page }) => {
+  test.skip(!process.env.LCMODEL_E2E_LARGE, "set LCMODEL_E2E_LARGE=1: segmentation on the CPU takes minutes");
+  test.setTimeout(1200000);
+  await proxyAssets(page);
+  // An adapter that looks like a WebGPU GPU but cannot open a device, as a
+  // driver or device limit can fail mid-run on a user's machine.
+  await page.addInitScript(() => {
+    const adapter = { info: { isFallbackAdapter: false }, features: new Set(["shader-f16"]), limits: {}, requestDevice: async () => { throw new Error("no device in this test"); } };
+    Object.defineProperty(navigator, "gpu", { value: { requestAdapter: async () => adapter, getPreferredCanvasFormat: () => "bgra8unorm" } });
+  });
+  await page.goto("/");
+  await page.getByRole("combobox", { name: "Example", exact: true }).selectOption(EXAMPLE);
+  await expect(page.locator("#t1Info")).toContainText("256 × 256 × 204", { timeout: 300000 });
+  await expect(page.locator("#measureButton")).toBeEnabled();
+  await page.locator("#measureButton").click();
+  const log = page.locator("#technicalLog");
+  await expect(log).toContainText("Segmenting with MindMap on webgpu");
+  await expect(log).toContainText("segmenting on the CPU instead", { timeout: 120000 });
+  await expect(page.locator("#tissueSummary")).toContainText("MindMap", { timeout: 1100000 });
+  await expect(log).toContainText("MindMap tissue maps on cpu");
+});
