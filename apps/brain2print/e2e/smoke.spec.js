@@ -88,7 +88,7 @@ function leftHanded(path) {
 // stored (right-handed) and on a left-handed copy, asserting a closed surface with outward
 // normals that encloses the segmented voxels for both.
 for (const [name, handedness] of [["small.nii.gz", 1], ["small_lh.nii.gz", -1]]) {
-  test(`segments, meshes and downloads a printable brain from ${name}`, { tag: name === 'small.nii.gz' ? [] : '@slow' }, async ({ page }) => {
+  test(`segments, meshes and downloads a printable brain from ${name}`, async ({ page }) => {
     test.setTimeout(600_000);
     const buffer = handedness > 0 ? readFileSync(fixture) : gzipSync(leftHanded(fixture));
     const { segmentation } = await createMesh(page, { name, mimeType: "application/gzip", buffer });
@@ -129,7 +129,7 @@ for (const [name, handedness] of [["small.nii.gz", 1], ["small_lh.nii.gz", -1]])
 // The pipeline above runs the default partial-volume model; each label model must return its
 // own parcellation on the input grid and a closed mesh around every labelled voxel.
 for (const [model, labelCount] of [["16chan18cls", 18], ["mindmap", 18], ["mindsnap", 104]]) {
-  test(`${model} returns its label set and a closed mesh around it`, { tag: model === '16chan18cls' ? [] : '@slow' }, async ({ page }) => {
+  test(`${model} returns its label set and a closed mesh around it`, { tag: model === 'mindmap' ? '@slow' : [] }, async ({ page }) => {
     test.setTimeout(600_000);
     const files = await createMesh(page, fixture, { model });
     const { dims, values } = labels(files.segmentation);

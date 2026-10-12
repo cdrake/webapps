@@ -127,7 +127,7 @@ test("automation reports a failed model download and leaves the run available", 
   await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(1);
 });
 
-test("the ensemble downloads each fold after inference of the previous fold", { tag: '@slow' }, async ({ page }) => {
+test("the ensemble downloads each fold after inference of the previous fold", async ({ page }) => {
   test.setTimeout(20 * 60 * 1000);
   const secondFold = manifest.base_url + manifest.assets[1].filename;
   await page.route(secondFold, (route) => route.fulfill({ status: 503, body: "" }));
