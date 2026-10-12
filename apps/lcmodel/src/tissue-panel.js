@@ -141,8 +141,10 @@ export function createTissuePanel(hooks) {
         signal?.removeEventListener("abort", stop);
         worker?.terminate();
         worker = null;
-        if (data.error) reject(Object.assign(new Error(`Segmentation failed: ${data.error}`), { moduleLog: data.log }));
-        else resolve(data.result);
+        if (data.error) {
+          for (const line of data.log?.slice(-40) ?? []) hooks.log.log(`MindMap: ${line}`);
+          reject(new Error(`Segmentation failed: ${data.error}`));
+        } else resolve(data.result);
       };
       worker.onerror = (event) => {
         signal?.removeEventListener("abort", stop);
@@ -192,7 +194,6 @@ export function createTissuePanel(hooks) {
           result = await segment(controller.signal, backend);
         } catch (error) {
           if (error.name === "AbortError") throw error;
-          for (const line of error.moduleLog?.slice(-40) ?? []) hooks.log.log(`MindMap: ${line}`);
           // The threaded CPU module is MindGrab's reference build; a GPU run
           // that fails (a driver, a device limit) can still be measured there.
           if (backend === "cpu" || !globalThis.crossOriginIsolated) throw error;

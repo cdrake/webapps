@@ -12,9 +12,8 @@
 //!   `<stem>_water_off`, `<stem>_nows` (file stem or containing directory)
 //!   pair with `<stem>`, `<stem>_ws` or `<stem>_act` (Philips' names, and
 //!   spec2nii's when it converts them);
-//! * when the names do not match, a water reference left over in a folder
-//!   pairs with the folder's one spectrum without water (a Siemens session
-//!   exports each series with its own number and description);
+//! * unmatched Siemens DICOM series pair within a folder only when their
+//!   StudyInstanceUID matches and there is one spectrum and one water series;
 //! * LCModel `<stem>.H2O` pairs with `<stem>.RAW`;
 //! * GE P-files carry their own water frames, and some twix sequences
 //!   (CMRR / Columbia sLASER) their own water scans.
@@ -261,6 +260,26 @@ fn dicom_has_spectrum(bytes: &[u8]) -> bool {
     }
 }
 
+fn same_dicom_study(a: &Dataset, b: &Dataset, files: &[NamedFile]) -> bool {
+    if a.format != Format::SiemensDicom || b.format != Format::SiemensDicom {
+        return false;
+    }
+    let read = |ds: &Dataset| {
+        ds.files.iter().copied()
+            .find(|&i| !split_path(files[i].name).1.starts_with('.'))
+            .and_then(|i| super::dicom_siemens::parse_dicom(files[i].bytes).ok())
+    };
+    let (Some(a), Some(b)) = (read(a), read(b)) else { return false };
+    let (Some(a_study), Some(b_study)) = (a.string(0x0020, 0x000d), b.string(0x0020, 0x000d)) else { return false };
+    if a_study.is_empty() || a_study != b_study {
+        return false;
+    }
+    match (a.string(0x0010, 0x0020), b.string(0x0010, 0x0020)) {
+        (Some(a_patient), Some(b_patient)) if !a_patient.is_empty() && !b_patient.is_empty() => a_patient == b_patient,
+        _ => true,
+    }
+}
+
 /// Leading directory components two paths share.
 fn shared_dirs(a: &str, b: &str) -> usize {
     let parts = |p: &str| p.trim_start_matches("./").split(['/', '\\']).filter(|c| !c.is_empty()).map(str::to_ascii_lowercase).collect::<Vec<_>>();
@@ -426,10 +445,8 @@ pub fn detect(files: &[NamedFile]) -> Detection {
         let w = best.and_then(|(k, _)| water[k].take());
         det.pairs.push(Pairing { metabolite: m, water: w });
     }
-    // A water reference whose name matched nothing pairs with the spectrum
-    // of its format in the same folder (for a series directory, the folder
-    // holding the series) when the folder holds one of each and nothing else
-    // claimed it: a session's series, never another subject's file.
+    // Siemens series names include different numbers and descriptions, so
+    // unmatched series need a shared study identifier as well as one of each.
     let folder = |ds: &Dataset| {
         let dir = split_path(files[ds.files[0]].name).0;
         if ds.format == Format::SiemensDicom || ds.format == Format::Bruker { split_path(dir).0.to_string() } else { dir.to_string() }
@@ -442,7 +459,7 @@ pub fn detect(files: &[NamedFile]) -> Detection {
         }
         let here: Vec<usize> = (0..det.pairs.len()).filter(|&k| det.pairs[k].metabolite.format == *fmt && folder(&det.pairs[k].metabolite) == *wf).collect();
         if let [k] = here[..] {
-            if det.pairs[k].water.is_none() {
+            if det.pairs[k].water.is_none() && water[wi].as_ref().is_some_and(|w| same_dicom_study(&det.pairs[k].metabolite, w, files)) {
                 det.pairs[k].water = water[wi].take();
             }
         }
@@ -705,7 +722,8 @@ mod tests {
         // Siemens series exported with their own numbers and descriptions; the
         // water-unsuppressed series is named for its switched-off suppression,
         // and an image series of the same session is not a dataset.
-        let spec = dicom_stub(true);
+        let spec = dicom_study("1.2.3", "subject-01");
+        let spec2 = dicom_study("1.2.4", "subject-02");
         let image = dicom_stub(false);
         let files = [
             nf("sub-01/mrs/sub-01-20-PRESS_svs_se_30_ave/._1.dcm", &image),
@@ -713,8 +731,8 @@ mod tests {
             nf("sub-01/mrs/sub-01-20-PRESS_svs_se_30_ave/2.dcm", &spec),
             nf("sub-01/mrs/sub-01-21-PRESS_svs_se_30/1.dcm", &image),
             nf("sub-01/mrs/sub-01-22-PRESS_svs_se_30_water_off/1.dcm", &spec),
-            nf("sub-02/mrs/sub-02-20-PRESS_svs_se_30_ave/1.dcm", &spec),
-            nf("sub-02/mrs/sub-02-22-PRESS_svs_se_30_water_off/1.dcm", &spec),
+            nf("sub-02/mrs/sub-02-20-PRESS_svs_se_30_ave/1.dcm", &spec2),
+            nf("sub-02/mrs/sub-02-22-PRESS_svs_se_30_water_off/1.dcm", &spec2),
         ];
         let d = detect(&files);
         assert_eq!(d.pairs.len(), 2, "{d:#?}");
@@ -735,6 +753,57 @@ mod tests {
         let d = detect(&files);
         assert!(d.pairs.iter().all(|p| p.water.is_none()), "{d:#?}");
         assert_eq!(d.unpaired_water.len(), 1, "{d:#?}");
+    }
+
+    #[test]
+    fn unmatched_single_file_water_stays_unpaired() {
+        let nii = nifti_stub();
+        let rda = b">>> Begin of header <<<\r\n".to_vec();
+        for (extension, bytes) in [("rda", &rda), ("nii", &nii)] {
+            for suffix in ["water", "water_off"] {
+                let spectrum = format!("flat/sub-01_svs.{extension}");
+                let water = format!("flat/sub-02_{suffix}.{extension}");
+                let files = [nf(&spectrum, bytes), nf(&water, bytes)];
+                let d = detect(&files);
+                assert_eq!(d.pairs.len(), 1, "{d:#?}");
+                assert!(d.pairs[0].water.is_none(), "{d:#?}");
+                assert_eq!(d.unpaired_water.len(), 1, "{d:#?}");
+            }
+        }
+    }
+
+    fn dicom_study(study: &str, patient: &str) -> Vec<u8> {
+        let mut bytes = dicom_stub(true);
+        for (group, element, vr, value) in [(0x0020u16, 0x000du16, b"UI", study), (0x0010, 0x0020, b"LO", patient)] {
+            let mut value = value.as_bytes().to_vec();
+            if value.len() % 2 != 0 {
+                value.push(b' ');
+            }
+            bytes.extend_from_slice(&group.to_le_bytes());
+            bytes.extend_from_slice(&element.to_le_bytes());
+            bytes.extend_from_slice(vr);
+            bytes.extend_from_slice(&(value.len() as u16).to_le_bytes());
+            bytes.extend_from_slice(&value);
+        }
+        bytes
+    }
+
+    #[test]
+    fn fallback_requires_matching_dicom_study() {
+        let spectrum = dicom_study("1.2.3", "subject-01");
+        for (study, patient, paired) in [
+            ("1.2.3", "subject-01", true),
+            ("1.2.4", "subject-01", false),
+            ("", "subject-01", false),
+            ("1.2.3", "subject-02", false),
+        ] {
+            let water = dicom_study(study, patient);
+            let files = [nf("session/20_PRESS_ave/1.dcm", &spectrum), nf("session/22_PRESS_water_off/1.dcm", &water)];
+            let d = detect(&files);
+            assert_eq!(d.pairs.len(), 1, "{d:#?}");
+            assert_eq!(d.pairs[0].water.is_some(), paired, "{d:#?}");
+            assert_eq!(d.unpaired_water.len(), usize::from(!paired), "{d:#?}");
+        }
     }
 
     #[test]
