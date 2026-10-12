@@ -8,6 +8,8 @@
   and Zarro's unused backend availability and URL-switching helpers. Remove the
   obsolete shared UI parity test helper and register release-maintained version
   records as explicit Knip roots.
+- Declare workspace dependencies without expanding SYNcro portable runtime installations. Mark dicompare type imports explicitly and separate the unchanged NeSVoR reference validator from worker orchestration to remove dependency cycles.
+- Updated dependencies
   - @neurodesk/nesvor@0.3.20261010
 - Updated dependencies
   - @neurodesk/runtime-support@0.4.1

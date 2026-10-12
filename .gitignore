@@ -104,3 +104,4 @@ apps/*/web/examples.json
 /:memory:.ses
 
 quality-artifacts/
+.stryker-tmp/
