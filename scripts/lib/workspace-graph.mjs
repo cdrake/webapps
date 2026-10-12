@@ -1,11 +1,13 @@
 import { readdir, readFile, stat } from 'node:fs/promises';
-import { join, relative, resolve } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 
 // Which apps/, packages/ and exes/ directories each workspace directory uses.
 // Declared workspace dependencies are not enough: apps also reach shared code
 // through relative paths in build scripts, Vite configs and Rust `#[path]`
-// includes, so text references count as edges too. A false reference only
-// widens the CI selection.
+// includes, so text references count as edges too. Root scripts an app runs
+// (`../../scripts/theme-app-dist.mjs`) are nodes of their own, followed
+// through their relative imports to the packages they copy or bundle. A false
+// reference only widens the CI selection.
 
 const TOP_LEVEL = ['apps', 'packages', 'exes'];
 // Apps are leaves: a package that mentions an app does not use what that app uses.
@@ -14,6 +16,10 @@ const SKIPPED_DIRS = new Set(['node_modules', 'dist', 'target', '.turbo', '.vite
 const TEXT_FILE = /\.(?:[cm]?[jt]sx?|json|html|css|rs|toml|py|sh|ya?ml)$|^Makefile$/;
 const MAX_TEXT_BYTES = 1024 * 1024;
 const REFERENCE = /(?:\.\.\/)+(packages|exes)\/([\w.-]+)/g;
+// Scripts address packages from the repository root, in either form.
+const SCRIPT_REFERENCE = /\b(packages|exes)(?:\/|['"],\s*['"])([\w.-]+)/g;
+const SCRIPT_PATH = /(?:\.\.\/)+(scripts\/[\w./-]+\.[cm]?js)\b/g;
+const SCRIPT_IMPORT = /['"](\.\.?\/[^'"\s]+\.[cm]?js)['"]/g;
 const DEPENDENCY_FIELDS = ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies'];
 
 async function listDirs(path) {
@@ -51,6 +57,7 @@ export async function loadWorkspaceGraph(root) {
   const nodeByPackageName = new Map([...manifests].filter(([, manifest]) => manifest?.name).map(([node, manifest]) => [manifest.name, node]));
 
   const edges = new Map();
+  const pendingScripts = [];
   for (const node of nodes) {
     const uses = new Set();
     const manifest = manifests.get(node);
@@ -66,17 +73,41 @@ export async function loadWorkspaceGraph(root) {
     }
     for await (const file of textFiles(join(root, node))) {
       if ((await stat(file)).size > MAX_TEXT_BYTES) continue;
-      for (const [, top, name] of (await readFile(file, 'utf8')).matchAll(REFERENCE)) {
+      const text = await readFile(file, 'utf8');
+      for (const [, top, name] of text.matchAll(REFERENCE)) {
         if (nodeSet.has(`${top}/${name}`)) uses.add(`${top}/${name}`);
+      }
+      for (const [, script] of text.matchAll(SCRIPT_PATH)) {
+        uses.add(script);
+        pendingScripts.push(script);
       }
     }
     uses.delete(node);
     edges.set(node, uses);
   }
+
+  while (pendingScripts.length) {
+    const script = pendingScripts.pop();
+    if (edges.has(script)) continue;
+    const uses = new Set();
+    edges.set(script, uses);
+    const text = await readFile(join(root, script), 'utf8').catch(() => null);
+    if (text === null) continue;
+    for (const [, top, name] of text.matchAll(SCRIPT_REFERENCE)) {
+      if (nodeSet.has(`${top}/${name}`)) uses.add(`${top}/${name}`);
+    }
+    for (const [, path] of text.matchAll(SCRIPT_IMPORT)) {
+      const imported = relative(root, resolve(root, dirname(script), path)).split(sep).join('/');
+      if (imported.startsWith('scripts/')) {
+        uses.add(imported);
+        pendingScripts.push(imported);
+      }
+    }
+  }
   return Object.freeze({ nodes: Object.freeze(nodes), edges });
 }
 
-// Every directory `node` uses, directly or through other workspace directories.
+// Every directory or root script `node` uses, directly or through others.
 export function reachableFrom(graph, node) {
   const seen = new Set([node]);
   const pending = [node];

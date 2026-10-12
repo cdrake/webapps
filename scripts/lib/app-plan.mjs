@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { reachableFrom } from './workspace-graph.mjs';
 
 const NON_CODE_PREFIXES = ['docs/', '.changeset/'];
@@ -7,6 +8,10 @@ const NON_CODE_PREFIXES = ['docs/', '.changeset/'];
 // Changes there select no catalog apps. Shared homepage files directly under
 // site/ still count as shared changes.
 const SELF_CONTAINED_PREFIXES = ['site/easter-eggs/'];
+// Root tests that `test:contracts` leaves out run only beside an app build.
+const contractsScript = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')).scripts['test:contracts'];
+const OUTSIDE_CONTRACTS = new Set([...contractsScript.matchAll(/-e \/([\w.-]+\.test\.mjs)/g)].map(([, name]) => `test/${name}`));
+
 // Paths no app build or browser test reads. Root contract tests, lint and
 // quality tooling run in workspace-contracts or their own workflows; desktop
 // scripts run in the standalone workflow; every workflow other than ci.yml
@@ -75,7 +80,7 @@ export function selectAffectedApps(registry, changedPaths = [], graph = null) {
       NON_CODE_FILES.has(path) ||
       NON_CODE_PREFIXES.some((prefix) => path.startsWith(prefix)) ||
       SELF_CONTAINED_PREFIXES.some((prefix) => path.startsWith(prefix)) ||
-      NON_APP_PATHS.some((pattern) => pattern.test(path))
+      (NON_APP_PATHS.some((pattern) => pattern.test(path)) && !OUTSIDE_CONTRACTS.has(path))
     ) {
       continue;
     }

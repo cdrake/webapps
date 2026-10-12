@@ -146,9 +146,17 @@ test('contract tests, tooling and other workflows select no apps', async () => {
   assert.deepEqual(plan.selected, []);
 });
 
-test('CI workflow, shared scripts and smoke tests still select the complete catalog', async () => {
+test('CI workflow, shared scripts, smoke tests and tests outside test:contracts still select the complete catalog', async () => {
   const registry = await loadAppsRegistry();
-  for (const path of ['.github/workflows/ci.yml', 'scripts/lib/runtime-assets.mjs', 'test/mobile-layout.smoke.mjs', 'test-utils/compute-reference-server.mjs']) {
+  for (const path of ['.github/workflows/ci.yml', 'scripts/lib/runtime-assets.mjs', 'test/mobile-layout.smoke.mjs', 'test/runtime-assets.test.mjs', 'test-utils/compute-reference-server.mjs']) {
     assert.equal(createAppPlan(registry, [path], await graph).allApps, true, path);
   }
+});
+
+test('packages that root build scripts stage select the apps whose builds run them', async () => {
+  const registry = await loadAppsRegistry();
+  const runtime = createAppPlan(registry, ['packages/runtime-support/src/freebrowse-viewer/static.js'], await graph);
+  assert.ok(runtime.selected.some((app) => app.id === 'spinalcordtoolbox'), 'vendor-runtime-support.mjs stages runtime-support for SCT');
+  const analytics = createAppPlan(registry, ['packages/analytics/src/index.js'], await graph);
+  assert.ok(analytics.selected.some((app) => app.id === 'zarro'), 'theme-app-dist.mjs copies analytics into themed apps');
 });
