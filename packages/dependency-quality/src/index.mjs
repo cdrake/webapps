@@ -49,17 +49,24 @@ function runtimeReferences(ast) {
     }
     const first = node.arguments?.[0]?.expression;
     const second = node.arguments?.[1]?.expression;
+    const isMetaUrl = (expression) => expression?.type === 'MemberExpression'
+      && expression.object?.type === 'MetaProperty'
+      && expression.object.kind === 'import.meta'
+      && expression.property?.value === 'url';
     if (first?.type === 'StringLiteral') {
-      const metaUrl = second?.type === 'MemberExpression'
-        && second.object?.type === 'MetaProperty'
-        && second.object.kind === 'import.meta'
-        && second.property?.value === 'url';
+      const metaUrl = isMetaUrl(second);
       const metaResolve = node.callee?.type === 'MemberExpression'
         && node.callee.object?.type === 'MetaProperty'
         && node.callee.object.kind === 'import.meta'
         && node.callee.property?.value === 'resolve';
       if ((node.type === 'NewExpression' && node.callee?.value === 'URL' && metaUrl)
         || (node.type === 'CallExpression' && metaResolve)) references.push({ specifier: first.value, url: node.type === 'NewExpression' });
+    }
+    // createRequire(new URL(path, import.meta.url)) resolves packages from that path's installation.
+    const anchor = first?.type === 'NewExpression' && first.callee?.value === 'URL'
+      && isMetaUrl(first.arguments?.[1]?.expression) ? first.arguments?.[0]?.expression : null;
+    if (node.type === 'CallExpression' && node.callee?.value === 'createRequire' && anchor?.type === 'StringLiteral') {
+      references.push({ specifier: anchor.value, url: true, anchor: true });
     }
     Object.values(node).forEach(visit);
   }
@@ -142,14 +149,15 @@ export async function dependencyGraph(root, files) {
     for (const dependency of module.dependencies) {
       dependency.typeOnly = (typeOnly.has(dependency.module) || typeOnly.has(`node:${dependency.module}`)) && !dependency.dynamic;
     }
-    for (const { specifier, url } of runtimeReferences(ast)) {
+    for (const { specifier, url, anchor } of runtimeReferences(ast)) {
       const existing = module.dependencies.find((dependency) => dependency.module === specifier);
       if (existing) {
         existing.typeOnly = false;
         if (url) existing.url = true;
+        if (anchor) existing.anchor = true;
         continue;
       }
-      module.dependencies.push({ module: specifier, ...resolveReference(root, module.source, specifier, url), url });
+      module.dependencies.push({ module: specifier, ...resolveReference(root, module.source, specifier, url), url, ...(anchor && { anchor }) });
     }
   }
   for (const module of graph.modules) {
@@ -272,6 +280,44 @@ export function dependencyFindings(modules, manifests, runtimeContracts = []) {
       if (!runtimeDeclared && !((contract || dependency.typeOnly) && Object.hasOwn(manifest.devDependencies ?? {}, name))) {
         add('undeclared-runtime', from, name);
       }
+    }
+  }
+  // A relative path may reach only its own workspace's node_modules. Another
+  // workspace's or the root's copy exists only because of pnpm's layout, so
+  // tooling included must import the package by name from a declared dependency.
+  // A createRequire anchored in another workspace resolves through its installation too.
+  for (const { source: from, dependencies } of modules) {
+    const owner = ownerOf(from, manifests);
+    for (const dependency of dependencies) {
+      if (!dependency.module.startsWith('.') && !dependency.url) continue;
+      const targetUrl = new URL(cleanSpecifier(dependency.module), `file:///${from}`);
+      if (dependency.url && targetUrl.protocol !== 'file:') continue;
+      // ESM specifiers and new URL() resolve as URLs: decode escapes, read backslashes as slashes.
+      // CommonJS require() takes file paths literally.
+      const path = dependency.moduleSystem === 'cjs' && !dependency.url
+        ? posix.normalize(posix.join(dirname(from), cleanSpecifier(dependency.module)))
+        : decodeURIComponent(targetUrl.pathname.slice(1));
+      const installation = path.match(/^(?:(.*?)\/)?node_modules\//);
+      if ((installation && installation[1] !== owner) || (dependency.anchor && ownerOf(path, manifests) !== owner)) {
+        add('foreign-node-modules', from, path);
+      }
+    }
+  }
+  // Tests, validation and build scripts resolve their tools by name, so the
+  // owning workspace declares them; the root's copy only works in a full install.
+  for (const { source: from, dependencies } of modules) {
+    if (isProduction(from)) continue;
+    const manifest = manifests.get(ownerOf(from, manifests));
+    if (!manifest) continue;
+    const declared = [manifest.dependencies, manifest.devDependencies, manifest.peerDependencies, manifest.optionalDependencies]
+      .flatMap((dependencies) => Object.keys(dependencies ?? {}));
+    for (const dependency of dependencies) {
+      const specifier = cleanSpecifier(dependency.module);
+      const name = dependency.url || isBuiltin(specifier) ? null : packageName(specifier);
+      if (!name || name === manifest.name || declared.includes(name)) continue;
+      // Jest's runtime supplies @jest/globals to the tests it runs; nothing installs it.
+      if (name === '@jest/globals' && declared.includes('jest')) continue;
+      add('undeclared-tooling', from, name);
     }
   }
   return [...new Map(findings.map((finding) => [findingIdentity(finding), finding])).values()]

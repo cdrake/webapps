@@ -1,4 +1,6 @@
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { reachableFrom } from './workspace-graph.mjs';
 
 const NON_CODE_PREFIXES = ['docs/', '.changeset/'];
 // Self-contained packages outside apps/ with their own CI job (the homepage
@@ -6,6 +8,27 @@ const NON_CODE_PREFIXES = ['docs/', '.changeset/'];
 // Changes there select no catalog apps. Shared homepage files directly under
 // site/ still count as shared changes.
 const SELF_CONTAINED_PREFIXES = ['site/easter-eggs/'];
+// Root tests that `test:contracts` leaves out run only beside an app build.
+const contractsScript = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')).scripts['test:contracts'];
+const OUTSIDE_CONTRACTS = new Set([...contractsScript.matchAll(/-e \/([\w.-]+\.test\.mjs)/g)].map(([, name]) => `test/${name}`));
+
+// Paths no app build or browser test reads. Root contract tests, lint and
+// quality tooling run in workspace-contracts or their own workflows; desktop
+// scripts run in the standalone workflow; every workflow other than ci.yml
+// runs itself when it changes; the app template is checked by contract tests.
+const NON_APP_PATHS = [
+  /^[^/]+\.md$/,
+  /^\.gitignore$/,
+  /^test\/[^/]+\.test\.mjs$/,
+  /^\.github\/workflows\/(?!ci\.yml$)[^/]+$/,
+  /^scripts\/(?:desktop|quality)\//,
+  /^scripts\/(?:lint|lint-workspaces|report-unused-code|report-mutations|check-dependencies)\.mjs$/,
+  /^(?:eslint|knip|stryker)\.config\.m?js$/,
+  /^config\/dependency-/,
+  /^templates\//,
+];
+// An app's model manifest belongs to that app alone.
+const MODEL_MANIFEST = /^models\/([^/]+)\.manifest\.json$/;
 const NON_CODE_FILES = new Set([
   'README.md',
   'LICENSES.md',
@@ -31,23 +54,33 @@ function matrixEntry(app) {
   };
 }
 
-export function selectAffectedApps(registry, changedPaths = []) {
+// Without a workspace graph every packages/ or exes/ change counts as shared.
+export function selectAffectedApps(registry, changedPaths = [], graph = null) {
   if (!changedPaths.length) return registry.apps;
 
   const appIds = new Set(registry.apps.map((app) => app.id));
+  const reach = graph && new Map(registry.apps.map((app) => [app.id, reachableFrom(graph, `apps/${app.id}`)]));
   const directlyChanged = new Set();
   let sharedChange = false;
 
   for (const path of changedPaths) {
-    const match = path.match(/^apps\/([^/]+)\//);
-    if (match && appIds.has(match[1])) {
-      directlyChanged.add(match[1]);
+    const appId = path.match(/^apps\/([^/]+)\//)?.[1] ?? path.match(MODEL_MANIFEST)?.[1];
+    if (appIds.has(appId)) {
+      directlyChanged.add(appId);
+      continue;
+    }
+    const workspaceNode = path.match(/^(packages|exes)\/[^/]+(?=\/)/)?.[0];
+    if (reach && graph.edges.has(workspaceNode)) {
+      for (const candidate of registry.apps) {
+        if (reach.get(candidate.id).has(workspaceNode)) directlyChanged.add(candidate.id);
+      }
       continue;
     }
     if (
       NON_CODE_FILES.has(path) ||
       NON_CODE_PREFIXES.some((prefix) => path.startsWith(prefix)) ||
-      SELF_CONTAINED_PREFIXES.some((prefix) => path.startsWith(prefix))
+      SELF_CONTAINED_PREFIXES.some((prefix) => path.startsWith(prefix)) ||
+      (NON_APP_PATHS.some((pattern) => pattern.test(path)) && !OUTSIDE_CONTRACTS.has(path))
     ) {
       continue;
     }
@@ -60,8 +93,8 @@ export function selectAffectedApps(registry, changedPaths = []) {
   return registry.apps.filter((app) => directlyChanged.has(app.id));
 }
 
-export function createAppPlan(registry, changedPaths = []) {
-  const selected = selectAffectedApps(registry, changedPaths);
+export function createAppPlan(registry, changedPaths = [], graph = null) {
+  const selected = selectAffectedApps(registry, changedPaths, graph);
   const releasable = selected.filter((app) => app.ci.release);
   const browserTested = selected.filter((app) => app.ci.browser_test);
   const gpuTested = selected.filter((app) => app.ci.hardware_gpu);

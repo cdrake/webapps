@@ -43,5 +43,8 @@
     "nifti-reader-js": "0.8.0",
     "onnxruntime-node": "1.29.0",
     "@neurodesk/webapp-components": "workspace:*"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.0"
   }
 }

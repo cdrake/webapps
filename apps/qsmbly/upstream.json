@@ -12,7 +12,8 @@
     "Keep monorepo date-based release versions and deployment workflows.",
     "Load Inter from css/inter.css, which pins the Google Fonts v20 files, not from the mutable fonts.googleapis.com stylesheet.",
     "Keep Cite owned by the shared shell. Move new upstream citations from index.html#citationsModal into registry/app-information.yml and test/app-information.test.mjs; do not restore the local Cite button, modal or handlers. The sync refreshes upstream-citations.json from its target commit and contract tests require every recorded DOI in the registry.",
-    "Keep the phase filename separator character class without the redundant dot escape; this preserves upstream matching behavior under the monorepo correctness gate."
+    "Keep the phase filename separator character class without the redundant dot escape; this preserves upstream matching behavior under the monorepo correctness gate.",
+    "Keep `@playwright/test` and `yaml` declared as exact devDependencies for the monorepo e2e suite; the dependency checker rejects tooling resolved through another workspace's or the root's node_modules."
   ],
   "branch": "main",
   "rewrite": {

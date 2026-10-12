@@ -34,7 +34,7 @@ test('slabs cover every output exactly once, retain real convolution neighbors a
 test('streamed full network preserves native predictions across forced slab boundaries',{
   skip:!process.env.SYNTHSR_MODEL_PATH&&'Set SYNTHSR_MODEL_PATH for full-network numerical validation',
 },async()=>{
-  const ort=createRequire(new URL('../../../packages/synthsr/package.json',import.meta.url))('onnxruntime-node');
+  const ort=createRequire(import.meta.url)('onnxruntime-node');
   const raw=await readFile(process.env.SYNTHSR_MODEL_PATH);
   const adapter={...ort,InferenceSession:{create:(bytes,options)=>ort.InferenceSession.create(bytes,{
     ...options,executionProviders:['cpu'],intraOpNumThreads:2,

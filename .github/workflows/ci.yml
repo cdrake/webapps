@@ -299,9 +299,12 @@ jobs:
   # The VM has 3 cores and 7 GB: it checks correctness, not speed. Each app
   # downloads its pinned models and fixtures, so no test skips for lack of
   # data; SYNcro's full normalizations make it the slowest by far.
+  # A pull request that changes shared code selects every app; its GPU suites
+  # then run after merge and nightly instead of holding scarce macOS runners.
+  # Dispatch ci on the branch to run them before merging.
   browser-e2e-gpu:
     needs: app-plan
-    if: needs.app-plan.outputs.has_gpu_apps == 'true'
+    if: needs.app-plan.outputs.has_gpu_apps == 'true' && (github.event_name != 'pull_request' || needs.app-plan.outputs.all_apps != 'true')
     runs-on: macos-15
     timeout-minutes: 300
     strategy:

@@ -538,21 +538,23 @@ pub struct Loaded {
     pub out: Spectra,
     pub embedded_water: Option<Spectra>,
     pub voxel: Option<Voxel>,
+    /// Why a format that records the voxel gave none (GE: the header values).
+    pub voxel_note: Option<String>,
 }
 
 /// Read one dataset with its reader.
 pub fn load_dataset(ds: &Dataset, files: &[NamedFile], opts: &LoadOptions) -> Res<Loaded> {
     let f = |k: usize| -> Res<&NamedFile> { ds.files.get(k).and_then(|&i| files.get(i)).ok_or_else(|| "internal error: dataset file index".to_string()) };
-    let one = |s: Spectra, voxel: Option<Voxel>| Loaded { out: s, embedded_water: None, voxel };
+    let one = |s: Spectra, voxel: Option<Voxel>| Loaded { out: s, embedded_water: None, voxel, voxel_note: None };
     match ds.format {
         Format::Twix => {
             let r = super::twix::load(f(0)?.bytes)?;
             let voxel = geometry::twix(&r.header);
-            Ok(Loaded { out: r.out, embedded_water: r.out_w, voxel })
+            Ok(Loaded { out: r.out, embedded_water: r.out_w, voxel, voxel_note: None })
         }
         Format::GePfile => {
             let r = super::ge::load(f(0)?.bytes, opts.subspecs)?;
-            Ok(Loaded { out: r.out, embedded_water: Some(r.out_w), voxel: r.voxel })
+            Ok(Loaded { out: r.out, embedded_water: Some(r.out_w), voxel: r.voxel, voxel_note: r.voxel_note })
         }
         Format::SiemensRda => {
             let b = f(0)?.bytes;
@@ -593,7 +595,7 @@ fn load_dicom(ds: &Dataset, files: &[NamedFile], opts: &LoadOptions) -> Res<Load
     match super::dicom_siemens::load_folder(&list) {
         Ok((s, _)) => {
             let voxel = list.first().and_then(|(_, b)| geometry::siemens_dicom(&super::dicom_siemens::protocol_text(b)));
-            Ok(Loaded { out: s, embedded_water: None, voxel })
+            Ok(Loaded { out: s, embedded_water: None, voxel, voxel_note: None })
         }
         Err(e) => {
             // IMA files without a Phoenix protocol: io_loadspec_IMA needs the
@@ -604,6 +606,7 @@ fn load_dicom(ds: &Dataset, files: &[NamedFile], opts: &LoadOptions) -> Res<Load
                         out: super::dicom_siemens::load_ima(list[0].1, bo, sw, opts.ima_te, opts.ima_tr)?,
                         embedded_water: None,
                         voxel: None,
+                        voxel_note: None,
                     });
                 }
             }
@@ -626,7 +629,7 @@ fn load_bruker(ds: &Dataset, files: &[NamedFile]) -> Res<Loaded> {
         })
         .collect();
     let r = super::bruker::load(&scan, true, 68)?;
-    Ok(Loaded { out: r.out, embedded_water: r.ref_scan, voxel: None })
+    Ok(Loaded { out: r.out, embedded_water: r.ref_scan, voxel: None, voxel_note: None })
 }
 
 /// Everything in one call: the detected pairs, each loaded (metabolite and
@@ -835,6 +838,28 @@ mod tests {
         b.extend_from_slice(&[0u8; 8]);
         assert!(dicom_has_spectrum(&b));
         assert!(!dicom_has_spectrum(&dicom_stub(false)));
+    }
+
+    #[test]
+    fn an_image_series_is_available_for_anatomical_import() {
+        let img = dicom_stub(false);
+        let files = [nf("21-PRESS/a.dcm", &img), nf("21-PRESS/b.dcm", &img)];
+        let d = detect(&files);
+        assert!(d.pairs.is_empty(), "{d:#?}");
+        assert!(d.ignored.is_empty());
+        assert_eq!(d.images, [Image { name: "21-PRESS".into(), files: vec![0, 1] }]);
+    }
+
+    #[test]
+    fn compressed_pixel_data_counts_as_pixel_data() {
+        // Modality MR, then encapsulated Pixel Data: undefined length, one empty
+        // item and the sequence delimiter, as JPEG and RLE transfer syntaxes write it.
+        let mut b = dicom_stub(false);
+        b.extend_from_slice(&[0xe0, 0x7f, 0x10, 0x00, b'O', b'B', 0, 0, 0xff, 0xff, 0xff, 0xff]);
+        b.extend_from_slice(&[0xfe, 0xff, 0x00, 0xe0, 0, 0, 0, 0]);
+        b.extend_from_slice(&[0xfe, 0xff, 0xdd, 0xe0, 0, 0, 0, 0]);
+        let d = super::super::dicom_siemens::parse_dicom(&b).unwrap();
+        assert!(super::super::dicom_siemens::describe(&d).ends_with("with pixel data"), "{}", super::super::dicom_siemens::describe(&d));
     }
 
     #[test]

@@ -48,6 +48,7 @@ import {
   groupRecords as recordsOf,
   headerFor as headerOf,
   isEdited as editedOf,
+  loadMessages,
   parseCustomBasis,
   planGroup,
   rangeUntouched,
@@ -447,9 +448,7 @@ async function stageFida(files, signal, options) {
     const loaded = await session.run({ type: "load", files: payload, options }, payload.map((f) => f.bytes));
     signal.throwIfAborted();
     if (loaded.error) throw new Error(loaded.error);
-    for (const e of loaded.errors) log.log(`${e.file}: ${e.error}`, "warning");
-    for (const e of loaded.ignored) log.log(`${e.file}: ${e.reason}`, "info");
-    for (const name of loaded.unpairedWater ?? []) log.log(`${name}: a water reference with no spectrum to pair it with`, "warning");
+    for (const { text, level } of loadMessages(loaded)) log.log(text, level);
     return { session, loaded };
   } catch (error) {
     session.terminate();

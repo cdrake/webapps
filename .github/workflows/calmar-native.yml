@@ -4,26 +4,18 @@ on:
   pull_request:
     paths:
       - '.github/workflows/calmar-native.yml'
-      - '.github/workflows/node-cli-portable.yml'
-      - 'exes/node-cli/**'
-      - 'exes/synthsr/scripts/ci_macos_release.sh'
-      - 'exes/synthsr/scripts/notarize_macos.sh'
       - 'packages/calmar/**'
       - 'apps/calmar/**'
       - 'packages/components/**'
-      - 'test/independent-workflows.test.mjs'
   push:
     branches: [main]
     paths:
       - '.github/workflows/calmar-native.yml'
       - '.github/workflows/node-cli-portable.yml'
       - 'exes/node-cli/**'
-      - 'exes/synthsr/scripts/ci_macos_release.sh'
-      - 'exes/synthsr/scripts/notarize_macos.sh'
       - 'packages/calmar/**'
       - 'apps/calmar/**'
       - 'packages/components/**'
-      - 'test/independent-workflows.test.mjs'
   workflow_dispatch:
     inputs:
       sign_release:
@@ -33,7 +25,7 @@ on:
 
 concurrency:
   group: calmar-native-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read

@@ -1,10 +1,6 @@
 import {readFile,readdir} from 'node:fs/promises';
 import {resolve} from 'node:path';
-import {pathToFileURL} from 'node:url';
-import {createRequire} from 'node:module';
-
-const appRequire=createRequire(new URL('../../../apps/syncro/package.json',import.meta.url));
-const {chromium}=(await import(pathToFileURL(appRequire.resolve('@playwright/test')).href)).default;
+import {chromium} from '@playwright/test';
 
 const [url,inputPath,synthstripPath,mindgrabBackend='auto']=process.argv.slice(2);
 if(!synthstripPath)throw new Error('Usage: benchmark-brain-extraction.mjs URL synthetic-t1.nii[.gz] synthstrip-browser.onnx [auto|webgpu|webgl2|cpu]');

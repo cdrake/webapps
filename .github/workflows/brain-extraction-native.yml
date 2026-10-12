@@ -4,32 +4,24 @@ on:
   pull_request:
     paths:
       - '.github/workflows/brain-extraction-native.yml'
-      - '.github/workflows/node-cli-portable.yml'
-      - 'exes/node-cli/**'
-      - 'exes/synthsr/scripts/ci_macos_release.sh'
-      - 'exes/synthsr/scripts/notarize_macos.sh'
       - 'packages/brain-extraction/**'
       - 'packages/node-drivers/**'
       - 'apps/brain-extraction/**'
       - 'apps/qsmbly/rust-wasm/**'
       - 'packages/synthsr/**'
       - 'packages/synthstrip/**'
-      - 'test/independent-workflows.test.mjs'
   push:
     branches: [main]
     paths:
       - '.github/workflows/brain-extraction-native.yml'
       - '.github/workflows/node-cli-portable.yml'
       - 'exes/node-cli/**'
-      - 'exes/synthsr/scripts/ci_macos_release.sh'
-      - 'exes/synthsr/scripts/notarize_macos.sh'
       - 'packages/brain-extraction/**'
       - 'packages/node-drivers/**'
       - 'apps/brain-extraction/**'
       - 'apps/qsmbly/rust-wasm/**'
       - 'packages/synthsr/**'
       - 'packages/synthstrip/**'
-      - 'test/independent-workflows.test.mjs'
   workflow_dispatch:
     inputs:
       sign_release:
@@ -39,7 +31,7 @@ on:
 
 concurrency:
   group: brain-extraction-native-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read

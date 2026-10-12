@@ -4,30 +4,22 @@ on:
   pull_request:
     paths:
       - '.github/workflows/carotid-flow-native.yml'
-      - '.github/workflows/node-cli-portable.yml'
-      - 'exes/node-cli/**'
-      - 'exes/synthsr/scripts/ci_macos_release.sh'
-      - 'exes/synthsr/scripts/notarize_macos.sh'
       - 'packages/carotid-flow/**'
       - 'packages/components/src/file-io/**'
       - 'packages/components/src/volume/**'
       - 'packages/components/src/automation/parameters.js'
       - 'apps/carotid-flow/**'
-      - 'test/independent-workflows.test.mjs'
   push:
     branches: [main]
     paths:
       - '.github/workflows/carotid-flow-native.yml'
       - '.github/workflows/node-cli-portable.yml'
       - 'exes/node-cli/**'
-      - 'exes/synthsr/scripts/ci_macos_release.sh'
-      - 'exes/synthsr/scripts/notarize_macos.sh'
       - 'packages/carotid-flow/**'
       - 'packages/components/src/file-io/**'
       - 'packages/components/src/volume/**'
       - 'packages/components/src/automation/parameters.js'
       - 'apps/carotid-flow/**'
-      - 'test/independent-workflows.test.mjs'
   workflow_dispatch:
     inputs:
       sign_release:
@@ -37,7 +29,7 @@ on:
 
 concurrency:
   group: carotid-flow-native-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read

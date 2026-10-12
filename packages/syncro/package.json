@@ -38,6 +38,7 @@
     "@neurodesk/registration": "workspace:*",
     "@neurodesk/synthsr": "workspace:*",
     "@neurodesk/synthstrip": "workspace:*",
+    "@playwright/test": "1.64.0",
     "esbuild": "^0.25.0"
   }
 }
