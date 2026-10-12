@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
+import { exampleFiles } from "../../../packages/lcmodel/validation/reference.mjs";
+import { proxyAssets } from "./tissue-runtime.mjs";
 import { syntheticNifti } from "../../../test-utils/nifti-fixture.mjs";
 
 const native = new URL("../../../exes/lcmodel/tests/data/test_lcm/", import.meta.url);
@@ -15,8 +17,8 @@ async function adopt(page, role, files) {
   await dispatch(page, "adopt", { role });
 }
 
-async function finish(page, parameters = {}) {
-  await dispatch(page, "start", { operation: "fit", parameters });
+async function finish(page, parameters = {}, operation = "fit") {
+  await dispatch(page, "start", { operation, parameters });
   await expect.poll(async () => (await dispatch(page, "snapshot")).state, { timeout: 120000 }).not.toBe("running");
   return dispatch(page, "snapshot");
 }
@@ -29,6 +31,12 @@ async function seed(page, parameters = {}) {
   expect(result.state, JSON.stringify(result.error)).toBe("succeeded");
 }
 
+async function download(page, stage) {
+  const saved = page.waitForEvent("download");
+  await page.locator(`#resultList [data-stage="${stage}"]`).getByRole("button", { name: "Download", exact: true }).click();
+  return readFile(await (await saved).path(), "utf8");
+}
+
 async function resident(page) {
   return page.evaluate(() => {
     const text = (id) => document.getElementById(id).textContent;
@@ -37,6 +45,7 @@ async function resident(page) {
       file: text("fileInfo"), basis: text("basisInfo"), t1: text("t1Info"),
       results: text("concBody"), downloads: text("resultList"),
       frequency: value("hzpppmInput"), dwell: value("dwellInput"), basisChoice: value("basisSelect"),
+      group: text("groupView"), dataset: value("datasetSelect"), ppm: [value("ppmStart"), value("ppmEnd")],
       badSd: value("badSd"), removeBad: document.getElementById("removeBad").checked,
       drift: document.getElementById("driftCorrection").checked,
       fractions: ["fGm", "fWm", "fCsf"].map(id => document.getElementById(id)?.value),
@@ -44,12 +53,13 @@ async function resident(page) {
   });
 }
 
-test("automation refuses additions as spectra and preserves the resident fitted session", async ({ page }) => {
+test("automation refuses additions as spectra and preserves the resident fitted session", async ({ page }, testInfo) => {
   test.setTimeout(240000);
   await seed(page, { removeBadAverages: false, badAverageSd: 5, driftCorrection: false });
   await page.locator("#t1Input").setInputFiles(anatomy);
   await expect(page.locator("#t1Info")).toContainText("patient-A.nii");
   const before = await resident(page);
+  const csv = await download(page, "concentrations");
   for (const files of [[file("patient-B.nii", anatomy.buffer)], [basis], [file("patient-B.H2O", raw.buffer)]]) {
     await adopt(page, "spectra", files);
     await adopt(page, "basis", [basis]);
@@ -57,10 +67,14 @@ test("automation refuses additions as spectra and preserves the resident fitted 
     expect(result.state, JSON.stringify(result.report)).toBe("failed");
     expect(result.error.message).toMatch(/spectroscopy|spectrum/i);
     expect(await resident(page)).toEqual(before);
+    expect(await download(page, "concentrations")).toBe(csv);
   }
   await page.locator("#runButton").click();
   await expect(page.locator("#statusText")).toContainText("Fit done", { timeout: 120000 });
   expect(await page.locator("#concBody").textContent()).toBe(before.results);
+  await page.screenshot({ path: testInfo.outputPath("retained-session-desktop.png"), fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: testInfo.outputPath("retained-session-phone.png"), fullPage: true });
 });
 
 test("automation stages optional inputs and fractions before replacing the session", async ({ page }) => {
@@ -114,5 +128,65 @@ for (const edited of [true, false]) {
     await page.locator("#runButton").click();
     await expect(page.locator("#statusText")).toContainText("Fit done", { timeout: 120000 });
     await expect(page.locator("#concTable")).toBeVisible();
+    const fittedControl = await download(page, "control");
+    expect(fittedControl.includes("sptype='mega-press-3'")).toBe(edited);
+    expect(fittedControl).toContain(`hzpppm=${frequency}`);
+    expect(fittedControl).toContain(`deltat=${Number(dwell) / 1000}`);
   });
 }
+
+
+test("fit-group rejects anatomy, basis and unpaired water while keeping its fitted group", async ({ page }) => {
+  test.setTimeout(300000);
+  await proxyAssets(page);
+  await seed(page);
+  await page.locator("#t1Input").setInputFiles(anatomy);
+  await expect(page.locator("#t1Info")).toContainText("patient-A.nii");
+  const group = await exampleFiles("philips-press-group");
+  const spectra = await Promise.all(group.map(async entry => file(entry.name, await readFile(entry.path))));
+  await adopt(page, "spectra", spectra);
+  const fitted = await finish(page, {}, "fit-group");
+  expect(fitted.state, JSON.stringify(fitted.error)).toBe("succeeded");
+  expect(fitted.report.provenance.fitted).toBe(2);
+  await expect(page.locator("#basisSelect")).not.toHaveValue("custom");
+  await expect(page.locator("#t1Info")).toBeHidden();
+  const before = await resident(page);
+  const csv = await download(page, "groupTable");
+  const water = spectra.filter(entry => entry.name.includes("_ref."));
+  expect(water.length).toBeGreaterThan(0);
+  for (const files of [[file("patient-B.nii", anatomy.buffer)], [basis], water]) {
+    await adopt(page, "spectra", files);
+    const result = await finish(page, {}, "fit-group");
+    expect(result.state).toBe("failed");
+    expect(result.error.message).toMatch(/spectroscopy|spectrum/i);
+    expect(await resident(page)).toEqual(before);
+    expect(await download(page, "groupTable")).toBe(csv);
+  }
+});
+
+test("cancelled automation anatomy selection preserves the old session and valid roles replace it", async ({ page }) => {
+  test.setTimeout(240000);
+  await seed(page, { driftCorrection: false });
+  await page.locator("#t1Input").setInputFiles(anatomy);
+  await expect(page.locator("#t1Info")).toContainText("patient-A.nii");
+  const before = await resident(page);
+  const replacement = file("patient-B.RAW", raw.buffer);
+  const replacementT1 = file("patient-B.nii", anatomy.buffer);
+  await adopt(page, "spectra", [replacement, control, anatomy, replacementT1]);
+  await adopt(page, "basis", [basis]);
+  await dispatch(page, "start", { operation: "fit" });
+  await expect(page.locator("#anatomySeries")).toBeVisible();
+  await dispatch(page, "cancel");
+  await expect.poll(async () => (await dispatch(page, "snapshot")).state).not.toBe("running");
+  await expect(page.locator("#anatomySeries")).toBeHidden();
+  expect(await resident(page)).toEqual(before);
+  await adopt(page, "spectra", [replacement, control, anatomy]);
+  await adopt(page, "basis", [basis]);
+  await adopt(page, "t1", [replacementT1]);
+  const result = await finish(page, { lineBroadening: "lcmodel" });
+  expect(result.error?.message).toMatch(/tissue|voxel/i);
+  await expect(page.locator("#fileInfo")).toHaveText("patient-B.RAW");
+  await expect(page.locator("#t1Info")).toContainText("patient-B.nii");
+  await expect(page.locator("#basisSelect")).toHaveValue("custom");
+  await expect(page.locator("#concTable")).toBeVisible();
+});

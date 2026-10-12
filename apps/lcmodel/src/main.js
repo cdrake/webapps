@@ -33,6 +33,7 @@ import { STATUS, fileStem, groupCsvLong, groupCsvWide } from "@neurodesk/lcmodel
 import { formatConc } from "@neurodesk/lcmodel/report";
 import {
   CUSTOM,
+  acquisitionMessage,
   applyEditing,
   RANGES,
   checkBasis,
@@ -322,7 +323,17 @@ async function prepareAnatomy(images, sources, signal) {
   return tissue.prepareT1(image.files.map((name) => original.get(name)), signal);
 }
 
-async function loadFiles(files, signal, { water = false } = {}) {
+async function loadFiles(request, signal) {
+  const automation = request.kind === "fit-request";
+  const files = automation ? request.inputs.spectra : request.files;
+  let water = request.kind === "water-reference";
+  const p = automation ? request.parameters : {};
+  const settings = settingsFrom(p);
+  const fractionKeys = ["fractionGM", "fractionWM", "fractionCSF"];
+  const given = fractionKeys.filter((key) => typeof p[key] === "number");
+  if (automation && !files?.length) throw new Error("No spectroscopy data found among the files.");
+  if (given.length && given.length < 3) throw new Error("Give all three tissue fractions (fractionGM, fractionWM, fractionCSF), or none.");
+  if (given.length && request.inputs.t1?.length) throw new Error("Give either a T1 image or tissue fractions, not both.");
   if (busy) throw new Error("Files are still loading. Wait or cancel, then retry.");
   if (water && !input) throw new Error("Load a spectrum before adding its water reference.");
   const controller = new AbortController();
@@ -341,27 +352,29 @@ async function loadFiles(files, signal, { water = false } = {}) {
     const read = await readSources(sourceFiles(files), importSignal);
     const sorted = sortInputs(read);
     const decode = (file) => new TextDecoder().decode(file.bytes);
-    const basis = sorted.basis.length ? parseCustomBasis(sorted.basis[0].name, decode(sorted.basis[0])) : null;
+    const basis = automation && request.inputs.basis?.length
+      ? await readBasisFile(request.inputs.basis[0])
+      : sorted.basis.length ? parseCustomBasis(sorted.basis[0].name, decode(sorted.basis[0])) : null;
     const control = sorted.control.length ? parseControl(decode(sorted.control[0])) : null;
-    let next;
-    let nextT1 = null;
-    if (input?.kind === "raw" && (water || (!sorted.raw.length && sorted.water.length))) {
+    let change = { kind: "none" };
+    let nextT1 = automation && request.inputs.t1?.length ? await tissue.prepareT1(request.inputs.t1, importSignal) : null;
+    if (!automation && input?.kind === "raw" && (water || (!sorted.raw.length && sorted.water.length))) {
       const references = [...sorted.raw, ...sorted.water];
       if (references.length !== 1 || sorted.other.length) throw new Error("Choose one LCModel .H2O or water .RAW reference for this .RAW spectrum.");
-      next = rawInput({ name: input.name, text: input.text, waterName: references[0].name, water: decode(references[0]), control: input.header });
-      next.header = input.header;
+      const reference = rawInput({ name: input.name, text: input.text, waterName: references[0].name, water: decode(references[0]), control: input.header });
+      change = { kind: "water-reference", input: { ...input, waterName: reference.waterName, water: reference.water } };
       water = true;
     } else if (!water && sorted.raw.length) {
-      next = rawInput({ name: sorted.raw[0].name, text: decode(sorted.raw[0]), waterName: sorted.water[0]?.name ?? null, water: sorted.water.length ? decode(sorted.water[0]) : null, control });
+      change = { kind: "replacement", input: rawInput({ name: sorted.raw[0].name, text: decode(sorted.raw[0]), waterName: sorted.water[0]?.name ?? null, water: sorted.water.length ? decode(sorted.water[0]) : null, control }) };
       if (sorted.other.length) {
         candidate = await stageFida(sorted.other, importSignal);
-        nextT1 = await prepareAnatomy(candidate.loaded.images, sorted.other, importSignal);
+        nextT1 ??= await prepareAnatomy(candidate.loaded.images, sorted.other, importSignal);
       }
     } else if (sorted.other.length || water) {
       let assignment = water ? waterSources(files) : null;
       let inputs = assignment ? await readSources(assignment.sources, importSignal) : sorted.other;
       candidate = await stageFida(inputs, importSignal, assignment?.options);
-      if (!water && !candidate.loaded.datasets.length && candidate.loaded.unpairedWater?.length && input?.kind === "fida") {
+      if (!automation && !water && !candidate.loaded.datasets.length && candidate.loaded.unpairedWater?.length && input?.kind === "fida") {
         candidate.session.terminate();
         assignment = waterSources(files);
         inputs = await readSources(assignment.sources, importSignal);
@@ -370,15 +383,16 @@ async function loadFiles(files, signal, { water = false } = {}) {
       }
       const loaded = candidate.loaded;
       const imageNames = new Set((loaded.images ?? []).flatMap((image) => image.files));
-      nextT1 = await prepareAnatomy(loaded.images, inputs, importSignal);
+      nextT1 ??= await prepareAnatomy(loaded.images, inputs, importSignal);
       if (loaded.datasets.length) {
-        next = { ...fidaInput(loaded), sources: inputs.filter((s) => !imageNames.has(s.name)).map(({ name, file }) => ({ name, file })), loadOptions: assignment?.options };
+        const next = { ...fidaInput(loaded), sources: inputs.filter((s) => !imageNames.has(s.name)).map(({ name, file }) => ({ name, file })), loadOptions: assignment?.options };
         if (assignment) {
           const overrides = new Map(input.datasets.map((dataset) => [dataset.path, dataset.editOverride]));
           for (const dataset of next.datasets) if (overrides.has(dataset.path)) dataset.editOverride = overrides.get(dataset.path);
           next.index = next.datasets.findIndex((d) => d.path === assignment.targetPath);
         }
         if (next.index < 0) throw new Error("The selected spectrum could not be paired with this water reference.");
+        change = { kind: assignment ? "water-reference" : "replacement", input: next };
       } else if (!nextT1) {
         const first = loaded.errors[0];
         throw new Error(loaded.unpairedWater?.length ? "Only a water reference was found. Load its spectrum first, then add the reference." : first ? `${first.file}: ${first.error}` : "No readable spectroscopy data found.");
@@ -388,7 +402,25 @@ async function loadFiles(files, signal, { water = false } = {}) {
     } else if (!basis) {
       throw new Error("No spectroscopy data found among the files.");
     }
+    if (automation && change.kind !== "replacement") throw new Error("No spectroscopy data found among the supplied spectra files.");
+    const next = change.kind === "none" ? null : change.input;
+    if (automation && typeof p.edited === "boolean") applyEditing(next, p.edited);
     importSignal.throwIfAborted();
+    importSignal.removeEventListener("abort", stopCandidate);
+    signal?.removeEventListener("abort", abort);
+    importAbort = null;
+    if (automation) {
+      customBasis = null;
+      $("basisDrop").classList.remove("has-files");
+      tissue.reset();
+      $("removeBad").checked = settings.preprocessing.removeBadAverages;
+      $("badSd").value = settings.preprocessing.badAverageSd ?? "";
+      $("driftCorrection").checked = settings.preprocessing.driftCorrection;
+      $("phaseReference").checked = settings.preprocessing.phaseAndReference;
+      $("metabRelax").checked = p.metaboliteRelaxation ?? true;
+      $("mmModel").value = settings.mmModel;
+      $("lineBroadening").value = settings.lineBroadening;
+    }
     if (next) {
       worker?.terminate();
       worker = next.kind === "fida" ? candidate.session : null;
@@ -397,9 +429,17 @@ async function loadFiles(files, signal, { water = false } = {}) {
       fits.clear();
       renderGroup();
       clearResults();
+      if (input.kind === "raw") {
+        const message = acquisitionMessage(input.name, input.header);
+        log.log(message.text, message.level);
+      }
       if (input.kind === "raw" && !water) {
         $("hzpppmInput").value = input.header.hzpppm ?? "";
         $("dwellInput").value = input.header.deltat ? +(input.header.deltat * 1000).toPrecision(6) : "";
+      }
+      if (automation) {
+        if (p.frequencyMHz) $("hzpppmInput").value = String(p.frequencyMHz);
+        if (p.dwellTimeMs) $("dwellInput").value = String(p.dwellTimeMs);
       }
       $("fileInfo").hidden = false;
       $("fileInfo").textContent = input.kind === "raw" ? input.name : input.sources.length > 6 ? `${input.sources.length} files` : input.sources.map((s) => s.file.name).join(", ");
@@ -409,9 +449,23 @@ async function loadFiles(files, signal, { water = false } = {}) {
       showDataset();
     }
     if (basis) setCustomBasis(basis.name, basis.text);
+    if (automation && !basis && p.basisSet && p.basisSet !== "auto") {
+      $("basisSelect").value = p.basisSet;
+      showBasisAdvice();
+    }
+    if (automation) {
+      const range = defaultRangeText(input.index);
+      $("ppmStart").value = String(p.ppmStart ?? range[0]);
+      $("ppmEnd").value = String(p.ppmEnd ?? range[1]);
+      if (!$("waterScaling").disabled) $("waterScaling").checked = p.waterScaling ?? true;
+      if (!$("ecc").disabled) $("ecc").checked = p.eddyCurrentCorrection ?? true;
+    }
+    if (given.length) tissue.setFractions({ gm: p.fractionGM, wm: p.fractionWM, csf: p.fractionCSF });
+    const presentation = nextT1 ? tissue.commitT1(nextT1) : null;
+    progress.end("Inputs loaded");
     if (nextT1) {
       $("tissueSection").open = true;
-      await tissue.commitT1(nextT1);
+      await presentation;
       if (fit) renderConcentrations();
     } else if (next && view === "voxel" && tissue.hasT1) showView("voxel");
     const message = water ? "Water reference attached to the selected dataset." : next ? `${describeInput()} loaded` : nextT1 ? "T1 loaded." : "Basis set loaded; add spectroscopy data.";
@@ -1077,7 +1131,7 @@ function showView(id) {
 
 function importFiles(files, options) {
   exampleControl.cancel();
-  return loadFiles(files, undefined, options).catch((error) => {
+  return loadFiles({ kind: options?.water ? "water-reference" : "import", files }).catch((error) => {
     status(error.name === "AbortError" ? "Loading cancelled" : error.message, error.name !== "AbortError");
     progress.end(error.name === "AbortError" ? "Loading cancelled" : error.message, { success: false });
   });
@@ -1110,14 +1164,19 @@ $("folderInput").addEventListener("change", (event) => {
   event.target.value = "";
   if (files.length) void importFiles(files);
 });
+async function readBasisFile(file) {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const text = /\.gz$/i.test(file.name)
+    ? await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"))).text()
+    : new TextDecoder().decode(bytes);
+  return parseCustomBasis(file.name, text);
+}
+
 async function loadBasisFile(file) {
   if (!file || busy) return;
   try {
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    const text = /\.gz$/i.test(file.name)
-      ? await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"))).text()
-      : new TextDecoder().decode(bytes);
-    setCustomBasis(file.name, text);
+    const basis = await readBasisFile(file);
+    setCustomBasis(basis.name, basis.text);
     status(`${file.name} loaded as the basis set`);
   } catch (error) {
     status(error.message, true);
@@ -1167,7 +1226,7 @@ const exampleControl = createExampleSelector({
     // The structural image goes to the tissue section, the rest to FID-A.
     const isT1 = (k) => example.files[k].role === "t1";
     tissue.reset();
-    await loadFiles(files.filter((_, k) => !isT1(k)), signal);
+    await loadFiles({ kind: "import", files: files.filter((_, k) => !isT1(k)) }, signal);
     assertCurrent();
     const t1 = files.filter((_, k) => isT1(k));
     if (t1.length) await loadT1Files(t1, signal);
@@ -1182,42 +1241,10 @@ recommend();
 // ---------------------------------------------------------------------------
 
 /** Load the inputs and set the controls from the parameters, as a user would. */
-async function prepareAutomation({ inputs, parameters: p, signal, progress: report }) {
+async function prepareAutomation({ inputs, parameters, signal, progress: report }) {
   exampleControl.cancel();
-  customBasis = null;
-  $("basisDrop").classList.remove("has-files");
-  $("removeBad").checked = p.removeBadAverages ?? true;
-  $("badSd").value = p.badAverageSd ? String(p.badAverageSd) : "";
-  $("driftCorrection").checked = p.driftCorrection ?? true;
-  $("phaseReference").checked = p.phaseAndReference ?? true;
-  const fractionKeys = ["fractionGM", "fractionWM", "fractionCSF"];
-  const given = fractionKeys.filter((k) => typeof p[k] === "number");
-  if (given.length && given.length < 3) throw new Error("Give all three tissue fractions (fractionGM, fractionWM, fractionCSF), or none.");
-  if (given.length && inputs.t1?.length) throw new Error("Give either a T1 image or tissue fractions, not both.");
-  $("metabRelax").checked = p.metaboliteRelaxation ?? true;
-  tissue.reset();
   report("Reading the spectroscopy data");
-  await loadFiles([...inputs.spectra, ...(inputs.basis ?? [])], signal);
-  if (!input) throw new Error("No spectroscopy data found among the files.");
-  // A .RAW fills these fields from its own header as it loads; given values replace them.
-  if (p.frequencyMHz) $("hzpppmInput").value = String(p.frequencyMHz);
-  if (p.dwellTimeMs) $("dwellInput").value = String(p.dwellTimeMs);
-  if (p.frequencyMHz || p.dwellTimeMs) recommend();
-  if (inputs.t1?.length) {
-    report("Reading the T1 image");
-    await loadT1Files(inputs.t1, signal);
-  }
-  if (given.length) tissue.setFractions({ gm: p.fractionGM, wm: p.fractionWM, csf: p.fractionCSF });
-  if (typeof p.edited === "boolean") {
-    applyEditing(input, p.edited);
-    showDataset();
-  }
-  $("mmModel").value = p.macromoleculeModel ?? "co-edited";
-  $("lineBroadening").value = p.lineBroadening ?? "widened";
-  if (!inputs.basis?.length && p.basisSet && p.basisSet !== "auto") {
-    $("basisSelect").value = p.basisSet;
-    showBasisAdvice();
-  }
+  await loadFiles({ kind: "fit-request", inputs, parameters }, signal);
 }
 
 /** While an automation run is active, its signal works like the footer ×. */
@@ -1237,13 +1264,8 @@ async function whileCancellable(signal, work) {
 }
 
 async function fitOperation(context) {
-  const { parameters: p, signal, progress: report } = context;
+  const { signal, progress: report } = context;
   await prepareAutomation(context);
-  const range = defaultRangeText(input.index);
-  $("ppmStart").value = String(p.ppmStart ?? range[0]);
-  $("ppmEnd").value = String(p.ppmEnd ?? range[1]);
-  if (!$("waterScaling").disabled) $("waterScaling").checked = p.waterScaling ?? true;
-  if (!$("ecc").disabled) $("ecc").checked = p.eddyCurrentCorrection ?? true;
   const choice = $("basisSelect").value;
   checkBasis(currentHeader(), choice, bases());
   report("Preprocessing and fitting");
