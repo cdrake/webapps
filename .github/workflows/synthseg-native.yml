@@ -9,7 +9,6 @@ on:
       - 'exes/native-publish/**'
       - 'test-utils/native-nifti/**'
       - 'packages/synthseg/**'
-      - 'exes/synthsr/scripts/ci_macos_release.sh'
   workflow_dispatch:
     inputs:
       sign_release:
@@ -22,7 +21,7 @@ permissions:
 
 concurrency:
   group: synthseg-native-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verify:

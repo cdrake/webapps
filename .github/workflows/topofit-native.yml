@@ -4,26 +4,18 @@ on:
   pull_request:
     paths:
       - '.github/workflows/topofit-native.yml'
-      - '.github/workflows/node-cli-portable.yml'
-      - 'exes/node-cli/**'
-      - 'exes/synthsr/scripts/ci_macos_release.sh'
-      - 'exes/synthsr/scripts/notarize_macos.sh'
       - 'packages/topofit/**'
       - 'packages/components/src/file-io/mesh.js'
       - 'apps/topofit/**'
-      - 'test/independent-workflows.test.mjs'
   push:
     branches: [main]
     paths:
       - '.github/workflows/topofit-native.yml'
       - '.github/workflows/node-cli-portable.yml'
       - 'exes/node-cli/**'
-      - 'exes/synthsr/scripts/ci_macos_release.sh'
-      - 'exes/synthsr/scripts/notarize_macos.sh'
       - 'packages/topofit/**'
       - 'packages/components/src/file-io/mesh.js'
       - 'apps/topofit/**'
-      - 'test/independent-workflows.test.mjs'
   workflow_dispatch:
     inputs:
       sign_release:
@@ -33,7 +25,7 @@ on:
 
 concurrency:
   group: topofit-native-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read

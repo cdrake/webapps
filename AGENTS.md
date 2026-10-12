@@ -69,6 +69,10 @@ Keep preview servers bound to loopback. Use a different path and port for anothe
 
 An e2e test that skips without data (`test.skip(!process.env.X, …)`) must run in CI. Add a provisioner to `scripts/lib/e2e-test-data.mjs` that downloads pinned, checksummed data and sets `X`, or list `X` under `unpublished` with the reason no public data exists; `test/e2e-test-data.test.mjs` fails otherwise. `browser-e2e` provisions on Linux; apps with `ci.hardware_gpu` run their whole suite on the free `macos-15` runner (`browser-e2e-gpu`, full Chromium on Metal, `NEURODESK_HARDWARE_GPU=1`). A hardware-GPU app can also declare a `cpu` subset: the variables whose tests run without a GPU; `browser-e2e` provisions it with `--cpu` on Linux so those tests run on every PR too. Locally: `node scripts/e2e-test-data.mjs <app>` (add `--cpu` for the subset) prints the variables to export.
 
+## CI scope
+
+`scripts/lib/app-plan.mjs` picks the apps a change tests. A `packages/` or `exes/` change selects only the apps that use that directory, through a workspace dependency or a relative path (`scripts/lib/workspace-graph.mjs`). Contract tests, lint tooling, desktop scripts and other workflows select no apps. Anything else outside `apps/` selects the whole catalog. When a pull request selects the whole catalog, the macOS GPU suite runs after merge and nightly instead; dispatch `ci` on the branch to run it first. Package workflows build their portable command line on linux-x64 for pull requests and on every target after merge. `node-cli.yml` builds one package on every target when the shared packager changes. `test/app-plan.test.mjs` and `test/independent-workflows.test.mjs` hold these rules.
+
 ## dwi2trx
 
 - WebGPU-only app (diffusion tensor fitting + GPU streamline tractography); it throws a clear error at startup on a browser without WebGPU, and streamline tracking additionally requires `subgroups` support.

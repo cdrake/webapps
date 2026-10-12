@@ -13,7 +13,6 @@ on:
       - 'test-utils/native-nifti/**'
       - 'packages/synthsr/**'
       - 'apps/synthsr/**'
-      - 'test/independent-workflows.test.mjs'
   push:
     branches: [main]
     paths:
@@ -27,7 +26,6 @@ on:
       - 'test-utils/native-nifti/**'
       - 'packages/synthsr/**'
       - 'apps/synthsr/**'
-      - 'test/independent-workflows.test.mjs'
   workflow_dispatch:
     inputs:
       sign_release:
@@ -37,7 +35,7 @@ on:
 
 concurrency:
   group: synthsr-native-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read

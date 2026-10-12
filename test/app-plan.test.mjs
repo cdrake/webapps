@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createAppPlan } from '../scripts/lib/app-plan.mjs';
-import { loadAppsRegistry } from '../scripts/lib/apps-registry.mjs';
+import { loadAppsRegistry, repoRoot } from '../scripts/lib/apps-registry.mjs';
+import { loadWorkspaceGraph } from '../scripts/lib/workspace-graph.mjs';
+
+const graph = loadWorkspaceGraph(repoRoot);
 
 test('app-local changes select only that webapp', async () => {
   const registry = await loadAppsRegistry();
@@ -101,4 +104,51 @@ test('documentation-only changes do not spend an app-test matrix', async () => {
   const plan = createAppPlan(registry, ['docs/adr/0002-hosting-capacity-and-runtime-store.md']);
   assert.deepEqual(plan.apps.include, []);
   assert.equal(plan.allApps, false);
+});
+
+test('an app package selects only the apps that use it', async () => {
+  const registry = await loadAppsRegistry();
+  const plan = createAppPlan(registry, ['packages/lcmodel/src/lcmodel-io.js', 'exes/lcmodel/src/state.rs'], await graph);
+  assert.deepEqual(plan.selected.map((app) => app.id), ['lcmodel']);
+  assert.equal(plan.allApps, false);
+});
+
+test('packages reached through relative paths still select their apps', async () => {
+  const registry = await loadAppsRegistry();
+  const selected = createAppPlan(registry, ['exes/greedy/src/lib.rs'], await graph).selected.map((app) => app.id);
+  assert.ok(selected.includes('greedy'), 'apps/greedy builds exes/greedy through ../../exes');
+  assert.ok(!selected.includes('lcmodel'));
+});
+
+test('the shared component package selects every app', async () => {
+  const registry = await loadAppsRegistry();
+  const plan = createAppPlan(registry, ['packages/components/src/ui/ProgressManager.js'], await graph);
+  assert.equal(plan.allApps, true);
+});
+
+test('an app model manifest selects only that app', async () => {
+  const registry = await loadAppsRegistry();
+  assert.deepEqual(createAppPlan(registry, ['models/vesselboost.manifest.json']).selected.map((app) => app.id), ['vesselboost']);
+});
+
+test('contract tests, tooling and other workflows select no apps', async () => {
+  const registry = await loadAppsRegistry();
+  const plan = createAppPlan(registry, [
+    'AGENTS.md',
+    'test/app-plan.test.mjs',
+    '.github/workflows/lcmodel-native.yml',
+    'scripts/desktop/pack.mjs',
+    'scripts/quality/package.json',
+    'eslint.config.js',
+    'config/dependency-baseline.json',
+    'templates/app-template/index.html',
+  ], await graph);
+  assert.deepEqual(plan.selected, []);
+});
+
+test('CI workflow, shared scripts and smoke tests still select the complete catalog', async () => {
+  const registry = await loadAppsRegistry();
+  for (const path of ['.github/workflows/ci.yml', 'scripts/lib/runtime-assets.mjs', 'test/mobile-layout.smoke.mjs', 'test-utils/compute-reference-server.mjs']) {
+    assert.equal(createAppPlan(registry, [path], await graph).allApps, true, path);
+  }
 });

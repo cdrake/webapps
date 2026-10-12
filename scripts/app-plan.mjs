@@ -2,6 +2,7 @@
 import { appendFile } from 'node:fs/promises';
 import { createAppPlan, changedPathsFromGit } from './lib/app-plan.mjs';
 import { loadAppsRegistry, repoRoot } from './lib/apps-registry.mjs';
+import { loadWorkspaceGraph } from './lib/workspace-graph.mjs';
 
 function option(name) {
   const index = process.argv.indexOf(name);
@@ -19,7 +20,7 @@ if (only && only !== 'affected') {
   if (unknown.length) throw new Error(`Unknown app ids: ${unknown.join(', ')}`);
   changedPaths = [...ids].map((id) => `apps/${id}/package.json`);
 }
-const plan = createAppPlan(registry, changedPaths);
+const plan = createAppPlan(registry, changedPaths, await loadWorkspaceGraph(repoRoot));
 const emptyMatrix = { include: [{ app: '__none__', path: '', runtime: '', rust_wasm: false, python_reference: false, shared_runtime: false, browser_test: false, hardware_gpu: false, app_scoped_runtime: false, release_test: 'test' }] };
 const outputs = {
   apps: JSON.stringify(plan.apps.include.length ? plan.apps : emptyMatrix),
