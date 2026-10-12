@@ -447,7 +447,7 @@ pub fn load_dataset(ds: &Dataset, files: &[NamedFile], opts: &LoadOptions) -> Re
         }
         Format::GePfile => {
             let r = super::ge::load(f(0)?.bytes, opts.subspecs)?;
-            Ok(Loaded { out: r.out, embedded_water: Some(r.out_w), voxel: None })
+            Ok(Loaded { out: r.out, embedded_water: Some(r.out_w), voxel: r.voxel })
         }
         Format::SiemensRda => {
             let b = f(0)?.bytes;
