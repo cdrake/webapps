@@ -128,6 +128,8 @@ test('installation paths are read as URLs, nested local installs pass and foreig
     'packages/second/package.json': '{}\n',
     'packages/example/node_modules/pkg/node_modules/dep/index.js': leaf,
     'packages/example/validation/encoded.mjs': "const vite = new URL('../../../node%5Fmodules/vite/', import.meta.url);\n",
+    'packages/example/validation/dot-encoded.mjs': "const vite = new URL('%2e%2e/%2e%2e/%2e%2e/node_modules/vite/', import.meta.url);\n",
+    'packages/example/validation/remote.mjs': "const vite = new URL('https://example.com/node_modules/vite/', import.meta.url);\n",
     'packages/example/validation/backslash.mjs': "const vite = new URL('..\\\\..\\\\..\\\\node_modules\\\\vite\\\\', import.meta.url);\n",
     'packages/example/validation/nested.mjs': "const dep = new URL('../node_modules/pkg/node_modules/dep/index.js', import.meta.url);\n",
     'packages/example/test/native.test.js': "import { createRequire } from 'node:module';\nconst ort = createRequire(new URL('../../second/package.json', import.meta.url))('onnxruntime-node');\nconst own = createRequire(import.meta.url);\nconst pinned = createRequire(new URL('../package.json', import.meta.resolve('@neurodesk/second/index.js')));\n",
@@ -139,6 +141,7 @@ test('installation paths are read as URLs, nested local installs pass and foreig
   assert.deepEqual(findings.filter(({ rule }) => rule === 'foreign-node-modules').map(({ from, to }) => `${from} -> ${to}`), [
     'packages/example/test/native.test.js -> packages/second/package.json',
     'packages/example/validation/backslash.mjs -> node_modules/vite/',
+    'packages/example/validation/dot-encoded.mjs -> node_modules/vite/',
     'packages/example/validation/encoded.mjs -> node_modules/vite/',
   ]);
 });

@@ -289,12 +289,14 @@ export function dependencyFindings(modules, manifests, runtimeContracts = []) {
   for (const { source: from, dependencies } of modules) {
     const owner = ownerOf(from, manifests);
     for (const dependency of dependencies) {
-      if (!dependency.module.startsWith('.')) continue;
+      if (!dependency.module.startsWith('.') && !dependency.url) continue;
+      const targetUrl = new URL(cleanSpecifier(dependency.module), `file:///${from}`);
+      if (dependency.url && targetUrl.protocol !== 'file:') continue;
       // ESM specifiers and new URL() resolve as URLs: decode escapes, read backslashes as slashes.
       // CommonJS require() takes file paths literally.
       const path = dependency.moduleSystem === 'cjs' && !dependency.url
         ? posix.normalize(posix.join(dirname(from), cleanSpecifier(dependency.module)))
-        : decodeURIComponent(new URL(cleanSpecifier(dependency.module), `file:///${from}`).pathname.slice(1));
+        : decodeURIComponent(targetUrl.pathname.slice(1));
       const installation = path.match(/^(?:(.*?)\/)?node_modules\//);
       if ((installation && installation[1] !== owner) || (dependency.anchor && ownerOf(path, manifests) !== owner)) {
         add('foreign-node-modules', from, path);

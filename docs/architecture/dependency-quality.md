@@ -143,6 +143,17 @@ and shipped bundles are unchanged; SYNcro's bundled-helper contract still passes
 `packages/syncro/test/build-closure.test.js`. Root scripts such as the interface
 audit and the desktop smoke test keep using the root's tooling.
 
+Catalog commands use the repository's shared orchestration. Static apps'
+`test:e2e` scripts call `test/examples.smoke.mjs`, which imports the root's
+Playwright installation and registry helpers. App builds that use
+`scripts/lib/vite-app-config.mjs` read the registry through the root's `yaml`.
+`scripts/generate-neuroflow.mjs` also reads that registry, while the desktop
+workspace's schema generator resolves Ajv from its own declared dependencies.
+Run `pnpm install --frozen-lockfile` at the repository root before these catalog,
+build and example commands. Their existing CI build and browser jobs install
+the full repository before invoking the app commands. Direct workspace tests
+and NeSVoR's numerical workflow verifier resolve their locally declared tools.
+
 To inspect current findings, run
 `pnpm check:dependencies --report "$TMPDIR/dependency-findings.json"`.
 The report command never rewrites the baseline. Review every proposed baseline or
