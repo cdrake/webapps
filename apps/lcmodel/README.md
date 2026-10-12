@@ -100,15 +100,18 @@ fitting, both as Rust ports compiled to WebAssembly (`packages/lcmodel`).
 
 * Tissue correction (optional, `src/tissue-panel.js`): the voxel geometry comes
   from the header (`exes/fida/src/io/geometry.rs`: twix, Siemens DICOM, RDA,
-  SPAR, NIfTI-MRS; spec2nii's conventions, checked against spec2nii). A T1 from
+  SPAR, GE P-file, NIfTI-MRS; spec2nii's conventions, checked against spec2nii). A T1 from
   the same session (NIfTI, or DICOM through the shared dcm2niix import) is
   segmented with MindMap's partial-volume maps (`@brainchop/mindgrab`
   `segmentTissues`; WebGPU, hardware WebGL2, else the threaded CPU module).
+  The GPU modules have a fixed 768 MiB heap, so a T1 with more voxels than
+  MindMap's 256³ grid (0.8 mm isotropic, GE's 512 x 512 matrices) goes to the
+  CPU module, and a failed GPU run is retried there.
   `@neurodesk/lcmodel/voxel` samples the oblique voxel box on the T1 grid (5 x 5 x 5 points
   per T1 voxel) for Osprey-style fractions; the Voxel view draws it on the T1.
   `src/tissue.js` is Osprey's `quantTiss`/`quantAlpha` (Gasparovic 2006, Harris
   2015) on LCModel's water-scaled output, tested against Osprey's own code in
-  Octave. Fractions can also be typed in. GE, Bruker and .RAW carry no voxel
+  Octave. Fractions can also be typed in. Bruker and .RAW carry no voxel
   position here. In a group, a loaded T1 is taken to be the session's: the run
   measures each dataset's own voxel on it. Typed fractions describe one voxel,
   so they correct only the dataset on display. Under the co-edited MM model,
