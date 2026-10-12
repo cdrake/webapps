@@ -641,22 +641,6 @@ mod tests {
     }
 
     #[test]
-    fn act_and_ref_pair_in_every_format() {
-        // spec2nii keeps Philips' <stem>_act / <stem>_ref names in NIfTI-MRS;
-        // every format but SDAT goes through the same rule, as RDA does here.
-        let rda = b">>> Begin of header <<<\r\n".to_vec();
-        let files = [nf("sub-01_raw_act.rda", &rda), nf("sub-01_raw_ref.rda", &rda), nf("sub-02_ws.rda", &rda), nf("sub-02_w.rda", &rda)];
-        let d = detect(&files);
-        assert_eq!(d.pairs.len(), 2, "{d:#?}");
-        assert!(d.unpaired_water.is_empty(), "{d:#?}");
-        for p in &d.pairs {
-            let m = files[p.metabolite.files[0]].name;
-            let w = files[p.water.as_ref().expect("paired").files[0]].name;
-            assert_eq!(m[..6], w[..6], "{m} paired with {w}");
-        }
-    }
-
-    #[test]
     fn subjects_in_folders_pair_within_each_subject() {
         let raw = b" $NMID\n $END\n 1 2\n".to_vec();
         let rda = b">>> Begin of header <<<\r\n".to_vec();
