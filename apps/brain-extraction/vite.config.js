@@ -6,7 +6,8 @@ import { neurodeskViteConfig } from '../../scripts/lib/vite-app-config.mjs';
 import { isolationFallback } from '../../scripts/lib/isolation-fallback-plugin.mjs';
 import { mindgrabFromAssetPath } from '../../scripts/lib/mindgrab-asset-path-plugin.mjs';
 
-const require = createRequire(new URL('../../packages/brain-extraction/package.json', import.meta.url));
+// Resolve MindGrab through the package that pins it, not the app's own install.
+const require = createRequire(import.meta.resolve('@neurodesk/brain-extraction/mindgrab'));
 const mindgrabRoot = dirname(require.resolve('@brainchop/mindgrab/package.json'));
 const qsmRoot = new URL('../qsmbly/', import.meta.url);
 const assets = new Map([

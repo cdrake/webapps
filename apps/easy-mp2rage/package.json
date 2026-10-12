@@ -19,5 +19,8 @@
   "dependencies": {
     "@neurodesk/easy-mp2rage": "workspace:*",
     "@neurodesk/webapp-components": "workspace:*"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.0"
   }
 }

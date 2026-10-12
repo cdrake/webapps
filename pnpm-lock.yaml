@@ -219,9 +219,15 @@ importers:
         specifier: 1.0.0-rc.16
         version: 1.0.0-rc.16
     devDependencies:
+      '@playwright/test':
+        specifier: 1.64.0
+        version: 1.64.0
       '@webgpu/types':
         specifier: ^0.1.52
         version: 0.1.71
+      jsdom:
+        specifier: 24.1.3
+        version: 24.1.3
       playwright:
         specifier: 1.64.0
         version: 1.64.0
@@ -303,6 +309,9 @@ importers:
         specifier: ^3.4.4
         version: 3.4.4
     devDependencies:
+      '@playwright/test':
+        specifier: 1.64.0
+        version: 1.64.0
       '@webgpu/types':
         specifier: ^0.1.52
         version: 0.1.71
@@ -322,6 +331,9 @@ importers:
         specifier: workspace:*
         version: link:../../packages/components
     devDependencies:
+      '@playwright/test':
+        specifier: 1.64.0
+        version: 1.64.0
       playwright:
         specifier: 1.64.0
         version: 1.64.0
@@ -419,6 +431,9 @@ importers:
       '@electron-toolkit/utils':
         specifier: ^4.0.0
         version: 4.0.0(electron@40.10.6)
+      '@playwright/test':
+        specifier: 1.64.0
+        version: 1.64.0
       '@testing-library/jest-dom':
         specifier: ^6.6.4
         version: 6.9.1
@@ -538,6 +553,10 @@ importers:
       '@neurodesk/webapp-components':
         specifier: workspace:*
         version: link:../../packages/components
+    devDependencies:
+      '@playwright/test':
+        specifier: 1.64.0
+        version: 1.64.0
 
   apps/edgereg:
     dependencies:
@@ -762,6 +781,9 @@ importers:
         specifier: ^0.62.1
         version: 0.62.1
     devDependencies:
+      '@playwright/test':
+        specifier: 1.64.0
+        version: 1.64.0
       vite:
         specifier: ^5.4.6
         version: 5.4.21(@types/node@24.13.3)(lightningcss@1.32.0)
@@ -772,6 +794,9 @@ importers:
         specifier: workspace:*
         version: link:../../packages/components
     devDependencies:
+      '@playwright/test':
+        specifier: 1.64.0
+        version: 1.64.0
       '@types/jest':
         specifier: ^29.5.12
         version: 29.5.14
@@ -781,6 +806,9 @@ importers:
       smol-toml:
         specifier: ^1.9.0
         version: 1.9.0
+      yaml:
+        specifier: 2.9.0
+        version: 2.9.0
 
   apps/seedseg:
     dependencies:
@@ -790,6 +818,10 @@ importers:
       '@neurodesk/webapp-components':
         specifier: workspace:*
         version: link:../../packages/components
+    devDependencies:
+      '@playwright/test':
+        specifier: 1.64.0
+        version: 1.64.0
 
   apps/spinalcordtoolbox:
     dependencies:
@@ -918,6 +950,9 @@ importers:
       '@playwright/test':
         specifier: 1.64.0
         version: 1.64.0
+      onnxruntime-node:
+        specifier: 1.29.0
+        version: 1.29.0
       vite:
         specifier: ^6.3.2
         version: 6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.14)(yaml@2.9.0)
@@ -1005,6 +1040,9 @@ importers:
       eslint:
         specifier: ^9.0.0
         version: 9.39.5(jiti@2.7.0)
+      playwright:
+        specifier: 1.64.0
+        version: 1.64.0
       vite:
         specifier: ^6.3.2
         version: 6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.14)(yaml@2.9.0)
@@ -1114,6 +1152,10 @@ importers:
       onnxruntime-node:
         specifier: 1.29.0
         version: 1.29.0
+    devDependencies:
+      '@playwright/test':
+        specifier: 1.64.0
+        version: 1.64.0
 
   packages/carotid-flow:
     dependencies:
@@ -1126,6 +1168,13 @@ importers:
       zod:
         specifier: ^4.6.5
         version: 4.6.5
+    devDependencies:
+      '@playwright/test':
+        specifier: 1.64.0
+        version: 1.64.0
+      jsdom:
+        specifier: 24.1.3
+        version: 24.1.3
 
   packages/dependency-quality:
     dependencies:
@@ -1151,6 +1200,12 @@ importers:
         specifier: ^4.6.5
         version: 4.6.5
     devDependencies:
+      ajv:
+        specifier: 8.20.0
+        version: 8.20.0
+      ajv-formats:
+        specifier: 3.0.1
+        version: 3.0.1(ajv@8.20.0)
       electron:
         specifier: 40.10.6
         version: 40.10.6
@@ -1213,6 +1268,10 @@ importers:
       '@niivue/dcm2niix':
         specifier: 1.2.0
         version: 1.2.0
+    devDependencies:
+      jsdom:
+        specifier: 24.1.3
+        version: 24.1.3
 
   packages/musclemap:
     dependencies:
@@ -1234,6 +1293,13 @@ importers:
       onnxruntime-web:
         specifier: 1.29.0
         version: 1.29.0
+    devDependencies:
+      '@playwright/test':
+        specifier: 1.64.0
+        version: 1.64.0
+      vite:
+        specifier: 5.4.21
+        version: 5.4.21(@types/node@24.13.3)(lightningcss@1.32.0)
 
   packages/nii2tvx: {}
 
@@ -1281,6 +1347,10 @@ importers:
       onnxruntime-node:
         specifier: 1.29.0
         version: 1.29.0
+    devDependencies:
+      '@playwright/test':
+        specifier: 1.64.0
+        version: 1.64.0
 
   packages/syncro:
     dependencies:
@@ -1300,6 +1370,9 @@ importers:
       '@neurodesk/synthstrip':
         specifier: workspace:*
         version: link:../synthstrip
+      '@playwright/test':
+        specifier: 1.64.0
+        version: 1.64.0
       esbuild:
         specifier: ^0.25.0
         version: 0.25.12
@@ -1335,6 +1408,9 @@ importers:
       '@neurodesk/runtime-support':
         specifier: workspace:*
         version: link:../runtime-support
+      onnxruntime-node:
+        specifier: 1.29.0
+        version: 1.29.0
 
   packages/topofit:
     dependencies:
@@ -1347,6 +1423,10 @@ importers:
       onnxruntime-node:
         specifier: 1.29.0
         version: 1.29.0
+    devDependencies:
+      '@playwright/test':
+        specifier: 1.64.0
+        version: 1.64.0
 
   packages/vesselboost:
     dependencies:
@@ -1356,6 +1436,10 @@ importers:
       onnxruntime-node:
         specifier: 1.29.0
         version: 1.29.0
+    devDependencies:
+      '@playwright/test':
+        specifier: 1.64.0
+        version: 1.64.0
 
   packages/white-matter-lesions:
     dependencies:

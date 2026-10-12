@@ -1,5 +1,5 @@
 import { chromium } from '@playwright/test';
-import { createServer } from '../../../../apps/nesvor/node_modules/vite/dist/node/index.js';
+import { createServer } from 'vite';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../../../../', import.meta.url));

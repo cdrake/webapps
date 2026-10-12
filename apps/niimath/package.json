@@ -13,6 +13,7 @@
     "test:e2e": "node ../../test/examples.smoke.mjs --app niimath && playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.0",
     "vite": "^5.4.6"
   },
   "dependencies": {

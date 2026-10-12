@@ -10,7 +10,7 @@ import { finishStrip } from '../src/index.js';
 import { layerModel, slabPlan } from '../../runtime-support/src/streamed-onnx/session.js';
 
 const modelPath = process.env.SYNTHSTRIP_MODEL_PATH;
-const native = () => createRequire(new URL('../../synthsr/package.json', import.meta.url))('onnxruntime-node');
+const native = () => createRequire(import.meta.url)('onnxruntime-node');
 const nativeOptions = options => ({ ...options, executionProviders: ['cpu'], intraOpNumThreads: 2 });
 
 function preparedFixture(dims, input) {

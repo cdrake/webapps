@@ -3,7 +3,7 @@ import {createRequire} from 'node:module';
 import {createHash} from 'node:crypto';
 import {readVolume,writeVolume} from '../../synthsr/src/index.js';
 import {prepareStrip,runSynthstrip} from '../../synthstrip/src/index.js';
-const require=createRequire(new URL('../../synthsr/package.json',import.meta.url));
+const require=createRequire(import.meta.url);
 const ort=require('onnxruntime-node');
 const [input,modelPath,out]=process.argv.slice(2);
 if(!out)throw new Error('Usage: run-strip.mjs input.nii.gz model.onnx output-directory');
