@@ -14,9 +14,9 @@ the automatic pipelines. `apps/lcmodel` runs it in the browser through
   of dropped files and pairs each spectrum with its water reference. Readers take
   bytes, never paths, so they run in WebAssembly. `geometry` (not in FID-A)
   reads the voxel position, size and orientation from twix, Siemens DICOM, RDA,
-  SPAR and NIfTI-MRS headers as a NIfTI-MRS-style RAS affine, with spec2nii's
-  conventions; `tests/geometry.rs` compares it with spec2nii on Osprey's
-  examples (`OSPREY_EXAMPLES`).
+  SPAR, GE P-file and NIfTI-MRS headers as a NIfTI-MRS-style RAS affine, with
+  spec2nii's conventions; `tests/geometry.rs` compares it with spec2nii on
+  Osprey's examples (`OSPREY_EXAMPLES`), `tests/ge.rs` on FID-A's GE example.
 * `src/ops/`: the FID-A `op_*` functions (coil combination, averaging, removal
   of bad averages, spectral registration in time and frequency domain, ISIS and
   MEGA subspectra, shifts, phasing, referencing, HSVD water removal, Klose

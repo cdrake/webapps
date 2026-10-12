@@ -4,11 +4,26 @@
 
 ### Patch Changes
 
+- 8321cb9: Tissue correction now works for GE P-files and for high-resolution T1 images.
+
+  - GE P-files record the voxel: its centre and size (`user8-13`) and the
+    prescription plane (`tlhc`, `trhc`, `brhc`) in the image header. The reader
+    now builds the voxel affine from them as spec2nii does, so a GE dataset can
+    be segmented and measured on its T1 instead of reporting that the format
+    does not record where the voxel is.
+  - MindMap's WebGPU and WebGL2 modules have a fixed 768 MiB heap and ran out of
+    memory on T1s larger than its 256³ grid (0.8 mm isotropic, GE's 512 x 512
+    BRAVO), which surfaced as "the mindmap module exited cleanly but wrote no
+    output". Those T1s now segment on the threaded CPU module, and a failed GPU
+    run is retried there.
+  - Philips spectra converted to NIfTI-MRS by spec2nii keep their `_act` and
+    `_ref` names; the water reference now pairs with its spectrum in every
+    format, not only SDAT/SPAR, so these datasets are water-scaled and can be
+    tissue-corrected.
+
 - Reject named Siemens DICOM water candidates when recorded study or patient identifiers conflict. Explicit filename matches remain available when identifiers are absent; arbitrary-series fallback still requires the same nonempty StudyInstanceUID. Limit the GE residual-water phasing description to multi-coil, unedited data processed by the PRESS pipeline.
-- Updated dependencies
-  - @neurodesk/lcmodel@0.7.20261012
 - Classify Philips SDAT water references with the shared naming rule. `_water_off`, `_nows`, `_wref` and `_h2o` now pair with their spectrum instead of being loaded as additional metabolite datasets.
-- Updated dependencies
+- Updated dependencies [8321cb9]
   - @neurodesk/lcmodel@0.7.20261012
 - 1ce9fe7: Fix three failures reported from multi-site data:
 

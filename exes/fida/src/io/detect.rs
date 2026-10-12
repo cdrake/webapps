@@ -251,11 +251,14 @@ fn metabolite_base(name: &str) -> &str {
 }
 
 /// Whether a parsed DICOM file holds spectroscopy data FID-A can read
-/// (XA SpectroscopyData or the CSA non-image element). Files that do not
-/// parse are kept, so the reader reports why.
+/// (XA SpectroscopyData or the CSA non-image element). The VE reader takes
+/// (7FE1,1010) whether or not its private creator is labelled, so this does
+/// too. Files that do not parse are kept, so the reader reports why.
 fn dicom_has_spectrum(bytes: &[u8]) -> bool {
     match super::dicom_siemens::parse_dicom(bytes) {
-        Ok(d) => d.get(0x5600, 0x0020).is_some() || d.private(0x7fe1, "SIEMENS CSA NON-IMAGE", 0x10).is_some(),
+        Ok(d) => {
+            d.get(0x5600, 0x0020).is_some() || d.get(0x7fe1, 0x1010).is_some() || d.private(0x7fe1, "SIEMENS CSA NON-IMAGE", 0x10).is_some()
+        }
         Err(_) => true,
     }
 }
@@ -511,7 +514,7 @@ pub fn load_dataset(ds: &Dataset, files: &[NamedFile], opts: &LoadOptions) -> Re
         }
         Format::GePfile => {
             let r = super::ge::load(f(0)?.bytes, opts.subspecs)?;
-            Ok(Loaded { out: r.out, embedded_water: Some(r.out_w), voxel: None })
+            Ok(Loaded { out: r.out, embedded_water: Some(r.out_w), voxel: r.voxel })
         }
         Format::SiemensRda => {
             let b = f(0)?.bytes;
@@ -690,6 +693,17 @@ mod tests {
             b.extend_from_slice(&[0x08, 0x00, 0x60, 0x00, b'C', b'S', 2, 0, b'M', b'R']);
         }
         b
+    }
+
+    #[test]
+    fn ve_spectrum_without_a_private_creator_label_is_kept() {
+        // (7FE1,1010) OB with no (7FE1,0010) creator: the VE reader reads it directly.
+        let mut b = vec![0u8; 128];
+        b.extend_from_slice(b"DICM");
+        b.extend_from_slice(&[0xe1, 0x7f, 0x10, 0x10, b'O', b'B', 0, 0, 8, 0, 0, 0]);
+        b.extend_from_slice(&[0u8; 8]);
+        assert!(dicom_has_spectrum(&b));
+        assert!(!dicom_has_spectrum(&dicom_stub(false)));
     }
 
     #[test]
