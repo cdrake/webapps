@@ -1,5 +1,12 @@
 # @neurodesk/carotid-flow
 
+## 0.4.20261012
+
+### Patch Changes
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.12.3
+
 ## 0.4.20261010
 
 ### Patch Changes

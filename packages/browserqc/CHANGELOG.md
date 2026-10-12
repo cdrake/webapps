@@ -1,5 +1,7 @@
 # @neurodesk/browserqc
 
+## 1.5.20261012
+
 ## 1.5.20261010
 
 ### Patch Changes

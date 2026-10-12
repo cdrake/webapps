@@ -1,5 +1,12 @@
 # @neurodesk/white-matter-lesions
 
+## 0.3.20261012
+
+### Patch Changes
+
+- @neurodesk/synthsr@0.6.20261012
+- @neurodesk/synthstrip@0.1.5
+
 ## 0.3.20261010
 
 ### Minor Changes

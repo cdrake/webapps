@@ -1,5 +1,14 @@
 # nesvor
 
+## 0.3.20261012
+
+### Patch Changes
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.12.3
+  - @neurodesk/nesvor@0.3.20261012
+  - @neurodesk/runtime-support@0.4.3
+
 ## 0.3.20261010
 
 ### Patch Changes

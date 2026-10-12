@@ -1,5 +1,11 @@
 # @neurodesk/webapp-components
 
+## 0.12.3
+
+### Patch Changes
+
+- Expose qform and sform codes from the shared NIfTI header parser so diagnostic messages and image geometry use the same interpretation.
+
 ## 0.12.2
 
 ### Patch Changes
