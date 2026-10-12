@@ -4,6 +4,9 @@
 
 ### Patch Changes
 
+- Reject named Siemens DICOM water candidates when recorded study or patient identifiers conflict. Explicit filename matches remain available when identifiers are absent; arbitrary-series fallback still requires the same nonempty StudyInstanceUID. Limit the GE residual-water phasing description to multi-coil, unedited data processed by the PRESS pipeline.
+- Updated dependencies
+  - @neurodesk/lcmodel@0.7.20261012
 - Classify Philips SDAT water references with the shared naming rule. `_water_off`, `_nows`, `_wref` and `_h2o` now pair with their spectrum instead of being loaded as additional metabolite datasets.
 - Updated dependencies
   - @neurodesk/lcmodel@0.7.20261012
