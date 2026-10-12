@@ -2,6 +2,7 @@
 //! in FID-A's gannetTools), including the separate water reference frames.
 
 use super::common::{fresh_flags, octave_range, time_axis, Bytes, NdArray, Res};
+use super::geometry::{self, Voxel};
 use crate::spectra::{Dims, Spectra};
 use num_complex::Complex64;
 
@@ -14,6 +15,8 @@ pub struct GeResult {
     pub revision: f32,
     /// Pulse sequence name (`psd_nam`) when the header layout exposes it.
     pub psd_name: String,
+    /// The voxel from the image header (not read by FID-A or GELoad).
+    pub voxel: Option<Voxel>,
 }
 
 /// Header positions (1-based element indices, as in GELoad) per revision.
@@ -34,6 +37,10 @@ struct Layout {
     stop_rcv: usize,
     image_te: usize,
     image_tr: usize,
+    /// `user8`, the first of the voxel size (user8-10) and centre (user11-13).
+    image_user8: usize,
+    /// `tlhc_R`, the first of the tlhc, trhc and brhc corners (R, A, S each).
+    image_tlhc: usize,
 }
 
 /// Octave `num2str` of a non-negative real scalar (the revision number).
@@ -58,7 +65,9 @@ fn num2str(x: f64) -> String {
 }
 
 fn layout(rev: &str) -> Option<Layout> {
-    let base = |te, tr| Layout {
+    // The geometry fields sit at fixed distances before `te` (spec2nii's
+    // ge_hdr_fields): 143 and 60 words up to revision 16, 169 and 86 after.
+    let base = |te, tr, user8, tlhc| Layout {
         off_image: 377,
         off_data: 368,
         ps_mps_freq: 107,
@@ -75,11 +84,13 @@ fn layout(rev: &str) -> Option<Layout> {
         stop_rcv: 102,
         image_te: te,
         image_tr: tr,
+        image_user8: user8,
+        image_tlhc: tlhc,
     };
     Some(match rev {
-        "14.3" => base(181, 179),
-        "16" => base(193, 191),
-        "20.006" | "20.007" | "24" => base(267, 265),
+        "14.3" => base(181, 179, 38, 121),
+        "16" => base(193, 191, 50, 133),
+        "20.006" | "20.007" | "24" => base(267, 265, 98, 181),
         "26.002" | "27" | "27.001" | "28.002" | "28.003" | "30" | "30.1" => Layout {
             off_image: 11,
             off_data: 2,
@@ -97,6 +108,8 @@ fn layout(rev: &str) -> Option<Layout> {
             stop_rcv: 134,
             image_te: 267,
             image_tr: 265,
+            image_user8: 98,
+            image_tlhc: 181,
         },
         _ => return None,
     })
@@ -111,6 +124,7 @@ struct GeLoad {
     tr: f64,
     revision: f32,
     psd_name: String,
+    voxel: Option<Voxel>,
 }
 
 /// GELoad(fname).
@@ -199,6 +213,12 @@ fn ge_load(data: &[u8]) -> Res<GeLoad> {
     let off_image = off_image as usize;
     let te = b.i32le(off_image + 4 * (lay.image_te - 1))? as f64 / 1e3;
     let tr = b.i32le(off_image + 4 * (lay.image_tr - 1))? as f64 / 1e3;
+    let image_float = |k: usize| b.f32le(off_image + 4 * (k - 1)).ok().map(f64::from);
+    let user: Option<Vec<f64>> = (0..6).map(|i| image_float(lay.image_user8 + i)).collect();
+    let corners: Option<Vec<f64>> = (0..9).map(|i| image_float(lay.image_tlhc + i)).collect();
+    let voxel = user.zip(corners).and_then(|(u, c)| {
+        geometry::ge_pfile([u[0], u[1], u[2]], [u[3], u[4], u[5]], [[c[0], c[1], c[2]], [c[3], c[4], c[5]], [c[6], c[7], c[8]]])
+    });
 
     if npoints == 1 && nrows == 1 {
         npoints = 2048;
@@ -314,7 +334,7 @@ fn ge_load(data: &[u8]) -> Res<GeLoad> {
     };
     let full = build(&full_frames, &full_sign, mult);
     let water = build(&water_frames, &water_sign, multw);
-    Ok(GeLoad { full, water, larmor, sw, te, tr, revision: rev, psd_name })
+    Ok(GeLoad { full, water, larmor, sw, te, tr, revision: rev, psd_name, voxel })
 }
 
 /// FID-A `io_loadspec_GE(filename, subspecs)` on the bytes of a P-file.
@@ -405,7 +425,7 @@ pub fn load(data: &[u8], subspecs: usize) -> Res<GeResult> {
     // out_w.flags.isFourSteps uses out's sizes (FID-A), only when out_w has subspecs (never)
     let out = make(fids, dims, four);
     let out_w = make(fids_w, dims_w, false);
-    Ok(GeResult { out, out_w, revision: g.revision, psd_name: g.psd_name })
+    Ok(GeResult { out, out_w, revision: g.revision, psd_name: g.psd_name, voxel: g.voxel })
 }
 
 #[cfg(test)]

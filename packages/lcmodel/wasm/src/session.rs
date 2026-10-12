@@ -22,6 +22,17 @@ pub struct Dataset {
     pub water: Option<Spectra>,
     /// GE and Philips: whether alternate transients look like edit-ON/OFF pairs.
     pub edit: Option<EditCheck>,
+    /// Acquired on a GE scanner (a P-file, or NIfTI-MRS whose header says so):
+    /// phased on the residual water, as run_pressproc_GEauto.
+    pub ge: bool,
+}
+
+/// A NIfTI-MRS file converted from GE data (spec2nii writes `Manufacturer`).
+fn nifti_from_ge(bytes: &[u8]) -> bool {
+    fida::io::niimrs::header_json(bytes)
+        .ok()
+        .and_then(|h| h.get("Manufacturer").and_then(Value::as_str).map(|m| m.trim().to_ascii_uppercase()))
+        .is_some_and(|m| m == "GE" || m.starts_with("GE "))
 }
 
 /// Readers that store edit-ON and edit-OFF as alternate transients without
@@ -166,7 +177,8 @@ pub fn load(files: &[(String, &[u8])]) -> (Vec<Dataset>, Value) {
             "water": water_name,
             "header": h,
         }));
-        datasets.push(Dataset { name: pair.metabolite.name.clone(), format, water_name, metab, water, edit });
+        let ge = format == Format::GePfile || (format == Format::NiftiMrs && pair.metabolite.files.first().is_some_and(|&i| nifti_from_ge(files[i].1)));
+        datasets.push(Dataset { name: pair.metabolite.name.clone(), format, water_name, metab, water, edit, ge });
     }
     let ignored: Vec<Value> = det.ignored.iter().map(|(n, why)| json!({ "file": n, "reason": why })).collect();
     let unpaired: Vec<Value> = det.unpaired_water.iter().map(|d| json!(d.name)).collect();
@@ -287,8 +299,9 @@ pub fn process(ds: &Dataset, opts: &Options, progress: &mut dyn FnMut(&str, f32)
         o.drift.enabled = opts.drift_correction;
         o.autophase = opts.phase_and_reference;
         o.ppmref = opts.phase_and_reference;
-        // FID-A's GE script phases on the residual water (run_pressproc_GEauto).
-        o.ge_phasing = conj;
+        // FID-A's GE script phases on the residual water (run_pressproc_GEauto);
+        // so does GE data converted to NIfTI-MRS, which spec2nii has conjugated.
+        o.ge_phasing = ds.ge;
         run_pressproc_auto(metab, water, &o, progress, cancelled)?
     };
     let mut report = out.report.to_json();
@@ -451,6 +464,32 @@ mod tests {
         let table = &r.outputs["out.table"];
         eprintln!("{table}");
         assert!(table.contains("NAA"));
+    }
+
+    /// A NIfTI-1 header whose NIfTI-MRS extension is `json`.
+    fn nifti_with_header(json: &str) -> Vec<u8> {
+        let mut ext = json.as_bytes().to_vec();
+        ext.resize((ext.len() + 8).div_ceil(16) * 16 - 8, 0);
+        let vox = 352 + 8 + ext.len();
+        let mut b = vec![0u8; 348];
+        b[..4].copy_from_slice(&348i32.to_le_bytes());
+        b[40..42].copy_from_slice(&1i16.to_le_bytes());
+        b[108..112].copy_from_slice(&(vox as f32).to_le_bytes());
+        b[344..348].copy_from_slice(b"n+1\0");
+        b.extend_from_slice(&[1, 0, 0, 0]);
+        b.extend_from_slice(&((ext.len() + 8) as i32).to_le_bytes());
+        b.extend_from_slice(&44i32.to_le_bytes());
+        b.extend_from_slice(&ext);
+        b
+    }
+
+    #[test]
+    fn nifti_mrs_from_ge_is_recognised_by_its_header() {
+        assert!(nifti_from_ge(&nifti_with_header(r#"{"Manufacturer": "GE"}"#)));
+        assert!(nifti_from_ge(&nifti_with_header(r#"{"Manufacturer": "GE MEDICAL SYSTEMS"}"#)));
+        assert!(!nifti_from_ge(&nifti_with_header(r#"{"Manufacturer": "Philips"}"#)));
+        assert!(!nifti_from_ge(&nifti_with_header(r#"{"Manufacturer": "GENERIC"}"#)));
+        assert!(!nifti_from_ge(&nifti_with_header("{}")));
     }
 }
 

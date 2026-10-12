@@ -17,6 +17,10 @@
 //! * Philips SPAR angles and offsets are LR/AP/CC in LPH (= LPS): the box is
 //!   rotated by Rx(lr) Ry(ap) Rz(cc) (intrinsic XYZ) about its centre, as in
 //!   Osprey's `coreg_sdat` and spec2nii's `_philips_orientation`.
+//! * GE P-file image headers hold the voxel centre (`user11-13`) and size
+//!   (`user8-10`, along the axes nearest L, P and S) in RAS, and the plane of
+//!   the prescription as its top-left, top-right and bottom-right corners, as
+//!   spec2nii's `_calculate_affine` reads them.
 //!
 //! LPS becomes RAS by negating x and y. A sign flip of one column describes
 //! the same box, so only the centre and the three edge vectors matter.
@@ -244,6 +248,26 @@ pub fn spar(text: &str) -> Option<Voxel> {
     Voxel::from_columns([col(0), col(1), col(2)], lps_to_ras(off), "Philips SPAR off_center, angulation, size").valid()
 }
 
+/// GE P-file: `user8-10` (size), `user11-13` (centre) and the `tlhc`,
+/// `trhc` and `brhc` corners of the image plane, all RAS.
+pub fn ge_pfile(size: [f64; 3], center: [f64; 3], corners: [[f64; 3]; 3]) -> Option<Voxel> {
+    let [tl, tr, br] = corners;
+    let row = [tr[0] - tl[0], tr[1] - tl[1], tr[2] - tl[2]];
+    let col = [br[0] - tr[0], br[1] - tr[1], br[2] - tr[2]];
+    if norm(row) == 0.0 || norm(col) == 0.0 {
+        return None;
+    }
+    let (row, col) = (unit(row), unit(col));
+    let dcos = [row, col, scale(cross(row, col), -1.0)];
+    // user8, user9 and user10 lie along the directions closest to x, y and z.
+    let mut edge = [0.0; 3];
+    for (axis, &s) in size.iter().enumerate() {
+        let nearest = (1..3).fold(0, |best, i| if dcos[i][axis].abs() > dcos[best][axis].abs() { i } else { best });
+        edge[nearest] = s;
+    }
+    Voxel::from_columns([scale(dcos[0], edge[0]), scale(dcos[1], edge[1]), scale(dcos[2], edge[2])], center, "GE P-file user8-13, tlhc, trhc, brhc").valid()
+}
+
 fn matmul(a: [[f64; 3]; 3], b: [[f64; 3]; 3]) -> [[f64; 3]; 3] {
     let mut m = [[0.0; 3]; 3];
     for i in 0..3 {
@@ -459,6 +483,49 @@ ColumnVector[0]: 0\r\nColumnVector[1]: 1\r\nColumnVector[2]: 0\r\n>>> End of hea
         assert!(spar("lr_size : 20\n").is_none());
         assert!(siemens_dicom("").is_none());
         assert!(nifti(b"not a nifti").is_none());
+    }
+
+    // Expected affines are spec2nii 0.8.15's `_calculate_affine` on the same
+    // image header values (PfileMapper.get_dcos, get_select_box_size/center).
+    #[test]
+    fn ge_axial_oblique_matches_spec2nii() {
+        // A revision 24 PROBE-P P-file: 20 mm cube, left prefrontal.
+        let f = |x: f64| x as f32 as f64;
+        let v = ge_pfile(
+            [20.0, 20.0, 20.0],
+            [f(-28.71819496154785), f(77.74109649658203), f(67.58155822753906)],
+            [
+                [f(97.41960144042969), f(184.57644653320312), f(29.169723510742188)],
+                [f(-141.96189880371094), f(200.22093200683594), f(36.3636474609375)],
+                [f(-154.85598754882812), f(-29.09424591064453), f(105.99339294433594)],
+            ],
+        )
+        .unwrap();
+        close(
+            &v,
+            [
+                [-19.9484574659, -1.074507304, -0.9510406727, -28.7181949615],
+                [1.3037070648, -19.1095965335, -5.7553165602, 77.7410964966],
+                [0.5994936358, 5.8024782965, -19.1303908201, 67.5815582275],
+            ],
+            1e-6,
+        );
+    }
+
+    #[test]
+    fn ge_sizes_follow_the_nearest_axis() {
+        // Sagittal plane: user8 (x) lands on the normal, user9 (y) on the row.
+        let v = ge_pfile([15.0, 25.0, 30.0], [4.5, -12.0, 20.25], [[10.0, 120.0, 110.0], [8.0, -120.0, 100.0], [-12.0, -118.0, -130.0]]).unwrap();
+        close(
+            &v,
+            [
+                [-0.2081455089, -2.5987909772, -14.9349853742, 4.5],
+                [-24.9774610724, 0.2598790977, 0.0703204672, -12.0],
+                [-1.0407275447, -29.8860962374, 1.2993058627, 20.25],
+            ],
+            1e-8,
+        );
+        assert!(ge_pfile([20.0; 3], [0.0; 3], [[1.0, 2.0, 3.0]; 3]).is_none());
     }
 
     #[test]

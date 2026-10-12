@@ -14,6 +14,10 @@ import { correctionFor, tissueTexts } from "@neurodesk/lcmodel/tissue";
 const $ = (id) => document.getElementById(id);
 const FIELDS = { gm: "fGm", wm: "fWm", csf: "fCsf" };
 const fixed = (x, digits = 2) => Number(x).toFixed(digits);
+// MindMap's WebGPU and WebGL2 modules have a fixed 768 MiB heap: a T1 larger
+// than its own 256^3 grid (0.8 mm isotropic, GE's 512 x 512 matrices) runs out
+// of memory there, so those go to the growable threaded CPU module.
+const GPU_MAX_VOXELS = 256 ** 3;
 
 /**
  * @param {{
@@ -141,8 +145,10 @@ export function createTissuePanel(hooks) {
         signal?.removeEventListener("abort", stop);
         worker?.terminate();
         worker = null;
-        if (data.error) reject(new Error(`Segmentation failed: ${data.error}`));
-        else resolve(data.result);
+        if (data.error) {
+          for (const line of data.log?.slice(-40) ?? []) hooks.log.log(`MindMap: ${line}`);
+          reject(new Error(`Segmentation failed: ${data.error}`));
+        } else resolve(data.result);
       };
       worker.onerror = (event) => {
         signal?.removeEventListener("abort", stop);
@@ -162,8 +168,10 @@ export function createTissuePanel(hooks) {
    * software renderer (SwiftShader, llvmpipe), where MindMap takes many
    * minutes; its threaded CPU module is far faster there. Prefer WebGPU,
    * then hardware WebGL2, then the CPU (the page is cross-origin isolated).
+   * On an isolated page, a T1 too large for the GPU heap takes the CPU.
    */
   async function chooseBackend() {
+    if (t1.dims[0] * t1.dims[1] * t1.dims[2] > GPU_MAX_VOXELS && globalThis.crossOriginIsolated) return "cpu";
     const adapter = await navigator.gpu?.requestAdapter().catch(() => null);
     if (adapter && !adapter.info?.isFallbackAdapter && adapter.features.has("shader-f16")) return "webgpu";
     const gl = new OffscreenCanvas(1, 1).getContext("webgl2");
@@ -188,7 +196,14 @@ export function createTissuePanel(hooks) {
       try {
         const backend = await chooseBackend();
         hooks.log.log(`Segmenting with MindMap on ${backend}`);
-        result = await segment(controller.signal, backend);
+        try {
+          result = await segment(controller.signal, backend);
+        } catch (error) {
+          // A GPU module can still run out of memory or lose its device.
+          if (backend === "cpu" || error.name === "AbortError" || !globalThis.crossOriginIsolated) throw error;
+          hooks.log.log(`${error.message}; segmenting on the CPU instead`, "warning");
+          result = await segment(controller.signal, "cpu");
+        }
       } finally {
         if (active === controller) active = null;
       }
