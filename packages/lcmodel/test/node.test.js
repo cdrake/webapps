@@ -123,3 +123,37 @@ test("tissue fractions need a header and water-scaled concentrations", async (t)
     /Tissue correction needs water-scaled concentrations/,
   );
 });
+
+test("RAW fits log effective acquisition overrides and preserve the input bytes", async (t) => {
+  const directory = await scratch(t);
+  const raw = " $SEQPAR\n HZPPPM=100\n ECHOT=35\n DWELLTIME=0.001\n SEQ='PRESS'\n $END\n" + await readFile(join(native, "data.raw"), "utf8");
+  const source = join(directory, "sample.raw");
+  await writeFile(source, raw);
+  const logs = [];
+  const output = join(directory, "out");
+  await fit({
+    inputs: [source], output, basis: join(native, "3t.basis"), offline: true,
+    parameters: { frequencyMHz: 127.786142, dwellTimeMs: 0.5, lineBroadening: "lcmodel" },
+    log: (text, level) => logs.push({ text, level }),
+  });
+  assert.deepEqual(logs[0], {
+    text: "sample.raw: sequence PRESS, 127.786142 MHz, TE 35 ms, dwell time 0.5 ms",
+    level: "info",
+  });
+  assert.equal(await readFile(join(output, "sample.RAW"), "utf8"), raw);
+  const control = await readFile(join(output, "sample.control"), "utf8");
+  assert.match(control, /hzpppm=127\.786142/i);
+  assert.match(control, /deltat=0\.0005/i);
+});
+
+test("RAW acquisition diagnostics retain known values when required values are missing", async (t) => {
+  const directory = await scratch(t);
+  const source = join(directory, "incomplete.raw");
+  await writeFile(source, " $SEQPAR\n ECHOT=35\n SEQ='PRESS'\n $END\n" + await readFile(join(native, "data.raw"), "utf8"));
+  const logs = [];
+  await assert.rejects(fit({
+    inputs: [source], output: join(directory, "out"), offline: true,
+    log: (text, level) => logs.push({ text, level }),
+  }), /records no spectrometer frequency/);
+  assert.deepEqual(logs, [{ text: "incomplete.raw: sequence PRESS, TE 35 ms", level: "info" }]);
+});
