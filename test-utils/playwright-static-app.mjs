@@ -1,8 +1,10 @@
 import { defineConfig } from '@playwright/test';
+import { e2eTier } from './e2e-tier.mjs';
 
 export function staticAppPlaywrightConfig({ port }) {
   const baseURL = `http://localhost:${port}`;
   return defineConfig({
+    ...e2eTier,
     testDir: './e2e',
     webServer: {
       command: `pnpm vendor && bash web/run.sh ${port}`,

@@ -22,7 +22,7 @@ async function adopt(page, files, role) {
 }
 
 for (const entry of CASES) {
-  test(`web app ${entry.operation} of ${entry.id} matches the browser reference`, async ({ page, browser }) => {
+  test(`web app ${entry.operation} of ${entry.id} matches the browser reference`, { tag: '@slow' }, async ({ page, browser }) => {
     test.skip(mode !== "check" && mode !== "write", "set LCMODEL_BROWSER_REFERENCE=check or write");
     test.setTimeout(20 * minutes);
     await proxyAssets(page);

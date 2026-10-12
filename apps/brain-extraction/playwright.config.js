@@ -1,6 +1,8 @@
 import { defineConfig } from '@playwright/test';
+import { e2eTier } from '../../test-utils/e2e-tier.mjs';
 
 export default defineConfig({
+  ...e2eTier,
   testDir: './e2e',
   timeout: 120000,
   workers: 1,

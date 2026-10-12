@@ -1,7 +1,9 @@
 import { defineConfig } from '@playwright/test';
+import { e2eTier } from '../../test-utils/e2e-tier.mjs';
 import { gpuBrowser } from '../../test-utils/hardware-gpu.mjs';
 
 export default defineConfig({
+  ...e2eTier,
   testDir: './e2e', timeout: 600000, workers: 1,
   webServer: {
     env: process.env.SYNTHSEG_ASSET_DIR ? { VITE_SYNTHSEG_ASSET_BASE: '/synthseg/model-assets/' } : {},

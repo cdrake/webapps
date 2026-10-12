@@ -10,7 +10,7 @@ import { ROLES, compare, pinnedExample, readReference, summarize, writeReference
 const mode = process.env.ANTS_BROWSER_REFERENCE;
 const minutes = 60_000;
 
-test("web app SyN registration of the pinned example matches the browser reference", async ({ page, browser }) => {
+test("web app SyN registration of the pinned example matches the browser reference", { tag: '@slow' }, async ({ page, browser }) => {
   test.skip(mode !== "check" && mode !== "write", "set ANTS_BROWSER_REFERENCE=check or write");
   test.setTimeout(45 * minutes);
   const example = await pinnedExample();

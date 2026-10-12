@@ -12,7 +12,7 @@ const minutes = 60_000;
 const dispatch = (page, command, request = {}) => page.evaluate(({ command, request }) => globalThis.neurodeskAutomation.dispatch(command, request), { command, request });
 
 for (const model of CASES) {
-  test(`web app ${model} quality control of the pinned example matches the browser reference`, async ({ page, browser }) => {
+  test(`web app ${model} quality control of the pinned example matches the browser reference`, { tag: '@slow' }, async ({ page, browser }) => {
     test.skip(mode !== 'check' && mode !== 'write', 'set BROWSERQC_BROWSER_REFERENCE=check or write');
     test.setTimeout(30 * minutes);
     const example = await pinnedExample();

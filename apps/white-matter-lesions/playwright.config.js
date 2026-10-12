@@ -1,7 +1,9 @@
 import { defineConfig } from "@playwright/test";
+import { e2eTier } from "../../test-utils/e2e-tier.mjs";
 
 // Serves the built output so the shared preview headers and worker/wasm asset paths are exercised.
 export default defineConfig({
+  ...e2eTier,
   testDir: "./e2e",
   timeout: 120000,
   workers: 1,

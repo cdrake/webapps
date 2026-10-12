@@ -246,7 +246,7 @@ const REAL_MODEL_MIN_DICE = { mindgrab: 0.96, synthstrip: 0.96 };
 // measurements, which re-record the reference when the pipeline changes on purpose.
 // MindGrab runs on its CPU backend, the modules the command line runs.
 for (const method of ['bet', 'synthstrip', 'mindgrab']) {
-  test(`${method} on the T1 example matches the recorded browser reference`, async ({ page }, testInfo) => {
+  test(`${method} on the T1 example matches the recorded browser reference`, { tag: '@slow' }, async ({ page }, testInfo) => {
     test.skip(!process.env.BRAIN_EXTRACTION_REAL_MODELS, 'Set BRAIN_EXTRACTION_REAL_MODELS=1 for the example download and inference.');
     test.setTimeout(1200000);
     const example = examples.find(({ id }) => id === browserReference.example);

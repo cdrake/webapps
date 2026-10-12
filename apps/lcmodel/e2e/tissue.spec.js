@@ -73,7 +73,7 @@ test("the voxel sits on the T1 and typed fractions correct the concentrations", 
   expect(mask.length).toBeGreaterThanOrEqual(352 + 256 * 256 * 204 * 4);
 });
 
-test("MindMap segments the T1 and measures the voxel", async ({ page }) => {
+test("MindMap segments the T1 and measures the voxel", { tag: '@slow' }, async ({ page }) => {
   test.skip(!process.env.LCMODEL_E2E_LARGE, "set LCMODEL_E2E_LARGE=1: segmentation on the CPU takes minutes");
   test.setTimeout(1200000);
   await loadExample(page);

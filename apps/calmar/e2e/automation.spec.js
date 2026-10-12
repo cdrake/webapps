@@ -88,7 +88,7 @@ test('a matching shape with a shifted affine is rejected before lesion mapping',
   expect(snapshot.report).toBeUndefined();
 });
 
-test('real structural example produces an unconfirmed native lesion candidate', async ({ page }) => {
+test('real structural example produces an unconfirmed native lesion candidate', { tag: '@slow' }, async ({ page }) => {
   const image = process.env.CALMAR_AUTOMATION_IMAGE;
   test.skip(!image, 'Set CALMAR_AUTOMATION_IMAGE=example or a structural T1 path to run full candidate inference.');
   const timeout = Number(process.env.CALMAR_AUTOMATION_TIMEOUT_MS || 900000);

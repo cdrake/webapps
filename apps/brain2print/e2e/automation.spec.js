@@ -84,7 +84,7 @@ test('automation can cancel the real segmentation worker while its runtime is lo
   expect((await dispatch(page, 'snapshot')).report).toBeUndefined();
 });
 
-test('CPU inference returns a watertight STL enclosing the segmented brain volume, and a matching MZ3', async ({ page }) => {
+test('CPU inference returns a watertight STL enclosing the segmented brain volume, and a matching MZ3', { tag: '@slow' }, async ({ page }) => {
   test.setTimeout(900_000);
   await start(page, brain, { backend: 'cpu' });
   const { report, files } = await finished(page);
