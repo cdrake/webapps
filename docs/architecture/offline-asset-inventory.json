@@ -3327,14 +3327,14 @@
           "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/544f1362f367355e61a85e0694f5075aba2792b6/reg/moving/t1_brain.nii.gz",
           "kind": "example",
           "sources": [
-            "apps/fireants/src/config.js"
+            "apps/fireants/examples.json"
           ]
         },
         {
           "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/544f1362f367355e61a85e0694f5075aba2792b6/reg/templates/MNI152_T1_1mm_brain.nii.gz",
           "kind": "example-template",
           "sources": [
-            "apps/fireants/src/config.js"
+            "apps/fireants/examples.json"
           ]
         }
       ],
