@@ -15,7 +15,9 @@ const SHARED_LEVEL = new Set(['packages', 'exes']);
 const SKIPPED_DIRS = new Set(['node_modules', 'dist', 'target', '.turbo', '.vite', 'coverage', 'test-results', 'playwright-report']);
 const TEXT_FILE = /\.(?:[cm]?[jt]sx?|json|html|css|rs|toml|py|sh|ya?ml)$|^Makefile$/;
 const MAX_TEXT_BYTES = 1024 * 1024;
-const REFERENCE = /(?:\.\.\/)+(packages|exes)\/([\w.-]+)/g;
+// A relative path, or a root-relative string such as 'exes/compute-server/src/x.rs'
+// joined onto a computed repository root.
+const REFERENCE = /(?:(?:\.\.\/)+|['"`])(packages|exes)\/([\w.-]+)/g;
 // Scripts address packages from the repository root, in either form.
 const SCRIPT_REFERENCE = /\b(packages|exes)(?:\/|['"],\s*['"])([\w.-]+)/g;
 const SCRIPT_PATH = /(?:\.\.\/)+(scripts\/[\w./-]+\.[cm]?js)\b/g;

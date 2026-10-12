@@ -160,3 +160,9 @@ test('packages that root build scripts stage select the apps whose builds run th
   const analytics = createAppPlan(registry, ['packages/analytics/src/index.js'], await graph);
   assert.ok(analytics.selected.some((app) => app.id === 'zarro'), 'theme-app-dist.mjs copies analytics into themed apps');
 });
+
+test('a root-relative path joined onto a computed repository root selects its app', async () => {
+  const registry = await loadAppsRegistry();
+  const plan = createAppPlan(registry, ['exes/compute-server/src/tools/sct.rs'], await graph);
+  assert.ok(plan.selected.some((app) => app.id === 'spinalcordtoolbox'), 'SCT test:release reads the pinned image from sct.rs');
+});
