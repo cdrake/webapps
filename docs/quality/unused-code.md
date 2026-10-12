@@ -87,8 +87,9 @@ and production builds. FireANTs' removed config is not a release version target.
 Compared with reporting commit `89c79036`, file candidates fall from 21 to 17 and
 export candidates from 72 to 69. Two files and three exports were deleted. Two
 additional file findings were corrected by registering Topofit and Zarro's
-release-maintained version records as roots. Types, duplicate exports and
-13 dependency plus four devDependency candidates retain their previous counts.
+release-maintained version records as roots. Those historical scans also reported
+14 types, one duplicate export, 13 dependencies and four devDependencies.
+Run `pnpm quality:unused` for current counts after dependency changes.
 
 Remaining candidates include upstream-owned modules, staged runtime dependencies,
 and exports referenced inside browser-evaluated source strings. These need caller
