@@ -348,7 +348,9 @@ pub fn detect(files: &[NamedFile]) -> Detection {
         }
     }
     for (d, v) in dicom_dirs {
-        if !dicom_has_spectrum(files[v[0]].bytes) {
+        // The reader skips dot-files (macOS `._` sidecars), so the check does too.
+        let first = v.iter().copied().find(|&i| !split_path(files[i].name).1.starts_with('.')).unwrap_or(v[0]);
+        if !dicom_has_spectrum(files[first].bytes) {
             let reason = "DICOM without Siemens spectroscopy data (an image series, or a format FID-A does not read)";
             det.ignored.extend(v.iter().map(|&i| (files[i].name.to_string(), reason.to_string())));
             continue;
@@ -706,6 +708,7 @@ mod tests {
         let spec = dicom_stub(true);
         let image = dicom_stub(false);
         let files = [
+            nf("sub-01/mrs/sub-01-20-PRESS_svs_se_30_ave/._1.dcm", &image),
             nf("sub-01/mrs/sub-01-20-PRESS_svs_se_30_ave/1.dcm", &spec),
             nf("sub-01/mrs/sub-01-20-PRESS_svs_se_30_ave/2.dcm", &spec),
             nf("sub-01/mrs/sub-01-21-PRESS_svs_se_30/1.dcm", &image),
