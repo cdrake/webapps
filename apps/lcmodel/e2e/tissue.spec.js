@@ -100,8 +100,11 @@ test("a GPU run that fails is measured on the CPU instead", async ({ page }) => 
   test.skip(!process.env.LCMODEL_E2E_LARGE, "set LCMODEL_E2E_LARGE=1: segmentation on the CPU takes minutes");
   test.setTimeout(1200000);
   await proxyAssets(page);
-  // An adapter that looks like a WebGPU GPU but cannot open a device, as a
-  // driver or device limit can fail mid-run on a user's machine.
+  // The page sees a usable WebGPU adapter, so the app picks WebGPU, but
+  // MindMap's GPU build cannot be fetched in its worker: the GPU run fails
+  // the same way with or without a real GPU, as a driver or device limit can
+  // fail mid-run on a user's machine.
+  await page.context().route(/brainchop-mindmap-(gpu|gl)\.(js|wasm)$/, (route) => route.abort());
   await page.addInitScript(() => {
     const adapter = { info: { isFallbackAdapter: false }, features: new Set(["shader-f16"]), limits: {}, requestDevice: async () => { throw new Error("no device in this test"); } };
     Object.defineProperty(navigator, "gpu", { value: { requestAdapter: async () => adapter, getPreferredCanvasFormat: () => "bgra8unorm" } });
