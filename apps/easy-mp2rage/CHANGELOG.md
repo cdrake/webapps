@@ -8,7 +8,8 @@
 
 ### Patch Changes
 
-- @neurodesk/easy-mp2rage@0.8.20261010
+- Declare workspace dependencies without expanding SYNcro portable runtime installations. Mark dicompare type imports explicitly and separate the unchanged NeSVoR reference validator from worker orchestration to remove dependency cycles.
+  - @neurodesk/easy-mp2rage@0.8.20261010
 - Updated dependencies
   - @neurodesk/easy-mp2rage@0.8.20261010
 
