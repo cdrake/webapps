@@ -1,5 +1,16 @@
 # lcmodel
 
+## 0.8.20261012
+
+### Minor Changes
+
+- Show anatomical images immediately and display the tissue segmentation with the spectroscopy voxel. Add a separate water-reference upload for the selected dataset, preserve usable data after failed imports, and separate anatomical and spectroscopy series in mixed session folders. Load the image viewer with the page to avoid a deferred module fetch after a deployment.
+
+### Patch Changes
+
+- Updated dependencies
+  - @neurodesk/lcmodel@0.8.20261012
+
 ## 0.7.20261012
 
 ### Patch Changes

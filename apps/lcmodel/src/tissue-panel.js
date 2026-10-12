@@ -4,6 +4,7 @@
 // tissue-corrected concentrations. The page (main.js) calls in through the
 // object returned by createTissuePanel; the science lives in voxel.js and
 // tissue.js.
+import NiiVue, { SLICE_TYPE } from "@niivue/niivue";
 import { version as mindgrabVersion } from "@brainchop/mindgrab/package.json";
 import { readImageFiles } from "@neurodesk/runtime-support/dcm2niix-client";
 import { decodeNiftiBuffer, parseNiftiHeader, readNiftiImageData, extractNiftiHeader, createFloat32Nifti } from "@neurodesk/webapp-components/file-io";
@@ -13,6 +14,7 @@ import { correctionFor, tissueTexts } from "@neurodesk/lcmodel/tissue";
 
 const $ = (id) => document.getElementById(id);
 const FIELDS = { gm: "fGm", wm: "fWm", csf: "fCsf" };
+const MAPS = { gm: { label: "Grey matter", colormap: "green" }, wm: { label: "White matter", colormap: "blue" }, csf: { label: "CSF", colormap: "violet" } };
 const fixed = (x, digits = 2) => Number(x).toFixed(digits);
 // MindMap's WebGPU and WebGL2 modules have a fixed 768 MiB heap: a T1 larger
 // than its own 256^3 grid (0.8 mm isotropic, GE's 512 x 512 matrices) runs out
@@ -27,6 +29,7 @@ const GPU_MAX_VOXELS = 256 ** 3;
  *   setBusy: (busy: boolean) => void,
  *   onChange: () => void,
  *   onViewAvailable: (available: boolean) => void,
+ *   onViewRequested: () => void,
  * }} hooks
  */
 export function createTissuePanel(hooks) {
@@ -37,6 +40,28 @@ export function createTissuePanel(hooks) {
   let measured = null; // fractions from the segmentation for the current voxel
   let viewer = null;
   let viewerReady = null;
+  let renderQueue = Promise.resolve();
+  let renderVersion = 0;
+  let renderedT1 = null;
+  let renderedVoxel = null;
+  const mapSelect = document.createElement("select");
+  mapSelect.id = "tissueMap";
+  mapSelect.setAttribute("aria-label", "Tissue map");
+  mapSelect.append(new Option("Anatomy", "anatomy"));
+  for (const [id, { label }] of Object.entries(MAPS)) mapSelect.append(new Option(label, id));
+  const voxelToggle = document.createElement("button");
+  voxelToggle.type = "button";
+  voxelToggle.className = "nd-btn nd-btn-secondary nd-btn-sm";
+  voxelToggle.textContent = "Voxel";
+  voxelToggle.setAttribute("aria-label", "Show spectroscopy voxel");
+  voxelToggle.setAttribute("aria-pressed", "true");
+  const viewControls = [mapSelect, voxelToggle];
+  for (const control of viewControls) control.hidden = true;
+  mapSelect.addEventListener("change", () => void show());
+  voxelToggle.addEventListener("click", () => {
+    voxelToggle.setAttribute("aria-pressed", String(voxelToggle.getAttribute("aria-pressed") !== "true"));
+    void show();
+  });
   let worker = null;
   let active = null; // AbortController of the running segmentation
 
@@ -63,7 +88,9 @@ export function createTissuePanel(hooks) {
 
   function refresh() {
     $("measureButton").disabled = !canMeasure();
-    hooks.onViewAvailable(canMeasure());
+    hooks.onViewAvailable(Boolean(t1));
+    for (const option of mapSelect.options) option.disabled = option.value !== "anatomy" && !maps;
+    voxelToggle.disabled = !dataset?.voxel;
     if (t1 && dataset && !dataset.voxel) summary("This format does not record where the voxel is; enter fractions.", "warning");
   }
 
@@ -87,18 +114,40 @@ export function createTissuePanel(hooks) {
       if (maps && canMeasure()) measureFromMaps();
     }
     refresh();
-    if (viewer && !$("t1Canvas").hidden) void showOverlay();
+    if (viewer && !$("t1Canvas").hidden) void show();
   }
 
-  async function loadT1(files, signal) {
+  async function prepareT1(files, signal) {
     hooks.progress.setIndeterminate?.("Reading the T1 image…");
     const images = await readImageFiles(files, { signal });
     signal?.throwIfAborted();
     if (images.length !== 1) throw new Error(images.length ? `These files hold ${images.length} images; choose the one T1 series.` : "No image found among the T1 files.");
     const buffer = await decodeNiftiBuffer(await images[0].arrayBuffer());
     const header = parseNiftiHeader(buffer);
-    if (header.dims[0] > 3 && header.dims[4] > 1) throw new Error("The T1 image must be a single 3D volume.");
-    t1 = { name: images[0].name, buffer, header, dims: [header.nx, header.ny, header.nz], affine: header.affine.map((row) => Array.from(row)) };
+    if (header.dims.slice(4, header.dims[0] + 1).some((dimension) => dimension > 1)) throw new Error("The T1 image must be a single 3D volume.");
+    const count = header.nx * header.ny * header.nz;
+    if ([header.nx, header.ny, header.nz].some((dimension) => dimension < 1)
+      || !Number.isFinite(header.voxOffset) || header.voxOffset < 348
+      || header.bitpix < 8 || header.voxOffset + count * header.bitpix / 8 > buffer.byteLength) {
+      throw new Error("The T1 image has incomplete voxel data.");
+    }
+    signal?.throwIfAborted();
+    return { name: images[0].name, buffer, header, dims: [header.nx, header.ny, header.nz], affine: header.affine.map((row) => Array.from(row)) };
+  }
+
+  async function loadT1(files, signal) {
+    const prepared = await prepareT1(files, signal);
+    signal?.throwIfAborted();
+    await commitT1(prepared);
+  }
+
+  async function commitT1(prepared) {
+    cancel();
+    renderVersion++;
+    mapSelect.value = "anatomy";
+    voxelToggle.setAttribute("aria-pressed", "true");
+    t1 = prepared;
+    const { header } = t1;
     maps = null;
     weights = null;
     if (measured) {
@@ -111,7 +160,8 @@ export function createTissuePanel(hooks) {
     $("t1Drop").classList.add("has-files");
     hooks.log.log(`T1 loaded: ${$("t1Info").textContent}`);
     refresh();
-    if (viewer && !$("t1Canvas").hidden) await showOverlay();
+    hooks.onViewRequested();
+    await show();
   }
 
   function currentWeights() {
@@ -133,6 +183,7 @@ export function createTissuePanel(hooks) {
   }
 
   function segment(signal, backend) {
+    signal?.throwIfAborted();
     return new Promise((resolve, reject) => {
       worker = new Worker(new URL("./tissue-worker.js", import.meta.url), { type: "module" });
       const stop = () => {
@@ -185,7 +236,9 @@ export function createTissuePanel(hooks) {
 
   /** Segment the T1 (once per T1) and measure the voxel. */
   async function measure(signal) {
+    signal?.throwIfAborted();
     if (!canMeasure()) throw new Error(t1 ? "These spectroscopy data do not record the voxel position." : "Load a T1 image first.");
+    const measuredT1 = t1;
     if (!maps) {
       hooks.progress.setIndeterminate?.("Segmenting the T1 image (MindMap)…");
       hooks.status("Segmenting the T1 image (MindMap)…");
@@ -207,6 +260,8 @@ export function createTissuePanel(hooks) {
       } finally {
         if (active === controller) active = null;
       }
+      controller.signal.throwIfAborted();
+      if (t1 !== measuredT1) throw new DOMException("T1 replaced", "AbortError");
       const read = (b) => readNiftiImageData(b).data;
       // Own copies: the CPU module may hand back views of its shared memory.
       const files = Object.fromEntries(["gm", "wm", "csf"].map((k) => [k, new Uint8Array(result.tissues[k]).slice().buffer]));
@@ -216,7 +271,11 @@ export function createTissuePanel(hooks) {
       hooks.log.log(`MindMap tissue maps on ${result.backend} in ${(result.elapsedMs / 1000).toFixed(1)} s`);
     }
     const f = measureFromMaps();
+    mapSelect.value = "gm";
+    refresh();
     hooks.onChange();
+    hooks.onViewRequested();
+    await show();
     return f;
   }
 
@@ -242,7 +301,7 @@ export function createTissuePanel(hooks) {
       // The partial-volume maps behind the fractions, for checking the segmentation.
       const t1Stem = t1.name.replace(/\.nii(\.gz)?$/i, "");
       for (const [key, label] of [["gm", "Grey matter"], ["wm", "White matter"], ["csf", "CSF"]]) {
-        entries[`${key}Map`] = { description: `${label} map (.nii)`, file: new File([maps.files[key]], `${t1Stem}_${key}.nii`), viewable: false };
+        entries[`${key}Map`] = { description: `${label} map (.nii)`, file: new File([maps.files[key]], `${t1Stem}_${key}.nii`), viewable: true };
       }
     }
     return entries;
@@ -256,42 +315,64 @@ export function createTissuePanel(hooks) {
 
   async function ensureViewer() {
     viewerReady ??= (async () => {
-      // NiiVue loads with the first Voxel view, not with the page.
-      const { default: NiiVue, SLICE_TYPE } = await import("@niivue/niivue");
-      viewer = new NiiVue({ isDragDropEnabled: false, backgroundColor: [0, 0, 0, 1] });
-      await viewer.attachTo("t1Canvas");
-      viewer.sliceType = SLICE_TYPE.MULTIPLANAR;
-      viewer.isColorbarVisible = false;
-    })();
+      const next = new NiiVue({ isDragDropEnabled: false, backgroundColor: [0, 0, 0, 1] });
+      await next.attachTo("t1Canvas");
+      next.sliceType = SLICE_TYPE.MULTIPLANAR;
+      next.isColorbarVisible = false;
+      viewer = next;
+    })().catch((error) => {
+      viewerReady = null;
+      throw error;
+    });
     return viewerReady;
   }
 
-  async function showOverlay() {
-    if (!t1) return;
+  async function renderAnatomy(version) {
+    if (!t1 || version !== renderVersion) return;
     await ensureViewer();
-    const volumes = [{ url: new File([t1.buffer], t1.name.replace(/\.gz$/i, "")), name: t1.name.replace(/\.gz$/i, "") }];
-    if (dataset?.voxel) volumes.push({ url: new File([maskNifti()], "voxel.nii"), name: "voxel.nii", colormap: "red", opacity: 0.45, calMin: 0, calMax: 1, isColorbarVisible: false });
+    if (!t1 || version !== renderVersion) return;
+    const image = t1;
+    const voxel = dataset?.voxel;
+    const samePosition = renderedT1 === image && renderedVoxel === voxel;
+    const crosshair = samePosition ? viewer.getCrosshairPos() : voxel?.centerMm;
+    const name = image.name.replace(/\.gz$/i, "");
+    const volumes = [{ url: new File([image.buffer], name), name }];
+    const map = mapSelect.value;
+    if (maps && MAPS[map]) {
+      volumes.push({ url: new File([maps.files[map]], `${map}.nii`), name: `${map}.nii`, colormap: MAPS[map].colormap, opacity: 0.5, calMin: 0, calMax: 1, isColorbarVisible: false });
+    }
+    if (voxel && voxelToggle.getAttribute("aria-pressed") === "true") {
+      volumes.push({ url: new File([maskNifti()], "voxel.nii"), name: "voxel.nii", colormap: "red", opacity: 0.45, calMin: 0, calMax: 1, isColorbarVisible: false });
+    }
     await viewer.loadVolumes(volumes);
-    // The crosshair (world mm) through the voxel centre, so all three planes cut it.
-    if (dataset?.voxel) viewer.setCrosshairPos(dataset.voxel.centerMm);
-    const v = dataset?.voxel;
-    $("plotLabel").textContent = v
-      ? `Voxel ${v.sizeMm.map((s) => fixed(s, 0)).join(" × ")} mm at ${v.centerMm.map((c) => fixed(c, 1)).join(", ")} mm (RAS) on ${t1.name}`
-      : `${t1.name}: no voxel position in these spectroscopy data`;
+    if (version !== renderVersion) return;
+    if (crosshair) viewer.setCrosshairPos(crosshair);
+    renderedT1 = image;
+    renderedVoxel = voxel;
+    $("plotLabel").textContent = voxel
+      ? `Voxel ${voxel.sizeMm.map((s) => fixed(s, 0)).join(" × ")} mm at ${voxel.centerMm.map((c) => fixed(c, 1)).join(", ")} mm (RAS) on ${image.name}`
+      : image.name;
+    $("viewerNotice").hidden = true;
+    $("viewerNotice").textContent = "";
   }
 
-  async function show() {
+  async function show(map) {
+    if (map && (map === "anatomy" || (maps && MAPS[map]))) mapSelect.value = map;
     $("t1Canvas").hidden = false;
-    try {
-      await showOverlay();
-    } catch (error) {
+    for (const control of viewControls) control.hidden = false;
+    const version = ++renderVersion;
+    renderQueue = renderQueue.then(() => renderAnatomy(version)).catch((error) => {
+      if (version !== renderVersion) return;
       $("viewerNotice").hidden = false;
       $("viewerNotice").textContent = `The image viewer is unavailable: ${error.message}`;
-    }
+    });
+    await renderQueue;
   }
 
   function hide() {
+    renderVersion++;
     $("t1Canvas").hidden = true;
+    for (const control of viewControls) control.hidden = true;
   }
 
   function cancel() {
@@ -361,6 +442,11 @@ export function createTissuePanel(hooks) {
   /** Forget the T1 and the fractions (another subject's data). */
   function reset() {
     cancel();
+    hide();
+    mapSelect.value = "anatomy";
+    voxelToggle.setAttribute("aria-pressed", "true");
+    renderedT1 = null;
+    renderedVoxel = null;
     t1 = null;
     maps = null;
     weights = null;
@@ -373,9 +459,12 @@ export function createTissuePanel(hooks) {
   }
 
   return {
+    viewControls,
     setDataset,
     reset,
     loadT1,
+    prepareT1,
+    commitT1,
     measure,
     correct,
     resultFiles,

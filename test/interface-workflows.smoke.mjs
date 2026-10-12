@@ -36,6 +36,28 @@ async function check(id, workflow) {
   finally { await page.close(); }
 }
 try {
+  await check('lcmodel', async page => {
+    await page.locator('#waterSection > summary').tap();
+    await expect(page.locator('#waterInput')).toBeDisabled();
+    await page.locator('#fitSettings > summary').tap();
+    await page.locator('#lineBroadening').selectOption('lcmodel');
+    await page.locator('#fitSettings > summary').tap();
+    await expect(page.locator('#lineBroadening')).toBeHidden();
+    await page.locator('#fitSettings > summary').tap();
+    await expect(page.locator('#lineBroadening')).toHaveValue('lcmodel');
+    await page.locator('#dataInput').setInputFiles(nifti('interface-t1.nii'));
+    await expect(page.locator('#t1Canvas')).toBeVisible();
+    await page.locator('#fGm').fill('0.6');
+    await page.locator('#fWm').fill('0.3');
+    await page.locator('#fCsf').fill('0.1');
+    await page.locator('#tissueSection > summary').tap();
+    await expect(page.locator('#fGm')).toBeHidden();
+    await page.locator('#tissueSection > summary').tap();
+    await expect(page.locator('#fGm')).toHaveValue('0.6');
+    await expect(page.locator('#fWm')).toHaveValue('0.3');
+    await expect(page.locator('#fCsf')).toHaveValue('0.1');
+    await expect(page.locator('#viewerNotice')).toBeHidden();
+  });
   await check('seedseg', async page => {
     const settings = page.locator('#seedseg-section-2 [data-disclosure-toggle]');
     await settings.tap();

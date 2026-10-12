@@ -60,6 +60,7 @@ import {
 } from "@neurodesk/lcmodel/pipeline";
 import { renderGroupTable } from "./group-view.js";
 import { createTissuePanel } from "./tissue-panel.js";
+import { createWorkerSession } from "./worker-session.js";
 
 const $ = (id) => document.getElementById(id);
 const VERSIONS = Object.freeze(reportVersions(`LCModel web app ${APP.version}`));
@@ -110,7 +111,9 @@ const tissue = createTissuePanel({
   setBusy: (value) => setBusy(value),
   onChange: () => fit && renderConcentrations(),
   onViewAvailable: (available) => setViewEnabled("voxel", available),
+  onViewRequested: () => showView("voxel"),
 });
+toolbar.actions.append(...tissue.viewControls);
 
 const info = createInfoDialog();
 $("aboutBtn").onclick = () => info.open("About LCModel", $("aboutContent"));
@@ -122,7 +125,10 @@ const results = createResultList({
   onView: (stage, result) => {
     if (stage === "fitReport") openReport(result);
     else if (stage.startsWith("group")) showView("group");
-    else showView(stage === "preprocessing" ? "preprocessing" : stage === "voxelMask" ? "voxel" : "fit");
+    else if (["gmMap", "wmMap", "csfMap"].includes(stage)) {
+      showView("voxel");
+      void tissue.show(stage.slice(0, -3));
+    } else showView(stage === "preprocessing" ? "preprocessing" : stage === "voxelMask" ? "voxel" : "fit");
   },
   onDownload: (_stage, result) => result && downloadFile(result.file ?? result.make()),
 });
@@ -153,38 +159,22 @@ function status(message, error = false) {
 // ---------------------------------------------------------------------------
 
 let worker = null;
-let jobId = 0;
-const pending = new Map();
+let importAbort = null;
 let workerProgress = null; // a group run maps each dataset's progress into its share
 
 function ensureWorker() {
   if (worker) return worker;
-  worker = new Worker(new URL("./lcmodel-worker.js", import.meta.url), { type: "module" });
-  worker.onmessage = ({ data }) => {
-    const job = pending.get(data.id);
-    if (!job) return;
-    if (data.type === "progress") {
-      if (workerProgress) workerProgress(data.fraction, data.text);
-      else progress.setProgress(data.fraction, data.text);
-      return;
-    }
-    pending.delete(data.id);
-    if (data.type === "done") job.resolve(data.result);
-    else job.reject(Object.assign(new Error(data.message), { trap: data.name === "RuntimeError" }));
-  };
-  worker.onerror = (event) => {
-    for (const job of pending.values()) job.reject(new Error(event.message || "The processing worker failed."));
-    pending.clear();
-  };
+  worker = createWorkerSession(reportWorkerProgress);
   return worker;
 }
 
+function reportWorkerProgress(fraction, text) {
+  if (workerProgress) workerProgress(fraction, text);
+  else progress.setProgress(fraction, text);
+}
+
 function runJob(job, transfer = []) {
-  const id = ++jobId;
-  return new Promise((resolve, reject) => {
-    pending.set(id, { resolve, reject });
-    ensureWorker().postMessage({ ...job, id }, transfer);
-  });
+  return ensureWorker().run(job, transfer);
 }
 
 /** The shared pipeline's engine: FID-A and LCModel in the worker. */
@@ -200,12 +190,6 @@ function cancelWorker() {
   if (!worker) return;
   worker.terminate();
   worker = null;
-  for (const job of pending.values()) {
-    const error = new Error("Cancelled");
-    error.name = "AbortError";
-    job.reject(error);
-  }
-  pending.clear();
   // The module's loaded datasets went with the worker; ensureLoaded reads them again.
   if (input?.kind === "fida") input.stale = true;
 }
@@ -215,7 +199,8 @@ async function ensureLoaded() {
   if (input?.kind !== "fida" || !input.stale) return;
   progress.setIndeterminate("Reading the data again…");
   const payload = await Promise.all(input.sources.map(async (s) => ({ name: s.name, bytes: await s.file.arrayBuffer() })));
-  const loaded = await runJob({ type: "load", files: payload }, payload.map((f) => f.bytes));
+  const loaded = await runJob({ type: "load", files: payload, options: input.loadOptions }, payload.map((f) => f.bytes));
+  if (loaded.error) throw new Error(loaded.error);
   if (loaded.datasets.length !== input.datasets.length) throw new Error("The files changed since they were loaded. Load them again.");
   input.stale = false;
 }
@@ -228,6 +213,7 @@ function setBusy(value) {
   busy = value;
   $("dataInput").disabled = value;
   $("folderInput").disabled = value;
+  $("waterInput").disabled = value || !input;
   $("basisInput").disabled = value;
   $("editedToggle").disabled = value;
   tissue.setDisabled(value);
@@ -270,61 +256,171 @@ function clearResults() {
   if (view === "group" && !hasGroup()) showView("fit");
 }
 
-async function loadFiles(files, signal) {
-  if (busy) throw new Error("Files are still loading. Wait or cancel, then retry.");
-  setBusy(true);
-  fits.clear();
-  renderGroup();
-  clearResults();
-  progress.begin("Reading files…");
-  status(`Reading ${files.length} file${files.length === 1 ? "" : "s"}…`);
-  const abort = () => cancelWorker();
-  signal?.addEventListener("abort", abort, { once: true });
-  try {
-    const read = await Promise.all(files.map(async (file) => {
-      const bytes = new Uint8Array(await file.arrayBuffer());
-      // A folder keeps its relative paths (picker: webkitRelativePath; drop: bindFileDrop's
-      // _webkitRelativePath), so subjects with the same file names pair within their folders.
-      return { name: file.webkitRelativePath || file._webkitRelativePath || file.name, bytes, head: textHead(bytes), file };
-    }));
+function sourceFiles(files) {
+  return files.map((file) => ({ name: file.webkitRelativePath || file._webkitRelativePath || file.name, file }));
+}
+
+async function readSources(sources, signal) {
+  return Promise.all(sources.map(async ({ name, file }) => {
     signal?.throwIfAborted();
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    signal?.throwIfAborted();
+    return { name, bytes, head: textHead(bytes), file };
+  }));
+}
+
+function waterSources(files) {
+  if (!input) throw new Error("Load a spectrum before adding its water reference.");
+  const targetPath = input.datasets[input.index].path;
+  const previous = input.loadOptions?.water ?? [];
+  const replaced = new Set(previous.find((w) => w.targetPath === targetPath)?.files ?? []);
+  const added = sourceFiles(files).map((source) => ({ ...source, name: `water-references/${encodeURIComponent(targetPath)}/${source.name}` }));
+  const sources = new Map(input.sources.filter((s) => !replaced.has(s.name)).map((s) => [s.name, s]));
+  for (const source of added) sources.set(source.name, source);
+  return {
+    sources: [...sources.values()],
+    options: { water: [...previous.filter((w) => w.targetPath !== targetPath), { targetPath, files: added.map((s) => s.name) }] },
+    targetPath,
+  };
+}
+
+function chooseAnatomy(images, signal) {
+  if (images.length === 1) return Promise.resolve(images[0]);
+  const field = $("anatomySeriesField");
+  const select = $("anatomySeries");
+  field.hidden = false;
+  $("tissueSection").open = true;
+  select.replaceChildren(new Option("Choose the T1 series…", ""), ...images.map((image, index) => new Option(image.name, String(index))));
+  status("Choose the T1 anatomical series to finish importing.");
+  return new Promise((resolve, reject) => {
+    const cleanup = () => {
+      field.hidden = true;
+      select.removeEventListener("change", choose);
+      signal.removeEventListener("abort", abort);
+    };
+    const choose = () => {
+      if (select.value === "") return;
+      const image = images[Number(select.value)];
+      cleanup();
+      resolve(image);
+    };
+    const abort = () => {
+      cleanup();
+      reject(signal.reason);
+    };
+    select.addEventListener("change", choose);
+    signal.addEventListener("abort", abort, { once: true });
+    signal.throwIfAborted();
+  });
+}
+
+async function prepareAnatomy(images, sources, signal) {
+  if (!images?.length) return null;
+  const image = await chooseAnatomy(images, signal);
+  const original = new Map(sources.map((source) => [source.name, source.file]));
+  return tissue.prepareT1(image.files.map((name) => original.get(name)), signal);
+}
+
+async function loadFiles(files, signal, { water = false } = {}) {
+  if (busy) throw new Error("Files are still loading. Wait or cancel, then retry.");
+  if (water && !input) throw new Error("Load a spectrum before adding its water reference.");
+  const controller = new AbortController();
+  importAbort = controller;
+  const abort = () => controller.abort();
+  signal?.addEventListener("abort", abort, { once: true });
+  if (signal?.aborted) controller.abort();
+  const importSignal = controller.signal;
+  let candidate = null;
+  const stopCandidate = () => candidate?.session.terminate();
+  importSignal.addEventListener("abort", stopCandidate);
+  setBusy(true);
+  progress.begin(water ? "Reading the water reference…" : "Reading files…");
+  status(`Reading ${files.length} file${files.length === 1 ? "" : "s"}…`);
+  try {
+    const read = await readSources(sourceFiles(files), importSignal);
     const sorted = sortInputs(read);
     const decode = (file) => new TextDecoder().decode(file.bytes);
-    if (sorted.basis.length) setCustomBasis(sorted.basis[0].name, decode(sorted.basis[0]));
+    const basis = sorted.basis.length ? parseCustomBasis(sorted.basis[0].name, decode(sorted.basis[0])) : null;
     const control = sorted.control.length ? parseControl(decode(sorted.control[0])) : null;
-    if (sorted.raw.length) {
-      const water = sorted.water[0];
-      input = rawInput({ name: sorted.raw[0].name, text: decode(sorted.raw[0]), waterName: water?.name ?? null, water: water ? decode(water) : null, control });
-      $("hzpppmInput").value = input.header.hzpppm ?? "";
-      $("dwellInput").value = input.header.deltat ? +(input.header.deltat * 1000).toPrecision(6) : "";
-    } else if (sorted.other.length) {
-      input = await loadWithFida(sorted.other, signal);
+    let next;
+    let nextT1 = null;
+    if (input?.kind === "raw" && (water || (!sorted.raw.length && sorted.water.length))) {
+      const references = [...sorted.raw, ...sorted.water];
+      if (references.length !== 1 || sorted.other.length) throw new Error("Choose one LCModel .H2O or water .RAW reference for this .RAW spectrum.");
+      next = rawInput({ name: input.name, text: input.text, waterName: references[0].name, water: decode(references[0]), control: input.header });
+      next.header = input.header;
+      water = true;
+    } else if (!water && sorted.raw.length) {
+      next = rawInput({ name: sorted.raw[0].name, text: decode(sorted.raw[0]), waterName: sorted.water[0]?.name ?? null, water: sorted.water.length ? decode(sorted.water[0]) : null, control });
+      if (sorted.other.length) {
+        candidate = await stageFida(sorted.other, importSignal);
+        nextT1 = await prepareAnatomy(candidate.loaded.images, sorted.other, importSignal);
+      }
+    } else if (sorted.other.length || water) {
+      let assignment = water ? waterSources(files) : null;
+      let inputs = assignment ? await readSources(assignment.sources, importSignal) : sorted.other;
+      candidate = await stageFida(inputs, importSignal, assignment?.options);
+      if (!water && !candidate.loaded.datasets.length && candidate.loaded.unpairedWater?.length && input?.kind === "fida") {
+        candidate.session.terminate();
+        assignment = waterSources(files);
+        inputs = await readSources(assignment.sources, importSignal);
+        candidate = await stageFida(inputs, importSignal, assignment.options);
+        water = true;
+      }
+      const loaded = candidate.loaded;
+      const imageNames = new Set((loaded.images ?? []).flatMap((image) => image.files));
+      nextT1 = await prepareAnatomy(loaded.images, inputs, importSignal);
+      if (loaded.datasets.length) {
+        next = { ...fidaInput(loaded), sources: inputs.filter((s) => !imageNames.has(s.name)).map(({ name, file }) => ({ name, file })), loadOptions: assignment?.options };
+        if (assignment) {
+          const overrides = new Map(input.datasets.map((dataset) => [dataset.path, dataset.editOverride]));
+          for (const dataset of next.datasets) if (overrides.has(dataset.path)) dataset.editOverride = overrides.get(dataset.path);
+          next.index = next.datasets.findIndex((d) => d.path === assignment.targetPath);
+        }
+        if (next.index < 0) throw new Error("The selected spectrum could not be paired with this water reference.");
+      } else if (!nextT1) {
+        const first = loaded.errors[0];
+        throw new Error(loaded.unpairedWater?.length ? "Only a water reference was found. Load its spectrum first, then add the reference." : first ? `${first.file}: ${first.error}` : "No readable spectroscopy data found.");
+      }
     } else if (sorted.water.length) {
-      throw new Error("Only a water reference was found; add the water-suppressed spectrum.");
-    } else if (sorted.basis.length) {
-      input = null;
-      status("Basis set loaded; add spectroscopy data.");
-      progress.end("Basis set loaded");
-      return;
-    } else {
+      throw new Error("Only a water reference was found. Load its spectrum first, then add the reference.");
+    } else if (!basis) {
       throw new Error("No spectroscopy data found among the files.");
     }
-    $("fileInfo").hidden = false;
-    $("fileInfo").textContent = files.length > 6 ? `${files.length} files` : files.map((f) => f.name).join(", ");
-    $("dropZone").classList.add("has-files");
-    $("emptyState").textContent = datasetCount() > 1
-      ? "Data loaded. Check the basis set, then fit all datasets."
-      : "Data loaded. Check the basis set, then preprocess and fit.";
-    $("emptyState").hidden = false;
-    showDataset();
-    progress.end("Data loaded");
-    status(`${describeInput()} loaded`);
-  } catch (error) {
-    input = null;
-    showDataset();
-    throw error;
+    importSignal.throwIfAborted();
+    if (next) {
+      worker?.terminate();
+      worker = next.kind === "fida" ? candidate.session : null;
+      if (next.kind === "fida") candidate = null;
+      input = next;
+      fits.clear();
+      renderGroup();
+      clearResults();
+      if (input.kind === "raw" && !water) {
+        $("hzpppmInput").value = input.header.hzpppm ?? "";
+        $("dwellInput").value = input.header.deltat ? +(input.header.deltat * 1000).toPrecision(6) : "";
+      }
+      $("fileInfo").hidden = false;
+      $("fileInfo").textContent = input.kind === "raw" ? input.name : input.sources.length > 6 ? `${input.sources.length} files` : input.sources.map((s) => s.file.name).join(", ");
+      $("dropZone").classList.add("has-files");
+      $("emptyState").textContent = datasetCount() > 1 ? "Data loaded. Check the basis set, then fit all datasets." : "Data loaded. Check the basis set, then preprocess and fit.";
+      $("emptyState").hidden = false;
+      showDataset();
+    }
+    if (basis) setCustomBasis(basis.name, basis.text);
+    if (nextT1) {
+      $("tissueSection").open = true;
+      await tissue.commitT1(nextT1);
+      if (fit) renderConcentrations();
+    } else if (next && view === "voxel" && tissue.hasT1) showView("voxel");
+    const message = water ? "Water reference attached to the selected dataset." : next ? `${describeInput()} loaded` : nextT1 ? "T1 loaded." : "Basis set loaded; add spectroscopy data.";
+    progress.end(message);
+    status(message);
   } finally {
+    candidate?.session.terminate();
+    importSignal.removeEventListener("abort", stopCandidate);
     signal?.removeEventListener("abort", abort);
+    if (importAbort === controller) importAbort = null;
     setBusy(false);
   }
 }
@@ -340,23 +436,27 @@ async function loadT1Files(files, signal) {
   }
 }
 
-async function loadWithFida(files, signal) {
+async function stageFida(files, signal, options) {
   progress.setIndeterminate("Reading the data with FID-A…");
-  const payload = files.map((f) => ({ name: f.name, bytes: f.bytes.buffer }));
-  const loaded = await runJob({ type: "load", files: payload }, payload.map((f) => f.bytes));
-  signal?.throwIfAborted();
-  for (const e of loaded.errors) log.log(`${e.file}: ${e.error}`, "warning");
-  for (const e of loaded.ignored) log.log(`${e.file}: ${e.reason}`, "info");
-  for (const name of loaded.unpairedWater ?? []) log.log(`${name}: a water reference with no spectrum to pair it with`, "warning");
-  if (!loaded.datasets.length) {
-    const first = loaded.errors[0];
-    throw new Error(first ? `${first.file}: ${first.error}` : "No readable spectroscopy data found.");
+  const session = createWorkerSession(reportWorkerProgress);
+  const abort = () => session.terminate();
+  signal.addEventListener("abort", abort, { once: true });
+  try {
+    signal.throwIfAborted();
+    const payload = files.map((f) => ({ name: f.name, bytes: f.bytes.buffer }));
+    const loaded = await session.run({ type: "load", files: payload, options }, payload.map((f) => f.bytes));
+    signal.throwIfAborted();
+    if (loaded.error) throw new Error(loaded.error);
+    for (const e of loaded.errors) log.log(`${e.file}: ${e.error}`, "warning");
+    for (const e of loaded.ignored) log.log(`${e.file}: ${e.reason}`, "info");
+    for (const name of loaded.unpairedWater ?? []) log.log(`${name}: a water reference with no spectrum to pair it with`, "warning");
+    return { session, loaded };
+  } catch (error) {
+    session.terminate();
+    throw error;
+  } finally {
+    signal.removeEventListener("abort", abort);
   }
-  // Subjects in their own folders may share file names; fidaInput labels them by folder.
-  const loadedInput = fidaInput(loaded);
-  if (loaded.datasets.length > 1) log.log(`${loaded.datasets.length} datasets: ${loaded.datasets.map((d) => `${d.label}${d.water ? ` + ${d.water}` : ""}`).join(", ")}`);
-  // The worker took the bytes; the File objects let it read them again.
-  return { ...loadedInput, sources: files.map((f) => ({ name: f.name, file: f.file })) };
 }
 
 /** What the basis set is matched against, for dataset `k`. */
@@ -423,6 +523,10 @@ function showDataset() {
   }
   showEditing();
   const water = hasWater();
+  const waterName = input?.kind === "raw" ? input.waterName : input?.datasets[input.index]?.water;
+  $("waterInfo").hidden = !waterName;
+  $("waterInfo").textContent = waterName ? `${waterName} → ${describeInput()}` : "";
+  $("waterDrop").classList.toggle("has-files", water);
   $("waterScaling").disabled = !water;
   $("waterScaling").checked = water;
   $("ecc").disabled = !water;
@@ -471,8 +575,10 @@ function setCustomBasis(name, text) {
   $("basisInfo").hidden = false;
   $("basisInfo").textContent = `${name}: ${header.metabolites.length} metabolites${header.teMs ? `, TE ${header.teMs} ms` : ""}${header.hzpppm ? `, ${(header.hzpppm / 42.577).toFixed(1)} T` : ""}`;
   $("basisDrop").classList.add("has-files");
-  $("basisSelect").value = CUSTOM;
   recommend();
+  $("basisSelect").value = CUSTOM;
+  showBasisAdvice();
+  showMacromoleculeModel();
 }
 
 function renderBasisOptions(ranked, assessed) {
@@ -583,7 +689,8 @@ async function run({ throwOnError = false } = {}) {
       settings: fitSettings(),
       onStep: step,
     });
-    if (entry.fit.water && tissue.needsSegmentation) {
+    const segmented = entry.fit.water && tissue.needsSegmentation;
+    if (segmented) {
       progress.setIndeterminate("Segmenting the T1 image…");
       try {
         await tissue.measure();
@@ -593,7 +700,7 @@ async function run({ throwOnError = false } = {}) {
       }
     }
     fits.set(k, entry);
-    showEntry(entry);
+    showEntry(entry, { view: segmented && tissue.source?.kind === "segmentation" ? "voxel" : "fit" });
     const seconds = ((performance.now() - started) / 1000).toFixed(1);
     progress.end(`Fit done in ${seconds} s`);
     status(`Fit done in ${seconds} s`);
@@ -811,7 +918,7 @@ function showResults(next = "fit") {
   setViewEnabled("preprocessing", Boolean(processed));
   $("outputSection").open = true;
   $("emptyState").hidden = true;
-  showView(next === "group" && hasGroup() ? "group" : "fit");
+  showView(next === "group" && !hasGroup() ? "fit" : next);
 }
 
 /** The selected fit's entry in `fits`. */
@@ -969,15 +1076,19 @@ function showView(id) {
 // Wiring
 // ---------------------------------------------------------------------------
 
-function importFiles(files) {
+function importFiles(files, options) {
   exampleControl.cancel();
-  return loadFiles(files).catch((error) => {
+  return loadFiles(files, undefined, options).catch((error) => {
     status(error.name === "AbortError" ? "Loading cancelled" : error.message, error.name !== "AbortError");
     progress.end(error.name === "AbortError" ? "Loading cancelled" : error.message, { success: false });
   });
 }
 
 $("cancelButton").onclick = () => {
+  if (importAbort) {
+    importAbort.abort();
+    return;
+  }
   runAbort?.abort();
   exampleControl.cancel();
   tissue.cancel();
@@ -989,6 +1100,12 @@ $("dataInput").addEventListener("change", (event) => {
   if (files.length) void importFiles(files);
 });
 bindFileDrop($("dropZone"), async (files) => importFiles(await files));
+$("waterInput").addEventListener("change", (event) => {
+  const files = Array.from(event.target.files);
+  event.target.value = "";
+  if (files.length) void importFiles(files, { water: true });
+});
+bindFileDrop($("waterDrop"), async (files) => importFiles(await files, { water: true }));
 $("folderInput").addEventListener("change", (event) => {
   const files = Array.from(event.target.files);
   event.target.value = "";
@@ -1172,6 +1289,7 @@ async function fitGroupOperation(context) {
 registerAppAutomation({ app: APP.id, convertDicom: runDcm2niix, operations: { fit: fitOperation, "fit-group": fitGroupOperation } });
 
 window.addEventListener("pagehide", () => {
+  importAbort?.abort();
   exampleControl.destroy();
   tissue.cancel();
   cancelWorker();

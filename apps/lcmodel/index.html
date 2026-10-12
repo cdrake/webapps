@@ -16,13 +16,25 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             <span>Drop spectroscopy files: twix, P-file, RDA, DICOM, SPAR/SDAT, NIfTI-MRS, .RAW</span>
           </label>
-          <label class="nd-file" id="folderPick">Or choose a folder of subjects<input id="folderInput" type="file" data-neurodesk-input="dataset" webkitdirectory multiple hidden /></label>
+          <label class="nd-file" id="folderPick">Or choose a session or subject folder<input id="folderInput" type="file" data-neurodesk-input="dataset" webkitdirectory multiple hidden /></label>
           <p id="fileInfo" class="nd-file-info" hidden></p>
           <div class="nd-field" id="datasetField" hidden>
             <label for="datasetSelect">Dataset</label>
             <select id="datasetSelect"></select>
           </div>
           <p id="datasetSummary" class="nd-hint" hidden></p>
+          <details class="nd-sidebar-section" id="waterSection">
+            <summary class="nd-section-title">Water reference</summary>
+            <div class="nd-section-content">
+              <label class="nd-file" id="waterDrop">
+                <input id="waterInput" type="file" data-neurodesk-input="dataset" multiple aria-label="Choose the water reference for the selected dataset" disabled />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span>Drop the unsuppressed water reference, including its companion header.</span>
+              </label>
+              <p id="waterInfo" class="nd-file-info" hidden></p>
+              <p class="nd-hint">Applies to the selected dataset. Load its spectrum first.</p>
+            </div>
+          </details>
           <label class="nd-check" id="editedField" hidden><input id="editedToggle" type="checkbox" /> Edited MEGA-PRESS: alternate edit-ON and edit-OFF <span class="nd-info-icon" tabindex="0" aria-label="About editing detection">i<span class="nd-info-tooltip" id="editedInfo">GE and Philips files do not record editing.</span></span></label>
           <div id="acquisitionFields" hidden>
             <div class="nd-row">
@@ -122,6 +134,10 @@
       <details class="nd-sidebar-section" id="tissueSection">
         <summary class="nd-section-title">Tissue correction</summary>
         <div class="nd-section-content">
+          <div id="anatomySeriesField" class="nd-field" hidden>
+            <label for="anatomySeries">T1 anatomical series</label>
+            <select id="anatomySeries" aria-label="T1 anatomical series"></select>
+          </div>
           <label class="nd-file" id="t1Drop">
             <input id="t1Input" type="file" data-neurodesk-input="image" multiple aria-label="Choose the T1-weighted image" />
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>

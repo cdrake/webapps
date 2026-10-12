@@ -30,6 +30,7 @@ test("fit reproduces LCModel's native table on its test case", async ({ page, re
   const snapshot = await dispatch(page, "snapshot");
   expect(snapshot.state, JSON.stringify(snapshot.error)).toBe("succeeded");
   const { report } = snapshot;
+  expect(report.provenance.basisSet).toBe("3t.basis");
   // Native gfortran LCModel on the same files (exes/lcmodel/tests/data/test_lcm/native.table).
   expect(report.measurements.metabolites.NAA.concentration).toBeCloseTo(1.91e-6, 8);
   expect(report.measurements.ratioTo).toBe("Cr+PCr");
