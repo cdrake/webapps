@@ -145,8 +145,10 @@ export function createTissuePanel(hooks) {
         signal?.removeEventListener("abort", stop);
         worker?.terminate();
         worker = null;
-        if (data.error) reject(new Error(`Segmentation failed: ${data.error}`));
-        else resolve(data.result);
+        if (data.error) {
+          for (const line of data.log?.slice(-40) ?? []) hooks.log.log(`MindMap: ${line}`);
+          reject(new Error(`Segmentation failed: ${data.error}`));
+        } else resolve(data.result);
       };
       worker.onerror = (event) => {
         signal?.removeEventListener("abort", stop);
@@ -166,7 +168,7 @@ export function createTissuePanel(hooks) {
    * software renderer (SwiftShader, llvmpipe), where MindMap takes many
    * minutes; its threaded CPU module is far faster there. Prefer WebGPU,
    * then hardware WebGL2, then the CPU (the page is cross-origin isolated).
-   * A T1 too large for the GPU modules' heap always takes the CPU.
+   * On an isolated page, a T1 too large for the GPU heap takes the CPU.
    */
   async function chooseBackend() {
     if (t1.dims[0] * t1.dims[1] * t1.dims[2] > GPU_MAX_VOXELS && globalThis.crossOriginIsolated) return "cpu";
