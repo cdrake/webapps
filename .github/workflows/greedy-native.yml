@@ -12,7 +12,6 @@ on:
       - 'apps/greedy/package.json'
       - 'scripts/package-greedy*'
       - 'scripts/greedy-third-party-notices.py'
-      - 'exes/synthsr/scripts/ci_macos_release.sh'
       - 'test/greedy-distribution.test.mjs'
   push:
     branches: [main]
@@ -26,7 +25,6 @@ on:
       - 'apps/greedy/package.json'
       - 'scripts/package-greedy*'
       - 'scripts/greedy-third-party-notices.py'
-      - 'exes/synthsr/scripts/ci_macos_release.sh'
       - 'test/greedy-distribution.test.mjs'
   workflow_dispatch:
     inputs:
@@ -40,7 +38,7 @@ permissions:
 
 concurrency:
   group: greedy-native-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   WINDOWS_SIGNING_ENABLED: ${{ github.event_name != 'pull_request' && vars.WINDOWS_SIGNING_ENABLED || 'false' }}

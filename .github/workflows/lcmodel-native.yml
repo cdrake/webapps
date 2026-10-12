@@ -14,30 +14,22 @@ on:
   pull_request:
     paths:
       - '.github/workflows/lcmodel-native.yml'
-      - '.github/workflows/node-cli-portable.yml'
-      - 'exes/node-cli/**'
-      - 'exes/synthsr/scripts/ci_macos_release.sh'
-      - 'exes/synthsr/scripts/notarize_macos.sh'
       - 'exes/lcmodel/**'
       - 'exes/fida/**'
       - 'packages/lcmodel/**'
       - 'models/lcmodel.manifest.json'
       - 'apps/lcmodel/**'
-      - 'test/independent-workflows.test.mjs'
   push:
     branches: [main]
     paths:
       - '.github/workflows/lcmodel-native.yml'
       - '.github/workflows/node-cli-portable.yml'
       - 'exes/node-cli/**'
-      - 'exes/synthsr/scripts/ci_macos_release.sh'
-      - 'exes/synthsr/scripts/notarize_macos.sh'
       - 'exes/lcmodel/**'
       - 'exes/fida/**'
       - 'packages/lcmodel/**'
       - 'models/lcmodel.manifest.json'
       - 'apps/lcmodel/**'
-      - 'test/independent-workflows.test.mjs'
   workflow_dispatch:
     inputs:
       sign_release:
@@ -50,7 +42,7 @@ permissions:
 
 concurrency:
   group: lcmodel-native-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   test:

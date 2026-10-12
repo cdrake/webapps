@@ -5,13 +5,8 @@ on:
     paths:
       - '.github/workflows/easy-mp2rage-native.yml'
       - '.github/actions/setup-wasm-opt/**'
-      - '.github/workflows/node-cli-portable.yml'
-      - 'exes/node-cli/**'
-      - 'exes/synthsr/scripts/ci_macos_release.sh'
-      - 'exes/synthsr/scripts/notarize_macos.sh'
       - 'packages/easy-mp2rage/**'
       - 'apps/easy-mp2rage/**'
-      - 'test/independent-workflows.test.mjs'
   push:
     branches: [main]
     paths:
@@ -19,11 +14,8 @@ on:
       - '.github/actions/setup-wasm-opt/**'
       - '.github/workflows/node-cli-portable.yml'
       - 'exes/node-cli/**'
-      - 'exes/synthsr/scripts/ci_macos_release.sh'
-      - 'exes/synthsr/scripts/notarize_macos.sh'
       - 'packages/easy-mp2rage/**'
       - 'apps/easy-mp2rage/**'
-      - 'test/independent-workflows.test.mjs'
   workflow_dispatch:
     inputs:
       sign_release:
@@ -33,7 +25,7 @@ on:
 
 concurrency:
   group: easy-mp2rage-native-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read

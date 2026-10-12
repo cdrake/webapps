@@ -15,6 +15,10 @@ on:
         description: JSON list of {os, platform} runners, one per release.json target
         type: string
         required: true
+      all_platforms_on_pull_request:
+        description: Build every target on pull requests too, not only linux-x64
+        type: boolean
+        default: false
       publish_release:
         description: Attach every verified archive to the package's existing release
         type: boolean
@@ -52,12 +56,32 @@ env:
   AZURE_ARTIFACT_SIGNING_PROFILE: ${{ vars.AZURE_ARTIFACT_SIGNING_PROFILE }}
 
 jobs:
+  # Pull requests build linux-x64 only; pushes to main, manual runs and
+  # releases build every target. Windows and macOS runners are the scarce ones.
+  runners:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      targets: ${{ steps.select.outputs.targets }}
+    steps:
+      - id: select
+        env:
+          TARGETS: ${{ inputs.targets }}
+          LINUX_ONLY: ${{ github.event_name == 'pull_request' && !inputs.all_platforms_on_pull_request }}
+        run: |
+          if [ "$LINUX_ONLY" = true ]; then
+            echo "targets=$(jq -c 'map(select(.platform == "linux-x64"))' <<<"$TARGETS")" >> "$GITHUB_OUTPUT"
+          else
+            echo "targets=$(jq -c . <<<"$TARGETS")" >> "$GITHUB_OUTPUT"
+          fi
+
   portable:
     name: ${{ matrix.platform }}
+    needs: [runners]
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(inputs.targets) }}
+        include: ${{ fromJSON(needs.runners.outputs.targets) }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     permissions:

@@ -105,7 +105,7 @@ test('native packages share one gated publisher while signing stays isolated', a
 
 test('native and independent test workflows pin actions and discard checkout credentials', async () => {
   const portable = (await portableCallers()).map(([name]) => name);
-  for (const name of ['synthsr-native', 'synthseg-native', ...portable, 'node-cli-portable', 'greedy-native', 'sct-full-tests', 'native-nifti', 'native-publish']) {
+  for (const name of ['synthsr-native', 'synthseg-native', ...portable, 'node-cli-portable', 'node-cli', 'greedy-native', 'sct-full-tests', 'native-nifti', 'native-publish']) {
     const flow = await workflow(name);
     for (const job of Object.values(flow.jobs)) {
       if (job.uses) assert.match(job.uses, /^\.\/\.github\/workflows\/[\w-]+\.yml$/, `${name}: ${job.uses}`);
@@ -174,9 +174,37 @@ test('portable Node command lines build on target runners and publish through on
     const targets=JSON.parse(flow.jobs.portable.with.targets);
     assert.deepEqual(targets.map(entry=>entry.platform).sort(),Object.keys(release.targets).sort(),`${name} builds every release target`);
     for(const entry of targets)assert.equal(entry.os,runners[entry.platform],`${name} ${entry.platform}`);
-    for(const trigger of [flow.on.pull_request,flow.on.push]) {
-      for(const path of ['exes/node-cli/**','.github/workflows/node-cli-portable.yml',`${packageDir}/**`])assert.ok(trigger.paths.includes(path),`${name} selects ${path}`);
+    for(const path of [`.github/workflows/${name}.yml`,`${packageDir}/**`])assert.ok(flow.on.pull_request.paths.includes(path),`${name} pull requests select ${path}`);
+    for(const path of ['exes/node-cli/**','.github/workflows/node-cli-portable.yml',`${packageDir}/**`])assert.ok(flow.on.push.paths.includes(path),`${name} pushes select ${path}`);
+    for(const path of ['exes/node-cli/**','.github/workflows/node-cli-portable.yml'])assert.ok(!flow.on.pull_request.paths.includes(path),`${name}: node-cli.yml gates ${path} on pull requests`);
+    assert.equal(flow.jobs.portable.with.all_platforms_on_pull_request,undefined,`${name} builds linux-x64 only on pull requests`);
+  }
+});
+
+test('pull requests build the portable packager on linux-x64, except the packager gate', async () => {
+  const shared=await workflow('node-cli-portable');
+  const select=shared.jobs.runners.steps.find(step=>step.id==='select');
+  assert.equal(select.env.LINUX_ONLY,"${{ github.event_name == 'pull_request' && !inputs.all_platforms_on_pull_request }}");
+  assert.match(select.run,/select\(\.platform == "linux-x64"\)/);
+  assert.deepEqual(shared.jobs.portable.needs,['runners']);
+  assert.equal(shared.jobs.portable.strategy.matrix.include,'${{ fromJSON(needs.runners.outputs.targets) }}');
+  const gate=await workflow('node-cli');
+  assert.deepEqual(Object.keys(gate.on),['pull_request']);
+  for(const path of ['exes/node-cli/**','.github/workflows/node-cli-portable.yml'])assert.ok(gate.on.pull_request.paths.includes(path));
+  assert.equal(gate.jobs.packager.uses,'./.github/workflows/node-cli-portable.yml');
+  assert.equal(gate.jobs.packager.with.all_platforms_on_pull_request,true);
+  assert.deepEqual(JSON.parse(gate.jobs.packager.with.targets).map(entry=>entry.platform).sort(),['linux-x64','macos-arm64','windows-x64']);
+});
+
+test('no pull request trigger depends on contract tests or release-only signing scripts', async () => {
+  const files=(await readdir(new URL('../.github/workflows/',import.meta.url))).filter(name=>name.endsWith('.yml'));
+  for(const file of files) {
+    const flow=await workflow(file.slice(0,-'.yml'.length));
+    const paths=flow.on?.pull_request?.paths??[];
+    for(const path of ['test/independent-workflows.test.mjs','exes/synthsr/scripts/ci_macos_release.sh','exes/synthsr/scripts/notarize_macos.sh']) {
+      assert.ok(!paths.includes(path),`${file} starts on ${path}`);
     }
+    if(flow.on?.pull_request&&flow.concurrency)assert.notEqual(flow.concurrency['cancel-in-progress'],false,`${file} cancels superseded pull request runs`);
   }
 });
 
