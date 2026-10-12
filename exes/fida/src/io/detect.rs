@@ -260,24 +260,25 @@ fn dicom_has_spectrum(bytes: &[u8]) -> bool {
     }
 }
 
+fn dicom_identity(ds: &Dataset, files: &[NamedFile]) -> Option<(String, String)> {
+    if ds.format != Format::SiemensDicom {
+        return None;
+    }
+    let i = ds.files.iter().copied().find(|&i| !split_path(files[i].name).1.starts_with('.'))?;
+    let d = super::dicom_siemens::parse_dicom(files[i].bytes).ok()?;
+    Some((d.string(0x0020, 0x000d).unwrap_or_default(), d.string(0x0010, 0x0020).unwrap_or_default()))
+}
+
+fn conflicting_dicom_identity(a: &Dataset, b: &Dataset, files: &[NamedFile]) -> bool {
+    let (Some((a_study, a_patient)), Some((b_study, b_patient))) = (dicom_identity(a, files), dicom_identity(b, files)) else { return false };
+    (!a_study.is_empty() && !b_study.is_empty() && a_study != b_study)
+        || (!a_patient.is_empty() && !b_patient.is_empty() && a_patient != b_patient)
+}
+
 fn same_dicom_study(a: &Dataset, b: &Dataset, files: &[NamedFile]) -> bool {
-    if a.format != Format::SiemensDicom || b.format != Format::SiemensDicom {
-        return false;
-    }
-    let read = |ds: &Dataset| {
-        ds.files.iter().copied()
-            .find(|&i| !split_path(files[i].name).1.starts_with('.'))
-            .and_then(|i| super::dicom_siemens::parse_dicom(files[i].bytes).ok())
-    };
-    let (Some(a), Some(b)) = (read(a), read(b)) else { return false };
-    let (Some(a_study), Some(b_study)) = (a.string(0x0020, 0x000d), b.string(0x0020, 0x000d)) else { return false };
-    if a_study.is_empty() || a_study != b_study {
-        return false;
-    }
-    match (a.string(0x0010, 0x0020), b.string(0x0010, 0x0020)) {
-        (Some(a_patient), Some(b_patient)) if !a_patient.is_empty() && !b_patient.is_empty() => a_patient == b_patient,
-        _ => true,
-    }
+    let (Some((a_study, a_patient)), Some((b_study, b_patient))) = (dicom_identity(a, files), dicom_identity(b, files)) else { return false };
+    !a_study.is_empty() && a_study == b_study
+        && (a_patient.is_empty() || b_patient.is_empty() || a_patient == b_patient)
 }
 
 /// Leading directory components two paths share.
@@ -434,7 +435,7 @@ pub fn detect(files: &[NamedFile]) -> Detection {
                         || (!mdir.is_empty() && water_base(&wdir).as_deref() == Some(&mdir))
                 }
             };
-            if hit {
+            if hit && !conflicting_dicom_identity(&m, w, files) {
                 let shared = shared_dirs(mpath, split_path(files[w.files[0]].name).0);
                 if best.is_none_or(|(_, s)| shared > s) {
                     best = Some((wi, shared));
@@ -837,6 +838,30 @@ mod tests {
             assert_eq!(d.pairs.len(), 1, "{d:#?}");
             assert_eq!(d.pairs[0].water.is_some(), paired, "{d:#?}");
             assert_eq!(d.unpaired_water.len(), usize::from(!paired), "{d:#?}");
+        }
+    }
+
+    #[test]
+    fn named_dicom_pairs_reject_conflicting_identifiers() {
+        for name in ["20", "20_act", "20_ws"] {
+            for (study, patient, water_study, water_patient, paired) in [
+                ("1.2.3", "subject-01", "1.2.3", "subject-01", true),
+                ("1.2.3", "subject-01", "1.2.4", "subject-01", false),
+                ("1.2.3", "subject-01", "1.2.3", "subject-02", false),
+                ("", "subject-01", "", "subject-02", false),
+                ("1.2.3", "", "1.2.4", "", false),
+                ("", "", "", "", true),
+                ("1.2.3", "subject-01", "", "", true),
+            ] {
+                let spectrum = dicom_study(study, patient);
+                let water = dicom_study(water_study, water_patient);
+                let spectrum_path = format!("session/{name}/1.dcm");
+                let files = [nf(&spectrum_path, &spectrum), nf("session/20_w/1.dcm", &water)];
+                let d = detect(&files);
+                assert_eq!(d.pairs.len(), 1, "{d:#?}");
+                assert_eq!(d.pairs[0].water.is_some(), paired, "{name}: {d:#?}");
+                assert_eq!(d.unpaired_water.len(), usize::from(!paired), "{d:#?}");
+            }
         }
     }
 
