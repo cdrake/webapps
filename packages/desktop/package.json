@@ -14,6 +14,8 @@
     "package": "node ../../scripts/desktop/pack.mjs"
   },
   "devDependencies": {
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
     "electron": "40.10.6",
     "electron-builder": "26.15.3"
   },

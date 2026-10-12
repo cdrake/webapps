@@ -17,5 +17,9 @@
     "@neurodesk/synthsr": "workspace:*",
     "@neurodesk/webapp-components": "workspace:*",
     "onnxruntime-web": "1.29.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.0",
+    "vite": "5.4.21"
   }
 }

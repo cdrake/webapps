@@ -105,6 +105,70 @@ test('relative workspace imports require a declared runtime dependency', async (
   assert.equal(declared.filter(({ rule }) => rule === 'undeclared-runtime').length, 0);
 });
 
+test('relative paths into another workspace or the root node_modules fail, tooling included', async (t) => {
+  const files = {
+    'apps/example/node_modules/vite/index.js': leaf,
+    'node_modules/vite/index.js': leaf,
+    'packages/example/node_modules/onnxruntime-web/dist/ort.mjs': leaf,
+    'packages/example/src/gpu/verify.mjs': "import '../../../../apps/example/node_modules/vite/index.js';\n",
+    'packages/example/validation/check.mjs': "const vite = new URL('../../../node_modules/vite/', import.meta.url);\n",
+    'packages/example/src/runtime.js': "const ort = new URL('../node_modules/onnxruntime-web/dist/', import.meta.url);\n",
+  };
+  const manifests = new Map([['apps/example', { name: 'example' }], ['packages/example', { name: '@neurodesk/example' }]]);
+  const findings = await checkFixture(t, files, manifests);
+  assert.deepEqual(findings.filter(({ rule }) => rule === 'foreign-node-modules').map(({ from, to }) => `${from} -> ${to}`), [
+    'packages/example/src/gpu/verify.mjs -> apps/example/node_modules/vite/index.js',
+    'packages/example/validation/check.mjs -> node_modules/vite/',
+  ]);
+});
+
+test('installation paths are read as URLs, nested local installs pass and foreign require anchors fail', async (t) => {
+  const files = {
+    'node_modules/vite/index.js': leaf,
+    'packages/second/package.json': '{}\n',
+    'packages/example/node_modules/pkg/node_modules/dep/index.js': leaf,
+    'packages/example/validation/encoded.mjs': "const vite = new URL('../../../node%5Fmodules/vite/', import.meta.url);\n",
+    'packages/example/validation/dot-encoded.mjs': "const vite = new URL('%2e%2e/%2e%2e/%2e%2e/node_modules/vite/', import.meta.url);\n",
+    'packages/example/validation/remote.mjs': "const vite = new URL('https://example.com/node_modules/vite/', import.meta.url);\n",
+    'packages/example/validation/backslash.mjs': "const vite = new URL('..\\\\..\\\\..\\\\node_modules\\\\vite\\\\', import.meta.url);\n",
+    'packages/example/validation/nested.mjs': "const dep = new URL('../node_modules/pkg/node_modules/dep/index.js', import.meta.url);\n",
+    'packages/example/test/native.test.js': "import { createRequire } from 'node:module';\nconst ort = createRequire(new URL('../../second/package.json', import.meta.url))('onnxruntime-node');\nconst own = createRequire(import.meta.url);\nconst pinned = createRequire(new URL('../package.json', import.meta.resolve('@neurodesk/second/index.js')));\n",
+    'packages/example/scripts/progress.cjs': "require('./progress%.json');\n",
+    'packages/example/scripts/progress%.json': '{}\n',
+  };
+  const manifests = new Map([['packages/example', { name: '@neurodesk/example' }], ['packages/second', { name: '@neurodesk/second' }]]);
+  const findings = await checkFixture(t, files, manifests);
+  assert.deepEqual(findings.filter(({ rule }) => rule === 'foreign-node-modules').map(({ from, to }) => `${from} -> ${to}`), [
+    'packages/example/test/native.test.js -> packages/second/package.json',
+    'packages/example/validation/backslash.mjs -> node_modules/vite/',
+    'packages/example/validation/dot-encoded.mjs -> node_modules/vite/',
+    'packages/example/validation/encoded.mjs -> node_modules/vite/',
+  ]);
+});
+
+test('tooling imports need a declaration in the owning workspace, not only the root', async (t) => {
+  const files = {
+    'package.json': JSON.stringify({ devDependencies: { jsdom: '1.0.0', '@playwright/test': '1.0.0' } }),
+    'node_modules/jsdom/package.json': JSON.stringify({ name: 'jsdom', main: 'index.js' }),
+    'node_modules/jsdom/index.js': leaf,
+    'node_modules/@playwright/test/package.json': JSON.stringify({ name: '@playwright/test', main: 'index.js' }),
+    'node_modules/@playwright/test/index.js': leaf,
+    'apps/example/e2e/smoke.spec.js': "import { test } from '@playwright/test';\n",
+    'apps/example/test/model.test.js': "import { jest } from '@jest/globals';\nimport { JSDOM } from 'jsdom';\n",
+    'apps/example/src/main.js': leaf,
+  };
+  const manifests = new Map([['apps/example', { name: 'example', devDependencies: { jest: '1.0.0' } }]]);
+  const findings = await checkFixture(t, files, manifests);
+  assert.deepEqual(findings.filter(({ rule }) => rule === 'undeclared-tooling').map(({ from, to }) => `${from} -> ${to}`), [
+    'apps/example/e2e/smoke.spec.js -> @playwright/test',
+    'apps/example/test/model.test.js -> jsdom',
+  ]);
+  delete manifests.get('apps/example').devDependencies.jest;
+  Object.assign(manifests.get('apps/example').devDependencies, { '@playwright/test': '1.0.0', jsdom: '1.0.0' });
+  const declared = await checkFixture(t, files, manifests);
+  assert.deepEqual(declared.filter(({ rule }) => rule === 'undeclared-tooling').map(({ to }) => to), ['@jest/globals']);
+});
+
 test('Vite asset queries resolve without hiding missing or undeclared assets', async (t) => {
   const findings = await checkFixture(t, {
     'apps/example/src/main.js': "import existing from './asset.wasm?url';\nimport missing from './missing.wasm?url';\n",

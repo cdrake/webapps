@@ -50,5 +50,8 @@
     "@neurodesk/node-drivers": "workspace:*",
     "@neurodesk/webapp-components": "workspace:*",
     "@niivue/dcm2niix": "1.2.0"
+  },
+  "devDependencies": {
+    "jsdom": "24.1.3"
   }
 }

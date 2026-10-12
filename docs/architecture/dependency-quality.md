@@ -38,6 +38,19 @@ small existing runtime contracts. The checker enforces these rules:
   `verbatimModuleSyntax`; use declaration-level `import type` for an erased edge.
 - Unresolved production imports fail unless an exact existing staging or remote
   runtime contract explains how the production build resolves them.
+- No source, tooling included, may reach another workspace's or the root's
+  `node_modules` by relative path or `new URL(..., import.meta.url)`, nor
+  anchor `createRequire(new URL(...))` in another workspace (`foreign-node-modules`).
+  Those copies exist only because of pnpm's layout; import the package by name and
+  declare it in the owning workspace. Paths are read as URLs, so escapes and
+  backslashes cannot hide one. A workspace's own `node_modules`, nested installs
+  included, stays allowed, for example to stage `onnxruntime-web/dist` beside a
+  verifier. To resolve through a dependency's own pins, anchor on the package by
+  name: `createRequire(import.meta.resolve('@neurodesk/brain-extraction/mindgrab'))`.
+- Tests, validation and build scripts declare every package they import by name
+  in their own workspace (`undeclared-tooling`); the root's devDependencies only
+  serve root scripts. The one exception is `@jest/globals` in a workspace that
+  declares `jest`: Jest's runtime supplies that module and nothing installs it.
 
 Tests, validation scripts, Vite and Playwright configs, verification utilities
 and build scripts remain in the parsed graph, but do not become production roots
@@ -101,12 +114,45 @@ reference validator. The browser continues to export the same validator and
 preset; its worker imports the pure helper directly. No upstream source pin or
 scientific behavior changed.
 
-Several test and validation imports also use root development tooling, notably
-Playwright and jsdom in app/package tests and Ajv in the desktop contract generator.
-They are intentionally outside the runtime dependency rule. A follow-up can declare
-local devDependencies where independent workspace testing or publishing requires
-them. `packages/nesvor/src/gpu/verify-workflow.mjs` additionally imports Vite from
-`apps/nesvor/node_modules`; replace that with a declared Vite devDependency.
+### Development tooling (2026-10-12)
+
+Test, validation and build imports stay outside the runtime dependency rule but
+are declared where they are used, so a workspace's tests and verifiers resolve
+from its own `node_modules`. Declarations reuse the versions the root already
+resolves (`@playwright/test` and `playwright` 1.64.0, `jsdom` 24.1.3, `ajv`
+8.20.0, `ajv-formats` 3.0.1, `yaml` 2.9.0, `onnxruntime-node` 1.29.0, Vite
+5.4.21 for NeSVoR), so the
+change added lock importer entries and no new packages. These were added after
+an inventory of every non-production import:
+
+| Workspace | Declared tooling | Importers |
+| --- | --- | --- |
+| `packages/nesvor` | `@playwright/test`, `vite` | GPU and ONNX verifiers; `verify-workflow.mjs` imported Vite from `apps/nesvor/node_modules` |
+| `packages/components` | `@playwright/test`, `jsdom` | unit tests, `scripts/test-elements-browser.mjs` |
+| `packages/lcmodel` | `jsdom` | `test/report.test.js` |
+| `packages/desktop` | `ajv`, `ajv-formats` | `neuroflow/generator.mjs` |
+| `packages/synthstrip`, `apps/synthsr` | `onnxruntime-node` | numerical tests that loaded SynthSR's copy |
+| `packages/{calmar,seedseg,syncro,topofit,vesselboost}` | `@playwright/test` | browser reference scripts; SYNcro's benchmark loaded `apps/syncro`'s copy |
+| `apps/browserqc` | `@playwright/test`, `jsdom` | e2e specs, `test/rate.test.mjs` |
+| `apps/{deface,dicom2vid,easy-mp2rage,niimath}` | `@playwright/test` | e2e specs and config |
+| `apps/{qsmbly,seedseg,dicompare}` | `@playwright/test` (and `yaml` for QSMbly) | e2e specs and config; kept as an adaptation in `upstream.json` |
+| `apps/white-matter-lesions` | `playwright` | `validation/browser-memory.mjs` |
+
+Dev-only tools stay out of runtime `dependencies`, so portable command lines
+and shipped bundles are unchanged; SYNcro's bundled-helper contract still passes
+`packages/syncro/test/build-closure.test.js`. Root scripts such as the interface
+audit and the desktop smoke test keep using the root's tooling.
+
+Catalog commands use the repository's shared orchestration. Static apps'
+`test:e2e` scripts call `test/examples.smoke.mjs`, which imports the root's
+Playwright installation and registry helpers. App builds that use
+`scripts/lib/vite-app-config.mjs` read the registry through the root's `yaml`.
+`scripts/generate-neuroflow.mjs` also reads that registry, while the desktop
+workspace's schema generator resolves Ajv from its own declared dependencies.
+Run `pnpm install --frozen-lockfile` at the repository root before these catalog,
+build and example commands. Their existing CI build and browser jobs install
+the full repository before invoking the app commands. Direct workspace tests
+and NeSVoR's numerical workflow verifier resolve their locally declared tools.
 
 To inspect current findings, run
 `pnpm check:dependencies --report "$TMPDIR/dependency-findings.json"`.

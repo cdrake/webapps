@@ -32,5 +32,8 @@
   "dependencies": {
     "@neurodesk/webapp-components": "workspace:*",
     "onnxruntime-node": "1.29.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.0"
   }
 }

@@ -95,5 +95,9 @@
   },
   "dependencies": {
     "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.0",
+    "jsdom": "24.1.3"
   }
 }
