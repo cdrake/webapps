@@ -41,6 +41,8 @@ test('JS, TypeScript and worker correctness canaries report real errors', async 
     ['packages/components/src/canary.js', 'missingBinding();', 'no-undef'],
     ['apps/zarro/src/canary.ts', 'const x: number = 1; if (true) { console.log(x); }', 'no-constant-condition'],
     ['apps/brain2print/src/canary-worker.js', 'document.querySelector("canvas");', 'no-restricted-globals'],
+    ['packages/components/src/canary-worker.mts', 'document.querySelector("canvas");', 'no-restricted-globals'],
+    ['packages/components/src/canaryWorker.cts', 'window.location.reload();', 'no-restricted-globals'],
     ['packages/components/src/canary.js', '/* eslint-disable */\nmissingBinding();', 'no-undef'],
   ]) {
     const [result] = await eslint.lintText(code, { filePath: join(root, filePath) });

@@ -81,7 +81,7 @@ export default [
     languageOptions: { sourceType: 'commonjs' },
   },
   {
-    files: ['**/*worker*.{js,mjs,ts}', '**/*Worker*.{js,mjs,ts}'],
+    files: ['**/*worker*.{js,mjs,cjs,jsx,ts,tsx,mts,cts}', '**/*Worker*.{js,mjs,cjs,jsx,ts,tsx,mts,cts}'],
     ignores: ['**/{test,e2e,validation}/**', '**/*.test.*', '**/*worker-client*', 'packages/runtime-support/src/coi-serviceworker.js'],
     languageOptions: { globals: { window: 'off', document: 'off', ...globals.worker } },
     rules: {
