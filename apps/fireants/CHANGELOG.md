@@ -10,6 +10,10 @@
   records as explicit Knip roots.
   - @neurodesk/fireants@0.3.20261010
 - Updated dependencies
+  - @neurodesk/webapp-components@0.12.2
+  - @neurodesk/runtime-support@0.4.2
+  - @neurodesk/fireants@0.3.20261010
+- Updated dependencies
   - @neurodesk/runtime-support@0.4.1
   - @neurodesk/webapp-components@0.12.1
   - @neurodesk/fireants@0.3.20261010
