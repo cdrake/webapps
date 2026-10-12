@@ -1029,10 +1029,10 @@ pub fn register_masked(
     verbose: bool,
     jitter: f64,
 ) -> Result<Mat4> {
+    let masks = fixed_masks(mask, &fixed.grid, metric)?;
     if iterations == [0, 0, 0] {
         return Ok(image_centers(&fixed.grid, &moving.grid));
     }
-    let masks = fixed_masks(mask, &fixed.grid, metric)?;
     let fixed_pyramid = build_pyramid(fixed)?;
     let moving_pyramid = build_pyramid(moving)?;
     // Greedy initializes at the coarsest reference spaces, not the original
@@ -1094,10 +1094,10 @@ pub fn register_rigid_masked(
     verbose: bool,
     jitter: f64,
 ) -> Result<Mat4> {
+    let masks = fixed_masks(mask, &fixed.grid, metric)?;
     if iterations == [0, 0, 0] {
         return Ok(image_centers(&fixed.grid, &moving.grid));
     }
-    let masks = fixed_masks(mask, &fixed.grid, metric)?;
     let fixed_pyramid = build_pyramid(fixed)?;
     let moving_pyramid = build_pyramid(moving)?;
     let mut transform = image_centers(&fixed_pyramid[0].grid, &moving_pyramid[0].grid);

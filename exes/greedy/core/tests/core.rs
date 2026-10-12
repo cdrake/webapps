@@ -4,8 +4,8 @@ use greedy_rs_core::{
     decode_series, decode_vector_field, downsample_grid, encode_image, encode_series,
     encode_vector_field, gaussian_smooth, grids_match, image_centers, nmi_score_gradient_affine,
     register_affine, register_affine_masked, register_nmi_svf, register_nmi_svf_masked,
-    register_rigid, reslice, reslice_with_background, reslice_with_interpolation, score_affine,
-    ssd_score_gradient,
+    register_rigid, register_rigid_masked, reslice, reslice_with_background,
+    reslice_with_interpolation, score_affine, ssd_score_gradient,
 };
 
 fn grid(dims: [usize; 3]) -> Grid {
@@ -822,4 +822,42 @@ fn fixed_mask_requires_nmi_and_the_fixed_grid() {
         )
         .is_err()
     );
+}
+
+#[test]
+fn zero_iteration_registration_validates_fixed_masks() {
+    let n = 8;
+    let image = NiftiImage {
+        grid: grid([n; 3]),
+        data: (0..n * n * n).map(|i| i as f32).collect(),
+        scalar_type: ScalarType::F32,
+    };
+    for register in [register_affine_masked, register_rigid_masked] {
+        let ssd = register(
+            image.clone(),
+            image.clone(),
+            Some(mask_image(n, |_| true)),
+            AffineMetric::Ssd,
+            [0, 0, 0],
+            false,
+            DEFAULT_AFFINE_JITTER,
+        );
+        assert_eq!(
+            ssd.unwrap_err().to_string(),
+            "-gm is supported with -m NMI only"
+        );
+        let wrong_grid = register(
+            image.clone(),
+            image.clone(),
+            Some(mask_image(n + 1, |_| true)),
+            AffineMetric::Nmi,
+            [0, 0, 0],
+            false,
+            DEFAULT_AFFINE_JITTER,
+        );
+        assert_eq!(
+            wrong_grid.unwrap_err().to_string(),
+            "-gm mask must be on the fixed image grid"
+        );
+    }
 }
