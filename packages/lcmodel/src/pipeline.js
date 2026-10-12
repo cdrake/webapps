@@ -90,6 +90,19 @@ export function describeVoxel(voxel) {
   return `${size} mm at ${centre} mm (RAS), from ${voxel.source}`;
 }
 
+export function acquisitionMessage(name, header) {
+  const sequence = String(header.sequence ?? "").trim();
+  const facts = [
+    sequence && `sequence ${sequence}`,
+    header.fieldT && `${header.fieldT.toFixed(2)} T`,
+    header.hzpppm && `${header.hzpppm} MHz`,
+    header.teMs && `TE ${Number(header.teMs.toFixed(2))} ms`,
+    header.trMs && `TR ${Number(header.trMs.toFixed(2))} ms`,
+    header.deltat && `dwell time ${Number((header.deltat * 1000).toPrecision(6))} ms`,
+  ].filter(Boolean).join(", ");
+  return { text: `${name}: ${facts || "acquisition parameters unavailable"}`, level: "info" };
+}
+
 /**
  * What loading found, as log lines ({ text, level }): files that failed or
  * were skipped (a skipped folder once, not once per file), unpaired water
@@ -101,20 +114,21 @@ export function loadMessages(loaded) {
   for (const e of loaded.errors) lines.push({ text: `${e.file}: ${e.error}`, level: "warning" });
   const skipped = new Map();
   for (const e of loaded.ignored) {
-    const folder = e.file.includes("/") ? e.file.slice(0, e.file.lastIndexOf("/") + 1) : e.file;
+    const folder = e.file.includes("/")
+      ? e.file.slice(0, e.file.lastIndexOf("/") + 1)
+      : e.reason.startsWith("DICOM without Siemens spectroscopy data") ? "" : e.file;
     const key = `${folder}\0${e.reason}`;
     const entry = skipped.get(key) ?? { folder, reason: e.reason, count: 0 };
     entry.count += 1;
     skipped.set(key, entry);
   }
-  for (const { folder, reason, count } of skipped.values()) lines.push({ text: `${folder}${count > 1 ? ` (${count} files)` : ""}: ${reason}`, level: "info" });
+  for (const { folder, reason, count } of skipped.values()) lines.push({ text: `${folder || "Selected folder"}${count > 1 ? ` (${count} files)` : ""}: ${reason}`, level: "info" });
   for (const name of loaded.unpairedWater ?? []) lines.push({ text: `${name}: a water reference with no spectrum to pair it with`, level: "warning" });
   for (const d of loaded.datasets) {
     const h = d.header ?? {};
-    const sequence = String(h.sequence ?? "").trim();
-    const facts = [sequence && `sequence ${sequence}`, h.fieldT && `${h.fieldT.toFixed(2)} T`, h.teMs && `TE ${Number(h.teMs.toFixed(2))} ms`, h.trMs && `TR ${Number(h.trMs.toFixed(2))} ms`].filter(Boolean).join(", ");
-    const voxel = h.voxel ? `voxel ${describeVoxel(h.voxel)}` : h.voxelNote ? `no voxel: ${h.voxelNote}` : "the format does not record the voxel";
-    lines.push({ text: `${d.name}: ${facts}; ${voxel}`, level: h.voxelNote ? "warning" : "info" });
+    const message = acquisitionMessage(d.name, h);
+    const voxel = h.voxel ? `voxel ${describeVoxel(h.voxel)}` : h.voxelNote ? `no voxel: ${h.voxelNote}` : "voxel position unavailable";
+    lines.push({ text: `${message.text}; ${voxel}`, level: h.voxelNote ? "warning" : "info" });
   }
   return lines;
 }
@@ -332,6 +346,8 @@ export async function fitDataset(engine, { input, index: k, choice, range, setti
     log(`FID-A, ${name}: ${summarizeReport(fida.report)}`);
     lcm = fida.lcmodel;
   } else {
+    const message = acquisitionMessage(input.name, { ...input.header, ...acquisition });
+    log(message.text, message.level);
     lcm = { raw: input.text, h2o: input.water, nunfil: input.points, deltat: acquisition.deltat, hzpppm: acquisition.hzpppm, teMs: input.header.teMs, edited: isEdited(input, k) };
   }
   const water = settings.scaleWater && Boolean(lcm.h2o);

@@ -104,3 +104,16 @@ test("committed WASM groups anatomical DICOM for flat and folder selections", as
     assert.deepEqual(loadMessages(loaded), []);
   }
 });
+
+
+test("flat ignored DICOM files share one diagnostic without hiding unrelated files", () => {
+  const reason = "DICOM without Siemens spectroscopy data";
+  assert.deepEqual(loadMessages({ errors: [], datasets: [], ignored: [
+    { file: "a.dcm", reason },
+    { file: "b.dcm", reason },
+    { file: "notes.txt", reason: "unrecognized file" },
+  ] }), [
+    { text: `Selected folder (2 files): ${reason}`, level: "info" },
+    { text: "notes.txt: unrecognized file", level: "info" },
+  ]);
+});

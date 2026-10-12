@@ -21,6 +21,12 @@ const fixed = (x, digits = 2) => Number(x).toFixed(digits);
 // of memory there, so those go to the growable threaded CPU module.
 const GPU_MAX_VOXELS = 256 ** 3;
 
+function t1HeaderFacts(header) {
+  const types = { 2: "uint8", 4: "int16", 8: "int32", 16: "float32", 64: "float64", 256: "int8", 512: "uint16", 768: "uint32" };
+  const type = types[header.datatype] ?? `datatype ${header.datatype}`;
+  return `${type}, scaling ${header.sclSlope} x + ${header.sclInter}, qform code ${header.qformCode}, sform code ${header.sformCode}`;
+}
+
 /**
  * @param {{
  *   status: (message: string, error?: boolean) => void,
@@ -32,15 +38,6 @@ const GPU_MAX_VOXELS = 256 ** 3;
  *   onViewRequested: () => void,
  * }} hooks
  */
-/** Header fields that explain a failed segmentation: type, scaling, orientation codes. */
-function t1HeaderFacts(buffer, header) {
-  const view = new DataView(buffer instanceof ArrayBuffer ? buffer : buffer.buffer);
-  const le = view.getInt32(0, true) === 348;
-  const types = { 2: "uint8", 4: "int16", 8: "int32", 16: "float32", 64: "float64", 256: "int8", 512: "uint16", 768: "uint32" };
-  const type = types[header.datatype] ?? `datatype ${header.datatype}`;
-  return `${type}, scaling ${header.sclSlope} x + ${header.sclInter}, qform code ${view.getInt16(252, le)}, sform code ${view.getInt16(254, le)}`;
-}
-
 export function createTissuePanel(hooks) {
   let t1 = null; // { name, buffer, header, dims, affine }
   let maps = null; // { gm, wm, csf, backend, elapsedMs }
@@ -101,7 +98,7 @@ export function createTissuePanel(hooks) {
     for (const option of mapSelect.options) option.disabled = option.value !== "anatomy" && !maps;
     voxelToggle.disabled = !dataset?.voxel;
     if (t1 && dataset && !dataset.voxel) {
-      summary(dataset.voxelNote ? "The voxel position could not be read (see the log); enter fractions." : "This format does not record where the voxel is; enter fractions.", "warning");
+      summary(dataset.voxelNote ? "The voxel position could not be read (see the log); enter fractions." : "The voxel position is unavailable; enter fractions.", "warning");
     }
   }
 
@@ -169,7 +166,7 @@ export function createTissuePanel(hooks) {
     $("t1Info").hidden = false;
     $("t1Info").textContent = `${t1.name}: ${t1.dims.join(" × ")} voxels, ${header.voxelSize.map((v) => fixed(v, 1)).join(" × ")} mm`;
     $("t1Drop").classList.add("has-files");
-    hooks.log.log(`T1 loaded: ${$("t1Info").textContent}; ${t1HeaderFacts(t1.buffer, header)}`);
+    hooks.log.log(`T1 loaded: ${$("t1Info").textContent}; ${t1HeaderFacts(header)}`);
     refresh();
     hooks.onViewRequested();
     await show();

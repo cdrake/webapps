@@ -133,7 +133,6 @@ impl<'a> Reader<'a> {
     }
 }
 
-/// Parse a DICOM file's top-level elements.
 /// What a DICOM file is, from its header, for a message that has to say why
 /// it was not read: series number and description, modality, image type,
 /// storage class and whether it holds pixel data.
@@ -168,6 +167,7 @@ pub fn describe(d: &DicomFile) -> String {
     parts.join(", ")
 }
 
+/// Parse a DICOM file's top-level elements.
 pub fn parse_dicom(b: &[u8]) -> Res<DicomFile> {
     let start = if b.len() > 132 && &b[128..132] == b"DICM" { 132 } else { 0 };
     let mut r = Reader { b, pos: start, explicit: true, big: false };
