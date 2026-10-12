@@ -8,6 +8,7 @@ self.onmessage = async ({ data: { input, options } }) => {
     const { gm, wm, csf } = result.tissues;
     self.postMessage({ result: { tissues: { gm, wm, csf }, backend: result.backend, elapsedMs: result.elapsedMs } }, [gm, wm, csf]);
   } catch (error) {
-    self.postMessage({ error: error instanceof Error ? error.message : String(error) });
+    // A BrainchopError carries the module's own output, which says why it failed.
+    self.postMessage({ error: error instanceof Error ? error.message : String(error), log: error?.log ?? [] });
   }
 };
