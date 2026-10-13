@@ -53,9 +53,9 @@ function namedByCommands(commands, rootScripts) {
     const command = pending.pop();
     for (const match of command.matchAll(ROOT_NAMED)) if (match[1]) named.add(match[1]);
     for (const [, script] of command.matchAll(ROOT_SCRIPT_CALL)) {
-      if (rootScripts[script] && !expanded.has(script)) {
+      if (!expanded.has(script)) {
         expanded.add(script);
-        pending.push(rootScripts[script]);
+        if (rootScripts[script]) pending.push(rootScripts[script]);
       }
     }
   }
@@ -180,7 +180,7 @@ export async function loadConservativeWorkspaceGraph(root) {
       for await (const path of textFiles(join(root, directory))) named.push(relative(root, path).split(sep).join('/'));
     }
     for (const target of [...imports, ...named]) {
-      if ((ROOT_DIRS.some((dir) => target.startsWith(dir)) || ROOT_CONFIG.test(target)) && target !== file && await exists(join(root, target))) {
+      if ((ROOT_DIRS.some((dir) => target.startsWith(dir)) || ROOT_CONFIG.test(target)) && target !== file) {
         uses.add(target);
         pendingRootFiles.push(target);
       }

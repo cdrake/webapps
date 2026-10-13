@@ -23,7 +23,7 @@ if (only && only !== 'affected') {
 }
 // changedPathsFromGit diffs from the merge base, so manifests are compared there too.
 const head = option('--head') || 'HEAD';
-const manifestPaths = changedPaths.filter((path) => /^(?:(?:packages|apps|exes)\/[^/]+\/)?package\.json$|^registry\/offline-assets\.lock\.json$/.test(path));
+const manifestPaths = (only && only !== 'affected' ? [] : changedPaths).filter((path) => /^(?:(?:packages|apps|exes)\/[^/]+\/)?package\.json$|^registry\/offline-assets\.lock\.json$/.test(path));
 const mergeBase = manifestPaths.length && execFileSync('git', ['merge-base', option('--base'), head], { cwd: repoRoot, encoding: 'utf8' }).trim();
 const show = (revision, path) => execFileSync('git', ['show', `${revision}:${path}`], { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
 const manifests = new Map();
