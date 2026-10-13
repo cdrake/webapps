@@ -11,7 +11,7 @@ const SELF_CONTAINED_PREFIXES = ['site/easter-eggs/'];
 // workspace-contracts or their own workflows; every workflow other than ci.yml
 // runs itself when it changes; the app template is checked by contract tests.
 const NON_APP_PATHS = [
-  /^(?!apps\/).*\.md$/,
+  /^[^/]+\.md$/,
   /^\.gitignore$/,
   /^\.github\/workflows\/(?!ci\.yml$)[^/]+$/,
   /^(?:eslint|knip|stryker)\.config\.m?js$/,
@@ -78,9 +78,10 @@ function changedRootScripts(manifest) {
 // as shared. With one, a change selects the apps that reach it; a root file
 // that ci.yml's per-app jobs run selects every app, and one only the
 // composite-site job runs selects no app but the site build. `manifests` maps
-// a changed package.json or offline asset lock to its text before and after: a
-// release version bump selects nothing, root script edits count only where
-// ci.yml runs them, and a lock change selects the apps whose assets changed.
+// a changed package.json or offline asset lock to its text before and after:
+// root script edits count only where ci.yml runs them, and a lock change
+// selects the apps whose assets changed. Markdown in a package or exes/
+// directory reaches only the apps that read that exact file.
 export function selectAffectedApps(registry, changedPaths = [], graph = null, manifests = new Map()) {
   if (!changedPaths.length) return { apps: registry.apps, site: true };
 
@@ -120,12 +121,12 @@ export function selectAffectedApps(registry, changedPaths = [], graph = null, ma
       siteChange = true;
       continue;
     }
-    if (manifest && changedFields(manifest).every((field) => field === 'version')) continue;
     // A package's tests reach only the apps that read them; any other file
     // reaches its package's users and, if a root file names it, that file's.
     const packageTests = path.match(/^packages\/[^/]+\/tests?(?=\/)/)?.[0];
-    const nodes = packageTests
-      ? [packageTests]
+    const document = /^(?:packages|exes)\/.*\.md$/.test(path) && path;
+    const nodes = packageTests || document
+      ? [packageTests || document]
       : [path.match(/^(packages|exes)\/[^/]+(?=\/)/)?.[0], ROOT_FILE.test(path) || graph?.edges.has(path) ? path : null].filter(Boolean);
     if (graph && nodes.length) {
       // Per-app jobs name packages only to provision their own app's data.

@@ -23,16 +23,20 @@ const MAX_TEXT_BYTES = 1024 * 1024;
 const REFERENCE = /(?:(?:\.\.\/)+|['"`])(packages|exes)\/([\w.-]+)/g;
 // Scripts address packages from the repository root, in either form, and
 // sometimes a single file in one.
-const SCRIPT_REFERENCE = /\b(packages|exes)(?:\/|['"],\s*['"])([\w.-]+)((?:\/[\w.-]+)*\/[\w.-]+\.(?:[cm]?[jt]s|json))?/g;
+const SCRIPT_REFERENCE = /\b(packages|exes)(?:\/|['"],\s*['"])([\w.-]+)((?:\/[\w.-]+)*\/[\w.-]+\.(?:[cm]?[jt]s|json|md))?/g;
+// Documentation counts only where code reads that exact file.
+const DOCUMENT_REFERENCE = /\b((?:packages|exes)\/[\w.-]+\/(?:[\w.-]+\/)*[\w.-]+\.md)\b/g;
 // A package's own tests change no app unless an app reads from them.
 const PACKAGE_TESTS = /(?:\.\.\/)+(packages\/[\w.-]+\/tests?)\//g;
 const BARE_IMPORT = /\bfrom\s+['"]((?:@[\w.-]+\/)?[\w.-]+)/g;
 const ROOT_FILE = String.raw`[\w./-]+\.(?:[cm]?[jt]s|json|ya?ml)`;
-const ROOT_PATH = new RegExp(String.raw`(?:\.\.\/)+((?:scripts|test-utils|registry)\/${ROOT_FILE})\b`, 'g');
+const ROOT_PATH = new RegExp(String.raw`(?:\.\.\/)+((?:scripts|test-utils|registry|test)\/${ROOT_FILE})\b`, 'g');
 // Root files name each other relative to themselves or from the repository root.
 const ROOT_IMPORT = new RegExp(String.raw`['"\`](\.\.?\/${ROOT_FILE})['"\`]`, 'g');
 const ROOT_NAMED = new RegExp(String.raw`(?:^|[\s'"\`(=])((?:scripts|test-utils|registry|test)\/${ROOT_FILE})\b|['"](registry|test-utils)['"],\s*['"](${ROOT_FILE})['"]`, 'gm');
+const ROOT_GLOB = /['"`]((?:scripts|test-utils|test)\/[\w/-]+)\/[^'"`]*\*[^'"`]*['"`]/g;
 const ROOT_DIRS = ['scripts/', 'test-utils/', 'registry/', 'test/', 'packages/', 'exes/'];
+const ROOT_CONFIG = /^[\w.-]+\.(?:[cm]?[jt]s|json)$/;
 const SOURCE_FILE = /\.[cm]?[jt]s$/;
 const ROOT_SCRIPT_CALL = /\bpnpm (?:run )?([\w:-]+)/g;
 export const CATALOG = '(catalog)';
@@ -119,6 +123,7 @@ export async function loadWorkspaceGraph(root) {
         if (nodeSet.has(`${top}/${name}`)) uses.add(`${top}/${name}`);
       }
       for (const [, tests] of text.matchAll(PACKAGE_TESTS)) uses.add(tests);
+      for (const [, document] of text.matchAll(DOCUMENT_REFERENCE)) uses.add(document);
       for (const [, rootFile] of text.matchAll(ROOT_PATH)) {
         uses.add(rootFile);
         pendingRootFiles.push(rootFile);
@@ -135,9 +140,13 @@ export async function loadWorkspaceGraph(root) {
     [SITE, runs([ci.jobs['composite-site']])],
     [CATALOG, runs(CATALOG_JOBS.map((name) => ci.jobs[name]))],
   ];
+  // Root tool configs (e2e.config.ts, tsconfig.agentic.json) are read implicitly
+  // by the commands composite-site runs, so the site build follows them too.
+  const rootConfigs = (await readdir(root)).filter((name) => /^(?:[\w-]+\.config\.[cm]?[jt]s|tsconfig[\w.-]*\.json)$/.test(name));
   const rootScriptsRun = new Map();
   for (const [node, commands] of entries) {
     const { named, expanded } = namedByCommands(commands, rootScripts);
+    if (node === SITE) for (const config of rootConfigs) named.add(config);
     edges.set(node, named);
     rootScriptsRun.set(node, expanded);
     pendingRootFiles.push(...named);
@@ -166,8 +175,12 @@ export async function loadWorkspaceGraph(root) {
     }
     const imports = [...text.matchAll(ROOT_IMPORT)].map(([, path]) => relative(root, resolve(root, dirname(file), path)).split(sep).join('/'));
     const named = [...text.matchAll(ROOT_NAMED)].map(([, path, dir, name]) => path ?? `${dir}/${name}`);
+    for (const [, directory] of text.matchAll(ROOT_GLOB)) {
+      if (!await exists(join(root, directory))) continue;
+      for await (const path of textFiles(join(root, directory))) named.push(relative(root, path).split(sep).join('/'));
+    }
     for (const target of [...imports, ...named]) {
-      if (ROOT_DIRS.some((dir) => target.startsWith(dir)) && target !== file && await exists(join(root, target))) {
+      if ((ROOT_DIRS.some((dir) => target.startsWith(dir)) || ROOT_CONFIG.test(target)) && target !== file && await exists(join(root, target))) {
         uses.add(target);
         pendingRootFiles.push(target);
       }

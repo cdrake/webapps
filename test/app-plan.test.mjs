@@ -189,12 +189,28 @@ function manifest(before, after) {
   return { before: JSON.stringify(before), after: JSON.stringify(after) };
 }
 
-test('a package version bump selects no app', async () => {
+test('a package version bump selects the apps that use the package, since builds embed versions', async () => {
   const registry = await loadAppsRegistry();
-  const manifests = new Map([['packages/components/package.json', manifest({ name: 'x', version: '1.0.0' }, { name: 'x', version: '1.1.0' })]]);
-  assert.deepEqual(createAppPlan(registry, ['packages/components/package.json'], await graph, manifests).selected, []);
-  const dependency = new Map([['packages/components/package.json', manifest({ version: '1', dependencies: {} }, { version: '1', dependencies: { a: '1' } })]]);
-  assert.equal(createAppPlan(registry, ['packages/components/package.json'], await graph, dependency).allApps, true);
+  const manifests = new Map([['packages/synthsr/package.json', manifest({ name: 'x', version: '1.0.0' }, { name: 'x', version: '1.1.0' })]]);
+  assert.ok(createAppPlan(registry, ['packages/synthsr/package.json'], await graph, manifests).selected.some((app) => app.id === 'synthsr'));
+});
+
+test('root test files app e2e scripts run select those apps', async () => {
+  const registry = await loadAppsRegistry();
+  assert.deepEqual(createAppPlan(registry, ['test/easy-mp2rage-workspace.smoke.mjs'], await graph).selected.map((app) => app.id), ['easy-mp2rage']);
+  assert.ok(createAppPlan(registry, ['test/musclemap-full-pipeline-smoke.mjs'], await graph).selected.some((app) => app.id === 'musclemap'));
+});
+
+test('files the catalog e2e config reads run the site build', async () => {
+  const registry = await loadAppsRegistry();
+  for (const path of ['test/agentic/catalog.e2e.ts', 'test-utils/agentic-browser.ts', 'scripts/serve-agentic-site.mjs']) {
+    assert.equal(createAppPlan(registry, [path], await graph).site, true, path);
+  }
+});
+
+test('documentation in a package or exes/ directory selects the apps that read it', async () => {
+  const registry = await loadAppsRegistry();
+  assert.deepEqual(createAppPlan(registry, ['exes/compute-server/README.md'], await graph).selected.map((app) => app.id), ['spinalcordtoolbox']);
 });
 
 test('root package.json script edits count only where ci.yml runs them', async () => {
