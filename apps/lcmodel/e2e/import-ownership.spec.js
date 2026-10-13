@@ -67,6 +67,8 @@ test("automation refuses additions as spectra and preserves the resident fitted 
     const result = await finish(page);
     expect(result.state, JSON.stringify(result.report)).toBe("failed");
     expect(result.error.message).toMatch(/spectroscopy|spectrum/i);
+    await expect(page.locator("#statusText")).toHaveText(result.error.message);
+    await expect(page.locator("#cancelButton")).toBeHidden();
     expect(await resident(page)).toEqual(before);
     expect(await download(page, "concentrations")).toBe(csv);
   }
@@ -96,6 +98,8 @@ test("automation stages optional inputs and fractions before replacing the sessi
     await adopt(page, "t1", request.t1 ?? []);
     const result = await finish(page, request.parameters);
     expect(result.state).toBe("failed");
+    await expect(page.locator("#statusText")).toHaveText(result.error.message);
+    await expect(page.locator("#cancelButton")).toBeHidden();
     expect(await resident(page)).toEqual(before);
   }
   await adopt(page, "spectra", [file("patient-B.RAW", raw.buffer), control]);
@@ -162,6 +166,8 @@ test("fit-group rejects anatomy, basis and unpaired water while keeping its fitt
     const result = await finish(page, {}, "fit-group");
     expect(result.state).toBe("failed");
     expect(result.error.message).toMatch(/spectroscopy|spectrum/i);
+    await expect(page.locator("#statusText")).toHaveText(result.error.message);
+    await expect(page.locator("#cancelButton")).toBeHidden();
     expect(await resident(page)).toEqual(before);
     expect(await download(page, "groupTable")).toBe(csv);
   }
@@ -183,6 +189,8 @@ test("cancelled automation anatomy selection preserves the old session and valid
   await dispatch(page, "cancel");
   await expect.poll(async () => (await dispatch(page, "snapshot")).state).not.toBe("running");
   await expect(page.locator("#anatomySeries")).toBeHidden();
+  await expect(page.locator("#statusText")).toHaveText("Cancelled");
+  await expect(page.locator("#cancelButton")).toBeHidden();
   expect(await resident(page)).toEqual(before);
   await adopt(page, "spectra", [replacement, control, anatomy]);
   await adopt(page, "basis", [basis]);
