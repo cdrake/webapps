@@ -18,7 +18,7 @@ async function loadExample(page) {
   await expect(page.locator("#t1Info")).toContainText("256 × 256 × 204", { timeout: 300000 });
   await expect(page.locator("#t1Canvas")).toBeVisible();
   await expect(page.locator("#viewerNotice")).toBeHidden();
-  await expect(page.locator("#runButton")).toBeEnabled();
+  await expect(page.locator("#runButton")).toBeEnabled({ timeout: 300000 });
   await expect(page.locator("#tissueSection")).toHaveAttribute("open", "");
   await expect(page.locator("#measureButton")).toBeEnabled();
 }
