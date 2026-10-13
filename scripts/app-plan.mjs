@@ -30,6 +30,7 @@ if (manifestPaths.length && base && !/^0+$/.test(base)) {
   try {
     mergeBase = execFileSync('git', ['merge-base', base, head], { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
   } catch {
+    mergeBase = null;
   }
 }
 const show = (revision, path) => execFileSync('git', ['show', `${revision}:${path}`], { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
