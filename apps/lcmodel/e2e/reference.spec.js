@@ -21,8 +21,11 @@ async function adopt(page, files, role) {
   await dispatch(page, "adopt", { role });
 }
 
+// Pull requests keep the cases that are the only completed fit of an option path.
+const PULL_REQUEST_CASES = new Set(["ge-press-phantom-preprocessing", "philips-press-tissue-water-only", "philips-megapress-unedited"]);
+
 for (const entry of CASES) {
-  test(`web app ${entry.operation} of ${entry.id} matches the browser reference`, async ({ page, browser }) => {
+  test(`web app ${entry.operation} of ${entry.id} matches the browser reference`, { tag: PULL_REQUEST_CASES.has(entry.id) ? [] : "@slow" }, async ({ page, browser }) => {
     test.skip(mode !== "check" && mode !== "write", "set LCMODEL_BROWSER_REFERENCE=check or write");
     test.setTimeout(20 * minutes);
     await proxyAssets(page);

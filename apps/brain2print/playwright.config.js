@@ -1,4 +1,5 @@
 import { defineConfig } from "@playwright/test";
+import { e2eTier } from "../../test-utils/e2e-tier.mjs";
 import { gpuBrowser } from "../../test-utils/hardware-gpu.mjs";
 
 // The viewer is WebGPU-only, so every run needs an adapter. Without NEURODESK_HARDWARE_GPU=1 that
@@ -8,6 +9,7 @@ import { gpuBrowser } from "../../test-utils/hardware-gpu.mjs";
 // Serve the BUILT output so the shared preview headers and worker/wasm asset
 // paths are exercised — not just the dev server.
 export default defineConfig({
+  ...e2eTier,
   testDir: "./e2e",
   webServer: {
     command: "pnpm build && pnpm preview --port 4173 --strictPort",

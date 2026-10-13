@@ -28,6 +28,10 @@ concurrency:
 env:
   # CI never uses the CUDA providers; parallel postinstalls of two versions race on one temp path.
   ONNXRUNTIME_NODE_INSTALL: skip
+  # Every Playwright run logs its tests slowest first (test-utils/test-durations-reporter.mjs).
+  PW_TEST_REPORTER: ${{ github.workspace }}/test-utils/test-durations-reporter.mjs
+  # Pull requests skip tests tagged @slow; pushes, the nightly run and releases run them (test-utils/e2e-tier.mjs).
+  NEURODESK_E2E_SKIP_SLOW: ${{ github.event_name == 'pull_request' && '1' || '' }}
 
 jobs:
   app-plan:

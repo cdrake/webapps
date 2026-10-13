@@ -64,7 +64,7 @@ test('cropped brain fails normalization without exporting nearly empty images', 
   await expect(page.locator('#download')).toBeDisabled();
 });
 
-test('the pinned T1 example normalizes onto the MNI152 template with WASM SynthSR', async ({ page }) => {
+test('the pinned T1 example normalizes onto the MNI152 template with WASM SynthSR', { tag: '@slow' }, async ({ page }) => {
   test.skip(!process.env.SYNCRO_AUTOMATION_IMAGE, 'Set SYNCRO_AUTOMATION_IMAGE to a suitable anatomical scan for full inference.');
   test.setTimeout(inferenceTimeout);
   await page.goto('./');

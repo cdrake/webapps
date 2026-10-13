@@ -73,6 +73,8 @@ An e2e test that skips without data (`test.skip(!process.env.X, …)`) must run 
 
 `scripts/lib/app-plan.mjs` picks the apps a change tests. A `packages/` or `exes/` change selects only the apps that use that directory, through a workspace dependency or a relative path (`scripts/lib/workspace-graph.mjs`). Contract tests, lint tooling, desktop scripts and other workflows select no apps. Anything else outside `apps/` selects the whole catalog. When a pull request selects the whole catalog, the macOS GPU suite runs after merge and nightly instead; dispatch `ci` on the branch to run it first. Package workflows build their portable command line on linux-x64 for pull requests and on every target after merge. `node-cli.yml` builds one package on every target when the shared packager changes. `test/app-plan.test.mjs` and `test/independent-workflows.test.mjs` hold these rules.
 
+Pull requests skip Playwright tests tagged `@slow`; pushes to main, the nightly run and releases run them. Tag a test `@slow` (`{ tag: '@slow' }`) only when an untagged test already runs the same path: the same model, method, option and kind of geometry. A browser reference case that is the only completed run of a path stays untagged. An app with tagged tests spreads `e2eTier` from `test-utils/e2e-tier.mjs` into its Playwright config (the shared config builders already do); `test/e2e-tier.test.mjs` checks it. Every CI Playwright run logs its tests slowest first, which is the evidence for tagging.
+
 ## dwi2trx
 
 - WebGPU-only app (diffusion tensor fitting + GPU streamline tractography); it throws a clear error at startup on a browser without WebGPU, and streamline tracking additionally requires `subgroups` support.
