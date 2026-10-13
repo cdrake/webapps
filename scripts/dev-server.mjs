@@ -275,6 +275,10 @@ const SHELL_FILES = new Map([
   ['/theme.js', 'site/theme.js'],
   ['/app-shell.js', 'site/app-shell.js'],
   ['/neurodesk-logo.svg', 'site/neurodesk-logo.svg'],
+  // The Standalone action's data and modules, as stageStandaloneAssets copies them.
+  ['/standalone.json', 'registry/standalone.json'],
+  ...['core/dom.js', 'ui/renderInfoDialog.js', 'ui/renderStandalone.js', 'styles/imaging-workspace.css', 'styles/base.css']
+    .map(name => [`/shell-adapters/components/${name}`, `packages/components/src/${name}`]),
 ]);
 
 function sendText(req, res, body, type) {
@@ -319,7 +323,7 @@ async function serveShell(req, res, pathname) {
     return true;
   }
   const file = SHELL_FILES.get(pathname)
-    ?? (pathname.startsWith('/shell-adapters/') && !pathname.includes('..') ? join('site', pathname) : undefined);
+    ?? (pathname.startsWith('/shell-adapters/') && !pathname.startsWith('/shell-adapters/components/') && !pathname.includes('..') ? join('site', pathname) : undefined);
   if (!file) return false;
   sendText(req, res, await readFile(join(repoRoot, file), 'utf8'), CONTENT_TYPES.get(extname(file)));
   return true;

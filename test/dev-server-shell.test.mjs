@@ -31,6 +31,10 @@ test('dev-server --app serves the page with the shared shell and no analytics', 
   assert.equal((await fetch(`${origin}/app-shell.js`)).status, 200);
   assert.equal((await fetch(`${origin}/shell-adapters/static-html.js`)).status, 200);
   assert.equal(await (await fetch(`${origin}/analytics.js`)).text(), 'export function initAnalytics() {}\n');
+  assert.equal((await fetch(`${origin}/standalone.json`)).status, 200);
+  for (const name of ['core/dom.js', 'ui/renderInfoDialog.js', 'ui/renderStandalone.js', 'styles/imaging-workspace.css', 'styles/base.css']) {
+    assert.equal((await fetch(`${origin}/shell-adapters/components/${name}`)).status, 200, name);
+  }
 });
 
 test('dev-server without --app serves the page unthemed', async (t) => {
