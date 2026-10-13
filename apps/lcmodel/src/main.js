@@ -372,6 +372,7 @@ async function loadFiles(request, signal) {
       change = { kind: "replacement", input: rawInput({ name: sorted.raw[0].name, text: decode(sorted.raw[0]), waterName: sorted.water[0]?.name ?? null, water: sorted.water.length ? decode(sorted.water[0]) : null, control }) };
       if (sorted.other.length) {
         candidate = await stageFida(sorted.other, importSignal);
+        if (candidate.loaded.datasets.length) throw new Error("Import LCModel .RAW and vendor spectra separately.");
         nextT1 ??= await prepareAnatomy(candidate.loaded.images, sorted.other, importSignal);
       }
     } else if (sorted.other.length || water) {
