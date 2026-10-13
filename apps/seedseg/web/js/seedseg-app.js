@@ -105,7 +105,6 @@ class SeedSegApp {
 
     // Modals
     this.aboutModal = new ModalManager('aboutModal');
-    this.citationsModal = new ModalManager('citationsModal');
     this.privacyModal = new ModalManager('privacyModal');
     this.dicompareModal = new ModalManager('dicompareModal');
 
@@ -249,11 +248,6 @@ class SeedSegApp {
     if (aboutBtn) aboutBtn.addEventListener('click', () => this.aboutModal.open());
     const closeAbout = document.getElementById('closeAbout');
     if (closeAbout) closeAbout.addEventListener('click', () => this.aboutModal.close());
-
-    const citationsBtn = document.getElementById('citationsButton');
-    if (citationsBtn) citationsBtn.addEventListener('click', () => this.citationsModal.open());
-    const closeCitations = document.getElementById('closeCitations');
-    if (closeCitations) closeCitations.addEventListener('click', () => this.citationsModal.close());
 
     const privacyBtn = document.getElementById('privacyButton');
     if (privacyBtn) privacyBtn.addEventListener('click', () => this.privacyModal.open());

@@ -322,7 +322,6 @@ export class LesionNetworkMappingApp {
 
     this.aboutModal = new ModalManager('aboutModal');
     this.privacyModal = new ModalManager('privacyModal');
-    this.citationsModal = new ModalManager('citationsModal');
 
     await this.setupViewer();
     this.viewerController.registerSctColormap(YEO7_COLORMAP, 'lnm-yeo7');
@@ -725,10 +724,8 @@ export class LesionNetworkMappingApp {
     this.bindMaskDrawingControls();
     this.bindModalButton('aboutButton', this.aboutModal);
     this.bindModalButton('privacyButton', this.privacyModal);
-    this.bindModalButton('citationsButton', this.citationsModal);
     this.bindCloseButton('closeAbout', this.aboutModal);
     this.bindCloseButton('closePrivacy', this.privacyModal);
-    this.bindCloseButton('closeCitations', this.citationsModal);
   }
 
   getAtlasOption() {

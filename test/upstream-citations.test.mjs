@@ -8,15 +8,28 @@ import { mountAppShell } from '../test-utils/mount-app-shell.mjs';
 
 const registry = await loadAppsRegistry();
 const information = await loadAppInformation(registry);
-const app = registry.apps.find(app => app.id === 'qsmbly');
-const snapshot = JSON.parse(await readFile(new URL('../apps/qsmbly/upstream-citations.json', import.meta.url)));
 
-test('QSMbly covers every DOI from the pinned upstream citation block without network access', () => {
-  assert.equal(snapshot.commit, app.source.split('@')[1], 'upstream sync must refresh citation coverage with the source pin');
-  assert.ok(snapshot.dois.length > 0);
-  const cited = new Set(information.apps.qsmbly.citations.map(item => item.doi?.toLowerCase()));
-  for (const doi of snapshot.dois) assert.ok(cited.has(doi), `Move upstream DOI ${doi} into registry/app-information.yml`);
+// Upstream copies whose citation dialog the monorepo replaced with the shared Cite list.
+const snapshotApps = [];
+for (const app of registry.apps) {
+  let config;
+  try { config = JSON.parse(await readFile(new URL(`../apps/${app.id}/upstream.json`, import.meta.url))); } catch { continue; }
+  if (config.citationSnapshot) snapshotApps.push({ app, output: config.citationSnapshot.output });
+}
+
+test('upstream apps that dropped their citation dialog snapshot it', () => {
+  assert.deepEqual(snapshotApps.map(({ app }) => app.id).sort(), ['qsmbly', 'seedseg']);
 });
+
+for (const { app, output } of snapshotApps) {
+  test(`${app.id} covers every DOI from the pinned upstream citation block without network access`, async () => {
+    const snapshot = JSON.parse(await readFile(new URL(`../apps/${app.id}/${output}`, import.meta.url)));
+    assert.equal(snapshot.commit, app.source.split('@')[1], 'upstream sync must refresh citation coverage with the source pin');
+    assert.ok(snapshot.dois.length > 0);
+    const cited = new Set(information.apps[app.id].citations.map(item => item.doi?.toLowerCase()));
+    for (const doi of snapshot.dois) assert.ok(cited.has(doi), `Move upstream DOI ${doi} into registry/app-information.yml`);
+  });
+}
 
 test('citation extraction isolates the modal, normalizes links and rejects missing upstream markup', () => {
   const html = '<a href="https://doi.org/10.1/outside">Other</a><div id="citationsModal"><a href="https://doi.org/10.1/Paper">Paper</a><a href="http://dx.doi.org/10.1/paper">Duplicate</a></div>';

@@ -38,10 +38,6 @@
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
         <span>About</span>
       </button>
-      <button class="header-link" id="citationsButton" data-neurodesk-control="cite" title="Citations">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-        <span>Cite</span>
-      </button>
       <button class="header-link" id="privacyButton" data-neurodesk-control="privacy" title="Privacy">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         <span>Privacy</span>
@@ -355,50 +351,6 @@
   </div>
 </div>
 
-<!-- Citations Modal -->
-<div class="modal-overlay" id="citationsModal">
-  <div class="modal citations-modal">
-    <div class="modal-header">
-      <h3>Citations</h3>
-      <button class="modal-close" id="closeCitations">&times;</button>
-    </div>
-    <div class="modal-body">
-      <div class="citation-section citation-primary">
-        <div class="citation-item">
-          <strong>SeedSeg</strong>
-          <span class="citation-ref">Code: <a href="https://github.com/astewartau/prostate-fiducial-seg" target="_blank" rel="noopener">GitHub</a> | Data: <a href="https://osf.io/f7hjv/" target="_blank" rel="noopener">OSF</a></span>
-          <p>Stewart, A. W., Goodwin, J., Richardson, M., Robinson, S. D., O'Brien, K., Jin, J., ... &amp; Bollmann, S. (2023). Deep-Learning-Enabled Differentiation between Intraprostatic Gold Fiducial Markers and Calcification in Quantitative Susceptibility Mapping. <em>bioRxiv</em>, 2023-10.</p>
-          <a href="https://doi.org/10.1101/2023.10.26.564293" target="_blank" rel="noopener">DOI: 10.1101/2023.10.26.564293</a>
-        </div>
-      </div>
-
-      <p class="citations-intro">SeedSeg uses the following methods. Please cite the relevant papers if you use these in your research.</p>
-
-      <div class="citation-section">
-        <h4>Bias Field Correction</h4>
-        <div class="citation-item">
-          <strong>Homogeneity Correction</strong>
-          <span class="citation-ref">Code: <a href="https://github.com/korbinian90/MriResearchTools.jl" target="_blank" rel="noopener">MriResearchTools.jl</a> | WASM: <a href="https://github.com/neurodesk/webapps/tree/main/apps/qsmbly" target="_blank" rel="noopener">QSMbly</a></span>
-          <p>Eckstein, K., Trattnig, S., Robinson, S. D. (2019). A Simple Homogeneity Correction for Neuroimaging at 7T. <em>Proc. ISMRM 27th Annual Meeting</em>.</p>
-        </div>
-      </div>
-
-      <div class="citation-section">
-        <h4>Reference Implementations</h4>
-        <p class="citations-intro" style="margin-bottom: var(--nd-space-sm);">The following repositories were used as references:</p>
-        <div class="ref-list">
-          <a href="https://github.com/korbinian90/MriResearchTools.jl" target="_blank" rel="noopener">MriResearchTools.jl</a> - Bias field correction algorithm
-        </div>
-        <div class="ref-list">
-          <a href="https://github.com/neurodesk/webapps/tree/main/apps/qsmbly" target="_blank" rel="noopener">QSMbly</a> - WASM build of bias field correction
-        </div>
-        <div class="ref-list">
-          <a href="https://github.com/nicjac/niern2niern" target="_blank" rel="noopener">niern2niern</a> - NIfTI JavaScript utilities
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 
 <!-- dicompare Report Modal -->
 <div class="modal-overlay" id="dicompareModal">

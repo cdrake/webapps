@@ -43,10 +43,6 @@
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
         <span>About</span>
       </button>
-      <button class="header-link" id="citationsButton" data-neurodesk-control="cite" title="Citations">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-        <span>Cite</span>
-      </button>
       <button class="header-link" id="privacyButton" data-neurodesk-control="privacy" title="Privacy">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         <span>Privacy</span>
@@ -426,82 +422,6 @@
   </div>
 </div>
 
-<!-- Citations Modal -->
-<div class="modal-overlay" id="citationsModal">
-  <div class="modal citations-modal">
-    <div class="modal-header">
-      <h3>Citations</h3>
-      <button class="modal-close" id="closeCitations">&times;</button>
-    </div>
-    <div class="modal-body">
-      <div class="citation-section citation-primary">
-        <div class="citation-item">
-          <strong>VesselBoost</strong>
-          <span class="citation-ref">Code: <a href="https://github.com/KMarshallX/VesselBoost/" target="_blank" rel="noopener">GitHub</a></span>
-          <p>Marshall K, et al. VesselBoost: A Python Toolbox for Small Blood Vessel Segmentation.</p>
-          <a href="https://github.com/KMarshallX/VesselBoost/" target="_blank" rel="noopener">https://github.com/KMarshallX/VesselBoost/</a>
-        </div>
-      </div>
-
-      <p class="citations-intro">VesselBoost uses the following methods and tools:</p>
-
-      <div class="citation-section">
-        <h4>Deep Learning Framework</h4>
-        <div class="citation-item">
-          <strong>PyTorch</strong>
-          <p>Paszke A, et al. PyTorch: An Imperative Style, High-Performance Deep Learning Library. NeurIPS 2019.</p>
-          <a href="https://pytorch.org" target="_blank" rel="noopener">https://pytorch.org</a>
-        </div>
-      </div>
-
-      <div class="citation-section">
-        <h4>Browser Inference</h4>
-        <div class="citation-item">
-          <strong>ONNX Runtime Web</strong>
-          <p>Microsoft. ONNX Runtime: cross-platform, high performance ML inferencing and training accelerator.</p>
-          <a href="https://onnxruntime.ai" target="_blank" rel="noopener">https://onnxruntime.ai</a>
-        </div>
-      </div>
-
-      <div class="citation-section">
-        <h4>DICOM Conversion</h4>
-        <div class="citation-item">
-          <strong>dcm2niix</strong>
-          <p>Li X, Morgan PS, Ashburner J, Smith J, Rorden C. The first step for neuroimaging data analysis: DICOM to NIfTI conversion. J Neurosci Methods. 2016;264:47-56.</p>
-          <a href="https://github.com/rordenlab/dcm2niix" target="_blank" rel="noopener">https://github.com/rordenlab/dcm2niix</a>
-        </div>
-      </div>
-
-      <div class="citation-section">
-        <h4>Brain Extraction</h4>
-        <div class="citation-item">
-          <strong>QSM.rs (BET)</strong>
-          <p>Stewart A. QSM.rs: Quantitative Susceptibility Mapping in Rust. FSL-BET2 brain extraction algorithm.</p>
-          <a href="https://github.com/astewartau/QSM.rs" target="_blank" rel="noopener">https://github.com/astewartau/QSM.rs</a>
-        </div>
-        <div class="citation-item">
-          <strong>FSL BET</strong>
-          <p>Smith SM. Fast robust automated brain extraction. Human Brain Mapping. 2002;17(3):143-155.</p>
-          <a href="https://doi.org/10.1002/hbm.10062" target="_blank" rel="noopener">https://doi.org/10.1002/hbm.10062</a>
-        </div>
-        <div class="citation-item">
-          <strong>SynthStrip</strong>
-          <p>Hoopes A, Mora JS, Dalca AV, Fischl B, Hoffmann M. SynthStrip: Skull-Stripping for Any Brain Image. NeuroImage. 2022;260:119474.</p>
-          <a href="https://doi.org/10.1016/j.neuroimage.2022.119474" target="_blank" rel="noopener">https://doi.org/10.1016/j.neuroimage.2022.119474</a>
-        </div>
-      </div>
-
-      <div class="citation-section">
-        <h4>Visualization</h4>
-        <div class="citation-item">
-          <strong>NiiVue</strong>
-          <p>NiiVue Contributors. NiiVue: a WebGL2 medical image viewer.</p>
-          <a href="https://github.com/niivue/niivue" target="_blank" rel="noopener">https://github.com/niivue/niivue</a>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 
 <!-- COOP/COEP service worker for cross-origin isolation (enables multi-threaded WASM) -->
 <script src="coi-serviceworker.js"></script>

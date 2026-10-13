@@ -315,3 +315,24 @@ test(`sidebar help stays under ${HINT_MAX_CHARS} characters and each sidebar has
   }
   assert.deepEqual(failures, []);
 });
+
+// Cite belongs to the shared shell, which renders registry/app-information.yml
+// and ends with the Neurodesk paper. An app-owned dialog drifts from the
+// registry and shows wherever the shell cannot hide the legacy header.
+const APP_CITATION_MARKERS = [
+  /\bid=["'](?:citationsModal|citationsButton|openCitations|closeCitations)["']/,
+  /\bdata-neurodesk-control=["']cite["']/,
+  /\b(?:getElementById|ModalManager)\(\s*["'](?:citationsModal|citationsButton|openCitations|closeCitations)["']/,
+];
+
+test('no app defines its own Cite control or citation dialog', async () => {
+  const failures = [];
+  for (const app of registry.apps) {
+    for (const { path, text } of await appSources(app, ['.js', '.ts', '.tsx', '.html'])) {
+      for (const marker of APP_CITATION_MARKERS) {
+        if (marker.test(text)) failures.push(`${path}: ${marker} — Cite is the shell's; move citations to registry/app-information.yml`);
+      }
+    }
+  }
+  assert.deepEqual(failures, []);
+});
