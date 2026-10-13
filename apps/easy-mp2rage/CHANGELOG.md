@@ -1,5 +1,13 @@
 # easy-mp2rage
 
+## 0.8.20261012
+
+### Patch Changes
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.12.3
+  - @neurodesk/easy-mp2rage@0.8.20261012
+
 ## 0.8.20261010
 
 ### Minor Changes

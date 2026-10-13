@@ -99,8 +99,8 @@ export function syntheticNifti({ dims = [4, 4, 4], spacing = [1, 1, 3], value = 
   header.writeInt16LE(1, 252);
   header.writeInt16LE(1, 254);
   header.writeFloatLE(spacing[0], 280);
-  header.writeFloatLE(spacing[1], 296);
-  header.writeFloatLE(spacing[2], 312);
+  header.writeFloatLE(spacing[1], 300);
+  header.writeFloatLE(spacing[2], 320);
   header.write('n+1\0', 344, 'latin1');
   const count = dims[0] * dims[1] * dims[2];
   const body = Buffer.alloc(count * 4);

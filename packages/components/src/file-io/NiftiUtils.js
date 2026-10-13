@@ -63,6 +63,8 @@ export function parseNiftiHeader(headerBuffer) {
     datatype: view.getInt16(70, littleEndian),
     bitpix: view.getInt16(72, littleEndian),
     xyztUnits: view.getUint8(123),
+    qformCode: view.getInt16(252, littleEndian),
+    sformCode: view.getInt16(254, littleEndian),
     voxOffset: view.getFloat32(108, littleEndian),
     sclSlope: scaled ? rawSlope : 1,
     sclInter: scaled ? view.getFloat32(116, littleEndian) || 0 : 0,

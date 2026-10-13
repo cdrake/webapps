@@ -229,3 +229,32 @@ test('decodeNiftiBuffer decodes gzip whole or only the first maxBytes', async ()
   assert.ok(head.length < original.length);
   assert.deepEqual(head.slice(0, 352), original.slice(0, 352));
 });
+
+
+test('reads orientation codes in both byte orders without changing affine or scaling', () => {
+  for (const littleEndian of [true, false]) {
+    const bytes = new ArrayBuffer(352);
+    const view = new DataView(bytes);
+    view.setInt32(0, 348, littleEndian);
+    view.setInt16(40, 3, littleEndian);
+    for (let axis = 1; axis <= 3; axis++) {
+      view.setInt16(40 + axis * 2, 2, littleEndian);
+      view.setFloat32(76 + axis * 4, axis, littleEndian);
+    }
+    view.setFloat32(112, 2, littleEndian);
+    view.setFloat32(116, 10, littleEndian);
+    view.setInt16(252, 1, littleEndian);
+    view.setInt16(254, 4, littleEndian);
+    const affine = [[2, 0, 0, 12], [0, 3, 0, 13], [0, 0, 4, 14], [0, 0, 0, 1]];
+    for (let row = 0; row < 3; row++) {
+      for (let col = 0; col < 4; col++) view.setFloat32(280 + row * 16 + col * 4, affine[row][col], littleEndian);
+    }
+    const header = parseNiftiHeader(bytes);
+    assert.equal(header.qformCode, 1);
+    assert.equal(header.sformCode, 4);
+    assert.equal(header.littleEndian, littleEndian);
+    assert.equal(header.sclSlope, 2);
+    assert.equal(header.sclInter, 10);
+    assert.deepEqual(header.affine.map(row => Array.from(row)), affine);
+  }
+});

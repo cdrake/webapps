@@ -13,6 +13,15 @@ const browser = await chromium.launch({ args: ['--enable-webgl', '--use-gl=angle
 const failures = [];
 if (process.env.UPLOAD_ARTIFACTS) await mkdir(process.env.UPLOAD_ARTIFACTS, { recursive: true });
 const checks = [
+  ['lcmodel', '#t1Input', async page => {
+    await expect(page.locator('#t1Info')).toContainText('16 × 16 × 4');
+    await expect(page.locator('#t1Canvas')).toBeVisible();
+    await expect(page.locator('#viewerNotice')).toBeHidden();
+    await page.locator('#t1Input').setInputFiles([...dicomSeries(), ...dicomSeries({ series: 2 })]);
+    await expect(page.locator('#statusText')).toContainText('choose the one T1 series');
+    await expect(page.locator('#t1Info')).toContainText('16 × 16 × 4');
+    await expect(page.locator('#t1Canvas')).toBeVisible();
+  }],
   ['elastix', '#movingInput', async page => {
     await expect(page.locator('#movingInfo')).toContainText('.nii');
     await expect(page.locator('#runButton')).toBeDisabled();

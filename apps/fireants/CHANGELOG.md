@@ -1,5 +1,14 @@
 # fireants
 
+## 0.3.20261012
+
+### Patch Changes
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.12.3
+  - @neurodesk/runtime-support@0.4.3
+  - @neurodesk/fireants@0.3.20261012
+
 ## 0.3.20261010
 
 ### Patch Changes

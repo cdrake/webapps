@@ -6,6 +6,7 @@
 import { test, expect } from "@playwright/test";
 import { forceCpu, proxyAssets } from "./tissue-runtime.mjs";
 import { readFileSync } from "node:fs";
+import { syntheticNifti } from "../../../test-utils/nifti-fixture.mjs";
 
 const EXAMPLE = "philips-press-t1";
 
@@ -15,7 +16,9 @@ async function loadExample(page) {
   await page.goto("/");
   await page.getByRole("combobox", { name: "Example", exact: true }).selectOption(EXAMPLE);
   await expect(page.locator("#t1Info")).toContainText("256 × 256 × 204", { timeout: 300000 });
-  await expect(page.locator("#runButton")).toBeEnabled();
+  await expect(page.locator("#t1Canvas")).toBeVisible();
+  await expect(page.locator("#viewerNotice")).toBeHidden();
+  await expect(page.locator("#runButton")).toBeEnabled({ timeout: 300000 });
   await expect(page.locator("#tissueSection")).toHaveAttribute("open", "");
   await expect(page.locator("#measureButton")).toBeEnabled();
 }
@@ -80,6 +83,9 @@ test("MindMap segments the T1 and measures the voxel", async ({ page }) => {
   await page.locator("#runButton").click();
   await expect(page.locator("#statusText")).toContainText("Fit done", { timeout: 1100000 });
   await expect(page.locator("#tissueSummary")).toContainText("MindMap");
+  await expect(page.locator('.nd-view-tab[data-view="voxel"]')).toHaveClass(/active/);
+  await expect(page.locator("#tissueMap")).toHaveValue("gm");
+  await expect(page.locator("#t1Canvas")).toBeVisible();
   const f = await Promise.all(["#fGm", "#fWm", "#fCsf"].map(async (id) => Number(await page.locator(id).inputValue())));
   // A posterior cingulate voxel on the midline: mostly grey matter, a third
   // white matter, and sulcal and interhemispheric CSF.
@@ -94,6 +100,15 @@ test("MindMap segments the T1 and measures the voxel", async ({ page }) => {
   expect(report.fractionSource.backend).toBe("cpu");
   // MindMap writes 8-bit maps with a scale factor.
   expect((await download(page, "Grey matter map")).length).toBeGreaterThanOrEqual(352 + 256 * 256 * 204);
+  await page.locator("#dataInput").setInputFiles({
+    name: "replacement.nii", mimeType: "application/octet-stream",
+    buffer: syntheticNifti({ dims: [32, 32, 32], gzip: false }),
+  });
+  await expect(page.locator("#t1Info")).toContainText("replacement.nii");
+  await expect(page.locator("#fGm")).toHaveValue("");
+  await expect(page.locator("#corrHeader")).toBeHidden();
+  await expect(page.locator('#resultList [data-stage="gmMap"]')).toHaveCount(0);
+  await expect(page.locator("#t1Canvas")).toBeVisible();
 });
 
 test("a GPU run that fails is measured on the CPU instead", async ({ page }) => {

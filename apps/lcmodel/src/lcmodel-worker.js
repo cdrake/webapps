@@ -61,7 +61,7 @@ self.onmessage = async ({ data: job }) => {
     if (job.type === "load") {
       lcm.reset();
       for (const file of job.files) lcm.addFile(file.name, new Uint8Array(file.bytes));
-      result = lcm.load();
+      result = lcm.load(job.options);
     } else if (job.type === "process") {
       result = lcm.process(job.dataset, job.options);
       if (result.error) throw new Error(result.error);

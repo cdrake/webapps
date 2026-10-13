@@ -113,9 +113,25 @@ pub unsafe extern "C" fn mrs_add_file(name_ptr: *const u8, name_len: usize, data
 /// Detect and load the added files, then release them.
 #[no_mangle]
 pub extern "C" fn mrs_load() {
+    load_added_files(&serde_json::json!({}));
+}
+
+/// Detect and load with explicit water assignments.
+///
+/// # Safety
+/// `ptr`/`len` must describe a readable JSON byte range.
+#[no_mangle]
+pub unsafe extern "C" fn mrs_load_with_options(ptr: *const u8, len: usize) {
+    match serde_json::from_slice(std::slice::from_raw_parts(ptr, len)) {
+        Ok(options) => load_added_files(&options),
+        Err(error) => reply(serde_json::json!({"error": format!("Invalid load options: {error}")})),
+    }
+}
+
+fn load_added_files(options: &serde_json::Value) {
     let files = FILES.with(|f| std::mem::take(&mut *f.borrow_mut()));
     let refs: Vec<(String, &[u8])> = files.iter().map(|(n, b)| (n.clone(), b.as_slice())).collect();
-    let (datasets, summary) = session::load(&refs);
+    let (datasets, summary) = session::load_with_options(&refs, options);
     drop(refs);
     drop(files);
     DATASETS.with(|d| *d.borrow_mut() = datasets);

@@ -7,6 +7,12 @@ fitting, both as Rust ports compiled to WebAssembly (`packages/lcmodel`).
   NIfTI-MRS, Bruker, or an already processed LCModel `.RAW` (with an optional
   `.H2O`, control file and `.BASIS`). Files are detected and paired with their
   water reference by `exes/fida/src/io/detect.rs`.
+  To add a reference separately, open **Water reference** and select the
+  unsuppressed scan with its companion header. It applies to the selected
+  dataset. Session folders can contain anatomical NIfTI or DICOM alongside
+  spectroscopy; choose the T1 series when several images are present.
+  The T1 opens immediately. After segmentation, the viewer shows a tissue
+  map and the spectroscopy voxel, with controls to inspect each map.
 * Preprocessing: FID-A's `run_pressproc_auto` (PRESS/STEAM/semi-LASER; GE with
   `run_pressproc_GEauto`'s phasing) or `run_specialproc_auto` (SPECIAL).
   `run_megapressproc_auto` for GABA-edited MEGA-PRESS, whose difference

@@ -107,35 +107,147 @@ fn normalize_timing(s: &mut Spectra, format: Format) {
 /// Detect and load every dataset among `files`. Returns the datasets and a
 /// JSON summary (including per-file problems) for the interface.
 pub fn load(files: &[(String, &[u8])]) -> (Vec<Dataset>, Value) {
+    load_with_options(files, &json!({}))
+}
+
+fn selected_detection(named: &[NamedFile], indices: &[usize]) -> detect::Detection {
+    let selected: Vec<_> = indices.iter().map(|&i| named[i]).collect();
+    let mut det = detect::detect(&selected);
+    let remap = |ds: &mut detect::Dataset| {
+        ds.files.iter_mut().for_each(|i| *i = indices[*i]);
+    };
+    for pair in &mut det.pairs {
+        remap(&mut pair.metabolite);
+        if let Some(water) = &mut pair.water { remap(water); }
+    }
+    det.unpaired_water.iter_mut().for_each(remap);
+    for image in &mut det.images {
+        image.files.iter_mut().for_each(|i| *i = indices[*i]);
+    }
+    det
+}
+
+fn configured_detection(named: &[NamedFile], options: &Value) -> Result<(detect::Detection, Vec<String>), String> {
+    let Some(requests) = options.get("water") else {
+        return Ok((detect::detect(named), Vec::new()));
+    };
+    let requests = requests.as_array().ok_or("Water assignments must be an array.")?;
+    let mut assignments = Vec::new();
+    let mut targets = Vec::new();
+    let mut sources = std::collections::HashSet::new();
+    for request in requests {
+        let target = request["targetPath"].as_str().filter(|s| !s.is_empty()).ok_or("A water assignment needs a targetPath.")?;
+        if targets.iter().any(|t| t == target) {
+            return Err(format!("More than one water reference was assigned to {target}."));
+        }
+        let paths = request["files"].as_array().filter(|p| !p.is_empty()).ok_or("Select the water reference files.")?;
+        let mut indices = Vec::new();
+        for path in paths {
+            let path = path.as_str().ok_or("Water file names must be strings.")?;
+            let matches: Vec<_> = named.iter().enumerate().filter(|(_, f)| f.name == path).map(|(i, _)| i).collect();
+            let [index] = matches.as_slice() else { return Err(format!("Water file {path} is missing or has a duplicate path.")); };
+            if !sources.insert(*index) {
+                return Err(format!("Water file {path} is assigned more than once."));
+            }
+            indices.push(*index);
+        }
+        let detection = selected_detection(named, &indices);
+        let mut candidates = detection.unpaired_water;
+        for pair in detection.pairs {
+            candidates.push(pair.metabolite);
+            candidates.extend(pair.water);
+        }
+        if candidates.len() != 1 || !detection.images.is_empty() || !detection.ignored.is_empty() {
+            return Err(format!("Select exactly one complete water reference dataset; found {} spectroscopy datasets.", candidates.len()));
+        }
+        assignments.push((target.to_string(), candidates.remove(0)));
+        targets.push(target.to_string());
+    }
+    let indices: Vec<_> = (0..named.len()).filter(|i| !sources.contains(i)).collect();
+    let mut detection = selected_detection(named, &indices);
+    for (target, water) in assignments {
+        let candidates: Vec<_> = detection.pairs.iter_mut().filter(|p| named[p.metabolite.files[0]].name == target).collect();
+        if candidates.len() != 1 {
+            return Err(format!("Load the spectrum {target} before adding its water reference."));
+        }
+        let pair = candidates.into_iter().next().unwrap();
+        if detect::conflicting_dicom_identity(
+            detect::dicom_identity(&pair.metabolite, named).as_ref(),
+            detect::dicom_identity(&water, named).as_ref(),
+        ) {
+            return Err("The water reference belongs to a different DICOM study or patient.".into());
+        }
+        pair.water = Some(water);
+    }
+    Ok((detection, targets))
+}
+
+/// Load with explicit water assignments keyed by original primary file paths.
+pub fn load_with_options(files: &[(String, &[u8])], options: &Value) -> (Vec<Dataset>, Value) {
     let named: Vec<NamedFile> = files.iter().map(|(n, b)| NamedFile { name: n.as_str(), bytes: b }).collect();
-    let (det, loaded) = detect::load_all(&named, &LoadOptions::default());
+    let (det, explicit) = match configured_detection(&named, options) {
+        Ok(detection) => detection,
+        Err(error) => return (Vec::new(), json!({"error": error})),
+    };
+    let load_options = LoadOptions::default();
+    let loaded = det.pairs.iter().map(|pair| (
+        detect::load_dataset(&pair.metabolite, &named, &load_options),
+        pair.water.as_ref().map(|water| detect::load_dataset(water, &named, &load_options)),
+    ));
     let mut datasets = Vec::new();
     let mut summary = Vec::new();
     let mut errors = Vec::new();
     for (pair, (metab, water)) in det.pairs.iter().zip(loaded) {
+        let assigned = explicit.iter().any(|target| target == named[pair.metabolite.files[0]].name);
         let mut metab = match metab {
             Ok(m) => m,
             Err(e) => {
+                if assigned { return (Vec::new(), json!({"error": e})); }
                 errors.push(json!({ "file": pair.metabolite.name, "error": e }));
                 continue;
             }
         };
         normalize_timing(&mut metab.out, pair.metabolite.format);
         let mut water_name = pair.water.as_ref().map(|w| w.name.clone());
-        let water = match water {
+        let mut water = match water {
             Some(Ok(mut w)) => {
                 if let Some(source) = &pair.water {
                     normalize_timing(&mut w.out, source.format);
+                    if assigned && (source.format == Format::GePfile) != (pair.metabolite.format == Format::GePfile) {
+                        // The GE pipeline conjugates both inputs; other readers already use its output convention.
+                        w.out = op_complex_conj(&w.out);
+                    }
                 }
                 Some(w.out)
             }
             Some(Err(e)) => {
+                if assigned { return (Vec::new(), json!({"error": e})); }
                 errors.push(json!({ "file": water_name.clone().unwrap_or_default(), "error": e }));
                 water_name = None;
                 None
             }
             None => None,
         };
+        if assigned {
+            if let Some(w) = &mut water {
+                let dwell_tolerance = metab.out.dwelltime.abs() * 1e-6;
+                if w.n() != metab.out.n() || !w.dwelltime.is_finite() || w.dwelltime <= 0.0
+                    || (w.dwelltime - metab.out.dwelltime).abs() > dwell_tolerance {
+                    return (Vec::new(), json!({"error": "The water reference must have the same number of points and dwell time as the spectrum."}));
+                }
+                if !w.txfrq.is_finite() || !metab.out.txfrq.is_finite()
+                    || (w.txfrq - metab.out.txfrq).abs() > metab.out.txfrq.abs() * 0.001 {
+                    return (Vec::new(), json!({"error": "The water reference has a different spectrometer frequency."}));
+                }
+                if size_of(w, w.dims.coils) != size_of(&metab.out, metab.out.dims.coils) {
+                    return (Vec::new(), json!({"error": "The water reference must have the same receive coils as the spectrum."}));
+                }
+                // NIfTI-1 stores dwell time as f32, unlike the vendor headers.
+                w.dwelltime = metab.out.dwelltime;
+                w.spectralwidth = metab.out.spectralwidth;
+                for (i, t) in w.t.iter_mut().enumerate() { *t = i as f64 * w.dwelltime; }
+            }
+        }
         // A water reference stored in the metabolite file (twix, GE frames, Bruker).
         let (water, water_name) = match (water, metab.embedded_water) {
             (Some(w), _) => (Some(w), water_name),
@@ -185,7 +297,11 @@ pub fn load(files: &[(String, &[u8])]) -> (Vec<Dataset>, Value) {
     }
     let ignored: Vec<Value> = det.ignored.iter().map(|(n, why)| json!({ "file": n, "reason": why })).collect();
     let unpaired: Vec<Value> = det.unpaired_water.iter().map(|d| json!(d.name)).collect();
-    (datasets, json!({ "datasets": summary, "errors": errors, "ignored": ignored, "unpairedWater": unpaired }))
+    let images: Vec<_> = det.images.iter().map(|image| json!({
+        "name": image.name,
+        "files": image.files.iter().map(|&i| files[i].0.as_str()).collect::<Vec<_>>(),
+    })).collect();
+    (datasets, json!({ "images": images, "datasets": summary, "errors": errors, "ignored": ignored, "unpairedWater": unpaired }))
 }
 
 /// Preprocessing choices from the interface (FID-A defaults when absent).
@@ -660,5 +776,85 @@ mod mega_tests {
         assert!(!e.edited() && e.contrast < 1.2, "{e:?}");
         let p = process(&ds[0], &Options::from_json(&json!({"edited": true})), &mut |_, _| {}, &|| false).unwrap();
         assert!(p.report["warnings"].as_array().unwrap().iter().any(|w| w.as_str().unwrap().contains("look alike")));
+    }
+}
+
+#[cfg(test)]
+mod import_tests {
+    use super::*;
+
+    fn spar(te: u32) -> Vec<u8> {
+        format!("samples : 128\nrows : 2\nsynthesizer_frequency : 123250000\nsample_frequency : 2000\necho_time : {te}\nrepetition_time : 2000\n").into_bytes()
+    }
+
+    #[test]
+    fn neutral_sdat_reference_is_attached_only_to_the_selected_path() {
+        let data = vec![0x80, 0x40, 0, 0].repeat(128 * 2 * 2);
+        let metabolite_header = spar(30);
+        let reference_header = spar(15);
+        let files = vec![
+            ("a/scan.sdat".into(), data.as_slice()),
+            ("a/scan.spar".into(), metabolite_header.as_slice()),
+            ("b/scan.sdat".into(), data.as_slice()),
+            ("b/scan.spar".into(), metabolite_header.as_slice()),
+            ("neutral.sdat".into(), data.as_slice()),
+            ("neutral.spar".into(), reference_header.as_slice()),
+        ];
+        let options = json!({"water": [{"targetPath": "b/scan.sdat", "files": ["neutral.sdat", "neutral.spar"]}]});
+        let (datasets, result) = load_with_options(&files, &options);
+        assert_eq!(datasets.len(), 2, "{result}");
+        assert!(datasets[0].water.is_none());
+        assert!(datasets[1].water.is_some());
+        assert_eq!(result["datasets"][1]["waterPath"], "neutral.sdat");
+        assert_eq!(result["datasets"][1]["header"]["waterTeMs"], 15.0);
+        assert_eq!(result["datasets"][1]["header"]["teMs"], 30.0);
+    }
+
+    #[test]
+    fn invalid_explicit_references_fail_the_whole_request() {
+        let data = vec![0x80, 0x40, 0, 0].repeat(128 * 2 * 2);
+        let h = spar(30);
+        let files = vec![
+            ("scan.sdat".into(), data.as_slice()), ("scan.spar".into(), h.as_slice()),
+            ("water.sdat".into(), data.as_slice()), ("water.spar".into(), h.as_slice()),
+        ];
+        let request = json!({"targetPath": "scan.sdat", "files": ["water.sdat", "water.spar"]});
+        for options in [
+            json!({"water": [request.clone(), request]}),
+            json!({"water": [{"targetPath": "missing", "files": ["water.sdat", "water.spar"]}]}),
+            json!({"water": [{"targetPath": "scan.sdat", "files": ["water.sdat"]}]}),
+            json!({"water": [{"targetPath": "scan.sdat", "files": ["missing"]}]}),
+        ] {
+            let (datasets, result) = load_with_options(&files, &options);
+            assert!(datasets.is_empty(), "{result}");
+            assert!(result["error"].is_string(), "{result}");
+        }
+    }
+
+    fn dicom(study: &str, patient: &str) -> Vec<u8> {
+        let mut bytes = vec![0; 128];
+        bytes.extend_from_slice(b"DICM");
+        bytes.extend_from_slice(&[0, 0x56, 0x20, 0, b'O', b'F', 0, 0, 8, 0, 0, 0]);
+        bytes.extend_from_slice(&[0; 8]);
+        for (group, element, text) in [(0x0020u16, 0x000du16, study), (0x0010, 0x0020, patient)] {
+            let mut text = text.as_bytes().to_vec();
+            if text.len() % 2 != 0 { text.push(b' '); }
+            bytes.extend_from_slice(&group.to_le_bytes());
+            bytes.extend_from_slice(&element.to_le_bytes());
+            bytes.extend_from_slice(b"LO");
+            bytes.extend_from_slice(&(text.len() as u16).to_le_bytes());
+            bytes.extend_from_slice(&text);
+        }
+        bytes
+    }
+
+    #[test]
+    fn explicit_dicom_water_still_rejects_conflicting_identity() {
+        let m = dicom("study", "subject");
+        for w in [dicom("other", "subject"), dicom("study", "other")] {
+            let files = vec![("metab/a.dcm".into(), m.as_slice()), ("water/b.dcm".into(), w.as_slice())];
+            let (_, result) = load_with_options(&files, &json!({"water": [{"targetPath": "metab/a.dcm", "files": ["water/b.dcm"]}]}));
+            assert!(result["error"].as_str().unwrap().contains("study or patient"), "{result}");
+        }
     }
 }

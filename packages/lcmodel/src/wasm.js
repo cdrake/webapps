@@ -57,8 +57,9 @@ export async function loadLcmodel(source, { onProgress = () => {} } = {}) {
       wasm.mrs_add_file(namePtr, nameBytes.length, dataPtr, bytes.length);
       wasm.dealloc(namePtr, nameBytes.length);
     },
-    /** Detect and read the added files: {datasets, errors, ignored, unpairedWater}. */
-    load() {
+    /** Detect files and optionally assign water by {water: [{targetPath, files: [path]}]}. */
+    load(options = {}) {
+      if (options.water?.length) return call(wasm.mrs_load_with_options, options);
       wasm.mrs_load();
       return reply();
     },

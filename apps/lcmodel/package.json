@@ -1,6 +1,6 @@
 {
   "name": "lcmodel",
-  "version": "0.7.20261012",
+  "version": "0.8.20261013",
   "private": true,
   "type": "module",
   "scripts": {

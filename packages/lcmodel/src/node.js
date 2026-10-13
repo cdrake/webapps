@@ -18,6 +18,7 @@ import { lcmodelError } from "./lcmodel-io.js";
 import { basisLibrary } from "./library.js";
 import {
   CUSTOM,
+  acquisitionMessage,
   applyEditing,
   chooseBasis,
   datasetLabel,
@@ -327,6 +328,8 @@ export async function fit({
   applyEditing(input, p.edited);
   const acquisition = input.kind === "raw" ? rawAcquisition(input, p) : null;
   if (acquisition && !(acquisition.hzpppm && acquisition.deltat)) {
+    const message = acquisitionMessage(input.name, { ...input.header, ...acquisition });
+    log(message.text, message.level);
     throw new Error(`${input.name} records no ${acquisition.hzpppm ? "dwell time" : "spectrometer frequency"}; give --frequency-mhz and --dwell-time-ms.`);
   }
   const bases = { library: LIBRARY, custom };
