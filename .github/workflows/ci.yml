@@ -121,7 +121,8 @@ jobs:
         if: matrix.rust_wasm
         uses: ./.github/actions/setup-wasm-opt
       # Dependency builds dominate a WebAssembly app's build; the key changes only with
-      # its lockfiles, and cargo rebuilds whatever sources changed on top.
+      # its lockfiles, and cargo rebuilds whatever sources changed on top. SYNcro,
+      # Greedy and Brain extraction compile exes/greedy through packages/greedy.
       - name: Restore ${{ matrix.app }} Rust build cache
         if: matrix.rust_wasm
         uses: actions/cache@v6
@@ -131,7 +132,8 @@ jobs:
             ~/.cargo/registry/cache
             ~/.cargo/git/db
             apps/${{ matrix.app }}/**/target
-          key: rust-wasm-${{ matrix.app }}-${{ runner.os }}-${{ hashFiles(format('apps/{0}/**/Cargo.lock', matrix.app)) }}
+            exes/greedy/target
+          key: rust-wasm-${{ matrix.app }}-${{ runner.os }}-${{ hashFiles(format('apps/{0}/**/Cargo.lock', matrix.app), 'exes/greedy/Cargo.lock') }}
           restore-keys: rust-wasm-${{ matrix.app }}-${{ runner.os }}-
       - uses: actions/setup-python@v7
         if: matrix.python_reference
@@ -282,7 +284,8 @@ jobs:
         if: matrix.rust_wasm
         uses: ./.github/actions/setup-wasm-opt
       # Dependency builds dominate a WebAssembly app's build; the key changes only with
-      # its lockfiles, and cargo rebuilds whatever sources changed on top.
+      # its lockfiles, and cargo rebuilds whatever sources changed on top. SYNcro,
+      # Greedy and Brain extraction compile exes/greedy through packages/greedy.
       - name: Restore ${{ matrix.app }} Rust build cache
         if: matrix.rust_wasm
         uses: actions/cache@v6
@@ -292,7 +295,8 @@ jobs:
             ~/.cargo/registry/cache
             ~/.cargo/git/db
             apps/${{ matrix.app }}/**/target
-          key: rust-wasm-${{ matrix.app }}-${{ runner.os }}-${{ hashFiles(format('apps/{0}/**/Cargo.lock', matrix.app)) }}
+            exes/greedy/target
+          key: rust-wasm-${{ matrix.app }}-${{ runner.os }}-${{ hashFiles(format('apps/{0}/**/Cargo.lock', matrix.app), 'exes/greedy/Cargo.lock') }}
           restore-keys: rust-wasm-${{ matrix.app }}-${{ runner.os }}-
       - uses: actions/setup-python@v7
         if: matrix.python_reference
@@ -368,7 +372,8 @@ jobs:
         if: matrix.rust_wasm
         uses: ./.github/actions/setup-wasm-opt
       # Dependency builds dominate a WebAssembly app's build; the key changes only with
-      # its lockfiles, and cargo rebuilds whatever sources changed on top.
+      # its lockfiles, and cargo rebuilds whatever sources changed on top. SYNcro,
+      # Greedy and Brain extraction compile exes/greedy through packages/greedy.
       - name: Restore ${{ matrix.app }} Rust build cache
         if: matrix.rust_wasm
         uses: actions/cache@v6
@@ -378,7 +383,8 @@ jobs:
             ~/.cargo/registry/cache
             ~/.cargo/git/db
             apps/${{ matrix.app }}/**/target
-          key: rust-wasm-${{ matrix.app }}-${{ runner.os }}-${{ hashFiles(format('apps/{0}/**/Cargo.lock', matrix.app)) }}
+            exes/greedy/target
+          key: rust-wasm-${{ matrix.app }}-${{ runner.os }}-${{ hashFiles(format('apps/{0}/**/Cargo.lock', matrix.app), 'exes/greedy/Cargo.lock') }}
           restore-keys: rust-wasm-${{ matrix.app }}-${{ runner.os }}-
       - uses: actions/setup-python@v7
         if: matrix.python_reference
