@@ -209,7 +209,15 @@ mod tests {
             .unwrap();
         assert_eq!(outcome, RunOutcome::Cancelled);
         if let Ok(stat) = std::fs::read_to_string(format!("/proc/{pid}/stat")) {
-            assert_eq!(stat.split_once(") ").unwrap().1.chars().next(), Some('Z'));
+            let mut fields = stat.split_once(") ").unwrap().1.split_whitespace();
+            let state = fields.next().unwrap();
+            let flags = fields.nth(5).unwrap().parse::<u64>().unwrap();
+            // Linux do_exit closes the pipes before exit_notify marks the task as a zombie.
+            const PF_EXITING: u64 = 0x4;
+            assert!(
+                state == "Z" || flags & PF_EXITING != 0,
+                "descendant still live: {stat}"
+            );
         }
     }
 
