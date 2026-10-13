@@ -39,10 +39,6 @@
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
         <span>About</span>
       </button>
-      <button class="header-link" id="citationsButton" data-neurodesk-control="cite" title="Citations">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-        <span>Cite</span>
-      </button>
       <button class="header-link" id="privacyButton" data-neurodesk-control="privacy" title="Privacy">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         <span>Privacy</span>
@@ -449,56 +445,6 @@
       <p>The Neurodesk hosting layer records page views only, unless your browser sends Do Not Track or Global Privacy Control. It does not send custom events, patient images, voxel values, screenshots, generated segmentations, filenames, or analysis results to Google Analytics. Other network requests load the application itself, runtime assets, and model files, which may be cached locally.</p>
     </div>
   </div>
-</div>
-
-<!-- Citations Modal -->
-<div class="modal-overlay" id="citationsModal">
-  <div class="modal citations-modal">
-    <div class="modal-header">
-      <h3>Citations</h3>
-      <button class="modal-close" id="closeCitations">&times;</button>
-    </div>
-    <div class="modal-body">
-      <div class="citation-section citation-primary">
-        <div class="citation-item">
-          <strong>MuscleMap</strong>
-          <span class="citation-ref">Code: <a href="https://github.com/neurodesk/webapps/tree/main/apps/musclemap" target="_blank" rel="noopener">GitHub</a></span>
-          <p>McKay MJ, Weber KA 2nd, Wesselink EO, Smith ZA, Abbott R, Anderson DB, Ashton-James CE, Atyeo J, Beach AJ, Burns J, Clarke S, Collins NJ, Coppieters MW, Cornwall J, Crawford RJ, De Martino E, Dunn AG, Eyles JP, Feng HJ, Fortin M, Franettovich Smith MM, Galloway G, Gandomkar Z, Glastras S, Henderson LA, Hides JA, Hiller CE, Hilmer SN, Hoggarth MA, Kim B, Lal N, LaPorta L, Magnussen JS, Maloney S, March L, Nackley AG, O'Leary SP, Peolsson A, Perraton Z, Pool-Goudzwaard AL, Schnitzler M, Seitz AL, Semciw AI, Sheard PW, Smith AC, Snodgrass SJ, Sullivan J, Tran V, Valentin S, Walton DM, Wishart LR, Elliott JM. MuscleMap: An Open-Source, Community-Supported Consortium for Whole-Body Quantitative MRI of Muscle. <em>J Imaging</em>. 2024;10(11):262.</p>
-          <a href="https://doi.org/10.3390/jimaging10110262" target="_blank" rel="noopener">https://doi.org/10.3390/jimaging10110262</a>
-        </div>
-      </div>
-
-      <p class="citations-intro">MuscleMap uses the following methods and tools:</p>
-
-      <div class="citation-section">
-        <h4>Deep Learning Framework</h4>
-        <div class="citation-item">
-          <strong>MONAI</strong>
-          <p>MONAI Consortium. (2020). MONAI: Medical Open Network for AI.</p>
-          <a href="https://monai.io" target="_blank" rel="noopener">https://monai.io</a>
-        </div>
-      </div>
-
-      <div class="citation-section">
-        <h4>Browser Inference</h4>
-        <div class="citation-item">
-          <strong>ONNX Runtime Web</strong>
-          <p>Microsoft. ONNX Runtime: cross-platform, high performance ML inferencing and training accelerator.</p>
-          <a href="https://onnxruntime.ai" target="_blank" rel="noopener">https://onnxruntime.ai</a>
-        </div>
-      </div>
-
-      <div class="citation-section">
-        <h4>Visualization</h4>
-        <div class="citation-item">
-          <strong>NiiVue</strong>
-          <p>NiiVue Contributors. NiiVue: a WebGL2 medical image viewer.</p>
-          <a href="https://github.com/niivue/niivue" target="_blank" rel="noopener">https://github.com/niivue/niivue</a>
-        </div>
-      </div>
-    </div>
-  </div>
-
 </div>
 
 
