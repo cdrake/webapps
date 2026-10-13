@@ -1248,7 +1248,14 @@ recommend();
 async function prepareAutomation({ inputs, parameters, signal, progress: report }) {
   exampleControl.cancel();
   report("Reading the spectroscopy data");
-  await loadFiles({ kind: "fit-request", inputs, parameters }, signal);
+  try {
+    await loadFiles({ kind: "fit-request", inputs, parameters }, signal);
+  } catch (error) {
+    const message = error.name === "AbortError" ? "Cancelled" : error.message;
+    progress.end(message, { success: false });
+    status(message, error.name !== "AbortError");
+    throw error;
+  }
 }
 
 /** While an automation run is active, its signal works like the footer ×. */
