@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { copyFile, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { parse } from 'yaml';
+import { parse, stringify } from 'yaml';
 import { createAppPlan } from '../scripts/lib/app-plan.mjs';
 import { loadAppsRegistry, repoRoot } from '../scripts/lib/apps-registry.mjs';
-import { loadConservativeWorkspaceGraph } from '../scripts/lib/workspace-graph.mjs';
+import { CATALOG_JOBS, loadConservativeWorkspaceGraph, WorkspaceGraphConfigurationError } from '../scripts/lib/workspace-graph.mjs';
 
 const graph = loadConservativeWorkspaceGraph(repoRoot);
 
@@ -278,10 +278,10 @@ test('deleting an imported root helper still selects the app that imports it', a
   }
   await writeFile(join(root, 'package.json'), JSON.stringify({ scripts: {} }));
   await writeFile(join(root, '.github/workflows/ci.yml'), JSON.stringify({ jobs: {
-    'composite-site': { steps: [] },
-    'app-tests': { steps: [] },
-    'browser-e2e': { steps: [] },
-    'browser-e2e-gpu': { steps: [] },
+    'composite-site': { steps: [{ run: 'echo fixture' }] },
+    'app-tests': { steps: [{ run: 'echo fixture' }] },
+    'browser-e2e': { steps: [{ run: 'echo fixture' }] },
+    'browser-e2e-gpu': { steps: [{ run: 'echo fixture' }] },
   } }));
   await writeFile(join(root, 'apps/lcmodel/main.js'), "import '../../scripts/entry.mjs';\n");
   await writeFile(join(root, 'scripts/entry.mjs'), "import './lib/shared.mjs';\n");
@@ -302,13 +302,87 @@ test('removing a root script still selects the CI job that calls it', async (t) 
   await writeFile(join(root, 'package.json'), JSON.stringify({ scripts: {} }));
   await writeFile(join(root, '.github/workflows/ci.yml'), JSON.stringify({ jobs: {
     'composite-site': { steps: [{ run: 'pnpm build' }] },
-    'app-tests': { steps: [] },
-    'browser-e2e': { steps: [] },
-    'browser-e2e-gpu': { steps: [] },
+    'app-tests': { steps: [{ run: 'echo fixture' }] },
+    'browser-e2e': { steps: [{ run: 'echo fixture' }] },
+    'browser-e2e-gpu': { steps: [{ run: 'echo fixture' }] },
   } }));
   const registry = await loadAppsRegistry();
   const manifests = new Map([['package.json', manifest({ scripts: { build: 'node scripts/build.mjs' } }, { scripts: {} })]]);
   const plan = createAppPlan(registry, ['package.json'], await loadConservativeWorkspaceGraph(root), manifests);
   assert.deepEqual(plan.selected, []);
   assert.equal(plan.site, true);
+});
+
+async function plannerFixture(t) {
+  const root = await mkdtemp(join(tmpdir(), 'app-plan-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  for (const path of ['scripts/lib', 'registry', '.github/workflows']) {
+    await mkdir(join(root, path), { recursive: true });
+  }
+  for (const path of ['scripts/app-plan.mjs', 'scripts/lib/app-plan.mjs', 'scripts/lib/workspace-graph.mjs', 'scripts/lib/apps-registry.mjs', 'registry/apps.yml']) {
+    await copyFile(join(repoRoot, path), join(root, path));
+  }
+  await writeFile(join(root, 'package.json'), JSON.stringify({ type: 'module', scripts: {} }));
+  await symlink(join(repoRoot, 'node_modules'), join(root, 'node_modules'), 'junction');
+  const ci = { jobs: Object.fromEntries(['composite-site', ...CATALOG_JOBS].map(name => [name, { steps: [{ run: 'echo fixture' }] }])) };
+  await writeFile(join(root, '.github/workflows/ci.yml'), stringify(ci));
+  const run = (...args) => spawnSync(process.execPath, ['scripts/app-plan.mjs', ...args], {
+    cwd: root, encoding: 'utf8', env: { ...process.env, GITHUB_OUTPUT: '' },
+  });
+  return { root, ci, run };
+}
+
+test('missing, renamed and reusable CI jobs trigger a visible full-coverage fallback', async (t) => {
+  const { root, ci, run } = await plannerFixture(t);
+  const registry = await loadAppsRegistry();
+  for (const name of ['composite-site', ...CATALOG_JOBS]) {
+    for (const variant of ['missing', 'renamed', 'reusable', 'empty', 'non-array']) {
+      const altered = structuredClone(ci);
+      if (variant === 'renamed') altered.jobs[`${name}-renamed`] = altered.jobs[name];
+      if (variant === 'missing' || variant === 'renamed') delete altered.jobs[name];
+      if (variant === 'reusable') altered.jobs[name] = { uses: './.github/workflows/reusable.yml' };
+      if (variant === 'empty') altered.jobs[name] = { steps: [] };
+      if (variant === 'non-array') altered.jobs[name] = { steps: {} };
+      await writeFile(join(root, '.github/workflows/ci.yml'), stringify(altered));
+      await assert.rejects(loadConservativeWorkspaceGraph(root), error => error instanceof WorkspaceGraphConfigurationError && error.message.includes(name));
+      const result = run('--only', 'niimath');
+      assert.equal(result.status, 0, `${name} ${variant}: ${result.stderr}`);
+      const output = JSON.parse(result.stdout);
+      assert.deepEqual(JSON.parse(output.selected_ids), registry.apps.map(app => app.id));
+      assert.equal(output.all_apps, 'true');
+      assert.equal(output.has_site, 'true');
+      assert.match(output.fallback_reason, new RegExp(name));
+      assert.match(result.stderr, /selecting the full catalog and site/);
+      assert.deepEqual(JSON.parse(output.browser_apps), createAppPlan(registry).browserApps);
+      assert.deepEqual(JSON.parse(output.gpu_apps), createAppPlan(registry).gpuApps);
+    }
+  }
+});
+
+test('unrelated workflow parsing errors remain fatal', async (t) => {
+  const { root, run } = await plannerFixture(t);
+  await writeFile(join(root, '.github/workflows/ci.yml'), 'jobs: [');
+  const result = run('--only', 'niimath');
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /YAMLParseError/);
+  assert.doesNotMatch(result.stderr, /selecting the full catalog and site/);
+});
+
+test('workflow outputs include the fallback reason and complete matrices', async (t) => {
+  const { root, ci } = await plannerFixture(t);
+  delete ci.jobs['app-tests'];
+  await writeFile(join(root, '.github/workflows/ci.yml'), stringify(ci));
+  const outputFile = join(root, 'github-output');
+  const result = spawnSync(process.execPath, ['scripts/app-plan.mjs', '--only', 'niimath'], {
+    cwd: root, encoding: 'utf8', env: { ...process.env, GITHUB_OUTPUT: outputFile },
+  });
+  assert.equal(result.status, 0, result.stderr);
+  const outputs = Object.fromEntries((await readFile(outputFile, 'utf8')).trim().split('\n').map(line => {
+    const equals = line.indexOf('=');
+    return [line.slice(0, equals), line.slice(equals + 1)];
+  }));
+  assert.match(outputs.fallback_reason, /app-tests/);
+  assert.equal(outputs.all_apps, 'true');
+  assert.equal(outputs.has_site, 'true');
+  assert.deepEqual(JSON.parse(outputs.selected_ids), (await loadAppsRegistry()).apps.map(app => app.id));
 });

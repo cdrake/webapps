@@ -95,6 +95,8 @@ function nodeOf(root, path) {
   return TRAVERSABLE_WORKSPACE_GROUPS.has(top) && name ? `${top}/${name}` : null;
 }
 
+export class WorkspaceGraphConfigurationError extends Error {}
+
 export async function loadConservativeWorkspaceGraph(root) {
   const nodes = (await Promise.all(TOP_LEVEL.map(async (top) => (await listDirs(join(root, top))).map((name) => `${top}/${name}`)))).flat();
   const nodeSet = new Set(nodes);
@@ -135,10 +137,16 @@ export async function loadConservativeWorkspaceGraph(root) {
 
   const ci = parse(await readFile(join(root, '.github/workflows/ci.yml'), 'utf8'));
   const rootScripts = JSON.parse(await readFile(join(root, 'package.json'), 'utf8')).scripts;
-  const runs = (jobs) => jobs.flatMap((job) => job.steps.map((step) => step.run ?? '')).map((run) => run.replace(/pnpm --filter \S+ (?:run )?\S+/g, ''));
+  const runs = (names) => names.flatMap((name) => {
+    const steps = ci?.jobs?.[name]?.steps;
+    if (!Array.isArray(steps) || steps.length === 0) {
+      throw new WorkspaceGraphConfigurationError(`ci.yml job ${name} has no step list; update the workspace graph's CI entry points`);
+    }
+    return steps.map((step) => step.run ?? '');
+  }).map((run) => run.replace(/pnpm --filter \S+ (?:run )?\S+/g, ''));
   const entries = [
-    [SITE, runs([ci.jobs['composite-site']])],
-    [CATALOG, runs(CATALOG_JOBS.map((name) => ci.jobs[name]))],
+    [SITE, runs(['composite-site'])],
+    [CATALOG, runs(CATALOG_JOBS)],
   ];
   // Root tool configs (e2e.config.ts, tsconfig.agentic.json) are read implicitly
   // by the commands composite-site runs, so the site build follows them too.

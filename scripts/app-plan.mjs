@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { appendFile } from 'node:fs/promises';
 import { createAppPlan, changedPathsFromGit } from './lib/app-plan.mjs';
 import { loadAppsRegistry, repoRoot } from './lib/apps-registry.mjs';
-import { loadConservativeWorkspaceGraph } from './lib/workspace-graph.mjs';
+import { loadConservativeWorkspaceGraph, WorkspaceGraphConfigurationError } from './lib/workspace-graph.mjs';
 
 function option(name) {
   const index = process.argv.indexOf(name);
@@ -34,7 +34,16 @@ for (const path of manifestPaths) {
     // An added or deleted manifest is a code change like any other.
   }
 }
-const plan = createAppPlan(registry, changedPaths, await loadConservativeWorkspaceGraph(repoRoot), manifests);
+let graph;
+let fallbackReason = '';
+try {
+  graph = await loadConservativeWorkspaceGraph(repoRoot);
+} catch (error) {
+  if (!(error instanceof WorkspaceGraphConfigurationError)) throw error;
+  fallbackReason = error.message;
+  console.error(`App planner: selecting the full catalog and site because ${fallbackReason}`);
+}
+const plan = createAppPlan(registry, fallbackReason ? [] : changedPaths, graph, manifests);
 const emptyMatrix = { include: [{ app: '__none__', path: '', runtime: '', rust_wasm: false, python_reference: false, shared_runtime: false, browser_test: false, hardware_gpu: false, app_scoped_runtime: false, release_test: 'test' }] };
 const outputs = {
   apps: JSON.stringify(plan.apps.include.length ? plan.apps : emptyMatrix),
@@ -48,6 +57,7 @@ const outputs = {
   has_release_apps: String(plan.releaseApps.include.length > 0),
   all_apps: String(plan.allApps),
   has_site: String(plan.site),
+  fallback_reason: fallbackReason,
 };
 
 if (process.env.GITHUB_OUTPUT) {
