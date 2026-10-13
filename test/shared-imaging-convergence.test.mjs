@@ -19,27 +19,24 @@ test('the workspace and static pages expose one typed shell-control contract', a
   assert.match(declarations, /ShellTargetSet/);
   assert.match(declarations, /'standalone'/);
 
-  for (const app of inferenceApps) {
-    const html = await source('apps', app, 'web', 'index.html');
-    for (const action of ['about', 'cite', 'privacy']) {
+  const information = await loadAppInformation(await loadAppsRegistry());
+  const pages = [...inferenceApps.map(app => [app, ['apps', app, 'web', 'index.html']]), ['qsmbly', ['apps', 'qsmbly', 'index.html']]];
+  for (const [app, path] of pages) {
+    const html = await source(...path);
+    for (const action of ['about', 'privacy']) {
       assert.match(html, new RegExp(`data-neurodesk-control=["']${action}["']`), `${app}/${action}`);
     }
+    assert.doesNotMatch(html, /data-neurodesk-control=["']cite["']|id=["']citationsModal["']/, `${app} leaves Cite to the shell`);
+    const window = await mountAppShell({ appId: app, bodyHtml: html, information: appInformationPayload(information, app) });
+    window.document.querySelector('[data-neurodesk-shell-control="cite"]').click();
+    const cite = window.document.querySelector('.nd-app-dialog[data-dialog="cite"]');
+    assert.ok(cite?.hasAttribute('open'), `${app}/cite opens the shared registry dialog`);
+    for (const citation of information.apps[app].citations) {
+      assert.ok(cite.textContent.includes(citation.title), `${app}/cite includes ${citation.title}`);
+    }
+    assert.ok(cite.querySelector('a[href="https://doi.org/10.1038/s41592-023-02145-x"]'), `${app}/cite ends with Neurodesk`);
   }
-
   const qsm = await source('apps', 'qsmbly', 'index.html');
-  for (const action of ['about', 'privacy']) {
-    assert.match(qsm, new RegExp(`data-neurodesk-control=["']${action}["']`), `qsmbly/${action}`);
-  }
-  assert.doesNotMatch(qsm, /data-neurodesk-control=["']cite["']|id=["']citationsModal["']/);
-  const information = await loadAppInformation(await loadAppsRegistry());
-  const window = await mountAppShell({ appId: 'qsmbly', bodyHtml: qsm, information: appInformationPayload(information, 'qsmbly') });
-  window.document.querySelector('[data-neurodesk-shell-control="cite"]').click();
-  const cite = window.document.querySelector('.nd-app-dialog[data-dialog="cite"]');
-  assert.ok(cite?.hasAttribute('open'), 'qsmbly/cite opens the shared registry dialog');
-  for (const citation of information.apps.qsmbly.citations) {
-    assert.ok(cite.textContent.includes(citation.title), `qsmbly/cite includes ${citation.title}`);
-  }
-  assert.ok(cite.querySelector('a[href="https://doi.org/10.1038/s41592-023-02145-x"]'));
   assert.match(qsm, /data-neurodesk-shell-link=["']more-apps["']/);
   assert.match(qsm, /data-neurodesk-shell-link=["']github["']/);
 

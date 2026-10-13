@@ -201,6 +201,7 @@ function renderCatalog(release, models) {
   const selectable = models.filter(model => model.status === 'active' || model.status === 'legacy');
   return `export const APP_VERSION = ${JSON.stringify(release.appVersion)};\n` +
     `export const TARGET_APP_VERSION = ${JSON.stringify(release.targetAppVersion)};\n` +
+    `export const MODEL_BASE_URL = ${JSON.stringify(release.publication.baseUrl)};\n` +
     `export const UPSTREAM_REVISION = ${JSON.stringify(release.upstream.revision)};\n` +
     `export const MODEL_RELEASES = ${JSON.stringify(models, null, 2)};\n\n` +
     `export const MODELS = MODEL_RELEASES\n` +
