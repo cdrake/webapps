@@ -180,6 +180,7 @@ export function createTissuePanel(hooks) {
     $("t1Drop").classList.add("has-files");
     hooks.log.log(`T1 loaded: ${$("t1Info").textContent}; ${t1HeaderFacts(header)}`);
     refresh();
+    hooks.onChange();
     hooks.onViewRequested();
     await show();
   }
@@ -435,7 +436,6 @@ export function createTissuePanel(hooks) {
       await loadT1(files);
       hooks.progress.end("T1 loaded");
       hooks.status(dataset?.voxel ? "T1 loaded; segment it to measure the voxel." : "T1 loaded.");
-      hooks.onChange();
     } catch (error) {
       hooks.progress.end(error.message, { success: false });
       hooks.status(error.message, true);

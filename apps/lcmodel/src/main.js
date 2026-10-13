@@ -471,7 +471,6 @@ async function loadFiles(request, signal) {
     if (nextT1) {
       $("tissueSection").open = true;
       await presentation;
-      if (fit) renderConcentrations();
     } else if (next && view === "voxel" && tissue.hasT1) showView("voxel");
     const message = water ? "Water reference attached to the selected dataset." : next ? `${describeInput()} loaded` : nextT1 ? "T1 loaded." : "Basis set loaded; add spectroscopy data.";
     progress.end(message);
