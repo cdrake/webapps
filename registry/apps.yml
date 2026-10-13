@@ -287,6 +287,7 @@ apps:
       shared_runtime: false
       browser_test: true
       release: true
+      e2e_shards: 2
   - id: surfannotate
     path: surfannotate
     title: SurfAnnotate

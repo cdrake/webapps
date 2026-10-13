@@ -31,6 +31,11 @@ const NON_CODE_FILES = new Set([
   'registry/apps.yml',
 ]);
 
+function shardedEntries(app) {
+  const total = app.ci.e2e_shards ?? 1;
+  return Array.from({ length: total }, (_, index) => ({ ...matrixEntry(app), shard: total > 1 ? `${index + 1}/${total}` : '' }));
+}
+
 function matrixEntry(app) {
   const toolchains = new Set(app.ci.toolchains);
   return {
@@ -157,7 +162,7 @@ export function createAppPlan(registry, changedPaths = [], graph = null, manifes
     changedPaths: Object.freeze([...changedPaths]),
     selected: Object.freeze(selected),
     apps: Object.freeze({ include: Object.freeze(selected.map(matrixEntry)) }),
-    browserApps: Object.freeze({ include: Object.freeze(browserTested.map(matrixEntry)) }),
+    browserApps: Object.freeze({ include: Object.freeze(browserTested.flatMap(shardedEntries)) }),
     gpuApps: Object.freeze({ include: Object.freeze(gpuTested.map(matrixEntry)) }),
     releaseApps: Object.freeze({ include: Object.freeze(releasable.map(matrixEntry)) }),
     allApps: selected.length === registry.apps.length,

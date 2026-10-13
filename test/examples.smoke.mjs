@@ -11,7 +11,7 @@ const id = process.argv[process.argv.indexOf('--app') + 1];
 const app = (await loadAppsRegistry()).apps.find(entry => entry.id === id);
 if (!app) throw new Error('Specify a registered app with --app <id>');
 const examples = await loadAppExamples(app);
-if (!process.argv.includes('--skip-build')) {
+if (!process.argv.includes('--skip-build') && process.env.NEURODESK_E2E_PREBUILT !== '1') {
   execFileSync('pnpm', ['--filter', app.id, 'build'], { cwd: repoRoot, stdio: 'inherit' });
 }
 const scratch = await mkdtemp(join(tmpdir(), 'example-browser-'));
