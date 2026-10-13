@@ -62,7 +62,7 @@ test('shared module changes select the complete app catalog', async () => {
   const plan = createAppPlan(registry, ['packages/components/src/ui/ProgressManager.js']);
   assert.equal(plan.selected.length, registry.apps.length);
   assert.deepEqual(
-    plan.browserApps.include.map(({ app }) => app),
+    [...new Set(plan.browserApps.include.map(({ app }) => app))],
     registry.apps.filter((app) => app.ci.browser_test).map((app) => app.id),
   );
   assert.deepEqual(
@@ -245,4 +245,12 @@ test('ci.yml runs the composite site build on pull requests that need it', async
   const ci = parse(await readFile(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8'));
   assert.equal(ci.jobs['composite-site'].if, "github.event_name != 'pull_request' || needs.app-plan.outputs.has_site == 'true'");
   assert.equal(ci.jobs['app-plan'].outputs.has_site, '${{ steps.plan.outputs.has_site }}');
+});
+
+test('an app with ci.e2e_shards gets one browser-e2e entry per shard', async () => {
+  const registry = await loadAppsRegistry();
+  const plan = createAppPlan(registry, ['apps/browserqc/src/main.js'], await graph);
+  assert.deepEqual(plan.browserApps.include.map(({ app, shard }) => `${app} ${shard}`), ['browserqc 1/2', 'browserqc 2/2']);
+  assert.equal(plan.apps.include.length, 1, 'unit tests and builds still run once');
+  assert.deepEqual(createAppPlan(registry, ['apps/niimath/main.js'], await graph).browserApps.include.map(({ shard }) => shard), ['']);
 });

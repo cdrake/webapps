@@ -120,6 +120,19 @@ jobs:
       - name: Set up wasm-opt
         if: matrix.rust_wasm
         uses: ./.github/actions/setup-wasm-opt
+      # Dependency builds dominate a WebAssembly app's build; the key changes only with
+      # its lockfiles, and cargo rebuilds whatever sources changed on top.
+      - name: Restore ${{ matrix.app }} Rust build cache
+        if: matrix.rust_wasm
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            apps/${{ matrix.app }}/**/target
+          key: rust-wasm-${{ matrix.app }}-${{ runner.os }}-${{ hashFiles(format('apps/{0}/**/Cargo.lock', matrix.app)) }}
+          restore-keys: rust-wasm-${{ matrix.app }}-${{ runner.os }}-
       - uses: actions/setup-python@v7
         if: matrix.python_reference
         with:
@@ -268,6 +281,19 @@ jobs:
       - name: Set up wasm-opt
         if: matrix.rust_wasm
         uses: ./.github/actions/setup-wasm-opt
+      # Dependency builds dominate a WebAssembly app's build; the key changes only with
+      # its lockfiles, and cargo rebuilds whatever sources changed on top.
+      - name: Restore ${{ matrix.app }} Rust build cache
+        if: matrix.rust_wasm
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            apps/${{ matrix.app }}/**/target
+          key: rust-wasm-${{ matrix.app }}-${{ runner.os }}-${{ hashFiles(format('apps/{0}/**/Cargo.lock', matrix.app)) }}
+          restore-keys: rust-wasm-${{ matrix.app }}-${{ runner.os }}-
       - uses: actions/setup-python@v7
         if: matrix.python_reference
         with:
@@ -295,7 +321,12 @@ jobs:
         run: node scripts/e2e-test-data.mjs "$APP" ~/.cache/neurodesk-e2e-test-data $CPU_ONLY | tee -a "$GITHUB_ENV"
       - name: Build ${{ matrix.app }} browser runtime
         run: pnpm --filter ${{ matrix.app }} build
-      - name: Test ${{ matrix.app }} in a browser
+      - name: Test ${{ matrix.app }} in a browser${{ matrix.shard && format(' (shard {0})', matrix.shard) || '' }}
+        env:
+          # The step above built the app; test/examples.smoke.mjs does not rebuild it.
+          NEURODESK_E2E_PREBUILT: '1'
+          # Playwright runs this job's share of an app with ci.e2e_shards (test-utils/e2e-tier.mjs).
+          NEURODESK_E2E_SHARD: ${{ matrix.shard }}
         run: pnpm --filter ${{ matrix.app }} test:e2e
 
   # The free macOS runners expose a paravirtual Apple GPU that full Chromium
@@ -336,6 +367,19 @@ jobs:
       - name: Set up wasm-opt
         if: matrix.rust_wasm
         uses: ./.github/actions/setup-wasm-opt
+      # Dependency builds dominate a WebAssembly app's build; the key changes only with
+      # its lockfiles, and cargo rebuilds whatever sources changed on top.
+      - name: Restore ${{ matrix.app }} Rust build cache
+        if: matrix.rust_wasm
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            apps/${{ matrix.app }}/**/target
+          key: rust-wasm-${{ matrix.app }}-${{ runner.os }}-${{ hashFiles(format('apps/{0}/**/Cargo.lock', matrix.app)) }}
+          restore-keys: rust-wasm-${{ matrix.app }}-${{ runner.os }}-
       - uses: actions/setup-python@v7
         if: matrix.python_reference
         with:
@@ -364,6 +408,8 @@ jobs:
       - name: Build ${{ matrix.app }} browser runtime
         run: pnpm --filter ${{ matrix.app }} build
       - name: Test ${{ matrix.app }} on the hardware GPU
+        env:
+          NEURODESK_E2E_PREBUILT: '1'
         run: pnpm --filter ${{ matrix.app }} test:e2e
       - uses: actions/upload-artifact@v7
         if: failure()

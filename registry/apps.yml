@@ -287,6 +287,8 @@ apps:
       shared_runtime: false
       browser_test: true
       release: true
+      # Its automation and reference spec files each run several minutes of CPU segmentation.
+      e2e_shards: 2
   - id: surfannotate
     path: surfannotate
     title: SurfAnnotate

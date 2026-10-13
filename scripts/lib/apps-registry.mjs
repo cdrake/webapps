@@ -99,6 +99,9 @@ export async function loadAppsRegistry(path = registryPath) {
     if (app.ci?.hardware_gpu && app.ci.browser_test !== true) {
       errors.push(`ci.hardware_gpu needs ci.browser_test for ${app.id}`);
     }
+    if (app.ci?.e2e_shards !== undefined && !(Number.isInteger(app.ci.e2e_shards) && app.ci.e2e_shards >= 2 && app.ci.e2e_shards <= 4 && app.ci.browser_test === true)) {
+      errors.push(`ci.e2e_shards for ${app.id} must be an integer from 2 to 4 on a browser-tested app`);
+    }
     if (app.ci?.release_test !== undefined && !PACKAGE_SCRIPT.test(app.ci.release_test)) {
       errors.push(`invalid ci.release_test for ${app.id}: ${app.ci.release_test}`);
     }
