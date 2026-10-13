@@ -1,5 +1,11 @@
 # @neurodesk/lcmodel
 
+## 0.8.20261013
+
+### Patch Changes
+
+- Finish the progress indicator and hide cancellation when automation preparation fails. Show the input error or Cancelled while preserving the loaded session.
+
 ## 0.8.20261012
 
 ### Minor Changes
