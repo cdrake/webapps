@@ -10,7 +10,7 @@ const SELF_CONTAINED_PREFIXES = ['site/easter-eggs/'];
 // Paths no app build or browser test reads. Lint and quality tooling run in
 // workspace-contracts or their own workflows; every workflow other than ci.yml
 // runs itself when it changes; the app template is checked by contract tests.
-const NON_APP_PATHS = [
+const INDEPENDENT_CHECK_PATHS = [
   /^[^/]+\.md$/,
   /^\.gitignore$/,
   /^\.github\/workflows\/(?!ci\.yml$)[^/]+$/,
@@ -103,7 +103,7 @@ export function selectAffectedApps(registry, changedPaths = [], graph = null, ma
       NON_CODE_FILES.has(path) ||
       NON_CODE_PREFIXES.some((prefix) => path.startsWith(prefix)) ||
       SELF_CONTAINED_PREFIXES.some((prefix) => path.startsWith(prefix)) ||
-      NON_APP_PATHS.some((pattern) => pattern.test(path))
+      INDEPENDENT_CHECK_PATHS.some((pattern) => pattern.test(path))
     ) {
       continue;
     }
