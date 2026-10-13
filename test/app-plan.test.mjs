@@ -326,8 +326,8 @@ test('missing, renamed and reusable CI jobs trigger a visible full-coverage fall
       assert.equal(output.has_site, 'true');
       assert.match(output.fallback_reason, new RegExp(name));
       assert.match(result.stderr, /selecting the full catalog and site/);
-      assert.deepEqual(JSON.parse(output.browser_apps).include.map(({ app }) => app), registry.apps.filter(app => app.ci.browser_test).map(app => app.id));
-      assert.deepEqual(JSON.parse(output.gpu_apps).include.map(({ app }) => app), registry.apps.filter(app => app.ci.hardware_gpu).map(app => app.id));
+      assert.deepEqual(JSON.parse(output.browser_apps), createAppPlan(registry).browserApps);
+      assert.deepEqual(JSON.parse(output.gpu_apps), createAppPlan(registry).gpuApps);
     }
   }
 });
