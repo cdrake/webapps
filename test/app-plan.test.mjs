@@ -313,7 +313,6 @@ test('removing a root script still selects the CI job that calls it', async (t) 
   assert.equal(plan.site, true);
 });
 
-// Exercise the real CLI in an isolated fixture without modifying the checkout's workflow.
 async function plannerFixture(t) {
   const root = await mkdtemp(join(tmpdir(), 'app-plan-'));
   t.after(() => rm(root, { recursive: true, force: true }));
@@ -323,7 +322,6 @@ async function plannerFixture(t) {
   for (const path of ['scripts/app-plan.mjs', 'scripts/lib/app-plan.mjs', 'scripts/lib/workspace-graph.mjs', 'scripts/lib/apps-registry.mjs', 'registry/apps.yml']) {
     await copyFile(join(repoRoot, path), join(root, path));
   }
-  // Resolve the checkout's installed YAML package from this isolated fixture.
   await writeFile(join(root, 'package.json'), JSON.stringify({ type: 'module', scripts: {} }));
   await symlink(join(repoRoot, 'node_modules'), join(root, 'node_modules'), 'junction');
   const ci = { jobs: Object.fromEntries(['composite-site', ...CATALOG_JOBS].map(name => [name, { steps: [{ run: 'echo fixture' }] }])) };
