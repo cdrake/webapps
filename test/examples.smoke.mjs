@@ -11,7 +11,6 @@ const id = process.argv[process.argv.indexOf('--app') + 1];
 const app = (await loadAppsRegistry()).apps.find(entry => entry.id === id);
 if (!app) throw new Error('Specify a registered app with --app <id>');
 const examples = await loadAppExamples(app);
-// CI builds the app in the step before its e2e tests (NEURODESK_E2E_PREBUILT).
 if (!process.argv.includes('--skip-build') && process.env.NEURODESK_E2E_PREBUILT !== '1') {
   execFileSync('pnpm', ['--filter', app.id, 'build'], { cwd: repoRoot, stdio: 'inherit' });
 }

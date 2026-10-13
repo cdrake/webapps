@@ -31,8 +31,6 @@ const NON_CODE_FILES = new Set([
   'registry/apps.yml',
 ]);
 
-// One browser-e2e matrix entry per Playwright shard (`ci.e2e_shards`); shard
-// is '' for an app that runs in one job.
 function shardedEntries(app) {
   const total = app.ci.e2e_shards ?? 1;
   return Array.from({ length: total }, (_, index) => ({ ...matrixEntry(app), shard: total > 1 ? `${index + 1}/${total}` : '' }));
