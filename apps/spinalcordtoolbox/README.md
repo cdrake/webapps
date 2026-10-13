@@ -15,7 +15,7 @@ python ../scripts/convert_sct_models.py --input ../.tmp_sct_models --task spinal
 python ../scripts/validate_sct_models.py --manifest models/manifest.json
 
 # 3. Start development server
-bash run.sh
+pnpm --filter spinalcordtoolbox dev
 # Open http://localhost:8080
 ```
 

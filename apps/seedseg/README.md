@@ -23,7 +23,7 @@ cd web && bash setup.sh
 cd .. && python scripts/convert_models.py
 
 # 3. Start development server
-cd web && bash run.sh
+pnpm --filter seedseg dev
 ```
 
 Then open http://localhost:8080 and upload a T1-weighted prostate MRI (NIfTI or DICOM).
