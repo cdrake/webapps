@@ -10,7 +10,7 @@ const SELF_CONTAINED_PREFIXES = ['site/easter-eggs/'];
 // Paths no app build or browser test reads. Lint and quality tooling run in
 // workspace-contracts or their own workflows; every workflow other than ci.yml
 // runs itself when it changes; the app template is checked by contract tests.
-const NON_APP_PATHS = [
+const INDEPENDENT_CHECK_PATHS = [
   /^[^/]+\.md$/,
   /^\.gitignore$/,
   /^\.github\/workflows\/(?!ci\.yml$)[^/]+$/,
@@ -30,6 +30,11 @@ const NON_CODE_FILES = new Set([
   'pnpm-lock.yaml',
   'registry/apps.yml',
 ]);
+
+function shardedEntries(app) {
+  const total = app.ci.e2e_shards ?? 1;
+  return Array.from({ length: total }, (_, index) => ({ ...matrixEntry(app), shard: total > 1 ? `${index + 1}/${total}` : '' }));
+}
 
 function matrixEntry(app) {
   const toolchains = new Set(app.ci.toolchains);
@@ -103,7 +108,7 @@ export function selectAffectedApps(registry, changedPaths = [], graph = null, ma
       NON_CODE_FILES.has(path) ||
       NON_CODE_PREFIXES.some((prefix) => path.startsWith(prefix)) ||
       SELF_CONTAINED_PREFIXES.some((prefix) => path.startsWith(prefix)) ||
-      NON_APP_PATHS.some((pattern) => pattern.test(path))
+      INDEPENDENT_CHECK_PATHS.some((pattern) => pattern.test(path))
     ) {
       continue;
     }
@@ -157,7 +162,7 @@ export function createAppPlan(registry, changedPaths = [], graph = null, manifes
     changedPaths: Object.freeze([...changedPaths]),
     selected: Object.freeze(selected),
     apps: Object.freeze({ include: Object.freeze(selected.map(matrixEntry)) }),
-    browserApps: Object.freeze({ include: Object.freeze(browserTested.map(matrixEntry)) }),
+    browserApps: Object.freeze({ include: Object.freeze(browserTested.flatMap(shardedEntries)) }),
     gpuApps: Object.freeze({ include: Object.freeze(gpuTested.map(matrixEntry)) }),
     releaseApps: Object.freeze({ include: Object.freeze(releasable.map(matrixEntry)) }),
     allApps: selected.length === registry.apps.length,

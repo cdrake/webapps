@@ -14,7 +14,7 @@ import { dirname, join, relative, resolve, sep } from 'node:path';
 
 const TOP_LEVEL = ['apps', 'packages', 'exes'];
 // Apps are leaves: a package that mentions an app does not use what that app uses.
-const SHARED_LEVEL = new Set(['packages', 'exes']);
+const TRAVERSABLE_WORKSPACE_GROUPS = new Set(['packages', 'exes']);
 const SKIPPED_DIRS = new Set(['node_modules', 'dist', 'target', '.turbo', '.vite', 'coverage', 'test-results', 'playwright-report']);
 const TEXT_FILE = /\.(?:[cm]?[jt]sx?|json|html|css|rs|toml|py|sh|ya?ml)$|^Makefile$/;
 const MAX_TEXT_BYTES = 1024 * 1024;
@@ -53,9 +53,9 @@ function namedByCommands(commands, rootScripts) {
     const command = pending.pop();
     for (const match of command.matchAll(ROOT_NAMED)) if (match[1]) named.add(match[1]);
     for (const [, script] of command.matchAll(ROOT_SCRIPT_CALL)) {
-      if (rootScripts[script] && !expanded.has(script)) {
+      if (!expanded.has(script)) {
         expanded.add(script);
-        pending.push(rootScripts[script]);
+        if (rootScripts[script]) pending.push(rootScripts[script]);
       }
     }
   }
@@ -92,10 +92,12 @@ async function readPackageJson(dir) {
 
 function nodeOf(root, path) {
   const [top, name] = relative(root, path).split(/[\\/]/);
-  return SHARED_LEVEL.has(top) && name ? `${top}/${name}` : null;
+  return TRAVERSABLE_WORKSPACE_GROUPS.has(top) && name ? `${top}/${name}` : null;
 }
 
-export async function loadWorkspaceGraph(root) {
+export class WorkspaceGraphConfigurationError extends Error {}
+
+export async function loadConservativeWorkspaceGraph(root) {
   const nodes = (await Promise.all(TOP_LEVEL.map(async (top) => (await listDirs(join(root, top))).map((name) => `${top}/${name}`)))).flat();
   const nodeSet = new Set(nodes);
   const manifests = new Map(await Promise.all(nodes.map(async (node) => [node, await readPackageJson(join(root, node))])));
@@ -109,7 +111,7 @@ export async function loadWorkspaceGraph(root) {
     for (const field of DEPENDENCY_FIELDS) {
       for (const [name, spec] of Object.entries(manifest?.[field] ?? {})) {
         const workspaceNode = String(spec).startsWith('workspace:') && nodeByPackageName.get(name);
-        if (workspaceNode && SHARED_LEVEL.has(workspaceNode.split('/')[0])) uses.add(workspaceNode);
+        if (workspaceNode && TRAVERSABLE_WORKSPACE_GROUPS.has(workspaceNode.split('/')[0])) uses.add(workspaceNode);
         if (String(spec).startsWith('file:')) {
           const target = nodeOf(root, resolve(root, node, String(spec).slice('file:'.length)));
           if (target) uses.add(target);
@@ -135,10 +137,16 @@ export async function loadWorkspaceGraph(root) {
 
   const ci = parse(await readFile(join(root, '.github/workflows/ci.yml'), 'utf8'));
   const rootScripts = JSON.parse(await readFile(join(root, 'package.json'), 'utf8')).scripts;
-  const runs = (jobs) => jobs.flatMap((job) => job.steps.map((step) => step.run ?? '')).map((run) => run.replace(/pnpm --filter \S+ (?:run )?\S+/g, ''));
+  const runs = (names) => names.flatMap((name) => {
+    const steps = ci?.jobs?.[name]?.steps;
+    if (!Array.isArray(steps) || steps.length === 0) {
+      throw new WorkspaceGraphConfigurationError(`ci.yml job ${name} has no step list; update the workspace graph's CI entry points`);
+    }
+    return steps.map((step) => step.run ?? '');
+  }).map((run) => run.replace(/pnpm --filter \S+ (?:run )?\S+/g, ''));
   const entries = [
-    [SITE, runs([ci.jobs['composite-site']])],
-    [CATALOG, runs(CATALOG_JOBS.map((name) => ci.jobs[name]))],
+    [SITE, runs(['composite-site'])],
+    [CATALOG, runs(CATALOG_JOBS)],
   ];
   // Root tool configs (e2e.config.ts, tsconfig.agentic.json) are read implicitly
   // by the commands composite-site runs, so the site build follows them too.
@@ -180,7 +188,7 @@ export async function loadWorkspaceGraph(root) {
       for await (const path of textFiles(join(root, directory))) named.push(relative(root, path).split(sep).join('/'));
     }
     for (const target of [...imports, ...named]) {
-      if ((ROOT_DIRS.some((dir) => target.startsWith(dir)) || ROOT_CONFIG.test(target)) && target !== file && await exists(join(root, target))) {
+      if ((ROOT_DIRS.some((dir) => target.startsWith(dir)) || ROOT_CONFIG.test(target)) && target !== file) {
         uses.add(target);
         pendingRootFiles.push(target);
       }
