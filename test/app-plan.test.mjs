@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
-import { parse } from 'yaml';
+import { parse, stringify } from 'yaml';
 import { createAppPlan } from '../scripts/lib/app-plan.mjs';
 import { loadAppsRegistry, repoRoot } from '../scripts/lib/apps-registry.mjs';
-import { loadWorkspaceGraph } from '../scripts/lib/workspace-graph.mjs';
+import { CATALOG_JOBS, loadWorkspaceGraph, WorkspaceGraphConfigurationError } from '../scripts/lib/workspace-graph.mjs';
 
 const graph = loadWorkspaceGraph(repoRoot);
 
@@ -245,4 +248,117 @@ test('ci.yml runs the composite site build on pull requests that need it', async
   const ci = parse(await readFile(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8'));
   assert.equal(ci.jobs['composite-site'].if, "github.event_name != 'pull_request' || needs.app-plan.outputs.has_site == 'true'");
   assert.equal(ci.jobs['app-plan'].outputs.has_site, '${{ steps.plan.outputs.has_site }}');
+});
+
+// Exercise the real CLI in an isolated small repository, without modifying the
+// checkout's workflow or depending on the checkout's Git history.
+async function plannerFixture(t) {
+  const root = await mkdtemp(join(tmpdir(), 'app-plan-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  for (const path of ['scripts/lib', 'registry', '.github/workflows']) {
+    await mkdir(join(root, path), { recursive: true });
+  }
+  for (const path of ['scripts/app-plan.mjs', 'scripts/lib/app-plan.mjs', 'scripts/lib/workspace-graph.mjs', 'scripts/lib/apps-registry.mjs', 'registry/apps.yml']) {
+    await copyFile(join(repoRoot, path), join(root, path));
+  }
+  // Resolve the checkout's installed YAML package from this isolated fixture.
+  await writeFile(join(root, 'package.json'), JSON.stringify({ type: 'module', scripts: {} }));
+  await symlink(join(repoRoot, 'node_modules'), join(root, 'node_modules'), 'junction');
+  const ci = { jobs: Object.fromEntries(['composite-site', ...CATALOG_JOBS].map(name => [name, { steps: [{ run: 'echo fixture' }] }])) };
+  await writeFile(join(root, '.github/workflows/ci.yml'), stringify(ci));
+  const git = (...args) => execFileSync('git', args, { cwd: root, stdio: 'pipe' });
+  git('init', '-q');
+  git('config', 'user.name', 'Planner test');
+  git('config', 'user.email', 'planner-test@example.invalid');
+  git('add', 'package.json');
+  git('commit', '-qm', 'Fixture base');
+  const run = (...args) => spawnSync(process.execPath, ['scripts/app-plan.mjs', ...args], {
+    cwd: root, encoding: 'utf8', env: { ...process.env, GITHUB_OUTPUT: '' },
+  });
+  return { root, ci, run };
+}
+
+test('explicit --only selections work without a usable base', async (t) => {
+  const { run } = await plannerFixture(t);
+  for (const args of [[], ['--base', '0'.repeat(40)], ['--base', 'missing-ref'], ['--base', 'HEAD']]) {
+    const result = run('--only', 'niimath', ...args);
+    assert.equal(result.status, 0, result.stderr);
+    const output = JSON.parse(result.stdout);
+    assert.deepEqual(JSON.parse(output.selected_ids), ['niimath']);
+    assert.equal(output.all_apps, 'false');
+    assert.equal(output.fallback_reason, '');
+  }
+  const qsmbly = run('--only', 'qsmbly');
+  assert.equal(qsmbly.status, 0, qsmbly.stderr);
+  assert.deepEqual(JSON.parse(JSON.parse(qsmbly.stdout).selected_ids), ['qsmbly', 'brain-extraction']);
+  const unknown = run('--only', 'not-an-app');
+  assert.notEqual(unknown.status, 0);
+  assert.match(unknown.stderr, /Unknown app ids: not-an-app/);
+});
+
+test('affected planning retains full coverage when the base is unavailable', async (t) => {
+  const { run } = await plannerFixture(t);
+  const registry = await loadAppsRegistry();
+  for (const args of [[], ['--base', '0'.repeat(40)], ['--base', 'missing-ref']]) {
+    const result = run('--only', 'affected', ...args);
+    assert.equal(result.status, 0, result.stderr);
+    const output = JSON.parse(result.stdout);
+    assert.deepEqual(JSON.parse(output.selected_ids), registry.apps.map(app => app.id));
+    assert.equal(output.has_site, 'true');
+  }
+});
+
+test('missing, renamed and reusable CI jobs trigger a visible full-coverage fallback', async (t) => {
+  const { root, ci, run } = await plannerFixture(t);
+  const registry = await loadAppsRegistry();
+  for (const name of ['composite-site', ...CATALOG_JOBS]) {
+    for (const variant of ['missing', 'renamed', 'reusable', 'empty', 'non-array']) {
+      const altered = structuredClone(ci);
+      if (variant === 'renamed') altered.jobs[`${name}-renamed`] = altered.jobs[name];
+      if (variant === 'missing' || variant === 'renamed') delete altered.jobs[name];
+      if (variant === 'reusable') altered.jobs[name] = { uses: './.github/workflows/reusable.yml' };
+      if (variant === 'empty') altered.jobs[name] = { steps: [] };
+      if (variant === 'non-array') altered.jobs[name] = { steps: {} };
+      await writeFile(join(root, '.github/workflows/ci.yml'), stringify(altered));
+      await assert.rejects(loadWorkspaceGraph(root), error => error instanceof WorkspaceGraphConfigurationError && error.message.includes(name));
+      const result = run('--only', 'niimath');
+      assert.equal(result.status, 0, `${name} ${variant}: ${result.stderr}`);
+      const output = JSON.parse(result.stdout);
+      assert.deepEqual(JSON.parse(output.selected_ids), registry.apps.map(app => app.id));
+      assert.equal(output.all_apps, 'true');
+      assert.equal(output.has_site, 'true');
+      assert.match(output.fallback_reason, new RegExp(name));
+      assert.match(result.stderr, /selecting the full catalog and site/);
+      assert.deepEqual(JSON.parse(output.browser_apps).include.map(({ app }) => app), registry.apps.filter(app => app.ci.browser_test).map(app => app.id));
+      assert.deepEqual(JSON.parse(output.gpu_apps).include.map(({ app }) => app), registry.apps.filter(app => app.ci.hardware_gpu).map(app => app.id));
+    }
+  }
+});
+
+test('unrelated workflow parsing errors remain fatal', async (t) => {
+  const { root, run } = await plannerFixture(t);
+  await writeFile(join(root, '.github/workflows/ci.yml'), 'jobs: [');
+  const result = run('--only', 'niimath');
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /YAMLParseError/);
+  assert.doesNotMatch(result.stderr, /selecting the full catalog and site/);
+});
+
+test('workflow outputs include the fallback reason and complete matrices', async (t) => {
+  const { root, ci } = await plannerFixture(t);
+  delete ci.jobs['app-tests'];
+  await writeFile(join(root, '.github/workflows/ci.yml'), stringify(ci));
+  const outputFile = join(root, 'github-output');
+  const result = spawnSync(process.execPath, ['scripts/app-plan.mjs', '--only', 'niimath'], {
+    cwd: root, encoding: 'utf8', env: { ...process.env, GITHUB_OUTPUT: outputFile },
+  });
+  assert.equal(result.status, 0, result.stderr);
+  const outputs = Object.fromEntries((await readFile(outputFile, 'utf8')).trim().split('\n').map(line => {
+    const equals = line.indexOf('=');
+    return [line.slice(0, equals), line.slice(equals + 1)];
+  }));
+  assert.match(outputs.fallback_reason, /app-tests/);
+  assert.equal(outputs.all_apps, 'true');
+  assert.equal(outputs.has_site, 'true');
+  assert.deepEqual(JSON.parse(outputs.selected_ids), (await loadAppsRegistry()).apps.map(app => app.id));
 });
