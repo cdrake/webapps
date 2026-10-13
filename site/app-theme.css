@@ -319,17 +319,17 @@
 }
 
 :root[data-neurodesk-app]:not([data-neurodesk-shell="react"])
-  :is(.about-highlight, .privacy-highlight, .citation-primary) {
+  :is(.about-highlight, .privacy-highlight) {
   background: var(--nd-brand-pale);
 }
 
 :root[data-neurodesk-app]:not([data-neurodesk-shell="react"])
-  :is(.about-highlight strong, .privacy-highlight strong, .citation-primary strong) {
+  :is(.about-highlight strong, .privacy-highlight strong) {
   color: var(--nd-brand-light);
 }
 
 :root[data-neurodesk-app][data-neurodesk-theme="light"]:not([data-neurodesk-shell="react"])
-  :is(.modal-body a, .modal-body h4, .about-highlight strong, .privacy-highlight strong, .citation-primary strong) {
+  :is(.modal-body a, .modal-body h4, .about-highlight strong, .privacy-highlight strong) {
   color: var(--nd-brand-selected);
 }
 

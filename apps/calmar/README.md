@@ -702,7 +702,7 @@ postprocessing path used by `neurodesk/vesselboost-webapp`.
 ```sh
 npm install
 bash web/setup.sh   # downloads ONNX Runtime WASM
-bash web/run.sh     # serves http://localhost:8080/
+pnpm --filter calmar dev   # serves http://localhost:8080/
 npm test            # full Node-only suite: lint, manifest, overlap,
                     # function profiles, spatial checks, inference helpers,
                     # worker, app, html

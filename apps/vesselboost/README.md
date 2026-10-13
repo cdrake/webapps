@@ -13,7 +13,7 @@ bash setup.sh
 # (See "Model Conversion" below, or place vesselboost.onnx in web/models/)
 
 # 3. Start development server
-bash run.sh
+pnpm --filter vesselboost dev
 # Open http://localhost:8080
 ```
 

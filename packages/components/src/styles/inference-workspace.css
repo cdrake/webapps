@@ -118,22 +118,6 @@ input[type="range"]:disabled { opacity: 0.4; cursor: not-allowed; }
 .privacy-modal h4 { font-size: 0.9rem; margin: var(--nd-space-md) 0 var(--nd-space-xs); color: var(--nd-color-text); }
 .privacy-modal p { font-size: 0.85rem; color: var(--nd-color-text-muted); line-height: 1.6; margin: 0 0 var(--nd-space-sm); }
 .privacy-list { font-size: 0.85rem; color: var(--nd-color-text-muted); line-height: 1.8; padding-left: var(--nd-space-lg); margin: 0 0 var(--nd-space-sm); }
-.citations-modal { max-width: 700px; max-height: 80vh; }
-.citations-intro { font-size: 0.85rem; color: var(--nd-color-text-muted); margin: 0 0 var(--nd-space-lg) 0; line-height: 1.5; }
-.citation-section { margin-bottom: var(--nd-space-lg); }
-.citation-section h4 { font-size: 0.9rem; font-weight: 600; color: var(--nd-color-primary); margin: 0 0 var(--nd-space-sm) 0; padding-bottom: var(--nd-space-xs); border-bottom: 1px solid var(--nd-color-border); }
-.citation-item { margin-bottom: var(--nd-space-md); padding-left: var(--nd-space-sm); border-left: 2px solid var(--nd-color-border); }
-.citation-item:last-child { margin-bottom: 0; }
-.citation-item strong { display: block; font-size: 0.85rem; color: var(--nd-color-text); margin-bottom: 4px; }
-.citation-item p { font-size: 0.8rem; color: var(--nd-color-text-muted); margin: 0 0 4px 0; line-height: 1.4; }
-.citation-item a { font-size: 0.75rem; color: var(--nd-color-primary); text-decoration: none; }
-.citation-item a:hover { text-decoration: underline; }
-.citation-ref { display: block; font-size: 0.7rem; color: var(--nd-color-text-muted); margin-bottom: 4px; }
-.citation-ref a { color: var(--nd-color-primary); text-decoration: none; }
-.citation-ref a:hover { text-decoration: underline; }
-.citation-primary { background: var(--nd-color-surface-elevated); border: 1px solid var(--nd-color-primary); border-radius: var(--nd-radius-md); padding: var(--nd-space-md); margin-bottom: var(--nd-space-md); }
-.citation-primary .citation-item { margin-bottom: 0; }
-.citation-primary strong { font-size: 1.1rem; color: var(--nd-color-primary); }
 .hidden { display: none !important; }
 
 /* Exact rules promoted from two or more inference applications. */
@@ -493,23 +477,6 @@ input[type="range"]:disabled::-moz-range-thumb {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--nd-space-xs);
-}
-.citation-item em {
-  font-style: italic;
-}
-.ref-list {
-  font-size: 0.8rem;
-  color: var(--nd-color-text-muted);
-  margin-bottom: 6px;
-  line-height: 1.4;
-}
-.ref-list a {
-  color: var(--nd-color-primary);
-  text-decoration: none;
-  font-weight: 500;
-}
-.ref-list a:hover {
-  text-decoration: underline;
 }
 .flex {
   display: flex;

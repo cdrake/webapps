@@ -126,7 +126,6 @@ export class SpinalCordToolboxApp {
 
     // Modals
     this.aboutModal = new ModalManager('aboutModal');
-    this.citationsModal = new ModalManager('citationsModal');
     this.privacyModal = new ModalManager('privacyModal');
 
     this.analysis = new SctAnalysis({
@@ -356,10 +355,8 @@ export class SpinalCordToolboxApp {
 
   setupShellEventListeners() {
     this.bindModalButton('aboutButton', this.aboutModal);
-    this.bindModalButton('citationsButton', this.citationsModal);
     this.bindModalButton('privacyButton', this.privacyModal);
     this.bindCloseButton('closeAbout', this.aboutModal);
-    this.bindCloseButton('closeCitations', this.citationsModal);
     this.bindCloseButton('closePrivacy', this.privacyModal);
   }
 

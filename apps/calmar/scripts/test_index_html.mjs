@@ -69,19 +69,19 @@ assert.deepEqual(
 // ---- header actions ----
 {
   const links = $$('.header-links .header-link');
-  assert.deepEqual(links.map(text), ['About', 'Cite', 'Privacy', 'More Apps', 'GitHub']);
-  const moreApps = links[3];
+  assert.deepEqual(links.map(text), ['About', 'Privacy', 'More Apps', 'GitHub']);
+  const moreApps = links[2];
   assert.equal(moreApps.tagName, 'A');
   assert.equal(moreApps.getAttribute('href'), '../', 'More Apps returns to the composite site root');
   assert.equal(moreApps.getAttribute('title'), 'More Neurodesk web apps');
   assert.equal(moreApps.hasAttribute('target'), false, 'More Apps stays in the current tab');
   assert.equal(moreApps.querySelectorAll('svg rect').length, 4, 'More Apps uses the 2x2 grid icon');
-  assert.equal(links[4].getAttribute('href'), 'https://github.com/neurodesk/webapps/tree/main/apps/calmar');
-  assert.equal(links[4].getAttribute('rel'), 'noopener noreferrer');
+  assert.equal(links[3].getAttribute('href'), 'https://github.com/neurodesk/webapps/tree/main/apps/calmar');
+  assert.equal(links[3].getAttribute('rel'), 'noopener noreferrer');
   assert.deepEqual(
-    links.slice(0, 3).map(link => link.dataset.neurodeskControl),
-    ['about', 'cite', 'privacy'],
-    'About, Cite and Privacy are registered through the shell control contract'
+    links.slice(0, 2).map(link => link.dataset.neurodeskControl),
+    ['about', 'privacy'],
+    'About and Privacy are registered through the shell control contract; Cite is the shell\'s own'
   );
 }
 
@@ -388,7 +388,7 @@ assert.deepEqual(
     text($('#privacyModal')),
     /The Neurodesk hosting layer records page views only, unless your browser sends Do Not Track or Global Privacy Control\..*It does not send custom events/
   );
-  for (const id of ['aboutModal', 'privacyModal', 'citationsModal']) {
+  for (const id of ['aboutModal', 'privacyModal']) {
     assert.ok(document.getElementById(id).classList.contains('modal-overlay'));
   }
 }
@@ -659,8 +659,7 @@ const fire = (id, type) => document.getElementById(id).dispatchEvent(new dom.win
 {
   for (const [button, modal, close] of [
     ['aboutButton', 'aboutModal', 'closeAbout'],
-    ['privacyButton', 'privacyModal', 'closePrivacy'],
-    ['citationsButton', 'citationsModal', 'closeCitations']
+    ['privacyButton', 'privacyModal', 'closePrivacy']
   ]) {
     const overlay = document.getElementById(modal);
     assert.equal(overlay.classList.contains('active'), false);

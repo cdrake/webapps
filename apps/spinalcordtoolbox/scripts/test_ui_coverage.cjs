@@ -65,8 +65,6 @@ const UI_COVERAGE = Object.freeze([
   { id: 'comparisonGrid', behavior: 'holds one canvas per loaded image while comparing', coveredBy: ['viewer', 'static-dom'] },
   { id: 'aboutButton', behavior: 'opens About modal', coveredBy: ['static-dom'] },
   { id: 'closeAbout', behavior: 'closes About modal', coveredBy: ['static-dom'] },
-  { id: 'citationsButton', behavior: 'opens Citations modal', coveredBy: ['static-dom'] },
-  { id: 'closeCitations', behavior: 'closes Citations modal', coveredBy: ['static-dom'] },
   { id: 'privacyButton', behavior: 'opens Privacy modal', coveredBy: ['static-dom'] },
   { id: 'closePrivacy', behavior: 'closes Privacy modal', coveredBy: ['static-dom'] }
 ]);
@@ -163,9 +161,12 @@ assert.ok(
   indexHtml.includes('downloads the pinned Pyodide Python runtime and scientific libraries from jsDelivr (cdn.jsdelivr.net)'),
   'privacy copy discloses the CDN requests made by browser SCT analysis'
 );
-assert.ok(
-  indexHtml.includes('SCT: Spinal Cord Toolbox, an open-source software for processing spinal cord MRI data'),
-  'Citations modal includes the primary SCT NeuroImage citation'
+const appInformation = fs.readFileSync(path.resolve(ROOT, '../../registry/app-information.yml'), 'utf8');
+const sctCitations = appInformation.split('\n  spinalcordtoolbox:\n')[1]?.split('\n    citations:\n')[1] ?? '';
+assert.match(
+  sctCitations,
+  /^ {6}- group: [^\n]+\n {8}title: Spinal Cord Toolbox\n {8}reference: "De Leener B[^\n]+\n {8}doi: 10\.1016\/j\.neuroimage\.2016\.10\.009\n/,
+  'the shared Cite list opens with the SCT NeuroImage 2017 paper'
 );
 
 // Console: one shared nd-console, collapsed at load, resizable, with an analysis and a technical log.

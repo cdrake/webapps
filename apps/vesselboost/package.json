@@ -13,7 +13,7 @@
     "vendor": "node ../../scripts/vendor-components.mjs && node ../../packages/vesselboost/scripts/stage-browser.mjs",
     "runtime-support": "node ../../scripts/vendor-runtime-support.mjs",
     "predev": "pnpm vendor && pnpm runtime-support",
-    "dev": "node ../../scripts/dev-server.mjs --dir web --port 8080",
+    "dev": "node ../../scripts/dev-server.mjs --dir web --app vesselboost --port 8080",
     "prebuild": "pnpm vendor && pnpm runtime-support && bash web/setup.sh",
     "build": "node ../../scripts/build-static.mjs && node ../../scripts/theme-app-dist.mjs --app vesselboost",
     "pretest": "pnpm runtime-support",

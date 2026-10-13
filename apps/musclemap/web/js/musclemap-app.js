@@ -179,7 +179,6 @@ class MuscleMapApp {
 
     // Modals
     this.aboutModal = new ModalManager('aboutModal');
-    this.citationsModal = new ModalManager('citationsModal');
     this.privacyModal = new ModalManager('privacyModal');
 
     // Register custom colormap
@@ -477,11 +476,6 @@ class MuscleMapApp {
     const closeAbout = document.getElementById('closeAbout');
     if (closeAbout) closeAbout.addEventListener('click', () => this.aboutModal.close());
 
-    const citationsBtn = document.getElementById('citationsButton');
-    if (citationsBtn) citationsBtn.addEventListener('click', () => this.citationsModal.open());
-    const closeCitations = document.getElementById('closeCitations');
-    if (closeCitations) closeCitations.addEventListener('click', () => this.citationsModal.close());
-
     const privacyBtn = document.getElementById('privacyButton');
     if (privacyBtn) privacyBtn.addEventListener('click', () => this.privacyModal.open());
     const closePrivacy = document.getElementById('closePrivacy');
@@ -490,33 +484,49 @@ class MuscleMapApp {
 
   setupDropZone() {
     const zone = document.getElementById('fileDropZone');
-    if (!zone) return;
+    if (zone) {
+      zone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        zone.classList.add('dragover');
+      });
+      zone.addEventListener('dragleave', () => {
+        zone.classList.remove('dragover');
+      });
+      zone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        zone.classList.remove('dragover');
+        this.handleDroppedTransfer(e.dataTransfer);
+      });
+    }
 
-    zone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      zone.classList.add('dragover');
-    });
+    // Capture phase: NiiVue's own drop listener on the canvas stops propagation and
+    // loads the file into the viewer only, so a bubble-phase listener never sees it.
+    const workspace = document.querySelector('main.app-main');
+    if (workspace) {
+      workspace.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }, true);
+      workspace.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.handleDroppedTransfer(e.dataTransfer);
+      }, true);
+    }
+  }
 
-    zone.addEventListener('dragleave', () => {
-      zone.classList.remove('dragover');
-    });
+  handleDroppedTransfer(dataTransfer) {
+    const files = Array.from(dataTransfer?.files || []);
+    const hasNifti = files.some(f => MuscleMapInputSet.isNiftiFile(f));
 
-    zone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      zone.classList.remove('dragover');
-
-      const files = Array.from(e.dataTransfer.files);
-      const hasNifti = files.some(f => MuscleMapInputSet.isNiftiFile(f));
-
-      if (hasNifti) {
-        this.fileIOController.handleDroppedFiles(files);
-      } else if (e.dataTransfer.items?.length) {
-        // Could be a folder drop (DICOM) - use items API for directory traversal
-        this.dicomController.convertDropItems(e.dataTransfer.items);
-      } else if (files.length > 0) {
-        this.fileIOController.handleDroppedFiles(files);
-      }
-    });
+    if (hasNifti) {
+      this.fileIOController.handleDroppedFiles(files);
+    } else if (dataTransfer?.items?.length) {
+      // Could be a folder drop (DICOM) - use items API for directory traversal
+      this.dicomController.convertDropItems(dataTransfer.items);
+    } else if (files.length > 0) {
+      this.fileIOController.handleDroppedFiles(files);
+    }
   }
 
   setupInfoTooltips() {
