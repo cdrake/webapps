@@ -1,9 +1,5 @@
 name: node-cli
 
-# Pull request gate for the shared portable packager. Package workflows no
-# longer start on packager changes in pull requests; this builds one
-# representative package on every target instead. After merge, every package
-# workflow still rebuilds from its push trigger.
 on:
   pull_request:
     paths:
@@ -21,7 +17,6 @@ permissions:
 jobs:
   packager:
     uses: ./.github/workflows/node-cli-portable.yml
-    # The nested release job declares contents: write; it never runs here.
     permissions:
       contents: write
       id-token: write

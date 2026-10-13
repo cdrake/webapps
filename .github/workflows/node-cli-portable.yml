@@ -56,8 +56,6 @@ env:
   AZURE_ARTIFACT_SIGNING_PROFILE: ${{ vars.AZURE_ARTIFACT_SIGNING_PROFILE }}
 
 jobs:
-  # Pull requests build linux-x64 only; pushes to main, manual runs and
-  # releases build every target. Windows and macOS runners are the scarce ones.
   runners:
     runs-on: ubuntu-latest
     timeout-minutes: 5
