@@ -28,9 +28,7 @@ concurrency:
 env:
   # CI never uses the CUDA providers; parallel postinstalls of two versions race on one temp path.
   ONNXRUNTIME_NODE_INSTALL: skip
-  # Every Playwright run logs its tests slowest first (test-utils/test-durations-reporter.mjs).
   PW_TEST_REPORTER: ${{ github.workspace }}/test-utils/test-durations-reporter.mjs
-  # Pull requests skip tests tagged @slow; pushes, the nightly run and releases run them (test-utils/e2e-tier.mjs).
   NEURODESK_E2E_SKIP_SLOW: ${{ github.event_name == 'pull_request' && '1' || '' }}
 
 jobs:
@@ -331,9 +329,6 @@ jobs:
   # The VM has 3 cores and 7 GB: it checks correctness, not speed. Each app
   # downloads its pinned models and fixtures, so no test skips for lack of
   # data; SYNcro's full normalizations make it the slowest by far.
-  # A pull request that changes shared code selects every app; its GPU suites
-  # then run after merge and nightly instead of holding scarce macOS runners.
-  # Dispatch ci on the branch to run them before merging.
   browser-e2e-gpu:
     needs: app-plan
     if: needs.app-plan.outputs.has_gpu_apps == 'true' && (github.event_name != 'pull_request' || needs.app-plan.outputs.all_apps != 'true')

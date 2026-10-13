@@ -1,12 +1,15 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
 import { parse } from 'yaml';
 import { createAppPlan } from '../scripts/lib/app-plan.mjs';
 import { loadAppsRegistry, repoRoot } from '../scripts/lib/apps-registry.mjs';
-import { loadWorkspaceGraph } from '../scripts/lib/workspace-graph.mjs';
+import { loadConservativeWorkspaceGraph } from '../scripts/lib/workspace-graph.mjs';
 
-const graph = loadWorkspaceGraph(repoRoot);
+const graph = loadConservativeWorkspaceGraph(repoRoot);
 
 test('app-local changes select only that webapp', async () => {
   const registry = await loadAppsRegistry();
@@ -253,4 +256,59 @@ test('an app with ci.e2e_shards gets one browser-e2e entry per shard', async () 
   assert.deepEqual(plan.browserApps.include.map(({ app, shard }) => `${app} ${shard}`), ['browserqc 1/2', 'browserqc 2/2']);
   assert.equal(plan.apps.include.length, 1, 'unit tests and builds still run once');
   assert.deepEqual(createAppPlan(registry, ['apps/niimath/main.js'], await graph).browserApps.include.map(({ shard }) => shard), ['']);
+});
+
+test('the app-plan CLI selects explicit apps without a base revision', () => {
+  const output = execFileSync(process.execPath, ['scripts/app-plan.mjs', '--only', 'lcmodel,calmar'], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    env: { ...process.env, GITHUB_OUTPUT: '' },
+  });
+  const plan = JSON.parse(output);
+  assert.deepEqual(JSON.parse(plan.selected_ids).sort(), ['calmar', 'lcmodel']);
+  assert.equal(plan.all_apps, 'false');
+  assert.equal(plan.has_site, 'true');
+});
+
+test('deleting an imported root helper still selects the app that imports it', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'app-plan-deleted-import-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  for (const directory of ['apps/lcmodel', 'scripts/lib', '.github/workflows']) {
+    await mkdir(join(root, directory), { recursive: true });
+  }
+  await writeFile(join(root, 'package.json'), JSON.stringify({ scripts: {} }));
+  await writeFile(join(root, '.github/workflows/ci.yml'), JSON.stringify({ jobs: {
+    'composite-site': { steps: [] },
+    'app-tests': { steps: [] },
+    'browser-e2e': { steps: [] },
+    'browser-e2e-gpu': { steps: [] },
+  } }));
+  await writeFile(join(root, 'apps/lcmodel/main.js'), "import '../../scripts/entry.mjs';\n");
+  await writeFile(join(root, 'scripts/entry.mjs'), "import './lib/shared.mjs';\n");
+  await writeFile(join(root, 'scripts/lib/shared.mjs'), 'export const value = 1;\n');
+  const registry = await loadAppsRegistry();
+  const selected = async () => createAppPlan(registry, ['scripts/lib/shared.mjs'], await loadConservativeWorkspaceGraph(root));
+  assert.deepEqual((await selected()).selected.map((app) => app.id), ['lcmodel']);
+  await rm(join(root, 'scripts/lib/shared.mjs'));
+  const plan = await selected();
+  assert.deepEqual(plan.selected.map((app) => app.id), ['lcmodel']);
+  assert.equal(plan.site, true);
+});
+
+test('removing a root script still selects the CI job that calls it', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'app-plan-deleted-script-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await mkdir(join(root, '.github/workflows'), { recursive: true });
+  await writeFile(join(root, 'package.json'), JSON.stringify({ scripts: {} }));
+  await writeFile(join(root, '.github/workflows/ci.yml'), JSON.stringify({ jobs: {
+    'composite-site': { steps: [{ run: 'pnpm build' }] },
+    'app-tests': { steps: [] },
+    'browser-e2e': { steps: [] },
+    'browser-e2e-gpu': { steps: [] },
+  } }));
+  const registry = await loadAppsRegistry();
+  const manifests = new Map([['package.json', manifest({ scripts: { build: 'node scripts/build.mjs' } }, { scripts: {} })]]);
+  const plan = createAppPlan(registry, ['package.json'], await loadConservativeWorkspaceGraph(root), manifests);
+  assert.deepEqual(plan.selected, []);
+  assert.equal(plan.site, true);
 });

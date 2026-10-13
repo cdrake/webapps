@@ -35,7 +35,7 @@ async function download(page, index) {
 // Holds each run to validation/browser-reference.json and attaches its measurements, which a
 // re-recording copies into that file. browser-memory.mjs measures resident memory separately.
 for (const folds of [1, 5]) {
-  test(`automation segments the MS example with ${folds} fold(s) on the input grid, falling back from a failed WebGPU`, { tag: folds > 1 ? '@slow' : [] }, async ({ page }, testInfo) => {
+  test(`automation segments the MS example with ${folds} fold(s) on the input grid, falling back from a failed WebGPU`, async ({ page }, testInfo) => {
     test.setTimeout(folds * 20 * 60 * 1000);
     // The page sees an adapter, so Automatic picks WebGPU; the worker has none, so its session fails.
     await page.addInitScript(() => {

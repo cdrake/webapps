@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { readdir, readFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import YAML from 'yaml';
@@ -52,3 +54,43 @@ test('browser-e2e passes each job its shard and skips the examples smoke rebuild
   const smoke = await readFile(join(repoRoot, 'test/examples.smoke.mjs'), 'utf8');
   assert.match(smoke, /NEURODESK_E2E_PREBUILT !== '1'/);
 });
+
+test('the pull request tier collects Calmar structural candidate inference', () => {
+  const collected = execFileSync(process.execPath, [
+    join(repoRoot, 'node_modules/@playwright/test/cli.js'),
+    'test', '--list', '--reporter=json',
+  ], {
+    cwd: join(repoRoot, 'apps/calmar'),
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      TMPDIR: process.env.TMPDIR || tmpdir(),
+      NEURODESK_E2E_SKIP_SLOW: '1',
+      PW_TEST_REPORTER: '',
+    },
+  });
+  assert.match(collected, /"title":\s*"real structural example produces an unconfirmed native lesion candidate"/);
+});
+
+for (const app of ['brain2print', 'white-matter-lesions', 'lcmodel', 'synthseg']) {
+  test(`the pull request tier retains every completed scientific path in ${app}`, () => {
+    const collect = (tier) => JSON.parse(execFileSync(process.execPath, [
+      join(repoRoot, 'node_modules/@playwright/test/cli.js'),
+      'test', '--list', '--reporter=json',
+    ], {
+      cwd: join(repoRoot, 'apps', app),
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        TMPDIR: process.env.TMPDIR || tmpdir(),
+        NEURODESK_E2E_SKIP_SLOW: tier,
+        PW_TEST_REPORTER: '',
+      },
+    }));
+    const full = collect('');
+    const pullRequest = collect('1');
+    assert.deepEqual(full.errors, []);
+    assert.deepEqual(pullRequest.errors, []);
+    assert.deepEqual(pullRequest.suites, full.suites);
+  });
+}
