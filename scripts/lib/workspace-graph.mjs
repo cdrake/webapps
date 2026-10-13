@@ -95,7 +95,6 @@ function nodeOf(root, path) {
   return SHARED_LEVEL.has(top) && name ? `${top}/${name}` : null;
 }
 
-// Callers must not narrow selection using an incomplete CI entry-point graph.
 export class WorkspaceGraphConfigurationError extends Error {}
 
 export async function loadWorkspaceGraph(root) {

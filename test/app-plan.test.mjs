@@ -250,8 +250,6 @@ test('ci.yml runs the composite site build on pull requests that need it', async
   assert.equal(ci.jobs['app-plan'].outputs.has_site, '${{ steps.plan.outputs.has_site }}');
 });
 
-// Exercise the real CLI in an isolated small repository, without modifying the
-// checkout's workflow or depending on the checkout's Git history.
 async function plannerFixture(t) {
   const root = await mkdtemp(join(tmpdir(), 'app-plan-'));
   t.after(() => rm(root, { recursive: true, force: true }));
@@ -261,7 +259,6 @@ async function plannerFixture(t) {
   for (const path of ['scripts/app-plan.mjs', 'scripts/lib/app-plan.mjs', 'scripts/lib/workspace-graph.mjs', 'scripts/lib/apps-registry.mjs', 'registry/apps.yml']) {
     await copyFile(join(repoRoot, path), join(root, path));
   }
-  // Resolve the checkout's installed YAML package from this isolated fixture.
   await writeFile(join(root, 'package.json'), JSON.stringify({ type: 'module', scripts: {} }));
   await symlink(join(repoRoot, 'node_modules'), join(root, 'node_modules'), 'junction');
   const ci = { jobs: Object.fromEntries(['composite-site', ...CATALOG_JOBS].map(name => [name, { steps: [{ run: 'echo fixture' }] }])) };
