@@ -1,13 +1,11 @@
 import {
   APP_VERSION,
   LABEL_SPACES,
-  MODEL_BASE_URL as GENERATED_MODEL_BASE_URL,
   MODEL_RELEASES,
   MODELS
 } from './model-catalog.generated.js';
 
 export const VERSION = APP_VERSION;
-export const MODEL_BASE_URL = GENERATED_MODEL_BASE_URL;
 export { LABEL_SPACES, MODEL_RELEASES, MODELS };
 
 export const INFERENCE_DEFAULTS = {
@@ -56,7 +54,6 @@ export const CACHE_CONFIG = {
 if (typeof self !== 'undefined') {
   self.MuscleMapConfig = {
     VERSION,
-    MODEL_BASE_URL,
     MODELS,
     MODEL_RELEASES,
     LABEL_SPACES,

@@ -45,13 +45,6 @@
         "license": "MIT"
       },
       {
-        "url": "https://huggingface.co/datasets/sbollmann/neurodesk-webapps-assets/resolve/a8cdbf8c2874e1a2f617ecc6695244a0810eac11/musclemap/musclemap-wholebody.onnx",
-        "sha256": "3bff6e22e54d3d7399247d5e71d6423c91bb636d86ab21e0dd929524afbc2bc7",
-        "bytes": 26888722,
-        "kind": "model",
-        "license": "MIT"
-      },
-      {
         "url": "https://unpkg.com/@niivue/niivue@0.68.2/dist/niivue.umd.js",
         "kind": "runtime-cdn"
       },
