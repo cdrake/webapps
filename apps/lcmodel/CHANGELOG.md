@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Invalidate measured tissue correction and map downloads when replacement anatomy is adopted, before waiting for viewer presentation.
+  - @neurodesk/lcmodel@0.8.20261013
 - 36d64d0: Reject imports that mix LCModel RAW and vendor spectra before replacing the current session or fit. Continue allowing RAW spectra with anatomical images.
   - @neurodesk/lcmodel@0.8.20261013
 - Finish the progress indicator and hide cancellation when automation preparation fails. Show the input error or Cancelled while preserving the loaded session.
