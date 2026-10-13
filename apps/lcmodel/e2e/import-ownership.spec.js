@@ -89,7 +89,7 @@ test("automation stages optional inputs and fractions before replacing the sessi
   const before = await resident(page);
   for (const request of [
     { basis: [file("bad.basis", Buffer.from("invalid basis"))] },
-    { t1: [file("bad.nii", Buffer.from("invalid image"))] },
+    { t1: [file("bad.nii", Buffer.from("invalid image"))], status: "bad.basis is not an LCModel .BASIS file." },
     { parameters: { fractionGM: 0.6 } },
     { t1: [anatomy], parameters: { fractionGM: 0.6, fractionWM: 0.3, fractionCSF: 0.1 } },
   ]) {
@@ -98,7 +98,7 @@ test("automation stages optional inputs and fractions before replacing the sessi
     await adopt(page, "t1", request.t1 ?? []);
     const result = await finish(page, request.parameters);
     expect(result.state).toBe("failed");
-    await expect(page.locator("#statusText")).toHaveText(result.error.message);
+    await expect(page.locator("#statusText")).toHaveText(request.status ?? result.error.message);
     await expect(page.locator("#cancelButton")).toBeHidden();
     expect(await resident(page)).toEqual(before);
   }
