@@ -17,12 +17,16 @@
 //   in-app-browser mask downloads (see apps/calmar/AGENTS.md).
 // --build-info writes <dir>/build-info.json from git on startup so the app can
 //   show the current commit in its version badge.
+// --app <id> themes index.html with the shared shell (bar, About, Cite, Privacy)
+//   as the build does, so `pnpm dev` matches the deployed page. Analytics is a
+//   no-op locally. Playwright's web/run.sh servers leave pages unthemed.
 import { execFileSync } from 'node:child_process';
 import { createReadStream } from 'node:fs';
 import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { homedir } from 'node:os';
 import { dirname, extname, join, normalize, resolve, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { setTimeout as sleep } from 'node:timers/promises';
 
 const args = process.argv.slice(2);
@@ -36,6 +40,8 @@ const port = Number.parseInt(flagValue('--port', '8080'), 10);
 const cachePolicy = flagValue('--cache-policy', 'no-store');
 const stagingRoute = flagValue('--staging-route', '');
 const buildInfo = args.includes('--build-info');
+const themeAppId = flagValue('--app', '');
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 if (!Number.isInteger(port) || port <= 0) {
   console.error(`Invalid --port ${flagValue('--port', '8080')}`);
   process.exit(1);
@@ -264,6 +270,61 @@ async function serveStatic(req, res, pathname) {
   createReadStream(path).pipe(res);
 }
 
+const SHELL_FILES = new Map([
+  ['/app-theme.css', 'site/app-theme.css'],
+  ['/theme.js', 'site/theme.js'],
+  ['/app-shell.js', 'site/app-shell.js'],
+  ['/neurodesk-logo.svg', 'site/neurodesk-logo.svg'],
+]);
+
+function sendText(req, res, body, type) {
+  res.writeHead(200, { 'Content-Type': type, 'Content-Length': Buffer.byteLength(body) });
+  res.end(req.method === 'HEAD' ? undefined : body);
+}
+
+// Rebuilt per request so registry and app-information edits show on reload.
+async function themedIndex() {
+  const [{ findApp, loadAppsRegistry }, { appInformationPayload, loadAppInformation }, { injectCompositeTheme }] = await Promise.all([
+    import('./lib/apps-registry.mjs'),
+    import('./lib/app-information.mjs'),
+    import('./lib/composite-theme.mjs'),
+  ]);
+  const registry = await loadAppsRegistry();
+  const app = findApp(registry, themeAppId);
+  const appPackage = JSON.parse(await readFile(join(repoRoot, 'apps', themeAppId, 'package.json'), 'utf8'));
+  return injectCompositeTheme(await readFile(join(root, 'index.html'), 'utf8'), {
+    appId: app.id,
+    shell: app.shell || 'static-html',
+    title: app.title,
+    description: app.description,
+    version: appPackage.version,
+    measurementId: registry.site.analytics.measurement_id,
+    href: './app-theme.css',
+    themeHref: './theme.js',
+    shellHref: './app-shell.js',
+    analyticsHref: './analytics.js',
+    moreAppsHref: '../',
+    iconHref: './neurodesk-logo.svg',
+    information: appInformationPayload(await loadAppInformation(registry), themeAppId),
+  });
+}
+
+async function serveShell(req, res, pathname) {
+  if (pathname === '/' || pathname === '/index.html') {
+    sendText(req, res, await themedIndex(), CONTENT_TYPES.get('.html'));
+    return true;
+  }
+  if (pathname === '/analytics.js') {
+    sendText(req, res, 'export function initAnalytics() {}\n', CONTENT_TYPES.get('.js'));
+    return true;
+  }
+  const file = SHELL_FILES.get(pathname)
+    ?? (pathname.startsWith('/shell-adapters/') && !pathname.includes('..') ? join('site', pathname) : undefined);
+  if (!file) return false;
+  sendText(req, res, await readFile(join(repoRoot, file), 'utf8'), CONTENT_TYPES.get(extname(file)));
+  return true;
+}
+
 async function handleRequest(req, res) {
   applySharedHeaders(res);
   let pathname;
@@ -278,6 +339,7 @@ async function handleRequest(req, res) {
     return sendError(res, 405, 'Method not allowed');
   }
   if (req.method !== 'GET' && req.method !== 'HEAD') return sendError(res, 405, 'Method not allowed');
+  if (themeAppId && await serveShell(req, res, pathname).catch((error) => { sendError(res, 500, error.message); return true; })) return;
   return serveStatic(req, res, pathname);
 }
 

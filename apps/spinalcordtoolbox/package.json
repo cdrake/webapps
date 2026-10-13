@@ -34,7 +34,7 @@
     "vendor": "node ../../scripts/vendor-components.mjs",
     "runtime-support": "node ../../scripts/vendor-runtime-support.mjs",
     "predev": "pnpm vendor && pnpm runtime-support && node scripts/stage-browser-analysis.mjs",
-    "dev": "node ../../scripts/dev-server.mjs --dir web --port 8080 --cache-policy 'no-store, must-revalidate'",
+    "dev": "node ../../scripts/dev-server.mjs --dir web --app spinalcordtoolbox --port 8080 --cache-policy 'no-store, must-revalidate'",
     "prebuild": "pnpm vendor && pnpm runtime-support && node ../../scripts/fetch-app-runtime.mjs --dest web/wasm ort-web:ort.webgpu.bundle.min.mjs,ort-wasm-simd-threaded.mjs,ort-wasm-simd-threaded.wasm,ort-wasm-simd-threaded.jsep.mjs,ort-wasm-simd-threaded.jsep.wasm && node scripts/stage-browser-analysis.mjs",
     "build": "node ../../scripts/build-static.mjs && node ../../scripts/theme-app-dist.mjs --app spinalcordtoolbox",
     "pretest": "pnpm runtime-support",
