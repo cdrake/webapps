@@ -241,7 +241,7 @@ test('records the WebGPU adapter and planned buffer limits', async ({ page }) =>
 
 if (!probeOnly) {
   for (const mode of ['fast', 'default']) {
-    test(`segments the small fixture in ${mode} mode against the FreeSurfer golden`, async ({ page }) => {
+    test(`segments the small fixture in ${mode} mode against the FreeSurfer golden`, { tag: mode === 'default' ? '@slow' : [] }, async ({ page }) => {
       test.setTimeout(1800000);
       await checkCase(page, {
         input: `${fixtures}/small.nii.gz`,

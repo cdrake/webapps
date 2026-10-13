@@ -136,7 +136,7 @@ test('typed automation completes the real SCT T2 workflow and its cord mask matc
   await expect(page.locator('#spinalcordtoolbox-log')).toHaveClass(/collapsed/);
 });
 
-test('a cord mask edited in the viewer downloads as the edited uint8 NIfTI', async ({ page }) => {
+test('a cord mask edited in the viewer downloads as the edited uint8 NIfTI', { tag: '@slow' }, async ({ page }) => {
   test.setTimeout(600000);
   const snapshot = await segment(page);
   expect(snapshot.state).toBe('succeeded');

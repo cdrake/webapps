@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { e2eTier } from './e2e-tier.mjs';
 
 // Playwright config for apps whose e2e suite runs against the BUILT output via
 // `vite preview` (so deploy headers, worker/wasm asset paths and the base path
@@ -27,6 +28,7 @@ export function vitePreviewPlaywrightConfig({
   }
   const baseURL = `http://${host}:${port}${basePath}`;
   return defineConfig({
+    ...e2eTier,
     testDir: './e2e',
     webServer: {
       command: `pnpm build && pnpm preview --port ${port} --strictPort --host ${host}`,

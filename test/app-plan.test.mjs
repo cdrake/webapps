@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import { parse } from 'yaml';
 import { createAppPlan } from '../scripts/lib/app-plan.mjs';
 import { loadAppsRegistry, repoRoot } from '../scripts/lib/apps-registry.mjs';
 import { loadWorkspaceGraph } from '../scripts/lib/workspace-graph.mjs';
@@ -131,38 +133,116 @@ test('an app model manifest selects only that app', async () => {
   assert.deepEqual(createAppPlan(registry, ['models/vesselboost.manifest.json']).selected.map((app) => app.id), ['vesselboost']);
 });
 
-test('contract tests, tooling and other workflows select no apps', async () => {
+test('contract tests, tooling, docs and other workflows select no apps and no site build', async () => {
   const registry = await loadAppsRegistry();
   const plan = createAppPlan(registry, [
     'AGENTS.md',
+    'packages/components/CHANGELOG.md',
     'test/app-plan.test.mjs',
     '.github/workflows/lcmodel-native.yml',
-    'scripts/desktop/pack.mjs',
     'scripts/quality/package.json',
     'eslint.config.js',
     'config/dependency-baseline.json',
     'templates/app-template/index.html',
   ], await graph);
   assert.deepEqual(plan.selected, []);
+  assert.equal(plan.site, false);
 });
 
-test('CI workflow, shared scripts, smoke tests and tests outside test:contracts still select the complete catalog', async () => {
+test('root files the per-app CI jobs run select the complete catalog', async () => {
   const registry = await loadAppsRegistry();
-  for (const path of ['.github/workflows/ci.yml', 'scripts/lib/runtime-assets.mjs', 'test/mobile-layout.smoke.mjs', 'test/runtime-assets.test.mjs', 'test-utils/compute-reference-server.mjs']) {
+  for (const path of ['.github/workflows/ci.yml', 'scripts/lib/e2e-test-data.mjs', 'test-utils/hardware-gpu.mjs']) {
     assert.equal(createAppPlan(registry, [path], await graph).allApps, true, path);
   }
 });
 
-test('packages that root build scripts stage select the apps whose builds run them', async () => {
+test('root files only the composite-site job runs select the site build and no app', async () => {
   const registry = await loadAppsRegistry();
-  const runtime = createAppPlan(registry, ['packages/runtime-support/src/freebrowse-viewer/static.js'], await graph);
-  assert.ok(runtime.selected.some((app) => app.id === 'spinalcordtoolbox'), 'vendor-runtime-support.mjs stages runtime-support for SCT');
-  const analytics = createAppPlan(registry, ['packages/analytics/src/index.js'], await graph);
-  assert.ok(analytics.selected.some((app) => app.id === 'zarro'), 'theme-app-dist.mjs copies analytics into themed apps');
+  for (const path of ['test/mobile-layout.smoke.mjs', 'test/runtime-assets.test.mjs']) {
+    const plan = createAppPlan(registry, [path], await graph);
+    assert.deepEqual(plan.selected, [], path);
+    assert.equal(plan.site, true, path);
+  }
+});
+
+test('a root helper selects the apps that import it', async () => {
+  const registry = await loadAppsRegistry();
+  const plan = createAppPlan(registry, ['scripts/lib/dice.mjs'], await graph);
+  assert.deepEqual(plan.selected.map((app) => app.id), ['spinalcordtoolbox']);
+});
+
+test("a package's tests select only the apps that read them", async () => {
+  const registry = await loadAppsRegistry();
+  assert.deepEqual(createAppPlan(registry, ['packages/brain-extraction/test/head-reference.mjs'], await graph).selected.map((app) => app.id), ['brain-extraction']);
+  assert.deepEqual(createAppPlan(registry, ['packages/lcmodel/test/lcmodel-io.test.js'], await graph).selected, []);
+});
+
+test('a root script that names one package file reaches that file, not the whole package', async () => {
+  const registry = await loadAppsRegistry();
+  const contracts = createAppPlan(registry, ['packages/desktop/src/contracts.js'], await graph);
+  const other = createAppPlan(registry, ['packages/desktop/src/jobs.js'], await graph);
+  assert.equal(contracts.allApps, true, 'vite-app-config.mjs reaches contracts.js through app-automation.mjs');
+  assert.deepEqual(other.selected.map((app) => app.id), ['dicompare'], 'only dicompare depends on the desktop package');
+});
+
+function manifest(before, after) {
+  return { before: JSON.stringify(before), after: JSON.stringify(after) };
+}
+
+test('a package version bump selects the apps that use the package, since builds embed versions', async () => {
+  const registry = await loadAppsRegistry();
+  const manifests = new Map([['packages/synthsr/package.json', manifest({ name: 'x', version: '1.0.0' }, { name: 'x', version: '1.1.0' })]]);
+  assert.ok(createAppPlan(registry, ['packages/synthsr/package.json'], await graph, manifests).selected.some((app) => app.id === 'synthsr'));
+});
+
+test('root test files app e2e scripts run select those apps', async () => {
+  const registry = await loadAppsRegistry();
+  assert.deepEqual(createAppPlan(registry, ['test/easy-mp2rage-workspace.smoke.mjs'], await graph).selected.map((app) => app.id), ['easy-mp2rage']);
+  assert.ok(createAppPlan(registry, ['test/musclemap-full-pipeline-smoke.mjs'], await graph).selected.some((app) => app.id === 'musclemap'));
+});
+
+test('files the catalog e2e config reads run the site build', async () => {
+  const registry = await loadAppsRegistry();
+  for (const path of ['test/agentic/catalog.e2e.ts', 'test-utils/agentic-browser.ts', 'scripts/serve-agentic-site.mjs']) {
+    assert.equal(createAppPlan(registry, [path], await graph).site, true, path);
+  }
+});
+
+test('documentation in a package or exes/ directory selects the apps that read it', async () => {
+  const registry = await loadAppsRegistry();
+  assert.deepEqual(createAppPlan(registry, ['exes/compute-server/README.md'], await graph).selected.map((app) => app.id), ['spinalcordtoolbox']);
+});
+
+test('root package.json script edits count only where ci.yml runs them', async () => {
+  const registry = await loadAppsRegistry();
+  const scripts = { build: 'a', 'new-app': 'b', 'test:mobile': 'c' };
+  const resolved = await graph;
+  const plan = (after) => createAppPlan(registry, ['package.json'], resolved, new Map([['package.json', manifest({ scripts }, after)]]));
+  assert.deepEqual(plan({ scripts: { ...scripts, 'new-app': 'B' } }).selected, []);
+  assert.equal(plan({ scripts: { ...scripts, 'new-app': 'B' } }).site, false);
+  const site = plan({ scripts: { ...scripts, 'test:mobile': 'C' } });
+  assert.deepEqual(site.selected, []);
+  assert.equal(site.site, true);
+  assert.equal(plan({ scripts, devDependencies: { a: '1' } }).allApps, true);
+});
+
+test('an offline asset lock change selects the apps whose assets changed', async () => {
+  const registry = await loadAppsRegistry();
+  const before = { schemaVersion: 1, assets: { u1: { sha256: 'a' }, u2: { sha256: 'b' } }, apps: { lcmodel: ['u1'], zarro: ['u2'] } };
+  const after = { ...before, assets: { ...before.assets, u1: { sha256: 'c' } } };
+  const plan = createAppPlan(registry, ['registry/offline-assets.lock.json'], await graph, new Map([['registry/offline-assets.lock.json', manifest(before, after)]]));
+  assert.deepEqual(plan.selected.map((app) => app.id), ['lcmodel']);
+  assert.equal(plan.site, true);
 });
 
 test('a root-relative path joined onto a computed repository root selects its app', async () => {
   const registry = await loadAppsRegistry();
   const plan = createAppPlan(registry, ['exes/compute-server/src/tools/sct.rs'], await graph);
   assert.ok(plan.selected.some((app) => app.id === 'spinalcordtoolbox'), 'SCT test:release reads the pinned image from sct.rs');
+});
+
+test('ci.yml runs the composite site build on pull requests that need it', async () => {
+  const ci = parse(await readFile(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8'));
+  assert.equal(ci.jobs['composite-site'].if, "github.event_name != 'pull_request' || needs.app-plan.outputs.has_site == 'true'");
+  assert.equal(ci.jobs['app-plan'].outputs.has_site, '${{ steps.plan.outputs.has_site }}');
 });

@@ -185,7 +185,7 @@ test.describe('Compare', () => {
     await poll(() => page.evaluate(() => [app.getInputSessions().length, app.sessionResults.size])).toEqual([0, 0]);
   });
 
-  test('a segmentation run on one image leaves the other image\'s results in place', async ({ page }) => {
+  test('a segmentation run on one image leaves the other image\'s results in place', { tag: '@slow' }, async ({ page }) => {
     test.setTimeout(900000);
     await openApp(page);
     // B: the real T2 example. A: a second image with a result of its own.
