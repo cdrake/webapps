@@ -4,9 +4,9 @@ import test from 'node:test';
 import { parse } from 'yaml';
 import { createAppPlan } from '../scripts/lib/app-plan.mjs';
 import { loadAppsRegistry, repoRoot } from '../scripts/lib/apps-registry.mjs';
-import { loadWorkspaceGraph } from '../scripts/lib/workspace-graph.mjs';
+import { loadConservativeWorkspaceGraph } from '../scripts/lib/workspace-graph.mjs';
 
-const graph = loadWorkspaceGraph(repoRoot);
+const graph = loadConservativeWorkspaceGraph(repoRoot);
 
 test('app-local changes select only that webapp', async () => {
   const registry = await loadAppsRegistry();
