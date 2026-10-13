@@ -2,8 +2,10 @@
 
 Run `pnpm check:dependencies` after installing the workspace. The independent
 `dependency-quality` pull request workflow checks the graph and its canary tests
-without building apps, downloading models or launching a browser. Existing CI
-continues to run its full catalog checks.
+without building apps, downloading models or launching a browser. CI always
+runs workspace contracts; app tests follow the affected workspace dependencies.
+Main runs retain GPU checks for affected apps; nightly and manual full runs
+cover the complete catalog. The repository instructions describe CI scope.
 
 The private `@neurodesk/dependency-quality` workspace owns dependency-cruiser
 18.5.0, SWC 1.15.11 and enhanced-resolve 5.26.0. The optional parser is declared

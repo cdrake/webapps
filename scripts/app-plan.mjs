@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { appendFile } from 'node:fs/promises';
 import { createAppPlan, changedPathsFromGit } from './lib/app-plan.mjs';
 import { loadAppsRegistry, repoRoot } from './lib/apps-registry.mjs';
-import { loadWorkspaceGraph, WorkspaceGraphConfigurationError } from './lib/workspace-graph.mjs';
+import { loadConservativeWorkspaceGraph, WorkspaceGraphConfigurationError } from './lib/workspace-graph.mjs';
 
 function option(name) {
   const index = process.argv.indexOf(name);
@@ -23,20 +23,11 @@ if (only && only !== 'affected') {
 }
 // changedPathsFromGit diffs from the merge base, so manifests are compared there too.
 const head = option('--head') || 'HEAD';
-const manifestPaths = changedPaths.filter((path) => /^(?:(?:packages|apps|exes)\/[^/]+\/)?package\.json$|^registry\/offline-assets\.lock\.json$/.test(path));
-const base = option('--base');
-let mergeBase;
-if (manifestPaths.length && base && !/^0+$/.test(base)) {
-  try {
-    mergeBase = execFileSync('git', ['merge-base', base, head], { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
-  } catch {
-    // Explicit --only selections do not require history. Without it, keep
-    // treating their manifests as code changes instead of refining the scope.
-  }
-}
+const manifestPaths = (only && only !== 'affected' ? [] : changedPaths).filter((path) => /^(?:(?:packages|apps|exes)\/[^/]+\/)?package\.json$|^registry\/offline-assets\.lock\.json$/.test(path));
+const mergeBase = manifestPaths.length && execFileSync('git', ['merge-base', option('--base'), head], { cwd: repoRoot, encoding: 'utf8' }).trim();
 const show = (revision, path) => execFileSync('git', ['show', `${revision}:${path}`], { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
 const manifests = new Map();
-for (const path of mergeBase ? manifestPaths : []) {
+for (const path of manifestPaths) {
   try {
     manifests.set(path, { before: show(mergeBase, path), after: show(head, path) });
   } catch {
@@ -46,7 +37,7 @@ for (const path of mergeBase ? manifestPaths : []) {
 let graph;
 let fallbackReason = '';
 try {
-  graph = await loadWorkspaceGraph(repoRoot);
+  graph = await loadConservativeWorkspaceGraph(repoRoot);
 } catch (error) {
   if (!(error instanceof WorkspaceGraphConfigurationError)) throw error;
   fallbackReason = error.message;

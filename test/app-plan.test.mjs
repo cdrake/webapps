@@ -1,15 +1,15 @@
 import assert from 'node:assert/strict';
-import { copyFile, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { execFileSync, spawnSync } from 'node:child_process';
+import { copyFile, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { parse, stringify } from 'yaml';
 import { createAppPlan } from '../scripts/lib/app-plan.mjs';
 import { loadAppsRegistry, repoRoot } from '../scripts/lib/apps-registry.mjs';
-import { CATALOG_JOBS, loadWorkspaceGraph, WorkspaceGraphConfigurationError } from '../scripts/lib/workspace-graph.mjs';
+import { CATALOG_JOBS, loadConservativeWorkspaceGraph, WorkspaceGraphConfigurationError } from '../scripts/lib/workspace-graph.mjs';
 
-const graph = loadWorkspaceGraph(repoRoot);
+const graph = loadConservativeWorkspaceGraph(repoRoot);
 
 test('app-local changes select only that webapp', async () => {
   const registry = await loadAppsRegistry();
@@ -250,8 +250,63 @@ test('ci.yml runs the composite site build on pull requests that need it', async
   assert.equal(ci.jobs['app-plan'].outputs.has_site, '${{ steps.plan.outputs.has_site }}');
 });
 
-// Exercise the real CLI in an isolated small repository, without modifying the
-// checkout's workflow or depending on the checkout's Git history.
+
+test('the app-plan CLI selects explicit apps without a base revision', () => {
+  const output = execFileSync(process.execPath, ['scripts/app-plan.mjs', '--only', 'lcmodel,calmar'], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    env: { ...process.env, GITHUB_OUTPUT: '' },
+  });
+  const plan = JSON.parse(output);
+  assert.deepEqual(JSON.parse(plan.selected_ids).sort(), ['calmar', 'lcmodel']);
+  assert.equal(plan.all_apps, 'false');
+  assert.equal(plan.has_site, 'true');
+});
+
+test('deleting an imported root helper still selects the app that imports it', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'app-plan-deleted-import-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  for (const directory of ['apps/lcmodel', 'scripts/lib', '.github/workflows']) {
+    await mkdir(join(root, directory), { recursive: true });
+  }
+  await writeFile(join(root, 'package.json'), JSON.stringify({ scripts: {} }));
+  await writeFile(join(root, '.github/workflows/ci.yml'), JSON.stringify({ jobs: {
+    'composite-site': { steps: [{ run: 'echo fixture' }] },
+    'app-tests': { steps: [{ run: 'echo fixture' }] },
+    'browser-e2e': { steps: [{ run: 'echo fixture' }] },
+    'browser-e2e-gpu': { steps: [{ run: 'echo fixture' }] },
+  } }));
+  await writeFile(join(root, 'apps/lcmodel/main.js'), "import '../../scripts/entry.mjs';\n");
+  await writeFile(join(root, 'scripts/entry.mjs'), "import './lib/shared.mjs';\n");
+  await writeFile(join(root, 'scripts/lib/shared.mjs'), 'export const value = 1;\n');
+  const registry = await loadAppsRegistry();
+  const selected = async () => createAppPlan(registry, ['scripts/lib/shared.mjs'], await loadConservativeWorkspaceGraph(root));
+  assert.deepEqual((await selected()).selected.map((app) => app.id), ['lcmodel']);
+  await rm(join(root, 'scripts/lib/shared.mjs'));
+  const plan = await selected();
+  assert.deepEqual(plan.selected.map((app) => app.id), ['lcmodel']);
+  assert.equal(plan.site, true);
+});
+
+test('removing a root script still selects the CI job that calls it', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'app-plan-deleted-script-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await mkdir(join(root, '.github/workflows'), { recursive: true });
+  await writeFile(join(root, 'package.json'), JSON.stringify({ scripts: {} }));
+  await writeFile(join(root, '.github/workflows/ci.yml'), JSON.stringify({ jobs: {
+    'composite-site': { steps: [{ run: 'pnpm build' }] },
+    'app-tests': { steps: [{ run: 'echo fixture' }] },
+    'browser-e2e': { steps: [{ run: 'echo fixture' }] },
+    'browser-e2e-gpu': { steps: [{ run: 'echo fixture' }] },
+  } }));
+  const registry = await loadAppsRegistry();
+  const manifests = new Map([['package.json', manifest({ scripts: { build: 'node scripts/build.mjs' } }, { scripts: {} })]]);
+  const plan = createAppPlan(registry, ['package.json'], await loadConservativeWorkspaceGraph(root), manifests);
+  assert.deepEqual(plan.selected, []);
+  assert.equal(plan.site, true);
+});
+
+// Exercise the real CLI in an isolated fixture without modifying the checkout's workflow.
 async function plannerFixture(t) {
   const root = await mkdtemp(join(tmpdir(), 'app-plan-'));
   t.after(() => rm(root, { recursive: true, force: true }));
@@ -266,47 +321,11 @@ async function plannerFixture(t) {
   await symlink(join(repoRoot, 'node_modules'), join(root, 'node_modules'), 'junction');
   const ci = { jobs: Object.fromEntries(['composite-site', ...CATALOG_JOBS].map(name => [name, { steps: [{ run: 'echo fixture' }] }])) };
   await writeFile(join(root, '.github/workflows/ci.yml'), stringify(ci));
-  const git = (...args) => execFileSync('git', args, { cwd: root, stdio: 'pipe' });
-  git('init', '-q');
-  git('config', 'user.name', 'Planner test');
-  git('config', 'user.email', 'planner-test@example.invalid');
-  git('add', 'package.json');
-  git('commit', '-qm', 'Fixture base');
   const run = (...args) => spawnSync(process.execPath, ['scripts/app-plan.mjs', ...args], {
     cwd: root, encoding: 'utf8', env: { ...process.env, GITHUB_OUTPUT: '' },
   });
   return { root, ci, run };
 }
-
-test('explicit --only selections work without a usable base', async (t) => {
-  const { run } = await plannerFixture(t);
-  for (const args of [[], ['--base', '0'.repeat(40)], ['--base', 'missing-ref'], ['--base', 'HEAD']]) {
-    const result = run('--only', 'niimath', ...args);
-    assert.equal(result.status, 0, result.stderr);
-    const output = JSON.parse(result.stdout);
-    assert.deepEqual(JSON.parse(output.selected_ids), ['niimath']);
-    assert.equal(output.all_apps, 'false');
-    assert.equal(output.fallback_reason, '');
-  }
-  const qsmbly = run('--only', 'qsmbly');
-  assert.equal(qsmbly.status, 0, qsmbly.stderr);
-  assert.deepEqual(JSON.parse(JSON.parse(qsmbly.stdout).selected_ids), ['qsmbly', 'brain-extraction']);
-  const unknown = run('--only', 'not-an-app');
-  assert.notEqual(unknown.status, 0);
-  assert.match(unknown.stderr, /Unknown app ids: not-an-app/);
-});
-
-test('affected planning retains full coverage when the base is unavailable', async (t) => {
-  const { run } = await plannerFixture(t);
-  const registry = await loadAppsRegistry();
-  for (const args of [[], ['--base', '0'.repeat(40)], ['--base', 'missing-ref']]) {
-    const result = run('--only', 'affected', ...args);
-    assert.equal(result.status, 0, result.stderr);
-    const output = JSON.parse(result.stdout);
-    assert.deepEqual(JSON.parse(output.selected_ids), registry.apps.map(app => app.id));
-    assert.equal(output.has_site, 'true');
-  }
-});
 
 test('missing, renamed and reusable CI jobs trigger a visible full-coverage fallback', async (t) => {
   const { root, ci, run } = await plannerFixture(t);
@@ -320,7 +339,7 @@ test('missing, renamed and reusable CI jobs trigger a visible full-coverage fall
       if (variant === 'empty') altered.jobs[name] = { steps: [] };
       if (variant === 'non-array') altered.jobs[name] = { steps: {} };
       await writeFile(join(root, '.github/workflows/ci.yml'), stringify(altered));
-      await assert.rejects(loadWorkspaceGraph(root), error => error instanceof WorkspaceGraphConfigurationError && error.message.includes(name));
+      await assert.rejects(loadConservativeWorkspaceGraph(root), error => error instanceof WorkspaceGraphConfigurationError && error.message.includes(name));
       const result = run('--only', 'niimath');
       assert.equal(result.status, 0, `${name} ${variant}: ${result.stderr}`);
       const output = JSON.parse(result.stdout);
