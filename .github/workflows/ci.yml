@@ -118,6 +118,18 @@ jobs:
       - name: Set up wasm-opt
         if: matrix.rust_wasm
         uses: ./.github/actions/setup-wasm-opt
+      - name: Restore ${{ matrix.app }} Rust build cache
+        if: matrix.rust_wasm
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            apps/${{ matrix.app }}/**/target
+            exes/greedy/target
+          key: rust-wasm-${{ matrix.app }}-${{ runner.os }}-${{ hashFiles(format('apps/{0}/**/Cargo.lock', matrix.app), 'exes/greedy/Cargo.lock') }}
+          restore-keys: rust-wasm-${{ matrix.app }}-${{ runner.os }}-
       - uses: actions/setup-python@v7
         if: matrix.python_reference
         with:
@@ -266,6 +278,18 @@ jobs:
       - name: Set up wasm-opt
         if: matrix.rust_wasm
         uses: ./.github/actions/setup-wasm-opt
+      - name: Restore ${{ matrix.app }} Rust build cache
+        if: matrix.rust_wasm
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            apps/${{ matrix.app }}/**/target
+            exes/greedy/target
+          key: rust-wasm-${{ matrix.app }}-${{ runner.os }}-${{ hashFiles(format('apps/{0}/**/Cargo.lock', matrix.app), 'exes/greedy/Cargo.lock') }}
+          restore-keys: rust-wasm-${{ matrix.app }}-${{ runner.os }}-
       - uses: actions/setup-python@v7
         if: matrix.python_reference
         with:
@@ -293,7 +317,10 @@ jobs:
         run: node scripts/e2e-test-data.mjs "$APP" ~/.cache/neurodesk-e2e-test-data $CPU_ONLY | tee -a "$GITHUB_ENV"
       - name: Build ${{ matrix.app }} browser runtime
         run: pnpm --filter ${{ matrix.app }} build
-      - name: Test ${{ matrix.app }} in a browser
+      - name: Test ${{ matrix.app }} in a browser${{ matrix.shard && format(' (shard {0})', matrix.shard) || '' }}
+        env:
+          NEURODESK_E2E_PREBUILT: '1'
+          NEURODESK_E2E_SHARD: ${{ matrix.shard }}
         run: pnpm --filter ${{ matrix.app }} test:e2e
 
   # The free macOS runners expose a paravirtual Apple GPU that full Chromium
@@ -331,6 +358,18 @@ jobs:
       - name: Set up wasm-opt
         if: matrix.rust_wasm
         uses: ./.github/actions/setup-wasm-opt
+      - name: Restore ${{ matrix.app }} Rust build cache
+        if: matrix.rust_wasm
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            apps/${{ matrix.app }}/**/target
+            exes/greedy/target
+          key: rust-wasm-${{ matrix.app }}-${{ runner.os }}-${{ hashFiles(format('apps/{0}/**/Cargo.lock', matrix.app), 'exes/greedy/Cargo.lock') }}
+          restore-keys: rust-wasm-${{ matrix.app }}-${{ runner.os }}-
       - uses: actions/setup-python@v7
         if: matrix.python_reference
         with:
@@ -359,6 +398,8 @@ jobs:
       - name: Build ${{ matrix.app }} browser runtime
         run: pnpm --filter ${{ matrix.app }} build
       - name: Test ${{ matrix.app }} on the hardware GPU
+        env:
+          NEURODESK_E2E_PREBUILT: '1'
         run: pnpm --filter ${{ matrix.app }} test:e2e
       - uses: actions/upload-artifact@v7
         if: failure()

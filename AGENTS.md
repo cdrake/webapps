@@ -75,6 +75,8 @@ An e2e test that skips without data (`test.skip(!process.env.X, …)`) must run 
 
 Pull requests skip Playwright tests tagged `@slow`; pushes to main and the nightly run include them. Release browser tests also select the full suite, subject to their data requirements. Tag a test `@slow` (`{ tag: '@slow' }`) only when an untagged test completes a run with the same model, method, option and kind of geometry. A browser reference case that is the only completed run of a path stays untagged. An app with tagged tests spreads `e2eTier` from `test-utils/e2e-tier.mjs` into its Playwright config (the shared config builders already do); `test/e2e-tier.test.mjs` checks it. The browser jobs in `.github/workflows/ci.yml` log per-test durations for tagging decisions.
 
+An app can set `ci.e2e_shards` to 2-4 in `registry/apps.yml`. The CPU browser job splits its selected tests by spec file unless the Playwright config is `fullyParallel`; unit/build and hardware GPU jobs stay unsharded. CI builds each app before its browser tests and sets `NEURODESK_E2E_PREBUILT=1`, so the example smoke driver uses that production bundle. Its standalone invocation retains the normal build. Rust jobs restore Cargo build directories using lockfile-based cache keys, including the shared Greedy workspace.
+
 ## dwi2trx
 
 - WebGPU-only app (diffusion tensor fitting + GPU streamline tractography); it throws a clear error at startup on a browser without WebGPU, and streamline tracking additionally requires `subgroups` support.
