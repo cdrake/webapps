@@ -40,6 +40,7 @@ jobs:
       gpu_apps: ${{ steps.plan.outputs.gpu_apps }}
       has_gpu_apps: ${{ steps.plan.outputs.has_gpu_apps }}
       all_apps: ${{ steps.plan.outputs.all_apps }}
+      has_site: ${{ steps.plan.outputs.has_site }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -136,7 +137,7 @@ jobs:
     # App-scoped changes can break composite assembly (runtime-store rewrites,
     # artifact budgets), so any PR that selects at least one app runs the
     # composite checks; only docs-only changes skip them.
-    if: github.event_name != 'pull_request' || needs.app-plan.outputs.has_apps == 'true'
+    if: github.event_name != 'pull_request' || needs.app-plan.outputs.has_site == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

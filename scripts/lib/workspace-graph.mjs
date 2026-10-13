@@ -1,13 +1,16 @@
 import { readdir, readFile, stat } from 'node:fs/promises';
+import { parse } from 'yaml';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 
 // Which apps/, packages/ and exes/ directories each workspace directory uses.
 // Declared workspace dependencies are not enough: apps also reach shared code
 // through relative paths in build scripts, Vite configs and Rust `#[path]`
-// includes, so text references count as edges too. Root scripts an app runs
-// (`../../scripts/theme-app-dist.mjs`) are nodes of their own, followed
-// through their relative imports to the packages they copy or bundle. A false
-// reference only widens the CI selection.
+// includes, so text references count as edges too. Root files an app reaches
+// (`../../scripts/theme-app-dist.mjs`, `../../test-utils/dice.mjs`, and the
+// registry files those read) are nodes of their own, followed through their
+// imports to the packages they copy or bundle. SITE is a node for what ci.yml's
+// composite-site job runs, CATALOG for what its per-app jobs run.
+// A false reference only widens the CI selection.
 
 const TOP_LEVEL = ['apps', 'packages', 'exes'];
 // Apps are leaves: a package that mentions an app does not use what that app uses.
@@ -18,10 +21,42 @@ const MAX_TEXT_BYTES = 1024 * 1024;
 // A relative path, or a root-relative string such as 'exes/compute-server/src/x.rs'
 // joined onto a computed repository root.
 const REFERENCE = /(?:(?:\.\.\/)+|['"`])(packages|exes)\/([\w.-]+)/g;
-// Scripts address packages from the repository root, in either form.
-const SCRIPT_REFERENCE = /\b(packages|exes)(?:\/|['"],\s*['"])([\w.-]+)/g;
-const SCRIPT_PATH = /(?:\.\.\/)+(scripts\/[\w./-]+\.[cm]?js)\b/g;
-const SCRIPT_IMPORT = /['"](\.\.?\/[^'"\s]+\.[cm]?js)['"]/g;
+// Scripts address packages from the repository root, in either form, and
+// sometimes a single file in one.
+const SCRIPT_REFERENCE = /\b(packages|exes)(?:\/|['"],\s*['"])([\w.-]+)((?:\/[\w.-]+)*\/[\w.-]+\.(?:[cm]?[jt]s|json))?/g;
+// A package's own tests change no app unless an app reads from them.
+const PACKAGE_TESTS = /(?:\.\.\/)+(packages\/[\w.-]+\/tests?)\//g;
+const BARE_IMPORT = /\bfrom\s+['"]((?:@[\w.-]+\/)?[\w.-]+)/g;
+const ROOT_FILE = String.raw`[\w./-]+\.(?:[cm]?[jt]s|json|ya?ml)`;
+const ROOT_PATH = new RegExp(String.raw`(?:\.\.\/)+((?:scripts|test-utils|registry)\/${ROOT_FILE})\b`, 'g');
+// Root files name each other relative to themselves or from the repository root.
+const ROOT_IMPORT = new RegExp(String.raw`['"\`](\.\.?\/${ROOT_FILE})['"\`]`, 'g');
+const ROOT_NAMED = new RegExp(String.raw`(?:^|[\s'"\`(=])((?:scripts|test-utils|registry|test)\/${ROOT_FILE})\b|['"](registry|test-utils)['"],\s*['"](${ROOT_FILE})['"]`, 'gm');
+const ROOT_DIRS = ['scripts/', 'test-utils/', 'registry/', 'test/', 'packages/', 'exes/'];
+const SOURCE_FILE = /\.[cm]?[jt]s$/;
+const ROOT_SCRIPT_CALL = /\bpnpm (?:run )?([\w:-]+)/g;
+export const CATALOG = '(catalog)';
+export const SITE = '(site)';
+// The ci.yml jobs that run once per selected app.
+export const CATALOG_JOBS = ['app-tests', 'browser-e2e', 'browser-e2e-gpu'];
+
+// Root files a set of CI commands names, following `pnpm <root script>` calls.
+function namedByCommands(commands, rootScripts) {
+  const named = new Set();
+  const pending = [...commands];
+  const expanded = new Set();
+  while (pending.length) {
+    const command = pending.pop();
+    for (const match of command.matchAll(ROOT_NAMED)) if (match[1]) named.add(match[1]);
+    for (const [, script] of command.matchAll(ROOT_SCRIPT_CALL)) {
+      if (rootScripts[script] && !expanded.has(script)) {
+        expanded.add(script);
+        pending.push(rootScripts[script]);
+      }
+    }
+  }
+  return { named, expanded };
+}
 const DEPENDENCY_FIELDS = ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies'];
 
 async function listDirs(path) {
@@ -37,6 +72,10 @@ async function* textFiles(dir) {
       yield join(dir, entry.name);
     }
   }
+}
+
+function exists(path) {
+  return stat(path).then(() => true, () => false);
 }
 
 async function readPackageJson(dir) {
@@ -59,7 +98,7 @@ export async function loadWorkspaceGraph(root) {
   const nodeByPackageName = new Map([...manifests].filter(([, manifest]) => manifest?.name).map(([node, manifest]) => [manifest.name, node]));
 
   const edges = new Map();
-  const pendingScripts = [];
+  const pendingRootFiles = [];
   for (const node of nodes) {
     const uses = new Set();
     const manifest = manifests.get(node);
@@ -79,37 +118,65 @@ export async function loadWorkspaceGraph(root) {
       for (const [, top, name] of text.matchAll(REFERENCE)) {
         if (nodeSet.has(`${top}/${name}`)) uses.add(`${top}/${name}`);
       }
-      for (const [, script] of text.matchAll(SCRIPT_PATH)) {
-        uses.add(script);
-        pendingScripts.push(script);
+      for (const [, tests] of text.matchAll(PACKAGE_TESTS)) uses.add(tests);
+      for (const [, rootFile] of text.matchAll(ROOT_PATH)) {
+        uses.add(rootFile);
+        pendingRootFiles.push(rootFile);
       }
     }
     uses.delete(node);
     edges.set(node, uses);
   }
 
-  while (pendingScripts.length) {
-    const script = pendingScripts.pop();
-    if (edges.has(script)) continue;
+  const ci = parse(await readFile(join(root, '.github/workflows/ci.yml'), 'utf8'));
+  const rootScripts = JSON.parse(await readFile(join(root, 'package.json'), 'utf8')).scripts;
+  const runs = (jobs) => jobs.flatMap((job) => job.steps.map((step) => step.run ?? '')).map((run) => run.replace(/pnpm --filter \S+ (?:run )?\S+/g, ''));
+  const entries = [
+    [SITE, runs([ci.jobs['composite-site']])],
+    [CATALOG, runs(CATALOG_JOBS.map((name) => ci.jobs[name]))],
+  ];
+  const rootScriptsRun = new Map();
+  for (const [node, commands] of entries) {
+    const { named, expanded } = namedByCommands(commands, rootScripts);
+    edges.set(node, named);
+    rootScriptsRun.set(node, expanded);
+    pendingRootFiles.push(...named);
+  }
+
+  while (pendingRootFiles.length) {
+    const file = pendingRootFiles.pop();
+    if (edges.has(file)) continue;
     const uses = new Set();
-    edges.set(script, uses);
-    const text = await readFile(join(root, script), 'utf8').catch(() => null);
+    edges.set(file, uses);
+    if (!SOURCE_FILE.test(file)) continue;
+    const text = await readFile(join(root, file), 'utf8').catch(() => null);
     if (text === null) continue;
-    for (const [, top, name] of text.matchAll(SCRIPT_REFERENCE)) {
-      if (nodeSet.has(`${top}/${name}`)) uses.add(`${top}/${name}`);
+    for (const [, top, name, inner] of text.matchAll(SCRIPT_REFERENCE)) {
+      if (!nodeSet.has(`${top}/${name}`)) continue;
+      const target = inner && `${top}/${name}${inner}`;
+      if (target && await exists(join(root, target))) {
+        uses.add(target);
+        pendingRootFiles.push(target);
+      } else {
+        uses.add(`${top}/${name}`);
+      }
     }
-    for (const [, path] of text.matchAll(SCRIPT_IMPORT)) {
-      const imported = relative(root, resolve(root, dirname(script), path)).split(sep).join('/');
-      if (imported.startsWith('scripts/')) {
-        uses.add(imported);
-        pendingScripts.push(imported);
+    for (const [, name] of text.matchAll(BARE_IMPORT)) {
+      if (nodeByPackageName.has(name)) uses.add(nodeByPackageName.get(name));
+    }
+    const imports = [...text.matchAll(ROOT_IMPORT)].map(([, path]) => relative(root, resolve(root, dirname(file), path)).split(sep).join('/'));
+    const named = [...text.matchAll(ROOT_NAMED)].map(([, path, dir, name]) => path ?? `${dir}/${name}`);
+    for (const target of [...imports, ...named]) {
+      if (ROOT_DIRS.some((dir) => target.startsWith(dir)) && target !== file && await exists(join(root, target))) {
+        uses.add(target);
+        pendingRootFiles.push(target);
       }
     }
   }
-  return Object.freeze({ nodes: Object.freeze(nodes), edges });
+  return Object.freeze({ nodes: Object.freeze(nodes), edges, rootScriptsRun });
 }
 
-// Every directory or root script `node` uses, directly or through others.
+// Every directory or root file `node` uses, directly or through others.
 export function reachableFrom(graph, node) {
   const seen = new Set([node]);
   const pending = [node];

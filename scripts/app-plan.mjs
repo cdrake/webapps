@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { execFileSync } from 'node:child_process';
 import { appendFile } from 'node:fs/promises';
 import { createAppPlan, changedPathsFromGit } from './lib/app-plan.mjs';
 import { loadAppsRegistry, repoRoot } from './lib/apps-registry.mjs';
@@ -20,7 +21,20 @@ if (only && only !== 'affected') {
   if (unknown.length) throw new Error(`Unknown app ids: ${unknown.join(', ')}`);
   changedPaths = [...ids].map((id) => `apps/${id}/package.json`);
 }
-const plan = createAppPlan(registry, changedPaths, await loadWorkspaceGraph(repoRoot));
+// changedPathsFromGit diffs from the merge base, so manifests are compared there too.
+const head = option('--head') || 'HEAD';
+const manifestPaths = changedPaths.filter((path) => /^(?:(?:packages|apps|exes)\/[^/]+\/)?package\.json$|^registry\/offline-assets\.lock\.json$/.test(path));
+const mergeBase = manifestPaths.length && execFileSync('git', ['merge-base', option('--base'), head], { cwd: repoRoot, encoding: 'utf8' }).trim();
+const show = (revision, path) => execFileSync('git', ['show', `${revision}:${path}`], { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+const manifests = new Map();
+for (const path of manifestPaths) {
+  try {
+    manifests.set(path, { before: show(mergeBase, path), after: show(head, path) });
+  } catch {
+    // An added or deleted manifest is a code change like any other.
+  }
+}
+const plan = createAppPlan(registry, changedPaths, await loadWorkspaceGraph(repoRoot), manifests);
 const emptyMatrix = { include: [{ app: '__none__', path: '', runtime: '', rust_wasm: false, python_reference: false, shared_runtime: false, browser_test: false, hardware_gpu: false, app_scoped_runtime: false, release_test: 'test' }] };
 const outputs = {
   apps: JSON.stringify(plan.apps.include.length ? plan.apps : emptyMatrix),
@@ -33,6 +47,7 @@ const outputs = {
   has_gpu_apps: String(plan.gpuApps.include.length > 0),
   has_release_apps: String(plan.releaseApps.include.length > 0),
   all_apps: String(plan.allApps),
+  has_site: String(plan.site),
 };
 
 if (process.env.GITHUB_OUTPUT) {
