@@ -133,3 +133,33 @@ test("an anatomical NIfTI in the main picker is visible without a spectrum", asy
   await expect(page.locator("#plotLabel")).toHaveText("anatomy.nii");
   await expect(page.locator("#runButton")).toBeDisabled();
 });
+
+
+test("mixing RAW and vendor spectra rejects the import and keeps the resident fit", async ({ page }) => {
+  test.setTimeout(180000);
+  const vendor = (await spectroscopyFiles()).filter((file) => file.name.includes("_act."));
+  const raw = ["data.raw", "3t.basis", "control.file"].map((name) => ({
+    name, mimeType: "application/octet-stream",
+    buffer: readFileSync(new URL(`../../../exes/lcmodel/tests/data/test_lcm/${name}`, import.meta.url)),
+  }));
+  await page.goto("/");
+  await page.locator("#dataInput").setInputFiles(vendor);
+  await expect(page.locator("#datasetSummary")).toContainText("no water reference");
+  await page.locator("#dataInput").setInputFiles(raw);
+  await expect(page.locator("#basisSelect")).toHaveValue("custom");
+  await page.locator("#runButton").click();
+  await expect(page.locator("#statusText")).toContainText("Fit done", { timeout: 120000 });
+  const summary = await page.locator("#datasetSummary").textContent();
+  const results = await page.locator("#concBody").textContent();
+  expect(results).toContain("NAA");
+  const replacement = { ...raw[0], name: "replacement.raw" };
+  for (const files of [[replacement, ...vendor], [...vendor, replacement]]) {
+    await page.locator("#dataInput").setInputFiles(files);
+    await expect(page.locator("#statusText")).toContainText("Import LCModel .RAW and vendor spectra separately.");
+    await expect(page.locator("#statusText")).toHaveClass(/error/);
+    await expect(page.locator("#datasetSummary")).toHaveText(summary);
+    await expect(page.locator("#concBody")).toHaveText(results);
+    await expect(page.locator("#basisSelect")).toHaveValue("custom");
+    await expect(page.locator("#runButton")).toBeEnabled();
+  }
+});
