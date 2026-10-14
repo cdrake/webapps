@@ -41,7 +41,8 @@ export function routeFiles(files, inputs, primary) {
 /**
  * Put files on a file input and let the app's own change handler load them.
  * `replace` first fires `nd-replace` on the input, so an app whose input adds
- * to a file list (marked `data-appends`) can clear it.
+ * to a file list (marked `data-appends`) can clear it. Such an app fires
+ * `nd-files` (detail.files) on the input whenever its list changes otherwise.
  */
 export function deliverFiles(input, files, { replace = false } = {}) {
   if (replace) input.dispatchEvent(new CustomEvent('nd-replace', { bubbles: true }));
@@ -106,10 +107,14 @@ export function bindPageDrop(doc = globalThis.document) {
     replacing.delete(input);
   }
 
-  function offerUndo(snapshot) {
-    const status = doc.querySelector('footer#status, #status');
-    status?.querySelector('.nd-status-undo')?.remove();
+  function withdrawUndo() {
+    doc.querySelector('.nd-status-undo')?.remove();
     view.clearTimeout(undoTimer);
+  }
+
+  function offerUndo(snapshot) {
+    withdrawUndo();
+    const status = doc.querySelector('footer#status, #status');
     if (!status || !snapshot.length) return;
     const button = doc.createElement('button');
     button.type = 'button';
@@ -125,9 +130,10 @@ export function bindPageDrop(doc = globalThis.document) {
 
   function drop(event) {
     if (!carriesFiles(event) || !ours(event)) return;
+    // Even without an input to take them, a dropped file must not navigate away from the session.
+    event.preventDefault();
     const primary = primaryInput(doc);
     if (!primary) return;
-    event.preventDefault();
     event.stopPropagation();
     overlay.hidden = true;
     const inputs = [...doc.querySelectorAll('input[type="file"][data-neurodesk-input]')].filter(usable);
@@ -137,6 +143,9 @@ export function bindPageDrop(doc = globalThis.document) {
       const snapshot = plan.filter(([input]) => previous.has(input)).map(([input]) => [input, previous.get(input)]);
       for (const [input, group] of plan) replace(input, group);
       offerUndo(snapshot);
+    }).catch(error => {
+      const text = doc.querySelector('#statusText');
+      if (text) text.textContent = `Could not read the dropped files: ${error.message}`;
     });
   }
 
@@ -148,9 +157,16 @@ export function bindPageDrop(doc = globalThis.document) {
     previous.set(input, [...kept, ...input.files]);
   }
 
-  // An example loads without the inputs, so earlier picks are no longer what Undo should restore.
+  // An appending input whose app removes entries reports its current list with `nd-files`.
+  function sync(event) {
+    previous.set(event.target, [...event.detail.files]);
+  }
+
+  // An example loads without the inputs, so neither earlier picks nor a pending Undo apply any more.
   function forget(event) {
-    if (event.detail?.state === 'ready') previous = new WeakMap();
+    if (event.detail?.state !== 'ready') return;
+    previous = new WeakMap();
+    withdrawUndo();
   }
 
   const listeners = [
@@ -159,6 +175,7 @@ export function bindPageDrop(doc = globalThis.document) {
     [view, 'drop', drop, true],
     [view, 'drop', drop, false],
     [doc, 'change', remember, true],
+    [doc, 'nd-files', sync, false],
     [doc, 'nd-example-status', forget, false],
   ];
   for (const [target, type, listener, capture] of listeners) target.addEventListener(type, listener, capture);

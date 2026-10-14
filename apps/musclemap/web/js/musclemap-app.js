@@ -632,6 +632,8 @@ class MuscleMapApp {
     this.syncImfControls();
     this.syncPostprocessingControls();
     const entries = this.fileIOController.getEntries();
+    // Keeps the page drop's Undo in step with removals.
+    document.getElementById('fileInput')?.dispatchEvent(new CustomEvent('nd-files', { bubbles: true, detail: { files: entries.map(entry => entry.file) } }));
     void this.maskEditor.cancel();
     const uploadedIds = new Set(entries.map(entry => `uploaded-${entry.id}`));
     for (const id of this.uploadedDerivedFiles.keys()) {

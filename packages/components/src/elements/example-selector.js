@@ -153,6 +153,7 @@ export function defineExampleSelector(view = globalThis.window) {
     // this reruns when the select is focused or pressed.
     #renderActions = () => {
       const input = primaryInput(this.#boundScope ?? this.#scope);
+      if (!input) this.#actionsFor = null;
       if (!input || input === this.#actionsFor) return;
       this.#actionsFor?.closest('.nd-file')?.classList.remove('nd-file-merged');
       this.#select.querySelectorAll('hr, option[data-action]').forEach(node => node.remove());

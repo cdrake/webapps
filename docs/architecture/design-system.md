@@ -59,9 +59,9 @@ impact:
 | Field | `<div class="nd-field"><label for="x">Label <small>unit</small></label><select id="x">…</select><p class="nd-hint">Help</p></div>` | |
 | Checkbox | `<label class="nd-check"><input type="checkbox"> Label</label>` | |
 | Equal columns | `<div class="nd-row">…</div>` | |
-| Input menu | `nd-example-selector`: "Choose an example…", the examples, a divider, **Choose files…** and, for scans, **Choose folder…**. The file actions open the scope's first `input[data-neurodesk-input]`; its `label.nd-file` gets `.nd-file-merged` and is hidden | `createExampleSelector()` |
+| Input menu | `nd-example-selector`: "Choose an example…", the examples, a divider, **Choose files…** and, for scans, **Choose folder…**. The file actions open the scope's first scan input (`data-neurodesk-input="image"`), else its first classified input; its `label.nd-file` gets `.nd-file-merged` and is hidden until the browser refuses the picker | `createExampleSelector()` |
 | Scan picker | `<label class="nd-file"><input type="file" data-neurodesk-input="image" multiple><svg…/><span>…</span></label>` + `<p class="nd-file-info">`. Visible only for second and later slots (fixed/moving, masks) | `createFileField()`, `bindFileDrop()` |
-| Page drop | The whole window, the NiiVue canvas included, takes file drops and shows `.nd-drop-overlay`. App drop handlers run first; an app that owns a region's drops (a viewer with its own loader) marks it `data-drop-target`. Gradients, models and parameter files go to an input of their kind, everything else to the primary input, replacing it, with **Undo** (`.nd-status-undo`) in the status bar for 8 s | `bindPageDrop()`, installed by the shell and by `nd-example-selector` |
+| Page drop | The whole window, the NiiVue canvas included, takes file drops and shows `.nd-drop-overlay`. App drop handlers run first; an app that owns a region's drops (a viewer with its own loader) marks it `data-drop-target`. Gradients, models and parameter files go to an input of their kind, everything else to the primary input, replacing it, with **Undo** (`.nd-status-undo`) in the status bar for 8 s; loading an example withdraws it | `bindPageDrop()`, installed by the shell and by `nd-example-selector` |
 | Buttons | `.nd-btn.nd-btn-primary` (one per workspace), `.nd-btn.nd-btn-secondary`, `.nd-btn-sm`, `.nd-btn-icon`, `.nd-btn-danger` | |
 | Result rows | `<div class="nd-volume-toggle"><button class="nd-view-btn active">View</button><span class="nd-stage-label">Name</span><button class="nd-edit-btn">Edit</button><button class="nd-download-btn">Download</button></div>` | `createResultList` (Edit only for `editable: true` results) |
 | Message | `<p class="nd-message error|warning|success|info">` | |
@@ -84,8 +84,8 @@ dark come from the hosted theme's tokens (`site/app-theme.css`); apps never set
 
 ## Colour
 
-Surfaces are neutral greys; green appears only on the primary button, focus rings,
-selection, links and progress. Dark uses the logo green `#6ba442` with dark text on it.
+Surfaces are neutral greys; green appears only on the app-bar title, the primary button,
+focus rings, selection, links and progress. Dark uses the logo green `#6ba442` with dark text on it.
 Light uses `#467d25`, because the logo green is only 3:1 on white. `--nd-color-on-primary`
 is the label colour on a primary fill. `test/design-system.test.mjs` holds both themes to
 AA: text 7:1, muted and dim text 4.5:1 on every surface, primary labels 4.5:1.
@@ -112,8 +112,9 @@ AA: text 7:1, muted and dim text 4.5:1 on every surface, primary labels 4.5:1.
   displayed (layout, overlay opacity, window, colormap).
 - Status is one line at the bottom: label, message, elapsed time, a 4px
   progress bar and a small × cancel that appears only while running. Before any
-  input it reads "Drag and drop files" (the initial `#statusText`); once a session
-  has inputs, `ProgressManager.reset()` returns it to "Ready".
+  input it reads "Drag and drop files" (the initial `#statusText`); an app that
+  loads before it can take files starts at "Loading…" and then sets it. Once a
+  session has inputs, `ProgressManager.reset()` returns it to "Ready".
 - Say things once. A field label plus a short `.nd-hint` when needed; no
   paragraphs, no repeated instructions, no "Image workspace" captions.
   Visible help is at most 90 characters; anything longer is an
