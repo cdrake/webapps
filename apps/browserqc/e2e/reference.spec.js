@@ -40,6 +40,19 @@ for (const model of CASES) {
       files[download.suggestedFilename()] = await readFile(await download.path());
     }
     expect(Object.keys(files).sort()).toEqual([...ARTIFACTS[model]].sort());
+    // The sidebar downloads are the automation's images under names that start with the input name.
+    const stem = example.image.name.replace(/\.nii\.gz$/, '');
+    const images = Object.keys(files).filter(name => name.endsWith('.nii'));
+    const buttons = page.locator('#resultList .nd-download-btn');
+    await expect(buttons).toHaveCount(images.length);
+    const visible = {};
+    for (const button of await buttons.all()) {
+      const downloaded = page.waitForEvent('download');
+      await button.click();
+      const download = await downloaded;
+      visible[download.suggestedFilename()] = await readFile(await download.path());
+    }
+    for (const name of images) expect(visible[`${stem}_${name}`]?.equals(files[name]), name).toBe(true);
     const actual = summarize(files, await readFile(example.image.path));
     const sidecar = JSON.parse(await readFile(example.sidecar.path, 'utf8'));
     const reference = await readReference();

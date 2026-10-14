@@ -71,7 +71,7 @@ function showOutputs(name: string, artifacts: { role: string; file: File }[]): v
   results.render(Object.fromEntries(artifacts.map(({ role, file }) => [role, {
     description: OUTPUT_LABELS[role],
     viewable: false,
-    file: new File([file], `${stem}_${file.name.replace(/^brain-/, '')}`, { type: file.type }),
+    file: new File([file], `${stem}_${file.name}`, { type: file.type }),
   }])))
 }
 function clearOutputs(): void {

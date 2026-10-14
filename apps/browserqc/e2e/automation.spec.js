@@ -34,7 +34,15 @@ test('CPU segmentation can be cancelled and retried to produce native-grid label
     if (snapshot.state === 'failed') throw new Error(JSON.stringify(snapshot.error));
     return snapshot.state;
   }, { timeout: 840000, intervals: [1000, 2000, 5000] }).toBe('succeeded');
-  const labels = readVolume(source(await download(page, 'labels')));
+  const labelBytes = await download(page, 'labels');
+  const rows = page.locator('#resultList .nd-volume-toggle');
+  await expect(rows.locator('.nd-stage-label')).toHaveText(['Brain mask', 'Label map']);
+  const visibleLabels = page.waitForEvent('download');
+  await rows.nth(1).locator('.nd-download-btn').click();
+  const labelFile = await visibleLabels;
+  expect(labelFile.suggestedFilename()).toBe('T1_labels.nii');
+  expect((await readFile(await labelFile.path())).equals(labelBytes)).toBe(true);
+  const labels = readVolume(source(labelBytes));
   const input = readVolume(source(await readFile(fixture)));
   expect(labels.dims).toEqual(input.dims);
   expect(labels.affine).toEqual(input.affine);
@@ -106,10 +114,10 @@ test('default PVE analysis publishes native-grid fractions and an independent ma
     const file = await downloading;
     visible[file.suggestedFilename()] = await readFile(await file.path());
   }
-  expect(Object.keys(visible)).toEqual(['T1_mask.nii', 'T1_csf.nii', 'T1_gm.nii', 'T1_wm.nii']);
+  expect(Object.keys(visible)).toEqual(['T1_brain-mask.nii', 'T1_csf.nii', 'T1_gm.nii', 'T1_wm.nii']);
   for (const name of ['csf', 'gm', 'wm', 'mask']) {
     const bytes = await download(page, name);
-    expect(visible[`T1_${name}.nii`].equals(bytes)).toBe(true);
+    expect(visible[`T1_${name === 'mask' ? 'brain-mask' : name}.nii`].equals(bytes)).toBe(true);
     const volume = readVolume(source(bytes));
     expect(volume.dims).toEqual(input.dims);
     expect(volume.affine).toEqual(input.affine);
