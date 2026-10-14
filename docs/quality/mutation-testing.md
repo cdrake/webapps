@@ -1,9 +1,11 @@
 # Mutation testing
 
 Run `pnpm quality:mutations` after `pnpm install --frozen-lockfile --ignore-scripts`.
-Stryker mutates the modules listed in `modules` in `stryker.config.mjs`. Each
+Stryker mutates the modules listed in `scripts/lib/mutation-modules.mjs`. Each
 entry names the source (or a line range of it), the files its suite needs in the
-sandbox, and the `node --test` command that specifies it. None of the suites
+sandbox, and the `node --test` command that specifies it. The adapter runs
+Stryker once per module, selecting it with `MUTATION_MODULE` in
+`stryker.config.mjs`, so each mutant runs only its own suite. None of the suites
 needs model files, native binaries, WASM execution, a GPU, a browser or the
 network.
 
@@ -24,11 +26,12 @@ Stryker is pinned to `@stryker-mutator/core@10.0.0`. The current
 supports arbitrary test commands. The official plugin list and published package
 schema do not provide a native node:test runner, so the command runner runs the
 suites with `node --test` and `coverageAnalysis: 'off'`. It cannot map tests to
-files: every mutant runs every listed suite, joined with `&&`, and the runner
-reports them as one test. It cannot distinguish uncovered mutations from
-mutations that survive assertions.
+files, which is why each module is a separate run: in one shared run every
+mutant would execute every suite, and the slower runs could turn into false
+timeouts. The runner reports a suite as one test and cannot distinguish
+uncovered mutations from mutations that survive assertions.
 
-Only the listed files are copied into Stryker's sandbox. Concurrency is two.
+Only the module's listed files are copied into Stryker's sandbox. Concurrency is two.
 The sandbox stays inside the checkout at `.stryker-tmp` and is cleaned even on
 failure. Node test fixtures use the host's `TMPDIR` storage volume locally and
 the runner temporary directory in CI. The reporting adapter clears the inherited
@@ -43,12 +46,12 @@ kill at least one mutant proves that instrumentation reaches the Node tests. It
 is not a mutation-score threshold.
 
 Both modes write a GitHub summary with one row per module and upload
-`quality-artifacts/mutations` with `mutation.json`, `index.html`, `summary.md`
-and `stryker.log`. Surviving mutations and scores are report-only. The summary
+`quality-artifacts/mutations`: `<module>/mutation.json` and `<module>/index.html`
+for each run, `summary.md`, and `stryker.log` with every run's output. Surviving mutations and scores are report-only. The summary
 lists survivors for review. Invalid configuration, failing baseline tests,
 scanner crashes, runner runtime errors, missing reports, a report whose modules
 differ from the configuration, and a module with no assessed mutants fail the
-job. The adapter removes previous reports before running so a failed scan cannot
+job. The first failing module stops the run. The adapter removes previous reports before running so a failed scan cannot
 reuse an old score.
 
 The repository tests exercise real Stryker configuration and baseline failures,
@@ -61,9 +64,9 @@ Measured locally on 2026-10-14 (two workers):
 
 | Run | Mutants | Wall time |
 | --- | --- | --- |
-| Baseline (Stryker's initial run of all suites) | - | 0.6-1.1 s |
-| PR smoke | 2 | 4 s |
-| Full run | 332 | 86-107 s |
+| Baseline (Stryker's initial suite run, per module) | - | 0.3-0.7 s |
+| PR smoke | 2 | 5 s |
+| Full run, three Stryker runs | 332 | 96 s |
 
 The full run before `basis-select.js` and `formatG` were added took about 4 s.
 The workflow's 10-minute timeout leaves room for slower hosted runners. Keep the

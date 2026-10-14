@@ -4,9 +4,7 @@ import { appendFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from '
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
-import { modules, smoke as smokeTarget } from '../stryker.config.mjs';
-
-const output = 'quality-artifacts/mutations';
+import { moduleById, modules, output, smoke as smokeTarget } from './lib/mutation-modules.mjs';
 
 function countStatuses(file, mutants) {
   if (!mutants.length) throw new Error(`No mutations were tested in ${file}`);
@@ -21,7 +19,7 @@ function countStatuses(file, mutants) {
   return { ...counts, assessed, score: (100 * (counts.Killed + counts.Timeout) / assessed).toFixed(2) };
 }
 
-export function summarizeMutations(report, { smoke = false, expected = smoke ? [smokeTarget.file] : modules.map((module) => module.file) } = {}) {
+export function summarizeMutations(report, { smoke = false, expected = smoke ? [moduleById(smokeTarget.module).file] : modules.map((module) => module.file) } = {}) {
   if (!report || !report.files || typeof report.files !== 'object') {
     throw new Error('Stryker did not produce a mutation report');
   }
@@ -37,27 +35,38 @@ export function summarizeMutations(report, { smoke = false, expected = smoke ? [
   const survivors = results.flatMap(({ file, mutants }) => mutants
     .filter((mutant) => mutant.status === 'Survived' || mutant.status === 'NoCoverage')
     .map((mutant) => `| ${file} | ${mutant.location.start.line} | ${mutant.mutatorName} | ${escape(mutant.replacement)} |`));
-  return `## Mutation testing${smoke ? ' smoke' : ''}\n\n| Module | Score | Assessed | Killed | Survived | Uncovered | Timed out | Compile errors | Ignored |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n${totals.join('\n')}\n\nScores are report-only. Configuration, baseline test and tool failures fail the job. The smoke canary must detect at least one mutation.\n\n${survivors.length ? `| Module | Line | Mutator | Surviving replacement |\n| --- | --- | --- | --- |\n${survivors.join('\n')}\n\n` : 'No surviving mutants in this run.\n\n'}docs/quality/mutation-testing.md explains the reviewed survivors. The mutation-quality artifact contains the JSON report, HTML report and tool log.\n`;
+  return `## Mutation testing${smoke ? ' smoke' : ''}\n\n| Module | Score | Assessed | Killed | Survived | Uncovered | Timed out | Compile errors | Ignored |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n${totals.join('\n')}\n\nScores are report-only. Configuration, baseline test and tool failures fail the job. The smoke canary must detect at least one mutation.\n\n${survivors.length ? `| Module | Line | Mutator | Surviving replacement |\n| --- | --- | --- | --- |\n${survivors.join('\n')}\n\n` : 'No surviving mutants in this run.\n\n'}docs/quality/mutation-testing.md explains the reviewed survivors. The mutation-quality artifact contains the JSON and HTML report of each module and the tool log.\n`;
 }
 
 export function runMutations({ cwd = process.cwd(), smoke = false, config = 'stryker.config.mjs', executable = process.execPath, prefix = [fileURLToPath(new URL('../node_modules/@stryker-mutator/core/bin/stryker.js', import.meta.url))], summary = process.env.GITHUB_STEP_SUMMARY } = {}) {
   const artifacts = resolve(cwd, output);
   rmSync(artifacts, { recursive: true, force: true });
   mkdirSync(artifacts, { recursive: true });
-  const args = [...prefix, 'run', config];
   // A small, stable naming function provides the PR mutation-detection canary.
-  if (smoke) args.push('--mutate', smokeTarget.mutate);
-  const env = { ...process.env };
-  // Nested node:test processes must execute their suites independently.
-  delete env.NODE_TEST_CONTEXT;
-  const result = spawnSync(executable, args, { cwd, env, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
-  writeFileSync(resolve(artifacts, 'stryker.log'), `${result.stdout ?? ''}\n${result.stderr ?? ''}`);
-  if (result.stdout) console.log(result.stdout);
-  if (result.stderr) console.error(result.stderr);
-  if (result.error) throw result.error;
-  if (result.status !== 0) throw new Error(`Stryker failed with ${result.signal ?? `exit ${result.status}`}`);
-  const report = JSON.parse(readFileSync(resolve(artifacts, 'mutation.json'), 'utf8'));
-  const markdown = summarizeMutations(report, { smoke });
+  const runs = smoke ? [{ id: smokeTarget.module, mutate: smokeTarget.mutate }] : modules.map(({ id }) => ({ id }));
+  const merged = { files: {} };
+  let log = '';
+  for (const { id, mutate } of runs) {
+    const args = [...prefix, 'run', config];
+    if (mutate) args.push('--mutate', mutate);
+    const env = { ...process.env, MUTATION_MODULE: id };
+    // Nested node:test processes must execute their suites independently.
+    delete env.NODE_TEST_CONTEXT;
+    const result = spawnSync(executable, args, { cwd, env, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
+    log += `### ${id}\n${result.stdout ?? ''}\n${result.stderr ?? ''}\n`;
+    writeFileSync(resolve(artifacts, 'stryker.log'), log);
+    if (result.stdout) console.log(result.stdout);
+    if (result.stderr) console.error(result.stderr);
+    if (result.error) throw result.error;
+    if (result.status !== 0) throw new Error(`Stryker failed for ${id} with ${result.signal ?? `exit ${result.status}`}`);
+    const report = JSON.parse(readFileSync(resolve(artifacts, id, 'mutation.json'), 'utf8'));
+    if (!report || !report.files || typeof report.files !== 'object') throw new Error(`Stryker did not produce a mutation report for ${id}`);
+    for (const [file, data] of Object.entries(report.files)) {
+      if (file in merged.files) throw new Error(`${file} was mutated by more than one module`);
+      merged.files[file] = data;
+    }
+  }
+  const markdown = summarizeMutations(merged, { smoke });
   writeFileSync(resolve(artifacts, 'summary.md'), markdown);
   if (summary) appendFileSync(summary, markdown);
   console.log(markdown);
