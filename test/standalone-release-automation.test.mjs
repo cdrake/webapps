@@ -240,6 +240,79 @@ test('an archive re-uploaded between computing and publishing an update blocks t
   await assert.rejects(checkUpdateAssets(changes, async () => removed), /no longer serves/);
 });
 
+// A suite release as scripts/desktop/publish.mjs leaves it: archives, a model pack in parts reused from an
+// earlier suite, and the catalog entry describing them.
+function suiteReleases(version = '0.28.20261014') {
+  const tag = `webapps-v${version}`;
+  const file = (name, digit, onTag = tag) => ({ name, digest: `sha256:${digit.repeat(64)}`, size: 10, browser_download_url: `https://github.com/neurodesk/webapps/releases/download/${onTag}/${name}` });
+  const record = ({ name, digest, browser_download_url }) => ({ url: browser_download_url, sha256: digest.slice(7) });
+  const zip = file(`webapps-${version}-mac-arm64.zip`, 'a');
+  const install = file('webapps-0.27.20261012-models.tar.gz.install.txt', 'b', 'webapps-v0.27.20261012');
+  const part = file('webapps-0.27.20261012-models.tar.gz.part01', 'c', 'webapps-v0.27.20261012');
+  const suite = {
+    version,
+    apps: [{ id: 'tool', version: '0.2.20261006' }],
+    downloads: [{ kind: 'desktop', platform: 'macos-arm64', version, bytes: 10, ...record(zip) }],
+    models: { kind: 'models', platform: 'any', version: '0.27.20261012', ...record(install), parts: [{ filename: part.name, bytes: 10, ...record(part) }] },
+  };
+  const catalogAsset = file('standalone-catalog.json', 'd');
+  return {
+    suite,
+    releases: {
+      [tag]: { tag_name: tag, draft: false, prerelease: false, assets: [zip, catalogAsset] },
+      'webapps-v0.27.20261012': { tag_name: 'webapps-v0.27.20261012', draft: false, prerelease: false, assets: [install, part] },
+    },
+    fetchText: async (url) => {
+      assert.equal(url, catalogAsset.browser_download_url);
+      return JSON.stringify({ apps: {}, suite });
+    },
+  };
+}
+
+test('a released desktop suite replaces the catalog suite entry, never with an older one', async () => {
+  const { suite, releases, fetchText } = suiteReleases();
+  const fetchRelease = async (tag) => releases[tag];
+  const catalog = { apps: { tool: { downloads: [] } }, suite: { version: '0.10.20260918', downloads: [] } };
+  const changes = await catalogUpdate(catalog, parseReleases(['webapps@0.28.20261014']), { fetchRelease, fetchText, nativeAt: () => new Map() });
+  assert.deepEqual(changes, [{ id: 'webapps', version: '0.28.20261014', suite }]);
+  await checkUpdateAssets(changes, fetchRelease);
+  applyCatalogUpdate(catalog, changes);
+  assert.deepEqual(catalog.suite, suite);
+  const older = suiteReleases('0.27.20261012');
+  applyCatalogUpdate(catalog, [{ id: 'webapps', version: '0.27.20261012', suite: older.suite }]);
+  assert.equal(catalog.suite.version, '0.28.20261014');
+  assert.deepEqual(releaseFromTag('webapps-v0.28.20261014'), { id: 'webapps', version: '0.28.20261014' });
+});
+
+test('a suite entry must match its release and every file it lists', async () => {
+  const update = (releases, fetchText) => catalogUpdate({ apps: {} }, parseReleases(['webapps@0.28.20261014']), { fetchRelease: async (tag) => releases[tag], fetchText, nativeAt: () => new Map() });
+  const draft = suiteReleases();
+  draft.releases['webapps-v0.28.20261014'].draft = true;
+  await assert.rejects(update(draft.releases, draft.fetchText), /not released yet/);
+  const unlisted = suiteReleases();
+  unlisted.releases['webapps-v0.28.20261014'].assets.pop();
+  await assert.rejects(update(unlisted.releases, unlisted.fetchText), /no standalone-catalog\.json/);
+  const mislabelled = suiteReleases();
+  await assert.rejects(update(mislabelled.releases, async () => JSON.stringify({ suite: { ...mislabelled.suite, version: '0.27.20261012' } })), /describes suite 0\.27\.20261012/);
+  const reuploaded = suiteReleases();
+  reuploaded.releases['webapps-v0.27.20261012'].assets[1].digest = `sha256:${'e'.repeat(64)}`;
+  await assert.rejects(update(reuploaded.releases, reuploaded.fetchText), /part01: release webapps-v0\.27\.20261012 does not serve the bytes/);
+  const intact = suiteReleases();
+  const changes = await update(intact.releases, intact.fetchText);
+  intact.releases['webapps-v0.28.20261014'].assets[0].digest = `sha256:${'e'.repeat(64)}`;
+  await assert.rejects(checkUpdateAssets(changes, async (tag) => intact.releases[tag]), /mac-arm64\.zip: release webapps-v0\.28\.20261014 does not serve the bytes/);
+});
+
+test('the nightly suite release announces itself to the catalog', async () => {
+  const publish = (await workflow('standalone.yml')).jobs.publish;
+  assert.equal(publish.permissions.contents, 'write');
+  const steps = publish.steps.map((step) => step.run || '');
+  const release = steps.findIndex((run) => run.includes('node scripts/desktop/publish.mjs'));
+  const announce = steps.findIndex((run) => run.includes(CATALOG_DISPATCH));
+  assert.ok(release >= 0 && announce > release, 'the suite is announced after it is published');
+  assert.match(steps[announce], /RELEASE="webapps@\$\(node -p "require\('\.\/packages\/desktop\/package\.json'\)\.version"\)"/);
+});
+
 test('a release.json from before exes/node-cli lists its targets without install commands', async () => {
   const legacy = nativeReleases(new Map([['syncro', { packageDir: 'packages/syncro', spec: { targets: { 'linux-x64': { archive: 'tar.gz' } } }, legacy: true }]]));
   const names = ['syncro-0.3.20260915-linux-x64.tar.gz'];
