@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { resizeFrame, INTERPOLATIONS } from '../../web/js/pipeline.js';
+import { resizeFrame, INTERPOLATIONS } from '@neurodesk/dicom2vid/pipeline.js';
 
 // A frame with a distinct value per pixel so any axis swap or channel mixup shows.
 function ramp(w, h, channels = 1) {

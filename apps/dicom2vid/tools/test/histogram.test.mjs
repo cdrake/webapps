@@ -9,7 +9,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { histogramBins } from '../../web/js/pipeline.js';
+import { histogramBins } from '@neurodesk/dicom2vid/pipeline.js';
 
 const MAX = 4095;
 const NB = 128;

@@ -40,7 +40,15 @@ The browser tool ports the behavior of `MRI2vid.py` for grayscale DICOM (global
 min/max normalize, the six orientations, slice range, slice annotation). That path
 is checked against the Python reference frame-for-frame (see Development).
 
-## Command-line tool
+## Command line
+
+The `dicom2vid` command line runs this app's readers, series selection and frame
+pipeline under Node.js and encodes VP9 with libvpx, so it writes the app's WebM
+video for the same options. The Standalone dialog offers it for Linux, Windows and
+macOS; `packages/dicom2vid/README.md` documents it and how it is validated against
+this app.
+
+## Python script
 
 The original script renders one DICOM folder to an MP4. Grayscale input gives a
 grayscale video; RGB input (a color-FA map, for example) gives a color video with
@@ -64,11 +72,13 @@ you may also need `brew install ffmpeg`.
 
 ## Development
 
-The browser app is plain ES modules with no build step. All dependencies are
-vendored under `web/js/vendor` (no CDN).
+The browser app is plain ES modules with no build step. The readers, series
+grouping, frame pipeline, video settings and muxers live in `packages/dicom2vid`,
+which the app shares with the command line. Its `scripts/stage-browser.mjs` copies
+them into `web/vendor/dicom2vid` before `dev`, `build` and the browser tests.
+NiiVue is vendored under `web/js/vendor` (no CDN).
 
-- Serve locally: `cd web && python3 -m http.server 8000`, then open
-  http://localhost:8000.
+- Serve locally: `pnpm dev`, then open http://localhost:8000.
 - Run the parity and reader tests: generate the goldens once, then run the tests.
 
 ```
