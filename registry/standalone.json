@@ -779,35 +779,35 @@
         {
           "kind": "cli",
           "platform": "linux-x64",
-          "version": "0.15.20261009",
-          "url": "https://github.com/neurodesk/webapps/releases/download/topofit-v0.15.20261009/topofit-0.15.20261009-linux-x64.tar.gz",
-          "sha256": "a6a70cecebd8220d2fc3bc5a581320ac3b89cc5a4ad32a4f0778f816166ba599",
-          "bytes": 92720653,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/topofit-v0.15.20261009/topofit-0.15.20261009-linux-x64.tar.gz.validation.txt",
+          "version": "0.15.20261014",
+          "url": "https://github.com/neurodesk/webapps/releases/download/topofit-v0.15.20261014/topofit-0.15.20261014-linux-x64.tar.gz",
+          "sha256": "2e3da1e4d40e04782880a6f1622d414bda94a8a5486b8b13ecfcea637a164116",
+          "bytes": 92722561,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/topofit-v0.15.20261014/topofit-0.15.20261014-linux-x64.tar.gz.validation.txt",
           "modelsIncluded": true,
-          "command": "tar -xzf topofit-0.15.20261009-linux-x64.tar.gz\n./topofit-0.15.20261009-linux-x64/topofit input.nii.gz results"
+          "command": "tar -xzf topofit-0.15.20261014-linux-x64.tar.gz\n./topofit-0.15.20261014-linux-x64/topofit input.nii.gz results"
         },
         {
           "kind": "cli",
           "platform": "macos-arm64",
-          "version": "0.15.20261009",
-          "url": "https://github.com/neurodesk/webapps/releases/download/topofit-v0.15.20261009/topofit-0.15.20261009-macos-arm64.pkg",
-          "sha256": "0cdf52473a9afe6f4055547ff9bd60ccf327df076e92a71ede83dac4d4bdb759",
-          "bytes": 94224225,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/topofit-v0.15.20261009/topofit-0.15.20261009-macos-arm64.pkg.validation.txt",
+          "version": "0.15.20261014",
+          "url": "https://github.com/neurodesk/webapps/releases/download/topofit-v0.15.20261014/topofit-0.15.20261014-macos-arm64.pkg",
+          "sha256": "349c2308f6bb5dbaec8326a395eb35ffbab084935e70b1e8ac1ef0fa8a606d58",
+          "bytes": 94226394,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/topofit-v0.15.20261014/topofit-0.15.20261014-macos-arm64.pkg.validation.txt",
           "modelsIncluded": true,
-          "command": "sudo installer -pkg topofit-0.15.20261009-macos-arm64.pkg -target /\ntopofit self-check\ntopofit input.nii.gz results"
+          "command": "sudo installer -pkg topofit-0.15.20261014-macos-arm64.pkg -target /\ntopofit self-check\ntopofit input.nii.gz results"
         },
         {
           "kind": "cli",
           "platform": "windows-x64",
-          "version": "0.15.20261009",
-          "url": "https://github.com/neurodesk/webapps/releases/download/topofit-v0.15.20261009/topofit-0.15.20261009-windows-x64.zip",
-          "sha256": "730b7156b361f823077fc9ea8cbbb67c2aeccea32d35898c4c8275714eda5b1a",
-          "bytes": 94201993,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/topofit-v0.15.20261009/topofit-0.15.20261009-windows-x64.zip.validation.txt",
+          "version": "0.15.20261014",
+          "url": "https://github.com/neurodesk/webapps/releases/download/topofit-v0.15.20261014/topofit-0.15.20261014-windows-x64.zip",
+          "sha256": "12b46dc0c34ce9fb4ea28b9b0873f94e280e2c4cf3df613e6466a5eff9823a39",
+          "bytes": 94203678,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/topofit-v0.15.20261014/topofit-0.15.20261014-windows-x64.zip.validation.txt",
           "modelsIncluded": true,
-          "command": "Expand-Archive -Path .\\topofit-0.15.20261009-windows-x64.zip -DestinationPath .\n.\\topofit-0.15.20261009-windows-x64\\topofit.exe input.nii.gz results"
+          "command": "Expand-Archive -Path .\\topofit-0.15.20261014-windows-x64.zip -DestinationPath .\n.\\topofit-0.15.20261014-windows-x64\\topofit.exe input.nii.gz results"
         }
       ],
       "containers": [
