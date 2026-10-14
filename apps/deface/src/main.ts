@@ -620,10 +620,24 @@ methodSelect.addEventListener('change', () => {
 
 // --- Cleanup (HMR / tab close) ---
 async function cleanup(): Promise<void> {
-  exampleControl.destroy()
-  if (isCleanedUp) return
+  // Every release step runs, so HMR never replaces a half-torn-down module; an
+  // unexpected failure is rethrown only once teardown is complete.
+  const failures: unknown[] = []
+  const release = (step: () => void): void => {
+    try {
+      step()
+    } catch (error) {
+      failures.push(error)
+    }
+  }
+  const finish = (): void => {
+    if (failures.length === 1) throw failures[0]
+    if (failures.length > 1) throw new AggregateError(failures, 'Deface teardown failed')
+  }
+  release(() => exampleControl.destroy())
+  if (isCleanedUp) return finish()
   isCleanedUp = true
-  listeners.abort()
+  release(() => listeners.abort())
   // Terminate the niimath worker FIRST (don't await `pending`): an in-flight run is one
   // uninterruptible WASM call — a Hellinger fit would stall teardown for minutes. The
   // terminated run never resolves, so we deliberately drop the await; any run that already
@@ -665,7 +679,8 @@ async function cleanup(): Promise<void> {
   } catch {
     // best-effort — must not skip nv.destroy() below
   }
-  nv.destroy()
+  release(() => nv.destroy())
+  finish()
 }
 window.addEventListener('pagehide', (e) => {
   if (e.persisted) return

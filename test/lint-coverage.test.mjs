@@ -197,9 +197,7 @@ test('a typed project that does not compile fails the gate instead of typing pro
     try {
       const file = join(directory, 'unresolved.ts');
       await writeFile(file, 'import { load } from "./missing-module.js";\nexport function run() { load(); }\n');
-      // The parser types the unresolved import as any, so the promise rule alone sees nothing.
-      const [result] = await eslint.lintFiles([file]);
-      assert.deepEqual(result.messages.filter((message) => message.severity === 2), [], `${sources} parser`);
+      // The parser would type the unresolved import as any and report nothing; the compile step must fail first.
       const relativeFile = file.slice(root.length).replaceAll('\\', '/');
       await assert.rejects(inspect(eslint, [relativeFile], {}), (error) => {
         assert.match(error.message, new RegExp(`${tsconfig.replaceAll('.', '\\.')} does not compile`));

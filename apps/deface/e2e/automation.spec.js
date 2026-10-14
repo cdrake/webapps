@@ -78,5 +78,8 @@ test('a teardown failure reaches the status bar instead of an unhandled rejectio
   });
   await expect(page.locator('#statusMsg')).toHaveText('Failed: teardown canary');
   await expect(page.locator('#consoleOutput')).toContainText('Failed: teardown canary');
+  // Teardown continued past the failing first step: the workspace listeners are gone.
+  const dragAccepted = await page.evaluate(() => !document.dispatchEvent(new DragEvent('dragover', { cancelable: true })));
+  expect(dragAccepted).toBe(false);
   expect(pageErrors).toEqual([]);
 });
