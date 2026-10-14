@@ -3,9 +3,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { parseDicom, DicomError } from '../../web/js/readers/dicom.js';
-import { readNifti, NiftiError } from '../../web/js/readers/nifti.js';
-import { readMgz, MgzError } from '../../web/js/readers/mgz.js';
+import { parseDicom, DicomError } from '@neurodesk/dicom2vid/readers/dicom.js';
+import { readNifti, NiftiError } from '@neurodesk/dicom2vid/readers/nifti.js';
+import { readMgz, MgzError } from '@neurodesk/dicom2vid/readers/mgz.js';
 
 test('parseDicom rejects a too-small buffer', () => {
   assert.throws(() => parseDicom(new ArrayBuffer(10)), DicomError);

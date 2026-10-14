@@ -3,6 +3,8 @@
 // A frame is a Uint8ClampedArray of length fH * fW * channels, row-major, with
 // channels interleaved. Grayscale has channels === 1, color has channels === 3.
 
+import { labelPlacement } from '../vendor/dicom2vid/src/raster.js';
+
 // Draw a frame into a 2D context sized fW x fH.
 export function drawFrame(ctx, frame, fW, fH, channels) {
   const img = ctx.createImageData(fW, fH);
@@ -26,20 +28,15 @@ export function drawFrame(ctx, frame, fW, fH, channels) {
   ctx.putImageData(img, 0, 0);
 }
 
-// The reference label: "Slice {origIndex+1}/{total}", bottom-left, white.
-// cv2.putText baseline sits at (10, height - 10). Canvas fillText uses the
-// alphabetic baseline, so the placement matches; the font is not pixel-identical
-// to OpenCV's Hershey font, which is acceptable (annotation is not a parity gate).
-export function sliceLabel(origIndex, total) {
-  return `Slice ${origIndex + 1}/${total}`;
-}
-
+// The slice label (sliceLabel in the shared raster.js) in the browser's sans-serif.
+// Canvas fillText uses the alphabetic baseline, so the placement matches
+// cv2.putText's; the command line draws the same label with a bitmap font.
 export function drawAnnotation(ctx, label, fH) {
-  const fontPx = Math.max(9, Math.min(16, Math.round(fH * 0.06)));
+  const { x, baseline, fontPx } = labelPlacement(fH);
   ctx.save();
   ctx.font = `${fontPx}px sans-serif`;
   ctx.textBaseline = 'alphabetic';
   ctx.fillStyle = '#ffffff';
-  ctx.fillText(label, 10, fH - 10);
+  ctx.fillText(label, x, baseline);
   ctx.restore();
 }

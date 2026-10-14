@@ -5,18 +5,16 @@ import { registerAppAutomation } from '../vendor/webapp-components/src/automatio
 // Public examples download on request; user-selected image data stays local.
 
 import { collectFromDrop, collectFromPicker, readPrefix } from './ingest.js';
+import { discoverSources, loadSource, outputBaseName } from '../vendor/dicom2vid/src/sources.js';
+import { ORIENTATIONS } from '../vendor/dicom2vid/src/volume.js';
 import {
-  detectKind, sniffDicom, readDicomSeries, readDicomHeader, readNifti, readMgz,
-} from './readers/index.js';
-import { groupSeries } from './series.js';
-import { ORIENTATIONS } from './volume.js';
-import {
-  orientationGeometry, resolveSliceIndices, extractFrame, normalizeParams,
-  colorNormalizeParams, rotateFrame, resizeFrame, histogramBins,
-} from './pipeline.js';
+  orientationGeometry, resolveSliceIndices, normalizeParams, colorNormalizeParams,
+  histogramBins, renderFrame, windowNorm,
+} from '../vendor/dicom2vid/src/pipeline.js';
+import { sliceLabel } from '../vendor/dicom2vid/src/raster.js';
 import { volumeToNifti } from './nifti_write.js';
 import { encodeVideo, probeEncoders } from './encode.js';
-import { drawFrame, drawAnnotation, sliceLabel } from './annotate.js';
+import { drawFrame, drawAnnotation } from './annotate.js';
 import { Niivue } from './vendor/niivue.js';
 
 const $ = (id) => document.getElementById(id);
@@ -88,9 +86,6 @@ function parseIntOrNull(v) {
   const n = parseInt(s, 10);
   return Number.isFinite(n) ? n : null;
 }
-function baseName(name) {
-  return String(name).replace(/\.(dcm|ima|nii\.gz|nii|mgz|mgh)$/i, '').replace(/[^\w.-]+/g, '_') || 'video';
-}
 
 // ---- ingest ----
 async function handleFiles(fileRecs, { autoSelect = true, signal } = {}) {
@@ -101,63 +96,11 @@ async function handleFiles(fileRecs, { autoSelect = true, signal } = {}) {
   stopPlay();
 
   logLine(`Received ${fileRecs.length} file(s).`);
-  const dicomFiles = [];
-  const volumeFiles = [];
-  let unreadable = 0;
-  for (const rec of fileRecs) {
-    signal?.throwIfAborted();
-    const kind = detectKind(rec.name);
-    if (kind === 'dicom') dicomFiles.push(rec);
-    else if (kind === 'nifti' || kind === 'mgz') volumeFiles.push({ rec, kind });
-    else {
-      try {
-        const prefix = await readPrefix(rec.file, 200);
-        if (sniffDicom(new Uint8Array(prefix))) dicomFiles.push(rec);
-      } catch (_) { unreadable++; }
-    }
-  }
-
-  const sources = [];
-  if (dicomFiles.length) {
-    const headers = [];
-    const byName = new Map();
-    for (const rec of dicomFiles) {
-      try {
-        const prefix = await readPrefix(rec.file);
-        const h = readDicomHeader(prefix, rec.name);
-        if (!h.rows || !h.cols) continue; // skip DICOMDIR / non-image DICOM
-        headers.push(h);
-        byName.set(rec.name, rec);
-      } catch (e) {
-        // Skip unreadable or compressed DICOM at grouping time.
-        unreadable++;
-        logLine(`Skipped ${rec.name}: ${e.message}`, 'warning');
-      }
-    }
-    if (headers.length) {
-      const { series, defaultIndex } = groupSeries(headers);
-      series.forEach((s, i) => {
-        sources.push({
-          id: `dicom-${i}`,
-          seriesUid: s.seriesInstanceUID,
-          kind: 'dicom-series',
-          label: s.seriesDescription || `Series ${s.seriesNumber ?? i + 1}`,
-          classification: s.classification,
-          sliceCount: s.sliceCount,
-          isColor: s.isColor,
-          isMosaic: s.isMosaic,
-          mosaicSlices: s.mosaicSlices,
-          volumes: s.volumes,
-          recs: s.files.map((n) => byName.get(n)).filter(Boolean),
-          isDefault: i === defaultIndex,
-        });
-      });
-    }
-  }
-  for (let i = 0; i < volumeFiles.length; i++) {
-    const { rec, kind } = volumeFiles[i];
-    sources.push({ id: `vol-${i}`, kind, label: rec.name, recs: [rec] });
-  }
+  const { sources, unreadable } = await discoverSources(fileRecs, {
+    readPrefix: (rec, bytes) => readPrefix(rec.file, bytes),
+    onSkip: (rec, e) => logLine(`Skipped ${rec.name}: ${e.message}`, 'warning'),
+    signal,
+  });
 
   if (unreadable) logLine(`${unreadable} file(s) could not be read and were skipped.`, 'warning');
   logLine(`Found ${sources.length} series or volume(s).`);
@@ -245,20 +188,11 @@ async function selectSource(id, { signal, throwOnError = false, mosaicReduce = $
   stopPlay();
 
   try {
-    let volume;
-    if (src.kind === 'dicom-series') {
-      const files = [];
-      for (const rec of src.recs) files.push({ name: rec.name, buffer: await rec.file.arrayBuffer() });
-      volume = readDicomSeries(files, { mosaicReduce });
-    } else if (src.kind === 'nifti') {
-      volume = await readNifti(await src.recs[0].file.arrayBuffer(), src.label);
-    } else if (src.kind === 'mgz') {
-      volume = await readMgz(await src.recs[0].file.arrayBuffer(), src.label);
-    }
+    const volume = await loadSource(src, { readBytes: (rec) => rec.file.arrayBuffer(), mosaicReduce });
     if (gen !== loadGen) return;
     signal?.throwIfAborted();
     S.volume = volume;
-    S.volumeBase = baseName(src.label);
+    S.volumeBase = outputBaseName(src.label);
     onVolumeLoaded(gen);
     const [x, y, z] = volume.dims;
     setStatus(`Loaded ${src.label} · ${x}×${y}×${z}${volume.channels === 3 ? ' RGB' : ''}`);
@@ -489,10 +423,7 @@ function currentOptions() {
 function currentNorm(vol, colorNormalize) {
   if (vol.channels === 1) {
     const { lo, hi } = S.win;
-    if (Number.isFinite(lo) && Number.isFinite(hi) && hi > lo) {
-      const scale = 255 / (hi - lo);
-      return { min: lo, max: hi, scale, shift: -lo * scale };
-    }
+    if (Number.isFinite(lo) && Number.isFinite(hi) && hi > lo) return windowNorm(lo, hi);
     return S.dataNorm;
   }
   if (colorNormalize) {
@@ -506,16 +437,14 @@ function currentNorm(vol, colorNormalize) {
 // upscale applied. The stretch (aspect correction) and the upscale are folded
 // into a single resample so the frame is only interpolated once.
 function getFrame(vol, orientation, k, norm, colorNormalize, opts = currentOptions()) {
-  const geo = orientationGeometry(vol.dims, orientation);
-  const frame0 = extractFrame(vol, orientation, k, norm, { colorNormalize });
-  let { frame, fW, fH } = rotateFrame(frame0, geo.fW, geo.fH, vol.channels, S.rotate);
-  const targetW = fW * S.scaleX * opts.upscale;
-  const targetH = fH * S.scaleY * opts.upscale;
-  if (Math.round(targetW) !== fW || Math.round(targetH) !== fH) {
-    const r = resizeFrame(frame, fW, fH, vol.channels, targetW, targetH, opts.interpolation);
-    frame = r.frame; fW = r.fW; fH = r.fH;
-  }
-  return { frame, fW, fH, channels: vol.channels, sliceIndex: k };
+  return renderFrame(vol, orientation, k, norm, {
+    colorNormalize,
+    rotate: S.rotate,
+    scaleX: S.scaleX,
+    scaleY: S.scaleY,
+    upscale: opts.upscale,
+    interpolation: opts.interpolation,
+  });
 }
 
 // Report the encoded frame size for the current settings.

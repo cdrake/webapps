@@ -16,6 +16,12 @@ for each app are recorded in `registry/apps.yml`.
 - `apps/easy-mp2rage`: GPL-3.0-or-later (`apps/easy-mp2rage/LICENSE`)
 - `apps/niimath`: BSD-2-Clause (`apps/niimath/LICENSE`)
 - `apps/dicom2vid`: BSD-3-Clause (`apps/dicom2vid/LICENSE`)
+- `packages/dicom2vid`: BSD-3-Clause (`packages/dicom2vid/LICENSE`); the shared
+  dicom2vid pipeline and its command line. The vendored muxers are MIT and the
+  label font is public domain. The command line's VP9 encoder,
+  `@libav.js/variant-vp9-opus`, is FFmpeg (LGPL-2.1-or-later) with libvpx and
+  Opus (BSD-3-Clause), shipped unmodified as a separate replaceable module
+  (`packages/dicom2vid/NOTICE`).
 - `apps/browserqc`: BSD-2-Clause (`apps/browserqc/LICENSE`)
 - `apps/surfannotate`: MIT (`apps/surfannotate/LICENSE`); bundled third-party
   notices in `apps/surfannotate/THIRD-PARTY.md`

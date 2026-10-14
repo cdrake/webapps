@@ -1,0 +1,169 @@
+{
+  "note": "Written by validation/browser-reference.mjs from the production app in Playwright Chromium. Do not edit.",
+  "app": "0.4.20261012",
+  "chromium": "156.0.8078.4",
+  "cases": {
+    "sagittal-webm": {
+      "parameters": {
+        "orientation": "sagittal",
+        "format": "webm",
+        "fps": 20,
+        "start": 40,
+        "end": 120,
+        "step": 5
+      },
+      "codec": "VP9",
+      "container": "webm",
+      "sha256": "2e8427a77e683d2f03fed1f54c16495efdab0e409bef0bb02d21b18b316708dc",
+      "bytes": 81138,
+      "video": {
+        "container": "webm",
+        "codec": "vp9",
+        "width": 210,
+        "height": 166,
+        "frames": 16,
+        "keyFrames": [
+          0
+        ],
+        "timestampsUs": [
+          0,
+          50000,
+          100000,
+          150000,
+          200000,
+          250000,
+          300000,
+          350000,
+          400000,
+          450000,
+          500000,
+          550000,
+          600000,
+          650000,
+          700000,
+          750000
+        ]
+      },
+      "file": "browser-reference/sagittal-webm.webm"
+    },
+    "axial-flipped-upscale-webm": {
+      "parameters": {
+        "orientation": "axial_flipped",
+        "format": "webm",
+        "fps": 10,
+        "start": 60,
+        "end": 110,
+        "step": 5,
+        "upscale": 1.5,
+        "interpolation": "bilinear"
+      },
+      "codec": "VP9",
+      "container": "webm",
+      "sha256": "4e7dcc8f48b172dcdca2ccf8846b3970c57a1e43f1fab51b5623a9182fe4d36c",
+      "bytes": 85176,
+      "video": {
+        "container": "webm",
+        "codec": "vp9",
+        "width": 240,
+        "height": 316,
+        "frames": 10,
+        "keyFrames": [
+          0
+        ],
+        "timestampsUs": [
+          0,
+          100000,
+          200000,
+          300000,
+          400000,
+          500000,
+          600000,
+          700000,
+          800000,
+          900000
+        ]
+      },
+      "file": "browser-reference/axial-flipped-upscale-webm.webm"
+    },
+    "coronal-annotate-webm": {
+      "parameters": {
+        "orientation": "coronal",
+        "format": "webm",
+        "fps": 12,
+        "start": 80,
+        "end": 140,
+        "step": 6,
+        "annotate": true
+      },
+      "codec": "VP9",
+      "container": "webm",
+      "sha256": "02d5296b78d4f4700dba0f36d09d5db049a9bed0936d39a7cfbfce1bf9fce5e3",
+      "bytes": 69317,
+      "video": {
+        "container": "webm",
+        "codec": "vp9",
+        "width": 160,
+        "height": 166,
+        "frames": 10,
+        "keyFrames": [
+          0
+        ],
+        "timestampsUs": [
+          0,
+          83000,
+          166000,
+          249000,
+          333000,
+          416000,
+          499000,
+          583000,
+          666000,
+          749000
+        ]
+      },
+      "file": "browser-reference/coronal-annotate-webm.webm"
+    },
+    "sagittal-mp4": {
+      "parameters": {
+        "orientation": "sagittal",
+        "format": "mp4",
+        "fps": 20,
+        "start": 40,
+        "end": 120,
+        "step": 5
+      },
+      "codec": "H.264",
+      "container": "mp4",
+      "sha256": "9aea503bf633fda05ec0c8408eccb4e7a01ceb3814451a28ea4a8907906fd4bc",
+      "bytes": 101027,
+      "video": {
+        "container": "mp4",
+        "codec": "h264",
+        "width": 210,
+        "height": 166,
+        "frames": 16,
+        "keyFrames": [
+          0
+        ],
+        "timestampsUs": [
+          0,
+          50000,
+          100000,
+          150000,
+          200000,
+          250000,
+          300000,
+          350000,
+          400000,
+          450000,
+          500000,
+          550000,
+          600000,
+          650000,
+          700000,
+          750000
+        ]
+      }
+    }
+  }
+}

@@ -12,8 +12,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { readDicomSeries, readDicomHeader, mosaicInfo, parseDicom } from '../../web/js/readers/dicom.js';
-import { groupSeries } from '../../web/js/series.js';
+import { readDicomSeries, readDicomHeader, mosaicInfo, parseDicom } from '@neurodesk/dicom2vid/readers/dicom.js';
+import { groupSeries } from '@neurodesk/dicom2vid/series.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..', '..');

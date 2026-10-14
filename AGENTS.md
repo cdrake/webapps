@@ -212,6 +212,12 @@ An app can set `ci.e2e_shards` to 2-4 in `registry/apps.yml`. The CPU browser jo
 - Raw ±4096 phase needs the VENC from the user; velocity-scaled phase does not. Aliasing is not unwrapped.
 - The detection, series reading and output naming live in `packages/carotid-flow`, which the app and the `carotid-flow` command line both import. Change the outputs there, not in the app, so the command line keeps writing the app's downloads byte for byte. `validation/pcmcalculator.json` holds the example's pins for both the open-example unit test and the command line's release check.
 
+## dicom2vid
+
+- The readers, series selection (`sources.js`), frame pipeline, video settings and muxers live in `packages/dicom2vid`; the app keeps only its UI, canvas drawing and WebCodecs encoder (`web/js/encode.js`, `annotate.js`) and imports the rest from `web/vendor/dicom2vid`, staged by `packages/dicom2vid/scripts/stage-browser.mjs`. Change shared behaviour in the package so the `dicom2vid` command line follows.
+- The command line encodes VP9 with libvpx from `@libav.js/variant-vp9-opus` (pinned exactly) in real-time mode, converting RGB to full-range BT.709 I420 because that is what Chromium's VP9 encoder reports for canvas frames. It cannot write H.264: its MP4 is VP9 in MP4.
+- `validation/browser-reference.mjs` records the production app's videos in Chromium; `--check` (in `dicom2vid-native.yml`) fails when the app's output drifts. Re-record and commit after changing the pipeline, the video settings or the Playwright version. `validation/cli-check.mjs` documents its PSNR thresholds and the negative controls behind them.
+
 ## easy-mp2rage
 
 - The WASM core in `packages/easy-mp2rage/wasm/` is committed. The web app stages it (`tools/stage_core.sh`) and the `easy-mp2rage` command line loads it, so both run one binary. After changing `crates/mp2rage-core` or `crates/mp2rage-wasm`, run `pnpm --filter @neurodesk/easy-mp2rage build:wasm` (Rust 1.98.0, wasm-pack 0.13.1, binaryen `version_117` wasm-opt) and commit the result. The `wasm-source` job in `easy-mp2rage-native.yml` rebuilds it from source and fails when the committed bytes differ; a toolchain bump means rebuilding and committing in the same change.
