@@ -49,8 +49,12 @@ test('each module is a separate Stryker run against only its own data-free Node 
     const { default: selected } = await import(`../stryker.config.mjs?module=${module.id}`);
     assert.deepEqual(selected, config);
   }
+  process.env.MUTATION_MODULE = 'missing';
+  await assert.rejects(import('../stryker.config.mjs?module=missing'), /Set MUTATION_MODULE to one of disconnectome, basis-select, format-g/);
+  // Tools that load the config without the variable (Knip) get the canary's module.
   delete process.env.MUTATION_MODULE;
-  await assert.rejects(import('../stryker.config.mjs?module=unset'), /Set MUTATION_MODULE to one of disconnectome, basis-select, format-g/);
+  const { default: fallback } = await import('../stryker.config.mjs?module=unset');
+  assert.deepEqual(fallback, strykerConfig(moduleById(smoke.module)));
 });
 
 test('line ranges still cover exactly the functions they name', () => {

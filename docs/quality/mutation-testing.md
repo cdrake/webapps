@@ -5,7 +5,9 @@ Stryker mutates the modules listed in `scripts/lib/mutation-modules.mjs`. Each
 entry names the source (or a line range of it), the files its suite needs in the
 sandbox, and the `node --test` command that specifies it. The adapter runs
 Stryker once per module, selecting it with `MUTATION_MODULE` in
-`stryker.config.mjs`, so each mutant runs only its own suite. None of the suites
+`stryker.config.mjs`, so each mutant runs only its own suite. Without the
+variable the config selects the smoke canary's module, so Knip and a bare
+`stryker run` can load it. None of the suites
 needs model files, native binaries, WASM execution, a GPU, a browser or the
 network.
 
