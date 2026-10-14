@@ -93,7 +93,8 @@ export function bindPageDrop(doc = globalThis.document) {
       if (event.defaultPrevented && !unownedCanvas(event)) overlay.hidden = true;
       return;
     }
-    if (!primaryInput(doc)) return;
+    // Look the input up once per drag; dragover repeats every few milliseconds.
+    if (overlay.hidden && !primaryInput(doc)) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = 'copy';
     show();
