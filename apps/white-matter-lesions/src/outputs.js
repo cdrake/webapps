@@ -1,5 +1,5 @@
 import { labelLesions, lesionTable } from "@neurodesk/white-matter-lesions";
-import { outputNames } from "@neurodesk/white-matter-lesions/results";
+import { outputNames, resampledFlairName } from "@neurodesk/white-matter-lesions/results";
 
 export function lesionSummary({ count, totalMl }) {
   return `${count} ${count === 1 ? "lesion" : "lesions"} · ${totalMl.toFixed(2)} ml`;
@@ -9,7 +9,7 @@ export function segmentationOutputs(inputName, { mask, probability, tsv, summary
   const names = outputNames(inputName);
   return {
     ...(resampledFlair && {
-      flair: { description: "FLAIR · resampled to 1 × 0.9 × 0.9 mm", file: new File([resampledFlair], names.resampledFlair) },
+      flair: { description: "FLAIR · resampled to 1 × 0.9 × 0.9 mm", file: new File([resampledFlair], resampledFlairName(inputName)) },
     }),
     mask: { description: `Lesion mask · ${lesionSummary(summary)}`, editable: true, file: new File([mask], names.mask) },
     probability: { description: "Lesion probability", file: new File([probability], names.probability) },

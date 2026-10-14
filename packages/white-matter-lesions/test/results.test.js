@@ -2,12 +2,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readVolume } from '@neurodesk/synthsr';
 import { PLAN, runFolds } from '../src/pipeline.js';
-import { lesionResults, outputNames } from '../src/results.js';
+import { lesionResults, outputNames, resampledFlairName } from '../src/results.js';
 
 const affine = [[2, 0, 0, -4], [0, 2, 0, -4], [0, 0, 2, -4], [0, 0, 0, 1]];
 
 test('output names follow the input file name', () => {
-  const expected = { mask: 'P57_FLAIR_lesions.nii', probability: 'P57_FLAIR_lesion_probability.nii', table: 'P57_FLAIR_lesions.tsv', resampledFlair: 'P57_FLAIR_flair_resampled.nii' };
+  const expected = { mask: 'P57_FLAIR_lesions.nii', probability: 'P57_FLAIR_lesion_probability.nii', table: 'P57_FLAIR_lesions.tsv' };
+  assert.equal(resampledFlairName('P57_FLAIR.nii.gz'), 'P57_FLAIR_flair_resampled.nii');
   assert.deepEqual(outputNames('P57_FLAIR.nii.gz'), expected);
   assert.deepEqual(outputNames('P57_FLAIR.NII'), expected);
   assert.equal(outputNames('scan.nii.gz.nii').mask, 'scan.nii.gz_lesions.nii');

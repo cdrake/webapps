@@ -8,7 +8,7 @@ import { runSynthstrip } from '@neurodesk/synthstrip';
 import packageJson from '../package.json' with { type: 'json' };
 import { ENSEMBLE_SIZES, FLAMES_FOLDS, SYNTHSTRIP } from './assets.js';
 import { MAX_INPUT_VOXELS, runFolds, toNetworkResolution } from './pipeline.js';
-import { lesionResults, outputNames } from './results.js';
+import { lesionResults, outputNames, resampledFlairName } from './results.js';
 
 // Set before loading the native library, including direct users of the Node API.
 process.env.ORT_DISABLE_TELEMETRY ??= '1';
@@ -189,12 +189,12 @@ export async function segment({
   });
   const results = lesionResults(volume, probability, { resampled: Boolean(resampledFrom) });
   const names = outputNames(basename(input));
-  const files = [names.mask, names.probability, names.table, ...(resampledFrom ? [names.resampledFlair] : [])];
+  const files = [names.mask, names.probability, names.table, ...(resampledFrom ? [resampledFlairName(basename(input))] : [])];
   await mkdir(destination, { recursive: true });
   await writeAtomically(join(destination, names.mask), new Uint8Array(results.mask));
   await writeAtomically(join(destination, names.probability), new Uint8Array(results.probability));
   await writeAtomically(join(destination, names.table), results.tsv);
-  if (resampledFrom) await writeAtomically(join(destination, names.resampledFlair), new Uint8Array(results.resampledFlair));
+  if (resampledFrom) await writeAtomically(join(destination, files[3]), new Uint8Array(results.resampledFlair));
   return {
     output: destination,
     files,

@@ -7,8 +7,12 @@ export function outputNames(inputName) {
     mask: `${stem}_lesions.nii`,
     probability: `${stem}_lesion_probability.nii`,
     table: `${stem}_lesions.tsv`,
-    resampledFlair: `${stem}_flair_resampled.nii`,
   };
+}
+
+// Written only when the input was finer than the FLAMeS grid, so not one of outputNames.
+export function resampledFlairName(inputName) {
+  return `${inputName.replace(/\.nii(\.gz)?$/i, '')}_flair_resampled.nii`;
 }
 
 // The downloads of one segmentation, on the grid it ran on. When the input was resampled to the
