@@ -1334,6 +1334,10 @@ importers:
         version: 1.64.0
 
   packages/qsmbly:
+    dependencies:
+      smol-toml:
+        specifier: 1.9.0
+        version: 1.9.0
     devDependencies:
       '@neurodesk/webapp-components':
         specifier: workspace:*

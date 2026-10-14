@@ -25,15 +25,30 @@ stages the host's archive in `native/`:
 The weights (19 files, 1.7 GB) are not in the release (`bundleModels: false` in
 `release.json`). `model.manifest.json` lists every model in qsm-core v0.38.0's
 registry at a pinned commit of the Hugging Face repository
-`qsmxt/qsm-onnx-weights`, with the registry's SHA-256. Before QSMxT starts, the
-wrapper downloads the weights the command names (an algorithm such as
-`--qsm-algorithm xqsm`, a mask op such as `hd-bet`, or segmentation and
-chi-separation flags) into `~/.cache/neurodesk/qsmbly/models` and verifies them.
-QSMxT finds them through `QSM_MODEL_DIR` and `QSM_MODEL_CACHE`. A model the
-scan misses is fetched by QSMxT itself from its unpinned upstream URL; QSMxT
-checks the same SHA-256 before using it. `QSMBLY_OFFLINE=1` forbids the
-wrapper's downloads. The launcher's `NEURODESK_OFFLINE` does not apply: it
-marks releases that bundle their models.
+`qsmxt/qsm-onnx-weights`, with the registry's SHA-256. The build checks all
+hosted cache filenames, sizes and checksums against the pinned Rust registry.
+
+Native QSMxT has no offline switch and its model downloader ignores proxy
+environment variables. Before any `run`, masking, inversion, background
+removal, separation, segmentation, R2' or interactive command, the wrapper
+therefore verifies the complete 19-file registry in one local directory.
+Missing weights download from pinned URLs into
+`~/.cache/neurodesk/qsmbly/models`. This first-use download is 1.7 GB,
+including for a classical reconstruction. Later runs verify the cached
+files and use no model network requests. Help, version, initialization,
+validation and dry-run commands need no weights.
+
+Both `QSMBLY_OFFLINE=1` and `NEURODESK_OFFLINE=1` forbid wrapper downloads.
+An incomplete offline cache fails before QSMxT starts. Both native model
+environment variables point at the same complete verified directory, so
+QSMxT never falls back to its mutable model URLs. Set
+`NEURODESK_QSMBLY_MODEL_DIR` to a complete model pack to avoid user-cache
+copies. The launcher preserves this override and sets `NEURODESK_OFFLINE`
+automatically only for releases that bundle models.
+
+`download-models --model ID` can still fetch individual files. Native compute
+requires the complete registry, so use `download-models` without `--model`
+before taking the command line offline.
 
 The wrapper refuses `qsmbly update`, which would replace the pinned binary.
 

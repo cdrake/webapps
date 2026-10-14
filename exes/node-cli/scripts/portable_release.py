@@ -389,7 +389,8 @@ def _copy_dependency_licenses(app: pathlib.Path, destination: pathlib.Path) -> N
 
 
 def _build_launcher(destination: pathlib.Path, target: ReleaseTarget) -> None:
-    _run(["cargo", "build", "--release", "--locked"], cwd=HERE)
+    environment = {**os.environ, "NEURODESK_BUNDLE_MODELS": str(target.bundle_models).lower()}
+    _run(["cargo", "build", "--release", "--locked"], cwd=HERE, env=environment)
     suffix = ".exe" if target.windows else ""
     source = HERE / f"target/release/node-cli-launcher{suffix}"
     shutil.copy2(source, destination / target.executable)
