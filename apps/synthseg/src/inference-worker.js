@@ -27,7 +27,7 @@ async function modelBytes(model) {
 self.onmessage = async ({ data: job }) => {
   try {
     const wasm = await loadSynthseg(fetch(wasmUrl));
-    const { buffer, provenance } = await runSynthseg({
+    const { buffer, provenance, volumes } = await runSynthseg({
       buffer: await job.file.arrayBuffer(),
       options: job.options,
       wasm,
@@ -36,7 +36,7 @@ self.onmessage = async ({ data: job }) => {
       onProgress: progress,
       runtime: { app: 'SynthSeg web 0.6.20261012', ...browserRuntime() },
     });
-    self.postMessage({ type: 'result', buffer, provenance }, [buffer]);
+    self.postMessage({ type: 'result', buffer, provenance, volumes }, [buffer]);
   } catch (error) {
     self.postMessage({ type: 'error', message: error.message || String(error) });
   }

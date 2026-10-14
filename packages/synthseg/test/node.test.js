@@ -44,10 +44,13 @@ function run(args, env = {}) {
 }
 
 test('the command line takes the app automation operation\'s parameters', () => {
-  assert.deepEqual(PARAMETERS, automation.operations.segment.parameters);
-  assert.deepEqual(parseParameters({}), { mode: 'default' });
+  // Age and sex only shape the app's volume report, which the command line does not write.
+  const { age, sex, ...segmentation } = automation.operations.segment.parameters;
+  assert.deepEqual(Object.keys({ age, sex }), ['age', 'sex']);
+  assert.deepEqual(PARAMETERS, segmentation);
+  assert.deepEqual(parseParameters({}), { mode: 'fast' });
   assert.deepEqual(parseParameters({ mode: 'fast', ct: true }), { mode: 'fast', ct: true });
-  assert.throws(() => parseParameters({ mode: 'quick' }), /--mode: .*\(default or fast\)/);
+  assert.throws(() => parseParameters({ mode: 'quick' }), /--mode: .*\(fast or default\)/);
   assert.deepEqual(outputNames('sub-01_T1w.nii.gz'), {
     labels: 'sub-01_T1w_synthseg.nii.gz',
     report: 'sub-01_T1w_synthseg.json',
@@ -120,7 +123,7 @@ test('invalid options fail before any model or output is touched', async (t) => 
   const { root, input, cache } = await workspace(t);
   const output = join(root, 'out');
   for (const [args, message] of [
-    [['--mode', 'quick'], /--mode: .*\(default or fast\)/],
+    [['--mode', 'quick'], /--mode: .*\(fast or default\)/],
     [['--threads=0'], /Threads must be a positive integer/],
     [['--threads=1.5'], /Threads must be a positive integer/],
     [['--threads=abc'], /Threads must be a positive integer/],

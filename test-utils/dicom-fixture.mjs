@@ -1,5 +1,6 @@
 // Synthetic, uncompressed MR slices. Values encode slice order for conversion checks.
-export function dicomSeries({ series = 1, slices = 4, extension = '.dcm' } = {}) {
+// `patient` adds demographics: { birthDate, sex, age, studyDate } as DICOM DA/CS/AS strings.
+export function dicomSeries({ series = 1, slices = 4, extension = '.dcm', patient = {} } = {}) {
   const uid = `1.2.826.0.1.3680043.10.543.99.${series}`;
   const us = value => { const b = Buffer.alloc(2); b.writeUInt16LE(value); return b; };
   function tag(group, element, vr, value) {
@@ -21,8 +22,12 @@ export function dicomSeries({ series = 1, slices = 4, extension = '.dcm' } = {})
       tag(2, 3, 'UI', instance), tag(2, 0x10, 'UI', '1.2.840.10008.1.2.1'),
       tag(8, 8, 'CS', 'ORIGINAL\\PRIMARY\\M'),
       tag(8, 0x16, 'UI', '1.2.840.10008.5.1.4.1.1.4'), tag(8, 0x18, 'UI', instance),
+      ...(patient.studyDate ? [tag(8, 0x20, 'DA', patient.studyDate), tag(8, 0x22, 'DA', patient.studyDate), tag(8, 0x32, 'TM', '101500')] : []),
       tag(8, 0x60, 'CS', 'MR'), tag(8, 0x70, 'LO', 'Synthetic'),
       tag(8, 0x103e, 'LO', `test_scan_${series}`), tag(0x10, 0x10, 'PN', 'Synthetic^Phantom'),
+      ...(patient.birthDate ? [tag(0x10, 0x30, 'DA', patient.birthDate)] : []),
+      ...(patient.sex ? [tag(0x10, 0x40, 'CS', patient.sex)] : []),
+      ...(patient.age ? [tag(0x10, 0x1010, 'AS', patient.age)] : []),
       tag(0x18, 0x1030, 'LO', `test_scan_${series}`),
       tag(0x18, 0x50, 'DS', '1'), tag(0x18, 0x80, 'DS', '2000'), tag(0x18, 0x81, 'DS', '20'),
       tag(0x20, 0x0d, 'UI', '1.2.826.0.1.3680043.10.543.99'), tag(0x20, 0x0e, 'UI', uid),
