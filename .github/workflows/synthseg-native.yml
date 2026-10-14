@@ -12,15 +12,19 @@ on:
   workflow_dispatch:
     inputs:
       sign_release:
-        description: Sign and notarize the macOS installer for an existing prerelease
+        description: Sign, notarize and attach the macOS installer to the selected tag's release
         type: boolean
         default: false
+      release_tag:
+        description: Backfill only. Run from main and build this released synthseg-vVERSION tag
+        type: string
+        default: ''
 
 permissions:
   contents: read
 
 concurrency:
-  group: synthseg-native-${{ github.ref }}
+  group: synthseg-native-${{ inputs.release_tag || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -32,6 +36,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          ref: ${{ inputs.release_tag }}
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
         with:
@@ -65,6 +70,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          ref: ${{ inputs.release_tag }}
           persist-credentials: false
           fetch-depth: 0
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
@@ -72,11 +78,19 @@ jobs:
         id: target
         env:
           GH_TOKEN: ${{ github.token }}
+          BACKFILL_TAG: ${{ inputs.release_tag }}
         run: |
           version=$(sed -n 's/^version = "\(.*\)"/\1/p' exes/synthseg/Cargo.toml)
           tag="synthseg-v$version"
-          test "$(gh release view "$tag" --json isDraft,isPrerelease --jq '.isDraft or .isPrerelease')" = true
-          test "$(git rev-parse "$tag^{commit}")" = "$GITHUB_SHA"
+          gh release view "$tag" >/dev/null
+          if [ -n "$BACKFILL_TAG" ]; then
+            # A backfill runs main's reviewed workflow on the tag's source, checked out above.
+            test "$GITHUB_REF" = refs/heads/main
+            test "$BACKFILL_TAG" = "$tag"
+            test "$(git rev-parse "$tag^{commit}")" = "$(git rev-parse HEAD)"
+          else
+            test "$(git rev-parse "$tag^{commit}")" = "$GITHUB_SHA"
+          fi
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "release=synthseg@$version" >> "$GITHUB_OUTPUT"
       - name: Sign and notarize installer
@@ -106,10 +120,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE: ${{ steps.target.outputs.release }}
-          RELEASE_TAG: ${{ steps.target.outputs.tag }}
-        run: |
-          if [ "$(gh release view "$RELEASE_TAG" --json isDraft,isPrerelease --jq '.isDraft or .isPrerelease')" = true ]; then
-            echo "::notice::$RELEASE_TAG is a draft or prerelease; publishing it adds its downloads to the Standalone catalog"
-          else
-            gh api "repos/$GITHUB_REPOSITORY/dispatches" -f event_type=standalone-catalog -f "client_payload[releases]=$RELEASE"
-          fi
+        run: gh api "repos/$GITHUB_REPOSITORY/dispatches" -f event_type=standalone-catalog -f "client_payload[releases]=$RELEASE"

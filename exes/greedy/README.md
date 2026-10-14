@@ -29,8 +29,10 @@ be built on their corresponding machines. The packaging script extracts the
 archive and checks a generated NIfTI reslice before writing its checksum and
 validation report.
 
-To release, create a draft or prerelease tagged `greedy-vVERSION` at the exact
-workflow commit, then dispatch `greedy-native` with `sign_release=true`. Apple
+An app release (`release.yml`) dispatches `greedy-native` with
+`sign_release=true` at its `greedy-vVERSION` tag. The workflow checks that the
+tag is the dispatched commit, attaches the packages to that release and updates
+the Standalone catalog. Apple
 signing uses the existing `APPLEID`, `APPLEIDPASS`, `APPLE_TEAM_ID`, `CSC_LINK`,
 `CSC_KEY_PASSWORD`, `CSC_INSTALLER_LINK` and `CSC_INSTALLER_KEY_PASSWORD` secrets.
 The workflow attaches artifacts after native and installed npm tests pass.
