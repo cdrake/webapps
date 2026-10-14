@@ -1,4 +1,6 @@
 import { execFileSync } from 'node:child_process';
+import { parse } from 'yaml';
+import { LockfileAnalysisError, lockfileImpact } from './lockfile-impact.mjs';
 import { CATALOG, SITE, reachableFrom } from './workspace-graph.mjs';
 
 const NON_CODE_PREFIXES = ['docs/', '.changeset/'];
@@ -22,14 +24,45 @@ const INDEPENDENT_CHECK_PATHS = [
 const ROOT_FILE = /^(?:scripts|test-utils|registry|test)\//;
 // An app's model manifest belongs to that app alone.
 const MODEL_MANIFEST = /^models\/([^/]+)\.manifest\.json$/;
-const NON_CODE_FILES = new Set([
-  'README.md',
-  'LICENSES.md',
-  // App additions and dependency changes update these shared manifests, but
-  // the corresponding apps/<id>/ paths already identify the unit-test scope.
-  'pnpm-lock.yaml',
-  'registry/apps.yml',
-]);
+const NON_CODE_FILES = new Set(['README.md', 'LICENSES.md']);
+const LOCKFILE = 'pnpm-lock.yaml';
+const REGISTRY = 'registry/apps.yml';
+
+function same(a, b) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+// The importers whose resolved dependencies a lockfile change touched, or why
+// the change cannot be scoped.
+function analyseLockfile(manifest) {
+  try {
+    return { importers: lockfileImpact(manifest) };
+  } catch (error) {
+    if (error instanceof LockfileAnalysisError) return { shared: error.message };
+    throw error;
+  }
+}
+
+// The app entries a registry/apps.yml change touched, or why the change is
+// shared: every app build embeds the site section's analytics id.
+function registryImpact({ before, after }) {
+  let old;
+  let now;
+  try {
+    [old, now] = [parse(before), parse(after)];
+  } catch (error) {
+    return { shared: `it does not parse (${error.message})` };
+  }
+  const section = [...new Set([...Object.keys(old ?? {}), ...Object.keys(now ?? {})])].find((key) => key !== 'apps' && !same(old?.[key], now?.[key]));
+  if (section) return { shared: `its ${section} section changed, and every app build reads it` };
+  const entries = (registry) => (Array.isArray(registry?.apps) ? registry.apps : []);
+  const byId = (registry) => new Map(entries(registry).map((app) => [app?.id, app]));
+  const [was, is] = [byId(old), byId(now)];
+  if (was.size !== entries(old).length || is.size !== entries(now).length || was.has(undefined) || is.has(undefined)) {
+    return { shared: 'its app entries have missing or duplicate ids' };
+  }
+  return { changed: [...new Set([...was.keys(), ...is.keys()])].filter((id) => !same(was.get(id), is.get(id))) };
+}
 
 function shardedEntries(app) {
   const total = app.ci.e2e_shards ?? 1;
@@ -78,30 +111,51 @@ function changedRootScripts(manifest) {
   return [...new Set([...Object.keys(old), ...Object.keys(now)])].filter((name) => old[name] !== now[name]);
 }
 
-// The apps a change tests, and whether it needs the composite site build.
+// The apps a change tests, whether it needs the composite site build, and why.
 // Without a workspace graph every packages/, exes/ or root file change counts
 // as shared. With one, a change selects the apps that reach it; a root file
 // that ci.yml's per-app jobs run selects every app, and one only the
 // composite-site job runs selects no app but the site build. `manifests` maps
-// a changed package.json or offline asset lock to its text before and after:
-// root script edits count only where ci.yml runs them, and a lock change
-// selects the apps whose assets changed. Markdown in a package or exes/
-// directory reaches only the apps that read that exact file.
+// a changed package.json, offline asset lock, pnpm-lock.yaml or
+// registry/apps.yml to its text before and after: root script edits count only
+// where ci.yml runs them, an asset lock change selects the apps whose assets
+// changed, a pnpm lockfile change the apps whose resolved dependencies changed,
+// and a registry change the apps whose entries changed. Without both texts the
+// last two select everything. Markdown in a package or exes/ directory reaches
+// only the apps that read that exact file.
+// `reasons.fallback` says why the whole catalog was selected; otherwise
+// `reasons.apps` maps each selected app, and `reasons.site` the site build, to
+// the changes that selected it.
 export function selectAffectedApps(registry, changedPaths = [], graph = null, manifests = new Map()) {
-  if (!changedPaths.length) return { apps: registry.apps, site: true };
+  const everything = (fallback) => ({ apps: registry.apps, site: true, reasons: { fallback, apps: {}, site: [] } });
+  if (!changedPaths.length) return everything('no changed paths: no base revision, an unreadable diff, or a full run');
 
   const appIds = new Set(registry.apps.map((app) => app.id));
   const reach = graph && new Map(registry.apps.map((app) => [app.id, reachableFrom(graph, `apps/${app.id}`)]));
   const catalog = graph && reachableFrom(graph, CATALOG);
   const site = graph && reachableFrom(graph, SITE);
-  const directlyChanged = new Set();
-  let sharedChange = false;
-  let siteChange = false;
+  const appReasons = new Map();
+  const siteReasons = [];
+  let fallback = null;
+  const select = (appId, reason) => appReasons.set(appId, [...(appReasons.get(appId) ?? []), reason]);
+  const shared = (reason) => {
+    fallback ??= reason;
+  };
+  const siteBuild = (reason) => siteReasons.push(reason);
+  // Selects whatever reaches `node` or a file below it.
+  const selectReaching = (node, reason) => {
+    const within = (candidate) => candidate === node || candidate.startsWith(`${node}/`);
+    if (ROOT_FILE.test(`${node}/`) && [...catalog].some(within)) shared(`${reason}; ci.yml's per-app jobs run ${node}`);
+    if ([...site].some(within)) siteBuild(reason);
+    for (const candidate of registry.apps) {
+      if ([...reach.get(candidate.id)].some(within)) select(candidate.id, reason);
+    }
+  };
 
   for (const path of changedPaths) {
     const appId = path.match(/^apps\/([^/]+)\//)?.[1] ?? path.match(MODEL_MANIFEST)?.[1];
     if (appIds.has(appId)) {
-      directlyChanged.add(appId);
+      select(appId, path);
       continue;
     }
     if (
@@ -112,18 +166,48 @@ export function selectAffectedApps(registry, changedPaths = [], graph = null, ma
     ) {
       continue;
     }
+    if (path === LOCKFILE) {
+      const impact = manifests.get(path) ? analyseLockfile(manifests.get(path)) : { shared: 'the base or head lockfile is unavailable' };
+      if (impact.shared) {
+        shared(`${path}: ${impact.shared}`);
+        continue;
+      }
+      for (const [importer, reason] of impact.importers) {
+        const importerApp = importer.match(/^apps\/([^/]+)$/)?.[1];
+        if (appIds.has(importerApp)) select(importerApp, `${path}: ${reason}`);
+        else if (importer === '.') shared(`${path}: ${reason}; the root's dependencies resolve for every workspace member`);
+        else if (SELF_CONTAINED_PREFIXES.some((prefix) => `${importer}/`.startsWith(prefix))) continue;
+        else if (!graph) shared(`${path}: ${reason}, and there is no workspace graph to find its users`);
+        else selectReaching(importer, `${path}: ${reason}`);
+      }
+      continue;
+    }
+    if (path === REGISTRY) {
+      const impact = manifests.get(path) ? registryImpact(manifests.get(path)) : { shared: 'the base or head registry is unavailable' };
+      if (impact.shared) {
+        shared(`${path}: ${impact.shared}`);
+        continue;
+      }
+      siteBuild(`${path}: the landing page lists the catalog`);
+      for (const id of impact.changed) {
+        if (appIds.has(id)) select(id, `${path}: the ${id} entry changed`);
+      }
+      continue;
+    }
     const manifest = graph && manifests.get(path);
     if (manifest && path === 'package.json') {
       const scripts = changedRootScripts(manifest);
       if (scripts) {
-        sharedChange ||= scripts.some((name) => graph.rootScriptsRun.get(CATALOG).has(name));
-        siteChange ||= scripts.some((name) => graph.rootScriptsRun.get(SITE).has(name));
+        const catalogScripts = scripts.filter((name) => graph.rootScriptsRun.get(CATALOG).has(name));
+        const siteScripts = scripts.filter((name) => graph.rootScriptsRun.get(SITE).has(name));
+        if (catalogScripts.length) shared(`${path}: ci.yml's per-app jobs run root scripts ${catalogScripts.join(', ')}`);
+        if (siteScripts.length) siteBuild(`${path}: the composite-site job runs root scripts ${siteScripts.join(', ')}`);
         continue;
       }
     }
     if (manifest && path === OFFLINE_LOCK) {
-      for (const app of lockOwners(manifest)) if (appIds.has(app)) directlyChanged.add(app);
-      siteChange = true;
+      for (const app of lockOwners(manifest)) if (appIds.has(app)) select(app, `${path}: its locked assets changed`);
+      siteBuild(path);
       continue;
     }
     // A package's tests reach only the apps that read them; any other file
@@ -136,25 +220,31 @@ export function selectAffectedApps(registry, changedPaths = [], graph = null, ma
     if (graph && nodes.length) {
       // Per-app jobs name packages only to provision their own app's data.
       if (ROOT_FILE.test(path) && catalog.has(path)) {
-        sharedChange = true;
+        shared(`${path}: ci.yml's per-app jobs run it`);
         continue;
       }
-      siteChange ||= nodes.some((node) => site.has(node));
+      if (nodes.some((node) => site.has(node))) siteBuild(path);
       for (const candidate of registry.apps) {
-        if (nodes.some((node) => reach.get(candidate.id).has(node))) directlyChanged.add(candidate.id);
+        const node = nodes.find((node) => reach.get(candidate.id).has(node));
+        if (node) select(candidate.id, node === path ? path : `${path} (through ${node})`);
       }
       continue;
     }
-    sharedChange = true;
+    shared(graph ? `${path}: no rule classifies it` : `${path}: there is no workspace graph to find its users`);
   }
 
-  if (sharedChange) return { apps: registry.apps, site: true };
-  if (directlyChanged.has('qsmbly')) directlyChanged.add('brain-extraction');
-  return { apps: registry.apps.filter((app) => directlyChanged.has(app.id)), site: siteChange };
+  if (fallback) return everything(fallback);
+  if (appReasons.has('qsmbly')) select('brain-extraction', 'qsmbly is selected and Brain extraction ships its runtime');
+  const apps = registry.apps.filter((app) => appReasons.has(app.id));
+  return {
+    apps,
+    site: siteReasons.length > 0,
+    reasons: { fallback: null, apps: Object.fromEntries(apps.map((app) => [app.id, appReasons.get(app.id)])), site: siteReasons },
+  };
 }
 
 export function createAppPlan(registry, changedPaths = [], graph = null, manifests = new Map()) {
-  const { apps: selected, site } = selectAffectedApps(registry, changedPaths, graph, manifests);
+  const { apps: selected, site, reasons } = selectAffectedApps(registry, changedPaths, graph, manifests);
   const releasable = selected.filter((app) => app.ci.release);
   const browserTested = selected.filter((app) => app.ci.browser_test);
   const gpuTested = selected.filter((app) => app.ci.hardware_gpu);
@@ -167,6 +257,7 @@ export function createAppPlan(registry, changedPaths = [], graph = null, manifes
     releaseApps: Object.freeze({ include: Object.freeze(releasable.map(matrixEntry)) }),
     allApps: selected.length === registry.apps.length,
     site: site || selected.length > 0,
+    reasons: Object.freeze(reasons),
   });
 }
 

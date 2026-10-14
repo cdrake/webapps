@@ -23,13 +23,18 @@ if (only && only !== 'affected') {
 }
 // changedPathsFromGit diffs from the merge base, so manifests are compared there too.
 const head = option('--head') || 'HEAD';
-const manifestPaths = (only && only !== 'affected' ? [] : changedPaths).filter((path) => /^(?:(?:packages|apps|exes)\/[^/]+\/)?package\.json$|^registry\/offline-assets\.lock\.json$/.test(path));
-const mergeBase = manifestPaths.length && execFileSync('git', ['merge-base', option('--base'), head], { cwd: repoRoot, encoding: 'utf8' }).trim();
-const show = (revision, path) => execFileSync('git', ['show', `${revision}:${path}`], { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+const manifestPaths = (only && only !== 'affected' ? [] : changedPaths).filter((path) => /^(?:(?:packages|apps|exes)\/[^/]+\/)?package\.json$|^registry\/(?:offline-assets\.lock\.json|apps\.yml)$|^pnpm-lock\.yaml$/.test(path));
+const git = (args) => execFileSync('git', args, { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 256 * 1024 * 1024 });
+let mergeBase = '';
+try {
+  mergeBase = manifestPaths.length ? git(['merge-base', option('--base'), head]).trim() : '';
+} catch {
+  // Without a merge base no manifest can be compared; the planner treats each as shared.
+}
 const manifests = new Map();
-for (const path of manifestPaths) {
+for (const path of mergeBase ? manifestPaths : []) {
   try {
-    manifests.set(path, { before: show(mergeBase, path), after: show(head, path) });
+    manifests.set(path, { before: git(['show', `${mergeBase}:${path}`]), after: git(['show', `${head}:${path}`]) });
   } catch {
     // An added or deleted manifest is a code change like any other.
   }
@@ -45,6 +50,17 @@ try {
 }
 const plan = createAppPlan(registry, fallbackReason ? [] : changedPaths, graph, manifests);
 const emptyMatrix = { include: [{ app: '__none__', path: '', runtime: '', rust_wasm: false, python_reference: false, shared_runtime: false, browser_test: false, hardware_gpu: false, app_scoped_runtime: false, release_test: 'test' }] };
+const fallback = (fallbackReason || (plan.reasons.fallback ?? '')).replace(/\s+/g, ' ');
+// A wide change gives every app the same long list; keep the outputs small.
+const REASONS_SHOWN = 10;
+const shorten = (reasons) => reasons.length > REASONS_SHOWN
+  ? [...reasons.slice(0, REASONS_SHOWN), `and ${reasons.length - REASONS_SHOWN} more`]
+  : reasons;
+const reasons = {
+  fallback: fallback || null,
+  apps: Object.fromEntries(Object.entries(plan.reasons.apps).map(([app, list]) => [app, shorten(list)])),
+  site: shorten(plan.reasons.site),
+};
 const outputs = {
   apps: JSON.stringify(plan.apps.include.length ? plan.apps : emptyMatrix),
   browser_apps: JSON.stringify(plan.browserApps.include.length ? plan.browserApps : emptyMatrix),
@@ -57,8 +73,20 @@ const outputs = {
   has_release_apps: String(plan.releaseApps.include.length > 0),
   all_apps: String(plan.allApps),
   has_site: String(plan.site),
-  fallback_reason: fallbackReason,
+  fallback_reason: fallback,
+  selection_reasons: JSON.stringify(reasons),
 };
+
+// The same reasons for a person: the job summary on GitHub, stderr locally.
+const summary = fallback
+  ? [`Full catalog and site selected: ${fallback}`]
+  : [
+    `Selected ${plan.selected.length} of ${registry.apps.length} apps; site build ${plan.site ? 'runs' : 'skipped'}.`,
+    ...Object.entries(reasons.apps).map(([app, list]) => `- ${app}: ${list.join('; ')}`),
+    ...reasons.site.map((reason) => `- site: ${reason}`),
+  ];
+console.error(summary.join('\n'));
+if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY, `## App plan\n\n${summary.join('\n')}\n`);
 
 if (process.env.GITHUB_OUTPUT) {
   await appendFile(
