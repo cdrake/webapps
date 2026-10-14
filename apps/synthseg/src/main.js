@@ -618,7 +618,8 @@ async function segmentImage(parameters, { signal, progress = () => {} } = {}) {
               volumesFast = options.fast;
               volumesVoxelSizeMm = options.voxelSizeMm;
               const names = outputNames(source.name);
-              const maps = data.tissues
+              // A result without all three maps offers none, rather than files that hold no image.
+              const maps = TISSUES.every((tissue) => data.tissues?.[tissue]?.byteLength > 0)
                 ? Object.fromEntries(TISSUES.map((tissue) => [tissue, new File([data.tissues[tissue]], names[tissue], { type: TISSUE_ARTIFACT.mediaType })]))
                 : null;
               const space = voxelSizeMm > 1 ? `subject-${voxelSizeMm}mm` : LABELS_ARTIFACT.space;

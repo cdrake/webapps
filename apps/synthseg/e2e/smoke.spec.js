@@ -113,6 +113,8 @@ test('worker results publish a checksummed report and label volumes; replacement
   expect(report.measurements.labels.find(label => label.id === 2)).toEqual({
     id: 2, name: 'Left-Cerebral-White-Matter', voxels: 2, volumeMl: 0.048,
   });
+  // A result without tissue maps offers no map downloads.
+  for (const tissue of ['gm', 'wm', 'csf']) await expect(page.locator(`#${tissue}SaveBtn`)).toBeDisabled();
   const downloads = [];
   page.on('download', download => downloads.push(download));
   const outputDownload = page.waitForEvent('download');
@@ -141,7 +143,8 @@ test('worker tissue maps become GM, WM and CSF downloads in the report', async (
   for (const tissue of ['gm', 'wm', 'csf']) await expect(page.locator(`#${tissue}SaveBtn`)).toBeDisabled();
   await page.locator('#processButton').click();
   const labels = await readFile('../../exes/synthseg/test/fixtures/small_fast.nii.gz');
-  const maps = Object.fromEntries(['gm', 'wm', 'csf'].map((tissue, index) => [tissue, [...gzipSync(Buffer.from(`${tissue}${index}`))]]));
+  // GM is a real image so View can load it; WM and CSF only need distinct bytes.
+  const maps = Object.fromEntries(['gm', 'wm', 'csf'].map((tissue, index) => [tissue, [...(tissue === 'gm' ? labels : gzipSync(Buffer.from(`${tissue}${index}`)))]]));
   await page.evaluate(async ({ bytes, maps }) => {
     const tissues = Object.fromEntries(Object.entries(maps).map(([name, value]) => [name, new Uint8Array(value).buffer]));
     await window.inferenceWorker.onmessage({
@@ -157,6 +160,9 @@ test('worker tissue maps become GM, WM and CSF downloads in the report', async (
     expect(report.artifacts[tissue].type).toBe('neuro:volume');
     expect([...saved.bytes]).toEqual(maps[tissue]);
   }
+  await page.locator('#gmViewBtn').click();
+  await expect(page.locator('#imageLabel')).toHaveText('ORIGINAL IMAGE · GM PROBABILITY');
+  await expect(page.locator('#viewerError')).toBeHidden();
   await page.locator('#imageInput').setInputFiles(SMALL);
   await expect(page.locator('#statusText')).toHaveAttribute('data-neurodesk-state', 'ready');
   for (const tissue of ['gm', 'wm', 'csf']) await expect(page.locator(`#${tissue}SaveBtn`)).toBeDisabled();
