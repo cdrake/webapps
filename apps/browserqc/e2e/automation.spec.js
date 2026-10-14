@@ -77,6 +77,8 @@ test('QC failure after real segmentation fails the operation instead of publishi
   const regions = await dispatch(page, 'viewers.regions', { viewerId: 'main' });
   expect(regions.find(region => region.name === 'Hippocampus').voxels).toBeGreaterThan(0);
   await expect(page.locator('#saveBtn')).toBeDisabled();
+  // Segmentation succeeded, so its downloads stay when only QC fails.
+  await expect(page.locator('#resultList .nd-stage-label')).toHaveText(['Brain mask', 'Label map']);
 });
 
 test('an air template with other bytes fails QC instead of publishing metrics', async ({ page }) => {
