@@ -4,7 +4,7 @@
 // (about two minutes on eight cores), so that test needs LCMODEL_E2E_LARGE=1;
 // typed-in fractions cover the rest of the workflow on every run.
 import { test, expect } from "@playwright/test";
-import { forceCpu, proxyAssets } from "./tissue-runtime.mjs";
+import { forceCpu, proxyAssets, REPLACEMENT_TIMEOUT } from "./tissue-runtime.mjs";
 import { readFileSync } from "node:fs";
 import { syntheticNifti } from "../../../test-utils/nifti-fixture.mjs";
 
@@ -100,11 +100,12 @@ test("MindMap segments the T1 and measures the voxel", async ({ page }) => {
   expect(report.fractionSource.backend).toBe("cpu");
   // MindMap writes 8-bit maps with a scale factor.
   expect((await download(page, "Grey matter map")).length).toBeGreaterThanOrEqual(352 + 256 * 256 * 204);
+  await expect(page.locator("#dataInput")).toBeEnabled();
   await page.locator("#dataInput").setInputFiles({
     name: "replacement.nii", mimeType: "application/octet-stream",
     buffer: syntheticNifti({ dims: [32, 32, 32], gzip: false }),
   });
-  await expect(page.locator("#t1Info")).toContainText("replacement.nii");
+  await expect(page.locator("#t1Info")).toContainText("replacement.nii", { timeout: REPLACEMENT_TIMEOUT });
   await expect(page.locator("#fGm")).toHaveValue("");
   await expect(page.locator("#corrHeader")).toBeHidden();
   await expect(page.locator('#resultList [data-stage="gmMap"]')).toHaveCount(0);

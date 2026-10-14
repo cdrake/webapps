@@ -43,12 +43,6 @@ export const LESION_MASK_COLORMAP = {
   labels: LESION_MASK_LABELS.map(label => label.name)
 };
 
-export const YEO7_NETWORK_LABELS = Object.fromEntries(
-  YEO7_LABELS
-    .filter(label => label.index > 0)
-    .map(label => [label.index, label.name])
-);
-
 function hsvToRgb(h, s, v) {
   const c = v * s;
   const x = c * (1 - Math.abs(((h / 60) % 2) - 1));

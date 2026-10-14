@@ -7,8 +7,6 @@ const example = (folder, filename, label) => Object.freeze({
   brainExtracted: true,
 });
 
-export const APP = Object.freeze({ id: "greedy" });
-
 export const MOVING_EXAMPLES = Object.freeze([
   example("moving", "t1_brain.nii.gz", "T1 brain 1 mm"),
 ]);

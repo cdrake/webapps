@@ -32,7 +32,3 @@ export const ATLAS_OPTIONS = [
 export function getAtlasOptionById(id, options = ATLAS_OPTIONS) {
   return options.find(option => option.id === id) || null;
 }
-
-export function getDefaultAtlasOption(options = ATLAS_OPTIONS) {
-  return getAtlasOptionById(DEFAULT_ATLAS_OPTION_ID, options) || options[0] || null;
-}

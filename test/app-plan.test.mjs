@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { parse, stringify } from 'yaml';
 import { createAppPlan } from '../scripts/lib/app-plan.mjs';
+import { lockfileImpact } from '../scripts/lib/lockfile-impact.mjs';
 import { loadAppsRegistry, repoRoot } from '../scripts/lib/apps-registry.mjs';
 import { CATALOG_JOBS, loadConservativeWorkspaceGraph, WorkspaceGraphConfigurationError } from '../scripts/lib/workspace-graph.mjs';
 
@@ -24,19 +25,6 @@ test('QSMbly runtime changes also select Brain extraction for browser tests and 
   assert.deepEqual(plan.selected.map(app => app.id), ['qsmbly', 'brain-extraction']);
   assert.ok(plan.browserApps.include.some(({ app }) => app === 'brain-extraction'));
   assert.ok(plan.releaseApps.include.some(({ app }) => app === 'brain-extraction'));
-});
-
-test('app registration and lockfile updates stay scoped to that webapp', async () => {
-  const registry = await loadAppsRegistry();
-  const plan = createAppPlan(registry, [
-    'LICENSES.md',
-    'apps/surfannotate/package.json',
-    'pnpm-lock.yaml',
-    'registry/apps.yml',
-  ]);
-  assert.deepEqual(plan.selected.map((app) => app.id), ['surfannotate']);
-  assert.deepEqual(plan.browserApps.include.map(({ app }) => app), ['surfannotate']);
-  assert.equal(plan.allApps, false);
 });
 
 test('homepage easter-egg changes select no catalog apps', async () => {
@@ -229,6 +217,237 @@ test('root package.json script edits count only where ci.yml runs them', async (
   assert.equal(plan({ scripts, devDependencies: { a: '1' } }).allApps, true);
 });
 
+// Lockfile and registry changes are compared before and after: the apps whose
+// resolved dependencies or registry entries changed are selected, and anything
+// that cannot be analysed selects the whole catalog with a reason.
+const dep = (version) => ({ specifier: version, version });
+const link = (target) => ({ specifier: 'workspace:*', version: `link:${target}` });
+function lockfile({ importers, snapshots }) {
+  const packages = Object.fromEntries(Object.keys(snapshots).map((key) => [key, { resolution: { integrity: `sha512-${key}` } }]));
+  return { lockfileVersion: '9.0', settings: { autoInstallPeers: true }, importers, packages, snapshots };
+}
+const baseLock = lockfile({
+  importers: {
+    '.': { devDependencies: { eslint: dep('9.0.0'), '@neurodesk/code-quality': link('scripts/quality') } },
+    'apps/niimath': { dependencies: { '@niivue/niivue': dep('1.0.0'), '@neurodesk/webapp-components': link('../../packages/components') } },
+    'apps/lcmodel': { dependencies: { '@neurodesk/lcmodel': link('../../packages/lcmodel') } },
+    'packages/components': {},
+    'packages/lcmodel': { dependencies: { fflate: dep('0.8.0') } },
+    'scripts/quality': { devDependencies: { knip: dep('5.0.0') } },
+    'site/easter-eggs/vessel-surfer': { dependencies: { three: dep('0.1.0') } },
+  },
+  snapshots: {
+    '@niivue/niivue@1.0.0': { dependencies: { pako: '2.1.0' } },
+    'pako@2.1.0': {},
+    'eslint@9.0.0': {},
+    'fflate@0.8.0': {},
+    'knip@5.0.0': {},
+    'three@0.1.0': {},
+  },
+});
+function changeLock(edit) {
+  const after = structuredClone(baseLock);
+  edit(after);
+  return after;
+}
+// Adds a resolved package to a lockfile.
+function resolve(lock, key) {
+  lock.snapshots[key] = {};
+  lock.packages[key] = { resolution: { integrity: `sha512-${key}` } };
+}
+async function lockPlan(after) {
+  const registry = await loadAppsRegistry();
+  return createAppPlan(registry, ['pnpm-lock.yaml'], await graph, new Map([['pnpm-lock.yaml', manifest(baseLock, after)]]));
+}
+
+test('a lockfile-only runtime upgrade selects the apps that resolve it', async () => {
+  const plan = await lockPlan(changeLock((lock) => {
+    lock.snapshots['@niivue/niivue@1.0.0'].dependencies.pako = '2.1.1';
+    delete lock.snapshots['pako@2.1.0'];
+    delete lock.packages['pako@2.1.0'];
+    resolve(lock, 'pako@2.1.1');
+  }));
+  assert.deepEqual(plan.selected.map((app) => app.id), ['niimath']);
+  assert.equal(plan.reasons.fallback, null);
+  assert.deepEqual(plan.reasons.apps.niimath, ['pnpm-lock.yaml: importer apps/niimath resolves changed packages @niivue/niivue@1.0.0, pako@2.1.0, pako@2.1.1']);
+});
+
+test('an integrity-only lockfile change selects the apps that resolve the package', async () => {
+  const plan = await lockPlan(changeLock((lock) => {
+    lock.packages['@niivue/niivue@1.0.0'].resolution.integrity = 'sha512-republished';
+  }));
+  assert.deepEqual(plan.selected.map((app) => app.id), ['niimath']);
+});
+
+test("a shared package's lockfile change selects the apps that use the package", async () => {
+  const plan = await lockPlan(changeLock((lock) => {
+    lock.importers['packages/lcmodel'].dependencies.fflate = dep('0.8.2');
+    resolve(lock, 'fflate@0.8.2');
+  }));
+  assert.deepEqual(plan.selected.map((app) => app.id), ['lcmodel']);
+  assert.ok(plan.reasons.apps.lcmodel.includes('pnpm-lock.yaml: importer packages/lcmodel changed its dependency entries'));
+  const components = await lockPlan(changeLock((lock) => {
+    lock.importers['packages/components'] = { dependencies: { pako: dep('2.1.0') } };
+  }));
+  assert.equal(components.allApps, true, 'every app uses the shared component package');
+  assert.equal(components.reasons.fallback, null);
+});
+
+test('a removed transitive dependency selects the apps that resolved it before', async () => {
+  const plan = await lockPlan(changeLock((lock) => {
+    lock.snapshots['@niivue/niivue@1.0.0'] = {};
+    delete lock.snapshots['pako@2.1.0'];
+    delete lock.packages['pako@2.1.0'];
+  }));
+  assert.deepEqual(plan.selected.map((app) => app.id), ['niimath']);
+  assert.match(plan.reasons.apps.niimath[0], /pako@2\.1\.0/);
+});
+
+test('an easter-egg lockfile change selects no app and no site build', async () => {
+  const plan = await lockPlan(changeLock((lock) => {
+    lock.importers['site/easter-eggs/vessel-surfer'].dependencies.three = dep('0.2.0');
+    resolve(lock, 'three@0.2.0');
+  }));
+  assert.deepEqual(plan.selected, []);
+  assert.equal(plan.site, false);
+});
+
+test('a quality-tool lockfile change selects what editing that tool selects, not the runtime consumers', async () => {
+  const plan = await lockPlan(changeLock((lock) => {
+    lock.importers['scripts/quality'].devDependencies.knip = dep('5.1.0');
+    resolve(lock, 'knip@5.1.0');
+  }));
+  const registry = await loadAppsRegistry();
+  const resolved = await graph;
+  const edited = createAppPlan(registry, ['scripts/quality/lint-inventory.mjs', 'scripts/quality/lint-baseline.json'], resolved);
+  assert.deepEqual(plan.selected.map((app) => app.id), edited.selected.map((app) => app.id));
+  assert.equal(plan.reasons.fallback, null);
+  assert.ok(!plan.selected.some((app) => app.id === 'niimath'), 'niimath does not reach the lint tooling');
+});
+
+test('lockfile changes the planner cannot scope select the whole catalog with a reason', async () => {
+  const cases = {
+    'root importer': [(lock) => {
+      lock.importers['.'].devDependencies.eslint = dep('9.1.0');
+      resolve(lock, 'eslint@9.1.0');
+    }, /root's dependencies resolve for every workspace member/],
+    overrides: [(lock) => {
+      lock.overrides = { pako: '2.1.1' };
+    }, /changed its overrides section/],
+    'unresolvable dependency': [(lock) => {
+      lock.importers['apps/niimath'].dependencies.missing = dep('1.0.0');
+    }, /resolves missing for apps\/niimath to 1\.0\.0, which has no snapshot/],
+    'unknown format': [(lock) => {
+      lock.lockfileVersion = '10.0';
+    }, /lockfileVersion 10\.0/],
+  };
+  for (const [name, [edit, reason]] of Object.entries(cases)) {
+    const plan = await lockPlan(changeLock(edit));
+    assert.equal(plan.allApps, true, name);
+    assert.match(plan.reasons.fallback, reason, name);
+  }
+  const registry = await loadAppsRegistry();
+  const missingBase = createAppPlan(registry, ['pnpm-lock.yaml'], await graph);
+  assert.equal(missingBase.allApps, true, 'without the base lockfile');
+  assert.equal(missingBase.reasons.fallback, 'pnpm-lock.yaml: the base or head lockfile is unavailable');
+  const unparsable = createAppPlan(registry, ['pnpm-lock.yaml'], await graph, new Map([['pnpm-lock.yaml', { before: 'importers: [', after: JSON.stringify(baseLock) }]]));
+  assert.equal(unparsable.allApps, true);
+  assert.match(unparsable.reasons.fallback, /the base pnpm-lock\.yaml does not parse/);
+});
+
+test('without a workspace graph a lockfile change to a package selects the whole catalog', async () => {
+  const registry = await loadAppsRegistry();
+  const after = changeLock((lock) => {
+    lock.importers['packages/lcmodel'].dependencies.fflate = dep('0.8.2');
+    resolve(lock, 'fflate@0.8.2');
+  });
+  const plan = createAppPlan(registry, ['pnpm-lock.yaml'], null, new Map([['pnpm-lock.yaml', manifest(baseLock, after)]]));
+  assert.equal(plan.allApps, true);
+  assert.match(plan.reasons.fallback, /no workspace graph/);
+});
+
+test('an importer is affected through the workspace importers it links, but the root is not', () => {
+  const after = changeLock((lock) => {
+    lock.importers['scripts/quality'].devDependencies.knip = dep('5.1.0');
+    resolve(lock, 'knip@5.1.0');
+    lock.importers['packages/components'] = { dependencies: { pako: dep('2.1.0') } };
+  });
+  const affected = lockfileImpact(manifest(baseLock, after));
+  assert.deepEqual([...affected.keys()].sort(), ['apps/niimath', 'packages/components', 'scripts/quality']);
+  assert.equal(affected.get('apps/niimath'), 'importer apps/niimath links affected importer packages/components');
+  assert.equal(lockfileImpact(manifest(baseLock, baseLock)).size, 0);
+});
+
+test("the repository's own lockfile resolves every importer's dependencies", async () => {
+  const text = await readFile(join(repoRoot, 'pnpm-lock.yaml'), 'utf8');
+  assert.equal(lockfileImpact({ before: text, after: text }).size, 0);
+});
+
+async function registryPlan(edit, paths = ['registry/apps.yml']) {
+  const text = await readFile(join(repoRoot, 'registry/apps.yml'), 'utf8');
+  const after = parse(text);
+  edit(after);
+  return createAppPlan(await loadAppsRegistry(), paths, await graph, new Map([['registry/apps.yml', { before: text, after: stringify(after) }]]));
+}
+const entry = (registry, id) => registry.apps.find((app) => app.id === id);
+
+test('a registry entry change selects that app and the site build', async () => {
+  const plan = await registryPlan((registry) => {
+    entry(registry, 'niimath').description = 'Changed.';
+  });
+  assert.deepEqual(plan.selected.map((app) => app.id), ['niimath']);
+  assert.deepEqual(plan.reasons.apps.niimath, ['registry/apps.yml: the niimath entry changed']);
+  assert.equal(plan.site, true);
+  const qsmbly = await registryPlan((registry) => {
+    entry(registry, 'qsmbly').keywords.push('changed');
+  });
+  assert.deepEqual(qsmbly.selected.map((app) => app.id), ['qsmbly', 'brain-extraction']);
+});
+
+test('app registration with its lockfile importer stays scoped to that webapp', async () => {
+  const text = await readFile(join(repoRoot, 'registry/apps.yml'), 'utf8');
+  const without = parse(text);
+  without.apps = without.apps.filter((app) => app.id !== 'surfannotate');
+  const plan = createAppPlan(await loadAppsRegistry(), ['LICENSES.md', 'apps/surfannotate/package.json', 'pnpm-lock.yaml', 'registry/apps.yml'], await graph, new Map([
+    ['registry/apps.yml', { before: stringify(without), after: text }],
+    ['pnpm-lock.yaml', manifest(baseLock, changeLock((lock) => {
+      lock.importers['apps/surfannotate'] = { dependencies: { '@niivue/niivue': dep('1.0.0') } };
+    }))],
+  ]));
+  assert.deepEqual(plan.selected.map((app) => app.id), ['surfannotate']);
+  assert.deepEqual(plan.browserApps.include.map(({ app }) => app), ['surfannotate']);
+  assert.equal(plan.allApps, false);
+});
+
+test('removing or reordering registry entries selects no app but the site build', async () => {
+  const text = await readFile(join(repoRoot, 'registry/apps.yml'), 'utf8');
+  const retired = parse(text);
+  retired.apps.push({ ...entry(retired, 'niimath'), id: 'retired', path: 'retired' });
+  const removed = createAppPlan(await loadAppsRegistry(), ['registry/apps.yml'], await graph, new Map([['registry/apps.yml', { before: stringify(retired), after: text }]]));
+  const reordered = await registryPlan((after) => {
+    after.apps.reverse();
+  });
+  for (const plan of [removed, reordered]) {
+    assert.deepEqual(plan.selected, []);
+    assert.equal(plan.site, true);
+    assert.equal(plan.reasons.fallback, null);
+  }
+});
+
+test('registry changes outside the app entries select the whole catalog with a reason', async () => {
+  const plan = await registryPlan((registry) => {
+    registry.site.analytics.measurement_id = 'G-CHANGED';
+  });
+  assert.equal(plan.allApps, true);
+  assert.equal(plan.reasons.fallback, 'registry/apps.yml: its site section changed, and every app build reads it');
+  const duplicate = await registryPlan((registry) => {
+    registry.apps.push(entry(registry, 'niimath'));
+  });
+  assert.match(duplicate.reasons.fallback, /missing or duplicate ids/);
+  const missingBase = createAppPlan(await loadAppsRegistry(), ['registry/apps.yml'], await graph);
+  assert.equal(missingBase.reasons.fallback, 'registry/apps.yml: the base or head registry is unavailable');
+});
+
 test('an offline asset lock change selects the apps whose assets changed', async () => {
   const registry = await loadAppsRegistry();
   const before = { schemaVersion: 1, assets: { u1: { sha256: 'a' }, u2: { sha256: 'b' } }, apps: { lcmodel: ['u1'], zarro: ['u2'] } };
@@ -319,7 +538,7 @@ async function plannerFixture(t) {
   for (const path of ['scripts/lib', 'registry', '.github/workflows']) {
     await mkdir(join(root, path), { recursive: true });
   }
-  for (const path of ['scripts/app-plan.mjs', 'scripts/lib/app-plan.mjs', 'scripts/lib/workspace-graph.mjs', 'scripts/lib/apps-registry.mjs', 'registry/apps.yml']) {
+  for (const path of ['scripts/app-plan.mjs', 'scripts/lib/app-plan.mjs', 'scripts/lib/lockfile-impact.mjs', 'scripts/lib/workspace-graph.mjs', 'scripts/lib/apps-registry.mjs', 'registry/apps.yml']) {
     await copyFile(join(repoRoot, path), join(root, path));
   }
   await writeFile(join(root, 'package.json'), JSON.stringify({ type: 'module', scripts: {} }));
@@ -382,7 +601,41 @@ test('workflow outputs include the fallback reason and complete matrices', async
     return [line.slice(0, equals), line.slice(equals + 1)];
   }));
   assert.match(outputs.fallback_reason, /app-tests/);
+  assert.match(JSON.parse(outputs.selection_reasons).fallback, /app-tests/);
   assert.equal(outputs.all_apps, 'true');
   assert.equal(outputs.has_site, 'true');
   assert.deepEqual(JSON.parse(outputs.selected_ids), (await loadAppsRegistry()).apps.map(app => app.id));
+});
+
+test('the CLI compares the lockfile at the merge base and reports why it selected each app', async (t) => {
+  const { root, run } = await plannerFixture(t);
+  const git = (...args) => execFileSync('git', ['-c', 'user.name=planner', '-c', 'user.email=planner@example.org', ...args], { cwd: root, encoding: 'utf8' }).trim();
+  git('init', '--quiet');
+  await writeFile(join(root, 'pnpm-lock.yaml'), stringify(baseLock));
+  git('add', 'pnpm-lock.yaml');
+  git('commit', '--quiet', '-m', 'base');
+  const base = git('rev-parse', 'HEAD');
+  await writeFile(join(root, 'pnpm-lock.yaml'), stringify(changeLock((lock) => {
+    lock.packages['@niivue/niivue@1.0.0'].resolution.integrity = 'sha512-republished';
+  })));
+  git('commit', '--quiet', '-am', 'head');
+  const summaryFile = join(root, 'step-summary');
+  const result = spawnSync(process.execPath, ['scripts/app-plan.mjs', '--base', base, '--head', 'HEAD'], {
+    cwd: root, encoding: 'utf8', env: { ...process.env, GITHUB_OUTPUT: '', GITHUB_STEP_SUMMARY: summaryFile },
+  });
+  assert.equal(result.status, 0, result.stderr);
+  const output = JSON.parse(result.stdout);
+  assert.deepEqual(JSON.parse(output.selected_ids), ['niimath']);
+  assert.equal(output.fallback_reason, '');
+  assert.deepEqual(JSON.parse(output.selection_reasons).apps, {
+    niimath: ['pnpm-lock.yaml: importer apps/niimath resolves changed packages @niivue/niivue@1.0.0'],
+  });
+  assert.match(await readFile(summaryFile, 'utf8'), /Selected 1 of \d+ apps[^]*- niimath: pnpm-lock\.yaml: importer apps\/niimath/);
+
+  const missingBase = run('--base', '0123456789abcdef0123456789abcdef01234567', '--head', 'HEAD');
+  assert.equal(missingBase.status, 0, missingBase.stderr);
+  const fallback = JSON.parse(missingBase.stdout);
+  assert.equal(fallback.all_apps, 'true');
+  assert.match(fallback.fallback_reason, /no changed paths/);
+  assert.match(missingBase.stderr, /Full catalog and site selected: no changed paths/);
 });

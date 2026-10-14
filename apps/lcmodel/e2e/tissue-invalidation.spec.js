@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { forceCpu, proxyAssets } from "./tissue-runtime.mjs";
+import { forceCpu, proxyAssets, REPLACEMENT_TIMEOUT } from "./tissue-runtime.mjs";
 import { syntheticNifti } from "../../../test-utils/nifti-fixture.mjs";
 
 const EXAMPLE = "philips-press-t1";
@@ -58,11 +58,12 @@ for (const input of ["#dataInput", "#t1Input"]) {
     await expect(page.locator("#statusText")).toContainText("Fit done", { timeout: 300000 });
     await expect(page.locator("#corrHeader")).toBeVisible();
     await expect(page.locator('#resultList [data-stage="gmMap"]')).toHaveCount(1);
+    await expect(page.locator(input)).toBeEnabled();
     await page.locator(input).setInputFiles({
       name: "replacement.nii", mimeType: "application/octet-stream",
       buffer: syntheticNifti({ dims: [32, 32, 32], gzip: false }),
     });
-    await expect(page.locator("#t1Info")).toContainText("replacement.nii");
+    await expect(page.locator("#t1Info")).toContainText("replacement.nii", { timeout: REPLACEMENT_TIMEOUT });
     await expect(page.locator("#fGm")).toHaveValue("");
     await expect.poll(() => page.evaluate(() => window.replacementViewerHeld), { timeout: 120000 }).toBe(true);
     try {
