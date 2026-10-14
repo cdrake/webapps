@@ -160,6 +160,12 @@ async function checkCase(page, { input, reference, mode, limit, pinned }) {
   const produced = await readNifti(producedBytes, Float64Array);
   const golden = await readNifti(goldenBytes, Float64Array);
   const report = JSON.parse(readFileSync(await reportDownload.path(), 'utf8'));
+  const volumesDownload = await Promise.all([page.waitForEvent('download'), page.locator('#volumesBtn').click()]).then(([value]) => value);
+  const [volumeHeader, volumeRow] = readFileSync(await volumesDownload.path(), 'utf8').trim().split('\r\n');
+  // The hosted norms, fetched and checksum-verified by the page, chart every structure.
+  await page.getByRole('button', { name: 'Volumes', exact: true }).click();
+  await expect(page.locator('#volumeReport figure svg circle.nd-chart-marker, #volumeReport figure svg line.nd-chart-level')).toHaveCount(10, { timeout: 60000 });
+  await expect(page.locator('#volumeReport tbody tr')).toHaveCount(10);
   const inputDescriptor = Array.isArray(report.inputs.image) ? report.inputs.image[0] : report.inputs.image;
   const outputDescriptor = report.artifacts.labels || Object.values(report.artifacts).find(value => value.role === 'labels');
   await test.info().attach(`${mode}-labels.nii.gz`, { path: await download.path(), contentType: 'application/gzip' });
@@ -199,6 +205,10 @@ async function checkCase(page, { input, reference, mode, limit, pinned }) {
   save();
   expect(result.gpuPosteriors).toHaveLength(mode === 'default' ? 2 : 1);
   expect(report.status).toBe('succeeded');
+  expect(volumeHeader.split(',')).toEqual(['subject', ...Object.keys(report.measurements.softVolumesMm3)]);
+  expect(Number(volumeRow.split(',')[1])).toBe(report.measurements.softVolumesMm3['total intracranial']);
+  expect(report.measurements.softVolumesMm3['total intracranial']).toBeGreaterThan(0);
+  expect(report.measurements.volumeReport.results).toHaveLength(10);
   expect(inputDescriptor.sha256).toBe(checksum(readFileSync(input)));
   expect(outputDescriptor.sha256).toBe(checksum(producedBytes));
   expect(report.provenance.gpuImplementation).toBe('synthseg-blocked-fp32-v1');
