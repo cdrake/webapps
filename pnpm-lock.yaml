@@ -606,6 +606,9 @@ importers:
       '@itk-wasm/transform-io':
         specifier: 1.1.0
         version: 1.1.0
+      '@neurodesk/elastix':
+        specifier: workspace:*
+        version: link:../../packages/elastix
       '@neurodesk/runtime-support':
         specifier: workspace:*
         version: link:../../packages/runtime-support
@@ -1245,6 +1248,37 @@ importers:
       '@niivue/niimath':
         specifier: 1.4.20260909
         version: 1.4.20260909
+
+  packages/elastix:
+    dependencies:
+      '@fideus-labs/fiff':
+        specifier: 0.8.2
+        version: 0.8.2(@fideus-labs/ngff-zarr@0.38.0)(@fideus-labs/worker-pool@2.1.0)
+      '@fideus-labs/ngff-zarr':
+        specifier: 0.38.0
+        version: 0.38.0
+      '@itk-wasm/elastix':
+        specifier: 2.1.0
+        version: 2.1.0
+      '@itk-wasm/image-io':
+        specifier: 1.6.1
+        version: 1.6.1
+      '@itk-wasm/transform-io':
+        specifier: 1.1.0
+        version: 1.1.0
+      '@zarrita/storage':
+        specifier: 0.2.0
+        version: 0.2.0
+      itk-wasm:
+        specifier: 1.0.0-b.201
+        version: 1.0.0-b.201
+      zarrita:
+        specifier: 0.7.5
+        version: 0.7.5
+    devDependencies:
+      '@neurodesk/webapp-components':
+        specifier: workspace:*
+        version: link:../components
 
   packages/fireants:
     dependencies:
@@ -6176,12 +6210,12 @@ packages:
     resolution: {integrity: sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g==}
     engines: {node: '>= 4'}
 
-  ignore@7.0.12:
-    resolution: {integrity: sha512-/8UvqAPU9DGTI9k4mxtf49U37Isfwr8Uts96+SBHIkFxPJnHS0Ew4f00sM4Scd8V8EjM0jUNtVDdv1kPdt35lg==}
-    engines: {node: '>= 4'}
-
   ignore@7.0.11:
     resolution: {integrity: sha512-YChdK5txDjwGUvgR7oCJcLGkwi3LDh8Zx8tS7ndYciLEg/oOCL26VUBSUEtgS7EjiybcBqFxh5j0rAdDX7/bbg==}
+    engines: {node: '>= 4'}
+
+  ignore@7.0.12:
+    resolution: {integrity: sha512-/8UvqAPU9DGTI9k4mxtf49U37Isfwr8Uts96+SBHIkFxPJnHS0Ew4f00sM4Scd8V8EjM0jUNtVDdv1kPdt35lg==}
     engines: {node: '>= 4'}
 
   immediate@3.0.6:
@@ -10557,7 +10591,7 @@ snapshots:
   '@jridgewell/trace-mapping@0.3.31':
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
-      '@jridgewell/sourcemap-codec': 1.5.5
+      '@jridgewell/sourcemap-codec': 1.6.0
 
   '@jridgewell/trace-mapping@0.3.9':
     dependencies:
@@ -13603,8 +13637,9 @@ snapshots:
 
   ignore@5.3.2: {}
 
-  ignore@7.0.12: {}
   ignore@7.0.11: {}
+
+  ignore@7.0.12: {}
 
   immediate@3.0.6: {}
 
