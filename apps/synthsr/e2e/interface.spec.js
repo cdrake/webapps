@@ -49,9 +49,9 @@ for (const width of [390, 1440]) {
   test(`input stays compact at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('./');
-    const picker = page.locator('#imageInput');
-    await expect(picker).toBeVisible();
-    expect((await picker.boundingBox()).height).toBeLessThanOrEqual(48);
+    // The input menu replaces the drop box; the whole window takes drops.
+    await expect(page.locator('#imageInput')).toBeHidden();
+    expect((await page.locator('#exampleSelect').boundingBox()).height).toBeLessThanOrEqual(48);
     expect((await page.locator('#inputSection').boundingBox()).height).toBeLessThanOrEqual(220);
     await expect(page.locator('#exampleSelect')).toBeVisible();
     await expect(page.locator('#outputSection')).not.toHaveAttribute('open', '');

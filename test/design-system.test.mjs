@@ -348,7 +348,9 @@ test(`the status bar starts with "${IDLE_STATUS}"`, async () => {
     if (IDLE_STATUS_EXEMPT.has(app.id)) continue;
     const entry = await appEntryHtml(app);
     const initial = entry?.html.match(/id="statusText"[^>]*>\s*([^<]*?)\s*</)?.[1];
-    if (initial !== IDLE_STATUS) failures.push(`${entry?.path ?? app.id}: #statusText starts as "${initial}"`);
+    // An app that must load before it can take files says so, then invites the drop.
+    const loadsFirst = initial === 'Loading…' && (await appSources(app, ['.js', '.ts'])).some(({ text }) => text.includes(`'${IDLE_STATUS}'`) || text.includes(`"${IDLE_STATUS}"`));
+    if (initial !== IDLE_STATUS && !loadsFirst) failures.push(`${entry?.path ?? app.id}: #statusText starts as "${initial}"`);
   }
   assert.deepEqual(failures, []);
 });

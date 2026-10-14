@@ -368,3 +368,19 @@ test('the menu ends with file actions that open the scope input and hide its dro
   assert.equal(control.dataset.exampleState, 'idle', 'a file action never loads an example');
   control.destroy();
 });
+
+test('a refused picker brings the drop box back instead of failing silently', () => {
+  const { window } = new JSDOM('<body><div id="scope"><label class="nd-file"><input type="file" data-neurodesk-input="model"></label><label class="nd-file"><input type="file" data-neurodesk-input="image"></label></div></body>');
+  const scope = window.document.getElementById('scope');
+  const control = createExampleSelector({ examples, onLoad: async () => {}, scope }, window.document);
+  scope.prepend(control);
+  const [model, image] = scope.querySelectorAll('input');
+  assert.ok(image.closest('.nd-file').classList.contains('nd-file-merged'), 'the scan input is primary, not the first input');
+  assert.ok(!model.closest('.nd-file').classList.contains('nd-file-merged'));
+  image.showPicker = () => { throw new window.DOMException('No activation', 'NotAllowedError'); };
+  [...control.select.options].find(option => option.dataset.action === 'files').selected = true;
+  control.select.dispatchEvent(new window.Event('change'));
+  assert.ok(!image.closest('.nd-file').classList.contains('nd-file-merged'));
+  assert.match(control.textContent, /file box below/);
+  control.destroy();
+});

@@ -5,6 +5,8 @@ const LOCAL_TARGETS = '.nd-file, .file-upload-zone, .file-drop, .upload-zone, [d
 const KINDS = [
   ['gradients', /\.(bvals?|bvecs?)$/i],
   ['surface', /\.(gii|mz3|stl|obj|ply|vtk|off|pial|white|inflated|sphere)$/i],
+  ['model', /\.(onnx|basis)$/i],
+  ['protocol', /\.(toml|txt)$/i],
 ];
 const UNDO_MS = 8000;
 

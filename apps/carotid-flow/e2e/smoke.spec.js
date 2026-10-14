@@ -26,7 +26,7 @@ async function tiltedSeries() {
 
 async function ready(page) {
   await page.goto('./');
-  await expect(page.locator('#statusText')).toHaveText('Ready · choose an example or drop a phase-contrast series', { timeout: 60000 });
+  await expect(page.locator('#statusText')).toHaveText('Drag and drop files', { timeout: 60000 });
 }
 
 test('shared app bar owns information actions and theme', async ({ page }) => {

@@ -489,7 +489,7 @@ async function init() {
   setBusy(true);
   try {
     await attachViewers();
-    status("Ready · choose an example or images, then register.");
+    status("Drag and drop files");
   } catch (error) {
     destroyViewers();
     $("viewerError").hidden = false;

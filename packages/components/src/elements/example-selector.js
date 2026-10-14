@@ -167,9 +167,11 @@ export function defineExampleSelector(view = globalThis.window) {
       input.closest('.nd-file')?.classList.add('nd-file-merged');
     };
 
-    // The scope's first scan input is the one the menu's file actions feed.
+    // The scope's first scan input (else its first classified input) is the one the menu's file actions feed.
     #primaryInput() {
-      return (this.#boundScope ?? this.#scope)?.querySelector('input[type="file"][data-neurodesk-input]:not([webkitdirectory])') ?? null;
+      const scope = this.#boundScope ?? this.#scope;
+      const pick = kind => scope?.querySelector(`input[type="file"][data-neurodesk-input${kind}]:not([webkitdirectory])`);
+      return pick('="image"') ?? pick('') ?? null;
     }
 
     #choose() {
@@ -178,7 +180,15 @@ export function defineExampleSelector(view = globalThis.window) {
       this.#select.value = '';
       const input = action === 'folder' ? this.#folder : this.#primaryInput();
       if (!input) return;
-      try { input.showPicker(); } catch { input.click(); }
+      try {
+        input.showPicker();
+      } catch (error) {
+        // A browser that withholds activation from a select's change event refuses the
+        // picker; show the drop box again so the user can open it directly.
+        if (error?.name !== 'NotAllowedError') return input.click();
+        this.#primaryInput()?.closest('.nd-file')?.classList.remove('nd-file-merged');
+        this.#message.textContent = 'Use the file box below to choose your files.';
+      }
     }
 
     #bindScope() {

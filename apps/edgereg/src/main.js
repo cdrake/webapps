@@ -359,7 +359,7 @@ async function init() {
       $("viewerError").textContent = `Visualization unavailable: ${errorMessage(error)}`;
       throw error;
     }
-    status("Ready · choose an example or upload images, then register.");
+    status("Drag and drop files");
   });
 }
 
