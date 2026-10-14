@@ -506,8 +506,8 @@
 .nd-app-bar__title {
   flex: 0 0 auto !important;
   color: var(--nd-brand-primary) !important;
-  font-size: 14px !important;
-  font-weight: 600 !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
   letter-spacing: -0.01em !important;
 }
 
