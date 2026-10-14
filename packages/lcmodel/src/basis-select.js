@@ -58,7 +58,8 @@ export function assessBasis(data, basis) {
     }
   } else {
     score -= 10;
-    notes.push({ level: "info", text: "The data do not record the field strength." });
+    const text = data.hzpppm > 0 ? "This basis set does not record its field strength." : "The data do not record the field strength.";
+    notes.push({ level: "info", text });
   }
   const dataSeq = sequenceFamily(data.sequence);
   const basisSeq = sequenceFamily(basis.sequence);
@@ -102,7 +103,8 @@ export function assessBasis(data, basis) {
     }
   } else {
     score -= 10;
-    notes.push({ level: "info", text: "The echo time could not be read from the data." });
+    const text = data.teMs > 0 ? "This basis set does not record its echo time." : "The echo time could not be read from the data.";
+    notes.push({ level: "info", text });
   }
   // Neither the data nor their headers say whether editing was symmetric
   // (edit-OFF at 1.5 ppm, suppressing co-edited MM), so the standard set
