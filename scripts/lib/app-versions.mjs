@@ -16,6 +16,7 @@ export const LINKED_PACKAGES = Object.freeze({
   '@neurodesk/browserqc': 'browserqc',
   '@neurodesk/calmar': 'calmar',
   '@neurodesk/carotid-flow': 'carotid-flow',
+  '@neurodesk/deface': 'deface',
   '@neurodesk/nii2tvx': 'disconnectome',
   '@neurodesk/dwi2trx': 'dwi2trx',
   '@neurodesk/easy-mp2rage': 'easy-mp2rage',

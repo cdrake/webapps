@@ -102,8 +102,12 @@ test('typed imaging runtimes use their declared shared or pinned owner', async (
   const browserMain = await source('apps', 'browserqc', 'src', 'main.ts');
   assert.match(browserMain, /from ['"]@niivue\/niimath['"]/);
 
+  // Deface runs @neurodesk/deface's pipeline on the vendored niimath build in runtime-support.
   const defaceMain = await source('apps', 'deface', 'src', 'main.ts');
-  assert.match(defaceMain, /@neurodesk\/runtime-support\/niimath/);
+  assert.match(defaceMain, /from ['"]@neurodesk\/deface\/browser['"]/);
+  const defaceBrowser = await source('packages', 'deface', 'src', 'browser.js');
+  assert.match(defaceBrowser, /from ['"]@neurodesk\/runtime-support\/niimath\/command['"]/);
+  assert.equal(runtimePackage.exports['./niimath/command'].default, './src/niimath/command.js');
 });
 
 test('the reusable convergence audit is wired into the repository test suite', async () => {
