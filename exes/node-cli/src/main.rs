@@ -72,6 +72,25 @@ fn installation_at(executable: &Path) -> Result<Installation, String> {
     })
 }
 
+fn runtime_command(installation: &Installation, bundle_models: bool) -> Command {
+    let mut command = Command::new(&installation.node);
+    command
+        .arg(&installation.entry)
+        .args(env::args_os().skip(1));
+    let model_variable = model_variable(&installation.tool);
+    if env::var_os(&model_variable).is_none() {
+        command.env(model_variable, &installation.models);
+    }
+    if bundle_models {
+        command.env("NEURODESK_OFFLINE", "1");
+    }
+    // ONNX Runtime's Linux build otherwise records a device ID under ~/.cache.
+    if env::var_os("ORT_DISABLE_TELEMETRY").is_none() {
+        command.env("ORT_DISABLE_TELEMETRY", "1");
+    }
+    command
+}
+
 fn main() {
     let installation = match installation() {
         Ok(installation) => installation,
@@ -80,16 +99,8 @@ fn main() {
             exit(1);
         }
     };
-    let mut command = Command::new(&installation.node);
-    command
-        .arg(&installation.entry)
-        .args(env::args_os().skip(1))
-        .env(model_variable(&installation.tool), &installation.models)
-        .env("NEURODESK_OFFLINE", "1");
-    // ONNX Runtime's Linux build otherwise records a device ID under ~/.cache.
-    if env::var_os("ORT_DISABLE_TELEMETRY").is_none() {
-        command.env("ORT_DISABLE_TELEMETRY", "1");
-    }
+    let bundle_models = option_env!("NEURODESK_BUNDLE_MODELS") != Some("false");
+    let mut command = runtime_command(&installation, bundle_models);
 
     #[cfg(unix)]
     {
@@ -118,6 +129,31 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_model_bundles_force_offline_and_overrides_are_inherited() {
+        let installation = Installation {
+            tool: "test-launcher".to_string(),
+            node: PathBuf::from("runtime/node"),
+            entry: PathBuf::from("app/bin/test-launcher.js"),
+            models: PathBuf::from("models"),
+        };
+        let bundled = runtime_command(&installation, true);
+        assert!(bundled
+            .get_envs()
+            .any(|(name, value)| name == "NEURODESK_OFFLINE" && value == Some("1".as_ref())));
+        let downloads = runtime_command(&installation, false);
+        assert!(!downloads
+            .get_envs()
+            .any(|(name, _)| name == "NEURODESK_OFFLINE"));
+        let variable = model_variable(&installation.tool);
+        env::set_var(&variable, "external-models");
+        let overridden = runtime_command(&installation, false);
+        env::remove_var(&variable);
+        assert!(!overridden
+            .get_envs()
+            .any(|(name, _)| name == variable.as_str()));
+    }
 
     #[test]
     fn tool_name_is_the_executable_stem() {

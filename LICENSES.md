@@ -9,6 +9,8 @@ for each app are recorded in `registry/apps.yml`.
 - `packages/components`: MIT (`packages/components/LICENSE`)
 - `apps/musclemap`: MIT (`apps/musclemap/web/LICENSE`)
 - `apps/qsmbly`: MIT (`apps/qsmbly/LICENSE`)
+- `packages/qsmbly`: GPL-3.0-only (`packages/qsmbly/LICENSE`, `packages/qsmbly/NOTICE`); its
+  release archives redistribute the unmodified GPL-3.0-only QSMxT 9.22.0 binaries and dcm2niix
 - `apps/synthsr`: Apache-2.0 (`apps/synthsr/LICENSE`); upstream attribution in `apps/synthsr/NOTICE`
 - `packages/synthsr`: Apache-2.0 (`packages/synthsr/LICENSE`); shared browser/native SynthSR pipeline
 - `apps/seedseg` web application: MIT (`apps/seedseg/web/LICENSE`)

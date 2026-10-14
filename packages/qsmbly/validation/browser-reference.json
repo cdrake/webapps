@@ -1,0 +1,321 @@
+{
+  "browser": "chromium 156.0.8078.4",
+  "app": "qsmbly 0.30.20261012",
+  "qsmCore": "0.38.0",
+  "seconds": 54,
+  "example": {
+    "id": "real-brain-qsm",
+    "sha256": {
+      "sub-170705134431std1312211075243167001_ses-1_run-1_part-mag_T2starw.nii.gz": "451510366b5d994d9fd0f24e69e2ab40e44534a61c2d1e3a26b791caa8d862b5",
+      "sub-170705134431std1312211075243167001_ses-1_run-1_part-mag_T2starw.json": "af2ec5f5eff02b3fa0bbe7b7d18dfe95a58a09fdc914efc1394424e0fa8fdbcc",
+      "sub-170705134431std1312211075243167001_ses-1_run-1_part-phase_T2starw.nii.gz": "169d30497c751724ace39864fb796fd341201a1282be0b0ac44938c22cfcdfa7",
+      "sub-170705134431std1312211075243167001_ses-1_run-1_part-phase_T2starw.json": "6624f63dfb76f3121c4c91a42fd89ba956870516b1ec0c4fa8f3c007dd9384b4"
+    }
+  },
+  "parameters": {
+    "echoTimesMs": [20],
+    "fieldStrength": 3
+  },
+  "settings": {
+    "combined_method": "none",
+    "swi": {
+      "hp_sigma": [4,4,0],
+      "scaling": "tanh",
+      "strength": 4,
+      "mip_window": 7
+    },
+    "tgv": {
+      "regularization": 2,
+      "alpha0": null,
+      "alpha1": null,
+      "iterations": 1000,
+      "erosions": 3,
+      "step_size": 3,
+      "tol": 0.00001
+    },
+    "qsmart": {
+      "sdf_sigma1_stage1": 10,
+      "sdf_sigma2_stage1": 10,
+      "sdf_sigma1_stage2": 8,
+      "sdf_sigma2_stage2": 2,
+      "sdf_spatial_radius": 8,
+      "sdf_lower_lim": 0.6,
+      "sdf_curv_constant": 500,
+      "vasc_sphere_radius": 8,
+      "frangi_scale_min": 0.5,
+      "frangi_scale_max": 6,
+      "frangi_scale_ratio": 0.5,
+      "frangi_c": 500,
+      "ilsqr_tol": 0.01,
+      "ilsqr_max_iter": 50,
+      "inversion_algorithm": "ilsqr"
+    },
+    "tfi": {
+      "lambda": 0.000075,
+      "precond": 30,
+      "merit": false,
+      "data_weighting": 1,
+      "percentage": 0.9,
+      "cg_tol": 0.01,
+      "cg_max_iter": 100,
+      "max_iter": 10,
+      "tol": 0.1
+    },
+    "unwrapping_algorithm": "romeo",
+    "phase_offset_method": "mcpc3ds",
+    "b0_estimation": "weighted_avg",
+    "mcpc3ds": {
+      "sigma": [4,4,4]
+    },
+    "b0_weight_type": "phase_snr",
+    "linearFit": {
+      "estimate_offset": true,
+      "reliability_threshold_percentile": 90
+    },
+    "romeo": {
+      "weighting": "phase_snr",
+      "phase_gradient_coherence": true,
+      "mag_coherence": true,
+      "mag_weight": false
+    },
+    "bf_algorithm": "vsharp",
+    "vsharp": {
+      "threshold": 0.2,
+      "max_radius": 18,
+      "min_radius": 2
+    },
+    "sharp": {
+      "threshold": 0.05,
+      "radius": 6
+    },
+    "resharp": {
+      "radius": 6,
+      "tik_reg": 0.0001,
+      "tol": 0.000001,
+      "max_iter": 30
+    },
+    "ismv": {
+      "tol": 0.000001,
+      "max_iter": 50,
+      "radius": 2
+    },
+    "pdf": {
+      "tol": 0.00001,
+      "maxit": 2834
+    },
+    "lbv": {
+      "tol": 0.000001
+    },
+    "harperella": {
+      "radius": 10,
+      "max_iter": 40,
+      "tol": 0.000001
+    },
+    "iharperella": {
+      "radius": 10,
+      "max_iter": 40,
+      "tol": 0.000001
+    },
+    "dipole_inversion": "rts",
+    "dl_tiling": {
+      "enabled": true,
+      "tile_size": 56,
+      "tile_halo": 4
+    },
+    "tkd": {
+      "threshold": 0.15
+    },
+    "tsvd": {
+      "threshold": 0.15
+    },
+    "tikhonov": {
+      "lambda": 0.01,
+      "reg": "identity"
+    },
+    "tv": {
+      "lambda": 0.0002,
+      "rho": 0.02,
+      "tol": 0.001,
+      "max_iter": 250
+    },
+    "rts": {
+      "delta": 0.15,
+      "mu": 100000,
+      "rho": 10,
+      "tol": 0.01,
+      "max_iter": 20,
+      "lsmr_iter": 4
+    },
+    "nltv": {
+      "lambda": 0.001,
+      "mu": 1,
+      "max_iter": 250,
+      "tol": 0.001,
+      "newton_max_iter": 10
+    },
+    "ndi": {
+      "tau": 2,
+      "alpha": 0.00001,
+      "max_iter": 200
+    },
+    "fansi": {
+      "alpha1": 0.0002,
+      "mu1": 0.02,
+      "mu2": 1,
+      "alpha0": 0.0004,
+      "mu0": 0.04,
+      "max_iter": 150,
+      "tol_update": 0.1
+    },
+    "fansitgv": {
+      "alpha1": 0.0002,
+      "mu1": 0.02,
+      "mu2": 1,
+      "alpha0": 0.0004,
+      "mu0": 0.04,
+      "max_iter": 150,
+      "tol_update": 0.1
+    },
+    "l1qsm": {
+      "alpha1": 0.0002,
+      "mu1": 0.02,
+      "mu2": 1,
+      "mu3": 1,
+      "lambda": 1,
+      "max_iter": 50,
+      "tol_update": 1
+    },
+    "whqsm": {
+      "alpha1": 0.0002,
+      "mu1": 0.02,
+      "mu2": 1,
+      "beta": 150,
+      "muh": 3,
+      "max_iter": 300,
+      "tol_update": 0.1
+    },
+    "hdqsm": {
+      "alpha_l2": 0.0001,
+      "mu1_l2": 0.01,
+      "mu2": 1,
+      "max_iter_l1": 20,
+      "max_iter_l2": 80,
+      "tol_update": 1
+    },
+    "medi": {
+      "lambda": 0.001,
+      "percentage": 0.3,
+      "max_iter": 30,
+      "cg_max_iter": 10,
+      "cg_tol": 0.01,
+      "tol": 0.1,
+      "smv": true,
+      "smv_radius": 5,
+      "merit": false,
+      "data_weighting": 1
+    },
+    "ilsqr": {
+      "tol": 0.01,
+      "max_iter": 50
+    }
+  },
+  "command": "qsmxt run <bids_dir> --mask phase-quality,threshold:otsu,dilate:1,fill-holes:0,erode:2 --vsharp-max-radius 18 --vsharp-min-radius 2",
+  "configToml": "description = \"\"\n\n[bet]\nfractional_intensity = 0.5\ngradient_threshold = 0.0\niterations = 1000\nsmoothness = 1.0\nsubdivisions = 4\n\n[bg_removal]\nalgorithm = \"vsharp\"\nmsmv_refine = false\n\n[bg_removal.vsharp]\nmax_radius = 18.0\nmin_radius = 2.0\nthreshold = 0.2\n\n[field_mapping]\nb0_estimation = \"weighted-avg\"\nb0_weight_type = \"phase-snr\"\nbipolar_correction = false\ncoil_combination_sigma = [\n    10.0,\n    10.0,\n    5.0,\n]\nphase_offset_removal = true\nphase_offset_sigma = [\n    4.0,\n    4.0,\n    4.0,\n]\nunwrapping_algorithm = \"romeo\"\n\n[field_mapping.linear_fit]\nestimate_offset = true\nreliability_threshold_percentile = 90.0\n\n[field_mapping.romeo]\nbestpath = false\ncorrect_global = true\ncorrect_regions = false\nindividual = true\nmag_coherence = true\nmag_weight = false\nmag_weight2 = false\nmax_seeds = 1\nmerge_regions = false\nphase_coherence = true\nphase_gradient_coherence = true\nphase_linearity = true\ntemplate = 0\ntemporal_uncertain_unwrapping = 0.5\nwrap_addition = 0.0\n\n[homogeneity]\nnbox = 3\nsigma_mm = 7.0\n\n[inversion]\nalgorithm = \"rts\"\n\n[inversion.rts]\ndelta = 0.15\nlsmr_iter = 4\nmax_iter = 20\nmu = 100000.0\nrho = 10.0\ntol = 0.01\n\n[masking]\ncombine = \"or\"\ninhomogeneity_correction = true\nrefinements = []\ntwo_pass = false\n\n[[masking.sections]]\ninput = \"phase-quality\"\n\n[masking.sections.generator]\nmethod = \"otsu\"\nop = \"threshold\"\n\n[[masking.sections.refinements]]\niterations = 1\nop = \"dilate\"\n\n[[masking.sections.refinements]]\nmax_size = 0\nop = \"fill-holes\"\n\n[[masking.sections.refinements]]\niterations = 2\nop = \"erode\"\n\n[pipeline]\ncrop_margin_mm = 32.0\ncrop_to_mask = false\ndo_analysis = false\ndo_chi_separation = false\ndo_qsm = true\ndo_r2map = false\ndo_r2primemap = false\ndo_r2starmap = false\ndo_segmentation = false\ndo_smwi = false\ndo_swi = false\ndo_t2starmap = false\nexport_dicom = false\nfft_padding = false\nobliquity_threshold = -1.0\noutput_space = \"acquired\"\n\n[qsm]\nreference = \"mean\"\n\n[segmentation]\nflip_averaging = true\nsigma_smoothing = 0.5\ntopology_cleanup = true\nversion = \"v1\"\n\n[separation]\nalgorithm = \"r2star-qsm\"\nr2prime_strategy = \"auto\"\n\n[separation.chi_sep_ilsqr]\ncg_max_iter = 30\ncg_tol = 0.05\ndr_neg = 137.0\ndr_pos = 137.0\nlambda1 = 1.0\nmax_iter = 30\npercentage = 0.9\nr2p_max = 30.0\nr2p_min = 1.0\ntol = 0.01\n\n[separation.chi_sep_medi]\ncg_max_iter = 100\ncg_tol = 0.01\ndr_neg = 30.0\ndr_pos = 114.0\nlambda_cpl = 100.0\nlambda_dia = 1000.0\nlambda_para = 1000.0\nmax_iter = 10\npercentage = 0.3\ntol = 0.1\n\n[separation.decompose]\nchi_bound = 0.5\nmax_lm_iter = 30\nn_inner = 10\n\n[separation.hc_chisep]\nbin_hz = 0.25\ndr_pos_3t = 137.0\n\n[separation.r2star_qsm]\nr_const_3t = 274.0\n\n[separation.wavesep]\nalpha = 0.2\ndr_neg = 137.0\ndr_pos = 137.0\nlambda = 0.02\nmax_iter = 100\ntol = 0.001\nwavelet_order = 4\n\n[smwi]\nmip_window = 4\npower = 4.0\nthreshold_ppm = 1.0\n\n[swi]\nhp_sigma = [\n    4.0,\n    4.0,\n    0.0,\n]\nmip_window = 7\nscaling = \"tanh\"\nstrength = 4.0\n",
+  "artifacts": {
+    "chiSha256": "03b4550895557329b93849d87c6a8688ece9c1fb36aaec032ed8fc23d7fe1a4f",
+    "maskSha256": "f7359a44809c62fe1c9f78d28e7821bb3ef6c8a32f0e37b51284c9089310482f"
+  },
+  "measurement": {
+    "dims": [224,224,160],
+    "mask": {
+      "voxels": 1334920,
+      "sha256": "cd37133bf3e505f47426af5f9b2f20a9f313a8d2df262b7c2ee07c0db30edb36"
+    },
+    "chi": {
+      "float32Sha256": "f3ca0ecaa432eb7affccba28421cb6d8bd77e4eee3a35ec4cad25ca0457d6f42",
+      "support": 1126485,
+      "meanPpm": 0,
+      "sdPpm": 0.031953,
+      "percentilesPpm": {
+        "p1": -0.052593,
+        "p5": -0.033499,
+        "p25": -0.013913,
+        "p50": -0.001478,
+        "p75": 0.010402,
+        "p95": 0.037598,
+        "p99": 0.090353
+      }
+    },
+    "blocks": {
+      "size": 10,
+      "grid": [23,23,16],
+      "meanPpb": [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,4,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,4,4,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-3,-7,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-1,null,null,4,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,1,-7,null,null,-2,3,10,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,10,-7,-13,-7,1,-3,-5,11,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,8,-8,4,2,0,1,14,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-6,-6,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-5,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-1,0,-2,2,6,3,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,1,2,-6,-2,5,-3,7,2,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,4,-1,-10,-9,-5,7,0,7,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,5,12,-1,5,4,7,5,11,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,5,-5,0,1,8,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,1,0,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-4,-5,10,null,9,2,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-2,-5,-10,0,7,-8,0,-1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-6,-19,-19,2,-3,-2,-16,-4,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-4,-12,-3,16,23,10,-14,-3,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-4,1,11,13,1,-3,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-2,-1,-5,-7,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,2,-3,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-10,-7,-1,null,null,null,null,null,-10,-10,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-7,1,null,null,null,null,-6,-9,-9,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-5,-3,null,null,null,null,null,-4,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,10,12,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,0,-8,22,14,8,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-6,-7,-19,-2,6,-7,-9,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-8,-21,-21,-6,-5,-12,-15,-11,null,null,null,null,null,null,null,null,null,null,null,null,null,null,5,-10,-20,-19,-5,0,-12,-19,-16,-5,null,null,null,null,null,null,null,null,null,null,null,null,null,2,-13,-8,-8,0,-9,-9,-12,-11,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-14,-4,9,1,-9,-3,-4,-19,null,null,null,null,null,null,null,null,null,null,null,null,null,2,-1,-11,-3,12,16,9,-16,-4,-14,-3,null,null,null,null,null,null,null,null,null,null,null,null,null,-3,-12,-1,3,null,null,null,-3,-11,-6,3,null,null,null,null,null,null,null,null,null,null,null,null,-2,-9,-6,null,null,null,null,-10,-13,-7,1,null,null,null,null,null,null,null,null,null,null,null,null,-5,-6,null,null,null,null,null,null,-2,-2,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,3,-21,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,1,null,null,0,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,2,7,2,4,-1,3,1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,2,-9,-13,3,26,4,-10,0,null,null,null,null,null,null,null,null,null,null,null,null,null,null,4,-5,-12,2,24,23,7,-16,-7,-1,null,null,null,null,null,null,null,null,null,null,null,null,null,5,-4,-22,13,5,0,14,-12,-15,3,null,null,null,null,null,null,null,null,null,null,null,null,4,5,-15,-30,1,-2,1,4,-21,-30,4,4,null,null,null,null,null,null,null,null,null,null,null,6,2,-19,-5,3,2,-6,5,-9,-26,3,5,null,null,null,null,null,null,null,null,null,null,null,null,2,-15,-9,30,5,-7,26,-5,-16,-2,7,null,null,null,null,null,null,null,null,null,null,null,7,4,-14,-1,-9,65,51,5,-3,-14,1,2,null,null,null,null,null,null,null,null,null,null,null,1,-2,-19,2,2,15,15,3,6,-24,-3,5,null,null,null,null,null,null,null,null,null,null,null,null,-4,-21,-4,19,null,null,null,0,-22,-6,9,null,null,null,null,null,null,null,null,null,null,null,null,-3,-15,-8,6,null,null,null,-5,-13,-1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,4,3,12,null,0,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,5,8,1,9,7,1,4,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,6,-8,-10,12,10,4,-6,4,null,null,null,null,null,null,null,null,null,null,null,null,null,null,6,2,-27,1,-7,31,7,-12,-4,5,null,null,null,null,null,null,null,null,null,null,null,null,9,4,0,-28,10,25,31,15,-7,-6,4,4,null,null,null,null,null,null,null,null,null,null,null,8,3,-19,-16,-18,34,103,-10,-10,-20,6,7,null,null,null,null,null,null,null,null,null,null,null,8,2,-12,-8,3,27,70,8,-1,-22,1,3,null,null,null,null,null,null,null,null,null,null,null,8,11,-7,-6,45,13,-11,46,5,-7,6,11,null,null,null,null,null,null,null,null,null,null,null,6,-2,-11,30,-9,21,0,2,11,-10,8,14,null,null,null,null,null,null,null,null,null,null,null,null,-3,-15,38,52,8,-9,13,80,-7,0,9,null,null,null,null,null,null,null,null,null,null,null,null,-5,-16,10,46,25,-11,48,41,-13,-6,9,null,null,null,null,null,null,null,null,null,null,null,null,-1,-11,-11,15,19,0,18,3,-6,1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-6,-10,-19,-2,-2,-17,-18,-7,-3,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-8,-16,-17,-2,1,-17,-20,-12,-4,null,null,null,null,null,null,null,null,null,null,null,null,null,null,1,null,-5,1,-3,-9,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,8,5,12,11,-2,4,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,10,-7,-4,13,15,6,-7,6,null,null,null,null,null,null,null,null,null,null,null,null,null,null,8,5,-25,11,7,14,11,-14,-1,5,null,null,null,null,null,null,null,null,null,null,null,null,null,5,-3,-32,8,-4,29,22,-18,-8,5,null,null,null,null,null,null,null,null,null,null,null,null,11,0,-19,-26,-23,3,43,-12,-15,-19,-1,7,null,null,null,null,null,null,null,null,null,null,null,14,-3,-7,-17,17,5,11,16,-3,-15,4,14,null,null,null,null,null,null,null,null,null,null,null,12,2,-12,-10,27,27,41,36,-12,-8,0,17,null,null,null,null,null,null,null,null,null,null,null,11,-2,-14,-4,-8,50,64,18,-24,-13,-7,14,null,null,null,null,null,null,null,null,null,null,null,null,2,-20,4,4,19,28,4,19,-21,-9,14,null,null,null,null,null,null,null,null,null,null,null,null,4,-13,-8,12,25,10,30,8,-26,0,15,null,null,null,null,null,null,null,null,null,null,null,null,0,-8,-15,6,16,15,25,-20,-16,0,10,null,null,null,null,null,null,null,null,null,null,null,null,1,-4,-8,-17,-10,8,-16,-20,-4,2,null,null,null,null,null,null,null,null,null,null,null,null,null,3,-3,-13,-15,4,-1,-13,-17,-8,2,null,null,null,null,null,null,null,null,null,null,null,null,null,null,4,3,-2,7,3,-3,-4,2,6,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,8,7,11,11,5,3,3,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,3,1,10,null,3,0,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,3,-6,-2,16,22,7,-5,1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,8,-3,-14,6,18,27,10,-7,-3,5,null,null,null,null,null,null,null,null,null,null,null,null,null,11,-8,-24,-12,19,22,-4,-19,-13,5,null,null,null,null,null,null,null,null,null,null,null,null,11,-4,-23,-28,-28,3,23,-23,-29,-17,-3,10,null,null,null,null,null,null,null,null,null,null,null,10,-1,-11,-25,-18,-8,10,-18,-25,-16,-2,9,null,null,null,null,null,null,null,null,null,null,null,13,8,-7,-22,-4,14,17,13,-22,-12,4,14,null,null,null,null,null,null,null,null,null,null,null,12,0,-13,-24,-5,12,14,10,-33,-17,-2,11,null,null,null,null,null,null,null,null,null,null,null,null,-1,-26,-14,12,12,8,22,-14,-22,-10,15,null,null,null,null,null,null,null,null,null,null,null,null,3,-13,-16,20,17,-4,33,-12,-22,-2,11,null,null,null,null,null,null,null,null,null,null,null,null,-1,-14,-19,-8,3,0,8,-25,-19,-3,8,null,null,null,null,null,null,null,null,null,null,null,null,1,-4,-12,-23,-7,3,-20,-22,-4,4,null,null,null,null,null,null,null,null,null,null,null,null,null,null,5,-6,-14,8,2,-6,-13,3,7,null,null,null,null,null,null,null,null,null,null,null,null,null,null,4,7,-1,14,4,3,8,6,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,6,9,14,12,11,10,5,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,3,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-3,-5,5,16,18,9,-1,2,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-4,-4,-3,17,21,4,0,-2,5,null,null,null,null,null,null,null,null,null,null,null,null,null,2,-9,-14,-22,24,24,-9,-18,-10,3,null,null,null,null,null,null,null,null,null,null,null,null,null,-2,-15,-18,-21,12,12,-7,-25,-12,-2,6,null,null,null,null,null,null,null,null,null,null,null,null,0,-5,-13,-21,0,13,-8,-22,-6,0,7,null,null,null,null,null,null,null,null,null,null,null,null,0,-10,-19,-25,6,17,-14,-26,-13,-4,5,null,null,null,null,null,null,null,null,null,null,null,null,-2,-2,-12,-11,-2,4,-14,-17,-12,3,6,null,null,null,null,null,null,null,null,null,null,null,null,-6,-11,1,0,-6,-5,-7,-8,-4,-8,3,null,null,null,null,null,null,null,null,null,null,null,null,-3,-4,6,11,3,0,1,1,-3,-5,3,null,null,null,null,null,null,null,null,null,null,null,null,-4,-10,-9,0,9,9,-2,-6,-9,-6,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-3,-10,-13,6,2,-9,-11,-6,1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-4,-8,-13,14,9,-6,-10,0,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,0,1,11,13,4,2,5,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,8,8,null,9,9,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,0,6,7,11,5,2,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,0,-3,-10,12,9,-3,2,-1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-12,-13,-18,21,23,-12,-12,-5,-1,null,null,null,null,null,null,null,null,null,null,null,null,null,-4,-15,-15,-14,22,18,-2,-23,-15,-6,null,null,null,null,null,null,null,null,null,null,null,null,null,0,-8,-8,-11,15,14,-7,-21,-9,-9,null,null,null,null,null,null,null,null,null,null,null,null,null,-3,-3,-9,-15,17,21,-12,-17,-6,-6,null,null,null,null,null,null,null,null,null,null,null,null,null,0,-1,-2,-3,11,16,-3,3,-8,0,null,null,null,null,null,null,null,null,null,null,null,null,null,-1,5,4,7,22,28,7,4,2,0,null,null,null,null,null,null,null,null,null,null,null,null,null,-1,5,13,8,26,35,8,9,3,2,null,null,null,null,null,null,null,null,null,null,null,null,null,null,2,-4,3,18,17,2,3,-5,1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-4,-8,-10,8,3,-4,-13,-9,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-7,-9,6,5,-10,-11,-4,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-1,7,7,-1,-6,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-8,2,null,-5,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-11,-12,4,4,-10,-15,-4,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-4,-12,-13,11,8,-5,-16,-9,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-6,-5,-11,15,21,-4,-14,-5,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-2,-11,-17,18,22,-10,-18,-6,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-4,0,-8,23,27,2,-4,-7,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,5,4,4,24,30,8,2,0,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,3,5,1,27,35,4,1,-2,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-3,-5,11,18,-2,-4,-4,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-9,4,3,-7,-13,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-2,-5,-15,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-8,null,null,-6,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-8,3,11,2,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-12,1,13,-4,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-9,8,16,2,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-5,9,20,0,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,6,10,-3,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,0,6,-5,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]
+    }
+  },
+  "replay": {
+    "phaseSidecar": {
+      "B0_dir": [0,0,1]
+    },
+    "why": "The web app inverts with B0 along +z (run_dipole_inversion_wasm is called with 0, 0, 1). QSMxT takes B0 from the affine unless a sidecar sets B0_dir, and the example is 3.6 degrees oblique, so the exported command alone computes a different, affine-aware map (observed.exportedCommand). Remove this once the app passes the affine's B0 direction."
+  },
+  "tolerance": {
+    "maskVoxelRatio": {
+      "min": 0.995,
+      "max": 1.005
+    },
+    "supportRatio": {
+      "min": 0.995,
+      "max": 1.005
+    },
+    "blocksCompared": {
+      "min": 0.99
+    },
+    "blockCorrelation": {
+      "min": 0.999
+    },
+    "blockRmsPpm": {
+      "max": 0.001
+    },
+    "blockMaxAbsPpm": {
+      "max": 0.006
+    },
+    "meanDifferencePpm": {
+      "max": 0.0005
+    },
+    "sdRatio": {
+      "min": 0.99,
+      "max": 1.01
+    },
+    "percentileMaxAbsPpm": {
+      "max": 0.001
+    }
+  },
+  "observed": {
+    "machine": "linux-x64, qsmbly bin/qsmbly.js with QSMxT 9.22.0 x86_64-unknown-linux-musl",
+    "replayed": {
+      "identical": false,
+      "maskVoxelRatio": 1.001523,
+      "supportRatio": 1.001146,
+      "blocksCompared": 1,
+      "blockCorrelation": 0.999552,
+      "blockRmsPpm": 0.000407,
+      "blockMaxAbsPpm": 0.003,
+      "meanDifferencePpm": 0.000082,
+      "sdRatio": 1.003255,
+      "percentileMaxAbsPpm": 0.000167
+    },
+    "exportedCommand": {
+      "identical": false,
+      "maskVoxelRatio": 1.001523,
+      "supportRatio": 1.001146,
+      "blocksCompared": 1,
+      "blockCorrelation": 0.978534,
+      "blockRmsPpm": 0.002766,
+      "blockMaxAbsPpm": 0.009,
+      "meanDifferencePpm": 0.000043,
+      "sdRatio": 0.996557,
+      "percentileMaxAbsPpm": 0.001216
+    },
+    "voxelwise": "Replayed against the browser on the voxels both maps hold: correlation 0.995, RMS difference 0.0032 ppm (browser SD 0.032 ppm), concentrated at the brain edge, where the masks differ (Dice 0.998). At least six voxels from the edge: correlation 0.9995, RMS 0.00096 ppm."
+  }
+}

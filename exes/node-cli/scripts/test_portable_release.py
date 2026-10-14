@@ -173,6 +173,31 @@ class PortableReleaseTests(unittest.TestCase):
             portable_release._flatten_node_modules(app, "@neurodesk/tool")
             self.assertEqual(list((app / "node_modules").iterdir()), [])
 
+    def test_qsmbly_ships_native_executables_and_downloads_models_on_first_use(self):
+        linux = portable_release.load_target(ROOT, "packages/qsmbly", "linux-x64")
+        self.assertFalse(linux.bundle_models)
+        self.assertEqual(linux.native_executables, ("app/native/qsmxt", "app/native/dcm2niix"))
+        self.assertEqual(portable_release._normalized_mode(pathlib.PurePosixPath("app/native/qsmxt"), linux), 0o755)
+        self.assertEqual(portable_release._normalized_mode(pathlib.PurePosixPath("app/native/dcm2niix.LICENSE"), linux), 0o644)
+        windows = portable_release.load_target(ROOT, "packages/qsmbly", "windows-x64")
+        self.assertEqual(windows.executables, ("qsmbly.exe", "runtime/node.exe", "app/native/qsmxt.exe", "app/native/dcm2niix.exe"))
+        self.assertTrue(portable_release.load_target(ROOT, "packages/topofit", "linux-x64").bundle_models)
+        self.assertEqual(portable_release.load_target(ROOT, "packages/topofit", "linux-x64").native_executables, ())
+
+    def test_native_executables_must_stay_inside_the_application(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = pathlib.Path(temporary)
+            (repo / "apps/tool").mkdir(parents=True)
+            (repo / "packages/tool/bin").mkdir(parents=True)
+            package = {"name": "@neurodesk/tool", "version": "0.1.20261005", "bin": {"tool": "bin/tool.js"}}
+            (repo / "apps/tool/package.json").write_text(json.dumps(package))
+            (repo / "packages/tool/package.json").write_text(json.dumps(package))
+            for native in ("runtime/node", "app/../tool", "/usr/bin/tool"):
+                release = {"displayName": "Tool", "app": "tool", "run": "", "readme": {"run": "Run", "notes": []}, "validation": "check.mjs", "targets": {"linux-x64": {"archive": "tar.gz", "executable": "tool", "native": [native]}}}
+                (repo / "packages/tool/release.json").write_text(json.dumps(release))
+                with self.assertRaisesRegex(ValueError, "inside app/"):
+                    portable_release.load_target(repo, "packages/tool", "linux-x64")
+
     def test_readme_comes_from_the_release_spec(self):
         syncro = portable_release.readme_text(portable_release.load_target(ROOT, "packages/syncro", "linux-x64"))
         self.assertIn("  ./syncro input.nii.gz results --threads 4\n", syncro)

@@ -53,7 +53,9 @@ test('Windows producers get OIDC permission and suppress activation in pull requ
 test('portable and native release gates verify Windows archives before publishing', async () => {
   const node = await read('exes/node-cli/scripts/portable_release.py');
   assert.ok(node.indexOf('windows_signing.sign_tree(stage') < node.indexOf('manifest = create_manifest(stage'));
-  assert.match(node, /verify_zip\(archive, \(target\.executable, target\.private_node\)\)/);
+  // target.executables is the launcher, the private Node runtime and any native tools the package ships.
+  assert.match(node, /verify_zip\(archive, target\.executables\)/);
+  assert.match(node, /return \(self\.executable, self\.private_node, \*self\.native_executables\)/);
   const greedy = await read('scripts/package-greedy.py');
   assert.ok(greedy.indexOf('windows_signing.sign_tree(stage') < greedy.indexOf("archive = dist / f'{name}.zip'"));
   const receipt = await read('scripts/check-native-receipts.mjs');
