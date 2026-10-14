@@ -39,6 +39,8 @@ test('core UI pairings meet WCAG AA text contrast', () => {
   assert.ok(contrast(token('nd-brand-text-muted'), token('nd-brand-surface')) >= 7);
   assert.ok(contrast(token('nd-brand-action-text'), token('nd-brand-primary')) >= 4.5);
   assert.ok(contrast(token('nd-brand-menu-text'), token('nd-brand-menu')) >= 4.5);
+  // The app title in the bar is primary green.
+  assert.ok(contrast(token('nd-brand-primary'), token('nd-brand-menu')) >= 4.5);
   assert.ok(contrast(token('nd-brand-light'), token('nd-brand-surface')) >= 4.5);
   assert.ok(contrast(token('nd-brand-text-dim'), token('nd-brand-pale')) >= 4.5);
   assert.ok(contrast(token('nd-brand-success'), token('nd-brand-surface')) >= 4.5);
@@ -61,6 +63,7 @@ test('the light palette meets the same WCAG AA text contrast', () => {
     ['nd-brand-text-muted', 'nd-brand-surface', 4.5],
     ['nd-brand-action-text', 'nd-brand-primary', 4.5],
     ['nd-brand-menu-text', 'nd-brand-menu', 4.5],
+    ['nd-brand-primary', 'nd-brand-menu', 4.5],
     ['nd-brand-text-dim', 'nd-brand-pale', 4.5],
     ['nd-brand-success', 'nd-brand-surface', 4.5],
     ['nd-brand-console-text', 'nd-brand-console-surface', 4.5],
