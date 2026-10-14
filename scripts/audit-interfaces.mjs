@@ -161,7 +161,7 @@ try {
         } else {
           await expect(selector).toHaveCount(1);
           await expect(selector).toBeVisible();
-          await expect(selector).toHaveAccessibleName('Example');
+          await expect(selector).toHaveAccessibleName('Input');
           // DICOMpare mounts its picker on From data; Zarro uses remote URLs.
           if (app.id === 'dicompare') await page.getByRole('button', { name: 'From data', exact: true }).click();
           const replacementInput = app.id === 'zarro' ? '#zarrUrl' : 'input[type="file"]';
@@ -207,7 +207,7 @@ try {
             await expect(state).toHaveAttribute('data-example-state', 'ready');
             await expect(state).toHaveAttribute('data-example-id', examples[0].id);
             // The loaded example's tooltip must not change the control's name.
-            await expect(selector).toHaveAccessibleName('Example');
+            await expect(selector).toHaveAccessibleName('Input');
             result.example = examples[0].id;
             result.exampleImport = { status: 'passed', example: examples[0].id };
           }

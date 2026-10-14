@@ -771,20 +771,19 @@ async function openGenVectors(): Promise<void> {
   await runGenerate() // generate immediately with the current settings
 }
 
-// --- Drag & drop ---
-// Prevent the browser's default "navigate to dropped file" on the WHOLE window —
-// a drop anywhere outside the canvas would otherwise blow away the app.
-window.addEventListener('dragover', (e) => e.preventDefault())
-window.addEventListener('drop', (e) => e.preventDefault())
-
+// --- Drag & drop --- (the shell's page drop handles drops outside the canvas)
 const main = $<HTMLElement>('canvas-container')
-main.addEventListener('dragover', () => dropOverlay.hidden = false)
+main.addEventListener('dragover', (e) => {
+  e.preventDefault()
+  dropOverlay.hidden = false
+})
 main.addEventListener('dragleave', (e) => {
   // Only hide when the cursor actually leaves the container, not on child crossings.
   if (!main.contains(e.relatedTarget as Node))
     dropOverlay.hidden = true
 })
 main.addEventListener('drop', (e) => {
+  e.preventDefault()
   void handleDrop(e as DragEvent)
 })
 

@@ -42,7 +42,7 @@ async function groupFiles(request, extra = []) {
 }
 
 async function selectGroupExample(page) {
-  await page.getByRole("combobox", { name: "Example", exact: true }).selectOption(group.id);
+  await page.getByRole("combobox", { name: "Input", exact: true }).selectOption(group.id);
   await expect(page.locator("[data-neurodesk-examples]")).toHaveAttribute("data-example-state", "ready", { timeout: 120000 });
   await expect(page.locator("#datasetSelect option")).toHaveCount(2);
   await expect(page.locator("#runButton")).toHaveText("Fit all 2 datasets");

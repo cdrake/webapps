@@ -51,7 +51,7 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
   };
   if (['deface', 'brain2print', 'dwi2trx', 'ants', 'greedy', 'edgereg', 'fireants', 'elastix', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel'].includes(id)) {
     const examples = JSON.parse(await readFile(join(root, 'apps', id, 'examples.json')));
-    const selector = page.getByRole('combobox', { name: 'Example', exact: true });
+    const selector = page.getByRole('combobox', { name: 'Input', exact: true });
     await expect(selector).toBeEnabled({ timeout: 120000 });
     await selector.selectOption(examples[0].id);
     await expect(page.locator('[data-neurodesk-examples]')).toHaveAttribute('data-example-state', 'ready', { timeout: 120000 });
@@ -59,7 +59,7 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
   if (id === 'nesvor') {
     assert.ok(compute, 'the nesvor workflow needs the reference compute server from prepareWorkflow');
     const examples = JSON.parse(await readFile(join(root, 'apps', id, 'examples.json')));
-    const selector = page.getByRole('combobox', { name: 'Example', exact: true });
+    const selector = page.getByRole('combobox', { name: 'Input', exact: true });
     await expect(selector).toBeEnabled({ timeout: 120000 });
     await selector.selectOption(examples[0].id);
     await expect(page.locator('[data-neurodesk-examples]')).toHaveAttribute('data-example-state', 'ready', { timeout: 120000 });

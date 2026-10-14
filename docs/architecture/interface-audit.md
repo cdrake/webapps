@@ -25,6 +25,21 @@ All 16 registered apps were reviewed on 9 September 2026, starting from `e6ef75e
 
 ## Rules and enforcement
 
+### Shared visual refresh, 14 October 2026
+
+The shared shell and workspace now use Inter, neutral surfaces, the logo green
+for actions and selection, and a 48px application bar. The input menu combines
+examples, file selection and folder selection. Page drops fill empty image slots
+in order, keep DICOM series together and offer Undo for replaced inputs.
+ANTs, Greedy and elastix serialize multi-image imports and report loaded files
+after clearing their native pickers. New selections supersede unfinished drop
+traversal. The page drop accepts native input snapshots without treating the
+shared file-field's promise-valued events as file arrays.
+
+Remaining markup work includes the independent drop boxes and uppercase section
+titles in QSMbly, the inference apps, ZARRo and SurfAnnotate. Those controls keep
+their existing behavior during this shared foundation change.
+
 About and Cite were reviewed across all 16 apps on 10 September 2026: no app stated who built the web application, none mentioned the lightNIIng ecosystem (lightniing.org), none cited the Neurodesk platform paper, and seven had no method citations at all. `registry/app-information.yml` now holds each app's packages, builder credits and one citation per implemented method (nnU-Net, SCIsegV2 and TotalSpineSeg for SCT; N4, non-local means and bilateral filtering for VesselBoost; DeepISLES, Neurosynth, the MNI152NLin2009cAsym template and the Nilearn development-fMRI dataset for CALMaR; MRIQC and Brainchop for BrowserQC; niimath, MindGrab and the ICBM template for Deface; and so on). The shared shell renders Cite from it for every app and appends the shared About block to every app dialog. `test/app-information.test.mjs` enforces completeness.
 
 [The design system](design-system.md) records why the catalog drifted and defines the one vocabulary every `imaging-workspace` app is built from. `test/design-system.test.mjs` enforces it: vocabulary apps have token-only app CSS within a 40-line budget, no restyled shared selectors, no free headings, inline styles or app-owned dialogs, and use the shared console, toolbar and dialog builders; legacy shell apps (Deface, BrowserQC, SurfAnnotate, ZARRo) are ratcheted so their colour literals and CSS size can only fall.

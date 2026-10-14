@@ -189,7 +189,7 @@ for (const failure of ["download", "empty image"]) {
         : route.fulfill({ body: fixture, headers: { "access-control-allow-origin": "*" } });
     });
     await page.goto("/");
-    const picker = page.getByRole("combobox", { name: "Example", exact: true });
+    const picker = page.getByRole("combobox", { name: "Input", exact: true });
     await picker.selectOption(example.id);
     await expect(page.locator("[data-neurodesk-examples]")).toHaveAttribute("data-example-state", "error");
     await expect(page.locator("#runButton")).toBeDisabled();
@@ -211,7 +211,7 @@ test("cancelling an example download leaves no image and permits retry", async (
     await route.fulfill({ body: fixture, headers: { "access-control-allow-origin": "*" } });
   });
   await page.goto("/");
-  const picker = page.getByRole("combobox", { name: "Example", exact: true });
+  const picker = page.getByRole("combobox", { name: "Input", exact: true });
   await picker.selectOption(example.id);
   await page.getByRole("button", { name: "Cancel example download", exact: true }).click();
   release();

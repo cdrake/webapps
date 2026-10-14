@@ -14,7 +14,7 @@ async function loadExample(page) {
   await proxyAssets(page);
   await forceCpu(page);
   await page.goto("/");
-  await page.getByRole("combobox", { name: "Example", exact: true }).selectOption(EXAMPLE);
+  await page.getByRole("combobox", { name: "Input", exact: true }).selectOption(EXAMPLE);
   await expect(page.locator("#t1Info")).toContainText("256 × 256 × 204", { timeout: 300000 });
   await expect(page.locator("#t1Canvas")).toBeVisible();
   await expect(page.locator("#viewerNotice")).toBeHidden();
@@ -126,7 +126,7 @@ test("a GPU run that fails is measured on the CPU instead", async ({ page }) => 
     Object.defineProperty(navigator, "gpu", { value: { requestAdapter: async () => adapter, getPreferredCanvasFormat: () => "bgra8unorm" } });
   });
   await page.goto("/");
-  await page.getByRole("combobox", { name: "Example", exact: true }).selectOption(EXAMPLE);
+  await page.getByRole("combobox", { name: "Input", exact: true }).selectOption(EXAMPLE);
   await expect(page.locator("#t1Info")).toContainText("256 × 256 × 204", { timeout: 300000 });
   await expect(page.locator("#measureButton")).toBeEnabled();
   await page.locator("#measureButton").click();
@@ -157,7 +157,7 @@ test("both failed segmentation attempts retain their last 40 module log lines", 
     Object.defineProperty(navigator, "gpu", { value: { requestAdapter: async () => adapter } });
   });
   await page.goto("/");
-  await page.getByRole("combobox", { name: "Example", exact: true }).selectOption(EXAMPLE);
+  await page.getByRole("combobox", { name: "Input", exact: true }).selectOption(EXAMPLE);
   await expect(page.locator("#measureButton")).toBeEnabled({ timeout: 300000 });
   await page.locator("#measureButton").click();
   await expect(page.locator("#statusText")).toContainText("Segmentation failed: cpu module failed");

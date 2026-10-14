@@ -42,7 +42,7 @@ for (const folds of [1, 5]) {
       if (navigator.gpu) navigator.gpu.requestAdapter = async () => ({});
     });
     await page.goto("./");
-    await page.getByLabel("Example", { exact: true }).selectOption(examples[0].id);
+    await page.getByLabel("Input", { exact: true }).selectOption(examples[0].id);
     await expect(page.locator("[data-neurodesk-examples]")).toHaveAttribute("data-example-state", "ready", { timeout: 120000 });
     await expect(page.locator("#fileInfo")).toContainText("240 × 240 × 81 voxels");
     await expect(page.locator("#runButton")).toBeEnabled();
@@ -107,7 +107,7 @@ test("automation reports a failed model download and leaves the run available", 
   test.setTimeout(5 * 60 * 1000);
   await page.route(modelUrl, (route) => route.fulfill({ status: 503, body: "" }));
   await page.goto("./");
-  await page.getByLabel("Example", { exact: true }).selectOption(examples[0].id);
+  await page.getByLabel("Input", { exact: true }).selectOption(examples[0].id);
   await expect(page.locator("#runButton")).toBeEnabled({ timeout: 120000 });
   await page.locator("#skullStripped").check();
   const input = await download(page, 0);
@@ -132,7 +132,7 @@ test("the ensemble downloads each fold after inference of the previous fold", as
   const secondFold = manifest.base_url + manifest.assets[1].filename;
   await page.route(secondFold, (route) => route.fulfill({ status: 503, body: "" }));
   await page.goto("./");
-  await page.getByLabel("Example", { exact: true }).selectOption(examples[0].id);
+  await page.getByLabel("Input", { exact: true }).selectOption(examples[0].id);
   await expect(page.locator("#runButton")).toBeEnabled({ timeout: 120000 });
   await page.locator("#skullStripped").check();
   await page.locator("#folds").selectOption("5");
@@ -150,7 +150,7 @@ test("cancelling a run stops it and keeps the input ready", async ({ page }) => 
   test.setTimeout(5 * 60 * 1000);
   await page.route(modelUrl, () => {});
   await page.goto("./");
-  await page.getByLabel("Example", { exact: true }).selectOption(examples[0].id);
+  await page.getByLabel("Input", { exact: true }).selectOption(examples[0].id);
   await expect(page.locator("#runButton")).toBeEnabled({ timeout: 120000 });
   await page.locator("#skullStripped").check();
   await page.locator("#runButton").click();
@@ -166,7 +166,7 @@ test("automation cancellation stops the worker and permits a new run", async ({ 
   test.setTimeout(5 * 60 * 1000);
   await page.route(modelUrl, () => {});
   await page.goto("./");
-  await page.getByLabel("Example", { exact: true }).selectOption(examples[0].id);
+  await page.getByLabel("Input", { exact: true }).selectOption(examples[0].id);
   await expect(page.locator("#runButton")).toBeEnabled({ timeout: 120000 });
   await page.locator("#skullStripped").check();
   const input = await download(page, 0);
@@ -219,7 +219,7 @@ for (const failure of ["download", "empty image"]) {
       return route.continue();
     });
     await page.goto("./");
-    const picker = page.getByLabel("Example", { exact: true });
+    const picker = page.getByLabel("Input", { exact: true });
     await picker.selectOption(example.id);
     await expect(page.locator("[data-neurodesk-examples]")).toHaveAttribute("data-example-state", "error");
     await expect(page.locator("#runButton")).toBeDisabled();

@@ -460,7 +460,7 @@ async function init() {
     viewer.crosshairWidth = 0;
     viewer.addEventListener('locationChange', (event) => { $('location').textContent = event.detail?.string ?? ''; });
     ready = true;
-    status('Ready · choose an example or drop a phase-contrast series');
+    status('Drag and drop files');
   } catch (error) {
     $('viewerError').hidden = false;
     $('viewerError').textContent = `Visualization unavailable: ${error instanceof Error ? error.message : error}`;

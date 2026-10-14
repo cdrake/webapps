@@ -44,7 +44,7 @@ async function dropNifti(page, target, name) {
 }
 
 for (const [label, selector] of [
-  ['the sidebar drop zone', '#fileDropZone'],
+  ['the sidebar', '#musclemap-section-1'],
   ['the NiiVue canvas', '#gl1'],
   ['the technical log', '#musclemap-log']
 ]) {
@@ -59,3 +59,41 @@ for (const [label, selector] of [
     await expect.poll(() => page.evaluate(() => window.app.fileIOController.getActiveFile()?.name)).toBe('subject_T1w.nii');
   });
 }
+
+test('a later drop replaces the inputs and Undo brings them back', async ({ page }) => {
+  await page.goto('/index.html');
+  await dropNifti(page, page.locator('#gl1'), 'first_T1w.nii');
+  await expect(page.locator('#fileList .file-name')).toHaveText(['first_T1w.nii']);
+  await dropNifti(page, page.locator('#gl1'), 'second_T1w.nii');
+  await expect(page.locator('#fileList .file-name')).toHaveText(['second_T1w.nii']);
+  await page.locator('#status .nd-status-undo').click();
+  await expect(page.locator('#fileList .file-name')).toHaveText(['first_T1w.nii']);
+});
+
+test('Undo after a drop restores every file added before it, not just the last batch', async ({ page }) => {
+  await page.goto('/index.html');
+  await expect(page.locator('#fileInput').locator('xpath=..')).toBeHidden();
+  const input = page.locator('#fileInput');
+  const nifti = name => ({ name, mimeType: 'application/octet-stream', buffer: createInt16Nifti([10, 20, 30]) });
+  await input.setInputFiles(nifti('a_T1w.nii'));
+  await input.setInputFiles(nifti('b_T1w.nii'));
+  await expect(page.locator('#fileList .file-name')).toHaveText(['a_T1w.nii', 'b_T1w.nii']);
+  await dropNifti(page, page.locator('#gl1'), 'c_T1w.nii');
+  await expect(page.locator('#fileList .file-name')).toHaveText(['c_T1w.nii']);
+  await page.locator('#status .nd-status-undo').click();
+  await expect(page.locator('#fileList .file-name')).toHaveText(['a_T1w.nii', 'b_T1w.nii']);
+});
+
+test('Undo after a drop leaves out files removed before it', async ({ page }) => {
+  await page.goto('/index.html');
+  const input = page.locator('#fileInput');
+  const nifti = name => ({ name, mimeType: 'application/octet-stream', buffer: createInt16Nifti([10, 20, 30]) });
+  await input.setInputFiles(nifti('a_T1w.nii'));
+  await input.setInputFiles(nifti('b_T1w.nii'));
+  await page.locator('#fileList .file-remove').first().click();
+  await expect(page.locator('#fileList .file-name')).toHaveText(['b_T1w.nii']);
+  await dropNifti(page, page.locator('#gl1'), 'c_T1w.nii');
+  await expect(page.locator('#fileList .file-name')).toHaveText(['c_T1w.nii']);
+  await page.locator('#status .nd-status-undo').click();
+  await expect(page.locator('#fileList .file-name')).toHaveText(['b_T1w.nii']);
+});

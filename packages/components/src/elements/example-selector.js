@@ -1,6 +1,7 @@
 import { defineElement, upgradeProperties } from './define.js';
 import { bindInfoTooltips, renderInfoIcon } from '../ui/bindInfoTooltips.js';
 import { fetchWithRetry } from '../net/fetchWithRetry.js';
+import { bindPageDrop, deliverFiles, primaryInput } from '../ui/pageDrop.js';
 
 let nextId = 0;
 
@@ -15,6 +16,8 @@ export function defineExampleSelector(view = globalThis.window) {
     #message;
     #info;
     #cancelButton;
+    #folder;
+    #actionsFor = null;
     #active = null;
 
     static get observedAttributes() {
@@ -25,6 +28,7 @@ export function defineExampleSelector(view = globalThis.window) {
       upgradeProperties(this, ['examples', 'onLoad', 'onStatus', 'scope', 'disabled']);
       this.#initialize();
       this.#bindScope();
+      bindPageDrop(this.ownerDocument);
     }
 
     disconnectedCallback() {
@@ -93,7 +97,8 @@ export function defineExampleSelector(view = globalThis.window) {
       // becomes part of its accessible name ("Example", not "Example About…").
       const name = doc.createElement('span');
       name.id = `${this.#select.id}-label`;
-      name.textContent = 'Example';
+      name.textContent = 'Input';
+      name.className = 'nd-sr-only';
       label.append(name);
       this.#select.setAttribute('aria-labelledby', name.id);
       // The loaded example's description and expected result live in a
@@ -114,21 +119,64 @@ export function defineExampleSelector(view = globalThis.window) {
       this.append(label, this.#select, this.#message, this.#cancelButton);
       bindInfoTooltips(this);
       this.#renderOptions();
-      this.#select.addEventListener('change', () => this.#load());
+      this.#folder = doc.createElement('input');
+      this.#folder.type = 'file';
+      this.#folder.setAttribute('webkitdirectory', '');
+      this.#folder.addEventListener('change', () => {
+        if (this.#actionsFor && this.#folder.files.length) deliverFiles(this.#actionsFor, [...this.#folder.files]);
+        this.#folder.value = '';
+      });
+      this.#select.addEventListener('change', () => this.#choose());
+      this.#select.addEventListener('focus', this.#renderActions);
+      this.#select.addEventListener('pointerdown', this.#renderActions);
       this.#cancelButton.addEventListener('click', () => this.cancel());
       this.#refresh();
     }
 
+    #option(text, value = '', action) {
+      const node = this.ownerDocument.createElement('option');
+      node.value = value;
+      node.textContent = text;
+      if (action) node.dataset.action = action;
+      return node;
+    }
+
     #renderOptions() {
-      const placeholder = this.ownerDocument.createElement('option');
-      placeholder.value = '';
-      placeholder.textContent = 'Choose an example…';
-      this.#select.replaceChildren(placeholder);
-      for (const example of this.#examples) {
-        const option = this.ownerDocument.createElement('option');
-        option.value = example.id;
-        option.textContent = example.label;
-        this.#select.append(option);
+      this.#select.replaceChildren(this.#option('Choose an example…'));
+      for (const example of this.#examples) this.#select.append(this.#option(example.label, example.id));
+      this.#actionsFor = null;
+      this.#renderActions();
+    }
+
+    // Actions carry empty values so the options still list exactly the manifest's
+    // examples. Apps may add or replace their file field after the selector, so
+    // this reruns when the select is focused or pressed.
+    #renderActions = () => {
+      const input = primaryInput(this.#boundScope ?? this.#scope);
+      if (!input) this.#actionsFor = null;
+      if (!input || input === this.#actionsFor) return;
+      this.#actionsFor?.closest('.nd-file')?.classList.remove('nd-file-merged');
+      this.#select.querySelectorAll('hr, option[data-action]').forEach(node => node.remove());
+      this.#select.append(this.ownerDocument.createElement('hr'), this.#option('Choose files…', '', 'files'));
+      if (input.dataset.neurodeskInput === 'image') this.#select.append(this.#option('Choose folder…', '', 'folder'));
+      input.closest('.nd-file')?.classList.add('nd-file-merged');
+      this.#actionsFor = input;
+    };
+
+    #choose() {
+      const action = this.#select.selectedOptions[0]?.dataset.action;
+      if (!action) return this.#load();
+      this.#select.value = '';
+      const input = action === 'folder' ? this.#folder : this.#actionsFor;
+      if (!input) return;
+      try {
+        input.showPicker();
+      } catch (error) {
+        // A browser that withholds activation from a select's change event refuses the
+        // picker; show the drop box again so the user can open it directly.
+        if (error?.name !== 'NotAllowedError') return input.click();
+        this.#actionsFor?.closest('.nd-file')?.classList.remove('nd-file-merged');
+        this.#message.textContent = 'Use the file box below to choose your files.';
       }
     }
 
@@ -137,6 +185,7 @@ export function defineExampleSelector(view = globalThis.window) {
       this.#boundScope = this.#scope ?? this.closest('nd-imaging-workspace, .nd-imaging-workspace, [data-example-scope], form, #workspace') ?? this.parentElement;
       this.#boundScope?.addEventListener('change', this.#replaced, true);
       this.#boundScope?.addEventListener('drop', this.#replaced, true);
+      if (this.#select) this.#renderActions();
     }
 
     #unbindScope() {

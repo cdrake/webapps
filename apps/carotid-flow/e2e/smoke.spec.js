@@ -26,7 +26,7 @@ async function tiltedSeries() {
 
 async function ready(page) {
   await page.goto('./');
-  await expect(page.locator('#statusText')).toHaveText('Ready · choose an example or drop a phase-contrast series', { timeout: 60000 });
+  await expect(page.locator('#statusText')).toHaveText('Drag and drop files', { timeout: 60000 });
 }
 
 test('shared app bar owns information actions and theme', async ({ page }) => {
@@ -119,7 +119,7 @@ for (const failure of ['download', 'empty image']) {
       return route.fulfill({ status: failure === 'download' ? 503 : 200, body: '' });
     });
     await ready(page);
-    const picker = page.getByRole('combobox', { name: 'Example', exact: true });
+    const picker = page.getByRole('combobox', { name: 'Input', exact: true });
     await picker.selectOption(example.id);
     await expect(page.locator('[data-neurodesk-examples]')).toHaveAttribute('data-example-state', 'error');
     await expect(page.locator('#runButton')).toBeDisabled();
@@ -145,7 +145,7 @@ test('cancelling during image reading prevents a late commit and permits retry',
       });
     };
   });
-  const picker = page.getByRole('combobox', { name: 'Example', exact: true });
+  const picker = page.getByRole('combobox', { name: 'Input', exact: true });
   await picker.selectOption(example.id);
   await page.waitForFunction(() => typeof window.finishExampleRead === 'function', null, { timeout: 120000 });
   await page.getByRole('button', { name: 'Cancel example download', exact: true }).click();

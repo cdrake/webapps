@@ -15,3 +15,4 @@ export * from './renderInfoDialog.js';
 export * from './bindFileDrop.js';
 export * from './bindInfoTooltips.js';
 export * from '../elements/index.js';
+export * from './pageDrop.js';

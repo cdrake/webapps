@@ -6,7 +6,7 @@ Every remote URL the apps or the offline bundle fetch (`registry/offline-assets.
 
 ## Interface changes and new applications
 
-Before changing UI, adding controls, or scaffolding an app, read [the design system](docs/architecture/design-system.md) and [the interface standard](docs/architecture/interface-standard.md). QSMbly is the visual reference; the design system is its metrics expressed as one shared vocabulary.
+Before changing UI, adding controls, or scaffolding an app, read [the design system](docs/architecture/design-system.md) and [the interface standard](docs/architecture/interface-standard.md). The design system sets the look (Inter, neutral greys, the logo green for action only) and the shared vocabulary; the app template is its reference.
 
 - Build every sidebar, viewer, console, status bar and dialog from the classes in `@neurodesk/webapp-components/styles/imaging-workspace.css` and the custom elements and native builders in `@neurodesk/webapp-components/ui` (`createFileField`, `createViewerToolbar`, `createConsole`, `createInfoDialog`, `createResultList`). Start from `templates/app-template`, which is the complete canonical layout.
 - Do not write app CSS for those regions, hardcode colours, override `--nd-color-*` tokens, set `color-scheme`, or add `<dialog>` markup. If the vocabulary lacks something, add it to the shared stylesheet with a test, then use it. `test/design-system.test.mjs` fails on each of these.
@@ -17,10 +17,11 @@ Before changing UI, adding controls, or scaffolding an app, read [the design sys
 - Keep the current task visible. Put optional settings, technical logs and inactive output controls in accessible collapsible sections.
 - Place technical logs in a collapsed console below the viewer, following QSMbly's `console-container` disclosure pattern. Keep Copy and Clear actions in the console header.
 - Open straight into the workspace. Do not add start pages, hero sections, landing overlays or welcome modals; an introduction is one paragraph in the About template.
-- Show every live status update in the bottom bar, `footer#status`: the message, a native `<progress>`, elapsed time and a × that appears only while the run can be cancelled. Drive it with `ProgressManager` from `@neurodesk/webapp-components/ui` (`begin`, `setProgress`, `end`, `reset`). Never put status, progress or a second log in the sidebar, and do not add a static footer.
+- Show every live status update in the bottom bar, `footer#status`: the message, a native `<progress>`, elapsed time and a × that appears only while the run can be cancelled. Drive it with `ProgressManager` from `@neurodesk/webapp-components/ui` (`begin`, `setProgress`, `end`, `reset`). It starts at "Drag and drop files". Never put status, progress or a second log in the sidebar, and do not add a static footer.
 - Keep visible help to 90 characters. Put longer explanations in an `.nd-info-icon` tooltip beside the label (`renderInfoIcon`, `bindInfoTooltips`) or in About. No subtitle paragraphs under section titles, no numbered step badges, no instructions that repeat a button's label.
 - Give each sidebar one `.nd-btn-primary`. Every other action, including per-step Run buttons, is secondary; the footer × is the only cancel.
 - `test/design-system.test.mjs` checks these rules in source for every app, whatever its shell; `pnpm audit:interfaces` checks them in the rendered page on desktop and phone.
+- Do not write drop code. The shell's page drop (`bindPageDrop`) sets the primary input's files and fires `change`; an app whose viewer loads drops itself marks it `data-drop-target`, and an input that appends to a list carries `data-appends`, clears on `nd-replace` and fires `nd-files` (`detail.files`) when its app removes entries, so Undo restores the list as it was.
 - Reuse shared layout, spacing and control components. Preserve input values when sections close.
 - Before completing UI work, run `pnpm audit:interfaces`, `pnpm test:mobile` and `pnpm test:interface-workflows` against a fresh production build. Review desktop and phone screenshots and exercise the changed workflow. The interface standard defines the review criteria and the audit's limits.
 
@@ -42,7 +43,7 @@ not an empty page or a copied app:
   build script. Together they make `pnpm --filter <app> dev`, standalone preview,
   and the deployed site use the same shell and theme.
 - Use `apps/dwi2trx` only as the richer workflow reference. Visual workflow
-  grouping follows QSMbly, per the interface standard.
+  grouping follows the template, per the interface standard.
 - Do not draw your own bar, theme toggle, dialogs, download helper, NIfTI header
   parser or DICOM import. They exist in `@neurodesk/webapp-components` and
   `@neurodesk/runtime-support`; an app-local copy is a defect, not a convenience.
