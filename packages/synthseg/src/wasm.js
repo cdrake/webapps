@@ -43,7 +43,9 @@ export async function loadSynthseg(source) {
       // Gzipped float32 NIfTI tissue probability maps on the label grid.
       const tissues = Object.fromEntries(TISSUES.map((name, index) => {
         const start = wasm.seg_tissue(this.seg, index);
-        return [name, u8().slice(start, start + wasm.seg_tissue_len(this.seg, index))];
+        const length = wasm.seg_tissue_len(this.seg, index);
+        if (!start || !length) throw new Error(`SynthSeg wasm wrote no ${name} map.`);
+        return [name, u8().slice(start, start + length)];
       }));
       return { buffer, volumes, tissues, geometry: this.geometry };
     }

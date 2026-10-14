@@ -114,12 +114,12 @@ function renderResults() {
     labels: labels ?? { description: 'FreeSurfer labels' },
     ...Object.fromEntries(TISSUES.map((tissue) => [tissue, { description: TISSUE_NAMES[tissue] }])),
   });
-  $('resultList').querySelector('.nd-download-btn').id = 'saveBtn';
-  $('resultList').querySelector('.nd-view-btn').id = 'viewResultBtn';
+  const row = (stage) => $('resultList').querySelector(`[data-stage="${stage}"]`);
+  row('labels').querySelector('.nd-download-btn').id = 'saveBtn';
+  row('labels').querySelector('.nd-view-btn').id = 'viewResultBtn';
   for (const tissue of TISSUES) {
-    const row = $('resultList').querySelector(`[data-stage="${tissue}"]`);
-    row.querySelector('.nd-download-btn').id = `${tissue}SaveBtn`;
-    row.querySelector('.nd-view-btn').id = `${tissue}ViewBtn`;
+    row(tissue).querySelector('.nd-download-btn').id = `${tissue}SaveBtn`;
+    row(tissue).querySelector('.nd-view-btn').id = `${tissue}ViewBtn`;
   }
   syncResultButtons();
 }

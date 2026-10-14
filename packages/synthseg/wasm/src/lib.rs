@@ -142,12 +142,14 @@ pub unsafe extern "C" fn seg_labels(seg: *mut Segmenter, fast: u32) -> *const u8
         &segmentation.labels,
         &s.prep,
     )));
+    drop(segmentation.labels);
+    // Each map is freed once written, so at most one aligned map and its NIfTI copy are live at once.
     for (out, map) in s
         .tissues
         .iter_mut()
-        .zip(segmentation.tissues.iter().flatten())
+        .zip(segmentation.tissues.into_iter().flatten())
     {
-        *out = gzip(&nifti::write(&volume::restore(map, &s.prep)));
+        *out = gzip(&nifti::write(&volume::restore(&map, &s.prep)));
     }
     s.output.as_ptr()
 }
@@ -158,20 +160,29 @@ fn gzip(image: &[u8]) -> Vec<u8> {
     gz.finish().expect("gzip into a Vec cannot fail")
 }
 
-/// Gzipped NIfTI of tissue map `index` (`post::TISSUES` order), valid after `seg_labels`.
+/// Gzipped NIfTI of tissue map `index` (`post::TISSUES` order), valid after `seg_labels`; null
+/// for an index outside `post::TISSUES`.
 ///
 /// # Safety
 /// `seg` must be a live pointer from `seg_new`.
 #[no_mangle]
 pub unsafe extern "C" fn seg_tissue(seg: *mut Segmenter, index: u32) -> *const u8 {
-    (*seg).tissues[index as usize].as_ptr()
+    (*seg)
+        .tissues
+        .get(index as usize)
+        .map_or(std::ptr::null(), |map| map.as_ptr())
 }
 
+/// Byte length of tissue map `index`; 0 for an index outside `post::TISSUES`.
+///
 /// # Safety
 /// `seg` must be a live pointer from `seg_new`.
 #[no_mangle]
 pub unsafe extern "C" fn seg_tissue_len(seg: *mut Segmenter, index: u32) -> u32 {
-    (*seg).tissues[index as usize].len() as u32
+    (*seg)
+        .tissues
+        .get(index as usize)
+        .map_or(0, |map| map.len() as u32)
 }
 
 /// # Safety

@@ -35,7 +35,7 @@ export function tissueVolumes(volumes) {
   )]));
 }
 
-export const TISSUE_NAMES =Object.freeze({ gm: 'GM probability', wm: 'WM probability', csf: 'CSF probability' });
+export const TISSUE_NAMES = Object.freeze({ gm: 'GM probability', wm: 'WM probability', csf: 'CSF probability' });
 
 // mri_synthseg --vol columns after `subject`, in the order the pipeline reports them.
 export const VOLUME_COLUMNS = Object.freeze([
