@@ -288,11 +288,21 @@ if (!probeOnly) {
     await expect(page.locator('#statusText')).toContainText('Labels ready');
     const pending = page.waitForEvent('download');
     await page.locator('#saveBtn').click();
-    const image = await readNifti(readFileSync(await (await pending).path()));
+    const labelBytes = readFileSync(await (await pending).path());
+    const image = await readNifti(labelBytes);
     const { report } = JSON.parse(await page.locator('#neurodesk-run').textContent());
     expect(report.provenance.voxelSizeMm).toBe(1.3);
     expect(report.provenance.preparation).toMatchObject({ voxelSizeMm: 1.3 });
     expect(report.artifacts.labels.space).toBe('subject-1.3mm');
+    // The tissue maps follow the labels onto the coarser grid.
+    const tissues = {};
+    for (const tissue of ['gm', 'wm', 'csf']) {
+      expect(report.artifacts[tissue].space).toBe('subject-1.3mm');
+      const map = page.waitForEvent('download');
+      await page.locator(`#${tissue}SaveBtn`).click();
+      tissues[tissue] = readFileSync(await (await map).path());
+    }
+    for (const [passed, line] of compareTissues('1.3 mm grid', labelBytes, tissues, report.measurements.softVolumesMm3)) expect(passed, line).toBe(true);
     expect(image.dims).toEqual(report.provenance.outputShape);
     for (const spacing of image.header.voxelSize) expect(spacing).toBeCloseTo(1.3, 5);
     expect(new Set(image.data).size).toBeGreaterThan(5);
