@@ -58,6 +58,17 @@ test('web releases and deployments do not wait for the desktop suite', async () 
   }
 });
 
+test('Standalone link checks run nightly and on main, never as a pull request gate', async () => {
+  const flow = await workflow('standalone-links');
+  assert.deepEqual(Object.keys(flow.on).sort(), ['push', 'schedule', 'workflow_dispatch']);
+  assert.deepEqual(flow.on.push.branches, ['main']);
+  assert.ok(flow.on.push.paths.includes('registry/standalone.json'));
+  assert.deepEqual(flow.permissions, { contents: 'read' });
+  assert.ok(flow.jobs.links.steps.some(step => /node scripts\/check-standalone-links\.mjs/.test(step.run || '')));
+  const ci = await workflow('ci');
+  assert.doesNotMatch(JSON.stringify(ci), /check-standalone-links/);
+});
+
 test('routine CI uses the lightweight SCT gate and full inference runs independently', async () => {
   const ci = await workflow('ci');
   const full = await workflow('sct-full-tests');
@@ -106,7 +117,7 @@ test('native packages share one gated publisher while signing stays isolated', a
 
 test('native and independent test workflows pin actions and discard checkout credentials', async () => {
   const portable = (await portableCallers()).map(([name]) => name);
-  for (const name of ['synthsr-native', 'synthseg-native', ...portable, 'node-cli-portable', 'node-cli', 'greedy-native', 'sct-full-tests', 'native-nifti', 'native-publish']) {
+  for (const name of ['synthsr-native', 'synthseg-native', ...portable, 'node-cli-portable', 'node-cli', 'greedy-native', 'sct-full-tests', 'native-nifti', 'native-publish', 'standalone-links']) {
     const flow = await workflow(name);
     for (const job of Object.values(flow.jobs)) {
       if (job.uses) assert.match(job.uses, /^\.\/\.github\/workflows\/[\w-]+\.yml$/, `${name}: ${job.uses}`);
