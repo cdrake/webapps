@@ -323,7 +323,8 @@ function element(tag, { className, text } = {}, children = []) {
   return node;
 }
 function svgElement(markup) {
-  return new DOMParser().parseFromString(markup, 'image/svg+xml').documentElement;
+  // The HTML parser puts <svg> in the SVG namespace; an XML parse without xmlns would not.
+  return new DOMParser().parseFromString(markup, 'text/html').body.firstElementChild;
 }
 function renderTable(rows) {
   const headings = ['Structure', 'Volume (mL)', 'Adjusted (mL)', 'z', 'Percentile', 'Flag'];

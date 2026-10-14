@@ -86,6 +86,9 @@ test('the Volumes view charts each structure against age and follows the Age and
   await expect(panel.locator('figure').first().locator('figcaption')).toHaveText('Left hippocampus: 99th');
   await expect(panel.locator('figure[data-flag]').first().locator('figcaption')).toHaveCSS('font-weight', '600');
   await expect(panel.locator('figure svg circle.nd-chart-marker')).toHaveCount(10);
+  // Markup outside the SVG namespace keeps the elements but draws nothing.
+  expect(await panel.locator('figure svg').first().evaluate((svg) => svg instanceof SVGSVGElement && svg.getBoundingClientRect().height > 100)).toBe(true);
+  await expect(panel.locator('figure svg circle.nd-chart-marker').first()).toBeVisible();
   await expect(panel.locator('tbody tr')).toHaveCount(10);
   await expect(panel.locator('tbody tr').first()).toHaveAttribute('data-flag', '>95th');
   await expect(panel).toContainText('Research use only. Not for diagnostic use.');
