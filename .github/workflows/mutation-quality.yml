@@ -25,14 +25,14 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile --ignore-scripts
-      - name: Test the isolated helper and failure handling
-        run: node --test packages/nii2tvx/test/disconnectome.test.js test/mutation-quality.test.mjs
+      - name: Test the mutated modules and failure handling
+        run: node --test packages/nii2tvx/test/disconnectome.test.js packages/lcmodel/test/basis-select.test.js packages/nii2tvx/test/parity.test.js test/mutation-quality.test.mjs
         env:
           TMPDIR: ${{ runner.temp }}
       - name: Prove mutation detection on pull requests
         if: github.event_name == 'pull_request'
         run: pnpm quality:mutations:smoke
-      - name: Run the full pilot
+      - name: Run every configured module
         if: github.event_name != 'pull_request'
         run: pnpm quality:mutations
       - uses: actions/upload-artifact@v7
