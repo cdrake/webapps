@@ -269,7 +269,8 @@ export function dependencyFindings(modules, manifests, runtimeContracts = []) {
           add('browser-to-node', from, to);
         }
       }
-      if (!dependency.typeOnly && node.has(from) && ((browserModules.test(to) && !nodeModules.test(to)) || uiModules.test(to))) add('node-to-browser', from, to);
+      if (!dependency.typeOnly && node.has(from) && !isGenerated(to)
+        && ((browserModules.test(to) && !nodeModules.test(to)) || uiModules.test(to))) add('node-to-browser', from, to);
       if (cycles.has(`${from}\0${to}`)) add('cycle', from, to);
       if (dependency.couldNotResolve && !runtimeContracts.some((contract) =>
         contract.from === from && contract.to === dependency.module)) add('unresolved', from, dependency.module);

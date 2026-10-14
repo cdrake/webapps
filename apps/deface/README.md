@@ -13,7 +13,7 @@ All processing runs in WebAssembly + WebGPU on your machine so your images are n
   - **allineate (fast, robustfov)** — the fast engine after a `-robustfov` crop
   - **allineate (Hellinger)** — the exhaustive Hellinger engine (`-cost hel`): a reference-quality fit, but single-threaded in WebAssembly it can take a few minutes on a full-head scan (native niimath is ~6× faster via OpenMP threads that WASM lacks)
   - **allineate (Hellinger, robustfov)** — the Hellinger engine after a `-robustfov` crop
-- **[brainchop mindgrab](https://github.com/neuroneural/brainchop)** — an edge-based AI model for omnimodal brain extraction, run entirely on the GPU. It masks out everything but the brain, so it removes the face along with the skull and scalp. Variants combine two knobs — a tight skull-strip vs. an **8mm** tissue margin around the brain, and optional **robustfov** neck/inferior-slice cropping: **mindgrab**, **mindgrab robustfov**, **mindgrab 8mm border**, and **mindgrab robustfov + 8mm**. Requires **WebGPU with `shader-f16`** (recent desktop Chrome, Edge, or Safari).
+- **[brainchop mindgrab](https://github.com/neuroneural/brainchop)** — an edge-based AI model for omnimodal brain extraction, run with the published [`@brainchop/mindgrab`](https://www.npmjs.com/package/@brainchop/mindgrab) package on a hardware GPU (WebGPU or WebGL2) or, without one, its threaded CPU module. It masks out everything but the brain, so it removes the face along with the skull and scalp. Variants combine two knobs — a tight skull-strip vs. an **8mm** tissue margin around the brain (niimath `-close 1 8 0`), and optional **robustfov** neck/inferior-slice cropping before MindGrab: **mindgrab**, **mindgrab robustfov**, **mindgrab 8mm border**, and **mindgrab robustfov + 8mm**.
 - **[NiiVue](https://niivue.com/)** renders the image.
 - **[dcm2niix](https://github.com/rordenlab/dcm2niix)** converts dropped DICOM folders to NIfTI.
 
@@ -24,6 +24,17 @@ niimath input -gz 0 -robustfov -deface avg152T1 avg152T1mask defaced.nii
 ```
 
 All niimath I/O is uncompressed (`-gz 0`) for speed; NiiVue re-gzips when you Save.
+
+The pipeline lives in [`packages/deface`](../../packages/deface/README.md), which the app and the
+`deface` command line share: both run the same niimath argv on the same WebAssembly build, and the
+same MindGrab modules, so the command line writes the app's download byte for byte.
+
+Until October 2026 MindGrab ran from an app-local copy of the model (tinygrad-generated WebGPU
+shaders with `shader-f16`, NiiVue's conform worker and a min-max intensity normalisation). Its
+`net_mindgrab.safetensors` weights are byte-identical to the weights compiled into
+`@brainchop/mindgrab` 0.1.20260925 (all 27 tensors, the same 25-layer MeshNet); the app now runs
+that package's own conform, normalisation, largest-component cleanup and reslice instead, as the
+brain extraction app and the command line do.
 
 ## License
 

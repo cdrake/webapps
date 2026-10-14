@@ -35,6 +35,7 @@
     "@niivue/niimath": "1.4.20260909"
   },
   "devDependencies": {
+    "@neurodesk/runtime-support": "workspace:*",
     "@playwright/test": "1.63.0",
     "vite": "^6.3.2"
   },

@@ -71,6 +71,19 @@ test('Node entries cannot reach browser runtime or UI through shared helpers', a
   assert.ok(findings.some(({ rule }) => rule === 'node-to-browser'));
 });
 
+test('Node entries can use the generated niimath factory but cannot use its browser wrapper', async (t) => {
+  const findings = await checkFixture(t, {
+    'packages/example/src/node.js': "import '../../runtime-support/src/niimath/niimath.js';\nimport '../../runtime-support/src/niimath/index.js';\n",
+    'packages/runtime-support/src/niimath/niimath.js': leaf,
+    'packages/runtime-support/src/niimath/index.js': leaf,
+  });
+  assert.deepEqual(findings.filter(({ rule }) => rule === 'node-to-browser'), [{
+    rule: 'node-to-browser',
+    from: 'packages/example/src/node.js',
+    to: 'packages/runtime-support/src/niimath/index.js',
+  }]);
+});
+
 test('conditional NIfTI zlib fallback does not exempt other Node imports', async (t) => {
   const findings = await checkFixture(t, {
     'apps/example/src/main.js': "import '../../../packages/components/src/file-io/NiftiUtils.js';\n",

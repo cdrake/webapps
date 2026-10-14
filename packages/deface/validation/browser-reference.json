@@ -1,0 +1,128 @@
+{
+  "browser": "chromium 156.0.8078.4",
+  "mindgrab": "0.1.20260925",
+  "niimathWasmSha256": "7facb7870512b4b5c84c9bc21742ddbefdadb03e8198d1edef9bbac1078a266b",
+  "backend": "cpu",
+  "example": {
+    "name": "T1_head.nii.gz",
+    "sha256": "58220b40d179b7a93dd3ce231dd7afaa39989c75658b2b8e4c2f34abf8f16416"
+  },
+  "cases": {
+    "example-allineate": {
+      "method": "allineate",
+      "seconds": 13.306,
+      "files": [
+        "defaced.nii"
+      ],
+      "sha256": {
+        "defaced.nii": "3d2cbad8853fd50da4bd5822c8eeb91ed66b9a8f38c15c7212f22fbdb8a5ef0d"
+      },
+      "image": {
+        "dims": [
+          166,
+          210,
+          160
+        ],
+        "datatype": 4,
+        "headerSha256": "d06747b6a290ac643df811ba188c28544da0d1614725d526f7b632e974fa41dd",
+        "nonzero": 2833098
+      }
+    },
+    "example-allineate-robustfov": {
+      "method": "allineate_robustfov",
+      "seconds": 12.745,
+      "files": [
+        "defaced.nii"
+      ],
+      "sha256": {
+        "defaced.nii": "3d2cbad8853fd50da4bd5822c8eeb91ed66b9a8f38c15c7212f22fbdb8a5ef0d"
+      },
+      "image": {
+        "dims": [
+          166,
+          210,
+          160
+        ],
+        "datatype": 4,
+        "headerSha256": "d06747b6a290ac643df811ba188c28544da0d1614725d526f7b632e974fa41dd",
+        "nonzero": 2833098
+      }
+    },
+    "example-mindgrab": {
+      "method": "mindgrab",
+      "seconds": 49.784,
+      "files": [
+        "brain-mask.nii",
+        "defaced.nii"
+      ],
+      "sha256": {
+        "brain-mask.nii": "95324ad19feee867641d219727edec53a8d53f041a9b1365654dff7e287bca74",
+        "defaced.nii": "46ff261d39117963997fa2bc5956984d99e1697eaeaa00eec1f74562537ae1bb"
+      },
+      "image": {
+        "dims": [
+          166,
+          210,
+          160
+        ],
+        "datatype": 4,
+        "headerSha256": "d06747b6a290ac643df811ba188c28544da0d1614725d526f7b632e974fa41dd",
+        "nonzero": 1602690
+      },
+      "mask": {
+        "dims": [
+          166,
+          210,
+          160
+        ],
+        "datatype": 2,
+        "headerSha256": "ac689aab742cb631538da372010af198fe0e523abd40ff97854c50fbfe450596",
+        "voxels": 1602690
+      },
+      "maskReference": {
+        "file": "example-mindgrab.mask.gz",
+        "bytes": 37352,
+        "sha256": "a28fcd3898b4cc121326b7d8db1bca1604b32ef6b1eb87ea92e1deceafaf108d",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/57ceacaadc952e14b31952c48a2069428c02fafc/deface/browser-reference/a28fcd3898b4cc121326b7d8db1bca1604b32ef6b1eb87ea92e1deceafaf108d.mask.gz"
+      }
+    },
+    "example-mindgrab-robust8": {
+      "method": "mindgrab_robust8",
+      "seconds": 55.359,
+      "files": [
+        "brain-mask.nii",
+        "defaced.nii"
+      ],
+      "sha256": {
+        "brain-mask.nii": "5723a825ccd0a17f51091e6b5a5753c5a07024f021cc47ff071342213b1a02ad",
+        "defaced.nii": "9844421572b29bfc0769ce12ce69907b63ac996effce8875df98f6303f3e7a0a"
+      },
+      "image": {
+        "dims": [
+          166,
+          210,
+          160
+        ],
+        "datatype": 4,
+        "headerSha256": "d06747b6a290ac643df811ba188c28544da0d1614725d526f7b632e974fa41dd",
+        "nonzero": 2252903
+      },
+      "mask": {
+        "dims": [
+          166,
+          210,
+          160
+        ],
+        "datatype": 2,
+        "headerSha256": "ac689aab742cb631538da372010af198fe0e523abd40ff97854c50fbfe450596",
+        "voxels": 2252903
+      },
+      "maskReference": {
+        "file": "example-mindgrab-robust8.mask.gz",
+        "bytes": 38461,
+        "sha256": "d9c0705795bf553008d1ec4704dab0176b44fa2276345894f007c033c38abca7",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/57ceacaadc952e14b31952c48a2069428c02fafc/deface/browser-reference/d9c0705795bf553008d1ec4704dab0176b44fa2276345894f007c033c38abca7.mask.gz"
+      }
+    }
+  }
+}
