@@ -1,5 +1,17 @@
 # seedseg
 
+## 0.6.20261014
+
+### Patch Changes
+
+- 498263f: Cite always opens the shared citation list, which ends with the Neurodesk
+  paper; the app's own Citations dialog is removed.
+- Updated dependencies [27c9549]
+- Updated dependencies [850e642]
+- Updated dependencies [ad92e2f]
+  - @neurodesk/webapp-components@0.13.0
+  - @neurodesk/seedseg@0.6.20261014
+
 ## 0.6.20261012
 
 ### Patch Changes
