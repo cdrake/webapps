@@ -46,6 +46,7 @@
     <div id="qcBody">
       <p class="qc-empty">Metrics appear here after processing finishes.</p>
     </div>
+      <div id="resultList"></div>
       <button id="saveBtn" class="nd-btn nd-btn-secondary" type="button" disabled>Download QC report</button>
       </div>
     </details>
@@ -100,6 +101,9 @@
       <ul>
         <li>Segmentation uses an independent MindGrab brain mask and GM/WM/CSF fractions by default.
           Three label models are also available. Adjust the tissue overlay with Opacity.</li>
+        <li>Download the brain mask and the GM, WM and CSF fractions (or the label map) as NIfTI on the input grid.
+          Each map is a separate fraction. The three maps are not a normalized set and their sum can differ from 1.
+          The CSF map covers the ventricles only. It does not contain sulcal or interhemispheric CSF.</li>
         <li><strong>Quality metrics</strong> — <a href="https://github.com/rordenlab/niimath" target="_blank"
             rel="noopener">niimath</a> computes MRIQC-style image-quality metrics (CJV, CNR, SNR, WM2MAX, EFC,
           tissue composition) from the scan and its segmentation</li>

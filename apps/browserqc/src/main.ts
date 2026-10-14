@@ -5,10 +5,10 @@ import NiiVueGPU, {
   SLICE_TYPE,
 } from '@niivue/niivue'
 import { mountImagingWorkspace } from '@neurodesk/webapp-components/core/mount-imaging-workspace'
-import { bindFileDrop, createInfoDialog, createConsole, createExampleSelector, createViewerToolbar, ProgressManager } from '@neurodesk/webapp-components/ui'
+import { bindFileDrop, createInfoDialog, createConsole, createExampleSelector, createResultList, createViewerToolbar, ProgressManager } from '@neurodesk/webapp-components/ui'
 import '@neurodesk/webapp-components/styles/imaging-workspace.css'
 import { registerAppAutomation, registerViewer, createNiivueAdapter, runAbortable, summarizeLabels, type OperationContext } from '@neurodesk/webapp-components/automation'
-import { downloadBlob, readNifti } from '@neurodesk/webapp-components/file-io'
+import { downloadBlob, downloadFile, readNifti } from '@neurodesk/webapp-components/file-io'
 import { runSegmentation, type SegmentationBackend } from './segmentation'
 import { readImageFiles, runDcm2niix, traverseDataTransferItems } from '@neurodesk/runtime-support/dcm2niix-client'
 import { Niimath } from '@niivue/niimath'
@@ -63,6 +63,21 @@ const aboutDialog = createInfoDialog({ id: 'aboutDialog' })
 const privacyBtn = $<HTMLButtonElement>('privacyBtn')
 const privacyDialog = createInfoDialog({ id: 'privacyDialog' })
 const saveBtn = $<HTMLButtonElement>('saveBtn')
+// Segmentation downloads, named after the input; the automation artifacts keep the command line's names.
+const OUTPUT_LABELS: Record<string, string> = { mask: 'Brain mask', gm: 'GM fraction', wm: 'WM fraction', csf: 'Ventricular CSF fraction', labels: 'Label map' }
+const results = createResultList({ element: $('resultList'), onDownload: (_stage, result) => { if (result) downloadFile(result.file) } })
+function showOutputs(name: string, artifacts: { role: string; file: File }[]): void {
+  const stem = name.replace(/\.(nii|nii\.gz|mgz|mgh)$/i, '')
+  results.render(Object.fromEntries(artifacts.map(({ role, file }) => [role, {
+    description: OUTPUT_LABELS[role],
+    viewable: false,
+    file: new File([file], `${stem}_${file.name.replace(/^brain-/, '')}`, { type: file.type }),
+  }])))
+}
+function clearOutputs(): void {
+  saveBtn.disabled = true
+  results.render()
+}
 const dicomPick = $<HTMLSelectElement>('dicomPick')
 const niftiInput = $<HTMLInputElement>('niftiInput')
 const dicomInput = $<HTMLInputElement>('dicomInput')
@@ -261,7 +276,7 @@ async function loadSource(file: File, signal?: AbortSignal): Promise<void> {
   $<HTMLButtonElement>('rateSave').disabled = true
   labelSummary = null
   lastReport = null
-  saveBtn.disabled = true
+  clearOutputs()
   $<HTMLButtonElement>('runButton').disabled = true
   $('fileInfo').hidden = true
   renderQc(qcBody, null)
@@ -272,7 +287,7 @@ async function loadSource(file: File, signal?: AbortSignal): Promise<void> {
   resetRating()
   await showView()
   lastReport = null
-  saveBtn.disabled = true
+  clearOutputs()
   renderQc(qcBody, null)
   $<HTMLDetailsElement>('resultsSection').open = false
   $('fileInfo').hidden = false
@@ -302,7 +317,7 @@ async function runSegment(file: File, options: { backend?: SegmentationBackend; 
   busy = true
   lastReport = null
   lastName = file.name
-  saveBtn.disabled = true
+  clearOutputs()
   $<HTMLDetailsElement>('resultsSection').open = false
   renderQc(qcBody, null) // clear any prior QC while we recompute
   const t0 = performance.now()
@@ -346,6 +361,7 @@ async function runSegment(file: File, options: { backend?: SegmentationBackend; 
         current()
       }
     }
+    showOutputs(file.name, artifacts)
     const tissues = qcTissues(result, model)
     labelSummary = measurements ?? null
     busy = false
@@ -426,7 +442,7 @@ async function handleDrop(filesPromise: Promise<File[]>, signal?: AbortSignal): 
       sourceFile = null
       bidsMeta = null
       lastReport = null
-      saveBtn.disabled = true
+      clearOutputs()
       $<HTMLButtonElement>('runButton').disabled = true
       $<HTMLButtonElement>('rateSave').disabled = true
       renderQc(qcBody, null)

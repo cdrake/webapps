@@ -95,8 +95,22 @@ test('default PVE analysis publishes native-grid fractions and an independent ma
     return snapshot.state;
   }, { timeout: 840000, intervals: [1000, 2000, 5000] }).toBe('succeeded');
   const input = readVolume(source(await readFile(fixture)));
+  // The sidebar result list offers the automation's bytes under names that start with the input name.
+  await expect(page.locator('#resultsSection')).toHaveJSProperty('open', true);
+  const rows = page.locator('#resultList .nd-volume-toggle');
+  await expect(rows.locator('.nd-stage-label')).toHaveText(['Brain mask', 'Ventricular CSF fraction', 'GM fraction', 'WM fraction']);
+  const visible = {};
+  for (const row of await rows.all()) {
+    const downloading = page.waitForEvent('download');
+    await row.locator('.nd-download-btn').click();
+    const file = await downloading;
+    visible[file.suggestedFilename()] = await readFile(await file.path());
+  }
+  expect(Object.keys(visible)).toEqual(['T1_mask.nii', 'T1_csf.nii', 'T1_gm.nii', 'T1_wm.nii']);
   for (const name of ['csf', 'gm', 'wm', 'mask']) {
-    const volume = readVolume(source(await download(page, name)));
+    const bytes = await download(page, name);
+    expect(visible[`T1_${name}.nii`].equals(bytes)).toBe(true);
+    const volume = readVolume(source(bytes));
     expect(volume.dims).toEqual(input.dims);
     expect(volume.affine).toEqual(input.affine);
     expect(volume.data.every(value => Number.isFinite(value) && value >= 0 && value <= 1)).toBe(true);
