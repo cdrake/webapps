@@ -9,6 +9,7 @@ import { expect, test } from '@playwright/test';
 import { readNifti } from '../../../packages/components/src/file-io/NiftiUtils.js';
 import { planGpuGraph } from '../../../packages/runtime-support/src/gpu-unet/session.js';
 import { hardwareGpu } from '../../../test-utils/hardware-gpu.mjs';
+import { compareTissues } from '../../../packages/synthseg/validation/compare.mjs';
 
 const graph = JSON.parse(readFileSync(new URL('../../../packages/synthseg/src/gpu-model.json', import.meta.url), 'utf8'));
 const gates = JSON.parse(readFileSync(new URL('../../../packages/synthseg/validation/gates.json', import.meta.url), 'utf8'));
@@ -162,6 +163,13 @@ async function checkCase(page, { input, reference, mode, limit, pinned }) {
   const report = JSON.parse(readFileSync(await reportDownload.path(), 'utf8'));
   const volumesDownload = await Promise.all([page.waitForEvent('download'), page.locator('#volumesBtn').click()]).then(([value]) => value);
   const [volumeHeader, volumeRow] = readFileSync(await volumesDownload.path(), 'utf8').trim().split('\r\n');
+  const tissues = {};
+  for (const tissue of ['gm', 'wm', 'csf']) {
+    const tissueDownload = await Promise.all([page.waitForEvent('download'), page.locator(`#${tissue}SaveBtn`).click()]).then(([value]) => value);
+    expect(tissueDownload.suggestedFilename()).toBe(report.artifacts[tissue].filename);
+    tissues[tissue] = readFileSync(await tissueDownload.path());
+    expect(checksum(tissues[tissue])).toBe(report.artifacts[tissue].sha256);
+  }
   // The hosted norms, fetched and checksum-verified by the page, chart every structure.
   await page.getByRole('button', { name: 'Volumes', exact: true }).click();
   await expect(page.locator('#volumeReport figure svg circle.nd-chart-marker, #volumeReport figure svg line.nd-chart-level')).toHaveCount(10, { timeout: 60000 });
@@ -238,6 +246,10 @@ async function checkCase(page, { input, reference, mode, limit, pinned }) {
   expect(produced.header.xyztUnits).toBe(golden.header.xyztUnits);
   expect(affineError).toBeLessThanOrEqual(gates.maxAffineErrorMm);
   expect(result.mismatch_fraction).toBeLessThanOrEqual(limit);
+  // No golden exists for the tissue maps: they must sit on the label grid and sum to the soft volumes.
+  result.tissueChecks = compareTissues(`${input} ${mode}`, producedBytes, tissues, report.measurements.softVolumesMm3);
+  save();
+  for (const [passed, line] of result.tissueChecks) expect(passed, line).toBe(true);
   result.pass = true;
   save();
   console.log(`${input} ${mode}: ${mismatches}/${produced.data.length} mismatched, ${report.provenance.seconds.toFixed(1)} s`);

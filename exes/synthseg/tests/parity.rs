@@ -2,6 +2,9 @@
 #[path = "../src/nifti.rs"]
 mod nifti;
 #[allow(dead_code)]
+#[path = "../src/post.rs"]
+mod post;
+#[allow(dead_code)]
 #[path = "../src/volume.rs"]
 mod volume;
 
@@ -190,6 +193,60 @@ fn gate(out: &Path, reference: &Path, limit: f64) {
     );
 }
 
+/// `--tissues` maps: the label map's header apart from datatype and description, probabilities that
+/// sum to at most 1, and totals that equal the soft volumes in the `--vol` table of their structures.
+fn check_tissues(labels: &Path, csv: &Path) {
+    let stem = labels.to_str().unwrap().strip_suffix(".nii.gz").unwrap();
+    let row: Vec<f64> = fs::read_to_string(csv)
+        .unwrap()
+        .lines()
+        .nth(1)
+        .unwrap()
+        .split(',')
+        .skip(2) // subject, total intracranial
+        .map(|v| v.parse().unwrap())
+        .collect();
+    let reference = header(labels);
+    let maps: Vec<nifti::Volume<f64>> = post::TISSUES
+        .iter()
+        .map(|t| {
+            let path = PathBuf::from(format!("{stem}_{t}.nii.gz"));
+            let h = header(&path);
+            assert_eq!(i16::from_le_bytes([h[70], h[71]]), 16, "{t}: float32");
+            for (range, name) in [(0..70, "dims"), (72..148, "pixdim"), (228..352, "geometry")] {
+                assert_eq!(
+                    h[range.clone()],
+                    reference[range],
+                    "{t}: {name} differs from the labels"
+                );
+            }
+            load(&path)
+        })
+        .collect();
+    let mut sums = [0f64; 3];
+    for v in 0..maps[0].data.len() {
+        let values = [maps[0].data[v], maps[1].data[v], maps[2].data[v]];
+        assert!(values.iter().all(|x| (0.0..=1.0).contains(x)), "{values:?}");
+        assert!(values.iter().sum::<f64>() <= 1.0 + 1e-5, "{values:?}");
+        for (sum, x) in sums.iter_mut().zip(values) {
+            *sum += x;
+        }
+    }
+    let groups = [&post::GM_LABELS[..], &post::WM_LABELS, &post::CSF_LABELS];
+    for (t, sum) in sums.iter().enumerate() {
+        let expected: f64 = (1..post::N)
+            .filter(|&c| groups[t].contains(&post::LABELS[c]))
+            .map(|c| row[c - 1])
+            .sum();
+        // 1 mm voxels; each table entry is rounded to 0.001 mm³.
+        assert!(
+            (sum - expected).abs() < 0.05,
+            "{}: {sum} != {expected}",
+            post::TISSUES[t]
+        );
+    }
+}
+
 #[test]
 fn cli_matches_fixture_and_refuses_to_clobber() {
     let dir = std::env::temp_dir().join(format!("synthseg-test-{}", std::process::id()));
@@ -199,11 +256,15 @@ fn cli_matches_fixture_and_refuses_to_clobber() {
     for device in available_devices() {
         for mode in ["fast", "default"] {
             let out = dir.join(format!("{device}_{mode}.nii.gz"));
+            let csv = dir.join(format!("{device}_{mode}_vol.csv"));
             let mut args = vec![
                 "--i",
                 input,
                 "--o",
                 out.to_str().unwrap(),
+                "--vol",
+                csv.to_str().unwrap(),
+                "--tissues",
                 "--threads",
                 "4",
                 "--quiet",
@@ -220,6 +281,7 @@ fn cli_matches_fixture_and_refuses_to_clobber() {
                 &root().join(format!("test/fixtures/small_{mode}.nii.gz")),
                 gate_value(&["maxMismatchFraction", "fixture"]),
             );
+            check_tissues(&out, &csv);
             let report: serde_json::Value = serde_json::from_str(
                 &fs::read_to_string(dir.join(format!("{device}_{mode}.json"))).unwrap(),
             )

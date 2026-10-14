@@ -22,7 +22,7 @@ export async function inferenceWorker(app, globals = {}) {
             async function run({ loadModel }) {
               const model = await loadModel();
               globalThis.loadedModel = model;
-              return { buffer: new ArrayBuffer(1), provenance: { hash: model.hash } };
+              return { buffer: new ArrayBuffer(1), tissues: {}, provenance: { hash: model.hash } };
             }
             export { run as runSynthsr, run as runSynthseg };
           ` };
