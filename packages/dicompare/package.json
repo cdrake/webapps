@@ -1,0 +1,42 @@
+{
+  "name": "@neurodesk/dicompare",
+  "version": "0.14.20261012",
+  "description": "dicompare DICOM protocol analysis and compliance checks on the command line, with the web app's Pyodide build and dicompare wheel",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "dicompare": "./bin/dicompare.js"
+  },
+  "exports": {
+    ".": "./src/node.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "schemas",
+    "python.manifest.json",
+    "LICENSE",
+    "NOTICE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node scripts/stage-schemas.mjs",
+    "pretest": "node scripts/stage-schemas.mjs",
+    "test": "node --test test/*.test.js",
+    "lint": "node --check src/node.js && node --check src/python.js && node --check bin/dicompare.js"
+  },
+  "dependencies": {
+    "pyodide": "0.27.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neurodesk/webapps.git",
+    "directory": "packages/dicompare"
+  }
+}
