@@ -28,8 +28,9 @@ if (current.trim() === target.sha256 && complete.every(Boolean)) {
     await writeFile(archive, bytes);
     const extracted = join(work, 'extracted');
     await mkdir(extracted);
-    // bsdtar, shipped with Windows and macOS, reads the zip as well as the tarballs.
-    const result = spawnSync('tar', ['-xf', archive, '-C', extracted], { encoding: 'utf8' });
+    // Windows' own bsdtar reads the zip; Git for Windows puts a GNU tar, which cannot, first on PATH.
+    const tar = process.platform === 'win32' ? join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'tar.exe') : 'tar';
+    const result = spawnSync(tar, ['-xf', archive, '-C', extracted], { encoding: 'utf8' });
     if (result.status !== 0) throw new Error(`tar could not extract ${archive}: ${result.stderr}`);
     const names = (await readdir(extracted)).sort();
     const expected = [...target.executables, ...target.files].sort();
