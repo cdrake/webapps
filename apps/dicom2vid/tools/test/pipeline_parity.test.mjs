@@ -9,8 +9,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { readDicomSeries } from '../../web/js/readers/dicom.js';
-import { buildFrames } from '../../web/js/pipeline.js';
+import { readDicomSeries } from '@neurodesk/dicom2vid/readers/dicom.js';
+import { buildFrames } from '@neurodesk/dicom2vid/pipeline.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..', '..');

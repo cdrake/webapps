@@ -1,7 +1,8 @@
 // Generated runtimes contain conditional Node branches and bundled dependencies.
 // Their staging and offline checks own validation; keep exclusions at exact paths.
 export const generatedSources = {
-  'apps/dicom2vid/web/js/vendor/': 'Pinned third-party viewer and muxer bundles.',
+  'apps/dicom2vid/web/js/vendor/': 'Pinned third-party viewer bundle.',
+  'packages/dicom2vid/src/vendor/': 'Pinned third-party muxer bundles.',
   'apps/dwi2trx/vendor/niimath/': 'Vendored Emscripten dtifit build.',
   'packages/easy-mp2rage/wasm/mp2rage_wasm.js': 'Committed wasm-bindgen glue.',
   'packages/nii2tvx/wasm/nii2tvx.mjs': 'Committed Emscripten glue.',

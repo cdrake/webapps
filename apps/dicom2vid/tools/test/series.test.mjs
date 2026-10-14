@@ -7,8 +7,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { readDicomHeader } from '../../web/js/readers/dicom.js';
-import { groupSeries, classifySeries } from '../../web/js/series.js';
+import { readDicomHeader } from '@neurodesk/dicom2vid/readers/dicom.js';
+import { groupSeries, classifySeries } from '@neurodesk/dicom2vid/series.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..', '..');

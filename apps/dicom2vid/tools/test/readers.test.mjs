@@ -7,9 +7,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { readNifti } from '../../web/js/readers/nifti.js';
-import { readMgz } from '../../web/js/readers/mgz.js';
-import { readDicomSeries } from '../../web/js/readers/dicom.js';
+import { readNifti } from '@neurodesk/dicom2vid/readers/nifti.js';
+import { readMgz } from '@neurodesk/dicom2vid/readers/mgz.js';
+import { readDicomSeries } from '@neurodesk/dicom2vid/readers/dicom.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..', '..');

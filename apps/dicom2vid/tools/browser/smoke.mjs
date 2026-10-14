@@ -59,8 +59,8 @@ async function main() {
 
     // 1. In-browser parity against the golden.
     const parity = await page.evaluate(async () => {
-      const { readDicomSeries } = await import('/web/js/readers/dicom.js');
-      const { buildFrames } = await import('/web/js/pipeline.js');
+      const { readDicomSeries } = await import('/web/vendor/dicom2vid/src/readers/dicom.js');
+      const { buildFrames } = await import('/web/vendor/dicom2vid/src/pipeline.js');
       const manifest = await (await fetch('/tools/golden/manifest.json')).json();
       const cfg = manifest.configs.find((c) => c.name === 'single_sagittal');
       const names = ['img_000.dcm', 'img_001.dcm', 'img_002.dcm', 'img_003.dcm', 'img_004.dcm'];
@@ -102,9 +102,9 @@ async function main() {
 
     // 2b. NIfTI and color-DICOM paths through to encode.
     const formats = await page.evaluate(async () => {
-      const { readNifti } = await import('/web/js/readers/nifti.js');
-      const { readDicomSeries } = await import('/web/js/readers/dicom.js');
-      const { buildFrames } = await import('/web/js/pipeline.js');
+      const { readNifti } = await import('/web/vendor/dicom2vid/src/readers/nifti.js');
+      const { readDicomSeries } = await import('/web/vendor/dicom2vid/src/readers/dicom.js');
+      const { buildFrames } = await import('/web/vendor/dicom2vid/src/pipeline.js');
       const { volumeToNifti } = await import('/web/js/nifti_write.js');
       const { encodeVideo } = await import('/web/js/encode.js');
       const providerFrom = (out, channels) => {

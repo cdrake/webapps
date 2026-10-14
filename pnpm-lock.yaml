@@ -309,6 +309,9 @@ importers:
 
   apps/dicom2vid:
     dependencies:
+      '@neurodesk/dicom2vid':
+        specifier: workspace:*
+        version: link:../../packages/dicom2vid
       '@neurodesk/webapp-components':
         specifier: workspace:*
         version: link:../../packages/components
@@ -1177,6 +1180,16 @@ importers:
       electron-builder:
         specifier: 26.15.3
         version: 26.15.3(electron-builder-squirrel-windows@26.15.3)
+
+  packages/dicom2vid:
+    dependencies:
+      '@libav.js/variant-vp9-opus':
+        specifier: 6.10.9
+        version: 6.10.9
+    devDependencies:
+      '@playwright/test':
+        specifier: 1.64.0
+        version: 1.64.0
 
   packages/dicompare:
     dependencies:
@@ -3322,6 +3335,9 @@ packages:
 
   '@lezer/python@1.1.19':
     resolution: {integrity: sha512-MhQIURHRytsNzP/YXnqpYKW6la6voAH3kyplTOOiCdjyFY6cWWGFVmYVdHIPrElqSDf4iCDktQCockB9FxuhzQ==}
+
+  '@libav.js/variant-vp9-opus@6.10.9':
+    resolution: {integrity: sha512-2vRsnDHjM3WN3I4KEhjcLMH7I+D+L2MtgiqiOIcBpaDhzS7S+N5dc97/+cnBMHTPrIWc9LMVN6YjXtbo4nfF9Q==}
 
   '@lukeed/csprng@1.1.0':
     resolution: {integrity: sha512-Z7C/xXCiGWsg0KuKsHTKJxbWhpI3Vs5GwLfOean7MGyVFGqdRgBbAjOCh6u4bbjPc/8MJ2pZmK/0DLdCbivLDA==}
@@ -10594,6 +10610,8 @@ snapshots:
       '@lezer/common': 1.5.2
       '@lezer/highlight': 1.2.3
       '@lezer/lr': 1.4.10
+
+  '@libav.js/variant-vp9-opus@6.10.9': {}
 
   '@lukeed/csprng@1.1.0': {}
 
