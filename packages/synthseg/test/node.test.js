@@ -7,7 +7,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import automation from '../../../apps/synthseg/automation.json' with { type: 'json' };
 import { MODEL_ASSETS, PARAMETERS, defaultCacheDir, downloadModels, parseParameters, segment } from '../src/node.js';
-import { outputNames } from '../src/results.js';
+import { VOLUME_COLUMNS, outputNames, parseVolumesCsv } from '../src/results.js';
 
 const cli = fileURLToPath(new URL('../bin/synthseg.js', import.meta.url));
 const fixture = fileURLToPath(new URL('../../../exes/synthseg/test/fixtures/small.nii.gz', import.meta.url));
@@ -48,7 +48,11 @@ test('the command line takes the app automation operation\'s parameters', () => 
   assert.deepEqual(parseParameters({}), { mode: 'default' });
   assert.deepEqual(parseParameters({ mode: 'fast', ct: true }), { mode: 'fast', ct: true });
   assert.throws(() => parseParameters({ mode: 'quick' }), /--mode: .*\(default or fast\)/);
-  assert.deepEqual(outputNames('sub-01_T1w.nii.gz'), { labels: 'sub-01_T1w_synthseg.nii.gz', report: 'sub-01_T1w_synthseg.json' });
+  assert.deepEqual(outputNames('sub-01_T1w.nii.gz'), {
+    labels: 'sub-01_T1w_synthseg.nii.gz',
+    report: 'sub-01_T1w_synthseg.json',
+    volumes: 'sub-01_T1w_synthseg_vol.csv',
+  });
 });
 
 test('installation holds the pinned 53 MB model and the model directory comes from the launcher', () => {
@@ -142,7 +146,7 @@ test('the command line writes the app\'s label map and report for the small fixt
   const output = join(root, 'out');
   const result = run([input, output, '--mode', 'fast', '--threads', '2'], { NEURODESK_SYNTHSEG_MODEL_DIR: localModel });
   assert.equal(result.status, 0, result.stderr);
-  assert.deepEqual((await readdir(output)).sort(), ['input_synthseg.json', 'input_synthseg.nii.gz']);
+  assert.deepEqual((await readdir(output)).sort(), ['input_synthseg.json', 'input_synthseg.nii.gz', 'input_synthseg_vol.csv']);
   const report = JSON.parse(await readFile(join(output, 'input_synthseg.json'), 'utf8'));
   assert.deepEqual(Object.keys(report), ['schemaVersion', 'app', 'appVersion', 'runId', 'status', 'inputs', 'parameters', 'provenance', 'artifacts', 'measurements']);
   assert.deepEqual(report.parameters, { mode: 'fast', ct: false });
@@ -150,4 +154,9 @@ test('the command line writes the app\'s label map and report for the small fixt
   assert.equal(report.provenance.fast, true);
   assert.equal(report.artifacts.labels.filename, 'input_synthseg.nii.gz');
   assert.ok(report.measurements.labels.length > 20, 'the fixture is labelled');
+  const table = parseVolumesCsv(await readFile(join(output, 'input_synthseg_vol.csv'), 'utf8'));
+  assert.equal(table.subject, 'input');
+  assert.deepEqual(table.volumes, report.measurements.softVolumesMm3);
+  assert.deepEqual(Object.keys(table.volumes), VOLUME_COLUMNS);
+  assert.ok(table.volumes['total intracranial'] > 0, 'the fixture has an intracranial volume');
 });

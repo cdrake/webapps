@@ -42,6 +42,16 @@
       "T1_head_fast.nii.gz": "80f6822d2f445fd0f8791eb2e1abd3349168c6ec99f25253423cf21c2309a8ec",
       "T1_head_2mm_default.nii.gz": "3fd14829d1503c9179255e9c485bb04ddddd02a0f87a81d1a2aaeea41ba6ac0a",
       "T1_head_2mm_fast.nii.gz": "12f020cf5d0c8b4ffb744d7e21405b71ddd35651f1ab8e041e4576e77459f7e7"
+    },
+    "volumes": {
+      "source": "FreeSurfer 8.2.0 mri_synthseg --vol",
+      "base_url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/87db4f0297be57eb7f280c629b1bbd2c95b235db/synthseg/validation/",
+      "sha256": {
+        "T1_head_fast_vol.csv": "8d3a47f8aaaa1faad7169312c0121b90fc7fad9ca2b7b5e40bb4d83f0729737e",
+        "T1_head_default_vol.csv": "65dfd2389dff20aca715f9b97df3c046463a22a5701fbbd7195488babfdd8ad2",
+        "T1_head_2mm_fast_vol.csv": "7b268b1cae2eef36620e5f6ff3be9f6c269c082577ba128d1ad91f971dc74390",
+        "T1_head_2mm_default_vol.csv": "da8b4cc3f7b0c7cf66d8865d2f59e43f79c3d1ac625201b54c4730e8317f2b68"
+      }
     }
   },
   "repository": "neurodeskorg/webapps",

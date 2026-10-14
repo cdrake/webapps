@@ -33,6 +33,7 @@ Options:
   --device DEV    cpu or metal (macOS); default DEFAULT
   --ct            Clip CT scans in Hounsfield units to [0, 80]
   --fast          Skip left–right averaging and topology postprocessing
+  --vol FILE.csv  Write structure volumes in mm³ as mri_synthseg --vol does
   --force         Replace existing output and JSON sidecar
   --quiet         Suppress progress messages
   --self-check    Report build, model checksum and runtime, then exit
@@ -49,6 +50,7 @@ struct Args {
     threads: usize,
     ct: bool,
     fast: bool,
+    vol: Option<PathBuf>,
     force: bool,
     quiet: bool,
     device: String,
@@ -80,6 +82,7 @@ fn parse_args() -> Result<Args, String> {
         threads: default_threads(),
         ct: false,
         fast: false,
+        vol: None,
         force: false,
         quiet: false,
         device: DEFAULT_DEVICE.into(),
@@ -108,6 +111,7 @@ fn parse_args() -> Result<Args, String> {
             "--o" => a.output = Some(it.next().map(PathBuf::from).ok_or("--o needs a path.")?),
             "--ct" => a.ct = true,
             "--fast" => a.fast = true,
+            "--vol" => a.vol = Some(it.next().map(PathBuf::from).ok_or("--vol needs a path.")?),
             "--force" => a.force = true,
             "--quiet" => a.quiet = true,
             "--threads" => {
@@ -278,7 +282,10 @@ fn run(a: &Args) -> Result<(), String> {
     };
     let stem = strip_nii(&output).ok_or("Output must end with .nii or .nii.gz.")?;
     let report = PathBuf::from(stem + ".json");
-    for path in [&output, &report] {
+    for path in [Some(&output), Some(&report), a.vol.as_ref()]
+        .into_iter()
+        .flatten()
+    {
         if same_file(path, &input) {
             return Err("Output must not overwrite the input image.".into());
         }
@@ -334,8 +341,8 @@ fn run(a: &Args) -> Result<(), String> {
     drop(session);
     mark("release");
     progress("Postprocessing and saving labels…");
-    let labels = post::labels(posteriors, &prep, a.fast);
-    let out = volume::restore(&labels, &prep);
+    let segmentation = post::segment(posteriors, &prep, a.fast);
+    let out = volume::restore(&segmentation.labels, &prep);
     let mut image = nifti::write(&out);
     if output
         .to_string_lossy()
@@ -358,18 +365,75 @@ fn run(a: &Args) -> Result<(), String> {
         "inputShape": vol.dims, "paddedShape": prep.padded, "outputShape": out.dims, "outputAffine": out.affine,
         "seconds": started.elapsed().as_secs_f64(), "timings": timings, "input": input, "output": output,
     });
-    publish(
-        &[
-            (
-                &report,
-                (serde_json::to_string_pretty(&provenance).unwrap() + "\n").into_bytes(),
-            ),
-            (&output, image),
-        ],
-        a.force,
-    )?;
+    let mut files = vec![
+        (
+            report.as_path(),
+            (serde_json::to_string_pretty(&provenance).unwrap() + "\n").into_bytes(),
+        ),
+        (output.as_path(), image),
+    ];
+    if let Some(vol) = &a.vol {
+        let subject = strip_nii(&input).unwrap_or_default();
+        let subject = Path::new(&subject)
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy();
+        files.push((
+            vol.as_path(),
+            volumes_csv(&subject, &segmentation.volumes_mm3).into_bytes(),
+        ));
+    }
+    publish(&files, a.force)?;
     progress(&format!("Wrote {}", output.display()));
     Ok(())
+}
+
+// mri_synthseg --vol column names, in `post::LABELS` order after the total intracranial volume.
+const VOLUME_COLUMNS: [&str; post::N] = [
+    "total intracranial",
+    "left cerebral white matter",
+    "left cerebral cortex",
+    "left lateral ventricle",
+    "left inferior lateral ventricle",
+    "left cerebellum white matter",
+    "left cerebellum cortex",
+    "left thalamus",
+    "left caudate",
+    "left putamen",
+    "left pallidum",
+    "3rd ventricle",
+    "4th ventricle",
+    "brain-stem",
+    "left hippocampus",
+    "left amygdala",
+    "csf",
+    "left accumbens area",
+    "left ventral DC",
+    "right cerebral white matter",
+    "right cerebral cortex",
+    "right lateral ventricle",
+    "right inferior lateral ventricle",
+    "right cerebellum white matter",
+    "right cerebellum cortex",
+    "right thalamus",
+    "right caudate",
+    "right putamen",
+    "right pallidum",
+    "right hippocampus",
+    "right amygdala",
+    "right accumbens area",
+    "right ventral DC",
+];
+
+// One header and one subject row, CRLF as Python's csv writes; `{:?}` prints the shortest
+// round-trip decimal, as Python does.
+fn volumes_csv(subject: &str, volumes: &[f64; post::N]) -> String {
+    let values: Vec<String> = volumes.iter().map(|v| format!("{v:?}")).collect();
+    format!(
+        "subject,{}\r\n{subject},{}\r\n",
+        VOLUME_COLUMNS.join(","),
+        values.join(",")
+    )
 }
 
 fn main() {

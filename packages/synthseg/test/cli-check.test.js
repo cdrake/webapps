@@ -7,7 +7,8 @@ import { gunzipSync } from 'node:zlib';
 import { summarizeLabels } from '@neurodesk/webapp-components/automation';
 import freesurferLut from '@neurodesk/webapp-components/automation/freesurfer-lut' with { type: 'json' };
 import { readNifti } from '@neurodesk/webapp-components/file-io';
-import { compareLabels, compareVolumes, gates } from '../validation/compare.mjs';
+import { parseVolumesCsv } from '../src/results.js';
+import { compareLabels, compareVolumeTable, compareVolumes, gates } from '../validation/compare.mjs';
 
 const golden = gunzipSync(await readFile(new URL('../../../exes/synthseg/test/fixtures/small_default.nii.gz', import.meta.url)));
 const limit = gates.maxMismatchFraction.fixture;
@@ -81,4 +82,18 @@ test('the report gates fail when its volumes do not describe the label map', asy
   const dropped = await report(golden);
   dropped.measurements.labels.pop();
   assert.match(failed(compareVolumes('dropped', dropped, compared)).join(';'), /report lists/);
+});
+
+test('the volume table gates pass FreeSurfer\'s table and fail each kind of drift', async () => {
+  const { volumes } = parseVolumesCsv(await readFile(new URL('fixtures/T1_head_fast_vol.csv', import.meta.url), 'utf8'));
+  assert.deepEqual(failed(compareVolumeTable('golden', volumes, volumes)), []);
+  const icv = { ...volumes, 'total intracranial': volumes['total intracranial'] * 1.002 };
+  assert.match(failed(compareVolumeTable('icv', icv, volumes)).join(';'), /total intracranial/);
+  const hippocampus = { ...volumes, 'left hippocampus': volumes['left hippocampus'] * 1.02 };
+  assert.match(failed(compareVolumeTable('structure', hippocampus, volumes)).join(';'), /failing left hippocampus/);
+  const small = { ...volumes, 'left inferior lateral ventricle': volumes['left inferior lateral ventricle'] + 15 };
+  assert.deepEqual(failed(compareVolumeTable('small', small, volumes)), [], 'a small structure may differ by 20 mm³');
+  const { csf, ...missing } = volumes;
+  assert.ok(csf > 0);
+  assert.match(failed(compareVolumeTable('missing', missing, volumes)).join(';'), /columns/);
 });
