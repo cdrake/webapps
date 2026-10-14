@@ -80,7 +80,6 @@ const WITHOUT_COMMAND_LINE = {
   qsmbly: 'not built yet (#284)',
   dicompare: 'not built yet (#283)',
   deface: 'not built yet (#281)',
-  niimath: 'not built yet (#280)',
   dicom2vid: 'not built yet (#282)',
   elastix: 'not built yet (#279)',
 };
