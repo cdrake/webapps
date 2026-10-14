@@ -81,3 +81,24 @@ export function compareVolumes(name, report, { reference, mismatched }) {
   checks.push([Math.abs(brainMl - goldenBrainMl) <= allowedMl, `${name} labelled volume ${brainMl.toFixed(3)} ml (FreeSurfer ${goldenBrainMl.toFixed(3)} ml)`]);
   return checks;
 }
+
+/** Soft volumes (mri_synthseg --vol columns, mm³) against FreeSurfer's table for the same input and mode. */
+export function compareVolumeTable(name, actual, reference) {
+  const limits = gates.volumes;
+  const checks = [];
+  const columns = Object.keys(reference);
+  checks.push([sameList(Object.keys(actual), columns), `${name} volume table has FreeSurfer's ${columns.length} columns`]);
+  const icv = Math.abs(actual['total intracranial'] - reference['total intracranial']) / reference['total intracranial'];
+  checks.push([icv <= limits.maxIcvRelativeError, `${name} total intracranial volume differs from FreeSurfer's by ${(100 * icv).toFixed(4)} % <= ${100 * limits.maxIcvRelativeError} %`]);
+  let worst = { column: '', relative: 0, absolute: 0 };
+  const failing = [];
+  for (const column of columns.filter((entry) => entry !== 'total intracranial')) {
+    const absolute = Math.abs(actual[column] - reference[column]);
+    const relative = absolute / reference[column];
+    if (relative > worst.relative) worst = { column, relative, absolute };
+    if (!(relative <= limits.maxRelativeError || absolute <= limits.maxAbsoluteErrorMm3)) failing.push(column);
+  }
+  const largest = `${worst.column} ${(100 * worst.relative).toFixed(4)} %, ${worst.absolute.toFixed(3)} mm³`;
+  checks.push([failing.length === 0, `${name} structure volumes within ${100 * limits.maxRelativeError} % or ${limits.maxAbsoluteErrorMm3} mm³ of FreeSurfer's (largest ${largest}${failing.length ? `; failing ${failing.join(', ')}` : ''})`]);
+  return checks;
+}

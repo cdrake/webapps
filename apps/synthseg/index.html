@@ -19,6 +19,21 @@
           </label>
           <p id="fileInfo" class="nd-file-info" hidden></p>
           <select id="seriesSelect" aria-label="Input image or DICOM series" hidden></select>
+          <div class="nd-row">
+            <div class="nd-field">
+              <label for="age">Age <small>years</small></label>
+              <input id="age" type="number" min="0" max="120" step="1" inputmode="numeric" placeholder="Unknown">
+            </div>
+            <div class="nd-field">
+              <label for="sex">Sex</label>
+              <select id="sex">
+                <option value="">Unknown</option>
+                <option value="female">Female</option>
+                <option value="male">Male</option>
+              </select>
+            </div>
+          </div>
+          <p id="subjectHint" class="nd-hint" hidden>From DICOM header</p>
         </div>
       </details>
       <details class="nd-sidebar-section" id="segmentSection" open>
@@ -27,10 +42,10 @@
           <div class="nd-field">
             <label for="mode">Processing mode</label>
             <select id="mode">
+              <option value="fast" selected>Fast · single pass</option>
               <option value="default">Default · flip averaging and topology</option>
-              <option value="fast">Fast · single pass</option>
             </select>
-            <p id="modeHelp" class="nd-hint">Fast mode skips flip averaging and topological correction.</p>
+            <p id="modeHelp" class="nd-hint">Fast mode matches the volume norms; default adds flip averaging and topology.</p>
           </div>
           <label class="nd-check"><input id="ct" type="checkbox"> Input is CT · Hounsfield units</label>
           <button id="processButton" class="nd-btn nd-btn-primary" type="button" disabled>Segment brain</button>
@@ -40,6 +55,7 @@
         <summary class="nd-section-title">Output</summary>
         <div class="nd-section-content">
           <div id="resultList"></div>
+          <button id="volumesBtn" class="nd-btn nd-btn-secondary nd-btn-sm" type="button" disabled>Download volumes (.csv)</button>
           <button id="reportBtn" class="nd-btn nd-btn-secondary nd-btn-sm" type="button" disabled>Download report (.json)</button>
         </div>
       </details>
@@ -52,6 +68,7 @@
         <canvas id="gl1" aria-label="Brain image viewer"></canvas>
         <p id="emptyState" class="nd-viewer-empty">Load a brain scan to view it and produce FreeSurfer labels.</p>
         <p id="viewerError" class="nd-viewer-notice" hidden></p>
+        <section id="volumeReport" class="nd-viewer-report" aria-label="Brain volumes by age" hidden></section>
       </div>
       <div class="nd-viewer-info">
         <span id="imageLabel"></span>
@@ -67,7 +84,8 @@
     </footer>
     <template id="privacyContent">
       <p>SynthSeg processes scans locally in your browser. It does not upload your input image, labels, or processing report.</p>
-      <p>The pretrained model and optional example image are downloaded from Hugging Face.</p>
+      <p>The pretrained model and optional example image are downloaded from Hugging Face. The reference volumes for the volume report are downloaded from GitHub.</p>
+      <p>Age and sex read from a DICOM header stay in this browser, and no other header field is kept. The run report records the age and sex its volume report used.</p>
     </template>
     <template id="standaloneContent">
       <p>The native command-line SynthSeg uses ONNX Runtime on CPU or Metal on Apple silicon. Build and run it with:</p>

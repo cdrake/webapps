@@ -1,0 +1,51 @@
+name: standalone-links
+
+# Checks that every download, Apptainer image, Docker Hub tag and OpenRecon recipe the Standalone
+# dialogs offer still resolves. The links can break with no change here (Neurocontainers removes a
+# superseded .simg when it rebuilds a version), so this runs nightly and after catalog changes reach
+# main, never as a pull request gate: a network failure says nothing about the change under review.
+on:
+  schedule:
+    - cron: '47 5 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - registry/standalone.json
+      - registry/neurocontainers.json
+      - scripts/check-standalone-links.mjs
+      - .github/workflows/standalone-links.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: standalone-links-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  links:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22.22.0
+      # The script uses only Node built-ins, so no install step is needed.
+      - name: Check Standalone links
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/check-standalone-links.mjs 2>&1 | tee "$RUNNER_TEMP/links.log"
+      - name: Summarize broken links
+        if: failure()
+        run: |
+          {
+            echo '## Broken Standalone links'
+            echo '```'
+            grep -v '^ok ' "$RUNNER_TEMP/links.log"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

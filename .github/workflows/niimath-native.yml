@@ -1,0 +1,85 @@
+name: niimath-native
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/niimath-native.yml'
+      - 'packages/niimath/**'
+      - 'packages/node-drivers/**'
+      - 'apps/niimath/**'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/niimath-native.yml'
+      - '.github/workflows/node-cli-portable.yml'
+      - 'exes/node-cli/**'
+      - 'packages/niimath/**'
+      - 'packages/node-drivers/**'
+      - 'apps/niimath/**'
+  workflow_dispatch:
+    inputs:
+      sign_release:
+        description: Sign and notarize the macOS installer, then attach every verified package to the existing niimath release
+        type: boolean
+        default: false
+
+concurrency:
+  group: niimath-native-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  # Runs every command the web app offers on its pinned examples through the built web app and
+  # compares each download with packages/niimath/validation/browser-reference.json, the reference
+  # the archives are held to.
+  web-app-reference:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22.22.0
+          cache: pnpm
+      - name: Install frozen dependencies
+        env:
+          ONNXRUNTIME_NODE_INSTALL: skip
+        run: pnpm install --frozen-lockfile
+      - name: Install browser
+        run: |
+          sudo rm -f /etc/apt/sources.list.d/google-chrome.list /etc/apt/sources.list.d/google-chrome.sources
+          node node_modules/@playwright/test/cli.js install --with-deps chromium
+      - name: Run the web app's commands on the pinned examples
+        env:
+          NIIMATH_BROWSER_REFERENCE: check
+        run: pnpm --filter niimath exec playwright test e2e/reference.spec.js --reporter=line
+
+  # Archives are built, and published, only once the web app still matches the reference they
+  # are held to.
+  portable:
+    needs: [web-app-reference]
+    uses: ./.github/workflows/node-cli-portable.yml
+    permissions:
+      contents: write
+      id-token: write
+    with:
+      package: packages/niimath
+      targets: >-
+        [{"os": "ubuntu-22.04", "platform": "linux-x64"},
+         {"os": "windows-latest", "platform": "windows-x64"},
+         {"os": "macos-15", "platform": "macos-arm64"}]
+      publish_release: ${{ github.event_name == 'workflow_dispatch' && inputs.sign_release }}
+      sign_release: ${{ github.event_name == 'workflow_dispatch' && inputs.sign_release }}
+    secrets:
+      APPLEID: ${{ secrets.APPLEID }}
+      APPLEIDPASS: ${{ secrets.APPLEIDPASS }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      CSC_LINK: ${{ secrets.CSC_LINK }}
+      CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+      CSC_INSTALLER_LINK: ${{ secrets.CSC_INSTALLER_LINK }}
+      CSC_INSTALLER_KEY_PASSWORD: ${{ secrets.CSC_INSTALLER_KEY_PASSWORD }}

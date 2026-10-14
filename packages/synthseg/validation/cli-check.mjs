@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Runs a synthseg command line on both benchmark volumes in both modes and holds each label map to the
-// FreeSurfer 8.1.0 golden with the gates of exes/synthseg/tests/parity.rs (./gates.json). FreeSurfer's
+// FreeSurfer 8.1.0 golden with the gates of exes/synthseg/tests/parity.rs (./gates.json), and each
+// volume table to FreeSurfer 8.2.0's mri_synthseg --vol table for the same input and mode. FreeSurfer's
 // Keras/TensorFlow SynthSeg made the goldens, so the reference shares no code with the command line.
 // With --native PATH, each fast-mode map is also compared with the native Rust synthseg on the same input.
 // Only fast mode: the native CPU path holds ONNX Runtime's memory arena and peaks near 14 GB in the default
@@ -13,8 +14,8 @@ import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import manifest from '../model.manifest.json' with { type: 'json' };
-import { outputNames } from '../src/results.js';
-import { compareLabels, compareVolumes, gates } from './compare.mjs';
+import { outputNames, parseVolumesCsv } from '../src/results.js';
+import { compareLabels, compareVolumeTable, compareVolumes, gates } from './compare.mjs';
 
 const { values } = parseArgs({ options: { executable: { type: 'string' }, native: { type: 'string' } } });
 const command = values.executable
@@ -29,12 +30,12 @@ function check(passed, line) {
 }
 
 // The release check runs with an empty home that must stay empty, so the downloads go under the temp directory.
-async function validationFile(name) {
-  const expected = manifest.validation.sha256[name];
+async function validationFile(name, source = manifest.validation) {
+  const expected = source.sha256[name];
   const path = join(tmpdir(), 'neurodesk-synthseg-validation', manifest.revision, name);
   const cached = await readFile(path).catch(() => null);
   if (cached && sha256(cached) === expected) return cached;
-  const response = await fetch(`${manifest.validation.base_url}${name}`);
+  const response = await fetch(`${source.base_url}${name}`);
   if (!response.ok) throw new Error(`${name}: HTTP ${response.status}`);
   const bytes = Buffer.from(await response.arrayBuffer());
   if (sha256(bytes) !== expected) throw new Error(`${name}: SHA-256 differs from model.manifest.json`);
@@ -60,7 +61,7 @@ async function segment(work, { input, mode }) {
   const result = JSON.parse(stdout);
   const names = outputNames(`${input}.nii.gz`);
   const files = (await readdir(output)).sort();
-  check(JSON.stringify(files) === JSON.stringify([names.labels, names.report].sort()), `${name} outputs ${files.join(', ')}`);
+  check(JSON.stringify(files) === JSON.stringify([names.labels, names.report, names.volumes].sort()), `${name} outputs ${files.join(', ')}`);
   const labels = await readFile(join(output, names.labels));
   const report = JSON.parse(await readFile(join(output, names.report), 'utf8'));
   const provenance = report.provenance;
@@ -71,6 +72,10 @@ async function segment(work, { input, mode }) {
   const compared = compareLabels(name, labels, golden, gates.maxMismatchFraction.fullVolume);
   for (const [passed, line] of compared.checks) check(passed, line);
   for (const [passed, line] of compareVolumes(name, report, compared)) check(passed, line);
+  const table = parseVolumesCsv(await readFile(join(output, names.volumes), 'utf8'));
+  const freesurfer = parseVolumesCsv((await validationFile(`${input}_${mode}_vol.csv`, manifest.validation.volumes)).toString('utf8'));
+  check(table.subject === input, `${name} volume table names subject ${table.subject}`);
+  for (const [passed, line] of compareVolumeTable(name, table.volumes, freesurfer.volumes)) check(passed, line);
   if (values.native && mode === 'fast') {
     const nativeOutput = join(work, `${input}-${mode}-native.nii.gz`);
     const native = run([resolve(values.native)], ['--i', inputPath, '--o', nativeOutput, '--quiet', '--fast']);

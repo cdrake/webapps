@@ -1,9 +1,14 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import { chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { delimiter, join } from 'node:path';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
 import YAML from 'yaml';
 import { openStandalone } from '../packages/components/src/ui/renderStandalone.js';
+import { EMBEDDED_VERSION_SITES } from '../scripts/lib/app-versions.mjs';
 import { nativeReleases, portableSpecs, portableSpecsAt } from '../scripts/lib/native-releases.mjs';
 import { applyCatalogUpdate, catalogReleases, catalogUpdate, checkReceipt, checkUpdateAssets, parseReleases, releaseFromTag } from '../scripts/lib/standalone-import.mjs';
 
@@ -101,8 +106,8 @@ test('Rust tools need every target and a receipt per archive, and keep their emb
   assert.ok(catalog.apps.synthsr.downloads.every((download) => download.modelsIncluded && !download.command));
 });
 
-// SynthSEG as it ships: the Rust workflow builds the Metal macOS installer at its Cargo version, and the
-// portable Node release builds Linux and Windows at the app's version.
+// SynthSEG as it ships: the Rust workflow builds the Metal macOS installer and the portable Node release
+// builds Linux and Windows. Before both started with the app release, the installer lagged at 0.2.20260910.
 const nodeSpec = {
   app: 'synthseg',
   workflow: 'synthseg-portable.yml',
@@ -136,7 +141,7 @@ async function synthsegUpdate(catalog, version, names, fetchText = async (url) =
 
 test('each release source owns its platforms, and two owners for one platform cannot be declared', () => {
   const [rust, portableSource] = split.get('synthseg');
-  assert.deepEqual([rust.workflow, rust.targets, rust.startsWithAppRelease], ['synthseg-native.yml', ['macos-arm64'], false]);
+  assert.deepEqual([rust.workflow, rust.targets, rust.portable], ['synthseg-native.yml', ['macos-arm64'], false]);
   assert.deepEqual([portableSource.workflow, portableSource.targets, portableSource.publishInput], ['synthseg-portable.yml', ['linux-x64', 'windows-x64'], 'publish_release']);
   const overlapping = { ...nodeSpec, targets: { ...nodeSpec.targets, 'macos-arm64': { archive: 'pkg', executable: 'synthseg' } } };
   assert.throws(() => nativeReleases(new Map([['synthseg', { packageDir: 'packages/synthseg', spec: overlapping }]])), /synthseg: macos-arm64 claimed by both synthseg-native\.yml and synthseg-portable\.yml/);
@@ -209,7 +214,7 @@ test('one tag can carry both sources, and each source it carries must be complet
 test('every receipt records the archive digest, and a line naming a file binds it to that file', () => {
   const name = 'greedy-0.3.20261008-linux-x64.tar.gz';
   const digest = 'a'.repeat(64);
-  const rust = { startsWithAppRelease: false };
+  const rust = { portable: false };
   const check = (text) => checkReceipt({ name, digest, platform: 'linux-x64', native: rust, text });
   assert.doesNotThrow(() => check(`PASS: identity reslice\nsha256: ${digest}  ${name}\n`), 'Greedy\'s receipt line');
   assert.doesNotThrow(() => check(`${digest}  dist/${name}\n`), 'SynthSEG\'s shasum line');
@@ -334,7 +339,21 @@ test('release tags name the app and version; specs are read from the tag itself'
   assert.ok(catalogReleases(catalog, natives).some(({ id, version }) => id === 'synthseg' && version === '0.2.20260910'), 'a refresh still finds the Rust macOS installer');
 });
 
-test('an app release starts every portable command line build, which then publishes to the catalog', async () => {
+// Runs scripts/dispatch-native-release.mjs with a stand-in gh that records each call instead of dispatching.
+async function dispatchedBy(app, tag) {
+  const bin = await mkdtemp(join(tmpdir(), 'dispatch-native-release-'));
+  try {
+    const log = join(bin, 'calls');
+    await writeFile(join(bin, 'gh'), `#!/bin/sh\necho "$*" >> "${log}"\n`);
+    await chmod(join(bin, 'gh'), 0o755);
+    execFileSync(process.execPath, [fileURLToPath(new URL('../scripts/dispatch-native-release.mjs', import.meta.url)), app, tag], { env: { ...process.env, PATH: `${bin}${delimiter}${process.env.PATH}` }, stdio: 'pipe' });
+    return (await readFile(log, 'utf8').catch(() => '')).split('\n').filter(Boolean);
+  } finally {
+    await rm(bin, { recursive: true, force: true });
+  }
+}
+
+test('an app release starts every native command line build, Rust or portable, which then publishes to the catalog', async () => {
   const release = await workflow('release.yml');
   assert.equal(release.permissions.actions, undefined, 'only the release job may dispatch workflows');
   assert.deepEqual(release.jobs.release.permissions, { contents: 'write', actions: 'write' });
@@ -343,20 +362,34 @@ test('an app release starts every portable command line build, which then publis
   assert.match(start.run, /node scripts\/dispatch-native-release\.mjs "\$APP" "\$\{APP\}-v\$\{VERSION\}"/);
   const install = steps.findIndex((step) => step.run === 'pnpm install --frozen-lockfile');
   assert.ok(install >= 0 && install < steps.indexOf(start), 'the dispatch script needs installed dependencies (yaml)');
-  for (const native of [...nativeReleases(await portableSpecs()).values()].flat()) {
-    const app = native.spec?.app ?? native.workflow;
-    const flow = await workflow(native.workflow);
-    assert.equal(flow.on.workflow_dispatch.inputs[native.publishInput].type, 'boolean', `${app}: dispatched with ${native.publishInput}`);
-    if (native.spec) {
-      const job = flow.jobs.portable;
-      assert.equal(job.uses, './.github/workflows/node-cli-portable.yml', `${app}: uses the shared packager`);
-      assert.equal(job.with.package, native.packageDir);
-      assert.equal(job.with.publish_release, `\${{ github.event_name == 'workflow_dispatch' && inputs.${native.publishInput} }}`);
-      assert.equal(job.permissions.contents, 'write');
-    } else {
-      const publish = flow.jobs.release.steps.at(-1);
-      assert.ok(publish.run.includes(CATALOG_DISPATCH), `${app}: its release job announces the archives`);
-      assert.match(publish.run, /isDraft or \.isPrerelease/, `${app}: a draft or prerelease waits for the release event`);
+  const natives = nativeReleases(await portableSpecs());
+  assert.deepEqual(['greedy', 'synthseg', 'synthsr'].filter((app) => natives.get(app)?.some((source) => !source.portable)), ['greedy', 'synthseg', 'synthsr']);
+  for (const [app, sources] of natives) {
+    const tag = `${app}-v0.1.20261014`;
+    assert.deepEqual(await dispatchedBy(app, tag), sources.map((source) => `workflow run ${source.workflow} --ref ${tag} -f ${source.publishInput}=true`), `${app}: the app release starts each of its sources at its tag`);
+    for (const native of sources) {
+      const flow = await workflow(native.workflow);
+      assert.equal(flow.on.workflow_dispatch.inputs[native.publishInput].type, 'boolean', `${app}: dispatched with ${native.publishInput}`);
+      if (native.portable) {
+        const job = flow.jobs.portable;
+        assert.equal(job.uses, './.github/workflows/node-cli-portable.yml', `${app}: uses the shared packager`);
+        assert.equal(job.with.package, native.packageDir);
+        assert.equal(job.with.publish_release, `\${{ github.event_name == 'workflow_dispatch' && inputs.${native.publishInput} }}`);
+        assert.equal(job.permissions.contents, 'write');
+        continue;
+      }
+      // A Rust source names its release from its Cargo.toml (Greedy from the app), which the release
+      // tooling keeps at the app's version, so it attaches to the very tag the app release created.
+      assert.ok(EMBEDDED_VERSION_SITES[app].some((site) => site.file === `exes/${app}/Cargo.toml`), `${app}: Cargo.toml follows the app version`);
+      const job = flow.jobs.release;
+      assert.equal(job.if, `github.event_name == 'workflow_dispatch' && inputs.${native.publishInput}`);
+      const target = job.steps.find((step) => step.id === 'target').run;
+      assert.match(target, new RegExp(`tag="${app}-v\\$version"`), `${app}: targets the app release tag`);
+      assert.match(target, /gh release view "\$tag" >\/dev\/null/, `${app}: attaches to the released tag`);
+      assert.doesNotMatch(target, /isDraft|isPrerelease/, `${app}: does not wait for a draft or prerelease`);
+      assert.ok(target.includes('test "$(git rev-parse "$tag^{commit}")" = "$GITHUB_SHA"'), `${app}: builds exactly the tagged commit`);
+      assert.ok(target.includes(`echo "release=${app}@$version"`));
+      assert.equal(job.steps.at(-1).run, CATALOG_DISPATCH, `${app}: its release job announces the archives`);
     }
   }
   const shared = await workflow('node-cli-portable.yml');

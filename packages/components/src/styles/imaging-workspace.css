@@ -927,6 +927,47 @@ nd-example-selector {
 .nd-data-table select { min-width: 96px; }
 .nd-data-table th { white-space: nowrap; }
 
+/* A report shown in place of the canvas, e.g. a volume table with charts. */
+.nd-viewer-report {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  padding: var(--nd-space-md);
+  background: var(--nd-color-bg);
+  color: var(--nd-color-text);
+  font-size: 0.8rem;
+}
+.nd-viewer-report[hidden] { display: none; }
+.nd-viewer-report p { margin: 0 0 var(--nd-space-xs); }
+.nd-report-lead { font-weight: 600; }
+.nd-report-notes { margin-top: var(--nd-space-md); color: var(--nd-color-text-muted); font-size: 0.7rem; }
+.nd-data-table [data-flag] td { font-weight: 600; }
+.nd-data-table .nd-numeric { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Small-multiple SVG charts: recessive axes and grid, token colours only. */
+.nd-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--nd-space-md);
+  margin: var(--nd-space-md) 0;
+}
+.nd-chart-figure { margin: 0; min-width: 0; }
+.nd-chart-figure figcaption { margin-bottom: var(--nd-space-xs); color: var(--nd-color-text); font-size: 0.75rem; }
+.nd-chart-figure[data-flag] figcaption { font-weight: 600; }
+.nd-chart { display: block; width: 100%; height: auto; overflow: visible; }
+.nd-chart text { fill: var(--nd-color-text-muted); font-size: 9px; }
+.nd-chart .nd-chart-axis { stroke: var(--nd-color-border); }
+.nd-chart .nd-chart-gridline { stroke: var(--nd-color-border-light); stroke-dasharray: 2 3; }
+.nd-chart .nd-chart-band-outer { fill: var(--nd-color-primary); fill-opacity: 0.14; }
+.nd-chart .nd-chart-band-inner { fill: var(--nd-color-primary); fill-opacity: 0.3; }
+.nd-chart .nd-chart-median { fill: none; stroke: var(--nd-color-primary); stroke-width: 1.5; }
+.nd-chart .nd-chart-marker { fill: var(--nd-color-text); stroke: var(--nd-color-bg); stroke-width: 2; }
+.nd-chart .nd-chart-level { stroke: var(--nd-color-text); stroke-width: 2; stroke-dasharray: 6 4; }
+.nd-chart .nd-chart-range { fill: none; stroke: var(--nd-color-text-dim); stroke-dasharray: 1 3; }
+.nd-chart .nd-chart-note { fill: var(--nd-color-text); font-weight: 600; }
+.nd-chart-legend { display: flex; flex-wrap: wrap; gap: var(--nd-space-xs) var(--nd-space-md); margin: 0; padding: 0; list-style: none; color: var(--nd-color-text-muted); font-size: 0.7rem; }
+.nd-chart-legend svg { width: 18px; height: 10px; margin-right: var(--nd-space-xs); vertical-align: middle; }
+
 /* Embedded FreeBrowse 2.5: its own stylesheet stays inside an open shadow root. */
 .nd-viewer-embed {
   position: absolute;

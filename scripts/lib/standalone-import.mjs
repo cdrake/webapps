@@ -73,7 +73,7 @@ export function checkReceipt({ name, digest, platform, native, text: raw }) {
   const recorded = recordedDigests(text, name);
   if (recorded.some((value) => value !== digest)) throw new Error(`${name}: its receipt validated different bytes`);
   if (!recorded.length) throw new Error(`${name}: its receipt records no SHA-256 of the archive`);
-  if (native.startsWithAppRelease && !text.startsWith(`PASS ${platform}\n`)) throw new Error(`${name}: its receipt does not pass these exact bytes`);
+  if (native.portable && !text.startsWith(`PASS ${platform}\n`)) throw new Error(`${name}: its receipt does not pass these exact bytes`);
 }
 
 // The file-name stem of a source's archives: the portable executable's name (FLAMeS ships as flames-...),

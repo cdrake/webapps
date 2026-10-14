@@ -13,7 +13,6 @@
     "deploy": "wrangler deploy"
   },
   "devDependencies": {
-    "eslint": "^9.0.0",
     "wrangler": "^3.0.0"
   }
 }

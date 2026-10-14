@@ -20,7 +20,6 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.44.0",
-    "eslint": "^9.0.0",
     "vite": "^6.3.2"
   }
 }

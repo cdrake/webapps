@@ -1095,6 +1095,14 @@
       "kind": "model",
       "dependencies": []
     },
+    "https://raw.githubusercontent.com/neurodesk/neurocontainers/b23bda1938a5e95e073e34176c1ada526f2382cd/recipes/synthseg/brainquant_norms.json": {
+      "sha256": "db01bdff445db7b8e1fd5e6eaa837edc0b8e27e2b28d3c8cdb0b89427d8eb710",
+      "bytes": 12233,
+      "contentType": "text/plain; charset=utf-8",
+      "kind": "reference-data",
+      "license": "CC-BY-SA-3.0",
+      "dependencies": []
+    },
     "https://raw.githubusercontent.com/neurolabusc/py_synthsr/04ab5548f4609c2b44ca51b3f4bc319b585dafa7/FLAIR.nii.gz": {
       "sha256": "87edd267540bcdb9734e4a42458c82c2aa8582c61ef6518a792bfdc1e89b5386",
       "bytes": 2547127,
@@ -3624,7 +3632,8 @@
     ],
     "synthseg": [
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/356a4adbce52cf9052d61ef90b14ba263e7c25e9/synthseg/models/synthseg-2.0.onnx",
-      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/356a4adbce52cf9052d61ef90b14ba263e7c25e9/synthseg/validation/T1_head.nii.gz"
+      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/356a4adbce52cf9052d61ef90b14ba263e7c25e9/synthseg/validation/T1_head.nii.gz",
+      "https://raw.githubusercontent.com/neurodesk/neurocontainers/b23bda1938a5e95e073e34176c1ada526f2382cd/recipes/synthseg/brainquant_norms.json"
     ],
     "syncro": [
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/88c3dd6b9aac13429f760d9b0b48249040d3ee5f/synthsr/models/synthsr-v2.onnx",

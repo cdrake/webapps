@@ -14,6 +14,7 @@ BIN = target/release/synthseg
 MACOS_PKG = dist/synthseg-$(VERSION)-macos-arm64.pkg
 VALIDATION = T1_head T1_head_2mm T1_head_default T1_head_fast T1_head_2mm_default T1_head_2mm_fast
 VALIDATION_FILES = $(addprefix $(SYNTHSEG_REFERENCE_DIR)/,$(addsuffix .nii.gz,$(VALIDATION)))
+VOLUME_TABLES = $(addprefix $(SYNTHSEG_REFERENCE_DIR)/,$(addsuffix _vol.csv,T1_head_fast T1_head_default T1_head_2mm_fast T1_head_2mm_default))
 manifest_url = $$(python3 -c 'import json;m=json.load(open("$(MANIFEST)"));print(m$(1))')
 
 .PHONY: help export check-model fetch-validation build test test-real test-keras references fmt lint clean \
@@ -46,11 +47,15 @@ $(MODEL):
 	curl -fL --retry 3 -o "$@.partial" "$(call manifest_url,["base_url"]+m["assets"][0]["filename"])"
 	mv "$@.partial" "$@"
 
-fetch-validation: $(VALIDATION_FILES)
-	@python3 -c 'import hashlib, json, sys; m = json.load(open("$(MANIFEST)"))["validation"]["sha256"]; bad = [f for f, h in m.items() if hashlib.sha256(open(sys.argv[1] + "/" + f, "rb").read()).hexdigest() != h]; sys.exit("checksum mismatch, delete and refetch: " + ", ".join(bad) if bad else 0)' "$(SYNTHSEG_REFERENCE_DIR)"
+fetch-validation: $(VALIDATION_FILES) $(VOLUME_TABLES)
+	@python3 -c 'import hashlib, json, sys; v = json.load(open("$(MANIFEST)"))["validation"]; m = {**v["sha256"], **v["volumes"]["sha256"]}; bad = [f for f, h in m.items() if hashlib.sha256(open(sys.argv[1] + "/" + f, "rb").read()).hexdigest() != h]; sys.exit("checksum mismatch, delete and refetch: " + ", ".join(bad) if bad else 0)' "$(SYNTHSEG_REFERENCE_DIR)"
 $(SYNTHSEG_REFERENCE_DIR)/%.nii.gz:
 	mkdir -p "$(SYNTHSEG_REFERENCE_DIR)"
 	curl -fL --retry 3 -o "$@.partial" "$(call manifest_url,["validation"]["base_url"])$*.nii.gz"
+	mv "$@.partial" "$@"
+$(SYNTHSEG_REFERENCE_DIR)/%_vol.csv:
+	mkdir -p "$(SYNTHSEG_REFERENCE_DIR)"
+	curl -fL --retry 3 -o "$@.partial" "$(call manifest_url,["validation"]["volumes"]["base_url"])$*_vol.csv"
 	mv "$@.partial" "$@"
 
 build: check-model

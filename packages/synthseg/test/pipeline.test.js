@@ -8,6 +8,8 @@ import { fileURLToPath } from 'node:url';
 import { runSynthseg, loadSynthseg } from '../src/index.js';
 import manifest from '../model.manifest.json' with { type: 'json' };
 import gates from '../validation/gates.json' with { type: 'json' };
+import { parseVolumesCsv } from '../src/results.js';
+import { compareVolumeTable } from '../validation/compare.mjs';
 
 const repo = new URL('../../../', import.meta.url);
 const modelPath = fileURLToPath(new URL('exes/synthseg/models/synthseg-2.0.onnx', repo));
@@ -62,11 +64,11 @@ async function createSession(bytes) {
 async function segment(input, options) {
   const started = performance.now();
   const file = await readFile(input);
-  const { buffer, provenance } = await runSynthseg({
+  const { buffer, provenance, volumes } = await runSynthseg({
     buffer: file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength),
     options, loadModel, createSession, wasm,
   });
-  return { bytes: new Uint8Array(buffer), provenance, seconds: (performance.now() - started) / 1000 };
+  return { bytes: new Uint8Array(buffer), provenance, volumes, seconds: (performance.now() - started) / 1000 };
 }
 
 before(async () => {
@@ -101,9 +103,15 @@ for (const fast of [true, false]) {
 for (const stem of ['T1_head_2mm', 'T1_head']) {
   for (const fast of [true, false]) {
     test(`${stem} parity (${fast ? 'fast' : 'default'})`, { timeout: 4 * 60 * 60_000, skip: references && existsSync(modelPath) ? false : 'set SYNTHSEG_REFERENCE_DIR' }, async () => {
-      const { bytes, seconds } = await segment(`${references}/${stem}.nii.gz`, { fast });
-      const diff = gate(bytes, await readFile(`${references}/${stem}_${fast ? 'fast' : 'default'}.nii.gz`), gates.maxMismatchFraction.fullVolume);
-      console.log(`${stem} ${fast ? 'fast' : 'default'}: ${seconds.toFixed(1)} s, ${diff.mismatched}/${diff.total} mismatched (${diff.fraction})`);
+      const mode = fast ? 'fast' : 'default';
+      const { bytes, volumes, seconds } = await segment(`${references}/${stem}.nii.gz`, { fast });
+      const diff = gate(bytes, await readFile(`${references}/${stem}_${mode}.nii.gz`), gates.maxMismatchFraction.fullVolume);
+      console.log(`${stem} ${mode}: ${seconds.toFixed(1)} s, ${diff.mismatched}/${diff.total} mismatched (${diff.fraction})`);
+      const reference = parseVolumesCsv(await readFile(`${references}/${stem}_${mode}_vol.csv`, 'utf8')).volumes;
+      for (const [passed, line] of compareVolumeTable(`${stem} ${mode}`, volumes, reference)) {
+        console.log(line);
+        assert.ok(passed, line);
+      }
     });
   }
 }

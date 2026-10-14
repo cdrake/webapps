@@ -2196,6 +2196,13 @@
         "bytes": 52983030,
         "kind": "model",
         "license": "Apache-2.0"
+      },
+      {
+        "url": "https://raw.githubusercontent.com/neurodesk/neurocontainers/b23bda1938a5e95e073e34176c1ada526f2382cd/recipes/synthseg/brainquant_norms.json",
+        "kind": "reference-data",
+        "sha256": "db01bdff445db7b8e1fd5e6eaa837edc0b8e27e2b28d3c8cdb0b89427d8eb710",
+        "bytes": 12233,
+        "license": "CC-BY-SA-3.0"
       }
     ],
     "syncro": [
