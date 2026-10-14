@@ -11,6 +11,7 @@ import {
   createConsole,
   createViewerToolbar,
   createMaskEditor,
+  ProgressManager,
 } from '@neurodesk/webapp-components/ui';
 import { downloadBlob, downloadFile, readNifti } from '@neurodesk/webapp-components/file-io';
 import { fetchModel } from '@neurodesk/webapp-components/worker';
@@ -34,6 +35,7 @@ mountImagingWorkspace({
 });
 const $ = (id) => document.getElementById(id);
 const technicalLog = createConsole({ id: 'technicalLog' });
+const progressManager = new ProgressManager({ cancelId: 'cancelBtn' });
 $('viewer').append(technicalLog);
 const runs = createRunState({ app: 'synthseg', appVersion: appPackage.version });
 const info = createInfoDialog({ id: 'infoDialog' });
@@ -82,7 +84,7 @@ const results = createResultList({
   onEdit: () => void editLabels(),
 });
 const assetBase = import.meta.env.VITE_SYNTHSEG_ASSET_BASE || manifest.base_url;
-const OFF_GRID_NOTE = "The input is shown resampled to SynthSeg's 1 mm label grid.";
+const offGridNote = () => `The input is shown resampled to SynthSeg's ${provenance?.voxelSizeMm ?? 1} mm label grid.`;
 
 const webgpu = Boolean(navigator.gpu);
 let source,
@@ -94,8 +96,7 @@ let source,
   viewer,
   viewerReady,
   busy = false,
-  timer,
-  started;
+  memoryRecommendation = null;
 let operation;
 let viewRevision = 0;
 let displayedStage = null;
@@ -103,6 +104,7 @@ let importedImages = [];
 // The last run's soft volumes (mri_synthseg --vol columns, mm³) and whether it ran in fast mode.
 let volumes = null;
 let volumesFast = true;
+let volumesVoxelSizeMm = 1;
 let normsLoad = null;
 // The last run's GM, WM and CSF probability maps as Files, or null.
 let tissues = null;
@@ -141,17 +143,17 @@ function status(message, error = false) {
 function setBusy(value, cancellable = false) {
   busy = value;
   exampleControl.setDisabled(value);
-  for (const id of ['imageInput', 'seriesSelect', 'mode', 'ct', 'age', 'sex'])
+  for (const id of ['imageInput', 'seriesSelect', 'mode', 'ct', 'age', 'sex', 'robustFov', 'voxelSizeMm', 'downsampleButton'])
     $(id).disabled = value;
   $('processButton').disabled = value || !source || !webgpu;
-  $('cancelBtn').hidden = !value || !cancellable;
+  progressManager.setCancellable(value && cancellable);
   $('opacity').disabled = value || !labels || editing();
   syncResultButtons();
   results.setEditingEnabled(!value && !editing());
   $('reportBtn').disabled = value || runs.snapshot().state !== 'succeeded';
   $('volumesBtn').disabled = value || !volumes;
   if (!value) {
-    clearInterval(timer);
+    progressManager.stopTimer();
     worker?.terminate();
     worker = null;
   }
@@ -189,7 +191,7 @@ async function ensureViewer() {
     });
     editor.addEventListener('nd-mask-edit-end', endEdit);
     editor.addEventListener('nd-mask-edit-start', ({ detail }) => {
-      status(sameGrid(sourceGrid, labels.grid) ? detail.message : `${detail.message} ${OFF_GRID_NOTE}`);
+      status(sameGrid(sourceGrid, labels.grid) ? detail.message : `${detail.message} ${offGridNote()}`);
     });
     toolbar.after(editor);
     automation.registerViewer('main', createNiivueAdapter(viewer, {
@@ -218,7 +220,7 @@ function stack(stage) {
   }
   if (stage === 'edit') {
     return {
-      title: 'ORIGINAL IMAGE ON THE 1 MM LABEL GRID · EDITING LABELS',
+      title: `ORIGINAL IMAGE ON THE ${provenance?.voxelSizeMm ?? 1} MM LABEL GRID · EDITING LABELS`,
       volumes: [{ ...overlay, opacity: 0 }, input],
       labelOverlay: false,
     };
@@ -329,10 +331,11 @@ async function reportSummary() {
   if (!volumes) return null;
   const used = subject();
   try {
-    const { report } = volumeReport(await loadNorms(), volumes, used, { fast: volumesFast });
+    const { report } = volumeReport(await loadNorms(), volumes, used, { fast: volumesFast, voxelSizeMm: volumesVoxelSizeMm });
     return {
-      norms: { url: manifest.norms.url, sha256: manifest.norms.sha256 },
+      norms: { version: manifest.norms.version, url: manifest.norms.url, sha256: manifest.norms.sha256 },
       subject: used,
+      voxelSizeMm: volumesVoxelSizeMm,
       icvMm3: report.icvMm3,
       outsideReferenceAge: report.outsideReferenceAge,
       results: report.results,
@@ -380,7 +383,7 @@ async function renderVolumes() {
   }
   if (revision !== renderRevision || !volumes) return;
   const used = subject();
-  const view = volumeReport(norms, volumes, used, { fast: volumesFast });
+  const view = volumeReport(norms, volumes, used, { fast: volumesFast, voxelSizeMm: volumesVoxelSizeMm });
   const lines = view.header.map((text) => element('p', { text }));
   lines.at(-1).className = 'nd-report-lead';
   const legend = element('ul', { className: 'nd-chart-legend' }, legendEntries(used.age !== null).map(({ label, svg }) => element('li', {}, [svgElement(svg), label])));
@@ -415,6 +418,10 @@ async function beginImport() {
   const run = runs.begin('loading');
   operation = run;
   source = null;
+  memoryRecommendation = null;
+  $('downsampleButton').hidden = true;
+  $('voxelSizeMm').value = '1';
+  progressManager.reset();
   ++viewRevision;
   const cancelled = clearOutputs();
   $('fileInfo').hidden = true;
@@ -443,8 +450,7 @@ async function load(file, signal, existingRun, sidecar = null) {
     sourceGrid = gridOf(image);
     setSubject(sidecar ? subjectFromSidecar(sidecar) : {}, Boolean(sidecar));
     $('ct').checked = looksLikeCt(data);
-    $('progress').value = 0;
-    $('elapsed').textContent = '';
+    progressManager.reset();
     $('fileInfo').hidden = false;
     $('fileInfo').textContent = `${file.name} · ${dims.join(' × ')} voxels`;
     void show();
@@ -541,8 +547,17 @@ async function segmentImage(parameters, { signal, progress = () => {} } = {}) {
   if (!source || busy) throw new Error('Load an image before starting segmentation.');
   if (!webgpu) throw new Error('SynthSeg requires WebGPU.');
   signal?.throwIfAborted();
+  const voxelSizeMm = Number($('voxelSizeMm').value);
+  if (!$('voxelSizeMm').checkValidity()) {
+    $('preparationSection').open = true;
+    $('voxelSizeMm').reportValidity();
+    throw new Error('Choose a processing voxel size between 1 and 3 mm.');
+  }
   const cancelled = clearOutputs();
-  const options = { fast: parameters.mode === 'fast', ct: parameters.ct ?? $('ct').checked };
+  memoryRecommendation = null;
+  $('downsampleButton').hidden = true;
+  const options = { fast: parameters.mode === 'fast', ct: parameters.ct ?? $('ct').checked,
+    robustFov: $('robustFov').checked, voxelSizeMm };
   if (parameters.age !== undefined || parameters.sex !== undefined) setSubject({ age: parameters.age ?? null, sex: parameters.sex ?? null });
   const run = runs.begin('running', {
     inputs: { image: source },
@@ -557,11 +572,8 @@ async function segmentImage(parameters, { signal, progress = () => {} } = {}) {
     signal?.throwIfAborted();
     run.signal.throwIfAborted();
     void show();
-    $('progress').value = 0;
-    started = performance.now();
-    timer = setInterval(() => {
-      $('elapsed').textContent = `${Math.round((performance.now() - started) / 1000)} s`;
-    }, 1000);
+    progressManager.begin('Preparing image…');
+    progressManager.setProgress(0);
     return await new Promise((resolve, reject) => {
       run.signal.addEventListener('abort', () => {
         queueMicrotask(() => {
@@ -572,6 +584,7 @@ async function segmentImage(parameters, { signal, progress = () => {} } = {}) {
       const fail = error => {
         run.fail(error);
         if (operation === run) {
+          progressManager.end(error.message || String(error), { success: false });
           setBusy(false);
           status(error.message || String(error), true);
         }
@@ -585,9 +598,17 @@ async function segmentImage(parameters, { signal, progress = () => {} } = {}) {
             run.progress(data);
             progress(data);
             status(data.message);
-            $('progress').value = data.value;
+            progressManager.setProgress(data.value);
           }
-          if (data.type === 'error') fail(new Error(data.message));
+          if (data.type === 'error') {
+            if (data.recommendation?.voxelSizeMm) {
+              memoryRecommendation = data.recommendation;
+              $('preparationSection').open = true;
+              $('downsampleButton').textContent = `Use ${memoryRecommendation.voxelSizeMm} mm and segment`;
+              $('downsampleButton').hidden = false;
+            }
+            fail(new Error(data.message));
+          }
           if (data.type === 'result') {
             try {
               const file = new File([data.buffer], outputNames(source.name).labels, { type: LABELS_ARTIFACT.mediaType });
@@ -595,10 +616,12 @@ async function segmentImage(parameters, { signal, progress = () => {} } = {}) {
               if (!run.current) throw new DOMException('Cancelled', 'AbortError');
               volumes = data.volumes ?? null;
               volumesFast = options.fast;
+              volumesVoxelSizeMm = options.voxelSizeMm;
               const names = outputNames(source.name);
               const maps = data.tissues
                 ? Object.fromEntries(TISSUES.map((tissue) => [tissue, new File([data.tissues[tissue]], names[tissue], { type: TISSUE_ARTIFACT.mediaType })]))
                 : null;
+              const space = voxelSizeMm > 1 ? `subject-${voxelSizeMm}mm` : LABELS_ARTIFACT.space;
               const measurements = {
                 ...summarizeLabels(image, freesurferLut),
                 softVolumesMm3: volumes,
@@ -607,8 +630,8 @@ async function segmentImage(parameters, { signal, progress = () => {} } = {}) {
               if (!run.current) throw new DOMException('Cancelled', 'AbortError');
               const succeeded = await run.succeed({
                 artifacts: {
-                  labels: { file, ...LABELS_ARTIFACT },
-                  ...Object.fromEntries(Object.entries(maps ?? {}).map(([tissue, map]) => [tissue, { file: map, ...TISSUE_ARTIFACT }])),
+                  labels: { file, ...LABELS_ARTIFACT, space },
+                  ...Object.fromEntries(Object.entries(maps ?? {}).map(([tissue, map]) => [tissue, { file: map, ...TISSUE_ARTIFACT, space }])),
                 },
                 provenance: data.provenance,
                 measurements,
@@ -619,12 +642,14 @@ async function segmentImage(parameters, { signal, progress = () => {} } = {}) {
               renderResults();
               provenance = data.provenance;
               $('outputSection').open = true;
-              $('progress').value = 1;
+              progressManager.end('Labels ready');
               setBusy(false);
               volumesTab().hidden = !volumes;
               await show();
               signal?.throwIfAborted();
-              status(`Labels ready · ${provenance.outputShape.join(' × ')} · ${Math.round(provenance.seconds)} s`);
+              const preparation = provenance.preparation;
+              const adjustments = `${preparation?.robustFov ? ' · robust FOV' : ''}${options.voxelSizeMm > 1 ? ` · ${options.voxelSizeMm} mm` : ''}`;
+              status(`Labels ready · ${provenance.outputShape.join(' × ')} · ${Math.round(provenance.seconds)} s${adjustments}`);
               const artifacts = [{ role: 'labels', file }, ...Object.entries(maps ?? {}).map(([role, map]) => ({ role, file: map }))];
               resolve({ artifacts, provenance, measurements });
             } catch (error) { fail(error); }
@@ -644,6 +669,17 @@ $('processButton').onclick = () => {
     if (error.name !== 'AbortError') status(error.message, true);
   });
 };
+$('downsampleButton').onclick = () => {
+  if (!memoryRecommendation || busy) return;
+  $('voxelSizeMm').value = String(memoryRecommendation.voxelSizeMm);
+  $('processButton').click();
+};
+for (const id of ['robustFov', 'voxelSizeMm']) {
+  $(id).onchange = () => {
+    memoryRecommendation = null;
+    $('downsampleButton').hidden = true;
+  };
+}
 const automation = registerAppAutomation({
   app: 'synthseg',
   convertDicom: runDcm2niix,
@@ -662,7 +698,7 @@ function cancel() {
   ++viewRevision;
   clearOutputs();
   setBusy(false);
-  $('progress').value = 0;
+  progressManager.reset();
   status('Processing cancelled. Your original image is unchanged.');
 }
 $('cancelBtn').onclick = cancel;
@@ -688,5 +724,5 @@ window.addEventListener('pagehide', () => {
   exampleControl.cancel();
   runs.cancel();
   worker?.terminate();
-  clearInterval(timer);
+  progressManager.reset();
 });
