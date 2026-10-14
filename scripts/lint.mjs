@@ -6,6 +6,7 @@ import { realpathSync } from 'node:fs';
 import { relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assertCoverage, sourceInventory } from './quality/lint-inventory.mjs';
+import { assertTypedProjectsCompile } from './quality/typed-projects.mjs';
 
 export const root = realpathSync(fileURLToPath(new URL('../', import.meta.url))) + sep;
 export function fingerprint(file, message, source) {
@@ -16,6 +17,7 @@ export function fingerprint(file, message, source) {
 
 export async function inspect(eslint, files, baseline) {
   await assertCoverage(eslint, files);
+  assertTypedProjectsCompile(root, files);
   const results = await eslint.lintFiles(files);
   const findings = [];
   const remaining = new Map(Object.entries(baseline));

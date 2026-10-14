@@ -190,6 +190,11 @@ function setStatus(msg: string): void {
   statusMsg.classList.toggle('hidden', msg === '')
   if (msg) technicalLog.log(msg, msg.startsWith('Failed') ? 'error' : 'info')
 }
+function reportFailure(err: unknown): void {
+  const msg = err instanceof Error ? err.message : String(err)
+  setStatus(`Failed: ${msg}`)
+  console.error('deface task failed', err)
+}
 function spin(on: boolean): void {
   if (on) loadingCircle.removeAttribute('value')
   else loadingCircle.setAttribute('value', '0')
@@ -217,11 +222,7 @@ function enqueue(fn: () => Promise<unknown>): void {
   updateButtons()
   pending = pending
     .then(fn)
-    .catch((err: unknown) => {
-      const msg = err instanceof Error ? err.message : String(err)
-      setStatus(`Failed: ${msg}`)
-      console.error('deface task failed', err)
-    })
+    .catch(reportFailure)
     .finally(() => {
       inFlightCount--
       updateButtons()
@@ -668,9 +669,10 @@ async function cleanup(): Promise<void> {
 }
 window.addEventListener('pagehide', (e) => {
   if (e.persisted) return
-  void cleanup()
+  cleanup().catch(reportFailure)
 }, { once: true, signal: listeners.signal })
-if (import.meta.hot) import.meta.hot.dispose(cleanup)
+// Vite awaits the returned promise before it imports the updated module.
+if (import.meta.hot) import.meta.hot.dispose(() => cleanup().catch(reportFailure))
 
 registerAppAutomation({
   app: 'deface',

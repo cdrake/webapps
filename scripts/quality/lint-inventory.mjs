@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { promiseRules, typedProjectFor } from './typed-projects.mjs';
 
 // Exclude committed compiler output and third-party distributions by exact path.
 // Scientific ports and imported app sources still receive the correctness rules.
@@ -37,11 +38,18 @@ export async function assertCoverage(eslint, files) {
     const config = await eslint.calculateConfigForFile(file);
     const required = ['no-unreachable', 'no-dupe-keys', 'no-constant-condition'];
     if (!/\.[cm]?tsx?$/.test(file)) required.push('no-undef');
-    if (file.startsWith('apps/zarro/src/') && /\.[cm]?tsx?$/.test(file)) {
-      required.push('@typescript-eslint/no-floating-promises', '@typescript-eslint/no-misused-promises');
-    }
+    const typed = typedProjectFor(file);
+    if (typed) required.push(...promiseRules);
     if (!config || required.some((rule) => config.rules?.[rule]?.[0] !== 2)) {
       throw new Error(`No effective correctness rules for ${file}`);
+    }
+    if (typed && config.rules['@typescript-eslint/no-floating-promises'][1]?.ignoreVoid !== false) {
+      throw new Error(`${file} must not accept \`void promise\` as handled`);
+    }
+    // Promise rules are only as good as the program that types them.
+    const project = [config.languageOptions?.parserOptions?.project ?? []].flat();
+    if (typed && (project.length !== 1 || project[0].replace(/^\.\//, '') !== typed.tsconfig)) {
+      throw new Error(`${file} must be typed by ${typed.tsconfig}`);
     }
   }
 }
