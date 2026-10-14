@@ -14,10 +14,16 @@ export function createNiimathCommand() {
     worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
     const current = worker;
     ready = new Promise((resolve, reject) => {
+      const fail = (error) => {
+        dispose();
+        reject(error);
+      };
       current.onmessage = ({ data }) => {
         if (data?.type === 'ready') resolve();
+        else if (data?.type === 'error') fail(new Error(data.message));
       };
-      current.onerror = (event) => reject(new Error(`niimath worker failed to load: ${event.message}`));
+      current.onerror = (event) => fail(new Error(`niimath worker failed to load: ${event.message}`));
+      current.onmessageerror = () => fail(new Error('niimath worker returned an unreadable initialization message.'));
     });
     return ready;
   }
@@ -36,14 +42,19 @@ export function createNiimathCommand() {
     await (ready ?? start());
     const current = worker;
     return new Promise((resolve, reject) => {
+      const fail = (error) => {
+        dispose();
+        reject(error);
+      };
       current.onmessage = ({ data }) => {
         if (data?.type === 'error') {
-          dispose();
-          reject(new Error(data.message));
+          fail(new Error(data.message));
         } else if (data && 'blob' in data) {
-          data.blob.arrayBuffer().then((buffer) => resolve(new Uint8Array(buffer)), reject);
+          data.blob.arrayBuffer().then((buffer) => resolve(new Uint8Array(buffer)), fail);
         }
       };
+      current.onerror = (event) => fail(new Error(`niimath worker failed: ${event.message}`));
+      current.onmessageerror = () => fail(new Error('niimath worker returned an unreadable result.'));
       current.postMessage({
         blob: new File([first[1]], first[0]),
         cmd: [...args],

@@ -194,6 +194,7 @@ apps:
     keywords: [defacing, anonymisation, anonymization, privacy, MRI, de-identification]
     legacy_domain: niivue.github.io/deface
     runtime: vite-webgpu
+    app_scoped_runtime_families: [mindgrab-20260925]
     model_manifest: models/deface.manifest.json
     asset_manifest_schema: scientific-assets-v1
     source: niivue/deface@a27d54264256531db1cb17019a01319e78506e76
@@ -275,6 +276,7 @@ apps:
     keywords: [quality control, QC, MRI, segmentation, metrics, review]
     legacy_domain: neurolabusc.github.io/BrowserQC
     runtime: vite-webgpu
+    app_scoped_runtime_families: [mindgrab-20260925]
     model_manifest: models/browserqc.manifest.json
     asset_manifest_schema: scientific-assets-v1
     source: niivue/browserqc@30f385f498299ceb580ead4709e55ac695b7c55c

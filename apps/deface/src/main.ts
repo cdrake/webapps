@@ -239,7 +239,7 @@ async function runDeface(method = methodSelect.value, options: { signal?: AbortS
       () => deface({ input, method, templates, niimath, mindgrab, mindgrabOptions: { assetPath: mindgrabAssets, signal }, onProgress: report }),
       () => niimath.dispose(),
     )
-    const out = new File([result.image.bytes as Uint8Array<ArrayBuffer>], result.image.name)
+    const out = new File([result.image.bytes.slice().buffer], result.image.name)
     await loadFromFile(out, false, signal) // display result; keep sourceFile pristine
     report(`Defaced with ${label} (${Math.round(performance.now() - t0)} ms)`)
     return out

@@ -59,6 +59,25 @@ test('cancel terminates the worker and retry returns the actual native-grid defa
   expect((await dispatch(page, 'snapshot')).report.provenance.method).toBe('allineate');
 });
 
+test('a niimath startup failure reports an error and a retry produces a defaced image', async ({ page }) => {
+  await page.route('**/niimath-*.wasm', route => route.abort('failed'));
+  await page.goto('./');
+  await page.locator('#neurodesk-input-transfer').setInputFiles(fixture);
+  await dispatch(page, 'adopt', { role: 'image' });
+  await dispatch(page, 'start', { operation: 'deface', parameters: { method: 'allineate' } });
+  await expect.poll(async () => (await dispatch(page, 'snapshot')).state, { timeout: 10000 }).toBe('failed');
+  const failed = await dispatch(page, 'snapshot');
+  expect(failed.error.message).toMatch(/wasm|WebAssembly|fetch|niimath/i);
+  expect(failed.report).toBeUndefined();
+  await expect(page.locator('#saveBtn')).toBeDisabled();
+  await page.unroute('**/niimath-*.wasm');
+  await page.locator('#neurodesk-input-transfer').setInputFiles(fixture);
+  await dispatch(page, 'adopt', { role: 'image' });
+  await dispatch(page, 'start', { operation: 'deface', parameters: { method: 'allineate' } });
+  await finish(page, 120000);
+  expectMaskedCopy(await download(page), readVolume(source(await readFile(fixture))));
+});
+
 // The page is cross-origin isolated and the runner's WebGPU and WebGL2 are SwiftShader, so the
 // shared MindGrab runtime picks its threaded CPU module, the backend the command line runs.
 test('MindGrab with an 8 mm border zeroes the face and keeps the brain unchanged', async ({ page }) => {

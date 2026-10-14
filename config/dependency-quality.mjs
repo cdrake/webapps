@@ -49,6 +49,7 @@ export const devRuntimeContracts = [
   ['packages/synthsr/src/wasm-session.js', '@neurodesk/runtime-support'],
   ['packages/synthstrip/src/browser.js', '@neurodesk/runtime-support'],
   ['packages/synthseg/src/browser.js', '@neurodesk/runtime-support'],
+  ['packages/brain2print/src/browser.js', '@neurodesk/runtime-support'],
   ['packages/desktop/src/main.js', 'electron'],
   ['apps/dicompare/electron/main.ts', 'electron'],
   ['apps/dicompare/electron/preload.ts', 'electron'],
