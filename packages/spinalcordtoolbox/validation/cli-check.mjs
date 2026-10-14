@@ -15,6 +15,8 @@ import { parseArgs } from 'node:util';
 import { getTask } from '../src/tasks.js';
 import { CASES, pinnedFile } from './fixtures.mjs';
 
+// The worker reference loads onnxruntime-node in this process; keep it from writing a device ID under HOME.
+process.env.ORT_DISABLE_TELEMETRY ??= '1';
 const require = createRequire(import.meta.url);
 const gates = require('../../../apps/spinalcordtoolbox/scripts/parity-gates.cjs');
 const { runWorkerCase } = require('../../../apps/spinalcordtoolbox/scripts/test_inference_worker_e2e.cjs');
