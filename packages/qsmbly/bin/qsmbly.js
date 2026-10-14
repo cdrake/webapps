@@ -1,0 +1,64 @@
+#!/usr/bin/env node
+import { parseArgs } from 'node:util';
+import { QSMXT, checkInstallation, downloadModels, runQsmxt } from '../src/node.js';
+
+const HELP = `Usage: qsmbly COMMAND [ARGS...]
+       qsmbly download-models [--model ID ...] [--cache-dir DIR]
+       qsmbly self-check
+
+QSMbly's command line is QSMxT ${QSMXT.version} (qsm-core ${QSMXT.qsmCore}), the native
+build of the pipeline the web app runs. Every QSMxT command works: replace
+"qsmxt" with "qsmbly" in the command QSMbly exports, for example
+  qsmbly run BIDS_DIR OUTPUT_DIR --qsm-algorithm rts
+Run "qsmbly help" for the QSMxT commands.
+
+Deep-learning weights are not included. A command that names a model
+downloads it once into ~/.cache/neurodesk/qsmbly/models from a pinned URL
+and checks its SHA-256. "download-models" fetches every model (1.7 GB) or
+the ones given with --model, for use without a network; set QSMBLY_OFFLINE=1
+to forbid downloads.`;
+
+const WRAPPER_COMMANDS = new Set(['download-models', 'self-check']);
+
+const progress = (message) => process.stderr.write(`${message}\n`);
+
+async function main(argv) {
+  const [command] = argv;
+  if (command === undefined || command === '-h' || command === '--help') {
+    console.log(HELP);
+    return 0;
+  }
+  if (command === 'update') {
+    throw new Error(`qsmbly pins QSMxT ${QSMXT.version}. Install a newer QSMbly release instead of "update".`);
+  }
+  if (!WRAPPER_COMMANDS.has(command)) return runQsmxt(argv, { onProgress: progress });
+  const { values, positionals } = parseArgs({
+    args: argv.slice(1),
+    allowPositionals: true,
+    options: {
+      help: { type: 'boolean', short: 'h' },
+      model: { type: 'string', multiple: true },
+      'cache-dir': { type: 'string' },
+    },
+  });
+  if (values.help) {
+    console.log(HELP);
+    return 0;
+  }
+  if (positionals.length) throw new Error(`${command} does not accept positional arguments.`);
+  if (command === 'self-check') {
+    if (values.model || values['cache-dir']) throw new Error('self-check does not accept options.');
+    console.log(JSON.stringify(await checkInstallation()));
+    return 0;
+  }
+  const models = await downloadModels({ models: values.model, cacheDir: values['cache-dir'], onProgress: progress });
+  console.log(`${models.count} model files (${(models.bytes / 1e9).toFixed(2)} GB) verified in ${models.directory}`);
+  return 0;
+}
+
+try {
+  process.exitCode = await main(process.argv.slice(2));
+} catch (error) {
+  console.error(error.message);
+  process.exitCode = 1;
+}

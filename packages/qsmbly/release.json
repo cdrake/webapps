@@ -1,0 +1,47 @@
+{
+  "repository": "neurodesk/webapps",
+  "tagPrefix": "qsmbly-v",
+  "displayName": "QSMbly",
+  "app": "qsmbly",
+  "run": "run BIDS_DIR OUTPUT_DIR",
+  "readme": {
+    "run": "Reconstruct susceptibility maps from a BIDS dataset",
+    "notes": [
+      "QSMbly's command line is QSMxT 9.22.0, the native build of the qsm-core",
+      "pipeline the web app runs. Every QSMxT command works: use the command QSMbly",
+      "exports with qsmbly in place of qsmxt. Run qsmbly help for all commands, and",
+      "qsmbly dicom-convert DICOM_DIR BIDS_DIR to convert DICOM first.",
+      "",
+      "Deep-learning weights are not included. A command that names a model",
+      "downloads it once from a pinned URL and checks its SHA-256. For a machine",
+      "without a network, run qsmbly download-models (1.7 GB) and copy",
+      "~/.cache/neurodesk/qsmbly/models, or set QSMBLY_OFFLINE=1 to forbid downloads.",
+      "",
+      "QSMxT is research software. Please cite: Stewart AW, Robinson SD, O'Brien K,",
+      "et al. QSMxT: Robust masking and artifact reduction for quantitative",
+      "susceptibility mapping. Magnetic Resonance in Medicine. 2022;87(3):1289-1300."
+    ]
+  },
+  "validation": "validation/cli-check.mjs",
+  "bundleModels": false,
+  "targets": {
+    "linux-x64": {
+      "label": "Linux x64",
+      "archive": "tar.gz",
+      "executable": "qsmbly",
+      "native": ["app/native/qsmxt", "app/native/dcm2niix"]
+    },
+    "windows-x64": {
+      "label": "Windows x64",
+      "archive": "zip",
+      "executable": "qsmbly.exe",
+      "native": ["app/native/qsmxt.exe", "app/native/dcm2niix.exe"]
+    },
+    "macos-arm64": {
+      "label": "macOS Apple silicon",
+      "archive": "pkg",
+      "executable": "qsmbly",
+      "native": ["app/native/qsmxt", "app/native/dcm2niix"]
+    }
+  }
+}

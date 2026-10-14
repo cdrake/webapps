@@ -27,7 +27,8 @@ Each package describes its archives in `release.json`:
 | `readme.run`, `readme.notes` | Heading for the run command and closing paragraphs of `README.txt` |
 | `validation` | Script, relative to the package, run as `node SCRIPT --executable PATH` on the extracted archive |
 | `workflow` | Optional. The workflow that builds the archives, when it is not `<app>-native.yml` because another release source already owns that name (SynthSEG's Rust macOS installer) |
-| `targets` | Release targets with their kind (`tar.gz`, `zip`, or `pkg` for macOS) and executable name |
+| `bundleModels` | Optional, default `true`. `false` skips `download-models` at packaging, for a tool whose models are too large to ship and download on first use (QSMbly) |
+| `targets` | Release targets with their kind (`tar.gz`, `zip`, or `pkg` for macOS), executable name and, optionally, `native`: paths under `app/` of native executables the package's `build` script stages (QSMbly's pinned QSMxT binaries). They keep their execute bit and are signed like the launcher |
 
 The package must have exactly one `bin` entry, `bin/<tool>.js`. Packaging runs
 the package's `build` script when it has one, deploys it with `pnpm deploy

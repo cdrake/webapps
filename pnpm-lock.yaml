@@ -1318,6 +1318,15 @@ importers:
         specifier: ^6.3.2
         version: 6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.14)(yaml@2.9.0)
 
+  packages/qsmbly:
+    devDependencies:
+      '@neurodesk/webapp-components':
+        specifier: workspace:*
+        version: link:../components
+      '@playwright/test':
+        specifier: 1.64.0
+        version: 1.64.0
+
   packages/registration: {}
 
   packages/runtime-support:

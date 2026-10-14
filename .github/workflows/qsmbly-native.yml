@@ -1,0 +1,56 @@
+name: qsmbly-native
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/qsmbly-native.yml'
+      - 'packages/qsmbly/**'
+      - 'packages/components/src/file-io/NiftiUtils.js'
+      - 'apps/qsmbly/rust-wasm/**'
+      - 'apps/qsmbly/examples.json'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/qsmbly-native.yml'
+      - '.github/workflows/node-cli-portable.yml'
+      - 'exes/node-cli/**'
+      - 'packages/qsmbly/**'
+      - 'packages/components/src/file-io/NiftiUtils.js'
+      - 'apps/qsmbly/rust-wasm/**'
+      - 'apps/qsmbly/examples.json'
+  workflow_dispatch:
+    inputs:
+      sign_release:
+        description: Sign and notarize the macOS installer, then attach every verified package to the existing QSMbly release
+        type: boolean
+        default: false
+
+concurrency:
+  group: qsmbly-native-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  portable:
+    uses: ./.github/workflows/node-cli-portable.yml
+    permissions:
+      contents: write
+      id-token: write
+    with:
+      package: packages/qsmbly
+      targets: >-
+        [{"os": "ubuntu-22.04", "platform": "linux-x64"},
+         {"os": "windows-latest", "platform": "windows-x64"},
+         {"os": "macos-15", "platform": "macos-arm64"}]
+      publish_release: ${{ github.event_name == 'workflow_dispatch' && inputs.sign_release }}
+      sign_release: ${{ github.event_name == 'workflow_dispatch' && inputs.sign_release }}
+    secrets:
+      APPLEID: ${{ secrets.APPLEID }}
+      APPLEIDPASS: ${{ secrets.APPLEIDPASS }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      CSC_LINK: ${{ secrets.CSC_LINK }}
+      CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+      CSC_INSTALLER_LINK: ${{ secrets.CSC_INSTALLER_LINK }}
+      CSC_INSTALLER_KEY_PASSWORD: ${{ secrets.CSC_INSTALLER_KEY_PASSWORD }}
