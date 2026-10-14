@@ -144,7 +144,7 @@ test("a FLAIR finer than the FLAMeS grid is replaced by its resampled copy, so t
   await segmentWithMockedWorker(page, { input, resampledFlair: resampled });
   const rows = page.locator("#resultList .nd-volume-toggle");
   const flairRow = rows.filter({ hasText: "FLAIR" }).first();
-  await expect(flairRow.locator(".nd-stage-label")).toHaveText("FLAIR · resampled to 1 × 0.9 × 0.9 mm");
+  await expect(flairRow.locator(".nd-stage-label")).toHaveText("FLAIR · downsampled for FLAMeS");
   const pending = page.waitForEvent("download");
   await flairRow.getByRole("button", { name: "Download", exact: true }).click();
   const file = await pending;

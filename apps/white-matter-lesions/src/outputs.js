@@ -9,7 +9,7 @@ export function segmentationOutputs(inputName, { mask, probability, tsv, summary
   const names = outputNames(inputName);
   return {
     ...(resampledFlair && {
-      flair: { description: "FLAIR · resampled to 1 × 0.9 × 0.9 mm", file: new File([resampledFlair], resampledFlairName(inputName)) },
+      flair: { description: "FLAIR · downsampled for FLAMeS", file: new File([resampledFlair], resampledFlairName(inputName)) },
     }),
     mask: { description: `Lesion mask · ${lesionSummary(summary)}`, editable: true, file: new File([mask], names.mask) },
     probability: { description: "Lesion probability", file: new File([probability], names.probability) },

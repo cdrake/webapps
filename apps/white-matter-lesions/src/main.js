@@ -13,6 +13,7 @@ import {
   createMaskEditor,
 } from "@neurodesk/webapp-components/ui";
 import { downloadFile } from "@neurodesk/webapp-components/file-io";
+import { decodeNiftiBuffer, parseNiftiHeader } from "@neurodesk/webapp-components/file-io/nifti";
 import { registerAppAutomation, runAbortable } from "@neurodesk/webapp-components/automation";
 import { readImageFiles, runDcm2niix } from "@neurodesk/runtime-support/dcm2niix-client";
 import { readVolume } from "@neurodesk/synthsr";
@@ -255,13 +256,15 @@ async function loadFiles(filesPromise, signal) {
     const images = await readImageFiles(files, { signal: current.controller.signal });
     current.controller.signal.throwIfAborted();
     if (images.length !== 1) throw new Error("Choose one FLAIR image: a NIfTI file or one DICOM series.");
-    const volume = readVolume(await images[0].arrayBuffer(), { maxVoxels: MAX_INPUT_VOXELS });
+    // The header is enough here; the worker decodes the voxels, so a 0.4 mm FLAIR is read once.
+    const { nx, ny, nz } = parseNiftiHeader(await decodeNiftiBuffer(await images[0].arrayBuffer(), { maxBytes: 352 }));
+    if (nx * ny * nz > MAX_INPUT_VOXELS) throw new Error("Unsupported image dimensions.");
     current.controller.signal.throwIfAborted();
     source = images[0];
     outputs = { flair: { description: "FLAIR", file: source } };
     renderOutputs();
     $("fileInfo").hidden = false;
-    $("fileInfo").textContent = `${source.name} · ${volume.dims.join(" × ")} voxels`;
+    $("fileInfo").textContent = `${source.name} · ${nx} × ${ny} × ${nz} voxels`;
     $("dropZone").classList.add("has-files");
     end(current, "FLAIR loaded · ready to segment lesions");
     await show("flair");

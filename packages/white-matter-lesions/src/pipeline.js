@@ -409,7 +409,7 @@ export function toNetworkResolution(volume, { skullStripped = false } = {}) {
   const resampleTo = (data, order) => resample(data, shape, newShape, spacing(volume.affine), spacing(grid.affine), order);
   return {
     volume: { data: resampleTo(volume.data, 3), ...grid },
-    brainMask: brainMask && threshold(resampleTo(Float32Array.from(brainMask), 1)),
+    brainMask: brainMask && threshold(resampleTo(brainMask, 1)),
     resampledFrom: volume.dims,
   };
 }

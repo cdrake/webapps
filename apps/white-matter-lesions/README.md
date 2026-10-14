@@ -5,7 +5,7 @@ FLAIR from **Example**, or load one NIfTI image or DICOM series, and select **Se
 The outputs are a lesion mask, a lesion probability map and a lesion table (TSV: voxels,
 volume in ml and centroid in scanner coordinates, one row per 26-connected lesion). Every output
 keeps the input grid and affine, unless the input is finer than FLAMeS's 1 × 0.9 × 0.9 mm grid:
-then it is downsampled to that grid first, the outputs use it, and the resampled FLAIR is shown
+then those axes are downsampled to it first, the outputs use it, and the resampled FLAIR is shown
 and offered for download. **Edit** on the mask row corrects the mask in the viewer;
 Apply recomputes the lesion count, volume and table from the edited mask. The probability map
 and run report stay as the model produced them.
