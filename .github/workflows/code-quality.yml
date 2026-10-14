@@ -27,6 +27,6 @@ jobs:
           cache: pnpm
       # Root-command canaries preserve every workspace type/syntax task; install their dependencies without runtime postinstalls.
       - run: pnpm install --frozen-lockfile --ignore-scripts
-      - run: pnpm --filter @neurodesk/code-quality exec tsc -p ../../apps/zarro/tsconfig.json --noEmit
+      # Compiles each typed promise project (scripts/quality/typed-projects.mjs) with the pinned TS5 before linting.
       - run: pnpm lint:correctness
       - run: pnpm test:lint
