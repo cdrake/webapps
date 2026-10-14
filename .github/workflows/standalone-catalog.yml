@@ -1,7 +1,7 @@
 name: standalone-catalog
 
-# Writes released, verified native archives into registry/standalone.json on main and redeploys the
-# site, so each app's Standalone dialog lists them. A native release job announces its archives with a
+# Writes released, verified native archives and the nightly desktop suite (webapps@VERSION) into
+# registry/standalone.json on main and redeploys the site, so each app's Standalone dialog lists them. A native release job announces its archives with a
 # repository_dispatch; publishing a draft or prerelease by hand announces it through the release event.
 # Runs are not grouped: each one re-applies its own update to the latest main, so none can be dropped.
 on:
@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       releases:
-        description: Space-separated app@VERSION releases whose verified archives are attached
+        description: Space-separated app@VERSION releases whose verified archives are attached (webapps@VERSION for the desktop suite)
         type: string
         required: true
 

@@ -286,3 +286,11 @@ jobs:
       - run: node scripts/desktop/publish.mjs release-artifacts
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # A release made with GITHUB_TOKEN starts no workflow, so announce it; standalone-catalog commits the
+      # suite entry to registry/standalone.json and redeploys the site.
+      - name: Publish to the Standalone catalog
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RELEASE="webapps@$(node -p "require('./packages/desktop/package.json').version")"
+          gh api "repos/$GITHUB_REPOSITORY/dispatches" -f event_type=standalone-catalog -f "client_payload[releases]=$RELEASE"
