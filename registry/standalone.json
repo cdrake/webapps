@@ -446,11 +446,11 @@
       "containers": [
         {
           "id": "freesurfer",
-          "label": "freesurfer 8.2.0 (20260818)",
+          "label": "freesurfer 8.2.0 (20261005)",
           "url": "https://hub.docker.com/r/vnmd/freesurfer_8.2.0",
-          "dockerImage": "vnmd/freesurfer_8.2.0:20260818",
-          "apptainerUrl": "https://neurocontainers.neurodesk.workers.dev/freesurfer_8.2.0_20260818.simg",
-          "apptainerName": "freesurfer_8.2.0_20260818"
+          "dockerImage": "vnmd/freesurfer_8.2.0:20261005",
+          "apptainerUrl": "https://neurocontainers.neurodesk.workers.dev/freesurfer_8.2.0_20261005.simg",
+          "apptainerName": "freesurfer_8.2.0_20261005"
         }
       ]
     },
@@ -495,11 +495,11 @@
       "containers": [
         {
           "id": "synthseg",
-          "label": "synthseg 8.2.0 (20260902)",
+          "label": "synthseg 8.2.0 (20261010)",
           "url": "https://hub.docker.com/r/vnmd/synthseg_8.2.0",
-          "dockerImage": "vnmd/synthseg_8.2.0:20260902",
-          "apptainerUrl": "https://neurocontainers.neurodesk.workers.dev/synthseg_8.2.0_20260902.simg",
-          "apptainerName": "synthseg_8.2.0_20260902"
+          "dockerImage": "vnmd/synthseg_8.2.0:20261010",
+          "apptainerUrl": "https://neurocontainers.neurodesk.workers.dev/synthseg_8.2.0_20261010.simg",
+          "apptainerName": "synthseg_8.2.0_20261010"
         }
       ],
       "openrecon": {
@@ -722,11 +722,11 @@
       "containers": [
         {
           "id": "ants",
-          "label": "ants 2.6.5 (20260602)",
+          "label": "ants 2.6.5 (20261012)",
           "url": "https://hub.docker.com/r/vnmd/ants_2.6.5",
-          "dockerImage": "vnmd/ants_2.6.5:20260602",
-          "apptainerUrl": "https://neurocontainers.neurodesk.workers.dev/ants_2.6.5_20260602.simg",
-          "apptainerName": "ants_2.6.5_20260602"
+          "dockerImage": "vnmd/ants_2.6.5:20261012",
+          "apptainerUrl": "https://neurocontainers.neurodesk.workers.dev/ants_2.6.5_20261012.simg",
+          "apptainerName": "ants_2.6.5_20261012"
         }
       ]
     },
