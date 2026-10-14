@@ -76,13 +76,13 @@ const WITHOUT_COMMAND_LINE = {
   surfannotate: 'interactive surface annotation: every result is a manual choice in the viewer',
   zarro: 'interactive OME-Zarr viewer: it has no batch output',
   nesvor: 'needs CUDA; its standalone form is the neurodesk-compute server',
-  spinalcordtoolbox: 'not built yet',
-  qsmbly: 'not built yet',
-  dicompare: 'not built yet',
-  deface: 'not built yet',
-  niimath: 'not built yet',
-  dicom2vid: 'not built yet',
-  elastix: 'not built yet',
+  spinalcordtoolbox: 'not built yet (#285)',
+  qsmbly: 'not built yet (#284)',
+  dicompare: 'not built yet (#283)',
+  deface: 'not built yet (#281)',
+  niimath: 'not built yet (#280)',
+  dicom2vid: 'not built yet (#282)',
+  elastix: 'not built yet (#279)',
 };
 
 test('every app ships its own command line or states why it cannot', async () => {
