@@ -12,11 +12,13 @@ build of the pipeline the web app runs. Every QSMxT command works: replace
   qsmbly run BIDS_DIR OUTPUT_DIR --qsm-algorithm rts
 Run "qsmbly help" for the QSMxT commands.
 
-Deep-learning weights are not included. A command that names a model
-downloads it once into ~/.cache/neurodesk/qsmbly/models from a pinned URL
-and checks its SHA-256. "download-models" fetches every model (1.7 GB) or
-the ones given with --model, for use without a network; set QSMBLY_OFFLINE=1
-to forbid downloads.`;
+Deep-learning weights are not included. Native compute first verifies all
+19 weights (1.7 GB), downloading missing files from pinned URLs into
+~/.cache/neurodesk/qsmbly/models. This also applies to classical runs:
+native QSMxT has no offline switch, so a complete cache prevents its model
+download fallback. "download-models" prepares the full offline cache;
+--model fetches individual files. QSMBLY_OFFLINE=1 or NEURODESK_OFFLINE=1
+forbids downloads and requires the full cache before native compute starts.`;
 
 const WRAPPER_COMMANDS = new Set(['download-models', 'self-check']);
 

@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import appManifest from '../../../models/qsmbly.manifest.json' with { type: 'json' };
-import { MODEL_ASSETS, QSMXT, ensureModels, modelsNamedBy, qsmxtEnvironment } from '../src/node.js';
+import { MODEL_ASSETS, QSMXT, ensureModels, ensureNativeModelDirectory, modelsNamedBy, nativeModelAssets, qsmxtEnvironment } from '../src/node.js';
+import { verifyNativeWeights } from '../src/native-registry.js';
 
 const bin = new URL('../bin/qsmbly.js', import.meta.url).pathname;
 const run = (args, env = {}) => spawnSync(process.execPath, [bin, ...args], { encoding: 'utf8', env: { ...process.env, ...env } });
@@ -55,6 +56,28 @@ test('a command fetches only the weights it names', async () => {
   assert.deepEqual(await named(['run', 'sub-qsmnetstudy', 'out']), [], 'a model name inside another word is not a request');
 });
 
+test('TOML pipeline booleans name implicit models only when enabled', async () => {
+  for (const [field, expected] of [
+    ['do_segmentation', ['synthseg.onnx']],
+    ['do_analysis', ['synthseg.onnx']],
+    ['do_r2primemap', ['r2primenet.onnx']],
+    ['do_chi_separation', ['r2primenet.onnx']],
+  ]) {
+    for (const enabled of [false, true]) {
+      assert.deepEqual(await named(['run', 'bids', 'out', '--config', 'settings.toml'], {
+        'settings.toml': `[pipeline]\n${field} = ${enabled}\n`,
+      }), enabled ? expected : [], `${field} = ${enabled}`);
+    }
+  }
+});
+
+test('config model fields ignore comments and paths and deduplicate weights', async () => {
+  const config = `# xqsm\ndescription = "qsmnet"\n[pipeline]\ndo_analysis = false\n[inversion]\nalgorithm = "nextqsm"\n[[masking.sections]]\ninput = "magnitude"\n[masking.sections.generator]\nop = "hd-bet"\n`;
+  assert.deepEqual(await named(['run', '/study/xqsm/bids', '/study/qsmnet/out', '--config=settings.toml', '--qsm-algorithm', 'nextqsm'], {
+    'settings.toml': config,
+  }), ['nextqsm-bf.onnx', 'nextqsm-vjp.onnx', 'hd-bet.onnx']);
+});
+
 test('weights are verified before use and downloaded only when missing', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'qsmbly-models-'));
   t.after(() => rm(root, { recursive: true, force: true }));
@@ -82,16 +105,62 @@ test('weights are verified before use and downloaded only when missing', async (
   assert.equal(requests, 3, 'a corrupt cached file is replaced');
 });
 
-test('QSMxT looks for weights in the release models directory, then the verified cache', () => {
+test('native registry inventory covers all model cache files and rejects drift', () => {
+  assert.equal(nativeModelAssets(), MODEL_ASSETS);
+  const source = MODEL_ASSETS.map((asset) => `WeightFile { name: "${asset.filename}", url: "${asset.url}", sha256: "${asset.sha256}", bytes: ${asset.bytes} }`).join('\n');
+  verifyNativeWeights(source, MODEL_ASSETS, QSMXT.weightFiles);
+  for (const assets of [MODEL_ASSETS.slice(1), [...MODEL_ASSETS, { ...MODEL_ASSETS[0], filename: 'unknown.onnx' }], [{ ...MODEL_ASSETS[0], sha256: '0'.repeat(64) }, ...MODEL_ASSETS.slice(1)]]) {
+    assert.throws(() => verifyNativeWeights(source, assets, QSMXT.weightFiles), /every hosted native/);
+  }
+});
+
+test('native weights share one complete verified directory, including a partial offline model pack', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'qsmbly-native-models-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const bundled = join(root, 'bundled');
+  const cacheDir = join(root, 'cache');
+  await Promise.all([bundled, cacheDir].map((path) => mkdir(path)));
+  const asset = (name, bytes) => ({ model: name, filename: `${name}.onnx`, bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex'), url: 'https://example.invalid/never-download' });
+  const assets = [asset('first', 'first'), asset('second', 'second')];
+  const previous = process.env.NEURODESK_QSMBLY_MODEL_DIR;
+  process.env.NEURODESK_QSMBLY_MODEL_DIR = bundled;
+  try {
+    await writeFile(join(bundled, 'first.onnx'), 'first');
+    await assert.rejects(ensureNativeModelDirectory(assets, { cacheDir, offline: true }), /second.onnx.*download-models/);
+    await writeFile(join(cacheDir, 'second.onnx'), 'second');
+    assert.equal(await ensureNativeModelDirectory(assets, { cacheDir, offline: true }), cacheDir);
+    assert.equal(await readFile(join(cacheDir, 'first.onnx'), 'utf8'), 'first');
+    await writeFile(join(bundled, 'first.onnx'), 'corrupt');
+    assert.equal(await ensureNativeModelDirectory(assets, { cacheDir, offline: true }), cacheDir, 'corrupt pack cannot shadow the verified cache');
+    assert.deepEqual([qsmxtEnvironment({ modelDir: cacheDir }).QSM_MODEL_DIR, qsmxtEnvironment({ modelDir: cacheDir }).QSM_MODEL_CACHE], [cacheDir, cacheDir]);
+  } finally {
+    if (previous === undefined) delete process.env.NEURODESK_QSMBLY_MODEL_DIR;
+    else process.env.NEURODESK_QSMBLY_MODEL_DIR = previous;
+  }
+});
+
+test('both offline switches refuse an incomplete native cache before launching QSMxT', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'qsmbly-offline-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  for (const variable of ['QSMBLY_OFFLINE', 'NEURODESK_OFFLINE']) {
+    const result = run(['run', 'missing-bids', 'out'], { XDG_CACHE_HOME: root, NEURODESK_QSMBLY_MODEL_DIR: root, [variable]: '1' });
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stderr, /bfrnet.onnx.*download-models/);
+    assert.equal(result.stdout, '');
+  }
+  assert.deepEqual(await readdir(root), []);
+});
+
+test('QSMxT reads only the complete model directory the wrapper verified', () => {
   const previous = process.env.NEURODESK_QSMBLY_MODEL_DIR;
   try {
     process.env.NEURODESK_QSMBLY_MODEL_DIR = '/opt/qsmbly/models';
     assert.deepEqual(
-      [qsmxtEnvironment({ cacheDir: '/cache' }).QSM_MODEL_DIR, qsmxtEnvironment({ cacheDir: '/cache' }).QSM_MODEL_CACHE],
-      ['/opt/qsmbly/models', '/cache'],
+      [qsmxtEnvironment({ modelDir: '/cache' }).QSM_MODEL_DIR, qsmxtEnvironment({ modelDir: '/cache' }).QSM_MODEL_CACHE],
+      ['/cache', '/cache'],
     );
     delete process.env.NEURODESK_QSMBLY_MODEL_DIR;
-    assert.equal(qsmxtEnvironment({ cacheDir: '/cache' }).QSM_MODEL_DIR, '/cache');
+    assert.equal(qsmxtEnvironment({ modelDir: '/cache' }).QSM_MODEL_DIR, '/cache');
   } finally {
     if (previous === undefined) delete process.env.NEURODESK_QSMBLY_MODEL_DIR;
     else process.env.NEURODESK_QSMBLY_MODEL_DIR = previous;

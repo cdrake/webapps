@@ -9,8 +9,11 @@ The launcher takes the tool name from its own file name. `syncro` or
 `syncro.exe` runs `runtime/node app/bin/syncro.js`; `topofit` runs
 `app/bin/topofit.js`. It resolves symlinks to itself first, so a link such as
 `/usr/local/bin/topofit` works. It sets `NEURODESK_<TOOL>_MODEL_DIR` to the
-release's `models/` directory and `NEURODESK_OFFLINE=1`, so the first analysis
-on an airgapped machine needs no downloads or cache preparation.
+release's `models/` directory unless the caller supplied a model-directory
+override. It sets `NEURODESK_OFFLINE=1` for releases that bundle models, so the
+first analysis on an airgapped machine needs no downloads or cache preparation.
+For `bundleModels: false`, it preserves an inherited `NEURODESK_OFFLINE` value
+and permits the package to download missing pinned models when online.
 
 Linux and Windows releases are `tar.gz` and `zip` archives. The macOS release
 is an installer package. It installs the same tree in

@@ -12,6 +12,7 @@ import { parseArgs } from 'node:util';
 import { readNifti } from '@neurodesk/webapp-components/file-io/nifti';
 import { pinnedExample, stageBids } from './example.mjs';
 import { compare, measure, violations } from './measure.mjs';
+import { ensureNativeModelDirectory, nativeModelAssets } from '../src/node.js';
 
 const { values } = parseArgs({ options: { executable: { type: 'string' }, output: { type: 'string' } } });
 const command = values.executable
@@ -33,6 +34,10 @@ const { phaseSidecar = {}, arguments: extra = [] } = reference.replay ?? {};
 const work = values.output ? resolve(values.output) : await mkdtemp(join(tmpdir(), 'qsmbly-cli-check-'));
 await mkdir(work, { recursive: true });
 try {
+  const modelCache = join(tmpdir(), 'qsmbly-validation-models-v0.38.0');
+  // Provision outside the packager's isolated HOME, then run the archive offline. Native QSMxT
+  // has no offline flag, so even a classical run gets its complete verified hosted registry.
+  const modelDir = await ensureNativeModelDirectory(nativeModelAssets(), { cacheDir: modelCache, offline: false, onProgress: (message) => console.log(message) });
   const bids = join(work, 'bids');
   const output = join(work, 'out');
   await rm(bids, { recursive: true, force: true });
@@ -41,10 +46,10 @@ try {
   const args = ['run', bids, output, ...exported.slice(3), ...extra];
   console.log(`qsmbly ${args.join(' ')}`);
   const started = Date.now();
-  // The exported command names no deep-learning model, so the run must not need the network.
+  // Every hosted native weight is verified locally before this process starts.
   const result = spawnSync(command[0], [...command.slice(1), ...args], {
     encoding: 'utf8',
-    env: { ...process.env, QSMBLY_OFFLINE: '1' },
+    env: { ...process.env, NEURODESK_QSMBLY_MODEL_DIR: modelDir, QSMBLY_OFFLINE: '1' },
     maxBuffer: 64 * 1024 * 1024,
   });
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
