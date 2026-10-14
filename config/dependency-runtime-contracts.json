@@ -66,12 +66,12 @@
   },
   {
     "from": "apps/seedseg/web/js/inference-worker.js",
-    "to": "../wasm/qsm_wasm_bg.wasm",
+    "to": "../wasm/qsm_wasm.js",
     "reason": "apps/seedseg prebuild stages this pinned QSM runtime with scripts/fetch-app-runtime.mjs."
   },
   {
     "from": "apps/seedseg/web/js/inference-worker.js",
-    "to": "../wasm/qsm_wasm.js",
+    "to": "../wasm/qsm_wasm_bg.wasm",
     "reason": "apps/seedseg prebuild stages this pinned QSM runtime with scripts/fetch-app-runtime.mjs."
   },
   {
@@ -133,6 +133,11 @@
     "from": "apps/vesselboost/web/js/vesselboost-app.js",
     "to": "../dcm2niix/index.js",
     "reason": "scripts/vendor-runtime-support.mjs stages this shared runtime; scripts/lib/runtime-assets.mjs rewrites it in the composite site."
+  },
+  {
+    "from": "packages/dicompare/src/node.js",
+    "to": "../schemas/",
+    "reason": "packages/dicompare/scripts/stage-schemas.mjs copies the pinned app schema library into the generated CLI schemas directory before build and test."
   },
   {
     "from": "packages/seedseg/src/node.js",
