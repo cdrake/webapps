@@ -1,5 +1,20 @@
 # ants
 
+## 0.4.20261014
+
+### Patch Changes
+
+- 850e642: Remove code that nothing calls, found by the unused-code report and checked by
+  repository-wide reference searches. The shared preview module no longer carries
+  a second NIfTI parser and writer; NiftiUtils remains the only one. Outputs and
+  behaviour are unchanged.
+- Updated dependencies [27c9549]
+- Updated dependencies [850e642]
+- Updated dependencies [ad92e2f]
+  - @neurodesk/runtime-support@0.5.0
+  - @neurodesk/webapp-components@0.13.0
+  - @neurodesk/ants@0.4.20261014
+
 ## 0.4.20261012
 
 ### Patch Changes
