@@ -31,7 +31,7 @@ test('SynthSeg input replacement waits for an entered editor callback to finish 
       if (!nodes.has(id)) nodes.set(id, {});
       return nodes.get(id);
     },
-    renderResults() {}, setBusy() {}, status() {},
+    renderResults() {}, setBusy() {}, status() {}, hideVolumes() {}, setSubject() {},
     readNifti: async () => ({ data: [], dims: [1, 1, 1] }),
     gridOf: () => ({}), looksLikeCt: () => false,
     show() { replacementLoads++; visible = 'new input'; },

@@ -259,18 +259,6 @@ function endEdit() {
   results.setEditingEnabled(!busy && !editing());
   $('opacity').disabled = busy || !labels || editing();
 }
-function clearOutputs() {
-  const cancelled = editor?.cancel();
-  labels = null;
-  provenance = null;
-  volumes = null;
-  renderResults();
-  $('outputSection').open = false;
-  $('reportBtn').disabled = true;
-  $('volumesBtn').disabled = true;
-  hideVolumes();
-  return cancelled;
-}
 const volumesTab = () => toolbar.viewTabs.querySelector('[data-view="volumes"]');
 function hideVolumes() {
   volumesTab().hidden = true;
@@ -383,6 +371,18 @@ function subjectChanged() {
 }
 $('age').oninput = subjectChanged;
 $('sex').onchange = subjectChanged;
+function clearOutputs() {
+  const cancelled = editor?.cancel();
+  labels = null;
+  provenance = null;
+  volumes = null;
+  renderResults();
+  $('outputSection').open = false;
+  $('reportBtn').disabled = true;
+  $('volumesBtn').disabled = true;
+  hideVolumes();
+  return cancelled;
+}
 async function beginImport() {
   const run = runs.begin('loading');
   operation = run;
