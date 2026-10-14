@@ -543,12 +543,13 @@ $('opacity').oninput = () => {
   toolbar.control('overlayOpacityValue').textContent = `${Math.round(value * 100)}%`;
   if (labels && viewer && (displayedStage === 'labels' || TISSUES.includes(displayedStage))) void viewer.setVolume(1, { opacity: value });
 };
-async function segmentImage(parameters, { signal, progress = () => {} } = {}) {
+// Automation passes voxelSizeMm: its contract declares the 1 mm grid, whatever the form holds.
+async function segmentImage(parameters, { signal, progress = () => {}, voxelSizeMm: fixedVoxelSizeMm } = {}) {
   if (!source || busy) throw new Error('Load an image before starting segmentation.');
   if (!webgpu) throw new Error('SynthSeg requires WebGPU.');
   signal?.throwIfAborted();
-  const voxelSizeMm = Number($('voxelSizeMm').value);
-  if (!$('voxelSizeMm').checkValidity()) {
+  const voxelSizeMm = fixedVoxelSizeMm ?? Number($('voxelSizeMm').value);
+  if (fixedVoxelSizeMm === undefined && !$('voxelSizeMm').checkValidity()) {
     $('preparationSection').open = true;
     $('voxelSizeMm').reportValidity();
     throw new Error('Choose a processing voxel size between 1 and 3 mm.');
@@ -688,7 +689,7 @@ const automation = registerAppAutomation({
     segment: async ({ inputs, parameters, signal, progress }) => {
       exampleControl.cancel();
       if (!await load(inputs.image[0], signal)) throw new Error('The input image could not be loaded.');
-      return segmentImage(parameters, { signal, progress });
+      return segmentImage(parameters, { signal, progress, voxelSizeMm: 1 });
     },
   },
 });

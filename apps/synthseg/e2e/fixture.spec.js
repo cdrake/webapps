@@ -310,6 +310,29 @@ if (!probeOnly) {
     await page.getByRole('button', { name: 'Volumes', exact: true }).click();
     await expect(page.locator('#volumeReport')).toContainText('The 1 mm reference norms have not been validated for this grid.');
   });
+
+  test('an automation run keeps the declared 1 mm grid when the form holds a coarser one', async ({ page }) => {
+    test.setTimeout(1800000);
+    const dispatch = (command, request = {}) => page.evaluate(({ command, request }) => globalThis.neurodeskAutomation.dispatch(command, request), { command, request });
+    await page.goto('./');
+    await page.locator('#preparationSection > summary').click();
+    await page.locator('#voxelSizeMm').fill('1.3');
+    await page.locator('#neurodesk-input-transfer').setInputFiles(`${fixtures}/small.nii.gz`);
+    await dispatch('adopt', { role: 'image' });
+    await dispatch('start', { operation: 'segment', parameters: { mode: 'fast' } });
+    await expect.poll(async () => {
+      const snapshot = await dispatch('snapshot');
+      if (snapshot.state === 'failed') throw new Error(JSON.stringify(snapshot.error));
+      return snapshot.state;
+    }, { timeout: 1700000, intervals: [1000, 5000] }).toBe('succeeded');
+    const { report } = await dispatch('snapshot');
+    expect(report.provenance.voxelSizeMm).toBe(1);
+    for (const role of ['labels', 'gm', 'wm', 'csf']) expect(report.artifacts[role].space).toBe('subject-1mm');
+    const pending = page.waitForEvent('download');
+    await dispatch('download', { artifactId: 'labels' });
+    const image = await readNifti(readFileSync(await (await pending).path()));
+    for (const spacing of image.header.voxelSize) expect(spacing).toBeCloseTo(1, 5);
+  });
 }
 
 // Hardware only: the full volumes plan a 1.98 GB activation buffer and SwiftShader stops at 1 GB.
