@@ -92,7 +92,10 @@ names and written by the same code (`src/results.js`). For `flair.nii.gz`:
 - `flair_lesions.tsv`, one row per 26-connected lesion: voxels, volume in ml
   and centroid in scanner coordinates
 
-Both images keep the input grid and affine.
+Both images keep the input grid and affine. An input finer than FLAMeS's
+1 × 0.9 × 0.9 mm grid along any axis is first downsampled to it with
+nnU-Net's cubic resampling; the images then use that grid, and the command
+also writes the resampled FLAIR as `flair_flair_resampled.nii`.
 
 ### Accuracy
 

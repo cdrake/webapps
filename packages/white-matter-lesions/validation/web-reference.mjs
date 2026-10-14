@@ -13,8 +13,8 @@ import { readVolume } from '@neurodesk/synthsr';
 import { runSynthstrip } from '@neurodesk/synthstrip';
 import { FLAMES_FOLDS, SYNTHSTRIP } from '../src/assets.js';
 import { downloadModels, resolveFolds } from '../src/node.js';
-import { runFolds } from '../src/pipeline.js';
-import { lesionResults, outputNames } from '../src/results.js';
+import { MAX_INPUT_VOXELS, runFolds, toNetworkResolution } from '../src/pipeline.js';
+import { lesionResults, outputNames, resampledFlairName } from '../src/results.js';
 
 // worker.js's session options; its WebGPU attempt falls back to exactly this on a CPU.
 const createSession = (bytes) => ort.InferenceSession.create(bytes, { executionProviders: ['wasm'], graphOptimizationLevel: 'all' });
@@ -24,7 +24,7 @@ export async function webReference({ input, output, folds = 1, cacheDir, threads
   ort.env.wasm.numThreads = threads;
   const { directory } = await downloadModels({ cacheDir });
   const model = (asset) => readFile(join(directory, asset.filename));
-  const volume = readVolume(arrayBuffer(await readFile(input)));
+  const { volume, resampledFrom } = toNetworkResolution(readVolume(arrayBuffer(await readFile(input)), { maxVoxels: MAX_INPUT_VOXELS }));
   const stripped = await runSynthstrip({
     volume,
     loadModel: async () => ({ bytes: await model(SYNTHSTRIP), hash: SYNTHSTRIP.sha256 }),
@@ -40,13 +40,18 @@ export async function webReference({ input, output, folds = 1, cacheDir, threads
     createSession,
     Tensor: ort.Tensor,
   });
-  const results = lesionResults(volume, probability);
+  const results = lesionResults(volume, probability, { resampled: Boolean(resampledFrom) });
   const names = outputNames(basename(input));
   await mkdir(output, { recursive: true });
   await writeFile(join(output, names.mask), new Uint8Array(results.mask));
   await writeFile(join(output, names.probability), new Uint8Array(results.probability));
   await writeFile(join(output, names.table), results.tsv);
-  return { output, files: [names.mask, names.probability, names.table], ...results.summary, threads: ort.env.wasm.numThreads };
+  const files = [names.mask, names.probability, names.table];
+  if (resampledFrom) {
+    files.push(resampledFlairName(basename(input)));
+    await writeFile(join(output, files[3]), new Uint8Array(results.resampledFlair));
+  }
+  return { output, files, ...results.summary, threads: ort.env.wasm.numThreads };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
