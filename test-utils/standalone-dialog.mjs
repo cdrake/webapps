@@ -6,12 +6,12 @@ export async function verifyStandaloneDialog(page, id) {
   await page.locator('[data-neurodesk-shell-control="standalone"]:visible').first().click();
   const dialog = page.locator('#neurodeskStandaloneDialog');
   await expect(dialog).toBeVisible();
-  for (const download of [...catalog.apps[id].downloads, ...(catalog.suite?.downloads || [])]) {
-    for (const file of download.parts || [download]) {
-      await expect(dialog.locator(`a[href="${file.url}"]`)).toBeVisible();
-    }
+  for (const download of catalog.apps[id].downloads) {
+    await expect(dialog.locator(`a[href="${download.url}"]`)).toBeVisible();
     await expect(dialog).not.toContainText(download.sha256);
   }
+  // The dialog lists the app's own command line, never the all-apps desktop suite.
+  await expect(dialog.locator('a[href*="/releases/download/webapps-v"]')).toHaveCount(0);
   await expect(dialog).not.toContainText(/SHA-256|shasum|Prepare this upstream/i);
   await expect(dialog).not.toContainText('cargo build');
   await dialog.getByRole('button', { name: 'Close', exact: true }).click();
