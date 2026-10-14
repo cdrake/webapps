@@ -3,19 +3,24 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { access, chmod, mkdir, mkdtemp, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
-import { MODEL_ASSETS, QSMXT, nativeDirectory, qsmxtVersion, releasePlatform } from '../src/node.js';
-import { verifyNativeWeights } from '../src/native-registry.js';
+import { EXAMPLE_ASSETS, MODEL_ASSETS, QSMXT, nativeDirectory, qsmxtVersion, releasePlatform } from '../src/node.js';
+import { verifyNativeExamples, verifyNativeWeights } from '../src/native-registry.js';
 
 const platform = process.argv[2] ?? releasePlatform();
 const target = QSMXT.targets[platform];
 if (!target) throw new Error(`No pinned QSMxT archive for ${platform}`);
-const registry = await fetch(QSMXT.modelRegistry.url);
-if (!registry.ok) throw new Error(`Failed to read the pinned native model registry: HTTP ${registry.status}`);
-const registryBytes = Buffer.from(await registry.arrayBuffer());
-if (createHash('sha256').update(registryBytes).digest('hex') !== QSMXT.modelRegistry.sha256) {
-  throw new Error('The native model registry failed checksum verification.');
+async function pinnedSource(pin) {
+  const response = await fetch(pin.url);
+  if (!response.ok) throw new Error(`Failed to read the pinned native registry: HTTP ${response.status}`);
+  const bytes = Buffer.from(await response.arrayBuffer());
+  if (createHash('sha256').update(bytes).digest('hex') !== pin.sha256) {
+    throw new Error('The native registry failed checksum verification.');
+  }
+  return bytes.toString('utf8');
 }
-verifyNativeWeights(registryBytes.toString('utf8'), MODEL_ASSETS, QSMXT.weightFiles);
+const [models, examples] = await Promise.all([QSMXT.modelRegistry, QSMXT.exampleRegistry].map(pinnedSource));
+verifyNativeWeights(models, MODEL_ASSETS, QSMXT.weightFiles);
+verifyNativeExamples(examples, EXAMPLE_ASSETS);
 const directory = nativeDirectory();
 const stamp = join(directory, 'archive.sha256');
 

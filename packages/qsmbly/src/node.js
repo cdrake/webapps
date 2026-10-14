@@ -9,10 +9,11 @@ import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
 import manifest from '../model.manifest.json' with { type: 'json' };
 import qsmxt from '../qsmxt.json' with { type: 'json' };
-import { parse as parseToml } from 'smol-toml';
+import examples from '../examples.manifest.json' with { type: 'json' };
 
 export const MODEL_ASSETS = Object.freeze(manifest.assets);
 export const QSMXT = qsmxt;
+export const EXAMPLE_ASSETS = Object.freeze(examples.assets);
 
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -42,58 +43,9 @@ export function modelDirectories({ cacheDir = defaultCacheDir() } = {}) {
   return { search: [...new Set([bundled, cacheDir].filter(Boolean))], cacheDir };
 }
 
-// Implicit model use: segmentation runs SynthSeg, and chi-separation falls back to R2PRIMEnet
-// when no MESE acquisition supplies R2'.
-const IMPLICIT = Object.freeze({
-  '--do-segmentation': ['synthseg'],
-  '--do-analysis': ['synthseg'],
-  segment: ['synthseg'],
-  '--do-chisep': ['r2primenet'],
-  '--do-r2primemap': ['r2primenet'],
-  r2prime: ['r2primenet'],
-});
-
-const MODEL_OPTIONS = new Set(['--qsm-algorithm', '--bf-algorithm', '--mask', '--mask-preset', '--two-pass-mask', '--chisep', '--r2prime-strategy']);
-const MODEL_FIELDS = new Set(['algorithm', 'op', 'r2prime_strategy']);
-const PIPELINE_MODELS = { do_segmentation: ['synthseg'], do_analysis: ['synthseg'], do_r2primemap: ['r2primenet'], do_chi_separation: ['r2primenet'] };
-const MODEL_COMMANDS = new Set(['run', 'mask', 'bgremove', 'invert', 'separate', 'segment', 'r2prime', 'tui']);
-
-/**
- * The weight files a QSMxT command line names: algorithm and mask-op values (`xqsm`,
- * `hd-bet:128x128x128`), flags that imply a model, and the same names in a `--config` file.
- */
-export async function modelsNamedBy(args, { readText = (path) => readFile(path, 'utf8') } = {}) {
-  const texts = IMPLICIT[args[0]] ? [args[0]] : [];
-  if (['mask', 'bgremove', 'invert', 'separate'].includes(args[0])) texts.push(...args.slice(1, args[1] === 'preset' ? 3 : 2));
-  const ids = new Set();
-  const visit = (value) => {
-    if (!value || typeof value !== 'object') return;
-    for (const [key, child] of Object.entries(value)) {
-      if (MODEL_FIELDS.has(key) && typeof child === 'string') texts.push(child);
-      else visit(child);
-    }
-  };
-  for (let index = 0; index < args.length; index++) {
-    const [flag, inline] = args[index].split(/=(.*)/s);
-    const value = inline ?? args[index + 1];
-    if (IMPLICIT[flag]) texts.push(flag);
-    if (MODEL_OPTIONS.has(flag) && value) texts.push(value);
-    if (flag === '--config' && value) {
-      const config = parseToml(await readText(value));
-      for (const [field, models] of Object.entries(PIPELINE_MODELS)) {
-        if (config.pipeline?.[field] === true) for (const model of models) ids.add(model);
-      }
-      visit(config);
-    }
-  }
-  for (const text of texts) {
-    for (const token of text.toLowerCase().split(/[^a-z0-9+-]+/)) {
-      for (const id of IMPLICIT[token] ?? []) ids.add(id);
-      if (MODEL_ASSETS.some((asset) => asset.model === token)) ids.add(token);
-    }
-  }
-  return MODEL_ASSETS.filter((asset) => ids.has(asset.model));
-}
+// These audited commands cannot resolve model weights. Every other native command
+// receives the complete registry, including QSMART and future processing commands.
+const CONTROL_COMMANDS = new Set(['help', 'init', 'validate', 'dicom-convert', 'example', '--version', '-V']);
 
 // Every hosted weight the pinned native resolver can fetch is checked at build time against
 // its immutable registry source. Refuse an incomplete manifest before starting that binary.
@@ -200,7 +152,7 @@ export async function downloadModels({ models, cacheDir = defaultCacheDir(), off
 }
 
 export function qsmxtEnvironment({ modelDir = defaultCacheDir(), environment = process.env } = {}) {
-  return { ...environment, QSM_MODEL_DIR: modelDir, QSM_MODEL_CACHE: modelDir };
+  return { ...environment, QSM_MODEL_DIR: modelDir, QSM_MODEL_CACHE: modelDir, QSMXT_EXAMPLE_BASE_URL: examples.baseUrl };
 }
 
 export function qsmxtVersion(executable = qsmxtExecutable()) {
@@ -229,14 +181,25 @@ export async function checkInstallation() {
   };
 }
 
-/** Run QSMxT with the given arguments after fetching the weights they name; resolves to its exit code. */
+/** Run the pinned QSMxT after preparing its verified local weights; resolves to its exit code. */
 export async function runQsmxt(args, { onProgress = () => {}, offline = offlineByDefault() } = {}) {
-  const compute = MODEL_COMMANDS.has(args[0]) && !args.some((arg) => ['--help', '-h'].includes(arg)) && !(args[0] === 'run' && args.includes('--dry'));
-  let modelDir = defaultCacheDir();
-  if (compute) {
-    await modelsNamedBy(args);
-    modelDir = await ensureNativeModelDirectory(nativeModelAssets(), { offline, onProgress });
+  if (args[0] === 'update') {
+    throw new Error(`qsmbly pins QSMxT ${QSMXT.version}. Install a newer QSMbly release instead of "update".`);
   }
+  const separator = args.indexOf('--');
+  const options = separator < 0 ? args : args.slice(0, separator);
+  const help = args[0] === 'help' || options.some((arg) => ['--help', '-h'].includes(arg));
+  const exampleList = args[0] === 'example' && options.includes('--list');
+  if (!help && ['slurm', 'tui'].includes(args[0])) {
+    throw new Error('QSMbly does not support native SLURM generation or the TUI: their jobs launch QSMxT directly and bypass verified model preflight. Use "run" for processing and write scheduler jobs that invoke "qsmbly run".');
+  }
+  if (offline && !help && args[0] === 'example' && !exampleList) {
+    throw new Error('Offline QSMbly does not support example downloads. Use "example --list", or prepare example data online and process it with "run" offline.');
+  }
+  const compute = !CONTROL_COMMANDS.has(args[0]) && !help && !(args[0] === 'run' && options.includes('--dry'));
+  const modelDir = compute
+    ? await ensureNativeModelDirectory(nativeModelAssets(), { offline, onProgress })
+    : defaultCacheDir();
   const child = spawn(qsmxtExecutable(), args, { stdio: 'inherit', env: qsmxtEnvironment({ modelDir }) });
   // The terminal delivers Ctrl-C to QSMxT as well; wait for it to stop rather than leaving it running.
   const ignore = () => {};

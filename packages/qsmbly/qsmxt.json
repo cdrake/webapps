@@ -62,5 +62,9 @@
     "chi-sepnet.onnx",
     "hd-bet.onnx",
     "synthseg.onnx"
-  ]
+  ],
+  "exampleRegistry": {
+    "url": "https://raw.githubusercontent.com/QSMxT/QSMxT/9bffc6e726b09670a68790c71643cca811c5dfa9/src/example/mod.rs",
+    "sha256": "8b36ec302028b9ed774d0572024a53a1e474ac30274bc52f0dac24f4171279d5"
+  }
 }

@@ -1319,10 +1319,6 @@ importers:
         version: 6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.14)(yaml@2.9.0)
 
   packages/qsmbly:
-    dependencies:
-      smol-toml:
-        specifier: 1.9.0
-        version: 1.9.0
     devDependencies:
       '@neurodesk/webapp-components':
         specifier: workspace:*

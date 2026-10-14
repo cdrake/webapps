@@ -24,3 +24,19 @@ export function verifyNativeWeights(source, assets, inventory) {
     throw new Error('The model manifest must pin every hosted native QSMxT weight with its exact filename, SHA-256 and size.');
   }
 }
+
+export function verifyNativeExamples(source, assets) {
+  const examples = [...source.matchAll(/Example\s*\{([^}]+)\}/g)].flatMap(([, block]) => {
+    const id = /id:\s*"([^"]+)"/.exec(block)?.[1];
+    if (!id) return [];
+    return [{
+      filename: `${id}.zip`,
+      sha256: /sha256:\s*"([^"]+)"/.exec(block)?.[1],
+      bytes: Number(/bytes:\s*([\d_]+)/.exec(block)?.[1]?.replaceAll('_', '')),
+    }];
+  });
+  const ordered = (files) => files.map(({ filename, sha256, bytes }) => ({ filename, sha256, bytes })).sort((a, b) => a.filename.localeCompare(b.filename));
+  if (!examples.length || JSON.stringify(ordered(examples)) !== JSON.stringify(ordered(assets))) {
+    throw new Error('The example manifest must mirror every native QSMxT acquisition with its exact filename, SHA-256 and size.');
+  }
+}
