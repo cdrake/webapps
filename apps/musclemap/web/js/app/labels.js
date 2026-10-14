@@ -1,4 +1,4 @@
-import { LABEL_SPACES, MODELS, getModelByFilename } from './model-catalog.generated.js';
+import { LABEL_SPACES, MODELS } from './model-catalog.generated.js';
 
 export const MODEL_LABELS = Object.fromEntries(
   [...MODELS].reverse().map(model => [model.filename, model.labelSpace.labels])
@@ -13,13 +13,6 @@ export function getLabelsForModel(modelName) {
 export function getLabelsForLabelSpace(labelSpaceId) {
   return LABEL_SPACES[labelSpaceId]?.labels || null;
 }
-
-export function getLabelSpaceForModel(modelName) {
-  return getModelByFilename(modelName)?.labelSpace || null;
-}
-
-export const INDEX_TO_VALUE = new Map(LABELS.map(label => [label.index, label.value]));
-export const VALUE_TO_INDEX = new Map(LABELS.map(label => [label.value, label.index]));
 
 function hslToRgba(h, s, l) {
   s /= 100;
