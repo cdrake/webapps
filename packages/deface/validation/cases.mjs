@@ -1,6 +1,6 @@
 // The inputs and methods that the browser reference (browser-reference.mjs) records and the
 // release check (cli-check.mjs) replays, and the measurements both compare. browser-reference.json
-// pins what the browser produced; <case>.mask.gz holds each MindGrab mask for the Dice check.
+// pins what the browser produced; packed masks live in the immutable dataset for the Dice check.
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -8,7 +8,6 @@ import { dirname, join } from 'node:path';
 import { gunzipSync, gzipSync } from 'node:zlib';
 
 export const REFERENCE_URL = new URL('./browser-reference.json', import.meta.url);
-export const maskUrl = (id) => new URL(`./masks/${id}.mask.gz`, import.meta.url);
 
 const examples = JSON.parse(await readFile(new URL('../../../apps/deface/examples.json', import.meta.url), 'utf8'));
 const lock = JSON.parse(await readFile(new URL('../../../registry/offline-assets.lock.json', import.meta.url), 'utf8'));
@@ -23,6 +22,28 @@ export const CASES = [
 ];
 
 export const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
+
+/** A packed browser mask, cached outside the source tree and verified on every read. */
+export async function referenceMask(pin, { cacheDir = join(tmpdir(), 'neurodesk-deface-reference') } = {}) {
+  if (!/^https:\/\/huggingface\.co\/datasets\/neurodeskorg\/webapps\/resolve\/[a-f0-9]{40}\//.test(pin?.url ?? '')
+    || !/^[a-f0-9]{64}$/.test(pin?.sha256 ?? '') || !Number.isSafeInteger(pin?.bytes) || pin.bytes <= 0) {
+    throw new Error('Every browser mask needs an immutable Hugging Face URL, SHA-256 and byte-size pin.');
+  }
+  const path = join(cacheDir, `${pin.sha256}.mask.gz`);
+  const verified = (bytes) => bytes.length === pin.bytes && sha256(bytes) === pin.sha256;
+  const cached = await readFile(path).catch((error) => {
+    if (error.code === 'ENOENT') return null;
+    throw error;
+  });
+  if (cached && verified(cached)) return cached;
+  const response = await fetch(pin.url);
+  if (!response.ok) throw new Error(`${pin.url}: HTTP ${response.status}`);
+  const bytes = Buffer.from(await response.arrayBuffer());
+  if (!verified(bytes)) throw new Error(`${pin.url}: browser mask failed checksum verification`);
+  await mkdir(cacheDir, { recursive: true });
+  await writeFile(path, bytes);
+  return bytes;
+}
 
 /** The app's example, downloaded once into os.tmpdir() and checked against the offline-assets lock. */
 export async function exampleInput() {
@@ -66,7 +87,7 @@ export function readNifti(bytes) {
   return { dims, datatype, headerSha256: sha256(bytes.subarray(0, 352)), values };
 }
 
-/** A binary mask packed eight voxels to a byte and gzipped: the committed form of a reference mask. */
+/** A binary mask packed eight voxels to a byte and gzipped for the reference dataset. */
 export function packMask(values) {
   const bits = new Uint8Array(Math.ceil(values.length / 8));
   for (let i = 0; i < values.length; i++) if (values[i] !== 0) bits[i >> 3] |= 1 << (i & 7);

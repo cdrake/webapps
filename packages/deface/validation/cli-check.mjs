@@ -4,7 +4,7 @@
 // vendored WebAssembly in its worker and MindGrab's published wrapper on its CPU backend; the
 // command line runs the same builds through the Node drivers. niimath's output must be the
 // browser's byte for byte. A MindGrab mask must reach Dice 0.99 with the browser's
-// (masks/<case>.mask.gz), and when it is the browser's exactly, so must the defaced image.
+// (downloaded from the pinned dataset), and when it is the browser's exactly, so must the defaced image.
 //
 //   node validation/cli-check.mjs [--executable PATH] [--only CASE,...]
 import { spawnSync } from 'node:child_process';
@@ -13,7 +13,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
-import { REFERENCE_URL, dice, exampleInput, maskUrl, measureOutputs, readNifti, unpackMask } from './cases.mjs';
+import { REFERENCE_URL, dice, exampleInput, measureOutputs, readNifti, referenceMask, unpackMask } from './cases.mjs';
 
 const MINIMUM_DICE = 0.99;
 const { values } = parseArgs({ options: { executable: { type: 'string' }, only: { type: 'string' } } });
@@ -75,7 +75,7 @@ try {
     }
     check(same(measured.mask.dims, expected.mask.dims) && measured.mask.headerSha256 === expected.mask.headerSha256, `${id}: brain-mask.nii grid and header equal the browser's (${measured.mask.dims.join(' x ')})`);
     const mask = readNifti(written.get('brain-mask.nii')).values;
-    const { dice: overlap, differing } = dice(mask, unpackMask(await readFile(maskUrl(id)), mask.length));
+    const { dice: overlap, differing } = dice(mask, unpackMask(await referenceMask(expected.maskReference), mask.length));
     check(overlap >= MINIMUM_DICE, `${id}: brain-mask.nii Dice ${overlap.toFixed(6)} >= ${MINIMUM_DICE} with the browser's mask (${differing} voxels differ, ${measured.mask.voxels} in the mask, browser ${expected.mask.voxels})`);
     if (measured.sha256['brain-mask.nii'] === expected.sha256['brain-mask.nii']) {
       check(measured.sha256['defaced.nii'] === expected.sha256['defaced.nii'], `${id}: with the browser's mask, defaced.nii is identical to the browser's (${measured.sha256['defaced.nii'].slice(0, 16)})`);
