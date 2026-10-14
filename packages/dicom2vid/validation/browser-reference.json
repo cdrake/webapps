@@ -44,7 +44,8 @@
           750000
         ]
       },
-      "file": "browser-reference/sagittal-webm.webm"
+      "file": "sagittal-webm.webm",
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/992ed10a896d451f3f447237dc98d7cfb5de060e/dicom2vid/browser-reference/2e8427a77e683d2f03fed1f54c16495efdab0e409bef0bb02d21b18b316708dc.webm"
     },
     "axial-flipped-upscale-webm": {
       "parameters": {
@@ -83,7 +84,8 @@
           900000
         ]
       },
-      "file": "browser-reference/axial-flipped-upscale-webm.webm"
+      "file": "axial-flipped-upscale-webm.webm",
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/992ed10a896d451f3f447237dc98d7cfb5de060e/dicom2vid/browser-reference/4e7dcc8f48b172dcdca2ccf8846b3970c57a1e43f1fab51b5623a9182fe4d36c.webm"
     },
     "coronal-annotate-webm": {
       "parameters": {
@@ -121,7 +123,8 @@
           749000
         ]
       },
-      "file": "browser-reference/coronal-annotate-webm.webm"
+      "file": "coronal-annotate-webm.webm",
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/992ed10a896d451f3f447237dc98d7cfb5de060e/dicom2vid/browser-reference/02d5296b78d4f4700dba0f36d09d5db049a9bed0936d39a7cfbfce1bf9fce5e3.webm"
     },
     "sagittal-mp4": {
       "parameters": {
@@ -134,7 +137,7 @@
       },
       "codec": "H.264",
       "container": "mp4",
-      "sha256": "9aea503bf633fda05ec0c8408eccb4e7a01ceb3814451a28ea4a8907906fd4bc",
+      "sha256": "11370b5f9e1b7f7c3c008b2d183ca9292ca0322e28b31db2d28dbedb28f30bb9",
       "bytes": 101027,
       "video": {
         "container": "mp4",
@@ -163,7 +166,9 @@
           700000,
           750000
         ]
-      }
+      },
+      "file": "sagittal-mp4.mp4",
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/992ed10a896d451f3f447237dc98d7cfb5de060e/dicom2vid/browser-reference/11370b5f9e1b7f7c3c008b2d183ca9292ca0322e28b31db2d28dbedb28f30bb9.mp4"
     }
   }
 }

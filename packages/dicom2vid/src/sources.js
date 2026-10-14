@@ -36,13 +36,14 @@ export async function discoverSources(records, { readPrefix, onSkip = () => {}, 
   const sources = [];
   if (dicomRecords.length) {
     const headers = [];
-    const byName = new Map();
+    const byRecord = new Map();
     for (const rec of dicomRecords) {
       try {
         const h = readDicomHeader(await readPrefix(rec, DICOM_HEADER_BYTES), rec.name);
         if (!h.rows || !h.cols) continue; // skip DICOMDIR / non-image DICOM
-        headers.push(h);
-        byName.set(rec.name, rec);
+        const id = String(headers.length);
+        headers.push({ ...h, name: id });
+        byRecord.set(id, rec);
       } catch (e) {
         // Skip unreadable or compressed DICOM at grouping time.
         unreadable++;
@@ -63,7 +64,7 @@ export async function discoverSources(records, { readPrefix, onSkip = () => {}, 
           isMosaic: s.isMosaic,
           mosaicSlices: s.mosaicSlices,
           volumes: s.volumes,
-          recs: s.files.map((n) => byName.get(n)).filter(Boolean),
+          recs: s.files.map((id) => byRecord.get(id)),
           isDefault: i === defaultIndex,
         });
       });

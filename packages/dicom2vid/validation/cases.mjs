@@ -1,7 +1,7 @@
 // The validation cases shared by the browser recorder (browser-reference.mjs) and the
 // command line's release check (cli-check.mjs). Each runs the app's pinned example through
 // the `encode-volume` automation parameters, which the command line accepts as options.
-// The slice ranges keep each recorded browser video small enough to commit.
+// Recorded videos live in the pinned Hugging Face dataset, outside the source repository.
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -36,6 +36,24 @@ export const CASES = [
 export const EXAMPLES_URL = new URL('../../../apps/dicom2vid/examples.json', import.meta.url);
 
 export const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
+
+/** A recorded video downloaded into the temporary cache and verified on every use. */
+export async function referenceVideo(entry) {
+  if (!/^https:\/\/huggingface\.co\/datasets\/neurodeskorg\/webapps\/resolve\/[a-f0-9]{40}\//.test(entry.url ?? '')) {
+    throw new Error('Every browser reference video needs an immutable Hugging Face URL.');
+  }
+  const path = join(tmpdir(), 'neurodesk-dicom2vid-reference', entry.sha256);
+  const verified = bytes => bytes.length === entry.bytes && sha256(bytes) === entry.sha256;
+  const cached = await readFile(path).catch(() => null);
+  if (cached && verified(cached)) return cached;
+  const response = await fetch(entry.url);
+  if (!response.ok) throw new Error(`${entry.url}: HTTP ${response.status}`);
+  const bytes = Buffer.from(await response.arrayBuffer());
+  if (!verified(bytes)) throw new Error(`${entry.url}: reference video failed checksum verification`);
+  await mkdir(join(path, '..'), { recursive: true });
+  await writeFile(path, bytes);
+  return bytes;
+}
 
 /** The example's files, downloaded once into the temporary directory and checked against their pins. */
 export async function exampleFile(exampleId) {

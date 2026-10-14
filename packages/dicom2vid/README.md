@@ -78,18 +78,29 @@ archive and an executable to mirror and pin; H.264 encoders were not an option
 ## Validation
 
 `validation/browser-reference.mjs` runs the production app in Playwright
-Chromium on the app's pinned example and records each case in `cases.mjs`:
-the WebM videos (`validation/browser-reference/`) and the container facts of
-every video (`browser-reference.json`). `--check` fails when the app no longer
-writes those bytes; rerun it without `--check` after changing the pipeline,
-the video settings or Chromium, and commit the result.
+Chromium on the app's pinned example and records every case in `cases.mjs`.
+The videos live at commit-pinned Hugging Face URLs with SHA-256 and byte-size
+checks in `browser-reference.json`. Downloads are cached outside the source
+repository and verified on every read. `--check` compares container facts and
+decoded frames for WebM and H.264 MP4, ignoring MP4 creation timestamps.
+Image pixels must reach 35 dB PSNR against the recorded video. Slice labels
+use platform fonts, so their box is excluded from PSNR and visible label ink
+is checked separately.
 
-`validation/cli-check.mjs --executable PATH` runs the command line on the same
-cases and requires, per case, the browser's container, coded size, frame
-count, timestamps and key frames, and on every decoded frame at least 30 dB
-luma PSNR both against the browser's decoded frame and against the frames the
-shared pipeline renders, no more than 3 dB below the browser's own. The
-measured margins and the negative controls behind 30 dB are in the script.
+After changing the pipeline, video settings or Chromium, record with
+`node validation/browser-reference.mjs --output /storage/path/references`.
+Upload the generated videos to `neurodeskorg/webapps` and pin the new dataset
+commit, checksums and sizes in `browser-reference.json`. Keep only that JSON
+and the recording code in Git.
+
+`validation/cli-check.mjs --executable PATH` requires the browser's container,
+coded size, frame count, timestamps and key frames. Every decoded CLI frame
+must reach 30 dB luma PSNR against the shared pipeline's rendered source.
+WebM frames also compare with the recorded browser frames and must stay
+within 3 dB of the browser's own source quality. MP4 compares CLI VP9 frames
+with rendered source frames because Chromium writes H.264 there. Annotated
+frames compare outside the label box, and both videos must show the label.
+The measured margins and negative controls behind 30 dB are in the script.
 
 ## Licensing
 

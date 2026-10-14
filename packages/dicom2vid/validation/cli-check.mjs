@@ -21,12 +21,10 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { decodeVideo, inspectVideo } from '../src/inspect.js';
+import { labelPixels, labelBox, psnr, renderedLuma } from './frame-comparison.mjs';
 import { parseOptions } from '../src/node.js';
-import { defaultNorm, orientationGeometry, renderFrame, resolveSliceIndices } from '../src/pipeline.js';
-import { labelPlacement, rasterize, rgbToI420 } from '../src/raster.js';
 import { readNifti } from '../src/readers/nifti.js';
-import { evenDim } from '../src/video.js';
-import { CASES, caseArguments, exampleFile } from './cases.mjs';
+import { CASES, caseArguments, exampleFile, referenceVideo } from './cases.mjs';
 
 // Measured on these cases (lowest frame per case): the browser's VP9 frames are 35.3-40.7 dB
 // from the rendered source, the command line's 35.2-40.5 dB, and the two decoded videos are
@@ -36,8 +34,6 @@ import { CASES, caseArguments, exampleFile } from './cases.mjs';
 const MIN_PSNR_DB = 30;
 // The command line may not be more than this much worse than the browser against the source.
 const QUALITY_MARGIN_DB = 3;
-// Pixels in the label box at least this much brighter than the unlabelled frame count as label.
-const LABEL_INK = 64;
 const MIN_LABEL_PIXELS = 20;
 
 const { values } = parseArgs({ options: { executable: { type: 'string' } } });
@@ -52,50 +48,8 @@ function check(passed, line) {
   console.log(`${passed ? 'PASS' : 'FAIL'} ${line}`);
 }
 
-function psnr(a, b, include = () => true) {
-  let sum = 0;
-  let count = 0;
-  for (let i = 0; i < a.length; i++) {
-    if (!include(i)) continue;
-    sum += (a[i] - b[i]) ** 2;
-    count++;
-  }
-  return sum ? 10 * Math.log10((255 * 255 * count) / sum) : Infinity;
-}
-
 const lowest = (values) => Math.min(...values);
 const dB = (value) => (Number.isFinite(value) ? `${value.toFixed(1)} dB` : 'identical');
-
-// The luma planes the shared pipeline renders for a case, unlabelled.
-function renderedLuma(vol, settings) {
-  const geo = orientationGeometry(vol.dims, settings.orientation);
-  const norm = defaultNorm(vol, settings);
-  return resolveSliceIndices(geo.nFrames, settings).map((k) => {
-    const { frame, fW, fH, channels } = renderFrame(vol, settings.orientation, k, norm, settings);
-    const width = evenDim(fW);
-    const height = evenDim(fH);
-    return { fH, width, y: rgbToI420(rasterize(frame, fW, fH, channels, width, height), width, height).subarray(0, width * height) };
-  });
-}
-
-// The label's box: from the left margin across, from two font sizes above the baseline to
-// a few pixels below it.
-function labelBox(fH, width) {
-  const { x, baseline, fontPx } = labelPlacement(fH);
-  const top = baseline - 2 * fontPx;
-  const bottom = baseline + 4;
-  return (i) => {
-    const px = i % width;
-    const py = Math.floor(i / width);
-    return px >= x - 2 && py >= top && py <= bottom;
-  };
-}
-
-function labelPixels(decoded, source, inBox) {
-  let count = 0;
-  for (let i = 0; i < decoded.length; i++) if (inBox(i) && decoded[i] >= source[i] + LABEL_INK) count++;
-  return count;
-}
 
 const work = await mkdtemp(join(tmpdir(), 'dicom2vid-cli-check-'));
 try {
@@ -137,8 +91,8 @@ try {
     const vsSource = lowest(decoded.map((f, k) => psnr(f.y, source[k].y, outside(k))));
     check(vsSource >= MIN_PSNR_DB, `${item.id}: every frame ${dB(vsSource)} or better against the rendered source (>= ${MIN_PSNR_DB} dB)`);
 
-    if (recorded.file) {
-      const browserDecoded = await decodeVideo(await readFile(new URL(recorded.file, import.meta.url)));
+    if (recorded.video.codec === 'vp9') {
+      const browserDecoded = await decodeVideo(await referenceVideo(recorded));
       const browserVsSource = lowest(browserDecoded.map((f, k) => psnr(f.y, source[k].y, outside(k))));
       const vsBrowser = lowest(decoded.map((f, k) => psnr(f.y, browserDecoded[k].y, outside(k))));
       check(vsSource >= browserVsSource - QUALITY_MARGIN_DB, `${item.id}: as close to the source as the browser's ${dB(browserVsSource)}, within ${QUALITY_MARGIN_DB} dB`);
