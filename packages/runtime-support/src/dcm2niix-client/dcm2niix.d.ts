@@ -9,6 +9,10 @@ declare module '@niivue/dcm2niix' {
   export interface Dcm2niixProcessor {
     /** Run the conversion and resolve to the output files. */
     run(): Promise<File[]>
+    /** `-b`: BIDS sidecar (`o` writes only the sidecar). */
+    bids(value: 'y' | 'n' | 'o'): Dcm2niixProcessor
+    /** `-ba`: BIDS anonymisation of the sidecar. */
+    bidsAnonymize(value: 'y' | 'n'): Dcm2niixProcessor
     /** Any chainable dcm2niix command flag (`compressionLevel`, `bids`, ...). */
     [command: string]: (
       ...args: unknown[]

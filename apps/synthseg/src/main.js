@@ -13,10 +13,13 @@ import {
   createMaskEditor,
 } from '@neurodesk/webapp-components/ui';
 import { downloadBlob, downloadFile, readNifti } from '@neurodesk/webapp-components/file-io';
-import { readImageFiles, runDcm2niix } from '@neurodesk/runtime-support/dcm2niix-client';
+import { fetchModel } from '@neurodesk/webapp-components/worker';
+import { readImageSeries, runDcm2niix } from '@neurodesk/runtime-support/dcm2niix-client';
 import manifest from '@neurodesk/synthseg/manifest';
-import { LABELS_ARTIFACT, outputNames } from '@neurodesk/synthseg/results';
+import { parseNorms, subjectFromSidecar } from '@neurodesk/synthseg/brainquant';
+import { LABELS_ARTIFACT, outputNames, outputStem, volumesCsv } from '@neurodesk/synthseg/results';
 import { editedResult, gridOf, labelNames, labelsResult, looksLikeCt, sameGrid } from './logic.js';
+import { legendEntries, volumeReport } from './volume-report.js';
 import freesurferLut from '@neurodesk/webapp-components/automation/freesurfer-lut';
 import './styles.css';
 
@@ -56,11 +59,12 @@ const toolbar = createViewerToolbar({
     ...view,
     onClick: () => {
       if (!viewer) return;
+      $('volumeReport').hidden = true;
       viewer.sliceType = layouts[view.id];
       viewer.drawScene();
       toolbar.setActive(view.id);
     },
-  })),
+  })).concat({ id: 'volumes', label: 'Volumes', hidden: true, onClick: () => showVolumes() }),
 });
 $('viewer').prepend(toolbar);
 toolbar.control('overlayOpacity').id = 'opacity';
@@ -96,6 +100,10 @@ let operation;
 let viewRevision = 0;
 let displayedStage = null;
 let importedImages = [];
+// The last run's soft volumes (mri_synthseg --vol columns, mm³) and whether it ran in fast mode.
+let volumes = null;
+let volumesFast = true;
+let normsLoad = null;
 renderResults();
 
 function renderResults() {
@@ -115,7 +123,7 @@ function status(message, error = false) {
 function setBusy(value, cancellable = false) {
   busy = value;
   exampleControl.setDisabled(value);
-  for (const id of ['imageInput', 'seriesSelect', 'mode', 'ct'])
+  for (const id of ['imageInput', 'seriesSelect', 'mode', 'ct', 'age', 'sex'])
     $(id).disabled = value;
   $('processButton').disabled = value || !source || !webgpu;
   $('cancelBtn').hidden = !value || !cancellable;
@@ -124,6 +132,7 @@ function setBusy(value, cancellable = false) {
   $('viewResultBtn').disabled = value || !labels;
   results.setEditingEnabled(!value && !editing());
   $('reportBtn').disabled = value || runs.snapshot().state !== 'succeeded';
+  $('volumesBtn').disabled = value || !volumes;
   if (!value) {
     clearInterval(timer);
     worker?.terminate();
@@ -250,13 +259,129 @@ function endEdit() {
   results.setEditingEnabled(!busy && !editing());
   $('opacity').disabled = busy || !labels || editing();
 }
+const volumesTab = () => toolbar.viewTabs.querySelector('[data-view="volumes"]');
+function hideVolumes() {
+  volumesTab().hidden = true;
+  if (!$('volumeReport').hidden) {
+    $('volumeReport').hidden = true;
+    toolbar.setActive(Object.keys(layouts).find((id) => layouts[id] === viewer?.sliceType) ?? 'multiplanar');
+  }
+  $('volumeReport').replaceChildren();
+}
+function showVolumes() {
+  if (!volumes) return;
+  $('volumeReport').hidden = false;
+  toolbar.setActive('volumes');
+  void renderVolumes();
+}
+/** The subject the report compares against: the Age and Sex fields, blank meaning unknown. */
+function subject() {
+  const age = $('age').value === '' ? null : Number($('age').value);
+  return {
+    age: Number.isInteger(age) && age >= 0 && age <= 120 ? age : null,
+    sex: $('sex').value || null,
+  };
+}
+function setSubject({ age = null, sex = null } = {}, fromHeader = false) {
+  $('age').value = age === null ? '' : String(age);
+  $('sex').value = sex ?? '';
+  $('subjectHint').hidden = !fromHeader || (age === null && sex === null);
+}
+// The norms are fetched once, after the first run that needs them, and checked against the manifest.
+function loadNorms() {
+  normsLoad ??= fetchModel({ url: manifest.norms.url, integrity: { bytes: manifest.norms.bytes, sha256: manifest.norms.sha256 } }, {
+    cache: 'neurodesk-synthseg-norms-v1',
+    requestFailureMessage: 'Could not download the reference volumes.',
+  }).then((bytes) => parseNorms(JSON.parse(new TextDecoder().decode(bytes))));
+  normsLoad.catch(() => {
+    normsLoad = null;
+  });
+  return normsLoad;
+}
+/** The report as the JSON run report and automation record it, or why it is missing. */
+async function reportSummary() {
+  if (!volumes) return null;
+  const used = subject();
+  try {
+    const { report } = volumeReport(await loadNorms(), volumes, used, { fast: volumesFast });
+    return {
+      norms: { url: manifest.norms.url, sha256: manifest.norms.sha256 },
+      subject: used,
+      icvMm3: report.icvMm3,
+      outsideReferenceAge: report.outsideReferenceAge,
+      results: report.results,
+    };
+  } catch (error) {
+    return { subject: used, unavailable: error.message };
+  }
+}
+function element(tag, { className, text } = {}, children = []) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  node.append(...children);
+  return node;
+}
+function svgElement(markup) {
+  // The HTML parser puts <svg> in the SVG namespace; an XML parse without xmlns would not.
+  return new DOMParser().parseFromString(markup, 'text/html').body.firstElementChild;
+}
+function renderTable(rows) {
+  const headings = ['Structure', 'Volume (mL)', 'Adjusted (mL)', 'z', 'Percentile', 'Flag'];
+  const numeric = [false, true, true, true, true, false];
+  const head = element('tr', {}, headings.map((text, index) => element('th', { text, className: numeric[index] ? 'nd-numeric' : '' })));
+  const body = rows.map((row) => {
+    const cells = [row.title, row.volumeMl, row.adjustedMl, row.z, row.percentile, row.flag];
+    const line = element('tr', {}, cells.map((text, index) => element('td', { text, className: numeric[index] ? 'nd-numeric' : '' })));
+    if (row.flag) line.dataset.flag = row.flag;
+    return line;
+  });
+  const table = element('table', { className: 'nd-data-table' }, [element('thead', {}, [head]), element('tbody', {}, body)]);
+  return element('div', { className: 'nd-table-scroll' }, [table]);
+}
+let renderRevision = 0;
+async function renderVolumes() {
+  const panel = $('volumeReport');
+  if (!volumes || panel.hidden) return;
+  const revision = ++renderRevision;
+  let norms;
+  try {
+    norms = await loadNorms();
+  } catch (error) {
+    if (revision !== renderRevision) return;
+    panel.replaceChildren(element('p', { className: 'nd-message error', text: `The reference volumes could not be loaded: ${error.message} The labels and the volume table remain available.` }));
+    return;
+  }
+  if (revision !== renderRevision || !volumes) return;
+  const used = subject();
+  const view = volumeReport(norms, volumes, used, { fast: volumesFast });
+  const lines = view.header.map((text) => element('p', { text }));
+  lines.at(-1).className = 'nd-report-lead';
+  const legend = element('ul', { className: 'nd-chart-legend' }, legendEntries(used.age !== null).map(({ label, svg }) => element('li', {}, [svgElement(svg), label])));
+  const charts = element('div', { className: 'nd-chart-grid' }, view.charts.map((chart) => {
+    const figure = element('figure', { className: 'nd-chart-figure' }, [element('figcaption', { text: chart.caption }), svgElement(chart.svg)]);
+    if (chart.flagged) figure.dataset.flag = '';
+    return figure;
+  }));
+  const notes = element('div', { className: 'nd-report-notes' }, view.footer.map((text) => element('p', { text })));
+  panel.replaceChildren(...lines, legend, charts, renderTable(view.rows), notes);
+}
+function subjectChanged() {
+  $('subjectHint').hidden = true;
+  void renderVolumes();
+}
+$('age').oninput = subjectChanged;
+$('sex').onchange = subjectChanged;
 function clearOutputs() {
   const cancelled = editor?.cancel();
   labels = null;
   provenance = null;
+  volumes = null;
   renderResults();
   $('outputSection').open = false;
   $('reportBtn').disabled = true;
+  $('volumesBtn').disabled = true;
+  hideVolumes();
   return cancelled;
 }
 async function beginImport() {
@@ -270,7 +395,7 @@ async function beginImport() {
   await cancelled;
   return run;
 }
-async function load(file, signal, existingRun) {
+async function load(file, signal, existingRun, sidecar = null) {
   if ((!existingRun && busy) || !file) return false;
   const run = existingRun || await beginImport();
   const abort = () => {
@@ -289,6 +414,7 @@ async function load(file, signal, existingRun) {
     if (!run.current) return false;
     source = file;
     sourceGrid = gridOf(image);
+    setSubject(sidecar ? subjectFromSidecar(sidecar) : {}, Boolean(sidecar));
     $('ct').checked = looksLikeCt(data);
     $('progress').value = 0;
     $('elapsed').textContent = '';
@@ -320,13 +446,14 @@ async function importImages(filesPromise) {
   try {
     const files = await filesPromise;
     run.signal.throwIfAborted();
-    const images = await readImageFiles(files, { signal: run.signal });
+    // The sidecars carry identifying fields; only age and sex are read from them, and nothing is saved.
+    const images = await readImageSeries(files, { signal: run.signal });
     run.signal.throwIfAborted();
     if (!images.length) throw new Error('Choose NIfTI files or a complete DICOM series.');
-    if (!(await load(images[0], undefined, run)) || operation !== run) return;
+    if (!(await load(images[0].image, undefined, run, images[0].sidecar)) || operation !== run) return;
     importedImages = images;
     $('seriesSelect').replaceChildren(
-      ...images.map((file, index) => new Option(file.name, String(index))),
+      ...images.map(({ image }, index) => new Option(image.name, String(index))),
     );
     $('seriesSelect').hidden = images.length < 2;
   } catch (error) {
@@ -344,8 +471,9 @@ $('imageInput').onchange = () => {
   if (files.length) void importImages(Promise.resolve(files));
 };
 $('seriesSelect').onchange = async () => {
-  if (!(await load(importedImages[Number($('seriesSelect').value)])))
-    $('seriesSelect').value = String(importedImages.indexOf(source));
+  const { image, sidecar } = importedImages[Number($('seriesSelect').value)];
+  if (!(await load(image, undefined, undefined, sidecar)))
+    $('seriesSelect').value = String(importedImages.findIndex((entry) => entry.image === source));
 };
 bindFileDrop($('dropZone'), (files) => {
   if (!busy) void importImages(files);
@@ -388,9 +516,10 @@ async function segmentImage(parameters, { signal, progress = () => {} } = {}) {
   signal?.throwIfAborted();
   const cancelled = clearOutputs();
   const options = { fast: parameters.mode === 'fast', ct: parameters.ct ?? $('ct').checked };
+  if (parameters.age !== undefined || parameters.sex !== undefined) setSubject({ age: parameters.age ?? null, sex: parameters.sex ?? null });
   const run = runs.begin('running', {
     inputs: { image: source },
-    parameters: { mode: parameters.mode, ct: options.ct },
+    parameters: { mode: parameters.mode, ct: options.ct, ...subject() },
   });
   operation = run;
   setBusy(true, true);
@@ -437,7 +566,14 @@ async function segmentImage(parameters, { signal, progress = () => {} } = {}) {
               const file = new File([data.buffer], outputNames(source.name).labels, { type: LABELS_ARTIFACT.mediaType });
               const image = await readNifti(data.buffer);
               if (!run.current) throw new DOMException('Cancelled', 'AbortError');
-              const measurements = summarizeLabels(image, freesurferLut);
+              volumes = data.volumes ?? null;
+              volumesFast = options.fast;
+              const measurements = {
+                ...summarizeLabels(image, freesurferLut),
+                softVolumesMm3: volumes,
+                volumeReport: await reportSummary(),
+              };
+              if (!run.current) throw new DOMException('Cancelled', 'AbortError');
               const succeeded = await run.succeed({
                 artifacts: { labels: { file, ...LABELS_ARTIFACT } },
                 provenance: data.provenance,
@@ -450,6 +586,7 @@ async function segmentImage(parameters, { signal, progress = () => {} } = {}) {
               $('outputSection').open = true;
               $('progress').value = 1;
               setBusy(false);
+              volumesTab().hidden = !volumes;
               await show();
               signal?.throwIfAborted();
               status(`Labels ready · ${provenance.outputShape.join(' × ')} · ${Math.round(provenance.seconds)} s`);
@@ -493,10 +630,16 @@ function cancel() {
   status('Processing cancelled. Your original image is unchanged.');
 }
 $('cancelBtn').onclick = cancel;
-$('reportBtn').onclick = () => {
+$('reportBtn').onclick = async () => {
   const { report } = runs.snapshot();
   if (!report || busy) return;
-  downloadBlob(new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' }), report.artifacts.labels.filename.replace(/\.nii\.gz$/, '.json'));
+  // The Age and Sex fields may have changed since the run, so the volume report follows them.
+  const current = { ...report, measurements: { ...report.measurements, volumeReport: await reportSummary() } };
+  downloadBlob(new Blob([JSON.stringify(current, null, 2)], { type: 'application/json' }), report.artifacts.labels.filename.replace(/\.nii\.gz$/, '.json'));
+};
+$('volumesBtn').onclick = () => {
+  if (!volumes || busy) return;
+  downloadBlob(new Blob([volumesCsv(outputStem(source.name), volumes)], { type: 'text/csv' }), outputNames(source.name).volumes);
 };
 $('privacyBtn').onclick = () => info.open('Privacy', $('privacyContent'));
 $('standaloneBtn').onclick = () => info.open('Standalone', $('standaloneContent'), { wide: true });

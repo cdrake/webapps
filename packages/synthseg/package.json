@@ -14,6 +14,7 @@
   "exports": {
     ".": "./src/index.js",
     "./browser": "./src/browser.js",
+    "./brainquant": "./src/brainquant.js",
     "./node": "./src/node.js",
     "./results": "./src/results.js",
     "./manifest": "./model.manifest.json",

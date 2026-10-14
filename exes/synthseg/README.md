@@ -9,6 +9,7 @@ builds anywhere the `ort` crate does.
 ```sh
 synthseg --i T1_head.nii.gz --o seg.nii.gz      # default: flip averaging + topology cleanup
 synthseg T1_head.nii.gz --fast                   # writes T1_head_synthseg.nii.gz, no flip/topology
+synthseg T1_head.nii.gz --vol T1_head_vol.csv    # also writes mri_synthseg --vol soft volumes (mm³)
 synthseg ct.nii.gz out.nii.gz --ct               # clip Hounsfield units to [0, 80]
 synthseg --self-check
 ```

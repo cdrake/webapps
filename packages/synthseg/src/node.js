@@ -1,5 +1,5 @@
 // The synthseg command line: the web app's pipeline (./pipeline.js and the Rust wasm) with ONNX Runtime's
-// CPU provider in place of WebGPU. It writes the app's two downloads for one input.
+// CPU provider in place of WebGPU. It writes the app's three downloads for one input.
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import { availableParallelism, homedir } from 'node:os';
@@ -13,7 +13,7 @@ import manifest from '../model.manifest.json' with { type: 'json' };
 import packageJson from '../package.json' with { type: 'json' };
 import PARAMETERS from './parameters.json' with { type: 'json' };
 import { runSynthseg } from './pipeline.js';
-import { LABELS_ARTIFACT, looksLikeCt, outputNames } from './results.js';
+import { LABELS_ARTIFACT, looksLikeCt, outputNames, outputStem, volumesCsv } from './results.js';
 import { loadSynthseg } from './wasm.js';
 
 export { PARAMETERS };
@@ -174,7 +174,7 @@ export async function segment({
   // The model is verified before any computation, so a missing or corrupt file fails at once.
   const model = await loadAsset(MODEL_ASSETS[0], { cacheDir, offline, onProgress: (message) => onProgress(undefined, message) });
   parameters.ct ??= looksLikeCt((await readNifti(arrayBuffer(source))).data);
-  const { buffer, provenance } = await runSynthseg({
+  const { buffer, provenance, volumes } = await runSynthseg({
     buffer: arrayBuffer(source),
     options: { fast: parameters.mode === 'fast', ct: parameters.ct },
     wasm: await loadWasm(),
@@ -201,11 +201,12 @@ export async function segment({
     parameters,
     provenance,
     artifacts: { labels: { ...LABELS_ARTIFACT, ...describe(names.labels, labels) } },
-    measurements: summarizeLabels(await readNifti(buffer), freesurferLut),
+    measurements: { ...summarizeLabels(await readNifti(buffer), freesurferLut), softVolumesMm3: volumes },
   };
   await mkdir(destination, { recursive: true });
   await writeAtomically(join(destination, names.labels), labels);
   await writeAtomically(join(destination, names.report), `${JSON.stringify(report, null, 2)}\n`);
+  await writeAtomically(join(destination, names.volumes), volumesCsv(outputStem(basename(input)), volumes));
   const peakMemoryMb = Math.round(process.resourceUsage().maxRSS / 1024);
-  return { output: destination, files: [names.labels, names.report], parameters, provenance, peakMemoryMb };
+  return { output: destination, files: [names.labels, names.report, names.volumes], parameters, provenance, peakMemoryMb };
 }

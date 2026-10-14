@@ -34,7 +34,10 @@ export async function loadSynthseg(source) {
     }
     labels({ fast = false } = {}) {
       const ptr = wasm.seg_labels(this.seg, fast ? 1 : 0);
-      return { buffer: u8().slice(ptr, ptr + wasm.seg_labels_len(this.seg)), geometry: this.geometry };
+      const buffer = u8().slice(ptr, ptr + wasm.seg_labels_len(this.seg));
+      // mri_synthseg --vol columns: total intracranial, then each label after background, in mm³.
+      const volumes = new Float64Array(wasm.memory.buffer, wasm.seg_volumes(this.seg), 33).slice();
+      return { buffer, volumes, geometry: this.geometry };
     }
     free() { if (this.seg) { wasm.seg_free(this.seg); this.seg = 0; } }
   }

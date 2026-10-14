@@ -1,0 +1,466 @@
+{
+ "cases": [
+  {
+   "age": 45,
+   "sex": "female",
+   "icv_mm3": 1591999.2,
+   "results": [
+    {
+     "id": "hippocampus_left",
+     "volume_mm3": 4892.462,
+     "adjusted_mm3": 4705.179081856661,
+     "z": 0.9101416396258238,
+     "percentile": 81.86260913768267,
+     "flag": ""
+    },
+    {
+     "id": "hippocampus_right",
+     "volume_mm3": 4701.524,
+     "adjusted_mm3": 4501.120331660776,
+     "z": 0.20414822602548233,
+     "percentile": 58.08811655584316,
+     "flag": ""
+    },
+    {
+     "id": "amygdala_left",
+     "volume_mm3": 2050.517,
+     "adjusted_mm3": 1964.478762981558,
+     "z": 1.0717831463889973,
+     "percentile": 85.80912776383418,
+     "flag": ""
+    },
+    {
+     "id": "amygdala_right",
+     "volume_mm3": 1817.327,
+     "adjusted_mm3": 1748.4649712225826,
+     "z": -0.1849827497973139,
+     "percentile": 42.662128286911916,
+     "flag": ""
+    },
+    {
+     "id": "thalamus_left",
+     "volume_mm3": 7293.104,
+     "adjusted_mm3": 6940.2123909376805,
+     "z": -0.36294040065272526,
+     "percentile": 35.83247030783096,
+     "flag": ""
+    },
+    {
+     "id": "thalamus_right",
+     "volume_mm3": 7609.961,
+     "adjusted_mm3": 7226.705160282652,
+     "z": 0.0054530154772180085,
+     "percentile": 50.21754276483465,
+     "flag": ""
+    },
+    {
+     "id": "lateral_ventricles",
+     "volume_mm3": 24949.048,
+     "adjusted_mm3": 22471.96703076341,
+     "z": 0.8366741221889324,
+     "percentile": 79.86121155630622,
+     "flag": ""
+    },
+    {
+     "id": "cortical_grey_matter",
+     "volume_mm3": 540129.72,
+     "adjusted_mm3": 509011.298818113,
+     "z": 0.7599293541942198,
+     "percentile": 77.63515929136604,
+     "flag": ""
+    },
+    {
+     "id": "cerebral_white_matter",
+     "volume_mm3": 471636.83999999997,
+     "adjusted_mm3": 441169.8932650962,
+     "z": -0.21547970811706812,
+     "percentile": 41.4696665530566,
+     "flag": ""
+    },
+    {
+     "id": "whole_brain",
+     "volume_mm3": 1233024.118,
+     "adjusted_mm3": 1161702.6736977291,
+     "z": -0.08064313808309945,
+     "percentile": 46.78628793371345,
+     "flag": ""
+    }
+   ]
+  },
+  {
+   "age": 72,
+   "sex": "male",
+   "icv_mm3": 1591999.2,
+   "results": [
+    {
+     "id": "hippocampus_left",
+     "volume_mm3": 4892.462,
+     "adjusted_mm3": 4701.848234179438,
+     "z": 2.255223978903326,
+     "percentile": 98.79403632302876,
+     "flag": ">95th"
+    },
+    {
+     "id": "hippocampus_right",
+     "volume_mm3": 4701.524,
+     "adjusted_mm3": 4526.769419138003,
+     "z": 1.6161338204938627,
+     "percentile": 94.69673082967121,
+     "flag": ""
+    },
+    {
+     "id": "amygdala_left",
+     "volume_mm3": 2050.517,
+     "adjusted_mm3": 1972.7727591772602,
+     "z": 1.8195180302236733,
+     "percentile": 96.5583782698433,
+     "flag": ">95th"
+    },
+    {
+     "id": "amygdala_right",
+     "volume_mm3": 1817.327,
+     "adjusted_mm3": 1747.9009119540021,
+     "z": 0.9872495111657574,
+     "percentile": 83.82398323905545,
+     "flag": ""
+    },
+    {
+     "id": "thalamus_left",
+     "volume_mm3": 7293.104,
+     "adjusted_mm3": 6930.8431654531505,
+     "z": 1.4516380642700792,
+     "percentile": 92.66988654894833,
+     "flag": ""
+    },
+    {
+     "id": "thalamus_right",
+     "volume_mm3": 7609.961,
+     "adjusted_mm3": 7223.426336397251,
+     "z": 2.1579197940417014,
+     "percentile": 98.45329658762495,
+     "flag": ">95th"
+    },
+    {
+     "id": "lateral_ventricles",
+     "volume_mm3": 24949.048,
+     "adjusted_mm3": 22625.24818444187,
+     "z": -0.9375315768670883,
+     "percentile": 17.424259441209212,
+     "flag": ""
+    },
+    {
+     "id": "cortical_grey_matter",
+     "volume_mm3": 540129.72,
+     "adjusted_mm3": 509130.87265955604,
+     "z": 2.8008468623330116,
+     "percentile": 99.74515650253662,
+     "flag": ">95th"
+    },
+    {
+     "id": "cerebral_white_matter",
+     "volume_mm3": 471636.83999999997,
+     "adjusted_mm3": 439823.3235208186,
+     "z": 1.9289538584158905,
+     "percentile": 97.31317046546499,
+     "flag": ">95th"
+    },
+    {
+     "id": "whole_brain",
+     "volume_mm3": 1233024.118,
+     "adjusted_mm3": 1159515.8081302713,
+     "z": 2.7547648876290425,
+     "percentile": 99.70632837571988,
+     "flag": ">95th"
+    }
+   ]
+  },
+  {
+   "age": null,
+   "sex": null,
+   "icv_mm3": 1591999.2,
+   "results": [
+    {
+     "id": "hippocampus_left",
+     "volume_mm3": 4892.462,
+     "adjusted_mm3": 4709.05069676433,
+     "z": null,
+     "percentile": null,
+     "flag": ""
+    },
+    {
+     "id": "hippocampus_right",
+     "volume_mm3": 4701.524,
+     "adjusted_mm3": 4516.941949154863,
+     "z": null,
+     "percentile": null,
+     "flag": ""
+    },
+    {
+     "id": "amygdala_left",
+     "volume_mm3": 2050.517,
+     "adjusted_mm3": 1957.7501707498384,
+     "z": null,
+     "percentile": null,
+     "flag": ""
+    },
+    {
+     "id": "amygdala_right",
+     "volume_mm3": 1817.327,
+     "adjusted_mm3": 1741.207877222983,
+     "z": null,
+     "percentile": null,
+     "flag": ""
+    },
+    {
+     "id": "thalamus_left",
+     "volume_mm3": 7293.104,
+     "adjusted_mm3": 6933.821774639169,
+     "z": null,
+     "percentile": null,
+     "flag": ""
+    },
+    {
+     "id": "thalamus_right",
+     "volume_mm3": 7609.961,
+     "adjusted_mm3": 7221.316441032047,
+     "z": null,
+     "percentile": null,
+     "flag": ""
+    },
+    {
+     "id": "lateral_ventricles",
+     "volume_mm3": 24949.048,
+     "adjusted_mm3": 22599.22271735945,
+     "z": null,
+     "percentile": null,
+     "flag": ""
+    },
+    {
+     "id": "cortical_grey_matter",
+     "volume_mm3": 540129.72,
+     "adjusted_mm3": 510559.16677707003,
+     "z": null,
+     "percentile": null,
+     "flag": ""
+    },
+    {
+     "id": "cerebral_white_matter",
+     "volume_mm3": 471636.83999999997,
+     "adjusted_mm3": 441682.11332540633,
+     "z": null,
+     "percentile": null,
+     "flag": ""
+    },
+    {
+     "id": "whole_brain",
+     "volume_mm3": 1233024.118,
+     "adjusted_mm3": 1163292.7497095522,
+     "z": null,
+     "percentile": null,
+     "flag": ""
+    }
+   ]
+  },
+  {
+   "age": 30,
+   "sex": null,
+   "icv_mm3": 1591999.2,
+   "results": [
+    {
+     "id": "hippocampus_left",
+     "volume_mm3": 4892.462,
+     "adjusted_mm3": 4709.05069676433,
+     "z": 0.8610250745921112,
+     "percentile": 80.53878834637769,
+     "flag": ""
+    },
+    {
+     "id": "hippocampus_right",
+     "volume_mm3": 4701.524,
+     "adjusted_mm3": 4516.941949154863,
+     "z": 0.2129920075354083,
+     "percentile": 58.43334016400854,
+     "flag": ""
+    },
+    {
+     "id": "amygdala_left",
+     "volume_mm3": 2050.517,
+     "adjusted_mm3": 1957.7501707498384,
+     "z": 0.6064985559727257,
+     "percentile": 72.79081295223806,
+     "flag": ""
+    },
+    {
+     "id": "amygdala_right",
+     "volume_mm3": 1817.327,
+     "adjusted_mm3": 1741.207877222983,
+     "z": -0.7114957507900097,
+     "percentile": 23.838854151912876,
+     "flag": ""
+    },
+    {
+     "id": "thalamus_left",
+     "volume_mm3": 7293.104,
+     "adjusted_mm3": 6933.821774639169,
+     "z": -1.2442012162247844,
+     "percentile": 10.671275812979298,
+     "flag": ""
+    },
+    {
+     "id": "thalamus_right",
+     "volume_mm3": 7609.961,
+     "adjusted_mm3": 7221.316441032047,
+     "z": -0.8777187682420389,
+     "percentile": 19.004817836543435,
+     "flag": ""
+    },
+    {
+     "id": "lateral_ventricles",
+     "volume_mm3": 24949.048,
+     "adjusted_mm3": 22599.22271735945,
+     "z": 1.4107637545006793,
+     "percentile": 92.08428574143493,
+     "flag": ""
+    },
+    {
+     "id": "cortical_grey_matter",
+     "volume_mm3": 540129.72,
+     "adjusted_mm3": 510559.16677707003,
+     "z": -0.020788922936622517,
+     "percentile": 49.17070170234959,
+     "flag": ""
+    },
+    {
+     "id": "cerebral_white_matter",
+     "volume_mm3": 471636.83999999997,
+     "adjusted_mm3": 441682.11332540633,
+     "z": -0.42265098119128847,
+     "percentile": 33.627496236740924,
+     "flag": ""
+    },
+    {
+     "id": "whole_brain",
+     "volume_mm3": 1233024.118,
+     "adjusted_mm3": 1163292.7497095522,
+     "z": -0.9705806276724415,
+     "percentile": 16.587857834278392,
+     "flag": ""
+    }
+   ]
+  },
+  {
+   "age": 95,
+   "sex": "female",
+   "icv_mm3": 1591999.2,
+   "results": [
+    {
+     "id": "hippocampus_left",
+     "volume_mm3": 4892.462,
+     "adjusted_mm3": 4705.179081856661,
+     "z": 2.7543607041451663,
+     "percentile": 99.70596541575367,
+     "flag": ">95th"
+    },
+    {
+     "id": "hippocampus_right",
+     "volume_mm3": 4701.524,
+     "adjusted_mm3": 4501.120331660776,
+     "z": 2.1618511294452225,
+     "percentile": 98.46851735202533,
+     "flag": ">95th"
+    },
+    {
+     "id": "amygdala_left",
+     "volume_mm3": 2050.517,
+     "adjusted_mm3": 1964.478762981558,
+     "z": 2.145813117659953,
+     "percentile": 98.40560541739373,
+     "flag": ">95th"
+    },
+    {
+     "id": "amygdala_right",
+     "volume_mm3": 1817.327,
+     "adjusted_mm3": 1748.4649712225826,
+     "z": 1.5329800025211047,
+     "percentile": 93.7359608908504,
+     "flag": ""
+    },
+    {
+     "id": "thalamus_left",
+     "volume_mm3": 7293.104,
+     "adjusted_mm3": 6940.2123909376805,
+     "z": 2.9572790937465396,
+     "percentile": 99.84481647404239,
+     "flag": ">95th"
+    },
+    {
+     "id": "thalamus_right",
+     "volume_mm3": 7609.961,
+     "adjusted_mm3": 7226.705160282652,
+     "z": 2.7487075674448365,
+     "percentile": 99.70084630413723,
+     "flag": ">95th"
+    },
+    {
+     "id": "lateral_ventricles",
+     "volume_mm3": 24949.048,
+     "adjusted_mm3": 22471.96703076341,
+     "z": -2.8809428954830274,
+     "percentile": 0.1982437338728524,
+     "flag": "<5th"
+    },
+    {
+     "id": "cortical_grey_matter",
+     "volume_mm3": 540129.72,
+     "adjusted_mm3": 509011.298818113,
+     "z": 4.257652494103868,
+     "percentile": 99.99896707630128,
+     "flag": ">95th"
+    },
+    {
+     "id": "cerebral_white_matter",
+     "volume_mm3": 471636.83999999997,
+     "adjusted_mm3": 441169.8932650962,
+     "z": 3.9280950212419206,
+     "percentile": 99.99571893084305,
+     "flag": ">95th"
+    },
+    {
+     "id": "whole_brain",
+     "volume_mm3": 1233024.118,
+     "adjusted_mm3": 1161702.6736977291,
+     "z": 5.105180891757169,
+     "percentile": 99.99998347608849,
+     "flag": ">95th"
+    }
+   ]
+  }
+ ],
+ "hippocampus_left_female_centiles_at_20_50_86.3": {
+  "0.05": [
+   3952.3623131901813,
+   3907.715677817334,
+   3252.065098785007
+  ],
+  "0.25": [
+   4175.564811193104,
+   4187.12697110521,
+   3562.2192346429074
+  ],
+  "0.5": [
+   4338.094494084638,
+   4393.029006728635,
+   3795.066304816199
+  ],
+  "0.75": [
+   4506.950482282227,
+   4609.056278239684,
+   4043.1335943294503
+  ],
+  "0.95": [
+   4761.472341946682,
+   4938.615151432544,
+   4428.733072819532
+  ]
+ }
+}

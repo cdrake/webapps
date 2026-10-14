@@ -28,14 +28,28 @@
           "type": "string",
           "description": "Fast mode skips flip averaging and topology postprocessing",
           "enum": [
-            "default",
-            "fast"
+            "fast",
+            "default"
           ],
-          "default": "default"
+          "default": "fast"
         },
         "ct": {
           "type": "boolean",
           "description": "Input is CT in Hounsfield units; omitted uses the app's intensity detection"
+        },
+        "age": {
+          "type": "integer",
+          "description": "Age in years for the volume report; omitted uses the DICOM header or leaves it unknown",
+          "minimum": 0,
+          "maximum": 120
+        },
+        "sex": {
+          "type": "string",
+          "description": "Sex for the volume report; omitted uses the DICOM header or the pooled reference",
+          "enum": [
+            "female",
+            "male"
+          ]
         }
       },
       "artifacts": {
