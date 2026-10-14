@@ -32,6 +32,7 @@ export const LINKED_PACKAGES = Object.freeze({
   '@neurodesk/synthseg': 'synthseg',
   '@neurodesk/synthsr': 'synthsr',
   '@neurodesk/nesvor': 'nesvor',
+  '@neurodesk/qsmbly': 'qsmbly',
   '@neurodesk/syncro': 'syncro',
   '@neurodesk/topofit': 'topofit',
   '@neurodesk/vesselboost': 'vesselboost',

@@ -1333,6 +1333,15 @@ importers:
         specifier: 1.64.0
         version: 1.64.0
 
+  packages/qsmbly:
+    devDependencies:
+      '@neurodesk/webapp-components':
+        specifier: workspace:*
+        version: link:../components
+      '@playwright/test':
+        specifier: 1.64.0
+        version: 1.64.0
+
   packages/registration: {}
 
   packages/runtime-support:
