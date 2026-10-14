@@ -184,6 +184,7 @@ test('the shared stylesheet defines the whole vocabulary the template and docs r
     '.nd-viewer-canvas-wrapper', '.nd-viewer-empty', '.nd-viewer-info', '.nd-console-container', '.nd-console-title', '.nd-console-output',
     '.nd-status-label', '.nd-status-text', 'dialog.nd-dialog', '.nd-dialog-header', '.nd-dialog-body', '.nd-command', '.nd-volume-toggle', '.nd-result-visibility',
     '.nd-mask-editor', '.nd-tool-group', '.nd-tool-btn', '.nd-brush-control', '.nd-edit-btn',
+    '.nd-viewer-report', '.nd-chart-grid', '.nd-chart-figure', '.nd-chart', '.nd-chart-legend',
   ]) {
     assert.ok(css.includes(selector), `imaging-workspace.css must define ${selector}`);
   }
