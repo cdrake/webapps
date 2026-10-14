@@ -67,7 +67,7 @@ const saveBtn = $<HTMLButtonElement>('saveBtn')
 const OUTPUT_LABELS: Record<string, string> = { mask: 'Brain mask', gm: 'GM fraction', wm: 'WM fraction', csf: 'Ventricular CSF fraction', labels: 'Label map' }
 const results = createResultList({ element: $('resultList'), onDownload: (_stage, result) => { if (result) downloadFile(result.file) } })
 function showOutputs(name: string, artifacts: { role: string; file: File }[]): void {
-  const stem = name.replace(/\.(nii|nii\.gz|mgz|mgh)$/i, '')
+  const stem = name.replace(DIRECT_VOLUME_RE, '')
   results.render(Object.fromEntries(artifacts.map(({ role, file }) => [role, {
     description: OUTPUT_LABELS[role],
     viewable: false,
