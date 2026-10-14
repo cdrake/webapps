@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { chooseBackend, isSoftwareAdapter, isSoftwareRenderer } from '../src/backend.js'
+import { chooseBackend, isSoftwareAdapter, isSoftwareRenderer } from '../src/mindgrab/backend.js'
 
 // Strings as Chromium reports them.
 const swiftshaderAdapter = { vendor: 'google', architecture: 'swiftshader', device: '', description: 'SwiftShader Device (Subzero)', isFallbackAdapter: false }

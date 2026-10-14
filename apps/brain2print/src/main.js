@@ -166,7 +166,7 @@ async function segment({ signal, progress = () => {}, backend = 'auto' } = {}) {
     progress({ message: 'Segmenting brain tissues' })
     const result = await segmentBrain(mindgrab, input, choice, {
       worker: true,
-      // The worker resolves `auto` (backend.js in @neurodesk/brain2print): hardware WebGPU, hardware WebGL2, then threaded CPU; automation may name `cpu`.
+      // The worker resolves `auto` (@neurodesk/runtime-support/mindgrab): hardware WebGPU, hardware WebGL2, then threaded CPU; automation may name `cpu`.
       backend,
       assetPath: `${import.meta.env.BASE_URL}brainchop/${mindgrab.version}/`,
       signal,

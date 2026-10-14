@@ -11,11 +11,18 @@
       "types": "./src/niimath/index.d.ts",
       "default": "./src/niimath/index.js"
     },
+    "./niimath/command": {
+      "types": "./src/niimath/command.d.ts",
+      "default": "./src/niimath/command.js"
+    },
+    "./niimath/module": "./src/niimath/niimath.js",
     "./gpu-unet": "./src/gpu-unet/index.js",
     "./freebrowse-viewer": "./src/freebrowse-viewer/index.js",
-    "./streamed-onnx": "./src/streamed-onnx/session.js"
+    "./streamed-onnx": "./src/streamed-onnx/session.js",
+    "./mindgrab": "./src/mindgrab/index.js"
   },
   "dependencies": {
+    "@brainchop/mindgrab": "0.1.20260925",
     "@neurodesk/webapp-components": "workspace:*",
     "@niivue/dcm2niix": "^1.2.0",
     "@niivue/niivue": "1.0.0-rc.13",
