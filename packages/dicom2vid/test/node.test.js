@@ -12,6 +12,7 @@ import { OPTIONS, encode, optionName, parseOptions } from '../src/node.js';
 import { defaultNorm, renderFrame } from '../src/pipeline.js';
 import { drawLabel, labelPlacement, rasterize, rgbToI420, sliceLabel } from '../src/raster.js';
 import { readNifti } from '../src/readers/nifti.js';
+import { discoverSources, loadSource } from '../src/sources.js';
 
 const bin = fileURLToPath(new URL('../bin/dicom2vid.js', import.meta.url));
 const automation = JSON.parse(await readFile(new URL('../../../apps/dicom2vid/automation.json', import.meta.url), 'utf8'));
@@ -129,6 +130,17 @@ test('the output directory must be new or empty', async (t) => {
   await writeFile(input, syntheticNifti({ dims: [4, 4, 4] }));
   await writeFile(join(directory, 'taken'), '');
   await assert.rejects(encode({ inputs: [input], output: directory }), /is not empty/);
+});
+
+test('distinct DICOM records with the same filename retain every slice', async () => {
+  const records = dicomSeries({ series: 72, slices: 2 }).map(file => ({ ...file, name: 'image.dcm' }));
+  const bytes = record => record.buffer.buffer.slice(record.buffer.byteOffset, record.buffer.byteOffset + record.buffer.byteLength);
+  const { sources } = await discoverSources(records, { readPrefix: async record => bytes(record) });
+  assert.equal(sources.length, 1);
+  assert.deepEqual(sources[0].recs, records);
+  const volume = await loadSource(sources[0], { readBytes: async record => bytes(record) });
+  assert.deepEqual(volume.dims, [16, 16, 2]);
+  assert.deepEqual([...volume.data.subarray(0, 4)], [100, 200, 101, 201]);
 });
 
 test('the executable reports usage errors and installs no models', () => {

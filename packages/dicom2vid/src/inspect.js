@@ -128,15 +128,20 @@ function demuxMp4(bytes) {
       time += durations[index];
     }
   }
-  return { container: 'mp4', codec: MP4_CODECS[fourcc] ?? fourcc, width, height, samples, durationUs: Math.round((time * 1e6) / timescale) };
+  const avc = fourcc === 'avc1' ? child(view, { start: entry.start + 78, end: entry.end }, 'avcC') : null;
+  return {
+    container: 'mp4', codec: MP4_CODECS[fourcc] ?? fourcc, width, height, samples,
+    description: avc ? bytes.subarray(avc.start, avc.end) : undefined,
+    durationUs: Math.round((time * 1e6) / timescale),
+  };
 }
 
-const demux = (bytes) => (isWebm(bytes) ? demuxWebm(bytes) : demuxMp4(bytes));
+export const demuxVideo = (bytes) => (isWebm(bytes) ? demuxWebm(bytes) : demuxMp4(bytes));
 
 /** Container facts: codec, coded size, frame count, key frames and presentation timestamps. */
 export async function inspectVideo(input) {
   const bytes = new Uint8Array(input);
-  const video = await demux(bytes);
+  const video = await demuxVideo(bytes);
   return {
     container: video.container,
     codec: video.codec,
@@ -151,7 +156,7 @@ export async function inspectVideo(input) {
 /** Decodes a VP9 video into its I420 frames: { width, height, y, u, v } per frame. */
 export async function decodeVideo(input) {
   const bytes = new Uint8Array(input);
-  const video = await demux(bytes);
+  const video = await demuxVideo(bytes);
   if (video.codec !== 'vp9') throw new Error(`Only VP9 is decoded here, not ${video.codec}`);
   const av = await libav();
   const [, context, packet, frame] = await av.ff_init_decoder('libvpx-vp9');

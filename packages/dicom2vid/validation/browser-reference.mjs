@@ -1,5 +1,5 @@
 // Records what the dicom2vid web app writes in Chromium for every validation case
-// (browser-reference.json and browser-reference/*.webm), which the command line's release check
+// (browser-reference.json and videos pinned on Hugging Face), which the command line's release check
 // (cli-check.mjs) compares against.
 //
 // Serves the app's production build (`pnpm --filter dicom2vid build`) on loopback, then runs
@@ -11,24 +11,25 @@ import { chromium } from '@playwright/test';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
-import { extname, join, normalize } from 'node:path';
+import { extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseArgs } from 'node:util';
 import { decodeVideo, inspectVideo } from '../src/inspect.js';
-import { CASES, exampleFile, sha256 } from './cases.mjs';
+import { parseOptions } from '../src/node.js';
+import { readNifti } from '../src/readers/nifti.js';
+import { labelBox, labelPixels, psnr, renderedLuma } from './frame-comparison.mjs';
+import { CASES, exampleFile, referenceVideo, sha256 } from './cases.mjs';
+import { decodeH264 } from './decode-h264.mjs';
 
-const check = process.argv.includes('--check');
+const { values } = parseArgs({ options: { check: { type: 'boolean' }, output: { type: 'string' } } });
+const check = values.check;
 // Two encodes of the same frames differ by less than the command line and the browser do
 // (35.9 dB at worst); the wrong slice, window or orientation scores 27 dB or less
 // (validation/cli-check.mjs).
 const MATCH_PSNR_DB = 35;
 
-function lumaPsnr(a, b) {
-  let sum = 0;
-  for (let i = 0; i < a.length; i++) sum += (a[i] - b[i]) ** 2;
-  return sum ? 10 * Math.log10((255 * 255 * a.length) / sum) : Infinity;
-}
 const dist = fileURLToPath(new URL('../../../apps/dicom2vid/dist/', import.meta.url));
-const referenceDir = new URL('./browser-reference/', import.meta.url);
+const referenceDir = resolve(values.output ?? join(tmpdir(), 'neurodesk-dicom2vid-reference-output'));
 const referenceJson = new URL('./browser-reference.json', import.meta.url);
 const appVersion = JSON.parse(await readFile(new URL('../../../apps/dicom2vid/package.json', import.meta.url), 'utf8')).version;
 await readFile(join(dist, 'index.html')).catch(() => {
@@ -88,7 +89,7 @@ try {
       bytes: bytes.length,
       video: await inspectVideo(bytes),
     };
-    if (item.parameters.format === 'webm') recorded[item.id].file = `browser-reference/${item.id}.webm`;
+    recorded[item.id].file = `${item.id}.${item.parameters.format}`;
     console.log(`${item.id}: ${summary.codec} ${summary.container} ${summary.frames} frames ${summary.width}x${summary.height}, ${bytes.length} bytes`);
   }
   const reference = {
@@ -98,34 +99,50 @@ try {
     cases: recorded,
   };
   if (check) {
-    // Every video must have the recorded container facts. The WebM videos must also decode
-    // to the recorded frames: byte-identical on the recording machine, and within
-    // MATCH_PSNR_DB where another CPU's libvpx paths round differently. MP4 stamps its
-    // creation time, so only its facts are compared.
+    // Container timestamps can change without changing encoded frames. Compare every
+    // decoded video, including H.264 MP4; annotations use platform fonts, so compare
+    // image pixels outside their box and require visible label ink independently.
     const committed = JSON.parse(await readFile(referenceJson, 'utf8'));
     const drift = [];
-    for (const { id } of CASES) {
+    for (const { id, parameters } of CASES) {
+      const failuresBefore = drift.length;
       const facts = JSON.stringify(committed.cases[id]?.video) === JSON.stringify(recorded[id].video);
-      let frames = 'facts only';
-      if (facts && recorded[id].file && committed.cases[id].sha256 !== recorded[id].sha256) {
-        const now = await decodeVideo(await readFile(join(work, `${id}.webm`)));
-        const then = await decodeVideo(await readFile(new URL(`${id}.webm`, referenceDir)));
-        const worst = Math.min(...now.map((frame, k) => lumaPsnr(frame.y, then[k].y)));
+      let frames = 'identical bytes';
+      if (facts && committed.cases[id].sha256 !== recorded[id].sha256) {
+        const decode = bytes => recorded[id].video.codec === 'h264'
+          ? decodeH264(page, bytes)
+          : decodeVideo(bytes);
+        const now = await decode(await readFile(join(work, `${id}.${parameters.format}`)));
+        const then = await decode(await referenceVideo(committed.cases[id]));
+        if (now.length !== recorded[id].video.frames || then.length !== committed.cases[id].video.frames) {
+          throw new Error(`${id}: decoded frame counts do not match the recorded container facts`);
+        }
+        let source;
+        if (parameters.annotate) {
+          const input = await readFile(await exampleFile(CASES.find(item => item.id === id).example));
+          const volume = await readNifti(input.buffer.slice(input.byteOffset, input.byteOffset + input.byteLength), 'example');
+          source = renderedLuma(volume, parseOptions(parameters));
+          for (const [k, frame] of now.entries()) {
+            const box = labelBox(source[k].fH, source[k].width);
+            if (labelPixels(frame.y, source[k].y, box) < 20) drift.push(`${id} (missing slice label)`);
+          }
+        }
+        const worst = Math.min(...now.map((frame, k) => {
+          const box = source ? labelBox(source[k].fH, source[k].width) : null;
+          return psnr(frame.y, then[k].y, box ? i => !box(i) : undefined);
+        }));
         frames = `${worst.toFixed(1)} dB from the recorded frames`;
         if (worst < MATCH_PSNR_DB) drift.push(`${id} (${frames})`);
-      } else if (recorded[id].file) {
-        frames = 'identical bytes';
       }
       if (!facts) drift.push(`${id} (container facts)`);
-      console.log(`${facts ? 'PASS' : 'FAIL'} ${id}: ${frames}`);
+      console.log(`${drift.length === failuresBefore ? 'PASS' : 'FAIL'} ${id}: ${frames}`);
     }
     if (drift.length) throw new Error(`The web app no longer writes the recorded videos for ${drift.join(', ')}`);
     console.log('PASS the web app still writes every recorded reference video');
   } else {
-    await rm(referenceDir, { recursive: true, force: true });
     await mkdir(referenceDir, { recursive: true });
     for (const [id, entry] of Object.entries(recorded)) {
-      if (entry.file) await writeFile(new URL(`${id}.webm`, referenceDir), await readFile(join(work, `${id}.webm`)));
+      await writeFile(join(referenceDir, entry.file), await readFile(join(work, entry.file)));
     }
     await writeFile(referenceJson, `${JSON.stringify(reference, null, 2)}\n`);
     console.log(`Wrote ${fileURLToPath(referenceJson)}`);
