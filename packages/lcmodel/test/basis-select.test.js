@@ -106,3 +106,133 @@ test("MEGA-PRESS data get the standard difference set; the MM-suppressed one is 
   assert.match(ranked[1].notes.map((n) => n.text).join(" "), /edit-OFF at 1\.5 ppm/);
   assert.equal(recommendBasis({ hzpppm: 123.25, teMs: 68, sequence: "megapress" }, sets).basis.id, "megapress-3t-te68-diff");
 });
+
+// What the app shows beside the basis menu and what the pipeline throws:
+// menu order, usability, the overall level and each note's level and text.
+const field3T = 127.73;
+const set = (id, sequence, overrides = {}) => ({ id, hzpppm: field3T, teMs: 30, sequence, ...overrides });
+const order = (data, sets) => rankBases(data, sets).map((r) => r.basis.id);
+const notes = (r) => r.notes.map((n) => [n.level, n.text]);
+
+test("scanner spellings of semi-LASER all reach the sLASER family", () => {
+  for (const name of ["semi-LASER", "semiLASER", "semi_laser", "s-LASER", "s_LASER", "sLASER"]) {
+    assert.equal(sequenceFamily(name), "sLASER", name);
+  }
+  assert.equal(sequenceFamily("LASER"), "LASER");
+  assert.equal(sequenceFamily(undefined), null);
+  assert.equal(sequenceFamily(null), null);
+});
+
+test("Siemens svs_st and svs_se match with a suffix but not inside a longer word", () => {
+  assert.equal(sequenceFamily("svs_st_vapor"), "STEAM");
+  assert.equal(sequenceFamily("svs_se_30"), "PRESS");
+  assert.equal(sequenceFamily("svs_stx"), null);
+  assert.equal(sequenceFamily("svs_sex"), null);
+});
+
+test("a related sequence family is the next best choice after the same family", () => {
+  const related = {
+    sLASER: ["LASER", "PRESS"],
+    LASER: ["sLASER"],
+    PRESS: ["sLASER"],
+    SPECIAL: ["STEAM"],
+    STEAM: ["SPECIAL"],
+  };
+  const families = Object.keys(related);
+  for (const data of families) {
+    // Equal scores fall back to the id, so the unrelated families ("a-")
+    // would sort first unless the relation lifts the related ones ("z-").
+    const sets = families.filter((f) => f !== data).map((f) => set(`${related[data].includes(f) ? "z" : "a"}-${f}`, f));
+    const ranked = rankBases({ hzpppm: field3T, teMs: 30, sequence: data }, sets);
+    const top = ranked.slice(0, related[data].length).map((r) => r.basis.sequence);
+    assert.deepEqual(top.sort(), [...related[data]].sort(), `${data} data`);
+    for (const r of ranked) {
+      assert.equal(r.level, "warning");
+      assert.deepEqual(notes(r), [["warning", `Basis is ${r.basis.sequence}; the data are ${data}.`]]);
+    }
+  }
+});
+
+test("a basis matching field, sequence and echo time has no notes", () => {
+  const r = assessBasis({ hzpppm: 127.765, teMs: 30, sequence: "PRESS" }, set("press", "PRESS"));
+  assert.deepEqual([r.usable, r.level, r.notes], [true, "match", []]);
+});
+
+test("an unrecorded field strength, sequence or echo time is noted and ranks below a verified match", () => {
+  for (const [data, text] of [
+    [{ teMs: 30, sequence: "PRESS" }, "The data do not record the field strength."],
+    [{ hzpppm: 0, teMs: 30, sequence: "PRESS" }, "The data do not record the field strength."],
+    [{ hzpppm: field3T, teMs: 30 }, "The sequence type could not be read from the data."],
+    [{ hzpppm: field3T, sequence: "PRESS" }, "The echo time could not be read from the data."],
+    [{ hzpppm: field3T, teMs: 0, sequence: "PRESS" }, "The echo time could not be read from the data."],
+  ]) {
+    const r = assessBasis(data, set("press", "PRESS"));
+    assert.deepEqual([r.usable, r.level, notes(r)], [true, "match", [["info", text]]], text);
+  }
+  // A user's basis whose header omits a parameter cannot be checked against
+  // the data, so a library set that verifiably matches comes first.
+  const data = { hzpppm: field3T, teMs: 30, sequence: "PRESS" };
+  for (const unknown of [{ hzpppm: null }, { hzpppm: 0 }, { teMs: null }, { teMs: 0 }]) {
+    const r = assessBasis(data, set("custom", "PRESS", unknown));
+    assert.deepEqual([r.usable, r.level], [true, "match"], JSON.stringify(unknown));
+    assert.deepEqual(order(data, [set("a-custom", "PRESS", unknown), set("z-library", "PRESS")]), ["z-library", "a-custom"], JSON.stringify(unknown));
+  }
+});
+
+test("a basis for another field strength is an error naming both fields", () => {
+  const r = assessBasis({ hzpppm: field3T, teMs: 30, sequence: "PRESS" }, set("press-7t", "PRESS", { hzpppm: 298.03 }));
+  assert.deepEqual([r.usable, r.level, notes(r)], [false, "error", [["error", "Simulated at 7.0 T; the data are 3.0 T."]]]);
+});
+
+test("a field strength 5-20 % off is a warning with the difference, ranked below the right field", () => {
+  const data = { hzpppm: field3T, teMs: 30, sequence: "PRESS" };
+  const off = set("a-off", "PRESS", { hzpppm: field3T * 1.1 });
+  const r = assessBasis(data, off);
+  assert.deepEqual([r.usable, r.level, notes(r)], [true, "warning", [["warning", "Field strength differs by 10%."]]]);
+  assert.deepEqual(order(data, [off, set("z-right", "PRESS")]), ["z-right", "a-off"]);
+});
+
+test("echo-time differences: up to 2 ms match, up to 5 ms is noted, beyond 15 ms is biased", () => {
+  const data = { hzpppm: field3T, teMs: 30, sequence: "PRESS" };
+  const at = (teMs) => assessBasis(data, set("press", "PRESS", { teMs }));
+  assert.deepEqual([at(32).level, at(32).notes], ["match", []]);
+  assert.deepEqual([at(32.5).level, notes(at(32.5))], ["match", [["info", "TE differs by 2.5 ms."]]]);
+  assert.deepEqual([at(35).level, notes(at(35))], ["match", [["info", "TE differs by 5 ms."]]]);
+  assert.deepEqual([at(45).level, notes(at(45))], ["warning", [["warning", "TE 45 ms vs 30 ms."]]]);
+  assert.deepEqual([at(46).level, notes(at(46))], ["warning", [["warning", "TE 46 ms vs 30 ms: coupled metabolites will be biased."]]]);
+});
+
+test("edited and unedited spectra say why one cannot stand in for the other", () => {
+  const edited = { hzpppm: field3T, teMs: 68, sequence: "MEGA-PRESS" };
+  const press = assessBasis(edited, set("press", "PRESS", { teMs: 68 }));
+  assert.deepEqual([press.level, notes(press)], ["error", [["error", "Edited data are fitted as a difference spectrum and need a MEGA-PRESS basis."]]]);
+  const unnamed = assessBasis(edited, set("custom", null, { teMs: 68 }));
+  assert.deepEqual(notes(unnamed), [["warning", "Check that this is a MEGA-PRESS difference basis: its header names no sequence."]]);
+  assert.deepEqual(order(edited, [set("a-custom", null, { teMs: 68 }), set("z-mega", "MEGA-PRESS", { teMs: 68 })]), ["z-mega", "a-custom"]);
+
+  const unedited = { hzpppm: field3T, teMs: 68, sequence: "PRESS" };
+  const mega = assessBasis(unedited, set("mega", "MEGA-PRESS", { teMs: 68 }));
+  assert.deepEqual([mega.level, notes(mega)], ["error", [["error", "This basis set is for edited (MEGA-PRESS) difference spectra."]]]);
+  // An unedited spectrum with an unnamed user basis raises no editing question.
+  const plain = assessBasis(unedited, set("custom", null, { teMs: 68 }));
+  assert.deepEqual([plain.usable, plain.level, plain.notes], [true, "match", []]);
+});
+
+test("data of unknown sequence may use a difference basis, with a warning, after an unedited one", () => {
+  const data = { hzpppm: field3T, teMs: 68 };
+  const mega = assessBasis(data, set("mega", "MEGA-PRESS", { teMs: 68 }));
+  assert.deepEqual([mega.usable, mega.level, notes(mega)], [true, "warning", [["warning", "This basis set is for edited (MEGA-PRESS) difference spectra."]]]);
+  assert.deepEqual(order(data, [set("a-mega", "MEGA-PRESS", { teMs: 68 }), set("z-press", "PRESS", { teMs: 68 })]), ["z-press", "a-mega"]);
+});
+
+test("an empty library recommends nothing", () => {
+  assert.equal(recommendBasis({ hzpppm: field3T, teMs: 30, sequence: "PRESS" }, []), null);
+});
+
+test("a .BASIS header is read whatever its case, spacing and exponent letter", () => {
+  const h = parseBasisHeader(" $seqpar\n hzpppm=1.2773D2,\n echot = 3.0E1,\n seq='  sLASER '\n idbasi = ' my set '\n $end\n metabo='NAA'\n METABO = ' GABA '\n");
+  assert.deepEqual(h, { hzpppm: 127.73, teMs: 30, sequence: "sLASER", id: "my set", metabolites: ["NAA", "GABA"] });
+  // A header without SEQ has no sequence, not the next quoted value.
+  const bare = parseBasisHeader(" $BASIS1\n IDBASI = 'FID-A press-3t-te30',\n $END\n METABO = 'NAA'\n");
+  assert.deepEqual([bare.hzpppm, bare.teMs, bare.sequence], [null, null, null]);
+});

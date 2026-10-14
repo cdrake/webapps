@@ -117,6 +117,20 @@ test('fractions format exactly as C printf("%g")', () => {
   assert.equal(formatG(1e-4), '0.0001');
 });
 
+test('formatG follows printf("%g") outside the fraction range too', () => {
+  // Expected strings are glibc printf("%g") output for the same doubles.
+  assert.equal(formatG(Infinity), 'inf');
+  assert.equal(formatG(-Infinity), '-inf');
+  assert.equal(formatG(-0.5), '-0.5');
+  assert.equal(formatG(-1e-5), '-1e-05');
+  assert.equal(formatG(100000), '100000');
+  assert.equal(formatG(123456), '123456');
+  assert.equal(formatG(1e6), '1e+06');
+  assert.equal(formatG(999999.5), '1e+06');
+  assert.equal(formatG(1234567), '1.23457e+06');
+  assert.equal(formatG(2.5e-300), '2.5e-300');
+});
+
 // The real atlases, which live outside the repository.
 for (const { file, golden, tracts } of [
   { file: 'hcp1065_avg_tracts.tvx', golden: 'test/expected-examples.tsv', tracts: 87 },
