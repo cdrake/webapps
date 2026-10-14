@@ -70,6 +70,7 @@ export const sourceMirrors = {
   'apps/easy-mp2rage/web/vendor/easy-mp2rage/': 'packages/easy-mp2rage/',
   'apps/musclemap/web/vendor/musclemap/src/': 'packages/musclemap/src/',
   'apps/seedseg/web/vendor/seedseg/src/': 'packages/seedseg/src/',
+  'apps/spinalcordtoolbox/web/vendor/spinalcordtoolbox/src/': 'packages/spinalcordtoolbox/src/',
   'apps/vesselboost/web/vendor/vesselboost/src/': 'packages/vesselboost/src/',
 };
 

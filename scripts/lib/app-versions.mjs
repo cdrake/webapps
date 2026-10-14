@@ -30,6 +30,7 @@ export const LINKED_PACKAGES = Object.freeze({
   '@neurodesk/musclemap': 'musclemap',
   '@neurodesk/niimath': 'niimath',
   '@neurodesk/seedseg': 'seedseg',
+  '@neurodesk/spinalcordtoolbox': 'spinalcordtoolbox',
   '@neurodesk/synthseg': 'synthseg',
   '@neurodesk/synthsr': 'synthsr',
   '@neurodesk/nesvor': 'nesvor',

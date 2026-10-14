@@ -10,30 +10,14 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
 const path = require('node:path');
 const { runWorkerCase } = require('./test_inference_worker_e2e.cjs');
 const { ensureSctBatchFixtures } = require('./huggingface-fixtures.cjs');
 
 const ROOT = path.resolve(__dirname, '..');
-const MODEL_PATH = path.join(ROOT, 'web/models/sct-lesion-ms.onnx');
-
-// The worker's shared model fetch uses the process-wide fetch. runWorkerCase()
-// has already verified the cached file against the manifest checksum (or
-// downloaded it), so serve those bytes instead of fetching 409 MB a second time.
-function serveCachedModel() {
-  const hostedFetch = globalThis.fetch;
-  globalThis.fetch = async (input, init) => {
-    const url = typeof input === 'string' ? input : input?.url || String(input);
-    if (!url.endsWith('/web/models/sct-lesion-ms.onnx') || !fs.existsSync(MODEL_PATH)) return hostedFetch(input, init);
-    const bytes = fs.readFileSync(MODEL_PATH);
-    return new Response(bytes, { status: 200, headers: { 'content-length': String(bytes.length) } });
-  };
-}
 
 async function main() {
   await ensureSctBatchFixtures(ROOT);
-  serveCachedModel();
   const { messages } = await runWorkerCase({
     id: 'course_t2_ms_deepseg_lesion_ms_smoke',
     taskId: 'lesion_ms',
