@@ -230,9 +230,10 @@ test('a project file source types exactly that file', async () => {
     assert.equal(typedProjectFor(file), agentic, file);
     await assertCoverage(eslint, [file]);
   }
-  for (const file of ['test-utils/agentic-browser.test.ts', 'test-utils/other.ts', 'e2e.config.ts.bak']) {
+  // Neighbours of a file source are not part of the project, in the coverage check or in ESLint.
+  for (const file of ['test-utils/agentic-browser.test.ts', 'test-utils/other.ts', 'e2e.config.mts']) {
     assert.equal(typedProjectFor(file), undefined, file);
+    const config = await eslint.calculateConfigForFile(file);
+    assert.equal(config.rules['@typescript-eslint/no-floating-promises'], undefined, file);
   }
-  const [result] = await eslint.lintText('export {}; Promise.resolve(1);', { filePath: join(root, 'e2e.config.ts') });
-  assert.ok(result.messages.some((message) => message.ruleId === '@typescript-eslint/no-floating-promises' && message.severity === 2));
 });
