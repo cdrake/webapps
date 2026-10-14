@@ -1076,17 +1076,6 @@
           "bytes": 3068922,
           "license": "NOASSERTION",
           "filename": "t1_crop.nii.gz"
-        },
-        {
-          "url": "https://huggingface.co/datasets/sbollmann/neurodesk-webapps-assets/resolve/49b12b87f4e5def9672cf582b93ecd4a54273608/deface/models/net_mindgrab.safetensors",
-          "kind": "model",
-          "sources": [
-            "models/deface.manifest.json"
-          ],
-          "sha256": "aba8754c83fce20e35c41ce2c4db205250ca84737e6b73cf0faf809fdc3884ef",
-          "bytes": 587404,
-          "license": "NOASSERTION",
-          "filename": "models/net_mindgrab.safetensors"
         }
       ],
       "url_mappings": [
@@ -1101,10 +1090,10 @@
         "@neurodesk/runtime-support": "workspace:*",
         "@niivue/dcm2niix": "^1.2.0",
         "@niivue/niivue": "1.0.0-rc.9",
-        "gl-matrix": "^3.4.4"
+        "@neurodesk/deface": "workspace:*"
       },
       "notes": [
-        "Uses source-local WebGPU model implementation with remote net_mindgrab.safetensors from the deface manifest; do not replace with the npm MindGrab graph without scientific parity."
+        "MindGrab runs @brainchop/mindgrab 0.1.20260925 (through @neurodesk/runtime-support/mindgrab) from modules staged under mindgrab/ in the app bundle; its weights are compiled into the WebAssembly and are byte-identical to the net_mindgrab.safetensors the app used before."
       ],
       "unknowns": [
         {
@@ -1114,8 +1103,8 @@
       ],
       "source_files": [
         "apps/deface/src/main.ts",
-        "apps/deface/src/mindgrab/index.ts",
-        "apps/deface/src/mindgrab/model.ts"
+        "packages/deface/src/pipeline.js",
+        "packages/deface/src/browser.js"
       ]
     },
     "easy-mp2rage": {

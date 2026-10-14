@@ -116,31 +116,8 @@ await runVitePreviewSmoke({
     ]).catch(() => fail('Save did not produce a download', page))
     console.log('✓ Save produced a download:', download.suggestedFilename())
 
-    // 4b. mindgrab: needs WebGPU + shader-f16. Headless SwiftShader lacks f16, so the
-    // expected outcome here is the graceful "needs WebGPU" dialog (NOT a crash). On a
-    // real f16 GPU the run completes instead — accept either, fail only on neither.
-    await page.selectOption('#methodSelect', 'mindgrab')
-    await page.click('#applyBtn')
-    const mindgrabOutcome = await page
-      .waitForFunction(
-        () =>
-          document.getElementById('webgpuDialog')?.open === true ||
-          (document.getElementById('statusMsg')?.textContent || '').includes('Brain-extracted with mindgrab'),
-        undefined,
-        { timeout: 120000 },
-      )
-      .then(() => true)
-      .catch(() => false)
-    if (!mindgrabOutcome) await fail('mindgrab neither completed nor showed the WebGPU dialog', page)
-    const usedDialog = await page.evaluate(() => document.getElementById('webgpuDialog')?.open === true)
-    if (!usedDialog) await page.screenshot({ path: join(here, 'smoke-mindgrab.png') })
-    console.log(usedDialog ? '✓ mindgrab gated on missing WebGPU/f16 (dialog shown)' : '✓ mindgrab ran and displayed')
-    if (usedDialog) {
-      await page.click('#webgpuDialog .nd-dialog-close') // dismiss so it doesn't mask later checks
-    }
-    // The mindgrab border/robustfov variants differ only by argv flags (`-close 1 8 0` vs
-    // `-bin`, and an upstream `-robustfov` crop) — that morphology/crop behavior is niimath's
-    // to test. One mindgrab outcome (inference or the capability dialog) covers the app wiring.
+    // 4b. MindGrab runs through the automation API in e2e/automation.spec.js, which checks
+    // its output against the input voxel by voxel.
 
     // 5. (optional) the slow exhaustive Hellinger path (`-cost hel`). Single-threaded WASM,
     // minutes on a full-head scan — hence gated behind SMOKE_FULL.

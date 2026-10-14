@@ -6,6 +6,37 @@ const fixture = new URL('../../calmar/tests/fixtures/synthstrip-mini/T1.nii.gz',
 const dispatch = (page, command, request = {}) => page.evaluate(({ command, request }) => globalThis.neurodeskAutomation.dispatch(command, request), { command, request });
 const source = bytes => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
 
+async function finish(page, timeout) {
+  await expect.poll(async () => {
+    const snapshot = await dispatch(page, 'snapshot');
+    if (snapshot.state === 'failed') throw new Error(JSON.stringify(snapshot.error));
+    return snapshot.state;
+  }, { timeout, intervals: [250, 1000, 2000] }).toBe('succeeded');
+}
+
+async function download(page) {
+  const downloading = page.waitForEvent('download');
+  await dispatch(page, 'download', { artifactId: 'image' });
+  return readVolume(source(await readFile(await (await downloading).path())));
+}
+
+// A defaced image is the input on its own grid with some voxels zeroed and the rest unchanged.
+function expectMaskedCopy(output, input) {
+  expect(output.dims).toEqual(input.dims);
+  expect(output.affine).toEqual(input.affine);
+  let removed = 0;
+  let kept = 0;
+  for (let index = 0; index < input.data.length; index++) {
+    if (input.data[index] !== 0 && output.data[index] === 0) removed++;
+    if (output.data[index] !== 0) {
+      kept++;
+      if (output.data[index] !== input.data[index]) throw new Error(`Unmasked voxel ${index} changed intensity`);
+    }
+  }
+  expect(removed).toBeGreaterThan(100);
+  expect(kept).toBeGreaterThan(100);
+}
+
 test('cancel terminates the worker and retry returns the actual native-grid defaced image', async ({ page }) => {
   await page.goto('./');
   await expect(page.locator('#neurodesk-input-transfer')).toHaveCount(1);
@@ -23,31 +54,24 @@ test('cancel terminates the worker and retry returns the actual native-grid defa
   await page.locator('#neurodesk-input-transfer').setInputFiles(fixture);
   await dispatch(page, 'adopt', { role: 'image' });
   await dispatch(page, 'start', { operation: 'deface', parameters: { method: 'allineate' } });
-  await expect.poll(async () => {
-    const snapshot = await dispatch(page, 'snapshot');
-    if (snapshot.state === 'failed') throw new Error(JSON.stringify(snapshot.error));
-    return snapshot.state;
-  }, { timeout: 120000, intervals: [250, 1000, 2000] }).toBe('succeeded');
-  const downloading = page.waitForEvent('download');
-  await dispatch(page, 'download', { artifactId: 'image' });
-  const output = readVolume(source(await readFile(await (await downloading).path())));
-  const input = readVolume(source(await readFile(fixture)));
-  expect(output.dims).toEqual(input.dims);
-  expect(output.affine).toEqual(input.affine);
-  let removed = 0;
-  let kept = 0;
-  for (let index = 0; index < input.data.length; index++) {
-    if (input.data[index] !== 0 && output.data[index] === 0) removed++;
-    if (output.data[index] !== 0) {
-      kept++;
-      if (output.data[index] !== input.data[index]) throw new Error(`Unmasked voxel ${index} changed intensity`);
-    }
-  }
-  expect(removed).toBeGreaterThan(100);
-  expect(kept).toBeGreaterThan(100);
+  await finish(page, 120000);
+  expectMaskedCopy(await download(page), readVolume(source(await readFile(fixture))));
   expect((await dispatch(page, 'snapshot')).report.provenance.method).toBe('allineate');
 });
 
+// The page is cross-origin isolated and the runner's WebGPU and WebGL2 are SwiftShader, so the
+// shared MindGrab runtime picks its threaded CPU module, the backend the command line runs.
+test('MindGrab with an 8 mm border zeroes the face and keeps the brain unchanged', async ({ page }) => {
+  test.setTimeout(660000);
+  await page.goto('./');
+  await expect(page.locator('#neurodesk-input-transfer')).toHaveCount(1);
+  await page.locator('#neurodesk-input-transfer').setInputFiles(fixture);
+  await dispatch(page, 'adopt', { role: 'image' });
+  await dispatch(page, 'start', { operation: 'deface', parameters: { method: 'mindgrab8' } });
+  await finish(page, 600000);
+  expectMaskedCopy(await download(page), readVolume(source(await readFile(fixture))));
+  expect((await dispatch(page, 'snapshot')).report.provenance).toMatchObject({ method: 'mindgrab8', engine: 'mindgrab-niimath' });
+});
 
 test('an unsupported WebGPU adapter fails the operation with the app initialization error', async ({ page }) => {
   await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));

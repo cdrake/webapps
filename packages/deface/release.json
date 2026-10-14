@@ -1,0 +1,43 @@
+{
+  "repository": "neurodesk/webapps",
+  "tagPrefix": "deface-v",
+  "displayName": "Deface",
+  "app": "deface",
+  "run": "head.nii.gz results",
+  "readme": {
+    "run": "Remove the face with niimath's affine registration",
+    "notes": [
+      "Writes defaced.nii, the web app's download, on the input's grid and datatype.",
+      "Add --method mindgrab (or mindgrab8, mindgrab_robust, mindgrab_robust8) to keep only",
+      "the brain with MindGrab on the CPU, about a minute and 2.6 GB of memory; it also",
+      "writes brain-mask.nii. Add --help for the allineate variants.",
+      "The MNI template and face mask are included and checked locally; MindGrab's",
+      "weights are part of its WebAssembly. No network connection is required.",
+      "Input is NIfTI only: convert DICOM with dcm2niix first, or use the web app.",
+      "",
+      "Deface is research software. Review every image before sharing it. Please cite:",
+      "Rorden C, Webster M, Drake C, et al. niimath and fslmaths: replication as a method",
+      "to enhance testing and improve tool quality. Aperture Neuro. 2024;4. For MindGrab:",
+      "Fani A, Nassar M, Ghosh S, et al. MindGrab for BrainChop: fast and accurate skull",
+      "stripping for command line and browser. arXiv. 2025."
+    ]
+  },
+  "validation": "validation/cli-check.mjs",
+  "targets": {
+    "linux-x64": {
+      "label": "Linux x64",
+      "archive": "tar.gz",
+      "executable": "deface"
+    },
+    "windows-x64": {
+      "label": "Windows x64",
+      "archive": "zip",
+      "executable": "deface.exe"
+    },
+    "macos-arm64": {
+      "label": "macOS Apple silicon",
+      "archive": "pkg",
+      "executable": "deface"
+    }
+  }
+}
