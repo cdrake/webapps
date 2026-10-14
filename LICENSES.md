@@ -15,6 +15,7 @@ for each app are recorded in `registry/apps.yml`.
 - `apps/deface`: BSD-2-Clause (`apps/deface/LICENSE`)
 - `apps/easy-mp2rage`: GPL-3.0-or-later (`apps/easy-mp2rage/LICENSE`)
 - `apps/niimath`: BSD-2-Clause (`apps/niimath/LICENSE`)
+- `packages/niimath`: BSD-2-Clause (`packages/niimath/LICENSE`); niimath attribution in `packages/niimath/NOTICE`
 - `apps/dicom2vid`: BSD-3-Clause (`apps/dicom2vid/LICENSE`)
 - `apps/browserqc`: BSD-2-Clause (`apps/browserqc/LICENSE`)
 - `apps/surfannotate`: MIT (`apps/surfannotate/LICENSE`); bundled third-party

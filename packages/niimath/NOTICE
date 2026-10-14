@@ -1,0 +1,14 @@
+niimath command line
+Copyright (c) 2026 Neurodesk
+BSD-2-Clause
+
+Every operation runs niimath (Chris Rorden, BSD-2-Clause) compiled to
+WebAssembly by @niivue/niimath 1.3.2, the build the NiiMath web app pins. The
+command line loads its BSD-2-Clause build (niimath.js, niimath.wasm), not the
+GPL-2 build the package also ships; see app/node_modules/@niivue/niimath/LICENSE
+in a portable archive.
+https://github.com/rordenlab/niimath
+
+Please cite: Rorden C, Webster M, Drake C, et al. niimath and fslmaths:
+replication as a method to enhance testing and improve tool quality. Aperture
+Neuro. 2024;4. https://doi.org/10.52294/001c.94384

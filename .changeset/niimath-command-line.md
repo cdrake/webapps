@@ -1,0 +1,6 @@
+---
+"niimath": patch
+"@neurodesk/niimath": patch
+---
+
+Add a portable `niimath` command line for Linux, Windows and macOS. It runs the web app's `@niivue/niimath` 1.3.2 WebAssembly build, now pinned exactly in the app, so each output equals the app's download for the same image and command byte for byte; its release check runs the app's 14 commands on both pinned examples against the recorded browser downloads.

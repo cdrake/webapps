@@ -77,6 +77,8 @@ export const provisioners = {
       return { NESVOR_MASK_FIXTURE_DIR: directory };
     },
   },
+  // The browser reference runs the app's 14 commands on both examples, about 3 min.
+  niimath: { env: ['NIIMATH_BROWSER_REFERENCE'], provision: async () => ({ NIIMATH_BROWSER_REFERENCE: 'check' }) },
   syncro: {
     env: ['SYNCRO_SCIENTIFIC_TESTS', 'SYNCRO_AUTOMATION_IMAGE', 'SYNTHSR_MODEL'],
     provision: async (cache) => {

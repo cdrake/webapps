@@ -1,0 +1,197 @@
+{
+  "inputs": {
+    "T1_head.nii.gz": "58220b40d179b7a93dd3ce231dd7afaa39989c75658b2b8e4c2f34abf8f16416",
+    "chris_t2.nii.gz": "8b763fcadd7a9ae677d4c5cab86b32831c03cddf146504291e7a5082fd9feee1"
+  },
+  "commands": [
+    "-s 2",
+    "-dehaze 5 -dog 2 3.2",
+    "-dehaze -5 -dog 2 3.2",
+    "-dehaze -5",
+    "-mesh -i m -b",
+    "-fmedian",
+    "-fmean",
+    "-sobel",
+    "-sobel_binary",
+    "-otsu 5",
+    "-recip",
+    "-bitmap -x 0.33 0.66 -r -y 0.33 0.66 -r -z 0.33 0.66 basic.png",
+    "-bitmap -y 0.33 0.66 -z 0.33 0.66 -X 0.5 -c viridis cross.png",
+    "-bitmap -o 0.5 -c inferno optimal.png"
+  ],
+  "browser": {
+    "path": "apps/niimath/e2e/reference.spec.js: the app's process automation, niimath worker, built assets",
+    "app": "niimath 1.3.20261012",
+    "niimath": "@niivue/niimath 1.3.2",
+    "browser": "Chromium 156.0.8078.4",
+    "seconds": 157,
+    "outputs": {
+      "t1-head": {
+        "-s 2": {
+          "name": "image.nii.gz",
+          "bytes": 20002306,
+          "sha256": "69d222884d1229d36e957906090827ff58e7ec870a46037b22b4a8827a5dab65",
+          "decompressedSha256": "05d984779b97077d70af8d5af5b3335c2431fbe232eabc18e87f2e8f939e3cd5"
+        },
+        "-dehaze 5 -dog 2 3.2": {
+          "name": "image.nii.gz",
+          "bytes": 528439,
+          "sha256": "473f22517c28b9c6dfea62a6d8e3e45ee4979d69ae734f8a0af0dc6ef23b27de",
+          "decompressedSha256": "0a96dc46a440591e6f69d0c766f563befb07177c70a88d005a5fbdf97723460a"
+        },
+        "-dehaze -5 -dog 2 3.2": {
+          "name": "image.nii.gz",
+          "bytes": 528439,
+          "sha256": "473f22517c28b9c6dfea62a6d8e3e45ee4979d69ae734f8a0af0dc6ef23b27de",
+          "decompressedSha256": "0a96dc46a440591e6f69d0c766f563befb07177c70a88d005a5fbdf97723460a"
+        },
+        "-dehaze -5": {
+          "name": "image.nii.gz",
+          "bytes": 5040454,
+          "sha256": "6b02c9ace0ca5420fb74f3487464843ed5a8c75fdd1db8aac5370c3e9dca0841",
+          "decompressedSha256": "2af83509159cc8d98f8e15da4ce2f0beb714a088f8fb4548b65226717a77a0bd"
+        },
+        "-mesh -i m -b": {
+          "name": "mesh.mz3",
+          "bytes": 3359671,
+          "sha256": "9823c5fee5239bb2026b3e3f4a2835b7a309f015e382b61a534bc4a1af776f3f",
+          "decompressedSha256": "3adcf6672e9708382106596eb619a710818e54af7104b3e70ffeb07affc0acf5"
+        },
+        "-fmedian": {
+          "name": "image.nii.gz",
+          "bytes": 5267405,
+          "sha256": "4711cbbc4e98fdb3db28c7748bfd44195b53925a26afe942fcfecbb3c995b868",
+          "decompressedSha256": "08c403a7b1650d6a0644d7533e32b4ee04c9a837775067785de1c616da037ac8"
+        },
+        "-fmean": {
+          "name": "image.nii.gz",
+          "bytes": 14093288,
+          "sha256": "c03ddea432e62ccef487e5844006bb2725049e1055c465117b4925f101f36b34",
+          "decompressedSha256": "fc73f9fe79d795f69dce5c7120082269c38894e04777dd7ca36454b4476bb8d1"
+        },
+        "-sobel": {
+          "name": "image.nii.gz",
+          "bytes": 16016023,
+          "sha256": "b489d657f80c7eed7a7ac4de7d3636dba990339c088954e64428446aab32e39f",
+          "decompressedSha256": "09038b7b1d79c6ec07166b68af50eb2cc9917bf33128a820588a5e143df347ca"
+        },
+        "-sobel_binary": {
+          "name": "image.nii.gz",
+          "bytes": 728749,
+          "sha256": "df34e17b425cc24716e3638a8766e45c8677c753124acfb8f0c872006c2e06cb",
+          "decompressedSha256": "4d84826d046cb6c1a0e0ff6e3b0a6ae91d7b1f4fab5e50ede35d9f3778d53113"
+        },
+        "-otsu 5": {
+          "name": "image.nii.gz",
+          "bytes": 309706,
+          "sha256": "c5fc6610aa284a9f4d9e826b19bb18db498c2a365a695f6a972042504565e41b",
+          "decompressedSha256": "7c88cdc1303739da0f96d480dd5fd441bdb43d183aa9eaf8a6665c2b7806cd47"
+        },
+        "-recip": {
+          "name": "image.nii.gz",
+          "bytes": 6808763,
+          "sha256": "252d2c6b4ae254a83e2232d2e0f5411eaf8bafa510f29136928c61da9479f60e",
+          "decompressedSha256": "ea51da013541e9f89f0faa4b072f771e7225ad1dda553e2a6991f507186c81cc"
+        },
+        "-bitmap -x 0.33 0.66 -r -y 0.33 0.66 -r -z 0.33 0.66 basic.png": {
+          "name": "bitmap.png",
+          "bytes": 264922,
+          "sha256": "cc4aac887040df8be90abfa2f754a5f1dae4eb26ff23261d20802be010c18850"
+        },
+        "-bitmap -y 0.33 0.66 -z 0.33 0.66 -X 0.5 -c viridis cross.png": {
+          "name": "bitmap.png",
+          "bytes": 324661,
+          "sha256": "1a86fe242cc63877d8dac03375f7f219f62b231e6295160e2727eaac3d8ff6b6"
+        },
+        "-bitmap -o 0.5 -c inferno optimal.png": {
+          "name": "bitmap.png",
+          "bytes": 61232,
+          "sha256": "dae38200cb0fe4b15876574170b07326f2ea4ea729af66ce6c15c2efe4ecc7d4"
+        }
+      },
+      "t2-head": {
+        "-s 2": {
+          "name": "image.nii.gz",
+          "bytes": 27104088,
+          "sha256": "6ffdffed0d53be8aa90d4a8214f09d1a7bfbe0bf94e0b1984438fc22efcec846",
+          "decompressedSha256": "46b0c80cf0183a367e92413514973d2798f49057277ebd6a8f38e5e4af4bbea9"
+        },
+        "-dehaze 5 -dog 2 3.2": {
+          "name": "image.nii.gz",
+          "bytes": 695486,
+          "sha256": "d7084b19be935294b5ac341b819891bbac035d57cc4cafbcdb1cbc1b6bc8998c",
+          "decompressedSha256": "35e9fbeecc17ef88234aadd3e2e9e46d1ec221250201e8576abc8405cfa6dc09"
+        },
+        "-dehaze -5 -dog 2 3.2": {
+          "name": "image.nii.gz",
+          "bytes": 695486,
+          "sha256": "d7084b19be935294b5ac341b819891bbac035d57cc4cafbcdb1cbc1b6bc8998c",
+          "decompressedSha256": "35e9fbeecc17ef88234aadd3e2e9e46d1ec221250201e8576abc8405cfa6dc09"
+        },
+        "-dehaze -5": {
+          "name": "image.nii.gz",
+          "bytes": 6278106,
+          "sha256": "69317ad1c580a514a2850ce9f218f529e9058d32d525ef0b6d1ddf66c89dd6a4",
+          "decompressedSha256": "faf8bdf7d0e60be94ac654742cb6f148f7fa5a9489840bbfa98e860d82cbb518"
+        },
+        "-mesh -i m -b": {
+          "name": "mesh.mz3",
+          "bytes": 2833110,
+          "sha256": "dc37cde8c3c9615b422aaed60de310a03de23fe37bbebe460883e8ddb3872d66",
+          "decompressedSha256": "9a436650757285cf75d71585c2ae31b5804cd1637a7007dc9f436b5eb4b3392e"
+        },
+        "-fmedian": {
+          "name": "image.nii.gz",
+          "bytes": 5638519,
+          "sha256": "eae80efcc9e11adc12f6d8a695d27beb4144c05889811b62961f737b8e342fbf",
+          "decompressedSha256": "7db899656a87ead169be1fe6ff8cef377e5704993a5722a3124c31127b8337eb"
+        },
+        "-fmean": {
+          "name": "image.nii.gz",
+          "bytes": 14444683,
+          "sha256": "5d8e3981acb3eeac66103a60fee72628ee6a689d5795ca401b17882faca1651b",
+          "decompressedSha256": "627180f5a7d03c8dabb27ea4ec783351650f1a4ce66500a1f5b9dea18caea796"
+        },
+        "-sobel": {
+          "name": "image.nii.gz",
+          "bytes": 16809283,
+          "sha256": "3df7db328f7f54ecaf5442c489d96878e3cfb04b6a6c14851dd3be107b7b0435",
+          "decompressedSha256": "5ed42783418944399f0c4dc9c048e0104cef1a0a6fd1e5401fe2f17beb09f733"
+        },
+        "-sobel_binary": {
+          "name": "image.nii.gz",
+          "bytes": 967211,
+          "sha256": "af62276a3616de14e3054c3e5656defb28042d05a953b52981c793a56d0cdda8",
+          "decompressedSha256": "ac43e4931bf1c4b021b41ed4503ed75b76ad1e0b84cf15cc8988fbb084fa4a6c"
+        },
+        "-otsu 5": {
+          "name": "image.nii.gz",
+          "bytes": 501664,
+          "sha256": "c4a606987a9ca1eed4a3b36f9351c46f2ae6c07768129b17eb82833a004ed65d",
+          "decompressedSha256": "d7c2d8d30041bc7f9ab5038a147bb774634de1141691e5a1e7459e9ed7058a70"
+        },
+        "-recip": {
+          "name": "image.nii.gz",
+          "bytes": 6727182,
+          "sha256": "1e9e20bd4e34bf8b1fe7669898759f42ead44cf5579ea719ce7d91c128cc1f44",
+          "decompressedSha256": "e3b6d5e31bb6dea39f74210c5ebde24d19d7278bc8e9a871794f79f0b48dc6d5"
+        },
+        "-bitmap -x 0.33 0.66 -r -y 0.33 0.66 -r -z 0.33 0.66 basic.png": {
+          "name": "bitmap.png",
+          "bytes": 287068,
+          "sha256": "dfffa190d216f2ddb2fdd514bf837aa12b6fb27dd05f706ec147cc8207d81aaa"
+        },
+        "-bitmap -y 0.33 0.66 -z 0.33 0.66 -X 0.5 -c viridis cross.png": {
+          "name": "bitmap.png",
+          "bytes": 331175,
+          "sha256": "4c2fa4cc545c44b0b40706f551b9358ed7c4939a98b30cf1fe4ac28b3aac5472"
+        },
+        "-bitmap -o 0.5 -c inferno optimal.png": {
+          "name": "bitmap.png",
+          "bytes": 78516,
+          "sha256": "2e63947ec33cc45aebd1f72d555dfc2c6161e3cda1c063b1c7342a9c5d4ac4d7"
+        }
+      }
+    }
+  }
+}
