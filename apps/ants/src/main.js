@@ -220,6 +220,7 @@ async function loadSlot(name, file, brainExtracted = false, signal) {
   slot.info.hidden = false;
   slot.info.textContent = `${file.name}${brainExtracted ? " · brain extracted" : " · not brain extracted"}`;
   slot.drop.classList.add("has-files");
+  slot.input.dispatchEvent(new CustomEvent('nd-files', { bubbles: true, detail: { files: [file] } }));
   status(`${file.name} loaded as ${name}`);
 }
 
@@ -236,18 +237,25 @@ async function runTask(message, task) {
   }
 }
 
-async function importSlot(name, filesPromise) {
+let importQueue = Promise.resolve();
+
+function importSlot(name, filesPromise) {
   exampleControl.cancel();
-  await runTask(`Reading ${name} image · converting DICOM if needed…`, async () => {
-    const images = await readImageFiles(await filesPromise);
-    if (!images.length) throw new Error("Choose NIfTI files or a complete DICOM series.");
+  importQueue = importQueue.then(() => runTask(`Reading ${name} image · converting DICOM if needed…`, async () => {
     const slot = slots[name];
-    slot.files = images;
-    slot.series.replaceChildren(...images.map((file, index) => new Option(file.name, String(index))));
-    slot.seriesField.hidden = images.length < 2;
-    await loadSlot(name, images[0]);
-    status(`${images[0].name} loaded.`);
-  });
+    try {
+      const images = await readImageFiles(await filesPromise);
+      if (!images.length) throw new Error("Choose NIfTI files or a complete DICOM series.");
+      slot.files = images;
+      slot.series.replaceChildren(...images.map((file, index) => new Option(file.name, String(index))));
+      slot.seriesField.hidden = images.length < 2;
+      await loadSlot(name, images[0]);
+      status(`${images[0].name} loaded.`);
+    } finally {
+      slot.input.dispatchEvent(new CustomEvent('nd-files', { bubbles: true, detail: { files: slot.file ? [slot.file] : [] } }));
+    }
+  }));
+  return importQueue;
 }
 
 for (const [name, slot] of Object.entries(slots)) {

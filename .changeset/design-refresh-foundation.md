@@ -38,3 +38,10 @@ then Choose files… and Choose folder…. The whole window, the viewer included
 accepts dropped files; a drop mid-session replaces the inputs with Undo in the
 status bar. Before any input the status reads "Drag and drop files". MuscleMap
 drops its separate drop box and Add File(s) button.
+
+Page drops fill empty image slots in order while keeping DICOM series together.
+New selections supersede unfinished drop traversal, and registration apps load
+each dropped image in order. The shared drop handler also respects the different
+native input and file-field event contracts.
+Failed imports leave only successfully loaded slots occupied, and Undo can
+restore loaded examples.

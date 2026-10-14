@@ -1,5 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { dicomSeries } from "../../../test-utils/dicom-fixture.mjs";
+import { registrationPageDropTests } from "../../../test-utils/registration-page-drop.mjs";
+
+registrationPageDropTests(test);
 
 test("imports extensionless DICOM and switches between converted series", async ({ page }) => {
   test.setTimeout(120000);

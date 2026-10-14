@@ -12,6 +12,7 @@ const AUXILIARY = new Set([...AUXILIARY_KINDS.map(([kind]) => kind), 'metadata']
 const OWNED = '[data-drop-target], .nd-file, .file-upload-zone, .file-drop, .upload-zone';
 const UNDO_MS = 8000;
 const HIDE_MS = 150;
+const SCAN_FILE = /\.(nii(?:\.gz)?|mgz|mgh)$/i;
 
 const usable = input => !input.disabled && !input.hasAttribute('webkitdirectory') && !input.closest('[inert], dialog:not([open])');
 
@@ -26,13 +27,22 @@ export function primaryInput(scope) {
 
 /**
  * Pair dropped files with inputs: a file of an auxiliary kind goes to the first
- * input of that kind, everything else to the primary input.
+ * input of that kind. Individual scans fill empty image slots in order;
+ * DICOM slices and other files stay together at the primary input.
  */
-export function routeFiles(files, inputs, primary) {
+export function routeFiles(files, inputs, primary, occupied = new Set()) {
   const plan = new Map();
+  const images = primary?.dataset.neurodeskInput === 'image'
+    ? inputs.filter(input => input.dataset.neurodeskInput === 'image')
+    : [];
+  const empty = images.filter(input => !occupied.has(input) && !input.files?.length);
+  let replacement = 0;
   for (const file of files) {
     const kind = AUXILIARY_KINDS.find(([, pattern]) => pattern.test(file.name))?.[0];
-    const input = (kind && inputs.find(candidate => candidate.dataset.neurodeskInput === kind)) || primary;
+    let input = (kind && inputs.find(candidate => candidate.dataset.neurodeskInput === kind)) || primary;
+    if (!kind && images.length > 1 && SCAN_FILE.test(file.name)) {
+      input = empty.shift() ?? images[replacement++ % images.length];
+    }
     if (input) plan.set(input, [...(plan.get(input) ?? []), file]);
   }
   return [...plan];
@@ -65,7 +75,9 @@ export function bindPageDrop(doc = globalThis.document) {
   root.setAttribute('data-nd-page-drop', '');
   const view = doc.defaultView;
   let previous = new WeakMap();
+  const occupied = new WeakSet();
   const replacing = new WeakSet();
+  let generation = 0;
   const overlay = doc.createElement('div');
   overlay.className = 'nd-drop-overlay';
   overlay.hidden = true;
@@ -112,6 +124,11 @@ export function bindPageDrop(doc = globalThis.document) {
     view.clearTimeout(undoTimer);
   }
 
+  function supersede() {
+    generation += 1;
+    withdrawUndo();
+  }
+
   function offerUndo(snapshot) {
     withdrawUndo();
     const status = doc.querySelector('footer#status, #status');
@@ -121,7 +138,7 @@ export function bindPageDrop(doc = globalThis.document) {
     button.className = 'nd-status-undo';
     button.textContent = 'Undo';
     button.addEventListener('click', () => {
-      button.remove();
+      supersede();
       for (const [input, files] of snapshot) replace(input, files);
     });
     status.append(button);
@@ -136,14 +153,18 @@ export function bindPageDrop(doc = globalThis.document) {
     if (!primary) return;
     event.stopPropagation();
     overlay.hidden = true;
+    const current = ++generation;
+    withdrawUndo();
     const inputs = [...doc.querySelectorAll('input[type="file"][data-neurodesk-input]')].filter(usable);
     filesFromDataTransferItems(event.dataTransfer.items).then(files => {
-      if (!files.length) return;
-      const plan = routeFiles(files, inputs, primary);
+      if (current !== generation || !files.length || !primary.isConnected || !usable(primary)) return;
+      const plan = routeFiles(files, inputs.filter(input => input.isConnected && usable(input)), primary,
+        new Set(inputs.filter(input => occupied.has(input))));
       const snapshot = plan.filter(([input]) => previous.has(input)).map(([input]) => [input, previous.get(input)]);
       for (const [input, group] of plan) replace(input, group);
       offerUndo(snapshot);
     }).catch(error => {
+      if (current !== generation) return;
       const text = doc.querySelector('#statusText');
       if (text) text.textContent = `Could not read the dropped files: ${error.message}`;
     });
@@ -153,25 +174,38 @@ export function bindPageDrop(doc = globalThis.document) {
   function remember(event) {
     const input = event.target;
     if (!(input instanceof view.HTMLInputElement) || input.type !== 'file' || !input.files?.length) return;
+    if (!replacing.has(input)) supersede();
     const kept = input.hasAttribute('data-appends') && !replacing.has(input) ? previous.get(input) ?? [] : [];
     previous.set(input, [...kept, ...input.files]);
+    occupied.add(input);
   }
 
-  // An appending input whose app removes entries reports its current list with `nd-files`.
+  // Native input owners report their loaded list; nd-file-field emits a different, promise-valued contract.
   function sync(event) {
-    previous.set(event.target, [...event.detail.files]);
+    const input = event.target;
+    if (!(input instanceof view.HTMLInputElement) || input.type !== 'file' || !input.hasAttribute('data-neurodesk-input')) return;
+    const files = event.detail?.files;
+    if (!files?.[Symbol.iterator]) return;
+    previous.set(input, [...files]);
+    if (previous.get(input).length) occupied.add(input);
+    else occupied.delete(input);
   }
 
-  // An example loads without the inputs, so neither earlier picks nor a pending Undo apply any more.
+  // Discard earlier picks when an example starts; its input owners can report newly loaded files.
   function forget(event) {
-    if (event.detail?.state !== 'ready') return;
-    previous = new WeakMap();
-    withdrawUndo();
+    if (!['loading', 'ready'].includes(event.detail?.state)) return;
+    supersede();
+    if (event.detail.state === 'loading') previous = new WeakMap();
+  }
+
+  function startingDrop(event) {
+    if (carriesFiles(event)) supersede();
   }
 
   const listeners = [
     [view, 'dragover', over, true],
     [view, 'dragover', over, false],
+    [view, 'drop', startingDrop, true],
     [view, 'drop', drop, true],
     [view, 'drop', drop, false],
     [doc, 'change', remember, true],
@@ -181,6 +215,7 @@ export function bindPageDrop(doc = globalThis.document) {
   for (const [target, type, listener, capture] of listeners) target.addEventListener(type, listener, capture);
   return {
     destroy() {
+      supersede();
       for (const [target, type, listener, capture] of listeners) target.removeEventListener(type, listener, capture);
       view.clearTimeout(undoTimer);
       view.clearTimeout(hideTimer);

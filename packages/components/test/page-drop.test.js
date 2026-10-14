@@ -17,18 +17,18 @@ test('the primary input skips auxiliary kinds and disabled or folder inputs', ()
   assert.equal(primaryInput(document).id, 't1');
 });
 
-test('auxiliary files go to their own input, everything else to the primary input', () => {
+test('auxiliary files go to their own input and a scan fills each empty image slot', () => {
   const scan = { dataset: { neurodeskInput: 'image' } };
   const mask = { dataset: { neurodeskInput: 'image' } };
   const gradients = { dataset: { neurodeskInput: 'gradients' } };
   const plan = routeFiles([file('a.nii'), file('b.nii'), file('dwi.bval'), file('dwi.bvec')], [scan, mask, gradients], scan);
-  assert.deepEqual(plan.map(([input, files]) => [input, files.map(f => f.name)]), [[scan, ['a.nii', 'b.nii']], [gradients, ['dwi.bval', 'dwi.bvec']]]);
+  assert.deepEqual(plan.map(([input, files]) => [input, files.map(f => f.name)]), [[scan, ['a.nii']], [mask, ['b.nii']], [gradients, ['dwi.bval', 'dwi.bvec']]]);
   const noGradientInput = routeFiles([file('a.nii'), file('dwi.bval')], [scan, mask], scan);
   assert.deepEqual(noGradientInput.map(([input, files]) => [input, files.length]), [[scan, 2]]);
 });
 
 // jsdom has no DataTransfer; a drop carries file items and the input keeps whatever files it is given.
-function dropSession(markup) {
+function dropSession(markup, t) {
   const { window } = new JSDOM(`<body>${markup}<footer id="status"></footer></body>`);
   // deliverFiles builds its events from the page's globals.
   Object.assign(globalThis, {
@@ -39,25 +39,42 @@ function dropSession(markup) {
       get files() { return this.items.list; }
     },
   });
-  const input = window.document.querySelector('input');
-  Object.defineProperty(input, 'files', { get: () => input._files ?? [], set: files => { input._files = files; } });
+  const inputs = [...window.document.querySelectorAll('input')];
+  const input = inputs[0];
+  for (const field of inputs) Object.defineProperty(field, 'files', { get: () => field._files ?? [], set: files => { field._files = files; } });
   const pick = (...names) => {
     input.files = names.map(name => new window.File([], name));
     input.dispatchEvent(new window.Event('change', { bubbles: true }));
   };
-  const drop = async name => {
+  const dispatchDrop = items => {
     const event = new window.Event('drop', { bubbles: true, cancelable: true });
-    event.dataTransfer = { types: ['Files'], items: [{ getAsFile: () => new window.File([], name) }] };
+    event.dataTransfer = { types: ['Files'], items };
     window.document.body.dispatchEvent(event);
-    await new Promise(resolve => setTimeout(resolve));
+  };
+  const settle = () => new Promise(resolve => setTimeout(resolve));
+  const drop = async (...names) => {
+    dispatchDrop(names.map(name => ({ getAsFile: () => new window.File([], name) })));
+    await settle();
+  };
+  const deferredDrop = name => {
+    let finish;
+    dispatchDrop([{ webkitGetAsEntry: () => ({ isFile: true, file: callback => { finish = callback; } }) }]);
+    return async () => {
+      finish(new window.File([], name));
+      await settle();
+    };
   };
   const undo = () => window.document.querySelector('.nd-status-undo');
-  bindPageDrop(window.document);
-  return { window, input, pick, drop, undo };
+  const binding = bindPageDrop(window.document);
+  t?.after(() => {
+    binding.destroy();
+    window.close();
+  });
+  return { window, input, inputs, pick, drop, deferredDrop, undo, binding };
 }
 
-test('loading an example withdraws a pending Undo', async () => {
-  const { window, input, pick, drop, undo } = dropSession('<input type="file" data-neurodesk-input="image">');
+test('loading an example withdraws a pending Undo', async t => {
+  const { window, input, pick, drop, undo } = dropSession('<input type="file" data-neurodesk-input="image">', t);
   pick('a.nii');
   await drop('b.nii');
   assert.ok(undo());
@@ -65,12 +82,107 @@ test('loading an example withdraws a pending Undo', async () => {
   assert.equal(undo(), null);
 });
 
-test('Undo restores an appending input as its app last reported it', async () => {
-  const { window, input, pick, drop, undo } = dropSession('<input type="file" data-neurodesk-input="image" data-appends>');
+test('Undo restores an appending input as its app last reported it', async t => {
+  const { window, input, pick, drop, undo } = dropSession('<input type="file" data-neurodesk-input="image" data-appends>', t);
   pick('a.nii');
   pick('b.nii');
   input.dispatchEvent(new window.CustomEvent('nd-files', { bubbles: true, detail: { files: [new window.File([], 'b.nii')] } }));
   await drop('c.nii');
   undo().click();
   assert.deepEqual([...input.files].map(f => f.name), ['b.nii']);
+});
+
+test('a loaded scan fills the next slot even when the app clears the picker', async t => {
+  const { input, inputs, pick, drop } = dropSession('<input type="file" data-neurodesk-input="image"><input type="file" data-neurodesk-input="image">', t);
+  const loaded = new Map();
+  for (const field of inputs) field.addEventListener('change', () => {
+    loaded.set(field, [...field.files].map(f => f.name));
+    field.files = [];
+  });
+  pick('moving.nii.gz');
+  await drop('stationary.nii.gz');
+  assert.deepEqual(loaded.get(input), ['moving.nii.gz']);
+  assert.deepEqual(loaded.get(inputs[1]), ['stationary.nii.gz']);
+});
+
+test('an input owner reports a loaded example and releases an empty slot', async t => {
+  const { window, input, inputs, drop } = dropSession('<input type="file" data-neurodesk-input="image"><input type="file" data-neurodesk-input="image">', t);
+  const report = files => input.dispatchEvent(new window.CustomEvent('nd-files', { bubbles: true, detail: { files } }));
+  report([new window.File([], 'example-moving.nii.gz')]);
+  input.dispatchEvent(new window.CustomEvent('nd-example-status', { bubbles: true, detail: { state: 'ready' } }));
+  await drop('stationary.nii.gz');
+  assert.deepEqual([...inputs[1].files].map(f => f.name), ['stationary.nii.gz']);
+  report([]);
+  await drop('new-moving.nii.gz');
+  assert.deepEqual([...input.files].map(f => f.name), ['new-moving.nii.gz']);
+});
+
+test('Undo restores the loaded files reported by a completed example', async t => {
+  const { window, input, drop, undo } = dropSession('<input type="file" data-neurodesk-input="image">', t);
+  input.dispatchEvent(new window.CustomEvent('nd-example-status', { bubbles: true, detail: { state: 'loading' } }));
+  input.dispatchEvent(new window.CustomEvent('nd-files', { bubbles: true, detail: { files: [new window.File([], 'example.nii.gz')] } }));
+  input.dispatchEvent(new window.CustomEvent('nd-example-status', { bubbles: true, detail: { state: 'ready' } }));
+  await drop('replacement.nii.gz');
+  assert.ok(undo(), 'replacing a loaded example offers Undo');
+  undo().click();
+  assert.deepEqual([...input.files].map(f => f.name), ['example.nii.gz']);
+});
+
+test('DICOM slices and their sidecars remain one batch at the primary input', async t => {
+  const { inputs, drop } = dropSession('<input type="file" data-neurodesk-input="image"><input type="file" data-neurodesk-input="image">', t);
+  await drop('slice1.dcm', 'slice2.dcm', 'series.json');
+  assert.deepEqual([...inputs[0].files].map(f => f.name), ['slice1.dcm', 'slice2.dcm', 'series.json']);
+  assert.deepEqual([...inputs[1].files], []);
+});
+
+test('a newer drop wins over an earlier traversal that finishes later', async t => {
+  const { input, drop, deferredDrop } = dropSession('<input type="file" data-neurodesk-input="image">', t);
+  const finishEarlier = deferredDrop('earlier.nii');
+  await drop('newer.nii');
+  await finishEarlier();
+  assert.deepEqual([...input.files].map(f => f.name), ['newer.nii']);
+});
+
+test('choosing files withdraws Undo and supersedes a pending traversal', async t => {
+  const { input, pick, drop, deferredDrop, undo } = dropSession('<input type="file" data-neurodesk-input="image">', t);
+  pick('original.nii');
+  await drop('replacement.nii');
+  assert.ok(undo());
+  const finishEarlier = deferredDrop('earlier.nii');
+  pick('chosen.nii');
+  await finishEarlier();
+  assert.deepEqual([...input.files].map(f => f.name), ['chosen.nii']);
+  assert.equal(undo(), null);
+});
+
+test('an example supersedes a pending traversal before it can commit', async t => {
+  const { window, input, deferredDrop, undo } = dropSession('<input type="file" data-neurodesk-input="image">', t);
+  const finishEarlier = deferredDrop('earlier.nii');
+  input.dispatchEvent(new window.CustomEvent('nd-example-status', { bubbles: true, detail: { state: 'ready' } }));
+  await finishEarlier();
+  assert.deepEqual([...input.files], []);
+  assert.equal(undo(), null);
+});
+
+test('destroying the drop binding prevents a pending traversal from committing', async t => {
+  const { input, deferredDrop, binding } = dropSession('<input type="file" data-neurodesk-input="image">', t);
+  const finishEarlier = deferredDrop('earlier.nii');
+  binding.destroy();
+  await finishEarlier();
+  assert.deepEqual([...input.files], []);
+});
+
+test('promise-valued nd-file-field events do not become appending-input snapshots', async t => {
+  const { window, input, pick, drop, undo } = dropSession('<nd-file-field><input type="file" data-neurodesk-input="image"></nd-file-field>', t);
+  const errors = [];
+  window.addEventListener('error', event => {
+    errors.push(event.error.message);
+    event.preventDefault();
+  });
+  pick('original.nii');
+  input.parentElement.dispatchEvent(new window.CustomEvent('nd-files', { bubbles: true, detail: { files: Promise.resolve([new window.File([], 'original.nii')]) } }));
+  await drop('replacement.nii');
+  undo().click();
+  assert.deepEqual([...input.files].map(f => f.name), ['original.nii']);
+  assert.deepEqual(errors, []);
 });

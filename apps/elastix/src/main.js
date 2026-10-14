@@ -274,6 +274,7 @@ async function setSlot(name, source, signal) {
   slot.info.hidden = false;
   slot.info.textContent = `${source.name} · ${source.note}`;
   slot.drop.classList.add("has-files");
+  slot.input.dispatchEvent(new CustomEvent('nd-files', { bubbles: true, detail: { files: [source.displayFile] } }));
   $("emptyState").hidden = true;
   if (name === "stationary") applyLayout(source.image.imageType.dimension === 2 ? "axial" : "multiplanar");
   log.log(`${name} image: ${source.name} · ${source.note}`);
@@ -299,13 +300,21 @@ async function loadFiles(name, files, signal) {
   }
 }
 
+let importQueue = Promise.resolve();
+
 function importSlot(name, filesPromise) {
   exampleControl.cancel();
-  return runTask(`Reading ${name} image…`, async (signal) => {
-    const files = await filesPromise;
-    await loadFiles(name, files, signal);
-    complete(`${slots[name].source.name} loaded as the ${name} image.`);
-  });
+  importQueue = importQueue.then(() => runTask(`Reading ${name} image…`, async (signal) => {
+    const slot = slots[name];
+    try {
+      const files = await filesPromise;
+      await loadFiles(name, files, signal);
+      complete(`${slot.source.name} loaded as the ${name} image.`);
+    } finally {
+      slot.input.dispatchEvent(new CustomEvent('nd-files', { bubbles: true, detail: { files: slot.source ? [slot.source.displayFile] : [] } }));
+    }
+  }));
+  return importQueue;
 }
 
 for (const [name, slot] of Object.entries(slots)) {
