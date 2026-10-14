@@ -29,7 +29,11 @@ const sharedUiSources = [
   'ModalManager.js',
   'ProgressManager.js'
 ].map(file => fs.readFileSync(path.join(SHARED_UI, file), 'utf8')).join('\n');
-const workerJs = fs.readFileSync(path.join(ROOT, 'web/js/inference-worker.js'), 'utf8');
+// The worker adapts the shared segmentation in packages/spinalcordtoolbox; together they write the logs.
+const workerJs = [
+  path.join(ROOT, 'web/js/inference-worker.js'),
+  path.join(ROOT, '../../packages/spinalcordtoolbox/src/segment.js')
+].map(file => fs.readFileSync(file, 'utf8')).join('\n');
 const logChannelsJs = fs.readFileSync(path.join(ROOT, 'web/js/app/log-channels.js'), 'utf8');
 const viewerTest = fs.readFileSync(path.join(ROOT, 'scripts/test_viewer_controller.mjs'), 'utf8');
 const lesionAnalysisTest = fs.readFileSync(path.join(ROOT, 'scripts/test_lesion_analysis.cjs'), 'utf8');

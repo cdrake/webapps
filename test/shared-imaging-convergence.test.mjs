@@ -60,11 +60,15 @@ test('all ORT workers use shared input and thread policy', async () => {
     assert.doesNotMatch(worker, /function\s+getOptimalWasmThreads\s*\(/);
     assert.doesNotMatch(worker, /navigator\.hardwareConcurrency/);
   }
-  for (const app of ['calmar', 'spinalcordtoolbox']) {
-    const worker = await source('apps', app, 'web', 'js', 'inference-worker.js');
-    assert.match(worker, /prepareRasWorkerInput/);
-    assert.doesNotMatch(worker, /function\s+loadStateFromInput\s*\(/);
-  }
+  const calmarWorker = await source('apps', 'calmar', 'web', 'js', 'inference-worker.js');
+  assert.match(calmarWorker, /prepareRasWorkerInput/);
+  assert.doesNotMatch(calmarWorker, /function\s+loadStateFromInput\s*\(/);
+  const sctWorker = await source('apps', 'spinalcordtoolbox', 'web', 'js', 'inference-worker.js');
+  assert.match(sctWorker, /import\s+\{\s*prepareInput,\s*segmentPrepared\s*\}\s+from\s+['"]\.\.\/vendor\/spinalcordtoolbox\/src\/segment\.js['"]/);
+  assert.doesNotMatch(sctWorker, /function\s+loadStateFromInput\s*\(/);
+  const sctSegment = await source('packages', 'spinalcordtoolbox', 'src', 'segment.js');
+  assert.match(sctSegment, /import\s+\{\s*prepareRasWorkerInput\s*\}\s+from\s+['"]@neurodesk\/webapp-components\/worker['"]/);
+  assert.match(sctSegment, /prepareRasWorkerInput\(parseNiftiVolume\(inputData, \{ decompress \}\)\)/);
   const vesselWorker = await source('apps', 'vesselboost', 'web', 'js', 'inference-worker.js');
   assert.match(vesselWorker, /import\s+\{\s*createVesselBoostPipeline\s*\}\s+from\s+['"]\.\.\/vendor\/vesselboost\/src\/pipeline\.js['"]/);
   assert.match(vesselWorker, /pipeline\s*=\s*createVesselBoostPipeline\s*\(/);

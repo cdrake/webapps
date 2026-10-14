@@ -123,6 +123,7 @@ apps:
       - { name: Spinal Cord Toolbox, url: https://spinalcordtoolbox.com, role: morphometry and lesion analysis in the browser or on your compute server }
       - { name: Pyodide, url: https://pyodide.org, role: runs SCT Python and scientific libraries in WebAssembly }
       - { name: ONNX Runtime Web, url: https://onnxruntime.ai, role: runs the segmentation models in the browser }
+      - { name: "@neurodesk/spinalcordtoolbox", url: https://github.com/neurodesk/webapps/tree/main/packages/spinalcordtoolbox, role: segmentation pipeline shared by the browser and the sct-webapp command line }
       - { name: FreeBrowse, url: https://github.com/pwighton/freebrowse/tree/20260707-niivue-mono-migration, role: interactive viewer with zoom, pan, layers and drawing }
       - { name: NiiVue, url: https://github.com/niivue/niivue, role: image viewer }
       - { name: dcm2niix (WebAssembly), url: https://github.com/rordenlab/dcm2niix, role: DICOM to NIfTI conversion }

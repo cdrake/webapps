@@ -2,9 +2,7 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const path = require('node:path');
-const loadClassicScript = require('./load-classic-script.cjs');
-const pipeline = loadClassicScript(path.join(__dirname, '../web/js/inference-pipeline.js'));
+const pipeline = require('@neurodesk/spinalcordtoolbox/inference-pipeline');
 
 (async () => {
   {

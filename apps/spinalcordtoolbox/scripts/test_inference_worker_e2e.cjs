@@ -4,7 +4,7 @@
  * SCT fixture/model pairs.
  *
  * Loads the worker source as text, evaluates it in a Node context with shimmed
- * globals (self/importScripts/fetch/localforage/ort/nifti), then drives it via
+ * globals (self/fetch/ort/nifti) and the shared SCT segmentation package, then drives it via
  * a synthetic message and asserts the produced segmentation is non-empty and
  * overlaps the SCT batch reference.
  *
@@ -20,12 +20,14 @@ const vm = require('node:vm');
 const { pathToFileURL } = require('node:url');
 const ort = require('onnxruntime-node');
 const loadClassicScript = require('./load-classic-script.cjs');
-const nifti = loadClassicScript(path.resolve(__dirname, '../web/nifti-js/index.js'));
+// The committed source of the web app's generated web/nifti-js/index.js.
+const nifti = loadClassicScript(path.resolve(__dirname, '../../../packages/runtime-support/src/nifti-js/index.js'));
 const manifest = require('../web/models/manifest.json');
 const { ensureSctBatchFixtures } = require('./huggingface-fixtures.cjs');
 const { ensureHostedAsset } = require('./hosted-assets.cjs');
 
 const ROOT = path.resolve(__dirname, '..');
+const DEFAULT_MODEL_DIRECTORY = path.join(ROOT, 'web/models');
 const WORKER_PATH = path.join(ROOT, 'web/js/inference-worker.js');
 const workerTimeoutMinutes = Number(process.env.SCT_WORKER_TIMEOUT_MINUTES || 30);
 if (!Number.isFinite(workerTimeoutMinutes) || workerTimeoutMinutes <= 0) {
@@ -38,45 +40,29 @@ function prepareModuleWorkerSource(source) {
     .replace(/\bimport\(/g, 'importModule(');
 }
 
-async function loadSharedWorkerBindings() {
+async function loadSharedWorkerBindings(modelDirectory = DEFAULT_MODEL_DIRECTORY) {
   const components = path.resolve(ROOT, '../../packages/components/src');
-  const [worker, niftiUtils, geometry, layout] = await Promise.all([
+  const [worker, segment] = await Promise.all([
     import(pathToFileURL(path.join(components, 'worker/index.js')).href),
-    import(pathToFileURL(path.join(components, 'file-io/NiftiUtils.js')).href),
-    import(pathToFileURL(path.join(components, 'volume/geometry.js')).href),
-    import(pathToFileURL(path.join(components, 'volume/layout.js')).href)
+    import('@neurodesk/spinalcordtoolbox')
   ]);
   return {
     createWorkerEmitter: worker.createWorkerEmitter,
-    fetchModelAsset: worker.fetchModel,
+    // The worker's model fetch reads a local copy; the worker still verifies its size and SHA-256.
+    fetchModelAsset: (asset, options) => worker.fetchModel(asset, { ...options, fetch: makeFetchShim(modelDirectory) }),
     getOptimalWasmThreads: worker.getOptimalWasmThreads,
     installWorkerRouter: worker.installWorkerRouter,
-    localForageCache: worker.localForageCache,
-    prepareRasWorkerInput: worker.prepareRasWorkerInput,
-    createNiftiFromData: niftiUtils.createNiftiFromData,
-    parseNiftiVolume: niftiUtils.parseNiftiVolume,
-    getOrientationTransform: geometry.getOrientationTransform,
-    inverseOrient: geometry.inverseOrient,
-    orientToRAS: geometry.orientToRAS,
-    resampleLabelsNearest: geometry.resampleLabelsNearest,
-    resampleVolume: geometry.resampleVolume,
-    flipVolumeAxes: layout.flipVolumeAxes,
-    transposeXYZToZYX: layout.transposeXYZToZYX,
-    transposeZYXToXYZ: layout.transposeZYXToXYZ
+    prepareInput: segment.prepareInput,
+    segmentPrepared: segment.segmentPrepared
   };
 }
 
-function installModuleLoader(sandbox, selfObj, localforage) {
+// The worker's only dynamic import is the vendored nifti-js script, which the
+// harness provides as the sandbox global `nifti`.
+function installModuleLoader(sandbox) {
   sandbox.importModule = async (specifier) => {
-    if (specifier.startsWith('https://')) return { default: localforage };
     if (specifier.endsWith('/nifti-js/index.js')) return {};
-    const abs = path.resolve(path.dirname(WORKER_PATH), specifier);
-    const src = fs.readFileSync(abs, 'utf8');
-    vm.runInContext(src, sandbox, { filename: abs });
-    for (const name of ['SCTInferencePipeline', 'SCTLesionAnalysis', 'TotalSpineSeg']) {
-      if (selfObj[name]) sandbox[name] = selfObj[name];
-    }
-    return {};
+    throw new Error(`Unexpected worker import: ${specifier}`);
   };
 }
 
@@ -207,23 +193,12 @@ function makeOrtShim() {
   };
 }
 
-// Minimal localforage shim: in-memory Map.
-function makeLocalforageShim() {
-  const store = new Map();
-  return {
-    config: () => {},
-    getItem: async (key) => store.has(key) ? store.get(key) : null,
-    setItem: async (key, value) => { store.set(key, value); },
-    removeItem: async (key) => { store.delete(key); }
-  };
-}
-
 // Fetch shim: reads MODEL_PATH from disk for any model URL.
-function makeFetchShim() {
+function makeFetchShim(modelDirectory = DEFAULT_MODEL_DIRECTORY) {
   return async (url) => {
     if (!url.endsWith('.onnx')) throw new Error(`Unexpected fetch: ${url}`);
     const modelName = path.basename(new URL(url).pathname);
-    const modelPath = path.join(ROOT, 'web/models', modelName);
+    const modelPath = path.join(modelDirectory, modelName);
     const buffer = fs.readFileSync(modelPath);
     let offset = 0;
     return {
@@ -243,14 +218,16 @@ function makeFetchShim() {
   };
 }
 
-async function runWorkerCase(testCase) {
+// `modelDirectory` serves models already verified elsewhere (the CLI release check);
+// by default ensureHostedAsset() provides them in web/models.
+async function runWorkerCase(testCase, { modelDirectory } = {}) {
   const task = manifest.tasks.find(item => item.id === testCase.taskId);
   const asset = task?.modelAssets?.find(item => item.id === testCase.modelAssetId);
   if (!asset) throw new Error(`No model asset ${testCase.modelAssetId} for task ${testCase.taskId}`);
-  await ensureHostedAsset(ROOT, asset);
+  if (!modelDirectory) await ensureHostedAsset(ROOT, asset);
   console.log('Loading worker source...');
   const workerSource = prepareModuleWorkerSource(fs.readFileSync(WORKER_PATH, 'utf8'));
-  const sharedBindings = await loadSharedWorkerBindings();
+  const sharedBindings = await loadSharedWorkerBindings(modelDirectory);
 
   const messages = [];
   let resolveDone, rejectDone;
@@ -264,35 +241,15 @@ async function runWorkerCase(testCase) {
       if (msg && msg.type === 'error') rejectDone(new Error(msg.message));
       if (msg && msg.type === 'complete') resolveDone();
     },
-    _modelCacheKey: null,
     _appVersion: 'test',
     _currentTaskId: null
   };
 
   const sandbox = {
     self: selfObj,
-    // External scripts (ort/localforage/nifti, the wasm bundle) are pre-shimmed
-    // via context globals, so we ignore those importScripts calls. For local
-    // worker modules we evaluate the file so each UMD bootstrap registers on `self`.
-    importScripts: (relPath) => {
-      if (typeof relPath !== 'string') return;
-      if (!/(inference-pipeline|modules\/lesion-analysis|modules\/totalspineseg)\.js$/.test(relPath)) return;
-      const abs = path.resolve(path.dirname(WORKER_PATH), relPath);
-      if (!fs.existsSync(abs)) return;
-      const src = fs.readFileSync(abs, 'utf8');
-      vm.runInContext(src, sandbox, { filename: abs });
-      // The UMD bootstraps assign to `root.*`
-      // where root === self in worker context. In our vm sandbox, `self` is a
-      // sandbox property (not the global itself), so promote exports to
-      // bare global so bare-name references in inference-worker.js resolve.
-      for (const name of ['SCTInferencePipeline', 'SCTLesionAnalysis', 'TotalSpineSeg']) {
-        if (selfObj[name]) sandbox[name] = selfObj[name];
-      }
-    },
     ort: makeOrtShim(),
-    localforage: makeLocalforageShim(),
     nifti,
-    fetch: makeFetchShim(),
+    fetch: makeFetchShim(modelDirectory),
     performance: { now: () => Date.now() },
     console,
     Math,
@@ -337,7 +294,7 @@ async function runWorkerCase(testCase) {
   vm.createContext(sandbox);
   // Make selfObj fields also accessible as bare globals (worker uses both `self.x` and bare names).
   sandbox.globalThis = sandbox;
-  installModuleLoader(sandbox, selfObj, sandbox.localforage);
+  installModuleLoader(sandbox);
 
   console.log('Evaluating worker source...');
   vm.runInContext(workerSource, sandbox, { filename: 'inference-worker.js' });
@@ -347,7 +304,7 @@ async function runWorkerCase(testCase) {
   }
 
   console.log(`Loading fixture input: ${testCase.id}...`);
-  const inputBytes = fs.readFileSync(path.join(ROOT, testCase.inputPath));
+  const inputBytes = fs.readFileSync(path.resolve(ROOT, testCase.inputPath));
   // Wrap into an ArrayBuffer view that the worker's parser expects.
   const inputArrayBuffer = inputBytes.buffer.slice(inputBytes.byteOffset, inputBytes.byteOffset + inputBytes.byteLength);
 
@@ -373,6 +330,8 @@ async function runWorkerCase(testCase) {
           keepLargestComponent: !!asset?.inferenceDefaults?.keepLargestComponent,
           modelName: testCase.modelName,
           modelUrl: asset?.downloadUrl || null,
+          modelSha256: asset?.checksum?.replace(/^sha256:/, '') || null,
+          modelBytes: asset?.sizeBytes ?? null,
           patchSize: testCase.patchSize || asset?.patchSize,
           preprocessing: asset?.preprocessing || {},
           output: asset?.output || {},
