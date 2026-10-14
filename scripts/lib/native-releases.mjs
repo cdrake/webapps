@@ -7,8 +7,8 @@ import { fileURLToPath } from 'node:url';
 // The release job runs this without installing dependencies, so only Node built-ins may be imported.
 const repoRoot = fileURLToPath(new URL('../../', import.meta.url));
 
-// Rust tools with their own workflow, dispatched by hand: their release jobs attach to a draft or
-// prerelease, and SynthSR and SynthSEG follow their Cargo.toml version rather than the app's.
+// Rust tools with their own workflow. The release tooling keeps each Cargo.toml at the app's version
+// (EMBEDDED_VERSION_SITES), so the app release tag names the release their archives attach to.
 const RUST_RELEASES = Object.freeze({
   greedy: { workflow: 'greedy-native.yml', targets: ['linux-x64', 'macos-arm64', 'windows-x64'] },
   synthsr: { workflow: 'synthsr-native.yml', targets: ['linux-x64', 'macos-arm64', 'windows-x64'] },
@@ -64,13 +64,14 @@ function claim(releases, app, source) {
 }
 
 // Every app's release sources, as { app: [source] }. Each source owns the platforms it builds, and one
-// platform never has two owners. A Rust source is dispatched by hand and attaches to the release named by
-// its Cargo.toml version; a portable source starts with the app release and builds in release.json's
-// workflow (default <app>-native.yml). A source with a macOS installer publishes only by signing it.
+// platform never has two owners. Every source starts with the app release and attaches to its tag. A Rust
+// source builds in its own workflow; a portable source builds in release.json's workflow (default
+// <app>-native.yml) and writes exes/node-cli receipts. A source with a macOS installer publishes only by
+// signing it.
 export function nativeReleases(specs) {
   const releases = new Map();
   for (const [app, release] of Object.entries(RUST_RELEASES)) {
-    claim(releases, app, { ...release, publishInput: 'sign_release', startsWithAppRelease: false, spec: null });
+    claim(releases, app, { ...release, publishInput: 'sign_release', portable: false, spec: null });
   }
   for (const [app, { packageDir, spec, legacy }] of specs) {
     const targets = Object.keys(spec.targets);
@@ -79,7 +80,7 @@ export function nativeReleases(specs) {
       workflow: spec.workflow ?? `${app}-native.yml`,
       targets,
       publishInput: installer ? 'sign_release' : 'publish_release',
-      startsWithAppRelease: true,
+      portable: true,
       packageDir,
       spec: legacy ? null : spec,
     });

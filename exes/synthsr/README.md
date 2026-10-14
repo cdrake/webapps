@@ -165,13 +165,12 @@ Apple Silicon packages for pull requests and pushes to main. It extracts and
 runs each Linux and Windows archive. It also uploads an ad-hoc macOS installer
 as a workflow artifact. These test packages are not signed releases.
 
-For a signed release, create a draft or prerelease named `synthsr-vVERSION`.
-Create its Git tag at the commit you intend to release. Select that tag when
-manually running `synthsr-native` and enable `sign_release`. The workflow checks
-that the tag, source commit and Cargo version agree. It signs and notarizes the
-macOS installer, waits for the verified Linux and Windows archives, then attaches
-all packages, checksums and verification logs to that release. It leaves the
-release's draft or prerelease status unchanged.
+An app release (`release.yml`) dispatches `synthsr-native` with `sign_release`
+at its `synthsr-vVERSION` tag; the release tooling keeps the Cargo version at the
+app version. The workflow checks that the tag, source commit and Cargo version
+agree. It signs and notarizes the macOS installer, waits for the verified Linux
+and Windows archives, then attaches all packages, checksums and verification
+logs to that release and updates the Standalone catalog.
 
 Configure these repository Actions secrets, following neurodesk-app's signing
 setup:

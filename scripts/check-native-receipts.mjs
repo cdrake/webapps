@@ -17,7 +17,7 @@ for (const directory of directories) {
     if (!platform) continue;
     const digest = createHash('sha256').update(await readFile(join(directory, name))).digest('hex');
     const text = await readFile(join(directory, `${name}.validation.txt`), 'utf8');
-    checkReceipt({ name, digest, platform, native: { startsWithAppRelease: false }, text });
+    checkReceipt({ name, digest, platform, native: { portable: false }, text });
     if (platform === 'windows-x64') execFileSync(process.platform === 'win32' ? 'python' : 'python3', ['scripts/lib/windows_signing.py', 'verify', join(directory, name)], { stdio: 'inherit' });
     console.log(`${name}: receipt records ${digest}`);
     checked += 1;

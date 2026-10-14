@@ -40,7 +40,8 @@ test('Greedy releases require native and installed npm checks on every target', 
   assert.match(signature.run, /codesign --verify --strict/);
   assert.match(signature.run, /Authority=Developer ID Application/);
   assert.match(steps[target].run, /git rev-parse/);
-  assert.match(steps[target].run, /isDraft or .isPrerelease/);
+  assert.match(steps[target].run, /gh release view "\$tag" >\/dev\/null/);
+  assert.doesNotMatch(steps[target].run, /isDraft|isPrerelease/);
 });
 
 test('Greedy npm CLI bundles binaries and has no runtime installation downloads', () => {

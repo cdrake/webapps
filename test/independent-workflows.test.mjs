@@ -97,7 +97,8 @@ test('native packages share one gated publisher while signing stays isolated', a
   const sign = steps.findIndex(step => step.name === 'Sign and notarize installer');
   const publish = steps.findIndex(step => step.name === 'Attach verified release assets');
   assert.ok(target >= 0 && target < sign && sign < publish);
-  assert.match(steps[target].run, /isDraft or .isPrerelease/);
+  assert.match(steps[target].run, /gh release view "\$tag" >\/dev\/null/);
+  assert.doesNotMatch(steps[target].run, /isDraft|isPrerelease/);
   assert.match(steps[target].run, /git rev-parse/);
   assert.match(steps[target].run, /GITHUB_SHA/);
   assert.ok(steps.some(step => step.uses?.startsWith('actions/download-artifact@')));
@@ -230,8 +231,18 @@ test('SynthSeg verifies native parity before its isolated signing job', async ()
   const sign = steps.findIndex(step => step.name === 'Sign and notarize installer');
   const publish = steps.findIndex(step => step.name === 'Attach verified release assets');
   assert.ok(target >= 0 && target < sign && sign < publish);
-  assert.match(steps[target].run, /isDraft or .isPrerelease/);
+  assert.match(steps[target].run, /gh release view "\$tag" >\/dev\/null/);
+  assert.doesNotMatch(steps[target].run, /isDraft|isPrerelease/);
   assert.match(steps[target].run, /GITHUB_SHA/);
+  // A backfill builds a published tag's own source with main's workflow, never another ref's.
+  assert.equal(flow.on.workflow_dispatch.inputs.release_tag.type, 'string');
+  for (const job of [flow.jobs.verify, flow.jobs.release]) {
+    assert.equal(job.steps.find(step => step.uses?.startsWith('actions/checkout@')).with.ref, '${{ inputs.release_tag }}');
+  }
+  assert.equal(steps[target].env.BACKFILL_TAG, '${{ inputs.release_tag }}');
+  assert.match(steps[target].run, /test "\$GITHUB_REF" = refs\/heads\/main/);
+  assert.match(steps[target].run, /test "\$BACKFILL_TAG" = "\$tag"/);
+  assert.match(steps[target].run, /test "\$\(git rev-parse "\$tag\^\{commit\}"\)" = "\$\(git rev-parse HEAD\)"/);
 });
 
 
