@@ -172,9 +172,14 @@ test("an unrecorded field strength, sequence or echo time is noted and ranks bel
   // A user's basis whose header omits a parameter cannot be checked against
   // the data, so a library set that verifiably matches comes first.
   const data = { hzpppm: field3T, teMs: 30, sequence: "PRESS" };
-  for (const unknown of [{ hzpppm: null }, { hzpppm: 0 }, { teMs: null }, { teMs: 0 }]) {
+  for (const [unknown, text] of [
+    [{ hzpppm: null }, "This basis set does not record its field strength."],
+    [{ hzpppm: 0 }, "This basis set does not record its field strength."],
+    [{ teMs: null }, "This basis set does not record its echo time."],
+    [{ teMs: 0 }, "This basis set does not record its echo time."],
+  ]) {
     const r = assessBasis(data, set("custom", "PRESS", unknown));
-    assert.deepEqual([r.usable, r.level], [true, "match"], JSON.stringify(unknown));
+    assert.deepEqual([r.usable, r.level, notes(r)], [true, "match", [["info", text]]], JSON.stringify(unknown));
     assert.deepEqual(order(data, [set("a-custom", "PRESS", unknown), set("z-library", "PRESS")]), ["z-library", "a-custom"], JSON.stringify(unknown));
   }
 });
