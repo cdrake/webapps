@@ -18,6 +18,12 @@ pnpm install
 pnpm --filter niimath dev
 ```
 
+### Command line
+
+`packages/niimath` is a portable `niimath` command line that runs this app's
+WebAssembly build, so its outputs equal the app's downloads byte for byte. Its
+releases are offered in the app's Standalone dialog; see its README.
+
 ### Commands
 
 You can use many of the commands familiar to fslmaths users:

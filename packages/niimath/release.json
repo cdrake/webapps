@@ -1,0 +1,40 @@
+{
+  "repository": "neurodesk/webapps",
+  "tagPrefix": "niimath-v",
+  "displayName": "niimath",
+  "app": "niimath",
+  "run": "T1.nii.gz -s 2 smooth.nii.gz",
+  "readme": {
+    "run": "Smooth an image with a 2 mm Gaussian kernel",
+    "notes": [
+      "Runs niimath command lines with the same WebAssembly build as the NiiMath",
+      "web app, so each output equals the app's download for that command.",
+      "Outputs are .nii.gz images, .mz3 meshes (-mesh) or .png bitmaps (-bitmap).",
+      "Run niimath --help for the operations. No network connection is required.",
+      "",
+      "Native niimath (container vnmd/niimath) runs the same operations faster;",
+      "its output differs from this build's by floating-point rounding. Please cite:",
+      "Rorden C, Webster M, Drake C, et al. niimath and fslmaths: replication as a",
+      "method to enhance testing and improve tool quality. Aperture Neuro. 2024;4.",
+      "https://doi.org/10.52294/001c.94384"
+    ]
+  },
+  "validation": "validation/cli-check.mjs",
+  "targets": {
+    "linux-x64": {
+      "label": "Linux x64",
+      "archive": "tar.gz",
+      "executable": "niimath"
+    },
+    "windows-x64": {
+      "label": "Windows x64",
+      "archive": "zip",
+      "executable": "niimath.exe"
+    },
+    "macos-arm64": {
+      "label": "macOS Apple silicon",
+      "archive": "pkg",
+      "executable": "niimath"
+    }
+  }
+}

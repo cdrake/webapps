@@ -19,7 +19,7 @@
   "dependencies": {
     "@neurodesk/webapp-components": "workspace:*",
     "@neurodesk/runtime-support": "workspace:*",
-    "@niivue/niimath": "^1.2.0",
+    "@niivue/niimath": "1.3.2",
     "@niivue/niivue": "^0.62.1"
   }
 }
