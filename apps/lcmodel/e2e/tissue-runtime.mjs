@@ -11,6 +11,12 @@ export async function proxyAssets(page) {
   });
 }
 
+// After "Fit done" NiiVue is still updating the 256 × 256 × 204 T1 and its
+// overlays. In headless Chromium's software WebGL, updateOverlays' readPixels
+// blocks the page for 3-9 s (profiled), and a file chosen meanwhile is
+// imported only once it ends: allow for that before the replacement shows.
+export const REPLACEMENT_TIMEOUT = 60000;
+
 export async function forceCpu(page) {
   await page.addInitScript(() => {
     Object.defineProperty(navigator, "gpu", { value: undefined });
