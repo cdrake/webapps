@@ -7,12 +7,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import appManifest from '../../../models/qsmbly.manifest.json' with { type: 'json' };
-import { MODEL_ASSETS, QSMXT, ensureModels, ensureNativeModelDirectory, modelsNamedBy, nativeModelAssets, qsmxtEnvironment } from '../src/node.js';
-import { verifyNativeWeights } from '../src/native-registry.js';
+import { EXAMPLE_ASSETS, MODEL_ASSETS, QSMXT, ensureModels, ensureNativeModelDirectory, nativeModelAssets, qsmxtEnvironment, runQsmxt } from '../src/node.js';
+import { verifyNativeExamples, verifyNativeWeights } from '../src/native-registry.js';
 
 const bin = new URL('../bin/qsmbly.js', import.meta.url).pathname;
 const run = (args, env = {}) => spawnSync(process.execPath, [bin, ...args], { encoding: 'utf8', env: { ...process.env, ...env } });
-const named = async (args, files = {}) => (await modelsNamedBy(args, { readText: async (path) => files[path] })).map((asset) => asset.filename);
 
 test('the CLI pins the same weights as the web app wherever both list a file', () => {
   const app = new Map(appManifest.assets.map((asset) => [asset.filename, asset]));
@@ -44,38 +43,61 @@ test('QSMxT is pinned to the release built on the qsm-core tag the web app compi
   assert.equal(release.bundleModels, false);
 });
 
-test('a command fetches only the weights it names', async () => {
-  assert.deepEqual(await named(['run', 'bids', 'out', '--qsm-algorithm', 'rts', '--mask', 'phase-quality,threshold:otsu']), []);
-  assert.deepEqual(await named(['run', 'bids', '--qsm-algorithm', 'xqsm']), ['xqsm.onnx']);
-  assert.deepEqual(await named(['run', 'bids', '--qsm-algorithm=qsmnet-plus']), ['qsmnet-plus.onnx']);
-  assert.deepEqual(await named(['run', 'bids', '--mask', 'hd-bet:128x128x128:tta']), ['hd-bet.onnx']);
-  assert.deepEqual(await named(['run', 'bids', '--qsm-algorithm', 'nextqsm']), ['nextqsm-bf.onnx', 'nextqsm-vjp.onnx']);
-  assert.deepEqual(await named(['run', 'bids', '--do-analysis']), ['synthseg.onnx']);
-  assert.deepEqual(await named(['run', 'bids', '--do-chisep']), ['r2primenet.onnx']);
-  assert.deepEqual(await named(['run', 'bids', '--config', 'settings.toml'], { 'settings.toml': '[qsm]\nalgorithm = "autoqsm"\n' }), ['autoqsm.onnx']);
-  assert.deepEqual(await named(['run', 'sub-qsmnetstudy', 'out']), [], 'a model name inside another word is not a request');
-});
-
-test('TOML pipeline booleans name implicit models only when enabled', async () => {
-  for (const [field, expected] of [
-    ['do_segmentation', ['synthseg.onnx']],
-    ['do_analysis', ['synthseg.onnx']],
-    ['do_r2primemap', ['r2primenet.onnx']],
-    ['do_chi_separation', ['r2primenet.onnx']],
-  ]) {
-    for (const enabled of [false, true]) {
-      assert.deepEqual(await named(['run', 'bids', 'out', '--config', 'settings.toml'], {
-        'settings.toml': `[pipeline]\n${field} = ${enabled}\n`,
-      }), enabled ? expected : [], `${field} = ${enabled}`);
-    }
+test('offline TOML pipeline settings and model paths require the complete cache', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'qsmbly-config-offline-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const config = join(root, 'settings.toml');
+  for (const enabled of [true, false]) {
+    await writeFile(config, `[pipeline]\ndo_segmentation = ${enabled}\ndo_analysis = ${enabled}\ndo_r2primemap = ${enabled}\ndo_chi_separation = ${enabled}\n[inversion.qsmart]\ninversion_algorithm = "qsmnet-plus"\n`);
+    const result = run(['run', '/study/xqsm/bids', '/study/qsmnet/out', '--config', config], {
+      XDG_CACHE_HOME: root, NEURODESK_QSMBLY_MODEL_DIR: root, NEURODESK_OFFLINE: '1',
+    });
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stderr, /bfrnet.onnx.*download-models/);
+    assert.equal(result.stdout, '');
   }
+  assert.deepEqual(await readdir(root), ['settings.toml']);
 });
 
-test('config model fields ignore comments and paths and deduplicate weights', async () => {
-  const config = `# xqsm\ndescription = "qsmnet"\n[pipeline]\ndo_analysis = false\n[inversion]\nalgorithm = "nextqsm"\n[[masking.sections]]\ninput = "magnitude"\n[masking.sections.generator]\nop = "hd-bet"\n`;
-  assert.deepEqual(await named(['run', '/study/xqsm/bids', '/study/qsmnet/out', '--config=settings.toml', '--qsm-algorithm', 'nextqsm'], {
-    'settings.toml': config,
-  }), ['nextqsm-bf.onnx', 'nextqsm-vjp.onnx', 'hd-bet.onnx']);
+test('flaglike positional filenames do not bypass native preflight', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'qsmbly-flags-offline-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const env = { XDG_CACHE_HOME: root, NEURODESK_QSMBLY_MODEL_DIR: root, NEURODESK_OFFLINE: '1' };
+  for (const filename of ['--help', '-h', '--dry']) {
+    const result = run(['run', '--qsm-algorithm', 'xqsm', '--', filename, 'out'], env);
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stderr, /bfrnet.onnx.*download-models/);
+    assert.equal(result.stdout, '');
+  }
+  assert.deepEqual(await readdir(root), []);
+});
+
+test('all processing commands default to complete native preflight', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'qsmbly-command-offline-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  for (const command of ['resample', 'quality-map', 'future-processing-command']) {
+    const result = run([command, 'missing-input.nii'], {
+      XDG_CACHE_HOME: root, NEURODESK_QSMBLY_MODEL_DIR: root, NEURODESK_OFFLINE: '1',
+    });
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stderr, /bfrnet.onnx.*download-models/);
+    assert.equal(result.stdout, '');
+  }
+  assert.deepEqual(await readdir(root), []);
+});
+
+test('offline QSMART refuses an incomplete cache before native usage or processing', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'qsmbly-qsmart-offline-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  for (const variable of ['QSMBLY_OFFLINE', 'NEURODESK_OFFLINE']) {
+    const result = run(['qsmart', 'field.nii', '--mask', 'mask.nii', '--output', 'out.nii', '--field-strength', '3', '--echo-time', '0.02', '--qsmart-inversion', 'xqsm'], {
+      XDG_CACHE_HOME: root, NEURODESK_QSMBLY_MODEL_DIR: root, [variable]: '1',
+    });
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stderr, /bfrnet.onnx.*download-models/);
+    assert.equal(result.stdout, '');
+  }
+  assert.deepEqual(await readdir(root), []);
 });
 
 test('weights are verified before use and downloaded only when missing', async (t) => {
@@ -151,6 +173,49 @@ test('both offline switches refuse an incomplete native cache before launching Q
   assert.deepEqual(await readdir(root), []);
 });
 
+test('offline example downloads stop before native launch', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'qsmbly-example-offline-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  for (const variable of ['QSMBLY_OFFLINE', 'NEURODESK_OFFLINE']) {
+    for (const args of [['example', join(root, 'out')], ['example', '--', '--list']]) {
+      const result = run(args, { XDG_CACHE_HOME: root, [variable]: '1' });
+      assert.equal(result.status, 1, result.stderr);
+      assert.match(result.stderr, /Offline QSMbly does not support example downloads/);
+      assert.equal(result.stdout, '');
+    }
+  }
+  assert.deepEqual(await readdir(root), []);
+});
+
+test('native SLURM and TUI cannot bypass wrapper preflight online or offline', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'qsmbly-slurm-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  for (const offline of ['0', '1']) {
+    for (const args of [['slurm', 'bids', 'out', '--account', 'test'], ['slurm', '--submit'], ['slurm', '--', '--help'], ['tui'], ['tui', '--', '--help']]) {
+      const result = run(args, { XDG_CACHE_HOME: root, NEURODESK_OFFLINE: offline });
+      assert.equal(result.status, 1, result.stderr);
+      assert.match(result.stderr, /does not support native SLURM generation or the TUI/);
+      assert.equal(result.stdout, '');
+    }
+  }
+  assert.deepEqual(await readdir(root), []);
+});
+
+test('every native example URL uses the pinned mirror and registry checksums', () => {
+  const base = 'https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fe86ccf8b742dfa2272c608bf25c95f5e809853/qsmbly/native-examples/v9.22.0';
+  assert.equal(EXAMPLE_ASSETS.length, 23);
+  for (const asset of EXAMPLE_ASSETS) {
+    assert.equal(asset.filename, `${asset.id}.zip`);
+    assert.equal(asset.url, `${base}/${asset.filename}`);
+  }
+  assert.equal(qsmxtEnvironment({ environment: { QSMXT_EXAMPLE_BASE_URL: 'https://example.invalid/mutable' } }).QSMXT_EXAMPLE_BASE_URL, base);
+  const source = EXAMPLE_ASSETS.map((asset) => `Example { id: "${asset.id}", bytes: ${asset.bytes}, sha256: "${asset.sha256}" }`).join('\n');
+  verifyNativeExamples(source, EXAMPLE_ASSETS);
+  for (const assets of [EXAMPLE_ASSETS.slice(1), [{ ...EXAMPLE_ASSETS[0], sha256: '0'.repeat(64) }, ...EXAMPLE_ASSETS.slice(1)]]) {
+    assert.throws(() => verifyNativeExamples(source, assets), /every native QSMxT acquisition/);
+  }
+});
+
 test('QSMxT reads only the complete model directory the wrapper verified', () => {
   const previous = process.env.NEURODESK_QSMBLY_MODEL_DIR;
   try {
@@ -178,4 +243,8 @@ test('the wrapper keeps its own commands and refuses to replace the pinned QSMxT
   const unknown = run(['download-models', '--model', 'nonesuch'], { QSMBLY_OFFLINE: '1' });
   assert.equal(unknown.status, 1);
   assert.match(unknown.stderr, /Unknown model nonesuch/);
+});
+
+test('the exported native runner also refuses the mutable updater before preflight', async () => {
+  await assert.rejects(runQsmxt(['update']), /Install a newer QSMbly release/);
 });

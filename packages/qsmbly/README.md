@@ -16,7 +16,7 @@ stages the host's archive in `native/`:
 | windows-x64 | `x86_64-pc-windows-msvc` |
 | macos-arm64 | `aarch64-apple-darwin`, re-signed with the release's Developer ID |
 
-`bin/qsmbly.js` adds two commands and passes every other one to QSMxT:
+`bin/qsmbly.js` adds two commands and guards native QSMxT execution:
 
 - `self-check` prints the runtime and QSMxT version as JSON.
 - `download-models [--model ID ...] [--cache-dir DIR]` fetches deep-learning
@@ -29,14 +29,14 @@ registry at a pinned commit of the Hugging Face repository
 hosted cache filenames, sizes and checksums against the pinned Rust registry.
 
 Native QSMxT has no offline switch and its model downloader ignores proxy
-environment variables. Before any `run`, masking, inversion, background
-removal, separation, segmentation, R2' or interactive command, the wrapper
-therefore verifies the complete 19-file registry in one local directory.
+environment variables. Before any native processing command, including
+QSMART, the wrapper therefore verifies the complete 19-file registry in one local directory.
 Missing weights download from pinned URLs into
 `~/.cache/neurodesk/qsmbly/models`. This first-use download is 1.7 GB,
 including for a classical reconstruction. Later runs verify the cached
 files and use no model network requests. Help, version, initialization,
-validation and dry-run commands need no weights.
+BIDS validation, DICOM conversion, example downloads and `run --dry` need
+no weights.
 
 Both `QSMBLY_OFFLINE=1` and `NEURODESK_OFFLINE=1` forbid wrapper downloads.
 An incomplete offline cache fails before QSMxT starts. Both native model
@@ -49,6 +49,22 @@ automatically only for releases that bundle models.
 `download-models --model ID` can still fetch individual files. Native compute
 requires the complete registry, so use `download-models` without `--model`
 before taking the command line offline.
+
+Native example downloads use a commit-pinned mirror on the Neurodesk Hugging
+Face dataset. `examples.manifest.json` lists all 23 acquisitions (2.99 GB in
+total); only the selected acquisitions download. The build checks their
+filenames, sizes and checksums against QSMxT's pinned example registry.
+`QSMXT_EXAMPLE_BASE_URL` is always set to this mirror for native execution.
+Native QSMxT verifies each archive before unpacking it.
+
+Offline mode disables `example` downloads. `example --list`, command help
+and processing local data remain available offline. Prepare example data
+while online, then use `run` offline with the complete model cache.
+
+Native `slurm` and `tui` execution are unavailable in both modes. Their
+scheduler jobs invoke QSMxT directly and bypass the wrapper's verified model
+preflight; the TUI can generate and submit those jobs internally. Their help
+remains available. Write scheduler scripts that invoke `qsmbly run` instead.
 
 The wrapper refuses `qsmbly update`, which would replace the pinned binary.
 

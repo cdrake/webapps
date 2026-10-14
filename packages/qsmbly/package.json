@@ -18,6 +18,7 @@
     "src",
     "native",
     "model.manifest.json",
+    "examples.manifest.json",
     "qsmxt.json",
     "LICENSE",
     "NOTICE",
@@ -36,8 +37,5 @@
     "type": "git",
     "url": "https://github.com/neurodesk/webapps.git",
     "directory": "packages/qsmbly"
-  },
-  "dependencies": {
-    "smol-toml": "1.9.0"
   }
 }

@@ -34,6 +34,30 @@ const { phaseSidecar = {}, arguments: extra = [] } = reference.replay ?? {};
 const work = values.output ? resolve(values.output) : await mkdtemp(join(tmpdir(), 'qsmbly-cli-check-'));
 await mkdir(work, { recursive: true });
 try {
+  const emptyCache = join(work, 'empty-cache');
+  const offlineEnvironment = { ...process.env, XDG_CACHE_HOME: emptyCache, NEURODESK_QSMBLY_MODEL_DIR: emptyCache, NEURODESK_OFFLINE: '1' };
+  for (const [args, expected] of [
+    [['qsmart', '--help'], /qsmart-inversion/],
+    [['tui', '--help'], /interactive TUI/],
+    [['slurm', '--help'], /SLURM/],
+    [['example', '--list'], /prisma-bridge-run1/],
+  ]) {
+    const result = spawnSync(command[0], [...command.slice(1), ...args], { encoding: 'utf8', env: offlineEnvironment });
+    assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+    assert.match(result.stdout, expected);
+  }
+  for (const [args, expected] of [
+    [['qsmart', 'field.nii', '--mask', 'mask.nii', '--output', 'out.nii', '--field-strength', '3', '--echo-time', '0.02', '--qsmart-inversion', 'xqsm'], /bfrnet.onnx.*download-models/],
+    [['run', '--qsm-algorithm', 'xqsm', '--', '--dry', 'out'], /bfrnet.onnx.*download-models/],
+    [['example', '--', '--list'], /Offline QSMbly/],
+    [['tui'], /native SLURM generation or the TUI/],
+    [['slurm', '--submit'], /native SLURM generation or the TUI/],
+  ]) {
+    const result = spawnSync(command[0], [...command.slice(1), ...args], { encoding: 'utf8', env: offlineEnvironment });
+    assert.equal(result.status, 1, `${result.stdout}\n${result.stderr}`);
+    assert.match(result.stderr, expected);
+    assert.equal(result.stdout, '');
+  }
   const modelCache = join(tmpdir(), 'qsmbly-validation-models-v0.38.0');
   // Provision outside the packager's isolated HOME, then run the archive offline. Native QSMxT
   // has no offline flag, so even a classical run gets its complete verified hosted registry.

@@ -1,0 +1,167 @@
+{
+  "version": "9.22.0",
+  "baseUrl": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fe86ccf8b742dfa2272c608bf25c95f5e809853/qsmbly/native-examples/v9.22.0",
+  "assets": [
+    {
+      "id": "prisma-bridge-run1",
+      "filename": "prisma-bridge-run1.zip",
+      "sha256": "0105106f7d232434e49c07252920350338daa760dff4996e74788efa078ee2d5",
+      "bytes": 102636620,
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fe86ccf8b742dfa2272c608bf25c95f5e809853/qsmbly/native-examples/v9.22.0/prisma-bridge-run1.zip"
+    },
+    {
+      "id": "prisma-bridge-run2",
+      "filename": "prisma-bridge-run2.zip",
+      "sha256": "b360fdb9768667a92809239f49b0ddb5a3c0ac4912614165df4831280dbe5ef6",
+      "bytes": 102876631,
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fe86ccf8b742dfa2272c608bf25c95f5e809853/qsmbly/native-examples/v9.22.0/prisma-bridge-run2.zip"
+    },
+    {
+      "id": "prisma-bridge-run3",
+      "filename": "prisma-bridge-run3.zip",
+      "sha256": "caf03b8638621713b3f1920b1faa103f712a4a1513a3ce5c5734186cf2ed6c53",
+      "bytes": 103221267,
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fe86ccf8b742dfa2272c608bf25c95f5e809853/qsmbly/native-examples/v9.22.0/prisma-bridge-run3.zip"
+    },
+    {
+      "id": "prisma-local-run1",
+      "filename": "prisma-local-run1.zip",
+      "sha256": "24c42e7c7001968dd344568a171dc8d45fd5b7e455acb505a3eafdc824a75a5f",
+      "bytes": 96269010,
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fe86ccf8b742dfa2272c608bf25c95f5e809853/qsmbly/native-examples/v9.22.0/prisma-local-run1.zip"
+    },
+    {
+      "id": "prisma-local-run2",
+      "filename": "prisma-local-run2.zip",
+      "sha256": "8862f6ba12483fc5abccd90399f3c78fdf30b8525d7c848e3519bfa88ac8dfe1",
+      "bytes": 96184302,
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fe86ccf8b742dfa2272c608bf25c95f5e809853/qsmbly/native-examples/v9.22.0/prisma-local-run2.zip"
+    },
+    {
+      "id": "prisma-local-run3",
+      "filename": "prisma-local-run3.zip",
+      "sha256": "6c55a58058b5443a29d4b55f325d4558ca63c43ef2730900dc2abf4dc7fb6308",
+      "bytes": 96358471,
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fe86ccf8b742dfa2272c608bf25c95f5e809853/qsmbly/native-examples/v9.22.0/prisma-local-run3.zip"
+    },
+    {
+      "id": "prisma-pulseq-offline-run1",
+      "filename": "prisma-pulseq-offline-run1.zip",
+      "sha256": "87d2011605c60eaae9fa3e6dd0cf5b1dcec2235e9f8a12ee4935be950a9ac4db",
+      "bytes": 224205905,
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fe86ccf8b742dfa2272c608bf25c95f5e809853/qsmbly/native-examples/v9.22.0/prisma-pulseq-offline-run1.zip"
+    },
+    {
+      "id": "prisma-pulseq-offline-run3",
+      "filename": "prisma-pulseq-offline-run3.zip",
+      "sha256": "5c7a7bffa641ae73a0a8489177ad1323c9e566a180b7a6669743f9d2823be4cb",
+      "bytes": 220958640,
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fe86ccf8b742dfa2272c608bf25c95f5e809853/qsmbly/native-examples/v9.22.0/prisma-pulseq-offline-run3.zip"
+    },
+    {
+      "id": "prisma-pulseq-online-run1",
+      "filename": "prisma-pulseq-online-run1.zip",
+      "sha256": "fb2bc282df85f4dcfeb26c24975cd2f7365252e6f4b6bf9f9c084ad48ceb1afb",
+      "bytes": 103363065,
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fe86ccf8b742dfa2272c608bf25c95f5e809853/qsmbly/native-examples/v9.22.0/prisma-pulseq-online-run1.zip"
+    },
+    {
+      "id": "prisma-pulseq-online-run2",
+      "filename": "prisma-pulseq-online-run2.zip",
+      "sha256": "f6851f02a5cca88df942d39b295379704e787344e3d4a71f469af6862e75bae5",
+      "bytes": 103833771,
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fe86ccf8b742dfa2272c608bf25c95f5e809853/qsmbly/native-examples/v9.22.0/prisma-pulseq-online-run2.zip"
+    },
+    {
+      "id": "prisma-pulseq-online-run3",
+      "filename": "prisma-pulseq-online-run3.zip",
+      "sha256": "eb4ab5e323efe402096e32cebedb3eb82ff0e3617338dcc7800474c331cf3e97",
+      "bytes": 103912746,
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fe86ccf8b742dfa2272c608bf25c95f5e809853/qsmbly/native-examples/v9.22.0/prisma-pulseq-online-run3.zip"
+    },
+    {
+      "id": "cima-bridge-run1",
+      "filename": "cima-bridge-run1.zip",
+      "sha256": "7c5a13476017907e7b51ba9ffb7894e508091c06240e3fd64346dd61fe431d55",
+      "bytes": 101998696,
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fe86ccf8b742dfa2272c608bf25c95f5e809853/qsmbly/native-examples/v9.22.0/cima-bridge-run1.zip"
+    },
+    {
+      "id": "cima-bridge-run2",
+      "filename": "cima-bridge-run2.zip",
+      "sha256": "f717e97f727523dc4c1052c0dc278f066abae4e1b253d27643f2d63d477b6f0e",
+      "bytes": 101854104,
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fe86ccf8b742dfa2272c608bf25c95f5e809853/qsmbly/native-examples/v9.22.0/cima-bridge-run2.zip"
+    },
+    {
+      "id": "cima-bridge-run3",
+      "filename": "cima-bridge-run3.zip",
+      "sha256": "43a2734ff8602b2f565d842940a5ab6d97af50a41f5f26864f74d67f2b834e1b",
+      "bytes": 101790208,
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fe86ccf8b742dfa2272c608bf25c95f5e809853/qsmbly/native-examples/v9.22.0/cima-bridge-run3.zip"
+    },
+    {
+      "id": "cima-local-run1",
+      "filename": "cima-local-run1.zip",
+      "sha256": "4101ef19f9f80000878e994368b8eec88e943ded8062ff301d1d109b26a530db",
+      "bytes": 116893140,
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fe86ccf8b742dfa2272c608bf25c95f5e809853/qsmbly/native-examples/v9.22.0/cima-local-run1.zip"
+    },
+    {
+      "id": "cima-local-run2",
+      "filename": "cima-local-run2.zip",
+      "sha256": "8744b4f8f82de52c86a270d803959badf7322af3ee14404eae8e3a516128c018",
+      "bytes": 117023810,
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fe86ccf8b742dfa2272c608bf25c95f5e809853/qsmbly/native-examples/v9.22.0/cima-local-run2.zip"
+    },
+    {
+      "id": "cima-local-run3",
+      "filename": "cima-local-run3.zip",
+      "sha256": "23bf5a1156d692de092f7b9c3ce1d7d61efc4ac9a2983193eafdc6ba963f15f5",
+      "bytes": 116128176,
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fe86ccf8b742dfa2272c608bf25c95f5e809853/qsmbly/native-examples/v9.22.0/cima-local-run3.zip"
+    },
+    {
+      "id": "cima-pulseq-offline-run1",
+      "filename": "cima-pulseq-offline-run1.zip",
+      "sha256": "f5eee8465c5f3e68292758467236d2333ef28e96960b3001a129676ba51d3ffb",
+      "bytes": 225377103,
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fe86ccf8b742dfa2272c608bf25c95f5e809853/qsmbly/native-examples/v9.22.0/cima-pulseq-offline-run1.zip"
+    },
+    {
+      "id": "cima-pulseq-offline-run2",
+      "filename": "cima-pulseq-offline-run2.zip",
+      "sha256": "a1f2da356ddb47315d99464b7f722e9c6af67f089e52663baf9888efa70ef775",
+      "bytes": 226451489,
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fe86ccf8b742dfa2272c608bf25c95f5e809853/qsmbly/native-examples/v9.22.0/cima-pulseq-offline-run2.zip"
+    },
+    {
+      "id": "cima-pulseq-offline-run3",
+      "filename": "cima-pulseq-offline-run3.zip",
+      "sha256": "6b9856c8d51e8da881d28b59c6ad571f0d80b1f6e81018e2aa10d57e54e4ac6e",
+      "bytes": 223541830,
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fe86ccf8b742dfa2272c608bf25c95f5e809853/qsmbly/native-examples/v9.22.0/cima-pulseq-offline-run3.zip"
+    },
+    {
+      "id": "cima-pulseq-online-run1",
+      "filename": "cima-pulseq-online-run1.zip",
+      "sha256": "df6b5aeb977de936ed7617961c1c88d3a6d5c7599289db367f8851de63652680",
+      "bytes": 101155349,
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fe86ccf8b742dfa2272c608bf25c95f5e809853/qsmbly/native-examples/v9.22.0/cima-pulseq-online-run1.zip"
+    },
+    {
+      "id": "cima-pulseq-online-run2",
+      "filename": "cima-pulseq-online-run2.zip",
+      "sha256": "5e5f53544f106e0e34b3004397882130f67759ccd9448e8db557b09b29f5aa21",
+      "bytes": 101240462,
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fe86ccf8b742dfa2272c608bf25c95f5e809853/qsmbly/native-examples/v9.22.0/cima-pulseq-online-run2.zip"
+    },
+    {
+      "id": "cima-pulseq-online-run3",
+      "filename": "cima-pulseq-online-run3.zip",
+      "sha256": "cd52f96b2475bc17238c9338bf0f2afbad189f6d457ebd80d3dd1a6e9691bcd7",
+      "bytes": 100694884,
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fe86ccf8b742dfa2272c608bf25c95f5e809853/qsmbly/native-examples/v9.22.0/cima-pulseq-online-run3.zip"
+    }
+  ]
+}
