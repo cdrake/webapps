@@ -91,7 +91,15 @@ release-maintained version records as roots. Those historical scans also reporte
 14 types, one duplicate export, 13 dependencies and four devDependencies.
 Run `pnpm quality:unused` for current counts after dependency changes.
 
-Remaining candidates include upstream-owned modules, staged runtime dependencies,
-and exports referenced inside browser-evaluated source strings. These need caller
-and runtime checks before a later cleanup. Scientific transform and output helpers
-require their parity evidence before changing their public APIs.
+## Triage records
+
+- [2026-10-14](unused-code-triage-2026-10-14.md) classifies every candidate in a
+  fresh report. It removes 29 dead exports and one dead file, and lists the
+  runtime entries, upstream-owned findings, redundant dependency declarations and
+  open decisions that remain.
+
+Add a dated record like this one when a cleanup changes the candidate list.
+Scientific transform and output helpers need parity evidence before their public
+APIs change. The test `documented runtime roots stay registered as Knip entries`
+in `test/unused-code.test.mjs` fails if an explicit runtime root listed above
+loses its entry.

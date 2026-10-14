@@ -30,6 +30,34 @@ test('every pnpm workspace receives a source project without treating all source
   }
 });
 
+test('documented runtime roots stay registered as Knip entries', () => {
+  // Each file is loaded by filename, string URL or release tooling; without its entry the report would list live code.
+  const roots = {
+    'apps/topofit': ['src/config.js'],
+    'apps/zarro': ['src/config.js'],
+    'apps/qsmbly': ['js/qsm-worker-pure.js'],
+    'apps/seedseg': ['web/js/inference-worker.js'],
+    'apps/musclemap': ['web/js/inference-worker.js'],
+    'apps/vesselboost': ['web/js/inference-worker.js'],
+    'apps/spinalcordtoolbox': ['web/js/inference-worker.js'],
+    'apps/dicompare': ['electron/main.ts'],
+    'apps/surfannotate': ['icon/render.mjs'],
+    'packages/runtime-support': ['src/niimath/worker.js', 'src/freebrowse-viewer/static.js'],
+    'packages/components': ['web/js/showcase.js'],
+    'packages/desktop': ['src/main.js', 'neuroflow/runtime/neurodesk.mjs'],
+    'site/easter-eggs/vessel-surfer-leaderboard': ['src/worker.js'],
+    '.': ['site/app-shell.js', 'site/landing.js', 'site/theme.js', 'exes/nii2tvx/wasm_demo.mjs'],
+  };
+  for (const [workspace, entries] of Object.entries(roots)) {
+    for (const entry of entries) assert.ok(config.workspaces[workspace].entry.includes(entry), `${workspace}/${entry}`);
+  }
+  const runtimeManifest = JSON.parse(readFileSync('runtime-assets/manifest.json', 'utf8'));
+  for (const file of runtimeManifest.families.flatMap((family) => family.files)) {
+    if (!file.source_package || !/\.(?:js|mjs)$/.test(file.source)) continue;
+    assert.ok(config.workspaces[`packages/${file.source_package}`].entry.includes(file.source), file.source);
+  }
+});
+
 test('real Knip detects a dead file and export while report-only findings succeed', (t) => {
   const options = fixture(t);
   runReport(options);

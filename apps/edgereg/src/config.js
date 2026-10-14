@@ -3,8 +3,6 @@ const DATA_BASE = "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/
 const example = (folder, filename, label = filename.replace(/\.nii(\.gz)?$/i, "")) =>
   Object.freeze({ label, filename, url: `${DATA_BASE}/${folder}/${filename}` });
 
-export const APP = Object.freeze({ id: "edgereg" });
-
 export const MOVING_EXAMPLES = Object.freeze([
   example("moving", "t1_crop.nii.gz", "T1 crop"),
   ...[

@@ -60,10 +60,6 @@ export function collectFromPicker(fileList) {
   return Array.from(fileList).map((f) => fileRecord(f, f.webkitRelativePath || f.name));
 }
 
-export function readAsArrayBuffer(file) {
-  return file.arrayBuffer();
-}
-
 // Read a small prefix for header sniffing/grouping without loading the whole file.
 export async function readPrefix(file, bytes = 262144) {
   const slice = file.slice(0, Math.min(bytes, file.size));

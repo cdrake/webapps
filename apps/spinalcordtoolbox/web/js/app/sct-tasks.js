@@ -663,10 +663,6 @@ export function getTaskLabels(taskOrId) {
   return SCT_LABELS[task?.labelSet || 'spinalcord'] || SCT_LABELS.spinalcord;
 }
 
-export function getTaskForegroundLabel(taskOrId) {
-  return getTaskLabels(taskOrId).find(label => label.index > 0) || getTaskLabels(taskOrId)[0];
-}
-
 export function isTaskRunnable(taskOrId) {
   const task = typeof taskOrId === 'string' ? getTaskById(taskOrId) : taskOrId;
   return task?.supportStatus === TASK_STATUS.SUPPORTED;

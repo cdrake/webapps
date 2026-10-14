@@ -1,9 +1,9 @@
 // Reader dispatch: detect a file's kind by extension, with a DICOM magic sniff
 // for extensionless files.
 
-export { readDicomSeries, readDicomHeader, parseDicom, DicomError } from './dicom.js';
-export { readNifti, NiftiError } from './nifti.js';
-export { readMgz, MgzError } from './mgz.js';
+export { readDicomSeries, readDicomHeader } from './dicom.js';
+export { readNifti } from './nifti.js';
+export { readMgz } from './mgz.js';
 
 export function detectKind(name) {
   const n = (name || '').toLowerCase();
