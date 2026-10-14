@@ -59,9 +59,18 @@ that CPU module. The brain extraction app and Brain2Print run the same package.
 `validation/browser-reference.mjs` builds `validation/harness/` with Vite and runs
 the app's pipeline and browser runtimes in Chromium on the app's example
 (`apps/deface/examples.json`), with MindGrab on its CPU backend. It records each
-file's SHA-256 in `browser-reference.json` and each MindGrab mask in
-`masks/<case>.mask.gz` (one bit per voxel). `--check` reruns it and fails on any
-difference; `.github/workflows/deface-native.yml` does that before packaging.
+file's SHA-256 in `browser-reference.json`. Each MindGrab mask is packed to one
+bit per voxel and stored at a commit-pinned Hugging Face URL there, with its
+SHA-256 and byte size. Both validators cache these masks outside the source
+repository and verify them on every read. `--check` reruns the browser pipeline
+and fails on any difference. `.github/workflows/deface-native.yml` does that
+before packaging.
+
+After changing the pipeline or its runtimes, record with
+`node validation/browser-reference.mjs --output /storage/path/references`.
+The mask output directory must be outside the source repository. Upload changed
+masks to `neurodeskorg/webapps`, then pin their dataset commit URLs, checksums and
+sizes in `browser-reference.json`. Keep only the JSON and recording code in Git.
 
 `validation/cli-check.mjs --executable PATH` holds a command line to that run:
 niimath's `defaced.nii` must be the browser's byte for byte; a MindGrab mask must

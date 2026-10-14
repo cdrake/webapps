@@ -1,26 +1,34 @@
-// Records what the web app's pipeline writes in Chromium (browser-reference.json and masks/),
+// Records what the web app's pipeline writes in Chromium (browser-reference.json and external masks),
 // which the command line's release check (cli-check.mjs) must reproduce.
 //
 // Builds harness/ with Vite, the way the app is built, serves it cross-origin isolated on loopback
 // beside MindGrab's dist files, and runs every case through the app's pipeline and browser
 // runtimes with MindGrab on its CPU backend.
 //
-//   node validation/browser-reference.mjs            rewrite browser-reference.json and masks/
+//   node validation/browser-reference.mjs --output DIR  rewrite JSON and save packed masks outside Git
 //   node validation/browser-reference.mjs --check    fail unless the browser still matches them
 import { chromium } from '@playwright/test';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
-import { extname, join, normalize } from 'node:path';
+import { extname, isAbsolute, join, normalize, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseArgs } from 'node:util';
 import { build } from 'vite';
 import { mindgrabFromAssetPath } from '../../../scripts/lib/mindgrab-asset-path-plugin.mjs';
 import { downloadModels, MODEL_ASSETS } from '../src/node.js';
 import { TEMPLATE_NAMES } from '../src/pipeline.js';
-import { CASES, REFERENCE_URL, exampleInput, maskUrl, measureOutputs, packMask, readNifti, sha256, unpackMask } from './cases.mjs';
+import { CASES, REFERENCE_URL, exampleInput, measureOutputs, packMask, readNifti, referenceMask, sha256, unpackMask } from './cases.mjs';
 
-const check = process.argv.includes('--check');
+const { values } = parseArgs({ options: { check: { type: 'boolean' }, output: { type: 'string' } } });
+const check = values.check;
+const outputDir = resolve(values.output ?? join(tmpdir(), 'neurodesk-deface-reference-output'));
+const outputRelative = relative(fileURLToPath(new URL('../../../', import.meta.url)), outputDir);
+if (!(outputRelative === '..' || outputRelative.startsWith(`..${sep}`) || isAbsolute(outputRelative))) {
+  throw new Error('The mask output directory must be outside the source repository.');
+}
+const pinned = JSON.parse(await readFile(REFERENCE_URL, 'utf8'));
 
 // MindGrab and niimath as the app resolves them: through @neurodesk/runtime-support.
 const runtime = createRequire(createRequire(import.meta.url).resolve('@neurodesk/runtime-support/mindgrab'));
@@ -113,28 +121,35 @@ try {
 }
 
 if (check) {
-  const pinned = JSON.parse(await readFile(REFERENCE_URL, 'utf8'));
   const failures = [];
   for (const key of ['mindgrab', 'niimathWasmSha256', 'example']) {
     if (JSON.stringify(reference[key]) !== JSON.stringify(pinned[key])) failures.push(`${key} ${JSON.stringify(reference[key])} is installed but ${JSON.stringify(pinned[key])} is pinned`);
   }
   for (const [id, measured] of Object.entries(reference.cases)) {
     const { seconds: _seconds, ...now } = measured;
-    const { seconds: _pinnedSeconds, ...then } = pinned.cases[id] ?? {};
+    const { seconds: _pinnedSeconds, maskReference: _maskReference, ...then } = pinned.cases[id] ?? {};
     const same = JSON.stringify(now) === JSON.stringify(then);
     console.log(`${same ? 'PASS' : 'FAIL'} browser ${id}: outputs identical to browser-reference.json`);
     if (!same) failures.push(`${id}: ${JSON.stringify(now.sha256)} differs from ${JSON.stringify(then.sha256)}`);
     if (masks.has(id)) {
       const values = masks.get(id);
-      const recorded = unpackMask(await readFile(maskUrl(id)), values.length);
+      const recorded = unpackMask(await referenceMask(pinned.cases[id].maskReference), values.length);
       const identical = values.every((value, i) => (value !== 0) === (recorded[i] === 1));
-      console.log(`${identical ? 'PASS' : 'FAIL'} browser ${id}: mask identical to masks/${id}.mask.gz`);
-      if (!identical) failures.push(`${id}: mask differs from masks/${id}.mask.gz`);
+      console.log(`${identical ? 'PASS' : 'FAIL'} browser ${id}: mask identical to the pinned dataset reference`);
+      if (!identical) failures.push(`${id}: mask differs from the pinned dataset reference`);
     }
   }
   if (failures.length) throw new Error(failures.join('\n'));
 } else {
-  for (const [id, values] of masks) await writeFile(maskUrl(id), packMask(values));
+  await mkdir(outputDir, { recursive: true });
+  for (const [id, values] of masks) {
+    const bytes = packMask(values);
+    const pin = { file: `${id}.mask.gz`, bytes: bytes.length, sha256: sha256(bytes) };
+    const previous = pinned.cases[id]?.maskReference;
+    if (previous?.sha256 === pin.sha256 && previous.bytes === pin.bytes) pin.url = previous.url;
+    reference.cases[id].maskReference = pin;
+    await writeFile(join(outputDir, pin.file), bytes);
+  }
   await writeFile(REFERENCE_URL, `${JSON.stringify(reference, null, 2)}\n`);
-  console.log(`Wrote ${fileURLToPath(REFERENCE_URL)}`);
+  console.log(`Wrote ${fileURLToPath(REFERENCE_URL)} and packed masks in ${outputDir}. Upload changed masks and pin their dataset URLs before validating.`);
 }

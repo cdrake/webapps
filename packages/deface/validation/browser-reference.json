@@ -78,6 +78,12 @@
         "datatype": 2,
         "headerSha256": "ac689aab742cb631538da372010af198fe0e523abd40ff97854c50fbfe450596",
         "voxels": 1602690
+      },
+      "maskReference": {
+        "file": "example-mindgrab.mask.gz",
+        "bytes": 37352,
+        "sha256": "a28fcd3898b4cc121326b7d8db1bca1604b32ef6b1eb87ea92e1deceafaf108d",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/57ceacaadc952e14b31952c48a2069428c02fafc/deface/browser-reference/a28fcd3898b4cc121326b7d8db1bca1604b32ef6b1eb87ea92e1deceafaf108d.mask.gz"
       }
     },
     "example-mindgrab-robust8": {
@@ -110,6 +116,12 @@
         "datatype": 2,
         "headerSha256": "ac689aab742cb631538da372010af198fe0e523abd40ff97854c50fbfe450596",
         "voxels": 2252903
+      },
+      "maskReference": {
+        "file": "example-mindgrab-robust8.mask.gz",
+        "bytes": 38461,
+        "sha256": "d9c0705795bf553008d1ec4704dab0176b44fa2276345894f007c033c38abca7",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/57ceacaadc952e14b31952c48a2069428c02fafc/deface/browser-reference/d9c0705795bf553008d1ec4704dab0176b44fa2276345894f007c033c38abca7.mask.gz"
       }
     }
   }
