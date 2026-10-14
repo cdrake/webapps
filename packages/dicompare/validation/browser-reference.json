@@ -1,0 +1,2233 @@
+{
+  "example": "t1-dicom-protocol",
+  "app": "0.14.20261012",
+  "chromium": "156.0.8078.4",
+  "pythonAssets": [
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/attrs-23.2.0-py3-none-any.whl",
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/contourpy-1.3.0-cp312-cp312-pyodide_2024_0_wasm32.whl",
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/cycler-0.12.1-py3-none-any.whl",
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/fonttools-4.51.0-py3-none-any.whl",
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/jsonschema-4.21.1-py3-none-any.whl",
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/jsonschema_specifications-2023.12.1-py3-none-any.whl",
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/kiwisolver-1.4.5-cp312-cp312-pyodide_2024_0_wasm32.whl",
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/matplotlib-3.8.4-cp312-cp312-pyodide_2024_0_wasm32.whl",
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/matplotlib_pyodide-0.2.3-py3-none-any.whl",
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/micropip-0.8.0-py3-none-any.whl",
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/numpy-2.0.2-cp312-cp312-pyodide_2024_0_wasm32.whl",
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/openblas-0.3.26.zip",
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/packaging-23.2-py3-none-any.whl",
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/pandas-2.2.3-cp312-cp312-pyodide_2024_0_wasm32.whl",
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/pillow-10.2.0-cp312-cp312-pyodide_2024_0_wasm32.whl",
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/pyodide-lock.json",
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/pyodide.asm.js",
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/pyodide.asm.wasm",
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/pyparsing-3.1.2-py3-none-any.whl",
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/pyrsistent-0.20.0-cp312-cp312-pyodide_2024_0_wasm32.whl",
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/python_dateutil-2.9.0.post0-py2.py3-none-any.whl",
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/python_stdlib.zip",
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/pytz-2024.1-py2.py3-none-any.whl",
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/referencing-0.34.0-py3-none-any.whl",
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/rpds_py-0.18.0-cp312-cp312-pyodide_2024_0_wasm32.whl",
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/scipy-1.14.1-cp312-cp312-pyodide_2024_0_wasm32.whl",
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/setuptools-69.5.1-py3-none-any.whl",
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/six-1.16.0-py2.py3-none-any.whl",
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/sqlite3-1.0.0-py2.py3-none-any.whl",
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/tqdm-4.66.2-py3-none-any.whl",
+    "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/typing_extensions-4.11.0-py3-none-any.whl",
+    "https://files.pythonhosted.org/packages/3b/d7/601b6396b33536811668935faa790112266c70661be94555999be431f86f/nibabel-5.4.2-py3-none-any.whl",
+    "https://files.pythonhosted.org/packages/64/52/fc88de4696f87c4b7316bb26082e7652961c59fb66de8da5c05667cdcdac/dicompare-0.11.1-py3-none-any.whl",
+    "https://files.pythonhosted.org/packages/93/ab/9db91133fb05d5aa4be55d5068175bc878dc9dac6edd5525c8b89dc3641c/twixtools-0.24-py3-none-any.whl",
+    "https://files.pythonhosted.org/packages/99/55/db07de81b5c630da5cbf5c7df646580ca26dfaefa593667fc6f2fe016d2e/tabulate-0.10.0-py3-none-any.whl",
+    "https://files.pythonhosted.org/packages/db/5b/4e7d67d880b3344afff01708725a39717694a79391a32711fd40a8958bed/pydicom-2.4.5-py3-none-any.whl"
+  ],
+  "reports": {
+    "analyze": {
+      "source": "browser automation analyze",
+      "sha256": "4d702e6e8dea524519c9028b24735ae59b7d155405299b0be41bf258ac755444",
+      "report": {
+        "acquisitions": [
+          {
+            "id": "acq_t1mprtragkv4",
+            "protocolName": "acq-t1mprtragkv4",
+            "seriesDescription": "t1_mpr_tra_gk_v4",
+            "totalFiles": 120,
+            "sliceCount": 120,
+            "acquisitionFields": [
+              {
+                "tag": "0008,103E",
+                "name": "SeriesDescription",
+                "keyword": "SeriesDescription",
+                "value": "t1_mpr_tra_gk_v4",
+                "vr": "LO",
+                "level": "acquisition",
+                "dataType": "string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0024",
+                "name": "SequenceName",
+                "keyword": "SequenceName",
+                "value": "*tfl3d1",
+                "vr": "SH",
+                "level": "acquisition",
+                "dataType": "string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0021",
+                "name": "SequenceVariant",
+                "keyword": "SequenceVariant",
+                "value": [
+                  "SP",
+                  "MP",
+                  "OSP"
+                ],
+                "vr": "CS",
+                "level": "acquisition",
+                "dataType": "list_string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0020",
+                "name": "ScanningSequence",
+                "keyword": "ScanningSequence",
+                "value": [
+                  "GR",
+                  "IR"
+                ],
+                "vr": "CS",
+                "level": "acquisition",
+                "dataType": "list_string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0008,0008",
+                "name": "ImageType",
+                "keyword": "ImageType",
+                "value": [
+                  "ORIGINAL",
+                  "PRIMARY",
+                  "M",
+                  "ND"
+                ],
+                "vr": "CS",
+                "level": "acquisition",
+                "dataType": "list_string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0008,0070",
+                "name": "Manufacturer",
+                "keyword": "Manufacturer",
+                "value": "SIEMENS",
+                "vr": "LO",
+                "level": "acquisition",
+                "dataType": "string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0008,1090",
+                "name": "ManufacturerModelName",
+                "keyword": "ManufacturerModelName",
+                "value": "Avanto",
+                "vr": "LO",
+                "level": "acquisition",
+                "dataType": "string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0023",
+                "name": "MRAcquisitionType",
+                "keyword": "MRAcquisitionType",
+                "value": "3D",
+                "vr": "CS",
+                "level": "acquisition",
+                "dataType": "string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0050",
+                "name": "SliceThickness",
+                "keyword": "SliceThickness",
+                "value": 1.5,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0028,0030",
+                "name": "PixelSpacing",
+                "keyword": "PixelSpacing",
+                "value": [
+                  0.41016,
+                  0.41016
+                ],
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "list_number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0028,0010",
+                "name": "Rows",
+                "keyword": "Rows",
+                "value": 512,
+                "vr": "US",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0028,0011",
+                "name": "Columns",
+                "keyword": "Columns",
+                "value": 512,
+                "vr": "US",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,1310",
+                "name": "AcquisitionMatrix",
+                "keyword": "AcquisitionMatrix",
+                "value": [
+                  0,
+                  256,
+                  256,
+                  0
+                ],
+                "vr": "US",
+                "level": "acquisition",
+                "dataType": "list_number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0080",
+                "name": "RepetitionTime",
+                "keyword": "RepetitionTime",
+                "value": 1900,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0081",
+                "name": "EchoTime",
+                "keyword": "EchoTime",
+                "value": 2.97,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0082",
+                "name": "InversionTime",
+                "keyword": "InversionTime",
+                "value": 1100,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,1314",
+                "name": "FlipAngle",
+                "keyword": "FlipAngle",
+                "value": 15,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0091",
+                "name": "EchoTrainLength",
+                "keyword": "EchoTrainLength",
+                "value": 1,
+                "vr": "IS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0095",
+                "name": "PixelBandwidth",
+                "keyword": "PixelBandwidth",
+                "value": 190,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,1312",
+                "name": "InPlanePhaseEncodingDirection",
+                "keyword": "InPlanePhaseEncodingDirection",
+                "value": "ROW",
+                "vr": "CS",
+                "level": "acquisition",
+                "dataType": "string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0089",
+                "name": "NumberOfPhaseEncodingSteps",
+                "keyword": "NumberOfPhaseEncodingSteps",
+                "value": 320,
+                "vr": "IS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0087",
+                "name": "MagneticFieldStrength",
+                "keyword": "MagneticFieldStrength",
+                "value": 1.5,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0084",
+                "name": "ImagingFrequency",
+                "keyword": "ImagingFrequency",
+                "value": 63.67664,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0085",
+                "name": "ImagedNucleus",
+                "keyword": "ImagedNucleus",
+                "value": "1H",
+                "vr": "SH",
+                "level": "acquisition",
+                "dataType": "string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,1251",
+                "name": "TransmitCoilName",
+                "keyword": "TransmitCoilName",
+                "value": "TxRx_Head",
+                "vr": "SH",
+                "level": "acquisition",
+                "dataType": "string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,1316",
+                "name": "SAR",
+                "keyword": "SAR",
+                "value": 0.006,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,1318",
+                "name": "dBdt",
+                "keyword": "dBdt",
+                "value": 0,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0083",
+                "name": "NumberOfAverages",
+                "keyword": "NumberOfAverages",
+                "value": 1,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": null,
+                "name": "CoilType",
+                "keyword": "CoilType",
+                "value": "Combined",
+                "vr": "LO",
+                "level": "acquisition",
+                "dataType": "string",
+                "fieldType": "derived",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0093",
+                "name": "PercentSampling",
+                "keyword": "PercentSampling",
+                "value": 100,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0094",
+                "name": "PercentPhaseFieldOfView",
+                "keyword": "PercentPhaseFieldOfView",
+                "value": 100,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0022",
+                "name": "ScanOptions",
+                "keyword": "ScanOptions",
+                "value": "IR",
+                "vr": "CS",
+                "level": "acquisition",
+                "dataType": "list_string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0025",
+                "name": "AngioFlag",
+                "keyword": "AngioFlag",
+                "value": "N",
+                "vr": "CS",
+                "level": "acquisition",
+                "dataType": "string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              }
+            ],
+            "seriesFields": [],
+            "series": [],
+            "seriesFileMapping": {},
+            "metadata": {
+              "analysis_timestamp": "2026-10-14T16:42:04.846000",
+              "source": "dicom_analysis"
+            }
+          }
+        ]
+      }
+    },
+    "compare-library": {
+      "source": "browser automation compare",
+      "sha256": "251f04e491f519d0f4736cddd198c62f49487ac031256ad014e2c10d7db251dc",
+      "report": {
+        "schema": "QSM_Consensus_Guidelines_v1.0.json",
+        "schemaIndex": 0,
+        "acquisitions": [
+          {
+            "id": "acq_t1mprtragkv4",
+            "protocolName": "acq-t1mprtragkv4",
+            "seriesDescription": "t1_mpr_tra_gk_v4",
+            "totalFiles": 120,
+            "sliceCount": 120,
+            "acquisitionFields": [
+              {
+                "tag": "0008,103E",
+                "name": "SeriesDescription",
+                "keyword": "SeriesDescription",
+                "value": "t1_mpr_tra_gk_v4",
+                "vr": "LO",
+                "level": "acquisition",
+                "dataType": "string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0024",
+                "name": "SequenceName",
+                "keyword": "SequenceName",
+                "value": "*tfl3d1",
+                "vr": "SH",
+                "level": "acquisition",
+                "dataType": "string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0021",
+                "name": "SequenceVariant",
+                "keyword": "SequenceVariant",
+                "value": [
+                  "SP",
+                  "MP",
+                  "OSP"
+                ],
+                "vr": "CS",
+                "level": "acquisition",
+                "dataType": "list_string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0020",
+                "name": "ScanningSequence",
+                "keyword": "ScanningSequence",
+                "value": [
+                  "GR",
+                  "IR"
+                ],
+                "vr": "CS",
+                "level": "acquisition",
+                "dataType": "list_string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0008,0008",
+                "name": "ImageType",
+                "keyword": "ImageType",
+                "value": [
+                  "ORIGINAL",
+                  "PRIMARY",
+                  "M",
+                  "ND"
+                ],
+                "vr": "CS",
+                "level": "acquisition",
+                "dataType": "list_string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0008,0070",
+                "name": "Manufacturer",
+                "keyword": "Manufacturer",
+                "value": "SIEMENS",
+                "vr": "LO",
+                "level": "acquisition",
+                "dataType": "string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0008,1090",
+                "name": "ManufacturerModelName",
+                "keyword": "ManufacturerModelName",
+                "value": "Avanto",
+                "vr": "LO",
+                "level": "acquisition",
+                "dataType": "string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0023",
+                "name": "MRAcquisitionType",
+                "keyword": "MRAcquisitionType",
+                "value": "3D",
+                "vr": "CS",
+                "level": "acquisition",
+                "dataType": "string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0050",
+                "name": "SliceThickness",
+                "keyword": "SliceThickness",
+                "value": 1.5,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0028,0030",
+                "name": "PixelSpacing",
+                "keyword": "PixelSpacing",
+                "value": [
+                  0.41016,
+                  0.41016
+                ],
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "list_number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0028,0010",
+                "name": "Rows",
+                "keyword": "Rows",
+                "value": 512,
+                "vr": "US",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0028,0011",
+                "name": "Columns",
+                "keyword": "Columns",
+                "value": 512,
+                "vr": "US",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,1310",
+                "name": "AcquisitionMatrix",
+                "keyword": "AcquisitionMatrix",
+                "value": [
+                  0,
+                  256,
+                  256,
+                  0
+                ],
+                "vr": "US",
+                "level": "acquisition",
+                "dataType": "list_number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0080",
+                "name": "RepetitionTime",
+                "keyword": "RepetitionTime",
+                "value": 1900,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0081",
+                "name": "EchoTime",
+                "keyword": "EchoTime",
+                "value": 2.97,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0082",
+                "name": "InversionTime",
+                "keyword": "InversionTime",
+                "value": 1100,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,1314",
+                "name": "FlipAngle",
+                "keyword": "FlipAngle",
+                "value": 15,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0091",
+                "name": "EchoTrainLength",
+                "keyword": "EchoTrainLength",
+                "value": 1,
+                "vr": "IS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0095",
+                "name": "PixelBandwidth",
+                "keyword": "PixelBandwidth",
+                "value": 190,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,1312",
+                "name": "InPlanePhaseEncodingDirection",
+                "keyword": "InPlanePhaseEncodingDirection",
+                "value": "ROW",
+                "vr": "CS",
+                "level": "acquisition",
+                "dataType": "string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0089",
+                "name": "NumberOfPhaseEncodingSteps",
+                "keyword": "NumberOfPhaseEncodingSteps",
+                "value": 320,
+                "vr": "IS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0087",
+                "name": "MagneticFieldStrength",
+                "keyword": "MagneticFieldStrength",
+                "value": 1.5,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0084",
+                "name": "ImagingFrequency",
+                "keyword": "ImagingFrequency",
+                "value": 63.67664,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0085",
+                "name": "ImagedNucleus",
+                "keyword": "ImagedNucleus",
+                "value": "1H",
+                "vr": "SH",
+                "level": "acquisition",
+                "dataType": "string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,1251",
+                "name": "TransmitCoilName",
+                "keyword": "TransmitCoilName",
+                "value": "TxRx_Head",
+                "vr": "SH",
+                "level": "acquisition",
+                "dataType": "string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,1316",
+                "name": "SAR",
+                "keyword": "SAR",
+                "value": 0.006,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,1318",
+                "name": "dBdt",
+                "keyword": "dBdt",
+                "value": 0,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0083",
+                "name": "NumberOfAverages",
+                "keyword": "NumberOfAverages",
+                "value": 1,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": null,
+                "name": "CoilType",
+                "keyword": "CoilType",
+                "value": "Combined",
+                "vr": "LO",
+                "level": "acquisition",
+                "dataType": "string",
+                "fieldType": "derived",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0093",
+                "name": "PercentSampling",
+                "keyword": "PercentSampling",
+                "value": 100,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0094",
+                "name": "PercentPhaseFieldOfView",
+                "keyword": "PercentPhaseFieldOfView",
+                "value": 100,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0022",
+                "name": "ScanOptions",
+                "keyword": "ScanOptions",
+                "value": "IR",
+                "vr": "CS",
+                "level": "acquisition",
+                "dataType": "list_string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0025",
+                "name": "AngioFlag",
+                "keyword": "AngioFlag",
+                "value": "N",
+                "vr": "CS",
+                "level": "acquisition",
+                "dataType": "string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              }
+            ],
+            "seriesFields": [],
+            "series": [],
+            "seriesFileMapping": {},
+            "metadata": {
+              "analysis_timestamp": "2026-10-14T16:42:30.735000",
+              "source": "dicom_analysis"
+            }
+          }
+        ],
+        "comparison": [
+          {
+            "acquisition": "acq_t1mprtragkv4",
+            "protocolName": "acq-t1mprtragkv4",
+            "results": [
+              {
+                "fieldPath": "MRAcquisitionType",
+                "fieldName": "MRAcquisitionType",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": "3D",
+                "expectedValue": "3D",
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "EchoTime",
+                "fieldName": "EchoTime",
+                "status": "fail",
+                "message": "Only 1 echoes; at least 2.0 required.",
+                "actualValue": "{'EchoTime': [2.97], 'Count': [120]}",
+                "expectedValue": "While QSM can be achieved with one echo, two is the minimum number of echoes needed to separate the intrinsic transmit RF phase from the magnetic field-induced phase.",
+                "validationType": "rule",
+                "rule_name": "Multi-echo Validation"
+              },
+              {
+                "fieldPath": "EchoTime, MagneticFieldStrength",
+                "fieldName": "EchoTime, MagneticFieldStrength",
+                "status": "fail",
+                "message": "The longest TE should be ≥0.75x the lowest tissue T2* (55.5 ms).",
+                "actualValue": "{'EchoTime': [2.97], 'MagneticFieldStrength': [1.5], 'Count': [120]}",
+                "expectedValue": "The longest TE (the TE of the last echo) should be equal to at least the T2* value of the tissue of interest.",
+                "validationType": "rule",
+                "rule_name": "TE Close to T2*"
+              },
+              {
+                "fieldPath": "ImageType, EchoTime",
+                "fieldName": "ImageType, EchoTime",
+                "status": "fail",
+                "message": "Echo time 2.97 ms is missing phase image.",
+                "actualValue": "{'ImageType': [('ORIGINAL', 'PRIMARY', 'M', 'ND')], 'EchoTime': [2.97], 'Count': [120]}",
+                "expectedValue": "Each EchoTime must have at least one magnitude and phase image.",
+                "validationType": "rule",
+                "rule_name": "Valid Magnitude/Phase Pairs"
+              },
+              {
+                "fieldPath": "FlipAngle, RepetitionTime, MagneticFieldStrength",
+                "fieldName": "FlipAngle, RepetitionTime, MagneticFieldStrength",
+                "status": "fail",
+                "message": "FlipAngle should be between 78.15° and 87.58° at 1.5T with TR=1900 ms. Found 15.00°.",
+                "actualValue": "{'FlipAngle': [15], 'RepetitionTime': [1900], 'MagneticFieldStrength': [1.5], 'Count': [120]}",
+                "expectedValue": "FlipAngle should be close to the Ernst angle.",
+                "validationType": "rule",
+                "rule_name": "Ernst Flip Angle"
+              },
+              {
+                "fieldPath": "PixelSpacing, SliceThickness",
+                "fieldName": "PixelSpacing, SliceThickness",
+                "status": "fail",
+                "message": "Voxels not isotropic (tolerance 0.1 mm). PixelSpacing (0.41016, 0.41016), SliceThickness 1.5.",
+                "actualValue": "{'PixelSpacing': [(0.41016, 0.41016)], 'SliceThickness': [1.5], 'Count': [120]}",
+                "expectedValue": "Use isotropic voxels.",
+                "validationType": "rule",
+                "rule_name": "Isotropic Voxels"
+              },
+              {
+                "fieldPath": "PixelBandwidth, MagneticFieldStrength",
+                "fieldName": "PixelBandwidth, MagneticFieldStrength",
+                "status": "warning",
+                "message": "PixelBandwidth recommendations are not available at 1.5T (defined at 3T).",
+                "actualValue": "{'PixelBandwidth': [190], 'MagneticFieldStrength': [1.5], 'Count': [120]}",
+                "expectedValue": "Use the minimum readout bandwidth which generates acceptable distortions.",
+                "validationType": "rule",
+                "rule_name": "Readout Bandwidth"
+              },
+              {
+                "fieldPath": "EchoTime",
+                "fieldName": "EchoTime",
+                "status": "pass",
+                "message": "OK",
+                "actualValue": "{'EchoTime': [2.97], 'Count': [120]}",
+                "expectedValue": "The spacing between echoes (ΔTE) should be uniform.",
+                "validationType": "rule",
+                "rule_name": "Uniform Echo Spacing"
+              },
+              {
+                "fieldPath": "EchoTime",
+                "fieldName": "EchoTime",
+                "status": "pass",
+                "message": "OK",
+                "actualValue": "{'EchoTime': [2.97], 'Count': [120]}",
+                "expectedValue": "The first TE (TE1) should be as short as possible.",
+                "validationType": "rule",
+                "rule_name": "Short First Echo"
+              },
+              {
+                "fieldPath": "ImageType, EchoTime",
+                "fieldName": "ImageType, EchoTime",
+                "status": "pass",
+                "message": "OK",
+                "actualValue": "{'ImageType': [('ORIGINAL', 'PRIMARY', 'M', 'ND')], 'EchoTime': [2.97], 'Count': [120]}",
+                "expectedValue": "Each magnitude and phase image should have the same number of slices.",
+                "validationType": "rule",
+                "rule_name": "Matching Magnitude/Phase Slices"
+              },
+              {
+                "fieldPath": "PixelSpacing, SliceThickness",
+                "fieldName": "PixelSpacing, SliceThickness",
+                "status": "pass",
+                "message": "OK",
+                "actualValue": "{'PixelSpacing': [(0.41016, 0.41016)], 'SliceThickness': [1.5], 'Count': [120]}",
+                "expectedValue": "Use a combined voxel size of at most 1 mm³ to reduce partial volume-related estimation errors.",
+                "validationType": "rule",
+                "rule_name": "Voxel Size Limit"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "build-schema": {
+      "source": "in-repository command line (the app has no schema automation)",
+      "sha256": "92ad178727d5847f497bea1a05f44c8a282bba9f39159a3d880341f0d1eb52f6",
+      "report": {
+        "name": "Untitled Schema",
+        "description": "",
+        "version": "1.0",
+        "authors": [],
+        "acquisitions": {
+          "acq-t1mprtragkv4": {
+            "description": "t1_mpr_tra_gk_v4",
+            "detailed_description": "",
+            "fields": [
+              {
+                "field": "SeriesDescription",
+                "tag": "0008,103E",
+                "value": "t1_mpr_tra_gk_v4"
+              },
+              {
+                "field": "SequenceName",
+                "tag": "0018,0024",
+                "value": "*tfl3d1"
+              },
+              {
+                "field": "SequenceVariant",
+                "tag": "0018,0021",
+                "value": [
+                  "SP",
+                  "MP",
+                  "OSP"
+                ]
+              },
+              {
+                "field": "ScanningSequence",
+                "tag": "0018,0020",
+                "value": [
+                  "GR",
+                  "IR"
+                ]
+              },
+              {
+                "field": "ImageType",
+                "tag": "0008,0008",
+                "value": [
+                  "ORIGINAL",
+                  "PRIMARY",
+                  "M",
+                  "ND"
+                ]
+              },
+              {
+                "field": "Manufacturer",
+                "tag": "0008,0070",
+                "value": "SIEMENS"
+              },
+              {
+                "field": "ManufacturerModelName",
+                "tag": "0008,1090",
+                "value": "Avanto"
+              },
+              {
+                "field": "MRAcquisitionType",
+                "tag": "0018,0023",
+                "value": "3D"
+              },
+              {
+                "field": "SliceThickness",
+                "tag": "0018,0050",
+                "value": 1.5
+              },
+              {
+                "field": "PixelSpacing",
+                "tag": "0028,0030",
+                "value": [
+                  0.41016,
+                  0.41016
+                ]
+              },
+              {
+                "field": "Rows",
+                "tag": "0028,0010",
+                "value": 512
+              },
+              {
+                "field": "Columns",
+                "tag": "0028,0011",
+                "value": 512
+              },
+              {
+                "field": "AcquisitionMatrix",
+                "tag": "0018,1310",
+                "value": [
+                  0,
+                  256,
+                  256,
+                  0
+                ]
+              },
+              {
+                "field": "RepetitionTime",
+                "tag": "0018,0080",
+                "value": 1900
+              },
+              {
+                "field": "EchoTime",
+                "tag": "0018,0081",
+                "value": 2.97
+              },
+              {
+                "field": "InversionTime",
+                "tag": "0018,0082",
+                "value": 1100
+              },
+              {
+                "field": "FlipAngle",
+                "tag": "0018,1314",
+                "value": 15
+              },
+              {
+                "field": "EchoTrainLength",
+                "tag": "0018,0091",
+                "value": 1
+              },
+              {
+                "field": "PixelBandwidth",
+                "tag": "0018,0095",
+                "value": 190
+              },
+              {
+                "field": "InPlanePhaseEncodingDirection",
+                "tag": "0018,1312",
+                "value": "ROW"
+              },
+              {
+                "field": "NumberOfPhaseEncodingSteps",
+                "tag": "0018,0089",
+                "value": 320
+              },
+              {
+                "field": "MagneticFieldStrength",
+                "tag": "0018,0087",
+                "value": 1.5
+              },
+              {
+                "field": "ImagingFrequency",
+                "tag": "0018,0084",
+                "value": 63.67664
+              },
+              {
+                "field": "ImagedNucleus",
+                "tag": "0018,0085",
+                "value": "1H"
+              },
+              {
+                "field": "TransmitCoilName",
+                "tag": "0018,1251",
+                "value": "TxRx_Head"
+              },
+              {
+                "field": "SAR",
+                "tag": "0018,1316",
+                "value": 0.006
+              },
+              {
+                "field": "dBdt",
+                "tag": "0018,1318",
+                "value": 0
+              },
+              {
+                "field": "NumberOfAverages",
+                "tag": "0018,0083",
+                "value": 1
+              },
+              {
+                "field": "CoilType",
+                "tag": "derived",
+                "value": "Combined"
+              },
+              {
+                "field": "PercentSampling",
+                "tag": "0018,0093",
+                "value": 100
+              },
+              {
+                "field": "PercentPhaseFieldOfView",
+                "tag": "0018,0094",
+                "value": 100
+              },
+              {
+                "field": "ScanOptions",
+                "tag": "0018,0022",
+                "value": "IR"
+              },
+              {
+                "field": "AngioFlag",
+                "tag": "0018,0025",
+                "value": "N"
+              }
+            ],
+            "series": []
+          }
+        }
+      }
+    },
+    "compare-built-schema": {
+      "source": "browser automation compare",
+      "sha256": "0e02e40a85e7dc8a6898bb8d4adf9c1aa2a3b1f47c17f7d31bab8375c9c5412d",
+      "report": {
+        "schema": "schema.json",
+        "schemaIndex": 0,
+        "acquisitions": [
+          {
+            "id": "acq_t1mprtragkv4",
+            "protocolName": "acq-t1mprtragkv4",
+            "seriesDescription": "t1_mpr_tra_gk_v4",
+            "totalFiles": 120,
+            "sliceCount": 120,
+            "acquisitionFields": [
+              {
+                "tag": "0008,103E",
+                "name": "SeriesDescription",
+                "keyword": "SeriesDescription",
+                "value": "t1_mpr_tra_gk_v4",
+                "vr": "LO",
+                "level": "acquisition",
+                "dataType": "string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0024",
+                "name": "SequenceName",
+                "keyword": "SequenceName",
+                "value": "*tfl3d1",
+                "vr": "SH",
+                "level": "acquisition",
+                "dataType": "string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0021",
+                "name": "SequenceVariant",
+                "keyword": "SequenceVariant",
+                "value": [
+                  "SP",
+                  "MP",
+                  "OSP"
+                ],
+                "vr": "CS",
+                "level": "acquisition",
+                "dataType": "list_string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0020",
+                "name": "ScanningSequence",
+                "keyword": "ScanningSequence",
+                "value": [
+                  "GR",
+                  "IR"
+                ],
+                "vr": "CS",
+                "level": "acquisition",
+                "dataType": "list_string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0008,0008",
+                "name": "ImageType",
+                "keyword": "ImageType",
+                "value": [
+                  "ORIGINAL",
+                  "PRIMARY",
+                  "M",
+                  "ND"
+                ],
+                "vr": "CS",
+                "level": "acquisition",
+                "dataType": "list_string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0008,0070",
+                "name": "Manufacturer",
+                "keyword": "Manufacturer",
+                "value": "SIEMENS",
+                "vr": "LO",
+                "level": "acquisition",
+                "dataType": "string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0008,1090",
+                "name": "ManufacturerModelName",
+                "keyword": "ManufacturerModelName",
+                "value": "Avanto",
+                "vr": "LO",
+                "level": "acquisition",
+                "dataType": "string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0023",
+                "name": "MRAcquisitionType",
+                "keyword": "MRAcquisitionType",
+                "value": "3D",
+                "vr": "CS",
+                "level": "acquisition",
+                "dataType": "string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0050",
+                "name": "SliceThickness",
+                "keyword": "SliceThickness",
+                "value": 1.5,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0028,0030",
+                "name": "PixelSpacing",
+                "keyword": "PixelSpacing",
+                "value": [
+                  0.41016,
+                  0.41016
+                ],
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "list_number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0028,0010",
+                "name": "Rows",
+                "keyword": "Rows",
+                "value": 512,
+                "vr": "US",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0028,0011",
+                "name": "Columns",
+                "keyword": "Columns",
+                "value": 512,
+                "vr": "US",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,1310",
+                "name": "AcquisitionMatrix",
+                "keyword": "AcquisitionMatrix",
+                "value": [
+                  0,
+                  256,
+                  256,
+                  0
+                ],
+                "vr": "US",
+                "level": "acquisition",
+                "dataType": "list_number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0080",
+                "name": "RepetitionTime",
+                "keyword": "RepetitionTime",
+                "value": 1900,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0081",
+                "name": "EchoTime",
+                "keyword": "EchoTime",
+                "value": 2.97,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0082",
+                "name": "InversionTime",
+                "keyword": "InversionTime",
+                "value": 1100,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,1314",
+                "name": "FlipAngle",
+                "keyword": "FlipAngle",
+                "value": 15,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0091",
+                "name": "EchoTrainLength",
+                "keyword": "EchoTrainLength",
+                "value": 1,
+                "vr": "IS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0095",
+                "name": "PixelBandwidth",
+                "keyword": "PixelBandwidth",
+                "value": 190,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,1312",
+                "name": "InPlanePhaseEncodingDirection",
+                "keyword": "InPlanePhaseEncodingDirection",
+                "value": "ROW",
+                "vr": "CS",
+                "level": "acquisition",
+                "dataType": "string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0089",
+                "name": "NumberOfPhaseEncodingSteps",
+                "keyword": "NumberOfPhaseEncodingSteps",
+                "value": 320,
+                "vr": "IS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0087",
+                "name": "MagneticFieldStrength",
+                "keyword": "MagneticFieldStrength",
+                "value": 1.5,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0084",
+                "name": "ImagingFrequency",
+                "keyword": "ImagingFrequency",
+                "value": 63.67664,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0085",
+                "name": "ImagedNucleus",
+                "keyword": "ImagedNucleus",
+                "value": "1H",
+                "vr": "SH",
+                "level": "acquisition",
+                "dataType": "string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,1251",
+                "name": "TransmitCoilName",
+                "keyword": "TransmitCoilName",
+                "value": "TxRx_Head",
+                "vr": "SH",
+                "level": "acquisition",
+                "dataType": "string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,1316",
+                "name": "SAR",
+                "keyword": "SAR",
+                "value": 0.006,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,1318",
+                "name": "dBdt",
+                "keyword": "dBdt",
+                "value": 0,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0083",
+                "name": "NumberOfAverages",
+                "keyword": "NumberOfAverages",
+                "value": 1,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": null,
+                "name": "CoilType",
+                "keyword": "CoilType",
+                "value": "Combined",
+                "vr": "LO",
+                "level": "acquisition",
+                "dataType": "string",
+                "fieldType": "derived",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0093",
+                "name": "PercentSampling",
+                "keyword": "PercentSampling",
+                "value": 100,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0094",
+                "name": "PercentPhaseFieldOfView",
+                "keyword": "PercentPhaseFieldOfView",
+                "value": 100,
+                "vr": "DS",
+                "level": "acquisition",
+                "dataType": "number",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0022",
+                "name": "ScanOptions",
+                "keyword": "ScanOptions",
+                "value": "IR",
+                "vr": "CS",
+                "level": "acquisition",
+                "dataType": "list_string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              },
+              {
+                "tag": "0018,0025",
+                "name": "AngioFlag",
+                "keyword": "AngioFlag",
+                "value": "N",
+                "vr": "CS",
+                "level": "acquisition",
+                "dataType": "string",
+                "fieldType": "standard",
+                "consistency": "constant",
+                "validationRule": {
+                  "type": "exact"
+                }
+              }
+            ],
+            "seriesFields": [],
+            "series": [],
+            "seriesFileMapping": {},
+            "metadata": {
+              "analysis_timestamp": "2026-10-14T16:42:59.715000",
+              "source": "dicom_analysis"
+            }
+          }
+        ],
+        "comparison": [
+          {
+            "acquisition": "acq_t1mprtragkv4",
+            "protocolName": "acq-t1mprtragkv4",
+            "results": [
+              {
+                "fieldPath": "SeriesDescription",
+                "fieldName": "SeriesDescription",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": "t1_mpr_tra_gk_v4",
+                "expectedValue": "t1_mpr_tra_gk_v4",
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "SequenceName",
+                "fieldName": "SequenceName",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": "*tfl3d1",
+                "expectedValue": "*tfl3d1",
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "SequenceVariant",
+                "fieldName": "SequenceVariant",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": [
+                  "SP",
+                  "MP",
+                  "OSP"
+                ],
+                "expectedValue": [
+                  "SP",
+                  "MP",
+                  "OSP"
+                ],
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "ScanningSequence",
+                "fieldName": "ScanningSequence",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": [
+                  "GR",
+                  "IR"
+                ],
+                "expectedValue": [
+                  "GR",
+                  "IR"
+                ],
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "ImageType",
+                "fieldName": "ImageType",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": [
+                  "ORIGINAL",
+                  "PRIMARY",
+                  "M",
+                  "ND"
+                ],
+                "expectedValue": [
+                  "ORIGINAL",
+                  "PRIMARY",
+                  "M",
+                  "ND"
+                ],
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "Manufacturer",
+                "fieldName": "Manufacturer",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": "SIEMENS",
+                "expectedValue": "SIEMENS",
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "ManufacturerModelName",
+                "fieldName": "ManufacturerModelName",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": "Avanto",
+                "expectedValue": "Avanto",
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "MRAcquisitionType",
+                "fieldName": "MRAcquisitionType",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": "3D",
+                "expectedValue": "3D",
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "SliceThickness",
+                "fieldName": "SliceThickness",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": 1.5,
+                "expectedValue": 1.5,
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "PixelSpacing",
+                "fieldName": "PixelSpacing",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": [
+                  0.41016,
+                  0.41016
+                ],
+                "expectedValue": [
+                  0.41016,
+                  0.41016
+                ],
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "Rows",
+                "fieldName": "Rows",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": 512,
+                "expectedValue": 512,
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "Columns",
+                "fieldName": "Columns",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": 512,
+                "expectedValue": 512,
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "AcquisitionMatrix",
+                "fieldName": "AcquisitionMatrix",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": [
+                  0,
+                  256,
+                  256,
+                  0
+                ],
+                "expectedValue": [
+                  0,
+                  256,
+                  256,
+                  0
+                ],
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "RepetitionTime",
+                "fieldName": "RepetitionTime",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": 1900,
+                "expectedValue": 1900,
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "EchoTime",
+                "fieldName": "EchoTime",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": 2.97,
+                "expectedValue": 2.97,
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "InversionTime",
+                "fieldName": "InversionTime",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": 1100,
+                "expectedValue": 1100,
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "FlipAngle",
+                "fieldName": "FlipAngle",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": 15,
+                "expectedValue": 15,
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "EchoTrainLength",
+                "fieldName": "EchoTrainLength",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": 1,
+                "expectedValue": 1,
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "PixelBandwidth",
+                "fieldName": "PixelBandwidth",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": 190,
+                "expectedValue": 190,
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "InPlanePhaseEncodingDirection",
+                "fieldName": "InPlanePhaseEncodingDirection",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": "ROW",
+                "expectedValue": "ROW",
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "NumberOfPhaseEncodingSteps",
+                "fieldName": "NumberOfPhaseEncodingSteps",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": 320,
+                "expectedValue": 320,
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "MagneticFieldStrength",
+                "fieldName": "MagneticFieldStrength",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": 1.5,
+                "expectedValue": 1.5,
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "ImagingFrequency",
+                "fieldName": "ImagingFrequency",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": 63.67664,
+                "expectedValue": 63.67664,
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "ImagedNucleus",
+                "fieldName": "ImagedNucleus",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": "1H",
+                "expectedValue": "1H",
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "TransmitCoilName",
+                "fieldName": "TransmitCoilName",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": "TxRx_Head",
+                "expectedValue": "TxRx_Head",
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "SAR",
+                "fieldName": "SAR",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": 0.006,
+                "expectedValue": 0.006,
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "dBdt",
+                "fieldName": "dBdt",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": 0,
+                "expectedValue": 0,
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "NumberOfAverages",
+                "fieldName": "NumberOfAverages",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": 1,
+                "expectedValue": 1,
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "CoilType",
+                "fieldName": "CoilType",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": "Combined",
+                "expectedValue": "Combined",
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "PercentSampling",
+                "fieldName": "PercentSampling",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": 100,
+                "expectedValue": 100,
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "PercentPhaseFieldOfView",
+                "fieldName": "PercentPhaseFieldOfView",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": 100,
+                "expectedValue": 100,
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "ScanOptions",
+                "fieldName": "ScanOptions",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": "IR",
+                "expectedValue": "IR",
+                "validationType": "field"
+              },
+              {
+                "fieldPath": "AngioFlag",
+                "fieldName": "AngioFlag",
+                "status": "pass",
+                "message": "Passed.",
+                "actualValue": "N",
+                "expectedValue": "N",
+                "validationType": "field"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
