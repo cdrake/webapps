@@ -13,7 +13,7 @@ import { readVolume } from '@neurodesk/synthsr';
 import { runSynthstrip } from '@neurodesk/synthstrip';
 import { FLAMES_FOLDS, SYNTHSTRIP } from '../src/assets.js';
 import { downloadModels, resolveFolds } from '../src/node.js';
-import { runFolds } from '../src/pipeline.js';
+import { MAX_INPUT_VOXELS, runFolds, toNetworkResolution } from '../src/pipeline.js';
 import { lesionResults, outputNames } from '../src/results.js';
 
 // worker.js's session options; its WebGPU attempt falls back to exactly this on a CPU.
@@ -24,7 +24,7 @@ export async function webReference({ input, output, folds = 1, cacheDir, threads
   ort.env.wasm.numThreads = threads;
   const { directory } = await downloadModels({ cacheDir });
   const model = (asset) => readFile(join(directory, asset.filename));
-  const volume = readVolume(arrayBuffer(await readFile(input)));
+  const { volume } = toNetworkResolution(readVolume(arrayBuffer(await readFile(input)), { maxVoxels: MAX_INPUT_VOXELS }));
   const stripped = await runSynthstrip({
     volume,
     loadModel: async () => ({ bytes: await model(SYNTHSTRIP), hash: SYNTHSTRIP.sha256 }),

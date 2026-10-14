@@ -7,11 +7,13 @@ export function outputNames(inputName) {
     mask: `${stem}_lesions.nii`,
     probability: `${stem}_lesion_probability.nii`,
     table: `${stem}_lesions.tsv`,
+    resampledFlair: `${stem}_flair_resampled.nii`,
   };
 }
 
-// The three downloads of one segmentation, on the input grid and affine.
-export function lesionResults(volume, probability) {
+// The downloads of one segmentation, on the grid it ran on. When the input was resampled to the
+// FLAMeS grid, that FLAIR is one of them, so the mask can be checked and edited over it.
+export function lesionResults(volume, probability, { resampled = false } = {}) {
   const lesionMask = threshold(probability);
   const { lesions } = labelLesions(lesionMask, volume.dims);
   const table = lesionTable(lesions, volume.affine);
@@ -20,6 +22,7 @@ export function lesionResults(volume, probability) {
     mask: writeVolume({ ...geometry, data: lesionMask }, 'FLAMeS lesion mask'),
     probability: writeVolume({ ...geometry, data: probability }, 'FLAMeS lesion probability'),
     tsv: table.tsv,
+    resampledFlair: resampled ? writeVolume(volume, 'FLAIR resampled to the FLAMeS grid') : null,
     summary: { count: table.rows.length, totalMl: table.totalMl },
   };
 }

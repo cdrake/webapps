@@ -16,6 +16,7 @@ import { downloadFile } from "@neurodesk/webapp-components/file-io";
 import { registerAppAutomation, runAbortable } from "@neurodesk/webapp-components/automation";
 import { readImageFiles, runDcm2niix } from "@neurodesk/runtime-support/dcm2niix-client";
 import { readVolume } from "@neurodesk/synthsr";
+import { MAX_INPUT_VOXELS } from "@neurodesk/white-matter-lesions";
 import { APP } from "./config.js";
 import { applyMaskEdit, lesionSummary, segmentationOutputs } from "./outputs.js";
 import examples from "../examples.json";
@@ -196,13 +197,14 @@ async function ensureViewer() {
   return viewerReady;
 }
 
-// The FLAIR stays underneath; a result is drawn over it.
+// The FLAIR stays underneath, on the results' grid once they exist; a result is drawn over it.
 function show(stage) {
   const revision = ++viewRevision;
   viewQueue = viewQueue.then(async () => {
     if (revision !== viewRevision || !source) return;
     const nv = await ensureViewer();
-    const layers = [{ url: source, name: source.name }];
+    const flair = outputs.flair.file;
+    const layers = [{ url: flair, name: flair.name }];
     if (stage === "mask") layers.push({ url: outputs.mask.file, name: outputs.mask.file.name, colormap: "red", opacity: 0.7 });
     if (stage === "probability") layers.push({
       url: outputs.probability.file,
@@ -253,7 +255,7 @@ async function loadFiles(filesPromise, signal) {
     const images = await readImageFiles(files, { signal: current.controller.signal });
     current.controller.signal.throwIfAborted();
     if (images.length !== 1) throw new Error("Choose one FLAIR image: a NIfTI file or one DICOM series.");
-    const volume = readVolume(await images[0].arrayBuffer());
+    const volume = readVolume(await images[0].arrayBuffer(), { maxVoxels: MAX_INPUT_VOXELS });
     current.controller.signal.throwIfAborted();
     source = images[0];
     outputs = { flair: { description: "FLAIR", file: source } };
@@ -310,7 +312,7 @@ async function segment(parameters, onProgress = () => {}) {
   void current.completion.promise.catch(() => {});
   const inputName = source.name;
   const cancelled = closeEdit();
-  outputs = { flair: outputs.flair };
+  outputs = { flair: { description: "FLAIR", file: source } };
   renderOutputs();
   try {
     await cancelled;
