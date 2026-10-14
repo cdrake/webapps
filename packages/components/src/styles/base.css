@@ -17,28 +17,29 @@
   --nd-color-error: #ef4444;
   --nd-color-error-bg: rgba(239, 68, 68, 0.1);
   --nd-color-accent: #8b5cf6;
+  --nd-color-on-primary: #ffffff;
   --nd-space-xs: 0.25rem;
   --nd-space-sm: 0.5rem;
   --nd-space-md: 1rem;
   --nd-space-lg: 1.5rem;
   --nd-space-xl: 2rem;
   --nd-space-2xl: 3rem;
-  --nd-radius-sm: 4px;
+  --nd-radius-sm: 6px;
   --nd-radius-md: 8px;
   --nd-radius-lg: 12px;
   --nd-radius-xl: 16px;
   --nd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
   --nd-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
   --nd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.3);
-  --nd-shadow-glow: 0 0 20px var(--nd-color-primary-glow);
-  --nd-transition-fast: 150ms ease;
+  --nd-shadow-glow: none;
+  --nd-transition-fast: 120ms ease;
   --nd-transition-normal: 250ms ease;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; overflow: hidden; }
 html { font-size: 16px; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-body { font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--nd-color-bg); color: var(--nd-color-text); line-height: 1.5; }
+body { font-family: var(--nd-font-ui, Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif); font-feature-settings: "cv11", "ss01"; background: var(--nd-color-bg); color: var(--nd-color-text); line-height: 1.5; }
 
 /* Class-driven workflow sections retain their app-owned state and controls. */
 [data-disclosure] > .section-title:has(> [data-disclosure-toggle]) { padding: 0; }
@@ -62,8 +63,8 @@ body { font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto
   text-align: left;
   cursor: pointer;
 }
-[data-disclosure-toggle]::after { content: '▾'; margin-left: auto; }
-[data-disclosure-toggle][aria-expanded='false']::after { transform: rotate(-90deg); }
+[data-disclosure-toggle]::after { content: ''; width: 6px; height: 6px; margin-left: auto; border-right: 1.5px solid var(--nd-color-text-dim); border-bottom: 1.5px solid var(--nd-color-text-dim); transform: translateY(-2px) rotate(45deg); transition: transform var(--nd-transition-fast); }
+[data-disclosure-toggle][aria-expanded='false']::after { transform: rotate(-45deg); }
 [data-disclosure-toggle]:focus-visible { outline: 2px solid var(--nd-color-primary); outline-offset: -2px; }
 [data-disclosure-panel][hidden] { display: none !important; }
 [data-disclosure] > [data-disclosure-panel] { max-height: none; }
@@ -88,3 +89,18 @@ body { font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto
 [data-disclosure]:is(.console-container, .nd-console-container).collapsed { height:auto; flex:0 0 auto; }
 :is(.console-header, .nd-console-header) > [data-disclosure-toggle] { width:auto; padding:0; min-height:28px; }
 @media (pointer:coarse) { :is(.console-header, .nd-console-header) > [data-disclosure-toggle] { min-height:44px; } }
+
+/* Page-wide file drop (ui/pageDrop.js): a quiet frame over the whole window, and Undo in the status bar. */
+.nd-drop-overlay { position: fixed; inset: 0; z-index: 2147483000; display: grid; place-items: center; pointer-events: none; background: color-mix(in srgb, var(--nd-color-bg) 55%, transparent); box-shadow: inset 0 0 0 2px var(--nd-color-primary); backdrop-filter: blur(2px); }
+.nd-drop-overlay[hidden] { display: none; }
+.nd-drop-overlay p { margin: 0; padding: 8px 14px; color: var(--nd-color-text); background: var(--nd-color-surface); border: 1px solid var(--nd-color-border-light); border-radius: var(--nd-radius-md); font-size: 13px; font-weight: 500; }
+.nd-status-undo { flex: 0 0 auto; margin: 0; padding: 2px 8px; color: var(--nd-color-primary); background: transparent; border: 1px solid var(--nd-color-border-light); border-radius: var(--nd-radius-sm); font: inherit; font-size: 12px; font-weight: 500; cursor: pointer; }
+.nd-status-undo:hover { background: var(--nd-color-surface-elevated); }
+
+/* The input menu: its label is visually hidden, so the example's info icon sits beside the select. */
+nd-example-selector { display: grid; grid-template-columns: minmax(0, 1fr) auto; row-gap: 2px; align-items: center; }
+nd-example-selector > label { display: contents; }
+nd-example-selector > label > .nd-info-icon { grid-row: 1; grid-column: 2; margin-left: var(--nd-space-sm); }
+nd-example-selector > select { grid-row: 1; grid-column: 1; }
+nd-example-selector > :not(label, select) { grid-column: 1 / -1; }
+.nd-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }

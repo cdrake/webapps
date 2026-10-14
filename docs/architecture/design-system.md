@@ -3,10 +3,11 @@
 One stylesheet, one markup vocabulary, shared custom elements and native builders. Every app on the
 `imaging-workspace` shell is assembled from the classes defined in
 [`packages/components/src/styles/imaging-workspace.css`](../../packages/components/src/styles/imaging-workspace.css)
-and the elements and builders exported from `@neurodesk/webapp-components/ui`. QSMbly is the
-visual reference; the vocabulary copies its metrics (0.7rem uppercase section
-titles, dashed 40px scan picker, 0.8rem controls, 34px viewer toolbar, 120px
-collapsed console, 4px progress bar). Apps supply words and science, not CSS.
+and the elements and builders exported from `@neurodesk/webapp-components/ui`. The look is
+quiet and dense, in the manner of Linear, Raycast and Figma: Inter, neutral greys, one
+green from the Neurodesk logo for action, focus and selection, hairline borders, 6px
+radii, 48px app bar, 0.8rem sentence-case section titles, 30px controls, 28px status
+bar. Apps supply words and science, not CSS.
 
 `test/design-system.test.mjs` enforces this document. Read
 [the interface standard](interface-standard.md) for behaviour (what starts
@@ -58,7 +59,9 @@ impact:
 | Field | `<div class="nd-field"><label for="x">Label <small>unit</small></label><select id="x">…</select><p class="nd-hint">Help</p></div>` | |
 | Checkbox | `<label class="nd-check"><input type="checkbox"> Label</label>` | |
 | Equal columns | `<div class="nd-row">…</div>` | |
-| Scan picker | `<label class="nd-file"><input type="file" data-neurodesk-input="image" multiple><svg…/><span>Drop NIfTI or DICOM files or folder</span></label>` + `<p class="nd-file-info">` | `createFileField()`, `bindFileDrop()` |
+| Input menu | `nd-example-selector`: "Choose an example…", the examples, a divider, **Choose files…** and, for scans, **Choose folder…**. The file actions open the scope's first `input[data-neurodesk-input]`; its `label.nd-file` gets `.nd-file-merged` and is hidden | `createExampleSelector()` |
+| Scan picker | `<label class="nd-file"><input type="file" data-neurodesk-input="image" multiple><svg…/><span>…</span></label>` + `<p class="nd-file-info">`. Visible only for second and later slots (fixed/moving, masks) | `createFileField()`, `bindFileDrop()` |
+| Page drop | The whole window, the NiiVue canvas included, takes file drops and shows `.nd-drop-overlay`. Files go to inputs of their kind, scans fill empty slots in order, and a mid-session drop replaces the inputs with **Undo** (`.nd-status-undo`) in the status bar for 8 s | `bindPageDrop()`, installed by the shell and by `nd-example-selector` |
 | Buttons | `.nd-btn.nd-btn-primary` (one per workspace), `.nd-btn.nd-btn-secondary`, `.nd-btn-sm`, `.nd-btn-icon`, `.nd-btn-danger` | |
 | Result rows | `<div class="nd-volume-toggle"><button class="nd-view-btn active">View</button><span class="nd-stage-label">Name</span><button class="nd-edit-btn">Edit</button><button class="nd-download-btn">Download</button></div>` | `createResultList` (Edit only for `editable: true` results) |
 | Message | `<p class="nd-message error|warning|success|info">` | |
@@ -70,18 +73,28 @@ impact:
 | Technical log | `.nd-console-container[data-disclosure].collapsed` with header, Copy, Clear | `createConsole()` |
 | Resizable log | `.nd-console-resizer[role=separator]` as the console's first child; the height is `--nd-console-height` on the container | `createConsole({ resizable: true })`, `<nd-console resizable>`, `bindConsoleResize()` for legacy `.console-container` markup |
 | Analysis and technical logs | `.nd-console-tabs[role=tablist] > .nd-console-tab[role=tab]` in the header, `.nd-console-panels > .nd-console-output[role=tabpanel]` | `createConsole({ channels: [{ id, label }, …] })`, `<nd-console channels="analysis:Analysis,technical:Technical">` |
-| Status (the only place for live progress) | `<footer id="status"><span class="nd-status-label">Status</span><span id="statusText" class="nd-status-text">…</span><span class="nd-status-elapsed"></span><progress></progress><button class="nd-btn-cancel" hidden>×</button></footer>` | |
+| Status (the only place for live progress) | `<footer id="status"><span class="nd-status-label">Status</span><span id="statusText" class="nd-status-text">Drag and drop files</span><span class="nd-status-elapsed"></span><progress></progress><button class="nd-btn-cancel" hidden>×</button></footer>` | |
 | Dialog | `dialog.nd-dialog` with `.nd-dialog-header`, `.nd-dialog-close`, `.nd-dialog-body`; `.nd-dialog-highlight`, `.nd-citation`, `.nd-command` inside | `createInfoDialog()`, `renderCommand()` |
 
-Sizes are the same on every app: sections 16px padding, controls 30px tall at
+Sizes are the same on every app: sections 12px/16px padding, controls 30px tall at
 0.8rem, hints 0.7rem, toolbar tabs 0.75rem, console 0.7rem monospace. Touch
 devices get 44px targets and 16px inputs from the shared media query. Light and
-dark come from the hosted theme's tokens; apps never set `color-scheme`.
+dark come from the hosted theme's tokens (`site/app-theme.css`); apps never set
+`color-scheme`. Inter ships with the theme (`site/fonts/`, Latin subset, OFL).
+
+## Colour
+
+Surfaces are neutral greys; green appears only on the primary button, focus rings,
+selection, links and progress. Dark uses the logo green `#6ba442` with dark text on it.
+Light uses `#467d25`, because the logo green is only 3:1 on white. `--nd-color-on-primary`
+is the label colour on a primary fill. `test/design-system.test.mjs` holds both themes to
+AA: text 7:1, muted and dim text 4.5:1 on every surface, primary labels 4.5:1.
 
 ## Layout rules
 
-- The sidebar is a column of sections. The first section is input (open),
-  the second is the task with its primary action (open), later sections are
+- The sidebar is a column of sections. The first section is input (open) and
+  starts with the input menu; there is no separate drop box or Add files button
+  for the primary input. The second is the task with its primary action (open), later sections are
   output and secondary inputs (collapsed until useful). Nothing else sits in
   the sidebar: About, Cite, Privacy and Standalone are hidden buttons wired
   through `controlsContract`, and the shared app bar shows them.
@@ -90,13 +103,17 @@ dark come from the hosted theme's tokens; apps never set `color-scheme`.
   keyboard up to the point where the canvas still has 160px, and keeps its
   size while collapsed. The canvas takes the rest; never give the log a fixed
   larger height in app CSS.
-  Before import the canvas shows one sentence in `.nd-viewer-empty`. No hero
-  copy, feature chips, logos or eyebrow labels.
+  Before import the canvas shows one sentence in `.nd-viewer-empty`, e.g. "Drop
+  an image anywhere, or choose an example." No hero copy, feature chips, logos or
+  eyebrow labels. Apps never handle canvas drops themselves; NiiVue's own drop
+  loading is pre-empted by the page drop.
 - Every result is a row in the Output section with View and Download. Which
   image is displayed is a sidebar decision; the toolbar holds only how it is
   displayed (layout, overlay opacity, window, colormap).
 - Status is one line at the bottom: label, message, elapsed time, a 4px
-  progress bar and a small × cancel that appears only while running.
+  progress bar and a small × cancel that appears only while running. Before any
+  input it reads "Drag and drop files" (the initial `#statusText`); once a session
+  has inputs, `ProgressManager.reset()` returns it to "Ready".
 - Say things once. A field label plus a short `.nd-hint` when needed; no
   paragraphs, no repeated instructions, no "Image workspace" captions.
   Visible help is at most 90 characters; anything longer is an
@@ -151,6 +168,7 @@ an implemented method has no paper or an app has no entry.
 | --- | --- |
 | SynthSR, SYNcro | Rebuilt on the vocabulary; app CSS is empty. |
 | App template (`pnpm new-app`) | Canonical example; Documentation links to this executable template. |
+| MuscleMap | Input menu and page drop replace its drop box and Add File(s) button (14 October 2026); a page drop clears its file list through `nd-replace`. |
 | NiiMath | Rebuilt on the vocabulary (28 September 2026): shared picker, layout tabs, status footer, console and information dialog; the app stylesheet is gone. |
 | Deface, BrowserQC | Own palette (`--bg`, `--accent`) and `.upload-button` pair. Ratcheted; migrate the picker to `.nd-file` and delete the palette. |
 | SurfAnnotate, ZARRo | Specialist sidebars with their own panel styling. Ratcheted; migrate section titles and buttons first. |

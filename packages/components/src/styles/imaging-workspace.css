@@ -5,7 +5,7 @@
 
    This file is the design language for every app mounted with
    `mountImagingWorkspace`. It is organised as a small vocabulary of classes
-   whose metrics are copied from QSMbly, the visual reference for the catalog:
+   (metrics in docs/architecture/design-system.md):
 
      Shell      .nd-imaging-workspace / -app-header / -controls / -viewer / -status
      Sections   details.nd-sidebar-section > summary.nd-section-title + .nd-section-content
@@ -46,7 +46,7 @@ nd-imaging-brand {
   overflow: hidden;
   color: var(--nd-color-text);
   background: var(--nd-color-bg);
-  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--nd-font-ui, Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
 }
 
 .nd-imaging-app-header {
@@ -142,10 +142,8 @@ nd-imaging-brand {
   width: 100%;
   margin-top: var(--nd-space-sm);
   color: var(--nd-color-text-muted) !important;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 .nd-imaging-controls > .row {
@@ -188,7 +186,7 @@ nd-imaging-brand {
 .nd-imaging-controls button:disabled { opacity: 0.45; cursor: not-allowed; }
 .nd-imaging-controls #applyBtn,
 .nd-imaging-controls #processButton {
-  color: white;
+  color: var(--nd-color-on-primary);
   background: var(--nd-color-primary);
   border-color: var(--nd-color-primary);
   font-weight: 600;
@@ -251,7 +249,7 @@ nd-imaging-brand {
 }
 
 /* --------------------------------------------------------------------------
-   2. Sidebar sections (QSMbly: 0.7rem uppercase title, 16px padding)
+   2. Sidebar sections (0.8rem sentence-case title, 12px/16px padding)
    -------------------------------------------------------------------------- */
 .nd-sidebar-section { width: 100%; min-width: 0; border-bottom: 1px solid var(--nd-color-border); }
 .nd-section-title {
@@ -259,33 +257,34 @@ nd-imaging-brand {
   align-items: center;
   gap: var(--nd-space-sm);
   margin: 0;
-  padding: var(--nd-space-md);
-  color: var(--nd-color-text-muted);
-  font-size: 0.7rem;
+  padding: 12px var(--nd-space-md);
+  color: var(--nd-color-text);
+  font-size: 0.8rem;
   font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  letter-spacing: -0.005em;
   cursor: pointer;
   user-select: none;
   list-style: none;
   transition: background var(--nd-transition-fast), color var(--nd-transition-fast);
 }
-.nd-section-title:hover { color: var(--nd-color-text); background: var(--nd-color-surface-elevated); }
-.nd-section-title svg { width: 14px; height: 14px; flex-shrink: 0; }
+.nd-section-title:hover { background: var(--nd-color-surface-elevated); }
+.nd-section-title svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--nd-color-text-muted); }
 .nd-section-title::after {
   content: "";
   margin-left: auto;
-  border-left: 4px solid transparent;
-  border-right: 4px solid transparent;
-  border-top: 5px solid currentColor;
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid var(--nd-color-text-dim);
+  border-bottom: 1.5px solid var(--nd-color-text-dim);
+  transform: translateY(-2px) rotate(45deg);
   transition: transform var(--nd-transition-fast);
 }
 .nd-section-title::-webkit-details-marker { display: none; }
 .nd-section-title:focus-visible { outline: 2px solid var(--nd-color-primary); outline-offset: -2px; }
-.nd-sidebar-section:not([open]) > .nd-section-title::after { transform: rotate(-90deg); }
+.nd-sidebar-section:not([open]) > .nd-section-title::after { transform: rotate(-45deg); }
 .nd-workflow-disclosure > summary.nd-section-title::after,
 .nd-workflow-disclosure:not([open]) > summary.nd-section-title::after { content: ""; }
-.nd-workflow-disclosure:not([open]) > summary.nd-section-title::after { transform: rotate(-90deg); }
+.nd-workflow-disclosure:not([open]) > summary.nd-section-title::after { transform: rotate(-45deg); }
 .nd-section-content { display: block; padding: 0 var(--nd-space-md) var(--nd-space-md); }
 @media (pointer: coarse) {
   .nd-section-title { min-height: 44px; box-sizing: border-box; }
@@ -316,8 +315,8 @@ nd-imaging-brand {
   margin: 0;
   padding: var(--nd-space-xs) var(--nd-space-sm);
   color: var(--nd-color-text);
-  background: var(--nd-color-surface-elevated);
-  border: 1px solid var(--nd-color-border);
+  background-color: var(--nd-color-bg);
+  border: 1px solid var(--nd-color-border-light);
   border-radius: var(--nd-radius-sm);
   font: inherit;
   font-size: 0.8rem;
@@ -331,7 +330,7 @@ nd-imaging-brand {
 :is(.nd-imaging-controls .nd-section-content, .nd-dialog-body) select {
   cursor: pointer;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b99ad' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23858885' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
   padding-right: 36px;
@@ -377,7 +376,7 @@ nd-imaging-brand {
   padding: var(--nd-space-sm) var(--nd-space-md);
   color: var(--nd-color-text-muted);
   background: transparent;
-  border: 1px dashed var(--nd-color-border);
+  border: 1px dashed var(--nd-color-border-light);
   border-radius: var(--nd-radius-sm);
   font-size: 0.75rem;
   font-weight: 400;
@@ -395,6 +394,8 @@ nd-imaging-brand {
 .nd-file:hover > svg { color: var(--nd-color-primary); }
 .nd-file strong { color: var(--nd-color-primary); font-weight: 500; }
 .nd-file:has(> input:disabled) { opacity: 0.5; cursor: not-allowed; }
+/* The example menu's "Choose files…" and the page-wide drop replace the box. */
+.nd-file.nd-file-merged { display: none; }
 .nd-file-info { margin: 0; color: var(--nd-color-text-muted); font-size: 0.75rem; overflow-wrap: anywhere; }
 .nd-file-info strong { color: var(--nd-color-text); font-weight: 500; }
 
@@ -414,14 +415,14 @@ nd-imaging-brand {
   transition: background var(--nd-transition-fast), color var(--nd-transition-fast), opacity var(--nd-transition-fast);
 }
 
-.nd-btn { margin: 0; padding: var(--nd-space-sm) var(--nd-space-lg); border-radius: var(--nd-radius-md); color: var(--nd-color-text); background: var(--nd-color-surface-elevated); font: inherit; font-size: 0.875rem; font-weight: 500; line-height: 1.2; }
+.nd-btn { margin: 0; padding: var(--nd-space-sm) var(--nd-space-lg); border-radius: var(--nd-radius-sm); color: var(--nd-color-text); background: var(--nd-color-surface-elevated); font: inherit; font-size: 0.875rem; font-weight: 500; line-height: 1.2; }
 .nd-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
 .nd-btn-sm { padding: var(--nd-space-xs) var(--nd-space-sm); font-size: 0.75rem; }
 .nd-btn-sm svg { width: 14px; height: 14px; }
-.nd-btn-primary { background: var(--nd-color-primary); color: white; padding: var(--nd-space-sm) var(--nd-space-md); }
-.nd-btn-primary:hover:not(:disabled) { background: var(--nd-color-primary-hover); box-shadow: var(--nd-shadow-glow); }
-.nd-btn-secondary { background: var(--nd-color-surface-elevated); color: var(--nd-color-text); border: 1px solid var(--nd-color-border); }
-.nd-btn-secondary:hover:not(:disabled) { background: var(--nd-color-border); border-color: var(--nd-color-border-light); }
+.nd-btn-primary { background: var(--nd-color-primary); color: var(--nd-color-on-primary); padding: var(--nd-space-sm) var(--nd-space-md); }
+.nd-btn-primary:hover:not(:disabled) { background: var(--nd-color-primary-hover); }
+.nd-btn-secondary { background: var(--nd-color-surface); color: var(--nd-color-text); border: 1px solid var(--nd-color-border-light); }
+.nd-btn-secondary:hover:not(:disabled) { background: var(--nd-color-surface-elevated); border-color: var(--nd-color-border-light); }
 .nd-btn-danger { background: var(--nd-color-error); color: white; }
 .nd-btn-danger:hover:not(:disabled) { filter: brightness(0.9); }
 .nd-btn-icon { padding: 2px; background: transparent; color: var(--nd-color-text-muted); border-radius: var(--nd-radius-sm); }
@@ -453,21 +454,21 @@ nd-imaging-brand {
 .nd-imaging-controls .nd-section-content .nd-btn,
 .nd-imaging-controls .nd-section-content button:not(.nd-btn):not(.nd-btn-icon):not(.nd-view-btn):not(.nd-download-btn):not(.nd-edit-btn) {
   width: 100%;
-  min-height: 34px;
+  min-height: 32px;
   margin: 0;
   font-size: 0.8rem;
 }
 .nd-imaging-controls .nd-section-content .nd-btn-sm { min-height: 28px; font-size: 0.75rem; }
 .nd-imaging-controls .nd-section-content button.nd-btn:hover:not(:disabled) { border-color: transparent; }
 .nd-imaging-controls .nd-section-content button.nd-btn-secondary:hover:not(:disabled) { border-color: var(--nd-color-border-light); }
-.nd-imaging-controls .nd-section-content .nd-btn-secondary { border-color: var(--nd-color-border); }
-.nd-imaging-controls .nd-section-content .nd-btn-primary { border: 1px solid var(--nd-color-primary); background: var(--nd-color-primary); color: var(--nd-color-bg); }
+.nd-imaging-controls .nd-section-content .nd-btn-secondary { border-color: var(--nd-color-border-light); }
+.nd-imaging-controls .nd-section-content .nd-btn-primary { border: 1px solid var(--nd-color-primary); background: var(--nd-color-primary); color: var(--nd-color-on-primary); font-weight: 600; }
 .nd-imaging-controls .nd-section-content .nd-btn-primary:hover:not(:disabled) { border-color: var(--nd-color-primary-hover); background: var(--nd-color-primary-hover); }
 
 /* --------------------------------------------------------------------------
    5. Messages and inline help
    -------------------------------------------------------------------------- */
-.nd-message { display: flex; align-items: flex-start; gap: var(--nd-space-sm); margin: 0; padding: var(--nd-space-sm) var(--nd-space-md); border-radius: var(--nd-radius-md); font-size: 0.75rem; line-height: 1.4; color: var(--nd-color-text-muted); background: var(--nd-color-surface-elevated); }
+.nd-message { display: flex; align-items: flex-start; gap: var(--nd-space-sm); margin: 0; padding: var(--nd-space-sm) var(--nd-space-md); border-radius: var(--nd-radius-sm); font-size: 0.75rem; line-height: 1.4; color: var(--nd-color-text-muted); background: var(--nd-color-surface-elevated); }
 .nd-message.error { color: var(--nd-color-error); background: var(--nd-color-error-bg); }
 .nd-message.warning { color: var(--nd-color-warning); background: var(--nd-color-warning-bg); }
 .nd-message.success { color: var(--nd-color-success); background: var(--nd-color-success-bg); }
@@ -576,9 +577,9 @@ nd-imaging-brand {
 .nd-console-container.collapsed { height: auto; }
 .nd-console-header { display: flex; align-items: center; justify-content: space-between; gap: var(--nd-space-sm); min-height: 28px; padding: var(--nd-space-xs) var(--nd-space-md); border-bottom: 1px solid var(--nd-color-border); flex-shrink: 0; }
 .nd-console-container.collapsed > .nd-console-header { border-bottom: 0; }
-.nd-console-title { margin: 0; padding: 0; color: var(--nd-color-text-muted); background: none; border: 0; font: inherit; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer; }
+.nd-console-title { margin: 0; padding: 0; color: var(--nd-color-text-muted); background: none; border: 0; font: inherit; font-size: 0.75rem; font-weight: 600; cursor: pointer; }
 /* Outranks the generic [data-disclosure-toggle] reset, which base.css applies again when an app also loads inference-workspace.css. */
-.nd-console-header > .nd-console-title { color: var(--nd-color-text-muted); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+.nd-console-header > .nd-console-title { color: var(--nd-color-text-muted); font-size: 0.75rem; font-weight: 600; }
 .nd-console-actions { display: flex; gap: var(--nd-space-sm); margin-left: auto; }
 .nd-console-clear { padding: 0 var(--nd-space-xs); color: var(--nd-color-text-dim); background: none; border: 0; font: inherit; font-size: 0.7rem; cursor: pointer; transition: color var(--nd-transition-fast); }
 .nd-console-clear:hover { color: var(--nd-color-text-muted); }
@@ -613,9 +614,9 @@ nd-imaging-brand {
 /* --------------------------------------------------------------------------
    8. Status bar (QSMbly sidebar status: label, value, cancel, 4px bar)
    -------------------------------------------------------------------------- */
-.nd-imaging-status:has(> .nd-status-text, > .nd-status-label) { display: flex; align-items: center; gap: var(--nd-space-md); min-height: 32px; padding: var(--nd-space-xs) var(--nd-space-lg); font-size: 0.75rem; }
-.nd-status-label { color: var(--nd-color-text-muted); font-size: 0.65rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
-.nd-status-text { flex: 1; min-width: 0; color: var(--nd-color-text); font-size: 0.75rem; font-weight: 500; overflow-wrap: anywhere; }
+.nd-imaging-status:has(> .nd-status-text, > .nd-status-label) { display: flex; align-items: center; gap: var(--nd-space-md); min-height: 28px; padding: 2px var(--nd-space-md); font-size: 0.75rem; }
+.nd-status-label { color: var(--nd-color-text-dim); font-size: 0.7rem; font-weight: 500; }
+.nd-status-text { flex: 1; min-width: 0; color: var(--nd-color-text-muted); font-size: 0.75rem; font-weight: 400; overflow-wrap: anywhere; }
 .nd-status-text.error { color: var(--nd-color-error); }
 .nd-status-elapsed { color: var(--nd-color-text-dim); font-size: 0.7rem; font-variant-numeric: tabular-nums; }
 .nd-imaging-status progress { width: 160px; max-width: 30vw; height: 4px; margin: 0; border: 0; border-radius: 2px; overflow: hidden; background: var(--nd-color-border); appearance: none; -webkit-appearance: none; accent-color: var(--nd-color-primary); }
@@ -835,7 +836,7 @@ dialog.nd-dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
 .nd-volume-toggle :is(.nd-view-btn, .nd-edit-btn, .nd-download-btn),
 .nd-edit-btn { width: auto; min-height: 28px; margin: 0; padding: var(--nd-space-xs) var(--nd-space-sm); color: var(--nd-color-text); background: var(--nd-color-surface-elevated); border: 1px solid var(--nd-color-border); border-radius: var(--nd-radius-sm); font: inherit; font-size: 0.75rem; font-weight: 500; cursor: pointer; flex-shrink: 0; }
 .nd-volume-toggle .nd-view-btn { min-width: 52px; }
-.nd-volume-toggle .nd-view-btn.active { color: white; background: var(--nd-color-primary); border-color: var(--nd-color-primary); }
+.nd-volume-toggle .nd-view-btn.active { color: var(--nd-color-on-primary); background: var(--nd-color-primary); border-color: var(--nd-color-primary); }
 .nd-volume-toggle :is(.nd-view-btn, .nd-edit-btn, .nd-download-btn):hover:not(:disabled),
 .nd-edit-btn:hover:not(:disabled) { border-color: var(--nd-color-border-light); background: var(--nd-color-border); }
 .nd-volume-toggle .nd-view-btn.active:hover:not(:disabled) { background: var(--nd-color-primary-hover); border-color: var(--nd-color-primary-hover); }
@@ -848,8 +849,7 @@ dialog.nd-dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
 nd-console,
 nd-viewer-toolbar,
 nd-file-field,
-nd-result-list,
-nd-example-selector {
+nd-result-list {
   display: block;
 }
 

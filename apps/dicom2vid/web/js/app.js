@@ -50,7 +50,7 @@ let loadGen = 0;
 // which opens itself on errors.
 const technicalLog = createConsole({ id: 'technicalLog' });
 $('viewerCard').append(technicalLog);
-const READY = 'Ready · choose an example or open a volume';
+const READY = 'Drag and drop files';
 let lastStatus = '';
 function setStatus(msg, isErr = false) {
   const text = msg || (S.volume ? 'Ready' : READY);

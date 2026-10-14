@@ -127,7 +127,7 @@ test('editing the BET mask in the viewer replaces its download', async ({ page }
 test('examples load through the picker and BET downloads a brain mask (regression pin on the MNI152 fixture)', async ({ page }) => {
   for (const example of examples) await page.route(example.files[0].url, route => route.fulfill({ path: fixture }));
   await page.goto('./');
-  const picker = page.getByLabel('Example', { exact: true });
+  const picker = page.getByLabel('Input', { exact: true });
   for (const example of examples) {
     await picker.selectOption(example.id);
     await expect(page.locator('[data-neurodesk-examples]')).toHaveAttribute('data-example-state', 'ready');
@@ -153,7 +153,7 @@ test('failed example download can retry the same example', async ({ page }) => {
     ? route.fulfill({ status: 503, body: 'Unavailable' })
     : route.fulfill({ path: fixture }));
   await page.goto('./');
-  const picker = page.getByLabel('Example', { exact: true });
+  const picker = page.getByLabel('Input', { exact: true });
   await picker.selectOption(example.id);
   await expect(page.locator('#statusText')).toContainText('HTTP 503');
   await expect(page.locator('#runButton')).toBeDisabled();
@@ -172,7 +172,7 @@ test('cancelling an example aborts its request and permits the same selection ag
     await route.fulfill({ path: fixture }).catch(() => {});
   });
   await page.goto('./');
-  const picker = page.getByLabel('Example', { exact: true });
+  const picker = page.getByLabel('Input', { exact: true });
   await picker.selectOption(example.id);
   await expect(picker).toBeDisabled();
   const failed = page.waitForEvent('requestfailed', request => request.url() === example.files[0].url);
@@ -251,7 +251,7 @@ for (const method of ['bet', 'synthstrip', 'mindgrab']) {
     test.setTimeout(1200000);
     const example = examples.find(({ id }) => id === browserReference.example);
     await page.goto('./');
-    await page.getByLabel('Example', { exact: true }).selectOption(example.id);
+    await page.getByLabel('Input', { exact: true }).selectOption(example.id);
     await expect(page.locator('[data-neurodesk-examples]')).toHaveAttribute('data-example-state', 'ready', { timeout: 600000 });
     await page.locator('#method').selectOption(method);
     if (method === 'mindgrab') {

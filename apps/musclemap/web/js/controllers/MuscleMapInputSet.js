@@ -217,14 +217,12 @@ export class MuscleMapInputSet {
 
   updateFileListUI() {
     const listElement = document.getElementById('fileList');
-    const fileDrop = listElement?.closest('.upload-group')?.querySelector('.file-drop');
 
     if (!listElement) return;
 
     listElement.innerHTML = '';
 
     if (this.entries.length > 0) {
-      fileDrop?.classList.add('has-files');
       this.entries.forEach((entry) => {
         const fileItem = document.createElement('div');
         fileItem.className = 'file-item';
@@ -336,12 +334,6 @@ export class MuscleMapInputSet {
         listElement.appendChild(fileItem);
       });
 
-      const label = fileDrop?.querySelector('.file-drop-label span');
-      if (label) label.textContent = `${this.entries.length} file${this.entries.length === 1 ? '' : 's'} selected`;
-    } else {
-      fileDrop?.classList.remove('has-files');
-      const label = fileDrop?.querySelector('.file-drop-label span');
-      if (label) label.textContent = 'Drop NIfTI, NIfTI labels, or DICOM files';
     }
   }
 

@@ -32,7 +32,7 @@ test("page is cross-origin isolated (COOP/COEP active)", async ({ page }) => {
 });
 
 async function selectExample(page, id) {
-  await page.getByRole("combobox", { name: "Example", exact: true }).selectOption(id);
+  await page.getByRole("combobox", { name: "Input", exact: true }).selectOption(id);
   await expect(page.locator("#fileInfo")).toContainText(byId[id].files[0].name, { timeout: 300000 });
   await expect(page.locator("#runButton")).toBeEnabled();
 }
@@ -220,7 +220,7 @@ test("a failed download can retry the same example", async ({ page }) => {
     return attempts === 1 ? route.fulfill({ status: 503, body: "" }) : route.continue();
   });
   await page.goto("/");
-  const picker = page.getByRole("combobox", { name: "Example", exact: true });
+  const picker = page.getByRole("combobox", { name: "Input", exact: true });
   await picker.selectOption(example.id);
   await expect(page.locator("[data-neurodesk-examples]")).toHaveAttribute("data-example-state", "error");
   await expect(page.locator("#runButton")).toBeDisabled();

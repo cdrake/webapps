@@ -84,7 +84,7 @@ for (const failure of ["download", "empty image"]) {
         : route.fulfill({ body: "sample image bytes" });
     });
     await page.goto("/");
-    const picker = page.getByRole("combobox", { name: "Example", exact: true });
+    const picker = page.getByRole("combobox", { name: "Input", exact: true });
     await picker.selectOption(example.id);
     await expect(page.locator("[data-neurodesk-examples]")).toHaveAttribute("data-example-state", "error");
     await expect(page.locator("#runButton")).toBeDisabled();
@@ -112,7 +112,7 @@ test("cancelling during image reading prevents a late commit and permits retry",
       });
     };
   });
-  const picker = page.getByRole("combobox", { name: "Example", exact: true });
+  const picker = page.getByRole("combobox", { name: "Input", exact: true });
   await picker.selectOption(example.id);
   await page.waitForFunction(() => typeof window.finishExampleRead === "function");
   await page.getByRole("button", { name: "Cancel example download", exact: true }).click();

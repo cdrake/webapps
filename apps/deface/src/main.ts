@@ -541,7 +541,7 @@ async function init(): Promise<void> {
     fetchFile(MASK_URL, 'mniMask.nii.gz'),
   ])
   refFiles = { mni, mask }
-  setStatus('Choose an example or open a scan, then click Apply.')
+  setStatus('Drag and drop files')
 }
 
 const exampleControl = createExampleSelector({

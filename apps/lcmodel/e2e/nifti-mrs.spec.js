@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 test("NIfTI-MRS PRESS example fits with its water reference and exports correct timing", async ({ page }) => {
   test.setTimeout(300000);
   await page.goto("/");
-  await page.getByRole("combobox", { name: "Example", exact: true }).selectOption("nifti-mrs-press");
+  await page.getByRole("combobox", { name: "Input", exact: true }).selectOption("nifti-mrs-press");
   await expect(page.locator("#datasetSummary")).toContainText("TE 35 ms", { timeout: 120000 });
   await expect(page.locator("#datasetSummary")).toContainText("with water");
   await expect(page.locator("#basisSelect")).toHaveValue("press-3t-te35-shaped");

@@ -71,7 +71,8 @@ test('shared examples load through the image workflow and preserve input on fail
   const fixture = fileURLToPath(new URL('../test/fixtures/validation.nii.gz', import.meta.url));
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('./');
-  await expect(page.locator('#exampleSelect option')).toHaveText(['Choose an example…', ...examples.map(example => example.label)]);
+  await expect(page.locator('#exampleSelect option:not([data-action])')).toHaveText(['Choose an example…', ...examples.map(example => example.label)]);
+  await expect(page.locator('#exampleSelect option[data-action]')).toHaveText(['Choose files…', 'Choose folder…']);
   await expect(page.locator('#exampleBtn')).toHaveCount(0);
   for (const id of ['t1-head', 'brain-ct']) {
     const example = examples.find(example => example.id === id);

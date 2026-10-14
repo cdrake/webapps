@@ -1,34 +1,46 @@
 /* Neurodesk's hosted-app theme, matched to the Neurocontainers Builder dark
    palette. The shared adapter is loaded after each app's own styles. */
+/* Inter, Latin subset, from @fontsource-variable/inter 5.2.5 (OFL, fonts/OFL.txt). */
+@font-face {
+  font-family: "Inter Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("fonts/inter.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 :root[data-neurodesk-app] {
   color-scheme: dark;
 
-  --nd-brand-page: #0a0c08;
-  --nd-brand-primary: #91c84a;
-  --nd-brand-menu: #0a0c08;
-  --nd-brand-selection: #1f2e18;
-  --nd-brand-accent-background: #10140d;
-  --nd-brand-selected: #527435;
-  --nd-brand-hover: #a8d65c;
-  --nd-brand-primary-hover: #a8d65c;
-  --nd-brand-light: #c4e382;
-  --nd-brand-unselected: #1f2e18;
-  --nd-brand-pale: #10140d;
-  --nd-brand-surface: #161a0e;
-  --nd-brand-text: #e8f5d0;
-  --nd-brand-text-muted: #d1d5db;
-  --nd-brand-text-dim: #9ca3af;
-  --nd-brand-action-text: #0a0c08;
-  --nd-brand-menu-text: #e8f5d0;
-  --nd-brand-border: #2d4222;
-  --nd-brand-border-strong: #3f5b2e;
-  --nd-brand-console-surface: #0a0c08;
-  --nd-brand-console-header: #10140d;
-  --nd-brand-console-text: #d1d5db;
-  --nd-brand-console-time: #91c84a;
-  --nd-brand-success: #75b580;
-  --nd-brand-focus: #91c84a;
-  --nd-font-ui: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  /* Neutral greys; green (the logo's #6ba442) marks action, focus and selection only. */
+  --nd-brand-page: #0d0e0d;
+  --nd-brand-primary: #6ba442;
+  --nd-brand-menu: #121312;
+  --nd-brand-selection: #1b2615;
+  --nd-brand-accent-background: #131a0f;
+  --nd-brand-selected: #4d7a2f;
+  --nd-brand-hover: #8cc063;
+  --nd-brand-primary-hover: #7db356;
+  --nd-brand-light: #b5d89a;
+  --nd-brand-unselected: #1c1d1c;
+  --nd-brand-pale: #0d0e0d;
+  --nd-brand-surface: #141514;
+  --nd-brand-text: #ededed;
+  --nd-brand-text-muted: #a3a6a3;
+  --nd-brand-text-dim: #858885;
+  --nd-brand-action-text: #0b0c0b;
+  --nd-brand-menu-text: #ededed;
+  --nd-brand-border: #262826;
+  --nd-brand-border-strong: #353835;
+  --nd-brand-console-surface: #0d0e0d;
+  --nd-brand-console-header: #141514;
+  --nd-brand-console-text: #c9cbc9;
+  --nd-brand-console-time: #858885;
+  --nd-brand-success: #5fb37a;
+  --nd-brand-focus: #6ba442;
+  --nd-color-on-primary: var(--nd-brand-action-text);
+  --nd-font-ui: "Inter Variable", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --nd-font-mono: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
 
   /* Shared imaging-workspace tokens. */
@@ -42,7 +54,7 @@
   --nd-color-text-dim: var(--nd-brand-text-dim);
   --nd-color-primary: var(--nd-brand-primary);
   --nd-color-primary-hover: var(--nd-brand-primary-hover);
-  --nd-color-primary-glow: rgb(145 200 74 / 18%);
+  --nd-color-primary-glow: rgb(107 164 66 / 16%);
   --nd-color-success: var(--nd-brand-success);
   --nd-color-accent: var(--nd-brand-selected);
 
@@ -63,75 +75,76 @@
 
 :root[data-neurodesk-app][data-neurodesk-theme="light"] {
   color-scheme: light;
-  --nd-brand-page: #f6f8f5;
-  --nd-brand-primary: #3f6f24;
-  --nd-brand-menu: #0c0e0a;
-  --nd-brand-selection: #e7f0df;
-  --nd-brand-accent-background: #eef4e9;
-  --nd-brand-selected: #3f6f24;
-  --nd-brand-hover: #c4e1a7;
-  --nd-brand-primary-hover: #31591c;
-  --nd-brand-light: #d7e7ca;
-  --nd-brand-unselected: #f1f4f0;
-  --nd-brand-pale: #f6f8f5;
+  /* The logo green is 3:1 on white; #467d25 keeps white text at 5:1. */
+  --nd-brand-page: #fafafa;
+  --nd-brand-primary: #467d25;
+  --nd-brand-menu: #ffffff;
+  --nd-brand-selection: #edf5e7;
+  --nd-brand-accent-background: #f3f8ef;
+  --nd-brand-selected: #467d25;
+  --nd-brand-hover: #3b6c1e;
+  --nd-brand-primary-hover: #3b6c1e;
+  --nd-brand-light: #3b6c1e;
+  --nd-brand-unselected: #f4f4f5;
+  --nd-brand-pale: #fafafa;
   --nd-brand-surface: #ffffff;
-  --nd-brand-text: #18201b;
-  --nd-brand-text-muted: #465149;
-  --nd-brand-text-dim: #667169;
+  --nd-brand-text: #171817;
+  --nd-brand-text-muted: #5a5d5a;
+  --nd-brand-text-dim: #6b6e6b;
   --nd-brand-action-text: #ffffff;
-  --nd-brand-menu-text: #ffffff;
-  --nd-brand-border: #dce2dc;
-  --nd-brand-border-strong: #b8c2b9;
+  --nd-brand-menu-text: #171817;
+  --nd-brand-border: #e5e6e5;
+  --nd-brand-border-strong: #d2d4d2;
   --nd-brand-console-surface: #ffffff;
-  --nd-brand-console-header: #f1f4f0;
-  --nd-brand-console-text: #18201b;
-  --nd-brand-console-time: #3f6f24;
+  --nd-brand-console-header: #fafafa;
+  --nd-brand-console-text: #171817;
+  --nd-brand-console-time: #6b6e6b;
   --nd-brand-success: #217738;
-  --nd-brand-focus: #2563a6;
-  --nd-color-primary-glow: rgb(63 111 36 / 16%);
+  --nd-brand-focus: #467d25;
+  --nd-color-primary-glow: rgb(70 125 37 / 12%);
 }
 
 /* Dicompare's Tailwind theme consumes raw RGB triplets. */
 :root[data-neurodesk-shell="react"] {
   color-scheme: dark;
-  --color-surface: 10 12 8;
-  --color-surface-primary: 22 26 14;
-  --color-surface-secondary: 31 46 24;
-  --color-surface-hover: 63 91 46;
-  --color-surface-alt: 16 20 13;
-  --color-text-primary: 232 245 208;
-  --color-text-secondary: 209 213 219;
-  --color-text-tertiary: 196 227 130;
-  --color-text-muted: 156 163 175;
-  --color-text-inverted: 10 12 8;
-  --color-border: 45 66 34;
-  --color-border-secondary: 63 91 46;
-  --color-brand-50: 16 20 13;
-  --color-brand-100: 31 46 24;
-  --color-brand-500: 145 200 74;
-  --color-brand-600: 82 116 53;
-  --color-brand-700: 45 66 34;
+  --color-surface: 13 14 13;
+  --color-surface-primary: 20 21 20;
+  --color-surface-secondary: 28 29 28;
+  --color-surface-hover: 38 40 38;
+  --color-surface-alt: 18 19 18;
+  --color-text-primary: 237 237 237;
+  --color-text-secondary: 163 166 163;
+  --color-text-tertiary: 181 216 154;
+  --color-text-muted: 133 136 133;
+  --color-text-inverted: 11 12 11;
+  --color-border: 38 40 38;
+  --color-border-secondary: 53 56 53;
+  --color-brand-50: 19 26 15;
+  --color-brand-100: 27 38 21;
+  --color-brand-500: 107 164 66;
+  --color-brand-600: 77 122 47;
+  --color-brand-700: 47 74 29;
 }
 
 :root[data-neurodesk-shell="react"][data-neurodesk-theme="light"] {
   color-scheme: light;
-  --color-surface: 246 248 245;
+  --color-surface: 250 250 250;
   --color-surface-primary: 255 255 255;
-  --color-surface-secondary: 241 244 240;
-  --color-surface-hover: 231 240 223;
-  --color-surface-alt: 246 248 245;
-  --color-text-primary: 24 32 27;
-  --color-text-secondary: 70 81 73;
-  --color-text-tertiary: 70 81 73;
-  --color-text-muted: 102 113 105;
+  --color-surface-secondary: 244 244 245;
+  --color-surface-hover: 237 245 231;
+  --color-surface-alt: 250 250 250;
+  --color-text-primary: 23 24 23;
+  --color-text-secondary: 90 93 90;
+  --color-text-tertiary: 90 93 90;
+  --color-text-muted: 107 110 107;
   --color-text-inverted: 255 255 255;
-  --color-border: 220 226 220;
-  --color-border-secondary: 184 194 185;
-  --color-brand-50: 238 244 233;
-  --color-brand-100: 231 240 223;
-  --color-brand-500: 63 111 36;
-  --color-brand-600: 49 89 28;
-  --color-brand-700: 39 72 22;
+  --color-border: 229 230 229;
+  --color-border-secondary: 210 212 210;
+  --color-brand-50: 243 248 239;
+  --color-brand-100: 237 245 231;
+  --color-brand-500: 70 125 37;
+  --color-brand-600: 59 108 30;
+  --color-brand-700: 47 87 24;
 }
 
 /* Older non-React apps use light-palette role names for surfaces and text.
@@ -150,7 +163,7 @@
 
 [data-neurodesk-app] :is(input:not([type="range"]), select, textarea) {
   color: var(--nd-brand-text);
-  background-color: var(--nd-brand-unselected);
+  background-color: var(--nd-brand-page);
   border-color: var(--nd-brand-border);
 }
 
@@ -192,7 +205,7 @@
 :root[data-neurodesk-app][data-neurodesk-theme="dark"]:not([data-neurodesk-shell="react"]) #controls
   :is(select, input[type="text"], input[type="number"]) {
   color: var(--nd-brand-text);
-  background: var(--nd-brand-unselected);
+  background-color: var(--nd-brand-page);
   border-color: var(--nd-brand-border);
 }
 
@@ -300,11 +313,11 @@
    changing the apps' existing markup. */
 [data-neurodesk-app] :is(.app-header, .start-header, .nd-imaging-app-header) {
   --nd-color-text: var(--nd-brand-menu-text);
-  --nd-color-text-muted: var(--nd-brand-light);
-  --nd-color-text-dim: var(--nd-brand-hover);
+  --nd-color-text-muted: var(--nd-brand-text-muted);
+  --nd-color-text-dim: var(--nd-brand-text-dim);
   color: var(--nd-brand-menu-text);
   background: var(--nd-brand-menu);
-  border-color: var(--nd-brand-selected);
+  border-color: var(--nd-brand-border);
 }
 
 [data-neurodesk-app] :is(.header-link, .nd-header-link) {
@@ -379,7 +392,7 @@
   --nd-color-warning: #f0c777;
   color: var(--nd-brand-console-text);
   background: var(--nd-brand-console-surface);
-  border-top: 3px solid var(--nd-brand-primary);
+  border-top: 1px solid var(--nd-brand-border);
 }
 
 [data-neurodesk-app] :is(.console-header, .nd-console-header) {
@@ -418,14 +431,14 @@
 [data-neurodesk-top-bar-host] {
   display: block !important;
   box-sizing: border-box !important;
-  min-height: 64px !important;
+  min-height: 48px !important;
   width: 100% !important;
   padding: 0 !important;
   margin: 0 !important;
   color: var(--nd-brand-menu-text) !important;
   background: var(--nd-brand-menu) !important;
   border: 0 !important;
-  border-bottom: 2px solid var(--nd-brand-primary) !important;
+  border-bottom: 1px solid var(--nd-brand-border) !important;
   border-radius: 0 !important;
   box-shadow: none !important;
 }
@@ -444,14 +457,14 @@
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  gap: 24px !important;
+  gap: 16px !important;
   width: 100% !important;
   min-width: 0 !important;
-  min-height: 62px !important;
-  padding: 0 28px !important;
+  min-height: 48px !important;
+  padding: 0 16px !important;
   margin: 0 !important;
   font-family: var(--nd-font-ui) !important;
-  font-size: 16px !important;
+  font-size: 13px !important;
   font-weight: 400 !important;
   line-height: 1.2 !important;
   color: var(--nd-brand-menu-text) !important;
@@ -462,7 +475,7 @@
 }
 
 .nd-app-bar--standalone {
-  border-bottom: 2px solid var(--nd-brand-primary) !important;
+  border-bottom: 1px solid var(--nd-brand-border) !important;
 }
 
 .nd-app-bar__identity,
@@ -473,7 +486,7 @@
 }
 
 .nd-app-bar__identity {
-  gap: 18px !important;
+  gap: 10px !important;
   white-space: nowrap !important;
   overflow: hidden !important;
 }
@@ -493,29 +506,31 @@
 .nd-app-bar__title {
   flex: 0 0 auto !important;
   color: var(--nd-brand-menu-text) !important;
-  font-size: 21px !important;
+  font-size: 14px !important;
   font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
 }
 
 .nd-app-bar__description {
   overflow: hidden !important;
-  color: var(--nd-brand-hover) !important;
-  font-size: 18px !important;
+  color: var(--nd-brand-text-muted) !important;
+  font-size: 13px !important;
   font-weight: 400 !important;
   text-overflow: ellipsis !important;
 }
 
 .nd-app-bar__version {
   flex: 0 0 auto !important;
-  color: var(--nd-brand-hover) !important;
-  font-size: 14px !important;
+  color: var(--nd-brand-text-dim) !important;
+  font-size: 12px !important;
+  font-variant-numeric: tabular-nums !important;
   font-weight: 400 !important;
 }
 
 .nd-app-bar__navigation {
   flex: 0 0 auto !important;
   justify-content: flex-end !important;
-  gap: 10px !important;
+  gap: 2px !important;
 }
 
 .nd-app-bar__action {
@@ -523,15 +538,15 @@
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 7px !important;
-  min-height: 40px !important;
-  padding: 7px 8px !important;
+  gap: 6px !important;
+  min-height: 32px !important;
+  padding: 6px 8px !important;
   margin: 0 !important;
   font: inherit !important;
-  font-size: 16px !important;
-  font-weight: 400 !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
   line-height: 1 !important;
-  color: var(--nd-brand-menu-text) !important;
+  color: var(--nd-brand-text-muted) !important;
   background: transparent !important;
   border: 1px solid transparent !important;
   border-radius: 6px !important;
@@ -544,18 +559,18 @@
 }
 
 .nd-app-bar__action:hover {
-  color: var(--nd-brand-menu) !important;
-  background: var(--nd-brand-hover) !important;
+  color: var(--nd-brand-text) !important;
+  background: var(--nd-brand-unselected) !important;
 }
 
 .nd-app-bar__action svg {
   display: block !important;
-  width: 22px !important;
-  height: 22px !important;
-  flex: 0 0 22px !important;
+  width: 16px !important;
+  height: 16px !important;
+  flex: 0 0 16px !important;
   fill: none !important;
   stroke: currentColor !important;
-  stroke-width: 1.8 !important;
+  stroke-width: 1.75 !important;
   stroke-linecap: round !important;
   stroke-linejoin: round !important;
 }
@@ -578,7 +593,7 @@
   position: relative !important;
   z-index: 1 !important;
   flex: 0 0 auto !important;
-  border-bottom: 2px solid var(--nd-brand-primary) !important;
+  border-bottom: 1px solid var(--nd-brand-border) !important;
 }
 
 .nd-app-utility-bar {
@@ -586,7 +601,7 @@
   align-items: center !important;
   justify-content: flex-end !important;
   gap: 8px !important;
-  padding: 8px 28px !important;
+  padding: 8px 16px !important;
   color: var(--nd-brand-text) !important;
   background: var(--nd-brand-pale) !important;
   border-bottom: 1px solid var(--nd-brand-border) !important;
@@ -795,8 +810,7 @@
 
   .nd-app-bar__action {
     gap: 4px !important;
-    padding-inline: 5px !important;
-    font-size: 14px !important;
+    padding-inline: 6px !important;
   }
 }
 
@@ -826,7 +840,7 @@
   .nd-app-bar__title {
     flex-shrink: 1 !important;
     white-space: normal !important;
-    font-size: 18px !important;
+    font-size: 16px !important;
   }
 
   .nd-app-bar__version {

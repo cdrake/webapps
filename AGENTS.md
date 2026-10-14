@@ -6,7 +6,7 @@ Every remote URL the apps or the offline bundle fetch (`registry/offline-assets.
 
 ## Interface changes and new applications
 
-Before changing UI, adding controls, or scaffolding an app, read [the design system](docs/architecture/design-system.md) and [the interface standard](docs/architecture/interface-standard.md). QSMbly is the visual reference; the design system is its metrics expressed as one shared vocabulary.
+Before changing UI, adding controls, or scaffolding an app, read [the design system](docs/architecture/design-system.md) and [the interface standard](docs/architecture/interface-standard.md). The design system sets the look (Inter, neutral greys, the logo green for action only) and the shared vocabulary; the app template is its reference.
 
 - Build every sidebar, viewer, console, status bar and dialog from the classes in `@neurodesk/webapp-components/styles/imaging-workspace.css` and the custom elements and native builders in `@neurodesk/webapp-components/ui` (`createFileField`, `createViewerToolbar`, `createConsole`, `createInfoDialog`, `createResultList`). Start from `templates/app-template`, which is the complete canonical layout.
 - Do not write app CSS for those regions, hardcode colours, override `--nd-color-*` tokens, set `color-scheme`, or add `<dialog>` markup. If the vocabulary lacks something, add it to the shared stylesheet with a test, then use it. `test/design-system.test.mjs` fails on each of these.
@@ -42,7 +42,7 @@ not an empty page or a copied app:
   build script. Together they make `pnpm --filter <app> dev`, standalone preview,
   and the deployed site use the same shell and theme.
 - Use `apps/dwi2trx` only as the richer workflow reference. Visual workflow
-  grouping follows QSMbly, per the interface standard.
+  grouping follows the template, per the interface standard.
 - Do not draw your own bar, theme toggle, dialogs, download helper, NIfTI header
   parser or DICOM import. They exist in `@neurodesk/webapp-components` and
   `@neurodesk/runtime-support`; an app-local copy is a defect, not a convenience.

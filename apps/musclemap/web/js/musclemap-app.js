@@ -338,8 +338,7 @@ class MuscleMapApp {
       },
       onStatus: (message) => this.updateOutput(message),
     });
-    const input = document.getElementById('fileInput');
-    input.closest('.section-content').prepend(this.exampleSelector);
+    document.getElementById('fileInput').closest('.section-content').prepend(this.exampleSelector);
   }
 
   setupEventListeners() {
@@ -347,15 +346,8 @@ class MuscleMapApp {
     if (fileInput) {
       fileInput.addEventListener('change', (e) => this.fileIOController.handleFileInput(e));
     }
-    const addFilesButton = document.getElementById('addFilesButton');
-    if (addFilesButton && fileInput) {
-      addFilesButton.addEventListener('click', () => {
-        fileInput.value = '';
-        fileInput.click();
-      });
-    }
-
-    this.setupDropZone();
+    // The page-wide drop replaces the inputs; "Choose files…" adds to them.
+    fileInput?.addEventListener('nd-replace', () => this.fileIOController.clearFiles());
 
     const runBtn = document.getElementById('runSegmentation');
     if (runBtn) runBtn.addEventListener('click', () => this.runSegmentation());
@@ -480,53 +472,6 @@ class MuscleMapApp {
     if (privacyBtn) privacyBtn.addEventListener('click', () => this.privacyModal.open());
     const closePrivacy = document.getElementById('closePrivacy');
     if (closePrivacy) closePrivacy.addEventListener('click', () => this.privacyModal.close());
-  }
-
-  setupDropZone() {
-    const zone = document.getElementById('fileDropZone');
-    if (zone) {
-      zone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        zone.classList.add('dragover');
-      });
-      zone.addEventListener('dragleave', () => {
-        zone.classList.remove('dragover');
-      });
-      zone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        zone.classList.remove('dragover');
-        this.handleDroppedTransfer(e.dataTransfer);
-      });
-    }
-
-    // Capture phase: NiiVue's own drop listener on the canvas stops propagation and
-    // loads the file into the viewer only, so a bubble-phase listener never sees it.
-    const workspace = document.querySelector('main.app-main');
-    if (workspace) {
-      workspace.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      }, true);
-      workspace.addEventListener('drop', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        this.handleDroppedTransfer(e.dataTransfer);
-      }, true);
-    }
-  }
-
-  handleDroppedTransfer(dataTransfer) {
-    const files = Array.from(dataTransfer?.files || []);
-    const hasNifti = files.some(f => MuscleMapInputSet.isNiftiFile(f));
-
-    if (hasNifti) {
-      this.fileIOController.handleDroppedFiles(files);
-    } else if (dataTransfer?.items?.length) {
-      // Could be a folder drop (DICOM) - use items API for directory traversal
-      this.dicomController.convertDropItems(dataTransfer.items);
-    } else if (files.length > 0) {
-      this.fileIOController.handleDroppedFiles(files);
-    }
   }
 
   setupInfoTooltips() {
