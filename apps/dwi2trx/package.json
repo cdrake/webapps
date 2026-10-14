@@ -19,12 +19,10 @@
     "@neurodesk/webapp-components": "workspace:*",
     "@niivue/dcm2niix": "^1.2.0",
     "@niivue/niimath": "file:./vendor/niimath",
-    "@niivue/niivue": "1.0.0-rc.11",
-    "fflate": "^0.8.3"
+    "@niivue/niivue": "1.0.0-rc.11"
   },
   "devDependencies": {
     "@playwright/test": "^1.44.0",
-    "eslint": "^9.0.0",
     "vite": "^6.3.2"
   }
 }

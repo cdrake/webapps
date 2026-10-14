@@ -9,22 +9,22 @@ The report was run from `origin/main` at `4b28789c` with
 `pnpm quality:unused` (Knip 6.41.0).
 The scan exited successfully. `diagnostics.log` was empty, so there were no scan warnings.
 
-| Kind | Before | After this change |
-| --- | ---: | ---: |
-| files | 17 | 16 |
-| exports | 69 | 40 |
-| types | 14 | 14 |
-| duplicates | 1 | 1 |
-| dependencies | 18 | 18 |
-| devDependencies | 28 | 28 |
-| total | 147 | 117 |
+| Kind | Before | After the source removals | After the dependency removals |
+| --- | ---: | ---: | ---: |
+| files | 17 | 16 | 16 |
+| exports | 69 | 40 | 40 |
+| types | 14 | 14 | 14 |
+| duplicates | 1 | 1 | 1 |
+| dependencies | 18 | 18 | 15 |
+| devDependencies | 28 | 28 | 7 |
+| total | 147 | 117 | 93 |
 
 Each candidate has one of these dispositions:
 
 - **Removed**: verified dead and deleted in this change.
 - **Runtime**: a legitimate external, runtime or test entry that Knip cannot see.
 - **Upstream**: owned by an upstream-synchronized app (`apps/<id>/upstream.json`), so it is classified here but not edited.
-- **Redundant**: verified as an unneeded declaration. Removal waits for a separate lockfile change (see [Remaining work](#remaining-work)).
+- **Redundant, removed**: verified as an unneeded declaration and removed in a separate lockfile change (see [Dependency removals](#dependency-removals)).
 - **Kept**: unreachable, but deliberately kept, with the reason given.
 
 ## Evidence used for removals
@@ -73,12 +73,12 @@ After the removals, the report produced no new candidates: no helper became unus
 
 | Candidate | Disposition | Evidence |
 | --- | --- | --- |
-| `eslint` devDependency in ants, brain2print, brain-extraction, carotid-flow, disconnectome, dwi2trx, edgereg, elastix, fireants, greedy, lcmodel, nesvor, synthseg, topofit, white-matter-lesions, vessel-surfer and vessel-surfer-leaderboard (17) | Redundant | Each `eslint.config.js` re-exports the root configuration. `lint` runs the root `scripts/lint.mjs`, which resolves the root's `eslint@9.39.5`. CI installs the whole workspace, never a filtered subset. Sixteen other apps declare no `eslint` at all. |
-| root `ajv`, `ajv-formats` | Redundant | Only `packages/desktop/neuroflow/generator.mjs` imports them. Node resolves them from `packages/desktop`, which declares both. |
-| `packages/node-drivers` `vite` | Redundant | Nothing in the package references Vite. `validation/browser-reference.mjs` serves with `node:http`. Neither pinned runtime declares Vite as a peer. |
-| `apps/vesselboost` `onnxruntime-node`, `jsdom` | Redundant | Nothing in the app references them. `packages/vesselboost` declares its own `onnxruntime-node` for `src/node.js`. |
-| `apps/spinalcordtoolbox` `nifti-reader-js` | Redundant | `web/nifti-js/index.js` is staged from `packages/runtime-support/src/nifti-js`, not from npm. Only planning documents name the package. |
-| `apps/dwi2trx` `fflate` | Redundant | Nothing in the app imports it. `@dipy/gpu-streamlines` declares its own `fflate` dependency. Keep the NOTICE entry, because the bundle still contains fflate. |
+| `eslint` devDependency in ants, brain2print, brain-extraction, carotid-flow, disconnectome, dwi2trx, edgereg, elastix, fireants, greedy, lcmodel, nesvor, synthseg, topofit, white-matter-lesions, vessel-surfer and vessel-surfer-leaderboard (17) | Redundant, removed | Each `eslint.config.js` re-exports the root configuration. `lint` runs the root `scripts/lint.mjs`, which resolves the root's `eslint@9.39.5`. CI installs the whole workspace, never a filtered subset. Sixteen other apps declare no `eslint` at all. |
+| root `ajv`, `ajv-formats` | Redundant, removed | Only `packages/desktop/neuroflow/generator.mjs` imports them. Node resolves them from `packages/desktop`, which declares both. |
+| `packages/node-drivers` `vite` | Redundant, removed | Nothing in the package references Vite. `validation/browser-reference.mjs` serves with `node:http`. Neither pinned runtime declares Vite as a peer. |
+| `apps/vesselboost` `onnxruntime-node`, `jsdom` | Redundant, removed | Nothing in the app references them. `packages/vesselboost` declares its own `onnxruntime-node` for `src/node.js`. |
+| `apps/spinalcordtoolbox` `nifti-reader-js` | Redundant, removed | `web/nifti-js/index.js` is staged from `packages/runtime-support/src/nifti-js`, not from npm. Only planning documents name the package. |
+| `apps/dwi2trx` `fflate` | Redundant, removed | Nothing in the app imports it. `@dipy/gpu-streamlines` declares its own `fflate` dependency. Keep the NOTICE entry, because the bundle still contains fflate. |
 | `apps/browserqc`, `apps/deface`, `apps/dwi2trx` `@niivue/dcm2niix` | Runtime (unresolved) | The apps use `@neurodesk/runtime-support/dcm2niix-client`, which declares the package. Each Vite config names it in `optimizeDeps.exclude`. Removal needs a production build and e2e DICOM import per app, because Vite resolves the worker's import from the app. BrowserQC is also upstream-synchronized. |
 | `apps/synthsr` `onnxruntime-node`, `packages/synthstrip` `onnxruntime-node` (devDependencies) | Runtime | Loaded by `createRequire(import.meta.url)('onnxruntime-node')` in `test/wasm.test.js` and `test/browser.test.js`. Knip does not follow that call. |
 | `apps/dicom2vid`, `apps/easy-mp2rage` `@neurodesk/webapp-components` | Runtime | `scripts/vendor-components.mjs` and `scripts/build-static.mjs` copy the package into `web/vendor/webapp-components`. The workspace dependency also places the app in the CI plan of the shared package. |
@@ -89,6 +89,17 @@ After the removals, the report produced no new candidates: no helper became unus
 | `packages/syncro` `@neurodesk/registration`, `@neurodesk/synthsr`, `@neurodesk/synthstrip` (devDependencies) | Runtime | Reached by relative path: `scripts/build.mjs` copies `../../registration/wasm`, `src/assets.js` reads `../../synthsr/model.manifest.json`, and `src/node.js` imports `../../synthstrip/src/index.js`. |
 | `apps/seedseg` `@neurodesk/seedseg` | Upstream / Runtime | `pnpm vendor` stages the shared pipeline. The integration rules in `upstream.json` require this package. |
 | `apps/dicompare` `@testing-library/user-event`, `@types/react-router-dom`, `@electron-toolkit/preload`, `@types/jszip` | Upstream | These are dicompare's own package declarations. |
+
+## Dependency removals
+
+The redundant declarations were removed in one lockfile change, kept separate from the source deletions because a root `package.json` dependency change selects the whole catalog in CI.
+Each entry was re-checked on `origin/main` at `e2fb6b76` before removal.
+The search covered static, dynamic and `createRequire` imports, package scripts, staging and copy scripts, HTML, worker URLs, validation tools, workflows and the `exes/node-cli` packager.
+
+- The 17 `eslint` declarations: every `lint` script is `node ../../scripts/lint.mjs --workspace` (three levels up for the easter eggs), and every `eslint.config.js` re-exports the root configuration, so ESLint resolves from the root. `templates/app-template` lost the same declaration, so `pnpm new-app` no longer copies it into new apps.
+- Root `ajv` and `ajv-formats`: the root tests and `scripts/generate-neuroflow.mjs` import `packages/desktop/neuroflow/generator.mjs`, which resolves both from `packages/desktop`.
+- None of the removed packages is a workspace package, so `scripts/lib/workspace-graph.mjs` has the same edges and no app leaves another package's CI plan.
+- The lockfile change removes importer entries only. Every package keeps its locked version, because each is still resolved for another importer: `fflate` 0.8.3 for `@dipy/gpu-streamlines`, `onnxruntime-node` for `packages/vesselboost` and SCT, and `ajv` for `packages/desktop`.
 
 ## Upstream-owned candidates
 
@@ -143,7 +154,6 @@ The `upstream.json` integration rules require some erased type imports (`Process
 
 ## Remaining work
 
-- Remove the redundant dependency declarations listed above in one lockfile change. Every `package.json` dependency change selects the whole catalog in CI, so that change is kept separate from these source deletions.
 - Before removing `@niivue/dcm2niix` from BrowserQC, Deface or dwi2trx, verify a production build and a DICOM import for each app.
 - Send the dicompare and QSMbly findings upstream, or remove them in a scoped upstream-sync PR. Then remove the dicompare `technicalLog.ts` exports.
 - TopoFit's affine helpers and the NeSVoR output re-exports need an owner decision with parity evidence.
