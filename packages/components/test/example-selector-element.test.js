@@ -384,3 +384,15 @@ test('a refused picker brings the drop box back instead of failing silently', ()
   assert.match(control.textContent, /file box below/);
   control.destroy();
 });
+
+test('a replaced file field takes over the menu and loses its box', () => {
+  const { window } = new JSDOM('<body><div id="scope"><label class="nd-file" id="old"><input type="file" data-neurodesk-input="image"></label></div></body>');
+  const scope = window.document.getElementById('scope');
+  const control = createExampleSelector({ examples, onLoad: async () => {}, scope }, window.document);
+  scope.prepend(control);
+  scope.querySelector('#old').replaceWith(Object.assign(window.document.createElement('label'), { className: 'nd-file', id: 'new', innerHTML: '<input type="file" data-neurodesk-input="image">' }));
+  control.select.dispatchEvent(new window.Event('focus'));
+  assert.ok(scope.querySelector('#new').classList.contains('nd-file-merged'));
+  assert.equal(control.select.querySelectorAll('option[data-action="files"]').length, 1, 'actions are not duplicated');
+  control.destroy();
+});

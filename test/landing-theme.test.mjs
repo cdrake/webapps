@@ -10,19 +10,19 @@ function token(name) {
   return match[1].toLowerCase();
 }
 
-test('landing page uses the Neurocontainers Builder dark palette', () => {
+test('landing page matches the app theme: neutral greys and the logo green', () => {
   assert.match(css, /:root\s*\{[^}]*color-scheme:\s*dark/s);
-  assert.equal(token('page'), '#0a0c08');
-  assert.equal(token('surface'), '#10140d');
-  assert.equal(token('white'), '#161a0e');
-  assert.equal(token('text'), '#e8f5d0');
-  assert.equal(token('muted'), '#9ca3af');
-  assert.equal(token('green'), '#91c84a');
-  assert.equal(token('line'), '#2d4222');
+  assert.equal(token('page'), '#0d0e0d');
+  assert.equal(token('surface'), '#141514');
+  assert.equal(token('white'), '#1c1d1c');
+  assert.equal(token('text'), '#ededed');
+  assert.equal(token('muted'), '#858885');
+  assert.equal(token('green'), '#6ba442');
+  assert.equal(token('line'), '#262826');
   assert.match(css, /body\s*\{[^}]*background:\s*var\(--page\)/s);
 });
 
 test('landing page exposes a neutral, readable light palette', () => {
-  assert.match(css, /:root\[data-neurodesk-theme="light"\]\s*\{[^}]*color-scheme:\s*light[^}]*--page:\s*#f6f8f5[^}]*--green:\s*#3f6f24[^}]*--text:\s*#18201b[^}]*--surface:\s*#f1f4f0/s);
+  assert.match(css, /:root\[data-neurodesk-theme="light"\]\s*\{[^}]*color-scheme:\s*light[^}]*--page:\s*#fafafa[^}]*--green:\s*#467d25[^}]*--text:\s*#171817[^}]*--surface:\s*#f4f4f5/s);
   assert.doesNotMatch(css, /Pontano Sans|Arial Narrow|fonts\.gstatic\.com/);
 });

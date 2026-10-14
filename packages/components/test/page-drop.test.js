@@ -1,30 +1,28 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { routeFiles } from '../src/ui/pageDrop.js';
+import { JSDOM } from 'jsdom';
+import { primaryInput, routeFiles } from '../src/ui/pageDrop.js';
 
-const input = (kind, multiple = false) => ({ dataset: { neurodeskInput: kind }, multiple });
 const file = name => ({ name });
 
-test('scans fill empty single-file slots in order, then replace from the first', () => {
-  const [fixed, moving] = [input('image'), input('image')];
-  const two = routeFiles([file('a.nii'), file('b.nii')], [fixed, moving]);
-  assert.deepEqual(two.map(([slot, files]) => [slot, files.map(f => f.name)]), [[fixed, ['a.nii']], [moving, ['b.nii']]]);
-  const next = routeFiles([file('c.nii')], [fixed, moving], slot => slot === fixed);
-  assert.equal(next[0][0], moving);
-  const full = routeFiles([file('d.nii')], [fixed, moving], () => true);
-  assert.equal(full[0][0], fixed);
+test('the primary input skips auxiliary kinds and disabled or folder inputs', () => {
+  const { document } = new JSDOM(`<body>
+    <input type="file" data-neurodesk-input="model" id="model">
+    <input type="file" data-neurodesk-input="image" id="off" disabled>
+    <input type="file" data-neurodesk-input="image" id="folder" webkitdirectory>
+    <input type="file" data-neurodesk-input="dataset" id="spectra">
+    <input type="file" data-neurodesk-input="image" id="t1"></body>`).window;
+  assert.equal(primaryInput(document).id, 'spectra', 'LCModel: spectra, not the tissue T1');
+  document.getElementById('spectra').remove();
+  assert.equal(primaryInput(document).id, 't1');
 });
 
-test('files go to an input of their kind, or with the scans when none exists', () => {
-  const [scan, gradients] = [input('image', true), input('gradients', true)];
-  const plan = routeFiles([file('dwi.nii.gz'), file('dwi.bval'), file('dwi.bvec')], [scan, gradients]);
-  assert.deepEqual(plan.map(([slot, files]) => [slot, files.length]), [[scan, 1], [gradients, 2]]);
-  const together = routeFiles([file('dwi.nii.gz'), file('dwi.bval')], [scan]);
-  assert.deepEqual(together.map(([slot, files]) => [slot, files.length]), [[scan, 2]]);
-});
-
-test('a DICOM series stays together in a multiple input', () => {
-  const scan = input('image', true);
-  const plan = routeFiles([file('1.dcm'), file('2.dcm'), file('3.dcm')], [scan, input('image')]);
-  assert.deepEqual(plan.map(([, files]) => files.length), [3]);
+test('auxiliary files go to their own input, everything else to the primary input', () => {
+  const scan = { dataset: { neurodeskInput: 'image' } };
+  const mask = { dataset: { neurodeskInput: 'image' } };
+  const gradients = { dataset: { neurodeskInput: 'gradients' } };
+  const plan = routeFiles([file('a.nii'), file('b.nii'), file('dwi.bval'), file('dwi.bvec')], [scan, mask, gradients], scan);
+  assert.deepEqual(plan.map(([input, files]) => [input, files.map(f => f.name)]), [[scan, ['a.nii', 'b.nii']], [gradients, ['dwi.bval', 'dwi.bvec']]]);
+  const noGradientInput = routeFiles([file('a.nii'), file('dwi.bval')], [scan, mask], scan);
+  assert.deepEqual(noGradientInput.map(([input, files]) => [input, files.length]), [[scan, 2]]);
 });

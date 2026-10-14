@@ -69,3 +69,17 @@ test('a later drop replaces the inputs and Undo brings them back', async ({ page
   await page.locator('#status .nd-status-undo').click();
   await expect(page.locator('#fileList .file-name')).toHaveText(['first_T1w.nii']);
 });
+
+test('Undo after a drop restores every file added before it, not just the last batch', async ({ page }) => {
+  await page.goto('/index.html');
+  await expect(page.locator('#fileInput').locator('xpath=..')).toBeHidden();
+  const input = page.locator('#fileInput');
+  const nifti = name => ({ name, mimeType: 'application/octet-stream', buffer: createInt16Nifti([10, 20, 30]) });
+  await input.setInputFiles(nifti('a_T1w.nii'));
+  await input.setInputFiles(nifti('b_T1w.nii'));
+  await expect(page.locator('#fileList .file-name')).toHaveText(['a_T1w.nii', 'b_T1w.nii']);
+  await dropNifti(page, page.locator('#gl1'), 'c_T1w.nii');
+  await expect(page.locator('#fileList .file-name')).toHaveText(['c_T1w.nii']);
+  await page.locator('#status .nd-status-undo').click();
+  await expect(page.locator('#fileList .file-name')).toHaveText(['a_T1w.nii', 'b_T1w.nii']);
+});

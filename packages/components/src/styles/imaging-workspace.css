@@ -394,8 +394,6 @@ nd-imaging-brand {
 .nd-file:hover > svg { color: var(--nd-color-primary); }
 .nd-file strong { color: var(--nd-color-primary); font-weight: 500; }
 .nd-file:has(> input:disabled) { opacity: 0.5; cursor: not-allowed; }
-/* The example menu's "Choose files…" and the page-wide drop replace the box. */
-.nd-file.nd-file-merged { display: none; }
 .nd-file-info { margin: 0; color: var(--nd-color-text-muted); font-size: 0.75rem; overflow-wrap: anywhere; }
 .nd-file-info strong { color: var(--nd-color-text); font-weight: 500; }
 

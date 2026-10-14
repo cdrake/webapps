@@ -110,17 +110,6 @@ export class MuscleMapInputSet {
     if (event.target) event.target.value = '';
   }
 
-  handleDroppedFiles(files) {
-    if (!files || files.length === 0) return;
-
-    const niftiFiles = files.filter(f => MuscleMapInputSet.isNiftiFile(f));
-    if (niftiFiles.length > 0) {
-      this.addFiles(niftiFiles);
-    } else {
-      this.onDicomFiles(files);
-    }
-  }
-
   setFile(file) {
     this.setFiles([file]);
   }

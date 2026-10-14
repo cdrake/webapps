@@ -438,7 +438,9 @@ import { resolveShellAdapter } from './shell-adapters/index.js';
       const identity = bar.querySelector('.nd-app-bar__identity');
       if (!identity) return;
       bar.classList.remove('nd-app-bar--compact');
-      if (identity.scrollWidth > identity.clientWidth + 1) bar.classList.add('nd-app-bar--compact');
+      // The description shrinks before anything clips, so a truncated description is the signal too.
+      const clipped = (node) => node && node.scrollWidth > node.clientWidth + 1;
+      if (clipped(identity) || clipped(identity.querySelector('.nd-app-bar__description'))) bar.classList.add('nd-app-bar--compact');
     });
   }
 

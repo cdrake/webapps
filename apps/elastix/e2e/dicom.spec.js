@@ -4,7 +4,7 @@ import { dicomSeries } from "../../../test-utils/dicom-fixture.mjs";
 test("imports extensionless DICOM and switches between converted series", async ({ page }) => {
   test.setTimeout(120000);
   await page.goto("/");
-  await expect(page.locator("#statusText")).toContainText("Ready", { timeout: 60000 });
+  await expect(page.locator("#statusText")).toHaveText("Drag and drop files", { timeout: 60000 });
   await page.locator("#movingInput").setInputFiles(dicomSeries({ extension: "" }));
   await expect(page.locator("#movingInfo")).toContainText("test_scan_1", { timeout: 60000 });
   await expect(page.locator("#movingInfo")).toContainText(".nii");

@@ -65,7 +65,10 @@
           Input
         </button></h2>
         <div class="section-content" data-disclosure-panel>
-          <input type="file" data-neurodesk-input="image" id="fileInput" multiple hidden>
+          <label class="file-upload-zone nd-file">
+            <input type="file" data-neurodesk-input="image" data-appends id="fileInput" multiple>
+            <span class="upload-text">Choose NIfTI, NIfTI labels or DICOM files</span>
+          </label>
           <div class="file-list" id="fileList"></div>
         </div>
       </section>

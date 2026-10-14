@@ -512,6 +512,9 @@
 }
 
 .nd-app-bar__description {
+  /* The description gives way first, so the title and version never clip. */
+  flex: 0 1 auto !important;
+  min-width: 0 !important;
   overflow: hidden !important;
   color: var(--nd-brand-text-muted) !important;
   font-size: 13px !important;
