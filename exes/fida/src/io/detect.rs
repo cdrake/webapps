@@ -302,26 +302,35 @@ fn same_dicom_study(a: Option<&(String, String)>, b: Option<&(String, String)>) 
 /// sites add for the averaged and water-unsuppressed series of one acquisition.
 fn dicom_protocol(ds: &Dataset, files: &[NamedFile], own_folder: bool) -> Option<String> {
     let i = ds.files.iter().copied().find(|&i| !split_path(files[i].name).1.starts_with('.'))?;
-    let description = super::dicom_siemens::parse_dicom(files[i].bytes).ok()?.string(0x0008, 0x103e).unwrap_or_default();
-    let name = match description.trim() {
-        "" if own_folder => split_path(split_path(files[i].name).0).1,
+    let dicom = super::dicom_siemens::parse_dicom(files[i].bytes).ok()?;
+    let description = dicom.string(0x0008, 0x103e).unwrap_or_default();
+    let series_number = dicom.string(0x0020, 0x0011).and_then(|s| s.trim().parse::<u32>().ok());
+    let (name, folder_name) = match description.trim() {
+        "" if own_folder => (split_path(split_path(files[i].name).0).1, true),
         "" => return None,
-        d => d,
+        d => (d, false),
     };
-    let name = after_series_number(name);
     let name = name.to_ascii_lowercase();
-    let name = water_base(&name).unwrap_or(name);
+    let name = after_series_number(&name, series_number, folder_name);
+    let name = water_base(name).unwrap_or_else(|| name.to_string());
     let name = name.strip_suffix("_ave").unwrap_or(&name);
     (!name.is_empty()).then(|| name.to_string())
 }
 
-/// `sub-01-20-PRESS_svs` -> `PRESS_svs`: what follows the last all-digit
-/// `-` field, as exporters number a series folder.
-fn after_series_number(name: &str) -> &str {
-    let fields: Vec<&str> = name.split('-').collect();
-    match fields[..fields.len() - 1].iter().rposition(|f| !f.is_empty() && f.bytes().all(|b| b.is_ascii_digit())) {
-        Some(k) => &name[fields[..=k].iter().map(|f| f.len() + 1).sum::<usize>()..],
-        None => name,
+/// Strip a leading SeriesNumber, or a `sub-<subject>-<series>-` folder prefix.
+/// Protocol parameters such as the 30 in `PRESS-30-TE` are never a prefix.
+fn after_series_number(name: &str, series_number: Option<u32>, folder_name: bool) -> &str {
+    let subject_prefix = folder_name.then(|| name.strip_prefix("sub-")).flatten()
+        .and_then(|rest| rest.split_once('-'))
+        .filter(|(subject, _)| !subject.is_empty() && subject.bytes().all(|b| b.is_ascii_alphanumeric()))
+        .map(|(_, rest)| rest);
+    let candidate = subject_prefix.unwrap_or(name);
+    let Some((prefix, protocol)) = candidate.split_once('-') else { return name };
+    let Ok(prefix) = prefix.parse::<u32>() else { return name };
+    if series_number.map_or(subject_prefix.is_some(), |number| number == prefix) {
+        protocol
+    } else {
+        name
     }
 }
 
@@ -490,11 +499,15 @@ pub fn detect(files: &[NamedFile]) -> Detection {
     let dir_of = |ds: &Dataset| split_path(files[ds.files[0]].name).0;
     let mut scopes: HashMap<usize, String> = HashMap::new();
     let mut protocols: HashMap<usize, String> = HashMap::new();
+    let mut voxels: HashMap<usize, Voxel> = HashMap::new();
     for ds in &dicom {
         let own_folder = !dir_of(ds).is_empty() && dicom.iter().filter(|other| dir_of(other) == dir_of(ds)).count() == 1;
         scopes.insert(ds.files[0], if own_folder { split_path(dir_of(ds)).0 } else { dir_of(ds) }.to_string());
         if let Some(protocol) = dicom_protocol(ds, files, own_folder) {
             protocols.insert(ds.files[0], protocol);
+        }
+        if let Some(voxel) = geometry::siemens_dicom(&super::dicom_siemens::protocol_text(files[ds.files[0]].bytes)) {
+            voxels.insert(ds.files[0], voxel);
         }
     }
     let key = |ds: &Dataset| -> (Format, String) { (ds.format, ds.name.to_ascii_lowercase()) };
@@ -570,7 +583,12 @@ pub fn detect(files: &[NamedFile]) -> Detection {
         if sources.iter().filter(|(other, _)| rivals(w, other)).count() != 1 {
             continue;
         }
-        let targets: Vec<usize> = (0..det.pairs.len()).filter(|&k| det.pairs[k].water.is_none() && shares(w, &det.pairs[k].metabolite)).collect();
+        let targets: Vec<usize> = (0..det.pairs.len()).filter(|&k| {
+            let metabolite = &det.pairs[k].metabolite;
+            // A repeated protocol at another known VOI is a different acquisition.
+            det.pairs[k].water.is_none() && shares(w, metabolite)
+                && voxels.get(&w.files[0]).zip(voxels.get(&metabolite.files[0])).is_none_or(|(a, b)| a == b)
+        }).collect();
         for &k in &targets {
             det.pairs[k].water = Some(w.clone());
         }
@@ -758,6 +776,15 @@ mod tests {
             bytes.extend_from_slice(&(value.len() as u16).to_le_bytes());
             bytes.extend_from_slice(&value);
         }
+        bytes
+    }
+
+    fn with_series_number(mut bytes: Vec<u8>, number: &str) -> Vec<u8> {
+        let mut value = number.as_bytes().to_vec();
+        if value.len() % 2 != 0 { value.push(b' '); }
+        bytes.extend_from_slice(&[0x20, 0, 0x11, 0, b'I', b'S']);
+        bytes.extend_from_slice(&(value.len() as u16).to_le_bytes());
+        bytes.extend_from_slice(&value);
         bytes
     }
 
@@ -1063,15 +1090,80 @@ mod tests {
 
     #[test]
     fn series_numbers_are_not_part_of_the_protocol() {
-        assert_eq!(after_series_number("sub-01-20-PRESS_svs_se_30_ave"), "PRESS_svs_se_30_ave");
-        assert_eq!(after_series_number("20-PRESS"), "PRESS");
-        assert_eq!(after_series_number("PRESS-2"), "PRESS-2");
-        assert_eq!(after_series_number("press"), "press");
-        let series = |uid: &str, description: &str| dicom_series(true, "1.2.3", uid, "subject-01", description);
+        assert_eq!(after_series_number("sub-01-20-PRESS_svs_se_30_ave", None, true), "PRESS_svs_se_30_ave");
+        assert_eq!(after_series_number("20-PRESS", Some(20), false), "PRESS");
+        assert_eq!(after_series_number("PRESS-2", Some(2), false), "PRESS-2");
+        assert_eq!(after_series_number("press", None, false), "press");
+        assert_eq!(after_series_number("PRESS-30-TE", Some(30), false), "PRESS-30-TE");
+        assert_eq!(after_series_number("20-PRESS", None, false), "20-PRESS");
+        assert_eq!(after_series_number("21-PRESS", Some(20), false), "21-PRESS");
+        let series = |uid: &str, description: &str| with_series_number(dicom_series(true, "1.2.3", uid, "subject-01", description), uid);
         let (plain, ave, water) = (series("21", "21-press"), series("20", "20-press_ave"), series("22", "22-press_water_off"));
         let files = [nf("flat/1.dcm", &plain), nf("flat/2.dcm", &ave), nf("flat/3.dcm", &water)];
         let d = detect(&files);
         assert!(d.pairs.iter().all(|p| p.water.as_ref().is_some_and(|w| w.files == [2])), "{d:#?}");
+    }
+
+    #[test]
+    fn hyphenated_protocol_parameters_do_not_share_water() {
+        for described in [true, false] {
+            let series = |number: &str, description: &str| with_series_number(
+                dicom_series(true, "1.2.3", number, "subject-01", if described { description } else { "" }),
+                number,
+            );
+            let ave = series("20", "PRESS-30-TE_ave");
+            let raw = series("21", "PRESS-30-TE");
+            let water = series("22", "PRESS-30-TE_water_off");
+            let other = series("23", "PRESS-144-TE");
+            let files = [
+                nf("session/sub-01-20-PRESS-30-TE_ave/1.dcm", &ave),
+                nf("session/sub-01-21-PRESS-30-TE/1.dcm", &raw),
+                nf("session/sub-01-22-PRESS-30-TE_water_off/1.dcm", &water),
+                nf("session/sub-01-23-PRESS-144-TE/1.dcm", &other),
+            ];
+            let d = detect(&files);
+            for index in [0, 1] {
+                assert_eq!(d.pairs.iter().find(|p| p.metabolite.files == [index]).unwrap().water.as_ref().map(|w| w.files.clone()), Some(vec![2]), "{d:#?}");
+            }
+            assert!(d.pairs.iter().find(|p| p.metabolite.files == [3]).unwrap().water.is_none(), "{d:#?}");
+        }
+    }
+
+    #[test]
+    fn unknown_numbered_prefixes_are_not_guessed() {
+        let ave = dicom_series(true, "1.2.3", "20", "subject-01", "20-PRESS_ave");
+        let raw = dicom_series(true, "1.2.3", "21", "subject-01", "21-PRESS");
+        let water = dicom_series(true, "1.2.3", "22", "subject-01", "22-PRESS_water_off");
+        let files = [nf("session/sub-01-20-PRESS_ave/1.dcm", &ave), nf("session/sub-01-21-PRESS/1.dcm", &raw), nf("session/sub-01-22-PRESS_water_off/1.dcm", &water)];
+        let d = detect(&files);
+        assert!(d.pairs.iter().all(|p| p.water.is_none()), "{d:#?}");
+        assert_eq!(d.unpaired_water.len(), 1, "{d:#?}");
+    }
+
+    #[test]
+    fn water_is_not_shared_with_a_different_known_voi() {
+        let series = |number: &str, description: &str, z: i32| {
+            let mut bytes = dicom_series(true, "1.2.3", number, "subject-01", description);
+            let mut protocol = format!("ASCCONV BEGIN\nsSpecPara.sVoI.dReadoutFOV = 20\nsSpecPara.sVoI.dPhaseFOV = 20\nsSpecPara.sVoI.dThickness = 20\nsSpecPara.sVoI.sPosition.dTra = {z}\nASCCONV END\n").into_bytes();
+            if protocol.len() % 2 != 0 { protocol.push(b' '); }
+            bytes.extend_from_slice(&[0x29, 0, 0x20, 0x10, b'L', b'O']);
+            bytes.extend_from_slice(&(protocol.len() as u16).to_le_bytes());
+            bytes.extend_from_slice(&protocol);
+            bytes
+        };
+        let raw = series("20", "PRESS", 0);
+        let ave = series("21", "PRESS_ave", 0);
+        let water = series("22", "PRESS_water_off", 0);
+        let other = series("23", "PRESS", 40);
+        let voxel = |bytes: &[u8]| geometry::siemens_dicom(&super::super::dicom_siemens::protocol_text(bytes)).unwrap();
+        assert_eq!(voxel(&raw).center_mm(), [0.0, 0.0, 0.0]);
+        assert_eq!(voxel(&other).center_mm(), [0.0, 0.0, 40.0]);
+        let files = [nf("session/sub-01-20-PRESS/1.dcm", &raw), nf("session/sub-01-21-PRESS_ave/1.dcm", &ave), nf("session/sub-01-22-PRESS_water_off/1.dcm", &water), nf("session/sub-01-23-PRESS/1.dcm", &other)];
+        let d = detect(&files);
+        for index in [0, 1] {
+            assert_eq!(d.pairs.iter().find(|p| p.metabolite.files == [index]).unwrap().water.as_ref().map(|w| w.files.clone()), Some(vec![2]), "{d:#?}");
+        }
+        assert!(d.pairs.iter().find(|p| p.metabolite.files == [3]).unwrap().water.is_none(), "{d:#?}");
     }
 
     #[test]

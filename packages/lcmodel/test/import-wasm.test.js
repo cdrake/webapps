@@ -75,7 +75,7 @@ test("a malformed NIfTI-MRS extension remains a spectroscopy error", async () =>
   assert.match(result.errors[0].error, /JSON/);
 });
 
-function dicom({ image = false, series = "1", description = "press", study = "study", patient = "patient" } = {}) {
+function dicom({ image = false, series = "1", description = "press", study = "study", patient = "patient", seriesNumber, voiZ } = {}) {
   const preamble = Buffer.alloc(132);
   preamble.write("DICM", 128);
   const tag = (group, element, vr, value) => {
@@ -90,17 +90,57 @@ function dicom({ image = false, series = "1", description = "press", study = "st
   };
   const spectrum = Buffer.alloc(128 * 8);
   for (let i = 0; i < 128; i++) spectrum.writeFloatLE(Math.exp(-i / 32), i * 8);
-  const protocol = "ASCCONV BEGIN\nlVectorSize = 128\nalDwellTime[0] = 500000\nlFrequency = 123250000\nflNominalB0 = 3\nalTE[0] = 30000\nalTR[0] = 2000000\ntSequenceFileName = svs_se\nASCCONV END\n";
+  const geometry = voiZ === undefined ? "" : `sSpecPara.sVoI.dReadoutFOV = 20\nsSpecPara.sVoI.dPhaseFOV = 20\nsSpecPara.sVoI.dThickness = 20\nsSpecPara.sVoI.sPosition.dTra = ${voiZ}\n`;
+  const protocol = `ASCCONV BEGIN\nlVectorSize = 128\nalDwellTime[0] = 500000\nlFrequency = 123250000\nflNominalB0 = 3\nalTE[0] = 30000\nalTR[0] = 2000000\ntSequenceFileName = svs_se\n${geometry}ASCCONV END\n`;
   return Buffer.concat([
     preamble,
     tag(0x20, 0x0d, "UI", study),
     tag(0x20, 0x0e, "UI", series),
+    ...(seriesNumber === undefined ? [] : [tag(0x20, 0x11, "IS", String(seriesNumber))]),
     tag(0x10, 0x20, "LO", patient),
     tag(8, 0x103e, "LO", description),
     image ? tag(8, 0x60, "CS", "MR") : tag(0x5600, 0x20, "OF", spectrum),
     tag(0x29, 0x1020, "LO", protocol),
   ]);
 }
+
+test("Siemens water sharing preserves hyphenated protocol parameters", async () => {
+  for (const described of [true, false]) {
+    const files = [
+      ["session/sub-01-20-PRESS-30-TE_ave/1.dcm", "PRESS-30-TE_ave"],
+      ["session/sub-01-21-PRESS-30-TE/1.dcm", "PRESS-30-TE"],
+      ["session/sub-01-22-PRESS-30-TE_water_off/1.dcm", "PRESS-30-TE_water_off"],
+      ["session/sub-01-23-PRESS-144-TE/1.dcm", "PRESS-144-TE"],
+    ].map(([name, description], i) => [name, dicom({ series: String(20 + i), seriesNumber: 20 + i, description: described ? description : "" })]);
+    const lcm = await moduleWith(files);
+    const result = lcm.load();
+    assert.deepEqual(result.errors, []);
+    assert.deepEqual(result.datasets.map(d => [d.path, d.waterPath ?? null]), [
+      ["session/sub-01-20-PRESS-30-TE_ave/1.dcm", "session/sub-01-22-PRESS-30-TE_water_off/1.dcm"],
+      ["session/sub-01-21-PRESS-30-TE/1.dcm", "session/sub-01-22-PRESS-30-TE_water_off/1.dcm"],
+      ["session/sub-01-23-PRESS-144-TE/1.dcm", null],
+    ]);
+  }
+});
+
+test("Siemens water sharing refuses a different Siemens VOI", async () => {
+  const files = [
+    ["session/sub-01-20-PRESS/1.dcm", "PRESS", 0],
+    ["session/sub-01-21-PRESS_ave/1.dcm", "PRESS_ave", 0],
+    ["session/sub-01-22-PRESS_water_off/1.dcm", "PRESS_water_off", 0],
+    ["session/sub-01-23-PRESS/1.dcm", "PRESS", 40],
+  ].map(([name, description, voiZ], i) => [name, dicom({ series: String(20 + i), description, voiZ })]);
+  const lcm = await moduleWith(files);
+  const result = lcm.load();
+  assert.deepEqual(result.errors, []);
+  assert.deepEqual(result.datasets.map(d => [d.path, d.waterPath ?? null]), [
+    ["session/sub-01-20-PRESS/1.dcm", "session/sub-01-22-PRESS_water_off/1.dcm"],
+    ["session/sub-01-21-PRESS_ave/1.dcm", "session/sub-01-22-PRESS_water_off/1.dcm"],
+    ["session/sub-01-23-PRESS/1.dcm", null],
+  ]);
+  assert.deepEqual(result.datasets[0].header.voxel.centerMm, [-0, -0, 0]);
+  assert.deepEqual(result.datasets[2].header.voxel.centerMm, [-0, -0, 40]);
+});
 
 test("mixed flat DICOM exports load each spectroscopy series in either file order", async () => {
   const files = [["flat/image.dcm", dicom({ image: true, series: "image", description: "T1" })], ["flat/metab.dcm", dicom()], ["flat/reference.dcm", dicom({ series: "water", description: "press_ref" })]];
