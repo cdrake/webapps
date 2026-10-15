@@ -1,0 +1,40 @@
+{
+  "repository": "neurodesk/webapps",
+  "tagPrefix": "dicompare-v",
+  "displayName": "dicompare",
+  "app": "dicompare",
+  "run": "compare dicom-session --schema protocol.json --output comparison.json",
+  "readme": {
+    "run": "Check a DICOM session against a protocol schema",
+    "notes": [
+      "Other commands: analyze (acquisition report), build-schema (protocol schema",
+      "from a session) and schemas (the web app's schema library, usable as",
+      "--schema NAME). Add --help for every option.",
+      "",
+      "The release runs the dicompare Python package in the web app's Pyodide build,",
+      "with the same pinned wheels. Every package is included and checksummed, and",
+      "no network connection is required. Reports are the web app's JSON downloads.",
+      "",
+      "dicompare checks acquisition parameters against a protocol. It is not",
+      "clinical compliance certification."
+    ]
+  },
+  "validation": "validation/cli-check.mjs",
+  "targets": {
+    "linux-x64": {
+      "label": "Linux x64",
+      "archive": "tar.gz",
+      "executable": "dicompare"
+    },
+    "windows-x64": {
+      "label": "Windows x64",
+      "archive": "zip",
+      "executable": "dicompare.exe"
+    },
+    "macos-arm64": {
+      "label": "macOS Apple silicon",
+      "archive": "pkg",
+      "executable": "dicompare"
+    }
+  }
+}
