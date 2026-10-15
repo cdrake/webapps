@@ -313,7 +313,41 @@
       "desktop": true,
       "profile": "batch",
       "assets": [],
-      "downloads": [],
+      "downloads": [
+        {
+          "kind": "cli",
+          "platform": "linux-x64",
+          "version": "0.9.20261015",
+          "url": "https://github.com/neurodesk/webapps/releases/download/spinalcordtoolbox-v0.9.20261015/sct-webapp-0.9.20261015-linux-x64.tar.gz",
+          "sha256": "b62a59557fa13e39d91a0483daf00e4fd80a87849c02d1d7f8a0bdda6d78aa87",
+          "bytes": 176529958,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/spinalcordtoolbox-v0.9.20261015/sct-webapp-0.9.20261015-linux-x64.tar.gz.validation.txt",
+          "modelsIncluded": true,
+          "command": "tar -xzf sct-webapp-0.9.20261015-linux-x64.tar.gz\n./sct-webapp-0.9.20261015-linux-x64/sct-webapp segment --task spinalcord input.nii.gz results"
+        },
+        {
+          "kind": "cli",
+          "platform": "macos-arm64",
+          "version": "0.9.20261015",
+          "url": "https://github.com/neurodesk/webapps/releases/download/spinalcordtoolbox-v0.9.20261015/sct-webapp-0.9.20261015-macos-arm64.pkg",
+          "sha256": "217f5117218178475d775be5f124f605584791e52bcb0cf7cfbbbc810337f332",
+          "bytes": 178055288,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/spinalcordtoolbox-v0.9.20261015/sct-webapp-0.9.20261015-macos-arm64.pkg.validation.txt",
+          "modelsIncluded": true,
+          "command": "sudo installer -pkg sct-webapp-0.9.20261015-macos-arm64.pkg -target /\nsct-webapp self-check\nsct-webapp segment --task spinalcord input.nii.gz results"
+        },
+        {
+          "kind": "cli",
+          "platform": "windows-x64",
+          "version": "0.9.20261015",
+          "url": "https://github.com/neurodesk/webapps/releases/download/spinalcordtoolbox-v0.9.20261015/sct-webapp-0.9.20261015-windows-x64.zip",
+          "sha256": "a55915c741cb6cb4cc737dccc68d56e2cc5157033632112fa7b4f0f439041d9e",
+          "bytes": 178028702,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/spinalcordtoolbox-v0.9.20261015/sct-webapp-0.9.20261015-windows-x64.zip.validation.txt",
+          "modelsIncluded": true,
+          "command": "Expand-Archive -Path .\\sct-webapp-0.9.20261015-windows-x64.zip -DestinationPath .\n.\\sct-webapp-0.9.20261015-windows-x64\\sct-webapp.exe segment --task spinalcord input.nii.gz results"
+        }
+      ],
       "containers": [
         {
           "id": "spinalcordtoolbox",
