@@ -179,3 +179,62 @@ test('declared single-file runtime deduplication rewrites references and removes
   assert.deepEqual(await readFile(join(siteDist, '_runtime/viewer/1/viewer.js')), body);
   await assert.rejects(readFile(join(siteDist, 'vesselboost/runtime/viewer.js')), { code: 'ENOENT' });
 });
+
+test('a declared WASM runtime is shared across app-relative and root-relative worker references', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'runtime-wasm-copies-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const siteDist = join(root, 'dist');
+  await prepareParameterRuntimeFixture(root);
+  await mkdir(join(root, 'runtime-assets'), { recursive: true });
+  const body = Buffer.from([0, 97, 115, 109, 1, 0, 0, 0]);
+  const name = 'dcm2niix.jpeg-CR3ddVLp.wasm';
+  const apps = [
+    { id: 'ants', path: 'ants', app_scoped_runtime_families: ['ort-web-asyncify'] },
+    { id: 'synthseg', path: 'synthseg', app_scoped_runtime_families: [] },
+  ];
+  const workerPrefix = 'const empty = ""; const defaultName = "dcm2niix.jpeg.wasm"; ';
+  const resetCopies = async () => {
+    for (const app of apps) {
+      const assets = join(siteDist, app.path, 'assets');
+      await mkdir(assets, { recursive: true });
+      await writeFile(join(assets, name), body);
+      const reference = app.id === 'ants' ? name : `/synthseg/assets/${name}`;
+      await writeFile(join(assets, 'worker.jpeg.js'), `${workerPrefix}export const wasm = new URL("${reference}", import.meta.url);`);
+      await writeFile(join(assets, 'ort-thread-worker.mjs'), 'export const localThreadWorker = true;');
+      await writeFile(join(assets, 'unrelated.wasm'), body);
+    }
+  };
+  await resetCopies();
+  await writeFile(join(root, 'runtime-assets/manifest.json'), JSON.stringify({
+    schema_version: 1,
+    families: [{
+      id: 'dcm2niix-jpeg', version: '1.2.0', target: 'dcm2niix-jpeg/1.2.0', deduplicate: true,
+      files: [{ name: 'dcm2niix.jpeg.wasm', source_app: 'ants', source: `assets/${name}`, sha256: createHash('sha256').update(body).digest('hex') }],
+    }],
+  }));
+
+  await assembleRuntimeAssetStore({ repoRoot: root, siteDist, registry: { apps } });
+
+  assert.deepEqual(await readFile(join(siteDist, '_runtime/dcm2niix-jpeg/1.2.0/dcm2niix.jpeg.wasm')), body);
+  for (const app of apps) {
+    await assert.rejects(readFile(join(siteDist, app.path, 'assets', name)), { code: 'ENOENT' });
+    const worker = await readFile(join(siteDist, app.path, 'assets/worker.jpeg.js'), 'utf8');
+    assert.equal(worker, `${workerPrefix}export const wasm = new URL("../../_runtime/dcm2niix-jpeg/1.2.0/dcm2niix.jpeg.wasm", import.meta.url);`);
+    const reference = worker.match(/new URL\("([^"]+)"/)?.[1];
+    for (const base of ['https://example.test/', 'https://example.test/webapps/']) {
+      const workerUrl = new URL(`${app.path}/assets/worker.jpeg.js`, base);
+      assert.equal(new URL(reference, workerUrl).href,
+        new URL('_runtime/dcm2niix-jpeg/1.2.0/dcm2niix.jpeg.wasm', base).href);
+    }
+    assert.equal(await readFile(join(siteDist, app.path, 'assets/ort-thread-worker.mjs'), 'utf8'), 'export const localThreadWorker = true;');
+    assert.deepEqual(await readFile(join(siteDist, app.path, 'assets/unrelated.wasm')), body);
+  }
+
+  await resetCopies();
+  await writeFile(join(siteDist, 'synthseg/assets', name), 'different runtime bytes');
+  await assert.rejects(assembleRuntimeAssetStore({ repoRoot: root, siteDist, registry: { apps } }), /Runtime asset checksum mismatch/);
+
+  await resetCopies();
+  apps[1].app_scoped_runtime_families.push('dcm2niix-jpeg');
+  await assert.rejects(assembleRuntimeAssetStore({ repoRoot: root, siteDist, registry: { apps } }), /Cannot deduplicate scoped runtime dcm2niix-jpeg/);
+});

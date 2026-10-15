@@ -28,6 +28,21 @@
       ]
     },
     {
+      "id": "dcm2niix-jpeg",
+      "version": "1.2.0",
+      "target": "dcm2niix-jpeg/1.2.0",
+      "deduplicate": true,
+      "reason": "Share the identical single-threaded JPEG WASM from @niivue/dcm2niix 1.2.0; each app keeps its worker scripts inside its service-worker scope.",
+      "files": [
+        {
+          "name": "dcm2niix.jpeg.wasm",
+          "source_app": "ants",
+          "source": "assets/dcm2niix.jpeg-CR3ddVLp.wasm",
+          "sha256": "eecc6922483a953b6647ac15f03e2594bed46ea11fee4be8d2f20df7948937f4"
+        }
+      ]
+    },
+    {
       "id": "nifti-reader",
       "version": "0.8.0",
       "target": "nifti-reader/0.8.0",
