@@ -7,8 +7,8 @@ import test from 'node:test';
 import { promisify } from 'node:util';
 import { loadAppsRegistry, repoRoot } from '../scripts/lib/apps-registry.mjs';
 import {
-  DATE_VERSION, EMBEDDED_VERSION_SITES, LINKED_PACKAGES, applyRelease, embeddedVersionMismatches, mergeSameVersionSections,
-  nextVersion, planRelease, releaseDate, syncEmbeddedVersions, validateReleaseDate, workspacePackages,
+  EMBEDDED_VERSION_SITES, LINKED_PACKAGES, applyRelease, embeddedVersionMismatches, mergeSameVersionSections,
+  planRelease, releaseDate, syncEmbeddedVersions, validateReleaseDate, workspacePackages,
 } from '../scripts/lib/app-versions.mjs';
 
 const registry = await loadAppsRegistry();
@@ -27,17 +27,6 @@ test('every app is versioned MAJOR.MINOR.YYYYMMDD with a valid past date', () =>
   }
 });
 
-test('the version scheme accepts date releases and nothing else', () => {
-  for (const version of ['0.1.20260808', '2.10.20261231']) assert.match(version, DATE_VERSION);
-  for (const version of ['0.1.0', '1.2.3', '0.1.2026088', '0.1.202608080', 'v0.1.20260808', '0.1.20260808-rc.1', '0.1']) {
-    assert.doesNotMatch(version, DATE_VERSION, version);
-  }
-  for (const date of ['20260230', '20261301', '20260000', '2026-08-08']) {
-    assert.throws(() => validateReleaseDate(date), undefined, date);
-  }
-  validateReleaseDate('20240229');
-});
-
 test('embedded version strings and linked packages match their app', async () => {
   assert.deepEqual(await embeddedVersionMismatches(packages), []);
   for (const [linked, appId] of Object.entries(LINKED_PACKAGES)) {
@@ -50,19 +39,6 @@ test('MuscleMap app releases version portable features separately from checkpoin
   const { manifest } = packages.get('musclemap');
   assert.equal(manifest.releaseSeries, '1.5');
   assert.equal(manifest.version.split('.').slice(0, 2).join('.'), manifest.releaseSeries);
-});
-
-test('date versions preserve bump semantics and reject invalid dates and downgrades', () => {
-  assert.equal(nextVersion('1.4.7', 'patch', '20260910'), '1.4.20260910');
-  assert.equal(nextVersion('1.4.20260930', 'patch', '20261001'), '1.4.20261001');
-  assert.equal(nextVersion('1.4.20260910', 'minor', '20260911'), '1.5.20260911');
-  assert.equal(nextVersion('1.4.20260910', 'major', '20260911'), '2.0.20260911');
-  assert.throws(() => nextVersion('nope', 'patch', '20260911'), /Cannot derive/);
-  assert.throws(() => nextVersion('1.4.20260910', 'patch', '20260909'), /downgrade/);
-  for (const date of ['20260931', '20260229', '20261301', '2026011']) {
-    assert.throws(() => validateReleaseDate(date), /date/i);
-  }
-  validateReleaseDate('20280229');
 });
 
 async function fixture(t) {

@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { parse } from 'yaml';
 import { LockfileAnalysisError, lockfileImpact } from './lockfile-impact.mjs';
-import { CATALOG, SITE, reachableFrom } from './workspace-graph.mjs';
+import { CATALOG, INDEPENDENT_CONFIG, SITE, reachableFrom } from './workspace-graph.mjs';
 
 const NON_CODE_PREFIXES = ['docs/', '.changeset/'];
 // Self-contained packages outside apps/ with their own CI job (the homepage
@@ -16,7 +16,7 @@ const INDEPENDENT_CHECK_PATHS = [
   /^[^/]+\.md$/,
   /^\.gitignore$/,
   /^\.github\/workflows\/(?!ci\.yml$)[^/]+$/,
-  /^(?:eslint|knip|stryker)\.config\.m?js$/,
+  INDEPENDENT_CONFIG,
   /^config\/dependency-/,
   /^templates\//,
 ];

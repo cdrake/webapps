@@ -50,7 +50,7 @@ test('each module is a separate Stryker run against only its own data-free Node 
     assert.deepEqual(selected, config);
   }
   process.env.MUTATION_MODULE = 'missing';
-  await assert.rejects(import('../stryker.config.mjs?module=missing'), /Set MUTATION_MODULE to one of disconnectome, basis-select, format-g/);
+  await assert.rejects(import('../stryker.config.mjs?module=missing'), /Set MUTATION_MODULE to one of disconnectome, basis-select, format-g, date-versions, lockfile-impact;/);
   // Tools that load the config without the variable (Knip) get the canary's module.
   delete process.env.MUTATION_MODULE;
   const { default: fallback } = await import('../stryker.config.mjs?module=unset');
@@ -67,6 +67,9 @@ test('line ranges still cover exactly the functions they name', () => {
   const names = [...readFileSync(formatG.files.at(-1), 'utf8').matchAll(/^test\('([^']+)'/gm)].map((match) => match[1]).filter((name) => pattern.test(name));
   assert.equal(names.length, 2, names.join(', '));
   assert.ok(names.every((name) => /printf\("%g"\)/.test(name)), names.join(', '));
+  const dates = lines(moduleById('date-versions').mutate);
+  assert.match(dates, /^export function releaseDate\(now = new Date\(\)\) \{[\s\S]*\n\}$/, 'update the date-versions range when the date functions move');
+  assert.deepEqual([...dates.matchAll(/^export function (\w+)/gm)].map((match) => match[1]), ['releaseDate', 'validateReleaseDate', 'nextVersion']);
 });
 
 test('surviving mutations are reported per module without a score gate', () => {

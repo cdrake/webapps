@@ -24,6 +24,21 @@ export const modules = [
     files: ['packages/nii2tvx/package.json', 'packages/nii2tvx/wasm/nii2tvx.mjs', 'packages/nii2tvx/test/parity.test.js'],
     command: 'node --test --test-name-pattern=printf packages/nii2tvx/test/parity.test.js',
   },
+  {
+    // The date arithmetic only: the rest of app-versions.mjs drives Changesets on a workspace.
+    id: 'date-versions',
+    file: 'scripts/lib/app-versions.mjs',
+    mutate: 'scripts/lib/app-versions.mjs:44-73',
+    files: ['scripts/lib/apps-registry.mjs', 'test/date-versions.test.mjs'],
+    command: 'node --test test/date-versions.test.mjs',
+  },
+  {
+    id: 'lockfile-impact',
+    file: 'scripts/lib/lockfile-impact.mjs',
+    mutate: 'scripts/lib/lockfile-impact.mjs',
+    files: ['test/lockfile-impact.test.mjs'],
+    command: 'node --test test/lockfile-impact.test.mjs',
+  },
 ];
 
 // The PR canary: tableName, a small naming function in the first module.
