@@ -12,6 +12,8 @@
 
 ### Patch Changes
 
+- Keep the raw volume table visible and explain why when the population volume report cannot be computed or its reference cannot be loaded.
+  - @neurodesk/synthseg@0.10.20261015
 - Clarify that the volume report records the DICOM-derived scanner field strength and reference choice alongside age and sex. The Privacy dialog and README now describe these fields accurately; the original sidecar is not included in the downloaded report.
   - @neurodesk/synthseg@0.10.20261015
 - Updated dependencies [c74b26f]

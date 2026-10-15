@@ -1,6 +1,7 @@
 // The age-normative volume report as data and SVG markup. Pure: norms, volumes and the subject in,
 // numbers, text and SVG strings out, so everything here is Node-tested and the page only places it.
 import { assess, centile, footerLines, headerLines, modelKey, percentileText, referenceNote, scaledAge } from '@neurodesk/synthseg/brainquant';
+import { VOLUME_COLUMNS } from '@neurodesk/synthseg/results';
 import manifest from '@neurodesk/synthseg/manifest' with { type: 'json' };
 
 const WIDTH = 240;
@@ -12,6 +13,14 @@ const FAST_MODE_NOTE = 'The reference volumes come from fast mode; this run used
 
 const ml = (mm3) => mm3 / 1000;
 const round = (value) => Number(value.toFixed(1));
+
+/** Raw soft volumes remain useful even when the population assessment rejects a run. */
+export function rawVolumeRows(volumes) {
+  return VOLUME_COLUMNS.map((title) => ({
+    title,
+    volumeMl: Number.isFinite(volumes[title]) ? ml(volumes[title]).toFixed(2) : 'n/a',
+  }));
+}
 
 /** Round step for about `count` ticks across `span`: 1, 2, 5 or 10 times a power of ten. */
 export function tickStep(span, count = 4) {
