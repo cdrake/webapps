@@ -1,0 +1,18 @@
+QSMbly command line
+Copyright Neurodesk contributors
+GPL-3.0-only
+
+The release bundles QSMxT 9.22.0 unmodified, as published by the QSMxT
+project with SHA256SUMS:
+https://github.com/QSMxT/QSMxT/releases/tag/v9.22.0
+Source: https://github.com/QSMxT/QSMxT/tree/v9.22.0
+QSMxT is GPL-3.0-only (LICENSE). It is built on qsm-core v0.38.0
+(https://github.com/astewartau/QSM.rs/tree/v0.38.0), which the QSMbly web app
+also runs, compiled to WebAssembly. qsmxt.json pins each archive's SHA-256.
+
+QSMxT's archives include dcm2niix (https://github.com/rordenlab/dcm2niix);
+its license is in app/native/dcm2niix.LICENSE.
+
+Deep-learning weights are not included. They are downloaded on first use from
+the Hugging Face repository qsmxt/qsm-onnx-weights at the commit pinned in
+model.manifest.json; each model keeps its authors' license.

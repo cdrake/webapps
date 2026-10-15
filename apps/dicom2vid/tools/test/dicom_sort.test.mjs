@@ -8,8 +8,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { readDicomSeries } from '../../web/js/readers/dicom.js';
-import { voxelIndex } from '../../web/js/volume.js';
+import { readDicomSeries } from '@neurodesk/dicom2vid/readers/dicom.js';
+import { voxelIndex } from '@neurodesk/dicom2vid/volume.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..', '..');

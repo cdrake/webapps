@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "app": "qsmbly",
+  "source": "qsm-core v0.38.0 src/models/registry.rs, as compiled into qsmxt 9.22.0",
+  "assets": [
+    {
+      "model": "bfrnet",
+      "filename": "bfrnet.onnx",
+      "bytes": 79600612,
+      "sha256": "6f693f0a02c94550179c4b5188ce652fc4bd8198ff57aaddd102fba67fe873d7",
+      "url": "https://huggingface.co/qsmxt/qsm-onnx-weights/resolve/7d01b11c2562bc8072674a8b8fa3d4b0f1d07701/bfrnet.onnx"
+    },
+    {
+      "model": "xqsm",
+      "filename": "xqsm.onnx",
+      "bytes": 20901826,
+      "sha256": "81854ec2ca85bba25c2f9aae05efdcac299d0efffb03fe6a0e6797019e46b487",
+      "url": "https://huggingface.co/qsmxt/qsm-onnx-weights/resolve/7d01b11c2562bc8072674a8b8fa3d4b0f1d07701/xqsm.onnx"
+    },
+    {
+      "model": "qsmnet",
+      "filename": "qsmnet.onnx",
+      "bytes": 397801854,
+      "sha256": "8fd1d79b7a9258a262a2faab9e8469757ae7735f3da6212e431acfb207c21b54",
+      "url": "https://huggingface.co/qsmxt/qsm-onnx-weights/resolve/7d01b11c2562bc8072674a8b8fa3d4b0f1d07701/qsmnet.onnx"
+    },
+    {
+      "model": "qsmnet-plus",
+      "filename": "qsmnet-plus.onnx",
+      "bytes": 397801854,
+      "sha256": "0ed31f9a1b66f75fee4a96022b6bc3838b91bc5b819714dade5ca87cd331683d",
+      "url": "https://huggingface.co/qsmxt/qsm-onnx-weights/resolve/7d01b11c2562bc8072674a8b8fa3d4b0f1d07701/qsmnet-plus.onnx"
+    },
+    {
+      "model": "qsmgan",
+      "filename": "qsmgan.onnx",
+      "bytes": 10753955,
+      "sha256": "238573a6fa8a563004fc28e63a30694289d1a1a204f3c406daba486b1122d604",
+      "url": "https://huggingface.co/qsmxt/qsm-onnx-weights/resolve/7d01b11c2562bc8072674a8b8fa3d4b0f1d07701/qsmgan.onnx"
+    },
+    {
+      "model": "lpcnn",
+      "filename": "lpcnn.onnx",
+      "bytes": 1790869,
+      "sha256": "831f2a161f6ab8ee7bf64cc2dd8bca532fc971d0083cf5729d6302d3ed31625d",
+      "url": "https://huggingface.co/qsmxt/qsm-onnx-weights/resolve/7d01b11c2562bc8072674a8b8fa3d4b0f1d07701/lpcnn.onnx"
+    },
+    {
+      "model": "ir2qsm",
+      "filename": "ir2qsm.onnx",
+      "bytes": 40259354,
+      "sha256": "dcaf7a26d6633900f339f94be16d580ccea6147bbf6da26eacb9a5e1acdc0c53",
+      "url": "https://huggingface.co/qsmxt/qsm-onnx-weights/resolve/7d01b11c2562bc8072674a8b8fa3d4b0f1d07701/ir2qsm.onnx"
+    },
+    {
+      "model": "autoqsm",
+      "filename": "autoqsm.onnx",
+      "bytes": 5609662,
+      "sha256": "c2f23c6ae735fd1677e8623da22cb6f25b4a932ae50ba1ef08a75439e240977e",
+      "url": "https://huggingface.co/qsmxt/qsm-onnx-weights/resolve/7d01b11c2562bc8072674a8b8fa3d4b0f1d07701/autoqsm.onnx"
+    },
+    {
+      "model": "iqsm",
+      "filename": "iqsm.onnx",
+      "bytes": 17233763,
+      "sha256": "8538a33892a877812e6cd0e22927a5040827c126e9347073d3dd0934bf226b09",
+      "url": "https://huggingface.co/qsmxt/qsm-onnx-weights/resolve/7d01b11c2562bc8072674a8b8fa3d4b0f1d07701/iqsm.onnx"
+    },
+    {
+      "model": "iqsm-plus",
+      "filename": "iqsm-plus.onnx",
+      "bytes": 17740526,
+      "sha256": "f93a4c83804759a4a0d24603f7754efb997ddd2ba5e3a0346ed6493725cafb1d",
+      "url": "https://huggingface.co/qsmxt/qsm-onnx-weights/resolve/7d01b11c2562bc8072674a8b8fa3d4b0f1d07701/iqsm-plus.onnx"
+    },
+    {
+      "model": "iqfm",
+      "filename": "iqfm.onnx",
+      "bytes": 17233763,
+      "sha256": "81965f4c0981612d979977c9618847e4cb1d340efa287b8dde894bdea5bf6ac9",
+      "url": "https://huggingface.co/qsmxt/qsm-onnx-weights/resolve/7d01b11c2562bc8072674a8b8fa3d4b0f1d07701/iqfm.onnx"
+    },
+    {
+      "model": "nextqsm",
+      "filename": "nextqsm-bf.onnx",
+      "bytes": 113211474,
+      "sha256": "d0f0b0391153f8e5e07ef85d46fbe492afc8394fab008350540a6868d0b4a3ba",
+      "url": "https://huggingface.co/qsmxt/qsm-onnx-weights/resolve/7d01b11c2562bc8072674a8b8fa3d4b0f1d07701/nextqsm-bf.onnx"
+    },
+    {
+      "model": "nextqsm",
+      "filename": "nextqsm-vjp.onnx",
+      "bytes": 42437407,
+      "sha256": "50fe388663c05b1d3996139975270e500e13feb025f1b792576dbc0da814a4bc",
+      "url": "https://huggingface.co/qsmxt/qsm-onnx-weights/resolve/7d01b11c2562bc8072674a8b8fa3d4b0f1d07701/nextqsm-vjp.onnx"
+    },
+    {
+      "model": "modl-qsm",
+      "filename": "modl-qsm.onnx",
+      "bytes": 1794143,
+      "sha256": "1f8da7d39eaaa4c3f0f9e67298fba5f14230e769cfd6349c81d0b74a6f800c57",
+      "url": "https://huggingface.co/qsmxt/qsm-onnx-weights/resolve/7d01b11c2562bc8072674a8b8fa3d4b0f1d07701/modl-qsm.onnx"
+    },
+    {
+      "model": "susep-net",
+      "filename": "susep-net.onnx",
+      "bytes": 205743584,
+      "sha256": "9bc85aa28451fda2c661de4b8fae8604ced7a54f028f94ed33629f6111a48b03",
+      "url": "https://huggingface.co/qsmxt/qsm-onnx-weights/resolve/7d01b11c2562bc8072674a8b8fa3d4b0f1d07701/susep-net.onnx"
+    },
+    {
+      "model": "r2primenet",
+      "filename": "r2primenet.onnx",
+      "bytes": 90307128,
+      "sha256": "44cb5e67d1c68dae87a5f532e501dc0d4bf627d91f9c8ba35a56df5ac7ec3cd0",
+      "url": "https://huggingface.co/qsmxt/qsm-onnx-weights/resolve/7d01b11c2562bc8072674a8b8fa3d4b0f1d07701/r2primenet.onnx"
+    },
+    {
+      "model": "chi-sepnet",
+      "filename": "chi-sepnet.onnx",
+      "bytes": 90314172,
+      "sha256": "5b442fdfdb88f50ec9149b384dabd0d2d9adb6983947d9cfa58382b78676bed9",
+      "url": "https://huggingface.co/qsmxt/qsm-onnx-weights/resolve/7d01b11c2562bc8072674a8b8fa3d4b0f1d07701/chi-sepnet.onnx"
+    },
+    {
+      "model": "hd-bet",
+      "filename": "hd-bet.onnx",
+      "bytes": 123168028,
+      "sha256": "f15200f9a0697cf53b151e316a0c4fe2cacfdbe2220deb36cb56184be4a227f9",
+      "url": "https://huggingface.co/qsmxt/qsm-onnx-weights/resolve/7d01b11c2562bc8072674a8b8fa3d4b0f1d07701/hd-bet.onnx"
+    },
+    {
+      "model": "synthseg",
+      "filename": "synthseg.onnx",
+      "bytes": 52998326,
+      "sha256": "c2821a74e8a03d4073896b5c2e359b3ef86f9776bacd78e00da1c757aa97bbcc",
+      "url": "https://huggingface.co/qsmxt/qsm-onnx-weights/resolve/7d01b11c2562bc8072674a8b8fa3d4b0f1d07701/synthseg.onnx"
+    }
+  ]
+}

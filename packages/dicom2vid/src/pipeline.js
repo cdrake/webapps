@@ -412,6 +412,48 @@ function resizeSeparable(frame, fW, fH, channels, newW, newH, method) {
   return { frame: out, fW: newW, fH: newH };
 }
 
+// Normalization for a grayscale intensity window [lo, hi] mapped to [0, 255].
+export function windowNorm(lo, hi) {
+  const scale = 255 / (hi - lo);
+  return { min: lo, max: hi, scale, shift: -lo * scale };
+}
+
+// The normalization a freshly loaded volume is encoded with: the full intensity range for
+// grayscale (the app's histogram window before it is moved), per-channel ranges for color
+// with colorNormalize, and the stored bytes otherwise.
+export function defaultNorm(vol, { colorNormalize = false } = {}) {
+  if (vol.channels === 1) {
+    const { min, max } = normalizeParams(vol);
+    return windowNorm(min, max > min ? max : min + 1);
+  }
+  return colorNormalize ? colorNormalizeParams(vol) : null;
+}
+
+// One output frame: the oriented slice with the normalization applied, turned clockwise by
+// `rotate` quarter-turns, then resampled once for the stretch and the upscale together.
+// Returns { frame, fW, fH, channels, sliceIndex }.
+export function renderFrame(vol, orientation, k, norm, {
+  colorNormalize = false,
+  rotate = 0,
+  scaleX = 1,
+  scaleY = 1,
+  upscale = 1,
+  interpolation = 'bilinear',
+} = {}) {
+  const geo = orientationGeometry(vol.dims, orientation);
+  const frame0 = extractFrame(vol, orientation, k, norm, { colorNormalize });
+  let { frame, fW, fH } = rotateFrame(frame0, geo.fW, geo.fH, vol.channels, rotate);
+  const targetW = fW * scaleX * upscale;
+  const targetH = fH * scaleY * upscale;
+  if (Math.round(targetW) !== fW || Math.round(targetH) !== fH) {
+    const r = resizeFrame(frame, fW, fH, vol.channels, targetW, targetH, interpolation);
+    frame = r.frame;
+    fW = r.fW;
+    fH = r.fH;
+  }
+  return { frame, fW, fH, channels: vol.channels, sliceIndex: k };
+}
+
 // Build the full selected frame stack. Returns:
 //   { frames: Uint8ClampedArray (nSelected * fH * fW * channels),
 //     nFrames, fH, fW, channels, sliceIndices, total }

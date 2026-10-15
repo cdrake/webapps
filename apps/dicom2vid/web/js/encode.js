@@ -3,9 +3,11 @@
 // falls back to MediaRecorder capturing a canvas stream to WebM (real time,
 // slower, last resort). No CDN and no external requests are involved.
 
-import * as Mp4Muxer from './vendor/mp4-muxer.js';
-import * as WebmMuxer from './vendor/webm-muxer.js';
-import { drawFrame, drawAnnotation, sliceLabel } from './annotate.js';
+import {
+  bitrateFor, createMuxer, evenDim, frameDurationUs, keyFrameInterval, MIME_TYPES,
+} from '../vendor/dicom2vid/src/video.js';
+import { sliceLabel } from '../vendor/dicom2vid/src/raster.js';
+import { drawFrame, drawAnnotation } from './annotate.js';
 
 // Candidate codecs per container. First supported wins.
 const MP4_CODECS = [
@@ -26,11 +28,6 @@ export function hasWebCodecs() {
 export function hasMediaRecorder() {
   return typeof MediaRecorder !== 'undefined' && typeof HTMLCanvasElement !== 'undefined'
     && typeof HTMLCanvasElement.prototype.captureStream === 'function';
-}
-
-function evenDim(n) {
-  // Most codecs require even width/height.
-  return n % 2 === 0 ? n : n + 1;
 }
 
 // Yield a real macrotask (not a microtask) so a queued Stop click can run and the
@@ -62,12 +59,6 @@ export async function probeEncoders(width = 256, height = 256, fps = 20) {
   }
   if (hasMediaRecorder()) out.mediaRecorder = true;
   return out;
-}
-
-function bitrateFor(width, height, fps) {
-  const bpp = 0.12;
-  const b = Math.round(width * height * fps * bpp);
-  return Math.max(1_000_000, Math.min(b, 24_000_000));
 }
 
 // frameProvider(i) returns { frame, fW, fH, channels, sliceIndex } for i in [0, nFrames).
@@ -123,19 +114,7 @@ async function encodeWebCodecs({
   const canvas = new OffscreenCanvas(width, height);
   const ctx = canvas.getContext('2d');
 
-  let muxer;
-  if (container === 'mp4') {
-    muxer = new Mp4Muxer.Muxer({
-      target: new Mp4Muxer.ArrayBufferTarget(),
-      video: { codec: codec.muxer, width, height },
-      fastStart: 'in-memory',
-    });
-  } else {
-    muxer = new WebmMuxer.Muxer({
-      target: new WebmMuxer.ArrayBufferTarget(),
-      video: { codec: codec.muxer, width, height, frameRate: fps },
-    });
-  }
+  const muxer = createMuxer({ container, codec: codec.muxer, width, height, fps });
 
   let encoderError = null;
   const encoder = new VideoEncoder({
@@ -150,8 +129,8 @@ async function encodeWebCodecs({
     framerate: fps,
   });
 
-  const frameDurUs = Math.round(1_000_000 / fps);
-  const gop = Math.max(1, Math.round(fps)); // keyframe about once per second
+  const frameDurUs = frameDurationUs(fps);
+  const gop = keyFrameInterval(fps);
   let stopped = false;
 
   for (let i = 0; i < nFrames; i++) {
@@ -189,7 +168,7 @@ async function encodeWebCodecs({
   muxer.finalize();
   const buffer = muxer.target.buffer;
   onProgress(1);
-  const mime = container === 'mp4' ? 'video/mp4' : 'video/webm';
+  const mime = MIME_TYPES[container];
   return {
     blob: new Blob([buffer], { type: mime }),
     mime,

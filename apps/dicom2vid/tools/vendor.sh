@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
-# Vendor third-party runtime dependencies into web/js/vendor as self-contained
-# ES modules. No CDN is used at runtime: the bundles are committed and the app
-# makes no external requests. Re-run this to update the pinned versions.
+# Vendor third-party runtime dependencies as self-contained ES modules: NiiVue
+# into web/js/vendor, and the MP4 and WebM muxers into packages/dicom2vid/src/vendor,
+# which the app and the dicom2vid command line share. No CDN is used at runtime:
+# the bundles are committed and the app makes no external requests. Re-run this
+# to update the pinned versions.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 SRC="$HERE/vendor"
 OUT="$HERE/../web/js/vendor"
-mkdir -p "$SRC" "$OUT"
+MUXERS="$HERE/../../../packages/dicom2vid/src/vendor"
+mkdir -p "$SRC" "$OUT" "$MUXERS"
 
 cd "$SRC"
 if [ ! -f package.json ]; then
@@ -44,10 +47,14 @@ BUNDLE() {
 }
 
 BUNDLE entry-niivue.js "$OUT/niivue.js"
-BUNDLE entry-mp4-muxer.js "$OUT/mp4-muxer.js"
-BUNDLE entry-webm-muxer.js "$OUT/webm-muxer.js"
+BUNDLE entry-mp4-muxer.js "$MUXERS/mp4-muxer.js"
+BUNDLE entry-webm-muxer.js "$MUXERS/webm-muxer.js"
 
-node -e "const v=require('./package.json').devDependencies; require('fs').writeFileSync('$OUT/VERSIONS.txt', Object.entries(v).map(([k,val])=>k+' '+val).join('\n')+'\n')"
+VERSIONS() {
+  node -e "const v=require('./package.json').devDependencies; require('fs').writeFileSync(process.argv[1], process.argv.slice(2).map(k=>k+' '+v[k]).join('\n')+'\n')" "$@"
+}
+VERSIONS "$OUT/VERSIONS.txt" @niivue/niivue esbuild
+VERSIONS "$MUXERS/VERSIONS.txt" mp4-muxer webm-muxer esbuild
 
-echo "Vendored bundles written to web/js/vendor:"
-ls -la "$OUT"
+echo "Vendored bundles written to web/js/vendor and packages/dicom2vid/src/vendor:"
+ls -la "$OUT" "$MUXERS"

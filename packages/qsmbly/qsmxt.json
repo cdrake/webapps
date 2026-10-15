@@ -1,0 +1,70 @@
+{
+  "version": "9.22.0",
+  "qsmCore": "v0.38.0",
+  "source": "https://github.com/QSMxT/QSMxT/tree/v9.22.0",
+  "license": "GPL-3.0-only",
+  "targets": {
+    "linux-x64": {
+      "url": "https://github.com/QSMxT/QSMxT/releases/download/v9.22.0/qsmxt-v9.22.0-x86_64-unknown-linux-musl.tar.gz",
+      "sha256": "6593438c029749b5e3fb5c78ce485f6f5e282545b1892832cf30539b0326ca49",
+      "executables": [
+        "qsmxt",
+        "dcm2niix"
+      ],
+      "files": [
+        "dcm2niix.LICENSE"
+      ]
+    },
+    "windows-x64": {
+      "url": "https://github.com/QSMxT/QSMxT/releases/download/v9.22.0/qsmxt-v9.22.0-x86_64-pc-windows-msvc.zip",
+      "sha256": "e96453c89c70fc5404394c6d3967b660cd539793ffcdb5993bb446d4d3a64da8",
+      "executables": [
+        "qsmxt.exe",
+        "dcm2niix.exe"
+      ],
+      "files": [
+        "dcm2niix.LICENSE"
+      ]
+    },
+    "macos-arm64": {
+      "url": "https://github.com/QSMxT/QSMxT/releases/download/v9.22.0/qsmxt-v9.22.0-aarch64-apple-darwin.tar.gz",
+      "sha256": "879029cd9446c8f19e0fc77999517c6a54cdbb759cd91d15913a84f1f66333d3",
+      "executables": [
+        "qsmxt",
+        "dcm2niix"
+      ],
+      "files": [
+        "dcm2niix.LICENSE"
+      ]
+    }
+  },
+  "modelRegistry": {
+    "url": "https://raw.githubusercontent.com/astewartau/QSM.rs/23cb68564be86b2ba9fc4696f05ea6ee4cad45ca/src/models/registry.rs",
+    "sha256": "ce91134e46780e5b7c1635c5aa75cd9b2e831457895c921028cc6989819a2136"
+  },
+  "weightFiles": [
+    "bfrnet.onnx",
+    "xqsm.onnx",
+    "qsmnet.onnx",
+    "qsmnet-plus.onnx",
+    "qsmgan.onnx",
+    "lpcnn.onnx",
+    "ir2qsm.onnx",
+    "autoqsm.onnx",
+    "iqsm.onnx",
+    "iqsm-plus.onnx",
+    "iqfm.onnx",
+    "nextqsm-bf.onnx",
+    "nextqsm-vjp.onnx",
+    "modl-qsm.onnx",
+    "susep-net.onnx",
+    "r2primenet.onnx",
+    "chi-sepnet.onnx",
+    "hd-bet.onnx",
+    "synthseg.onnx"
+  ],
+  "exampleRegistry": {
+    "url": "https://raw.githubusercontent.com/QSMxT/QSMxT/9bffc6e726b09670a68790c71643cca811c5dfa9/src/example/mod.rs",
+    "sha256": "8b36ec302028b9ed774d0572024a53a1e474ac30274bc52f0dac24f4171279d5"
+  }
+}
