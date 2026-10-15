@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import * as ort from 'onnxruntime-web';
 import { readVolume } from '@neurodesk/synthsr';
 import { runSynthstrip } from '@neurodesk/synthstrip';
+import { createBrowserSession } from '@neurodesk/synthstrip/browser';
 import { SYNTHSTRIP_MODEL } from '@neurodesk/synthstrip/model';
 import { downloadModels } from '../src/node.js';
 import { outputNames, writeOutputs } from '../src/outputs.js';
@@ -24,7 +25,7 @@ export async function webReference({ input, output, cacheDir }) {
   const result = await runSynthstrip({
     volume: readVolume(arrayBuffer(await readFile(input))),
     loadModel: async () => ({ bytes: model, hash: SYNTHSTRIP_MODEL.sha256 }),
-    createSession: (bytes) => ort.InferenceSession.create(bytes, { executionProviders: ['wasm'], graphOptimizationLevel: 'all' }),
+    createSession: (bytes, dims) => createBrowserSession(bytes, dims, ort),
     Tensor: ort.Tensor,
   });
   const names = outputNames(basename(input), 'synthstrip');
