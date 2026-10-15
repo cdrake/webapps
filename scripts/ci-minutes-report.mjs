@@ -1,0 +1,65 @@
+#!/usr/bin/env node
+// Runner minutes and queue latency of `ci` runs, split by what the app planner
+// selected (issue #259). The planner's choice comes from its own summary line
+// in the app-plan job log; runs older than the log retention, or older than the
+// planner, are `unknown`.
+//
+//   node scripts/ci-minutes-report.mjs --since 2026-10-13 --event pull_request \
+//     --json minutes.json --markdown minutes.md
+//
+// Needs an authenticated `gh`. Rerunning over the same window gives the same
+// numbers, except for runs still in progress, which are left out.
+import { writeFile } from 'node:fs/promises';
+import { aggregate, aggregateJobs, selectionFromLog, summarizeRun } from './lib/ci-minutes.mjs';
+import { loadAppsRegistry } from './lib/apps-registry.mjs';
+import { jobLog, listJobs, listRuns, mapLimited } from './lib/github-actions.mjs';
+
+const argv = process.argv.slice(2);
+const option = (name, fallback) => (argv.includes(name) ? argv[argv.indexOf(name) + 1] : fallback);
+const since = option('--since', new Date(Date.now() - 7 * 86400e3).toISOString().slice(0, 10));
+const until = option('--until');
+const events = option('--event', 'pull_request,push,schedule').split(',');
+const limit = Number(option('--limit', 1000));
+// Runs before the planner printed its summary are classified by how many
+// app-tests jobs they created; the catalog has had this many apps since 2026-10-09.
+const catalogSize = Number(option('--catalog-size', (await loadAppsRegistry()).apps.length));
+
+const runs = (await Promise.all(events.map((event) => listRuns({ since, event, limit }))))
+  .flat()
+  .filter((run) => run.status === 'completed' && (!until || run.created_at < until))
+  .slice(0, limit);
+console.error(`Reading ${runs.length} completed ci runs since ${since}${until ? ` until ${until}` : ''}`);
+
+const summaries = await mapLimited(runs, 6, async (run) => {
+  const jobs = await listJobs(run.id);
+  const planJob = jobs.find((job) => job.name === 'app-plan');
+  const logged = planJob ? selectionFromLog(await jobLog(planJob.id)) : null;
+  const created = jobs.filter((job) => /^app-tests \(/.test(job.name)).length;
+  const selection = logged ?? (planJob ? { kind: created === catalogSize ? 'full (inferred)' : created === 0 ? 'no apps (inferred)' : 'narrowed (inferred)', selected: created } : null);
+  return { ...summarizeRun(run, jobs, selection), event: run.event };
+});
+
+const byEvent = Object.fromEntries(events.map((event) => [event, aggregate(summaries.filter((run) => run.event === event))]));
+const jobs = Object.fromEntries(events.map((event) => [event, aggregateJobs(summaries.filter((run) => run.event === event))]));
+
+const format = (value, unit = '') => (value === null || value === undefined ? '-' : `${value}${unit}`);
+const lines = [`ci runs created from ${since}${until ? ` to ${until}` : ''}, completed. Minutes are per job, rounded up as GitHub bills them.`, ''];
+for (const event of events) {
+  lines.push(`### ${event}`, '', '| Selection | Runs | Finished | Cancelled | Wall median / p90 (min) | Linux min/run median / p90 | macOS min/run median / p90 | Linux queue median / p90 / max (s) | macOS queue median / p90 / max (s) |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+  for (const group of byEvent[event].sort((a, b) => a.kind.localeCompare(b.kind))) {
+    const minutes = (os) => `${format(group.runnerMinutesPerFinishedRun[os].median)} / ${format(group.runnerMinutesPerFinishedRun[os].p90)}`;
+    const queue = (os) => `${format(group.jobQueueSeconds[os].median)} / ${format(group.jobQueueSeconds[os].p90)} / ${format(group.jobQueueSeconds[os].max)}`;
+    lines.push(`| ${group.kind} | ${group.runs} | ${group.finished} | ${group.cancelled} | ${format(group.wallMinutes.median)} / ${format(group.wallMinutes.p90)} | ${minutes('Linux')} | ${minutes('macOS')} | ${queue('Linux')} | ${queue('macOS')} |`);
+  }
+  lines.push('', '| Job (runner) | Jobs | Run median / p90 / total (min) | Queue median / p90 / max (s) |', '| --- | --- | --- | --- |');
+  for (const job of jobs[event]) {
+    lines.push(`| ${job.job} | ${job.jobs} | ${format(job.runMinutes.median)} / ${format(job.runMinutes.p90)} / ${format(job.runMinutes.total)} | ${format(job.queueSeconds.median)} / ${format(job.queueSeconds.p90)} / ${format(job.queueSeconds.max)} |`);
+  }
+  lines.push('');
+}
+const text = `${lines.join('\n')}\n`;
+if (option('--json')) {
+  await writeFile(option('--json'), `${JSON.stringify({ generatedAt: new Date().toISOString(), since, until: until ?? null, byEvent, jobs, runs: summaries.map(({ timings, ...run }) => run) }, null, 2)}\n`);
+}
+if (option('--markdown')) await writeFile(option('--markdown'), text);
+else process.stdout.write(text);

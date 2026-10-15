@@ -22,7 +22,10 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  # The nightly full-catalog run is the backstop for narrowed push runs, so a
+  # push to main must not cancel it (it did on 3 of 4 nights after narrowing,
+  # docs/quality/ci-selection-shadow-2026-10.md).
+  group: ci-${{ github.workflow }}-${{ github.event_name == 'schedule' && 'nightly' || github.ref }}
   cancel-in-progress: true
 
 env:
