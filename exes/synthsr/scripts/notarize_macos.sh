@@ -20,13 +20,23 @@ case "$signature" in
 *"Status: signed by a developer certificate"*) ;;
 *) echo "notarize_macos.sh: $pkg is unsigned or invalid. Set MACOS_INSTALLER_IDENTITY and run 'make macos-pkg'." >&2; exit 2;;
 esac
+# stapler fetches the ticket from Apple's CloudKit, which sometimes drops the connection
+# (NSURLErrorDomain -1005, exit 68) after notarization has succeeded; retry it a few times.
+stapler() {
+	attempt=1
+	until xcrun stapler "$@"; do
+		[ "$attempt" -lt 4 ] || return 1
+		sleep $((attempt * ${STAPLER_RETRY_SECONDS:-20}))
+		attempt=$((attempt + 1))
+	done
+}
 xcrun notarytool submit "$pkg" --keychain-profile "$profile" --wait
-xcrun stapler staple "$pkg"
+stapler staple "$pkg"
 # Every validation below must pass (set -e); its output is kept beside the artifact as release evidence.
 log="$pkg.validation.txt"
 {
 	date -u +"%Y-%m-%dT%H:%M:%SZ notarize_macos.sh $pkg"
-	xcrun stapler validate "$pkg"
+	stapler validate "$pkg"
 	pkgutil --check-signature "$pkg"
 	"$verify" "$pkg"
 	# Installer packages are assessed under the "install" policy; "open" is for applications.

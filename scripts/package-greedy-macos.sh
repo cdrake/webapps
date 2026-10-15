@@ -1,6 +1,17 @@
 #!/bin/bash
 set -euo pipefail
 
+# stapler fetches the ticket from Apple's CloudKit, which sometimes drops the connection
+# (NSURLErrorDomain -1005, exit 68) after notarization has succeeded; retry it a few times.
+stapler() {
+    attempt=1
+    until xcrun stapler "$@"; do
+        [ "$attempt" -lt 4 ] || return 1
+        sleep $((attempt * ${STAPLER_RETRY_SECONDS:-20}))
+        attempt=$((attempt + 1))
+    done
+}
+
 [[ $(uname -s) == Darwin && $(uname -m) == arm64 ]] || { echo 'Apple ARM macOS is required' >&2; exit 2; }
 root=$(cd -- "$(dirname -- "$0")/.." && pwd)
 version=$(node -p "require('$root/apps/greedy/package.json').version")
@@ -40,8 +51,8 @@ else
     productbuild --package "$work/component.pkg" --sign "$installer_identity" "$pkg"
     pkgutil --check-signature "$pkg" | grep -F "($EXPECTED_TEAM_ID)"
     xcrun notarytool submit "$pkg" --keychain-profile "$NOTARY_PROFILE" --wait
-    xcrun stapler staple "$pkg"
-    xcrun stapler validate "$pkg"
+    stapler staple "$pkg"
+    stapler validate "$pkg"
     spctl --assess --type install --verbose=4 "$pkg"
 fi
 pkgutil --expand-full "$pkg" "$work/expanded"
@@ -52,7 +63,7 @@ python3 "$root/scripts/package-greedy.py" verify "$extracted" > "$pkg.validation
 (cd "$(dirname "$pkg")" && shasum -a 256 "$(basename "$pkg")") > "$pkg.sha256"
 if [[ "$identity" != - ]]; then
     pkgutil --check-signature "$pkg" >> "$pkg.validation.txt"
-    xcrun stapler validate "$pkg" >> "$pkg.validation.txt" 2>&1
+    stapler validate "$pkg" >> "$pkg.validation.txt" 2>&1
 fi
 # The digest of the stapled package; the Standalone catalog accepts a receipt only when it records it.
 printf 'sha256: %s\n' "$(cat "$pkg.sha256")" >> "$pkg.validation.txt"
