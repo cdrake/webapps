@@ -813,25 +813,31 @@
         {
           "kind": "cli",
           "platform": "linux-x64",
-          "version": "0.3.20260915",
-          "url": "https://github.com/neurodesk/webapps/releases/download/greedy-v0.3.20260915/greedy-0.3.20260915-linux-x64.tar.gz",
-          "sha256": "827b703ffeda68e4e6a4884ae0475f1c11c3b3518aacc30722eb345f175cbcfd",
+          "version": "0.5.20261014",
+          "url": "https://github.com/neurodesk/webapps/releases/download/greedy-v0.5.20261014/greedy-0.5.20261014-linux-x64.tar.gz",
+          "sha256": "d98dd9fabf8969966b188181c5cfc4a86bb7cfec0b9e31a22a3cef61978d4bea",
+          "bytes": 521599,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/greedy-v0.5.20261014/greedy-0.5.20261014-linux-x64.tar.gz.validation.txt",
           "modelsIncluded": true
         },
         {
           "kind": "cli",
           "platform": "macos-arm64",
-          "version": "0.3.20260915",
-          "url": "https://github.com/neurodesk/webapps/releases/download/greedy-v0.3.20260915/greedy-0.3.20260915-macos-arm64.pkg",
-          "sha256": "8598d1c14a645c55e6d88c44d4172e8fd4fa5b0e5efb3ae8f427c992048de338",
+          "version": "0.5.20261014",
+          "url": "https://github.com/neurodesk/webapps/releases/download/greedy-v0.5.20261014/greedy-0.5.20261014-macos-arm64.pkg",
+          "sha256": "0985aa9d60ac6a992047a3cf8cc4c8421ab86a222a89dc623292925290b3b253",
+          "bytes": 500115,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/greedy-v0.5.20261014/greedy-0.5.20261014-macos-arm64.pkg.validation.txt",
           "modelsIncluded": true
         },
         {
           "kind": "cli",
           "platform": "windows-x64",
-          "version": "0.3.20260915",
-          "url": "https://github.com/neurodesk/webapps/releases/download/greedy-v0.3.20260915/greedy-0.3.20260915-windows-x64.zip",
-          "sha256": "d47ed9308090d3364b317846db9d81f2048ebea2cb4936120a8e233300f3d6d2",
+          "version": "0.5.20261014",
+          "url": "https://github.com/neurodesk/webapps/releases/download/greedy-v0.5.20261014/greedy-0.5.20261014-windows-x64.zip",
+          "sha256": "f6de688b86df9069fae34f91b090d86b1d11ffa072e910c4bde95b5ac7f697f5",
+          "bytes": 446771,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/greedy-v0.5.20261014/greedy-0.5.20261014-windows-x64.zip.validation.txt",
           "modelsIncluded": true
         }
       ],
