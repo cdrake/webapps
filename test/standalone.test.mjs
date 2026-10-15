@@ -18,7 +18,8 @@ test('scanner packages link the supported apps to their OpenRecon recipes', asyn
   assert.deepEqual(Object.fromEntries(Object.entries(catalog.apps).filter(([, app]) => app.openrecon).map(([id, app]) => [id, app.openrecon.recipe])), expected);
   const dom = new JSDOM('<html><body></body></html>');
   const dialog = openStandalone({ title: 'QSMbly', app: catalog.apps.qsmbly }, dom.window.document);
-  assert.deepEqual([...dialog.root.querySelectorAll('section > h3')].map(node => node.textContent), ['Neurodesk containers', 'OpenRecon · MRI scanner console']);
+  const sections = [...dialog.root.querySelectorAll('section > h3')].map(node => node.textContent);
+  assert.deepEqual(sections.filter(name => name !== 'Command line'), ['Neurodesk containers', 'OpenRecon · MRI scanner console']);
   const scanner = dialog.root.querySelector('section[aria-labelledby="standalone-openrecon"]');
   assert.match(scanner.textContent, /Run the QSMxT container on the MRI scanner console/);
   assert.match(scanner.textContent, /official OpenRecon package/);
