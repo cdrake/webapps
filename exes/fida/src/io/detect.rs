@@ -483,14 +483,19 @@ pub fn detect(files: &[NamedFile]) -> Detection {
     let identities: HashMap<usize, (String, String)> = datasets.iter()
         .filter_map(|ds| dicom_identity(ds, files).map(|identity| (ds.files[0], identity)))
         .collect();
+    // Where a Siemens series was acquired, for sharing its water series: the
+    // session folder above a folder of its own, else its exact folder.
     let dicom: Vec<&Dataset> = datasets.iter().filter(|ds| ds.format == Format::SiemensDicom).collect();
     let dir_of = |ds: &Dataset| split_path(files[ds.files[0]].name).0;
-    let protocols: HashMap<usize, String> = dicom.iter()
-        .filter_map(|ds| {
-            let own_folder = !dir_of(ds).is_empty() && dicom.iter().filter(|other| dir_of(other) == dir_of(ds)).count() == 1;
-            dicom_protocol(ds, files, own_folder).map(|protocol| (ds.files[0], protocol))
-        })
-        .collect();
+    let mut scopes: HashMap<usize, String> = HashMap::new();
+    let mut protocols: HashMap<usize, String> = HashMap::new();
+    for ds in &dicom {
+        let own_folder = !dir_of(ds).is_empty() && dicom.iter().filter(|other| dir_of(other) == dir_of(ds)).count() == 1;
+        scopes.insert(ds.files[0], if own_folder { split_path(dir_of(ds)).0 } else { dir_of(ds) }.to_string());
+        if let Some(protocol) = dicom_protocol(ds, files, own_folder) {
+            protocols.insert(ds.files[0], protocol);
+        }
+    }
     let key = |ds: &Dataset| -> (Format, String) { (ds.format, ds.name.to_ascii_lowercase()) };
     let (water, metab): (Vec<Dataset>, Vec<Dataset>) = datasets.into_iter().partition(|d| d.is_water);
     let mut water: Vec<Option<Dataset>> = water.into_iter().map(Some).collect();
@@ -547,16 +552,21 @@ pub fn detect(files: &[NamedFile]) -> Detection {
     // The averaged and unaveraged series of one Siemens acquisition share its
     // water series, paired or not: every spectrum of the same folder, study
     // and protocol gets it, when it is that protocol's only water series.
-    let shares = |a: &Dataset, b: &Dataset| {
-        let protocol = protocols.get(&a.files[0]);
-        protocol.is_some() && protocol == protocols.get(&b.files[0]) && folder(a) == folder(b)
+    let together = |a: &Dataset, b: &Dataset| {
+        scopes.get(&a.files[0]).is_some_and(|scope| scopes.get(&b.files[0]) == Some(scope))
             && same_dicom_study(identities.get(&a.files[0]), identities.get(&b.files[0]))
     };
+    let shares = |a: &Dataset, b: &Dataset| {
+        let protocol = protocols.get(&a.files[0]);
+        protocol.is_some() && protocol == protocols.get(&b.files[0]) && together(a, b)
+    };
+    // A water series of unknown protocol beside it may be the right one.
+    let rivals = |a: &Dataset, b: &Dataset| together(a, b) && (!protocols.contains_key(&b.files[0]) || shares(a, b));
     let sources: Vec<(Dataset, Option<usize>)> = det.pairs.iter().filter_map(|p| p.water.clone().map(|w| (w, None)))
         .chain(water.iter().enumerate().filter_map(|(wi, w)| w.clone().map(|w| (w, Some(wi)))))
         .collect();
     for (w, unpaired) in &sources {
-        if sources.iter().filter(|(other, _)| shares(w, other)).count() != 1 {
+        if sources.iter().filter(|(other, _)| rivals(w, other)).count() != 1 {
             continue;
         }
         let targets: Vec<usize> = (0..det.pairs.len()).filter(|&k| det.pairs[k].water.is_none() && shares(w, &det.pairs[k].metabolite)).collect();
@@ -1032,6 +1042,22 @@ mod tests {
         let d = detect(&files);
         assert!(d.pairs.iter().all(|p| p.water.is_none()), "{d:#?}");
         assert_eq!(d.unpaired_water.len(), 1, "{d:#?}");
+    }
+
+    #[test]
+    fn water_is_shared_only_within_one_flat_folder_and_without_rivals() {
+        let series = |uid: &str, description: &str| dicom_series(true, "1.2.3", uid, "subject-01", description);
+        let (plain, ave, water) = (series("21", "press"), series("20", "press_ave"), series("22", "press_water_off"));
+        // Sibling flat exports of one study: run-b's averaged series stays without water.
+        let ave_b = series("30", "press_ave");
+        let files = [nf("root/run-a/1.dcm", &plain), nf("root/run-a/2.dcm", &water), nf("root/run-b/1.dcm", &ave_b)];
+        let d = detect(&files);
+        assert!(d.pairs.iter().find(|p| p.metabolite.files == [2]).unwrap().water.is_none(), "{d:#?}");
+        // A second, undescribed water series makes the shared one ambiguous.
+        let unknown = series("23", "");
+        let files = [nf("flat/1.dcm", &plain), nf("flat/2.dcm", &ave), nf("flat/3.dcm", &water), nf("flat/4_water_off.dcm", &unknown)];
+        let d = detect(&files);
+        assert!(d.pairs.iter().find(|p| p.metabolite.files == [1]).unwrap().water.is_none(), "{d:#?}");
     }
 
     #[test]
