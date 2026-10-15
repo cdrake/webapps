@@ -1,5 +1,12 @@
 # synthsr
 
+## 0.6.20261015
+
+### Patch Changes
+
+- Updated dependencies [84d192a]
+  - @neurodesk/synthsr@0.6.20261015
+
 ## 0.6.20261014
 
 ### Patch Changes
