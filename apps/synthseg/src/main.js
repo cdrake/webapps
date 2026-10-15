@@ -7,6 +7,7 @@ import { mountImagingWorkspace } from '@neurodesk/webapp-components/core/mount-i
 import {
   createResultList,
   bindFileDrop,
+  bindInfoTooltips,
   createInfoDialog,
   createConsole,
   createViewerToolbar,
@@ -428,6 +429,7 @@ function subjectChanged() {
 }
 $('age').oninput = subjectChanged;
 $('sex').onchange = subjectChanged;
+bindInfoTooltips(document);
 $('reference').onchange = () => {
   showReferenceHint();
   void renderVolumes();
