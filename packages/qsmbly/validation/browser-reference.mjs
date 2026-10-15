@@ -12,6 +12,7 @@ import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { extname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { readNifti } from '@neurodesk/webapp-components/file-io/nifti';
 import qsmxt from '../qsmxt.json' with { type: 'json' };
@@ -120,12 +121,12 @@ export async function recordBrowserReference({ dist = resolve('apps/qsmbly/dist'
 // Number arrays on one line: the block grid has thousands of entries.
 export const formatReference = (reference) => `${JSON.stringify(reference, null, 2).replace(/\[\s+((?:-?[\d.]+|null)(?:,\s+(?:-?[\d.]+|null))*)\s+\]/g, (_, items) => `[${items.split(/,\s+/).join(',')}]`)}\n`;
 
-if (process.argv[1] === new URL(import.meta.url).pathname) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const { values } = parseArgs({ options: { output: { type: 'string' }, dist: { type: 'string' } } });
   const previous = JSON.parse(await readFile(REFERENCE, 'utf8').catch(() => '{}'));
   const reference = await recordBrowserReference({ dist: values.dist && resolve(values.dist), output: values.output });
   assert.equal(`v${reference.qsmCore}`, qsmxt.qsmCore,'the web app and the pinned QSMxT build on different qsm-core tags');
   // The replay adjustments, tolerance and evidence come from comparing a CLI run; recording keeps them.
   await writeFile(REFERENCE, formatReference({ ...reference, replay: previous.replay, tolerance: previous.tolerance, observed: previous.observed }));
-  console.log(`Recorded ${REFERENCE.pathname} in ${reference.seconds} s: ${reference.command}`);
+  console.log(`Recorded ${fileURLToPath(REFERENCE)} in ${reference.seconds} s: ${reference.command}`);
 }
