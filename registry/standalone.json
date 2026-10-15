@@ -728,8 +728,8 @@
           "platform": "macos-arm64",
           "version": "0.6.20261015",
           "url": "https://github.com/neurodesk/webapps/releases/download/syncro-v0.6.20261015/syncro-0.6.20261015-macos-arm64.pkg",
-          "sha256": "3b0ea2707cf5d10d6affcdbe37bea703cffc9f6ffb1e4a5efd693d0dfd2ee24d",
-          "bytes": 127646024,
+          "sha256": "3528328b3dbeed0fc2f7904d1b071d6c4b7537a83123457221dae12f21a79e82",
+          "bytes": 127645782,
           "validationUrl": "https://github.com/neurodesk/webapps/releases/download/syncro-v0.6.20261015/syncro-0.6.20261015-macos-arm64.pkg.validation.txt",
           "modelsIncluded": true,
           "command": "sudo installer -pkg syncro-0.6.20261015-macos-arm64.pkg -target /\nsyncro self-check\nsyncro input.nii.gz results --threads 4"
@@ -739,8 +739,8 @@
           "platform": "windows-x64",
           "version": "0.6.20261015",
           "url": "https://github.com/neurodesk/webapps/releases/download/syncro-v0.6.20261015/syncro-0.6.20261015-windows-x64.zip",
-          "sha256": "c22452e90074a75c9f5b6d8df16d6a093917a5c94e110f9e1cda1189aeaaccfb",
-          "bytes": 127146071,
+          "sha256": "0fe1ebb0440fe42efe58d5dc2006858d3bdede3984d91a5443b8b500698f5a75",
+          "bytes": 127146073,
           "validationUrl": "https://github.com/neurodesk/webapps/releases/download/syncro-v0.6.20261015/syncro-0.6.20261015-windows-x64.zip.validation.txt",
           "modelsIncluded": true,
           "command": "Expand-Archive -Path .\\syncro-0.6.20261015-windows-x64.zip -DestinationPath .\n.\\syncro-0.6.20261015-windows-x64\\syncro.exe input.nii.gz results --threads 4"
