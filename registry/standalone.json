@@ -849,8 +849,8 @@
           "platform": "linux-x64",
           "version": "0.5.20261014",
           "url": "https://github.com/neurodesk/webapps/releases/download/greedy-v0.5.20261014/greedy-0.5.20261014-linux-x64.tar.gz",
-          "sha256": "d98dd9fabf8969966b188181c5cfc4a86bb7cfec0b9e31a22a3cef61978d4bea",
-          "bytes": 521599,
+          "sha256": "fe1eaedf7b82d974f343506e51c21497ba744ff2c9c96bf62ea6139d19e231fb",
+          "bytes": 521594,
           "validationUrl": "https://github.com/neurodesk/webapps/releases/download/greedy-v0.5.20261014/greedy-0.5.20261014-linux-x64.tar.gz.validation.txt",
           "modelsIncluded": true
         },
@@ -859,8 +859,8 @@
           "platform": "macos-arm64",
           "version": "0.5.20261014",
           "url": "https://github.com/neurodesk/webapps/releases/download/greedy-v0.5.20261014/greedy-0.5.20261014-macos-arm64.pkg",
-          "sha256": "0985aa9d60ac6a992047a3cf8cc4c8421ab86a222a89dc623292925290b3b253",
-          "bytes": 500115,
+          "sha256": "1774e92a51e9266b8e10e0de483732c5fc6beff8870d682d5ca9f3896b2ed1d9",
+          "bytes": 500128,
           "validationUrl": "https://github.com/neurodesk/webapps/releases/download/greedy-v0.5.20261014/greedy-0.5.20261014-macos-arm64.pkg.validation.txt",
           "modelsIncluded": true
         },
@@ -869,7 +869,7 @@
           "platform": "windows-x64",
           "version": "0.5.20261014",
           "url": "https://github.com/neurodesk/webapps/releases/download/greedy-v0.5.20261014/greedy-0.5.20261014-windows-x64.zip",
-          "sha256": "f6de688b86df9069fae34f91b090d86b1d11ffa072e910c4bde95b5ac7f697f5",
+          "sha256": "77043b9d280fd9026260378f50c9dd4b89ef6806df6e63816d83a2a60f68f6f8",
           "bytes": 446771,
           "validationUrl": "https://github.com/neurodesk/webapps/releases/download/greedy-v0.5.20261014/greedy-0.5.20261014-windows-x64.zip.validation.txt",
           "modelsIncluded": true
