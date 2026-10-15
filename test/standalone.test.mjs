@@ -78,7 +78,6 @@ const WITHOUT_COMMAND_LINE = {
   nesvor: 'needs CUDA; its standalone form is the neurodesk-compute server',
   spinalcordtoolbox: 'not built yet (#285)',
   qsmbly: 'not built yet (#284)',
-  dicompare: 'not built yet (#283)',
   deface: 'not built yet (#281)',
   dicom2vid: 'not built yet (#282)',
 };
