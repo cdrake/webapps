@@ -17,8 +17,8 @@ entries with `node scripts/freesurfer-lut.mjs <FreeSurferColorLUT.txt>`.
 - **Input image** — NIfTI or DICOM (drag-drop supported), or the `T1_head` example.
 - **Age and Sex** — the subject for the volume report. A DICOM series fills them from
   its dcm2niix sidecar (`PatientAge`, or whole years from `PatientBirthDate` to the
-  acquisition date, and `PatientSex`); the sidecar stays in memory and nothing else is
-  read from it. A new image resets them. Blank means unknown: no percentile, and the
+  acquisition date, and `PatientSex`); the sidecar stays in memory. The run report
+  records age, sex and scanner field strength. A new image resets them. Blank means unknown: no percentile, and the
   pooled female and male reference.
 - **Reference** — the norms the volume report compares against: IXI (1.5 T and 3 T) or
   AHEAD (7 T). **Auto**, the default and what a new image resets to, reads

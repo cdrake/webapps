@@ -12,6 +12,8 @@
 
 ### Patch Changes
 
+- Clarify that the volume report records the DICOM-derived scanner field strength and reference choice alongside age and sex. The Privacy dialog and README now describe these fields accurately; the original sidecar is not included in the downloaded report.
+  - @neurodesk/synthseg@0.10.20261015
 - Updated dependencies [c74b26f]
 - Updated dependencies [03beb9e]
   - @neurodesk/runtime-support@0.6.1
