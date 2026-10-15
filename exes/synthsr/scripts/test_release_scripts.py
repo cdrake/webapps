@@ -108,6 +108,38 @@ fi
         )
         return result, self.directory / "tool.pkg.validation.txt"
 
+    def test_stapling_retries_a_dropped_cloudkit_connection(self):
+        # Fails the first N stapler calls, as Apple's ticket lookup does with error 68.
+        def run(failures):
+            count = self.directory / "stapler-calls"
+            count.write_text("0")
+            self.executable("pkgutil", "echo 'Status: signed by a developer certificate'\n")
+            self.executable("xcrun", f"""case "$1" in stapler)
+n=$(($(cat '{count}') + 1)); echo $n > '{count}'
+[ $n -gt {failures} ] || {{ echo 'The staple and validate action failed! Error 68.'; exit 68; }};;
+esac
+echo "xcrun $*"
+""")
+            self.executable("spctl", "echo 'source=Notarized Developer ID'\n")
+            verifier = self.executable("node-cli-verifier", 'echo "verified $1"\n')
+            package = self.directory / "tool.pkg"
+            package.touch()
+            result = subprocess.run(
+                ["sh", str(ROOT / "scripts/notarize_macos.sh"), str(package), "tool-ci"],
+                env={**self.environment, "EXPECTED_TEAM_ID": "ABCDE12345", "VERIFY_MACOS_PKG": str(verifier),
+                     "STAPLER_RETRY_SECONDS": "0"},
+                capture_output=True, text=True,
+            )
+            return result, int(count.read_text())
+        result, calls = run(2)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(calls, 4)
+        self.assertIn("Notarized, stapled", result.stdout)
+        result, calls = run(4)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(calls, 4)
+        self.assertNotIn("Notarized, stapled", result.stdout)
+
     def test_notarization_runs_the_named_payload_verifier(self):
         result, evidence = self.notarize(0)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
