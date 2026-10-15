@@ -1,5 +1,11 @@
 # nesvor
 
+## 0.3.20261015
+
+### Patch Changes
+
+- @neurodesk/nesvor@0.3.20261015
+
 ## 0.3.20261014
 
 ### Patch Changes
