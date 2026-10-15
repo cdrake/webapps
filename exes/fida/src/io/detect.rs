@@ -297,17 +297,18 @@ fn same_dicom_study(a: Option<&(String, String)>, b: Option<&(String, String)>) 
 }
 
 /// The protocol a Siemens series was acquired with: its description, else
-/// the name of its own folder after the series number (`own_folder`: no other
-/// series shares that folder), without the suffixes Siemens and sites add for
-/// the averaged and water-unsuppressed series of one acquisition.
+/// the name of its own folder (`own_folder`: no other series shares that
+/// folder), after the series number and without the suffixes Siemens and
+/// sites add for the averaged and water-unsuppressed series of one acquisition.
 fn dicom_protocol(ds: &Dataset, files: &[NamedFile], own_folder: bool) -> Option<String> {
     let i = ds.files.iter().copied().find(|&i| !split_path(files[i].name).1.starts_with('.'))?;
     let description = super::dicom_siemens::parse_dicom(files[i].bytes).ok()?.string(0x0008, 0x103e).unwrap_or_default();
     let name = match description.trim() {
-        "" if own_folder => after_series_number(split_path(split_path(files[i].name).0).1),
+        "" if own_folder => split_path(split_path(files[i].name).0).1,
         "" => return None,
         d => d,
     };
+    let name = after_series_number(name);
     let name = name.to_ascii_lowercase();
     let name = water_base(&name).unwrap_or(name);
     let name = name.strip_suffix("_ave").unwrap_or(&name);
@@ -1066,6 +1067,11 @@ mod tests {
         assert_eq!(after_series_number("20-PRESS"), "PRESS");
         assert_eq!(after_series_number("PRESS-2"), "PRESS-2");
         assert_eq!(after_series_number("press"), "press");
+        let series = |uid: &str, description: &str| dicom_series(true, "1.2.3", uid, "subject-01", description);
+        let (plain, ave, water) = (series("21", "21-press"), series("20", "20-press_ave"), series("22", "22-press_water_off"));
+        let files = [nf("flat/1.dcm", &plain), nf("flat/2.dcm", &ave), nf("flat/3.dcm", &water)];
+        let d = detect(&files);
+        assert!(d.pairs.iter().all(|p| p.water.as_ref().is_some_and(|w| w.files == [2])), "{d:#?}");
     }
 
     #[test]
