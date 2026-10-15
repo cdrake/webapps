@@ -463,6 +463,8 @@ import { resolveShellAdapter } from './shell-adapters/index.js';
   syncScientificVersion();
   fitBars();
   window.addEventListener('resize', refresh);
+  // Inter swaps in after the first fit and changes every width the fit measured.
+  document.fonts?.addEventListener('loadingdone', refresh);
   new MutationObserver(refresh).observe(document.body, {
     childList: true,
     subtree: true,

@@ -343,7 +343,9 @@ try {
       const actions = await topBar.locator('.nd-app-bar__navigation').innerText();
       const githubHref = await topBar.locator('a[title="View this app on GitHub"]').getAttribute('href');
       if (!identity.includes(app.title)) failures.push(`${app.id}: top bar is missing the app name`);
-      if (!identity.includes(app.description)) failures.push(`${app.id}: top bar is missing the short explanation`);
+      // The bar hides a description that does not fit, so check its text rather than its rendering.
+      const description = await topBar.locator('.nd-app-bar__description').textContent();
+      if (description !== app.description) failures.push(`${app.id}: top bar is missing the short explanation`);
       if (!/v\d+\.\d+/.test(identity)) failures.push(`${app.id}: top bar is missing a version`);
       const expectedActions = 'About Cite Standalone Privacy Support Light More Apps GitHub';
       if (actions.replace(/\s+/g, ' ').trim() !== expectedActions) {

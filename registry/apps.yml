@@ -333,7 +333,7 @@ apps:
   - id: synthsr
     path: synthsr
     title: SynthSR
-    description: Synthesize a 1 mm T1-weighted image from a brain MRI.
+    description: Synthesize a 1 mm T1-weighted image from brain MRI or CT.
     categories: [data-preparation]
     keywords: [SynthSR, MRI, CT, super-resolution, T1]
     legacy_domain: null
@@ -648,7 +648,7 @@ apps:
   - id: nesvor
     path: nesvor
     title: NeSVoR
-    description: Reconstruct a 3D fetal brain volume from 2D MRI stacks.
+    description: Reconstruct a 3D fetal or neonatal brain from 2D MRI stacks.
     categories: [data-preparation]
     keywords: [NeSVoR, SVoRT, fetal MRI, slice-to-volume reconstruction, motion correction, neonatal MRI]
     legacy_domain: null
