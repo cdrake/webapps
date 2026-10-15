@@ -414,7 +414,7 @@ async function main() {
     return
   }
   log.log('niimath worker ready', 'info')
-  status('Ready · choose an example or open an image')
+  status('Drag and drop files')
 
   // enable our button after our WASM has been setup
   initializeImageProcessing();

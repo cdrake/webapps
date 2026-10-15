@@ -5,84 +5,13 @@ const assert = require('node:assert/strict');
 const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
-const loadClassicScript = require('./load-classic-script.cjs');
 const fixtures = require('./batch-parity-fixtures.cjs');
 const { loadNifti } = require('./batch-parity-lib.cjs');
 const { ensureSctBatchFixtures } = require('./huggingface-fixtures.cjs');
 const manifest = require('../web/models/manifest.json');
-const lesionAnalysis = loadClassicScript(path.join(__dirname, '../web/js/modules/lesion-analysis.js'));
+const { CRITICAL_BROWSER_OUTPUTS, assertMaskParity, assertMsLesionMetrics, assertSciLesionMetrics } = require('./parity-gates.cjs');
 
 const ROOT = path.resolve(__dirname, '..');
-
-const CRITICAL_BROWSER_OUTPUTS = Object.freeze([
-  {
-    id: 'batch_t2_deepseg_spinalcord',
-    taskId: 'spinalcord',
-    minDice: 0.95,
-    foregroundRatioTolerance: 0.1
-  },
-  {
-    id: 'batch_t2_deepseg_lesion_sci_t2_sc',
-    fixtureId: 'batch_t2_deepseg_lesion_sci_t2',
-    stage: 'segmentation',
-    taskId: 'lesion_sci_t2',
-    minDice: 0.8,
-    foregroundRatioTolerance: 0.35
-  },
-  {
-    id: 'batch_t2_deepseg_lesion_sci_t2_lesion',
-    fixtureId: 'batch_t2_deepseg_lesion_sci_t2',
-    stage: 'lesion',
-    taskId: 'lesion_sci_t2',
-    minDice: 0.6,
-    foregroundRatioTolerance: 0.75
-  },
-  {
-    id: 'course_t2_ms_deepseg_lesion_ms_lesion',
-    fixtureId: 'course_t2_ms_deepseg_lesion_ms',
-    stage: 'lesion',
-    taskId: 'lesion_ms',
-    // Measured 0.8255 (171 vs 190 voxels) against SCT 7.3 `lesion_ms -single-fold`.
-    minDice: 0.75,
-    foregroundRatioTolerance: 0.2
-  },
-  {
-    id: 'batch_dmri_deepseg_spinalcord',
-    taskId: 'spinalcord',
-    minDice: 0.8,
-    foregroundRatioTolerance: 0.5
-  },
-  {
-    id: 'batch_t2s_deepseg_spinalcord',
-    taskId: 'spinalcord',
-    minDice: 0.9,
-    foregroundRatioTolerance: 0.2
-  },
-  {
-    id: 'batch_t2s_deepseg_graymatter',
-    taskId: 'graymatter',
-    minDice: 0.7,
-    foregroundRatioTolerance: 0.15
-  },
-  {
-    id: 'batch_t1_deepseg_spinalcord_t1',
-    taskId: 'spinalcord',
-    minDice: 0.9,
-    foregroundRatioTolerance: 0.2
-  },
-  {
-    id: 'batch_t1_deepseg_spinalcord_t2',
-    taskId: 'spinalcord',
-    minDice: 0.95,
-    foregroundRatioTolerance: 0.1
-  },
-  {
-    id: 'batch_mt_deepseg_spinalcord',
-    taskId: 'spinalcord',
-    minDice: 0.85,
-    foregroundRatioTolerance: 0.2
-  }
-]);
 
 function fixtureForCheck(check) {
   return fixtures.FIXTURE_CASES.find(item => item.id === (check.fixtureId || check.id));
@@ -102,94 +31,24 @@ function expectedOutputPathForCheck(check, fixture) {
   return path.join(ROOT, fixture.expectedOutputPath);
 }
 
-function diceStats(expected, produced) {
-  let expectedNz = 0;
-  let producedNz = 0;
-  let intersection = 0;
-  for (let i = 0; i < expected.data.length; i++) {
-    const e = expected.data[i] > 0;
-    const p = produced.data[i] > 0;
-    if (e) expectedNz++;
-    if (p) producedNz++;
-    if (e && p) intersection++;
-  }
-  return {
-    expectedNz,
-    producedNz,
-    intersection,
-    dice: expectedNz + producedNz ? (2 * intersection) / (expectedNz + producedNz) : 1
-  };
-}
-
-function assertMetadataComparable(fixture, expected, produced) {
-  assert.equal(
-    expected.header.dims.slice(0, 4).join('x'),
-    produced.header.dims.slice(0, 4).join('x'),
-    `${fixture.id}: browser output dimensions match test_data reference`
-  );
-  assert.equal(
-    expected.header.pixDims.slice(1, 4).join('x'),
-    produced.header.pixDims.slice(1, 4).join('x'),
-    `${fixture.id}: browser output spacing matches test_data reference`
-  );
-  assert.equal(produced.header.datatypeCode, 2, `${fixture.id}: browser output is uint8 label data`);
-}
-
-function lesionMetricsFor(scPath, lesionPath) {
-  const spinalCord = loadNifti(scPath);
-  const lesion = loadNifti(lesionPath);
-  return lesionAnalysis.analyzeLesions({
-    spinalCord: spinalCord.data,
-    lesion: lesion.data,
-    dims: spinalCord.header.dims.slice(1, 4),
-    spacing: spinalCord.header.pixDims.slice(1, 4).map(value => Math.abs(value) || 1)
-  });
-}
-
-function assertRelativeClose(actual, expected, tolerance, label) {
-  const allowed = Math.max(Math.abs(expected) * tolerance, tolerance);
-  assert.ok(Math.abs(actual - expected) <= allowed, `${label}: ${actual} is within ${tolerance * 100}% of ${expected}`);
-}
-
 function assertLesionMetricsFixture() {
   const fixture = fixtures.FIXTURE_CASES.find(item => item.id === 'batch_t2_deepseg_lesion_sci_t2');
   assert.ok(fixture, 'SCI lesion fixture exists for metrics validation');
-  const expectedMetrics = lesionMetricsFor(
-    expectedOutputPathForCheck({ stage: 'segmentation' }, fixture),
-    expectedOutputPathForCheck({ stage: 'lesion' }, fixture)
-  );
-  const producedMetrics = lesionMetricsFor(
-    browserOutputPathForCheck({ stage: 'segmentation' }, fixture),
-    browserOutputPathForCheck({ stage: 'lesion' }, fixture)
-  );
-  assert.ok(producedMetrics.csv.includes('dorsal_bridge_width_mm'), 'browser lesion metrics CSV includes tissue-bridge columns');
-  assert.ok(producedMetrics.summary.lesion_count >= expectedMetrics.summary.lesion_count, 'browser metrics preserve the expected SCI lesion component');
-  assert.ok(producedMetrics.summary.lesion_count <= expectedMetrics.summary.lesion_count + 1, 'browser metrics do not add more than one small extra component on the fake-lesion fixture');
-  assertRelativeClose(producedMetrics.summary.total_volume_mm3, expectedMetrics.summary.total_volume_mm3, 0.25, 'lesion total volume');
-  assertRelativeClose(producedMetrics.summary.total_length_mm, expectedMetrics.summary.total_length_mm, 0.25, 'lesion total length');
-  assertRelativeClose(producedMetrics.summary.max_width_mm, expectedMetrics.summary.max_width_mm, 0.30, 'lesion max width');
+  assertSciLesionMetrics({
+    expectedCord: expectedOutputPathForCheck({ stage: 'segmentation' }, fixture),
+    expectedLesion: expectedOutputPathForCheck({ stage: 'lesion' }, fixture),
+    producedCord: browserOutputPathForCheck({ stage: 'segmentation' }, fixture),
+    producedLesion: browserOutputPathForCheck({ stage: 'lesion' }, fixture)
+  });
 }
 
-// lesion_ms has no cord mask, so the metrics are lesion-only. SCT 7.3 finds 5
-// lesions (673.5 mm3) on the course MS image; the browser finds 4 (606.2 mm3),
-// missing the smallest one (8 voxels).
 function assertMsLesionMetricsFixture() {
   const fixture = fixtures.FIXTURE_CASES.find(item => item.id === 'course_t2_ms_deepseg_lesion_ms');
   assert.ok(fixture, 'MS lesion fixture exists for metrics validation');
-  const metricsFor = filePath => {
-    const lesion = loadNifti(filePath);
-    return lesionAnalysis.analyzeLesions({
-      lesion: lesion.data,
-      dims: lesion.header.dims.slice(1, 4),
-      spacing: lesion.header.pixDims.slice(1, 4).map(value => Math.abs(value) || 1)
-    });
-  };
-  const expectedMetrics = metricsFor(expectedOutputPathForCheck({ stage: 'lesion' }, fixture));
-  const producedMetrics = metricsFor(browserOutputPathForCheck({ stage: 'lesion' }, fixture));
-  assert.equal(expectedMetrics.summary.lesion_count, 5, 'SCT reference lesion count on the MS fixture');
-  assert.ok(Math.abs(producedMetrics.summary.lesion_count - expectedMetrics.summary.lesion_count) <= 1, `MS lesion count ${producedMetrics.summary.lesion_count} is within one of ${expectedMetrics.summary.lesion_count}`);
-  assertRelativeClose(producedMetrics.summary.total_volume_mm3, expectedMetrics.summary.total_volume_mm3, 0.2, 'MS lesion total volume');
-  assert.ok(!producedMetrics.csv.includes('sagittal_x_'), 'lesion-only metrics CSV has no tissue-bridge columns');
+  assertMsLesionMetrics({
+    expectedLesion: expectedOutputPathForCheck({ stage: 'lesion' }, fixture),
+    producedLesion: browserOutputPathForCheck({ stage: 'lesion' }, fixture)
+  });
 }
 
 const supportedTasks = new Set(
@@ -266,15 +125,7 @@ function ensureBrowserOutputs() {
     assert.notEqual(path.resolve(expectedPath), path.resolve(producedPath), `${check.id}: produced output is not the expected fixture`);
     assert.ok(fs.existsSync(producedPath), `${check.id}: browser output exists at ${path.relative(ROOT, producedPath)}`);
 
-    const expected = loadNifti(expectedPath);
-    const produced = loadNifti(producedPath);
-    assertMetadataComparable(fixture, expected, produced);
-
-    const stats = diceStats(expected, produced);
-    const lower = stats.expectedNz * (1 - check.foregroundRatioTolerance);
-    const upper = stats.expectedNz * (1 + check.foregroundRatioTolerance);
-    assert.ok(stats.producedNz >= lower && stats.producedNz <= upper, `${check.id}: foreground ${stats.producedNz} is within tolerance of ${stats.expectedNz}`);
-    assert.ok(stats.dice >= check.minDice, `${check.id}: Dice ${stats.dice.toFixed(4)} >= ${check.minDice.toFixed(4)}`);
+    const stats = assertMaskParity(check, expectedPath, producedPath);
     results.push(`${check.id}: dice=${stats.dice.toFixed(4)} expectedNz=${stats.expectedNz} producedNz=${stats.producedNz}`);
   }
   assertLesionMetricsFixture();

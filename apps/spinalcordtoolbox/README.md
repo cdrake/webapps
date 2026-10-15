@@ -36,10 +36,21 @@ pnpm --filter spinalcordtoolbox dev
 
 ## Command line
 
-Use SCT's native `sct_deepseg` for headless segmentation. The shared **Standalone**
-action already offers the SCT container and the OpenRecon scanner recipe. This
-app uses that existing native distribution instead of a separate portable Node
-CLI with another copy of the segmentation models.
+The **Standalone** action offers two command lines. `sct-webapp` runs this
+app's segmentation models on Linux, Windows and macOS without a browser and
+writes the app's output formats and filenames. Native CPU and browser
+WebAssembly results can differ slightly. See the measured backend comparisons
+([`packages/spinalcordtoolbox`](../../packages/spinalcordtoolbox/README.md)):
+
+```bash
+sct-webapp segment --task spinalcord t2.nii.gz results
+sct-webapp download-models --task lesion_ms   # once; only spinalcord ships with the release
+sct-webapp segment --task lesion_ms t2_ms.nii.gz ms-results
+```
+
+For the full toolbox, including SCT analysis, use SCT's native `sct_deepseg` and
+the other `sct_*` commands from the pinned SCT container below, or the OpenRecon
+scanner recipe.
 
 These commands use the same image digest as the compute server and
 `registry/neurocontainers.json`. The image is labelled `7.3.3`, but the installed SCT
@@ -192,7 +203,7 @@ spinalcordtoolbox/
 │   │   ├── controllers/   # Input sessions and the inference pipeline adapter
 │   │   ├── modules/       # Viewer (sct-viewer.js), 2D fallback preview, processing
 │   │   ├── spinalcordtoolbox-app.js    # Main app
-│   │   └── inference-worker.js   # Web Worker (3D inference pipeline)
+│   │   └── inference-worker.js   # Web Worker around packages/spinalcordtoolbox
 │   ├── models/            # SCT model manifest + browser-runnable assets
 │   └── index.html
 └── README.md

@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
-import { dirname, extname, join, relative, resolve, sep } from 'node:path';
+import { basename, dirname, extname, join, relative, resolve, sep } from 'node:path';
 import { isUrlWithinServiceWorkerScope } from './runtime-support.mjs';
 import { stageOperationParameters } from './operation-parameters-runtime.mjs';
 
@@ -126,22 +126,37 @@ async function removeAppCopies(siteDist, registry) {
 async function deduplicateSources({ manifest, files, siteDist, registry }) {
   for (const family of manifest.families.filter(family => family.deduplicate)) {
     for (const asset of family.files) {
-      const app = registry.apps.find(app => app.id === asset.source_app);
-      if (!app || app.app_scoped_runtime_families?.includes(family.id)) throw new Error(`Cannot deduplicate scoped runtime ${family.id}`);
-      const sourcePath = join(siteDist, app.path, asset.source);
       const targetPath = join(siteDist, '_runtime', family.target, asset.name);
-      let references = 0;
-      for (const file of files.filter(file => file.startsWith(join(siteDist, app.path) + sep) && TEXT_EXTENSIONS.has(extname(file)))) {
-        const original = await readFile(file, 'utf8');
-        const rewritten = original.replace(/(['"])([^'"\n]+)\1/g, (match, quote, reference) => {
-          if (resolve(dirname(file), reference) !== sourcePath) return match;
-          references++;
-          return `${quote}${moduleReference(file, targetPath)}${quote}`;
-        });
-        if (rewritten !== original) await writeFile(file, rewritten);
+      for (const app of registry.apps) {
+        const appFiles = files.filter(file => file.startsWith(join(siteDist, app.path) + sep));
+        const copies = appFiles.filter(file => basename(file) === basename(asset.source));
+        if (!copies.length) continue;
+        if (app.app_scoped_runtime_families?.includes(family.id)) throw new Error(`Cannot deduplicate scoped runtime ${family.id}`);
+        for (const sourcePath of copies) {
+          const actual = await sha256(sourcePath);
+          if (actual !== asset.sha256) {
+            throw new Error(`Runtime asset checksum mismatch for ${sourcePath}: expected ${asset.sha256}, got ${actual}`);
+          }
+          const escapedName = basename(sourcePath).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          // Match the declared filename so empty strings in minified workers cannot consume its opening quote.
+          const assetReference = new RegExp(`(['"])([^'"\\n]*${escapedName})\\1`, 'g');
+          let references = 0;
+          for (const file of appFiles.filter(file => TEXT_EXTENSIONS.has(extname(file)))) {
+            const original = await readFile(file, 'utf8');
+            const rewritten = original.replace(assetReference, (match, quote, reference) => {
+              const referencedPath = reference.startsWith('/')
+                ? resolve(siteDist, `.${reference}`)
+                : resolve(dirname(file), reference);
+              if (referencedPath !== sourcePath) return match;
+              references++;
+              return `${quote}${moduleReference(file, targetPath)}${quote}`;
+            });
+            if (rewritten !== original) await writeFile(file, rewritten);
+          }
+          if (!references) throw new Error(`No static references found for deduplicated runtime ${sourcePath}`);
+          await rm(sourcePath);
+        }
       }
-      if (!references) throw new Error(`No static references found for deduplicated runtime ${sourcePath}`);
-      await rm(sourcePath);
     }
   }
 }

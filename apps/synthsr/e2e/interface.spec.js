@@ -49,9 +49,9 @@ for (const width of [390, 1440]) {
   test(`input stays compact at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('./');
-    const picker = page.locator('#imageInput');
-    await expect(picker).toBeVisible();
-    expect((await picker.boundingBox()).height).toBeLessThanOrEqual(48);
+    // The input menu replaces the drop box; the whole window takes drops.
+    await expect(page.locator('#imageInput')).toBeHidden();
+    expect((await page.locator('#exampleSelect').boundingBox()).height).toBeLessThanOrEqual(48);
     expect((await page.locator('#inputSection').boundingBox()).height).toBeLessThanOrEqual(220);
     await expect(page.locator('#exampleSelect')).toBeVisible();
     await expect(page.locator('#outputSection')).not.toHaveAttribute('open', '');
@@ -71,7 +71,8 @@ test('shared examples load through the image workflow and preserve input on fail
   const fixture = fileURLToPath(new URL('../test/fixtures/validation.nii.gz', import.meta.url));
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('./');
-  await expect(page.locator('#exampleSelect option')).toHaveText(['Choose an example…', ...examples.map(example => example.label)]);
+  await expect(page.locator('#exampleSelect option:not([data-action])')).toHaveText(['Choose an example…', ...examples.map(example => example.label)]);
+  await expect(page.locator('#exampleSelect option[data-action]')).toHaveText(['Choose files…', 'Choose folder…']);
   await expect(page.locator('#exampleBtn')).toHaveCount(0);
   for (const id of ['t1-head', 'brain-ct']) {
     const example = examples.find(example => example.id === id);

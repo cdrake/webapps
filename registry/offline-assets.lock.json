@@ -3242,7 +3242,6 @@
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0a35af062d07f36ff2935f8c1454e1ca2f80da86/examples/vesselboost/lausanne-tof/sub-000_ses-20110101_angio.nii.gz"
     ],
     "spinalcordtoolbox": [
-      "https://cdn.jsdelivr.net/npm/localforage@1.10.0/+esm",
       "https://huggingface.co/datasets/sbollmann/sct-webapp-data/resolve/55c9462a14bc9c84cf093c348cffda9148099df9/web/models/sct-graymatter.onnx",
       "https://huggingface.co/datasets/sbollmann/sct-webapp-data/resolve/55c9462a14bc9c84cf093c348cffda9148099df9/web/models/sct-lesion-sci-t2.onnx",
       "https://huggingface.co/datasets/sbollmann/sct-webapp-data/resolve/9ed55d734edbd3b4dcd2da298ab49ce277c1bc4e/web/models/sct-lesion-ms.onnx",

@@ -25,6 +25,7 @@ const sharedSiteAssets = [
   ['shell-adapters', join(repoRoot, 'site', 'shell-adapters')],
   ['analytics.js', join(repoRoot, 'packages', 'analytics', 'src', 'index.js')],
   ['neurodesk-logo.svg', join(repoRoot, 'site', 'neurodesk-logo.svg')],
+  ['fonts', join(repoRoot, 'site', 'fonts')],
 ];
 await rm(siteDist, { recursive: true, force: true });
 await mkdir(siteDist, { recursive: true });

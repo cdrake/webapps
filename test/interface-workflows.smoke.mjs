@@ -166,7 +166,7 @@ try {
     await expect(page.locator('#outputSection')).not.toHaveAttribute('open', '');
   });
   await check('carotid-flow', async page => {
-    await expect(page.locator('#statusText')).toContainText('Ready · choose', { timeout: 60000 });
+    await expect(page.locator('#statusText')).toHaveText('Drag and drop files', { timeout: 60000 });
     const advanced = page.locator('#advancedSettings > summary');
     await advanced.tap();
     await page.locator('#candidatePercentile').fill('99.5');
@@ -181,7 +181,7 @@ try {
     await expect(page.locator('#outputSection')).not.toHaveAttribute('open', '');
   });
   await check('disconnectome', async page => {
-    await expect(page.locator('#statusText')).toContainText('Ready · choose', { timeout: 60000 });
+    await expect(page.locator('#statusText')).toHaveText('Drag and drop files', { timeout: 60000 });
     await page.locator('#imageInput').setInputFiles(nifti('interface-lesion.nii'));
     await expect(page.locator('#runButton')).toBeEnabled();
     const inputs = page.locator('#inputSection > summary');

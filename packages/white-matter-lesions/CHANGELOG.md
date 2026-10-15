@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- @neurodesk/synthsr@0.6.20261015
+- @neurodesk/synthstrip@0.1.5
 - 84d192a: FLAMeS no longer rejects high-resolution FLAIR. A 0.4 mm 3D FLAIR of
   544 × 544 × 480 voxels exceeded SynthSR's 128 Mi voxel reader cap and failed
   with "Unsupported image dimensions". An input finer than FLAMeS's

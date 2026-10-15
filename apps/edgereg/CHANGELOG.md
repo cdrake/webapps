@@ -1,5 +1,31 @@
 # edgereg
 
+## 0.4.20261015
+
+### Patch Changes
+
+- dd65e6a: Visual refresh: Inter, neutral greys with the Neurodesk logo green for action,
+  focus and selection only, a compact 48px app bar, sentence-case section titles
+  and a quieter status bar. The example menu is now the input control: examples,
+  then Choose files… and Choose folder…. The whole window, the viewer included,
+  accepts dropped files; a drop mid-session replaces the inputs with Undo in the
+  status bar. Before any input the status reads "Drag and drop files". MuscleMap
+  drops its separate drop box and Add File(s) button.
+
+  Page drops fill empty image slots in order while keeping DICOM series together.
+  New selections supersede unfinished drop traversal, and registration apps load
+  each dropped image in order. The shared drop handler also respects the different
+  native input and file-field event contracts.
+  Failed imports leave only successfully loaded slots occupied, and Undo can
+  restore loaded examples.
+
+- Updated dependencies [0569da8]
+- Updated dependencies [dd65e6a]
+- Updated dependencies [dcc74e7]
+  - @neurodesk/runtime-support@0.6.0
+  - @neurodesk/webapp-components@0.14.0
+  - @neurodesk/edgereg@0.4.20261015
+
 ## 0.4.20261014
 
 ### Patch Changes

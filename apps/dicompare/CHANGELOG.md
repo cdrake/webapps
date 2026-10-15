@@ -9,6 +9,12 @@
   `analyze`, `compare` (the compliance report) and `build-schema`, plus the app's
   schema library. Its reports match the web app's downloads.
 
+### Patch Changes
+
+- Updated dependencies [dd65e6a]
+- Updated dependencies [dcc74e7]
+  - @neurodesk/webapp-components@0.14.0
+
 ## 0.14.20261014
 
 ### Patch Changes

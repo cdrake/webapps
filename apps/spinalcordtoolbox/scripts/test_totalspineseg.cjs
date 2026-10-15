@@ -2,9 +2,7 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const path = require('node:path');
-const loadClassicScript = require('./load-classic-script.cjs');
-const tss = loadClassicScript(path.join(__dirname, '../web/js/modules/totalspineseg.js'));
+const tss = require('@neurodesk/spinalcordtoolbox/totalspineseg');
 
 function makeVolume(dims) {
   return new Uint8Array(dims[0] * dims[1] * dims[2]);

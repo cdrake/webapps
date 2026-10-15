@@ -1,5 +1,5 @@
 import { cp, readFile, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { injectCompositeTheme } from './composite-theme.mjs';
 import { stageStandaloneAssets } from './standalone.mjs';
 import { publishAppContract } from './app-automation.mjs';
@@ -27,6 +27,7 @@ export async function applyAppTheme({
   });
   await writeFile(indexPath, themed);
   await cp(themeFile, join(distDir, 'app-theme.css'));
+  await cp(join(dirname(themeFile), 'fonts'), join(distDir, 'fonts'), { recursive: true });
   await cp(themeScriptFile, join(distDir, 'theme.js'));
   await cp(shellFile, join(distDir, 'app-shell.js'));
   if (shellAdaptersDir) await cp(shellAdaptersDir, join(distDir, 'shell-adapters'), { recursive: true });

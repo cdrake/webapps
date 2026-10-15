@@ -113,7 +113,7 @@ test('a teardown failure reaches the status bar instead of an unhandled rejectio
   page.on('pageerror', error => pageErrors.push(error.message));
   await page.goto('./');
   // Initialization has settled, so no later status update can replace the failure.
-  await expect(page.locator('#statusMsg')).toHaveText(/Choose an example|WebGPU/);
+  await expect(page.locator('#statusMsg')).toHaveText(/Drag and drop files|WebGPU/);
   await page.evaluate(() => {
     const selector = document.querySelector('#exampleControl nd-example-selector');
     selector.destroy = () => { throw new Error('teardown canary'); };

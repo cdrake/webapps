@@ -28,7 +28,7 @@ try {
   if (await workspace.isVisible()) await workspace.click();
   const welcome = page.locator('#welcomeLater');
   if (await welcome.isVisible()) await welcome.click();
-  const selector = page.getByRole('combobox', { name: 'Example', exact: true });
+  const selector = page.getByRole('combobox', { name: 'Input', exact: true });
   if (examples.length === 0) {
     await expect(selector).toHaveCount(0);
     await expect(page.locator('input[data-neurodesk-input="image"]').first()).toBeEnabled();

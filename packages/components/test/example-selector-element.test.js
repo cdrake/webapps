@@ -35,7 +35,7 @@ test('one labelled selector loads only when chosen and reports successful import
   const hint = control.querySelector('[role="status"]');
   assert.equal(hint.textContent, 'Brain MRI loaded.', 'the visible hint stays one short line');
   const labelledBy = control.select.getAttribute('aria-labelledby');
-  assert.equal(control.querySelector(`#${labelledBy}`).textContent, 'Example', 'the icon never joins the accessible name');
+  assert.equal(control.querySelector(`#${labelledBy}`).textContent, 'Input', 'the icon never joins the accessible name');
   const info = control.querySelector('label .nd-info-icon');
   assert.equal(info.hidden, false);
   assert.equal(info.querySelector('.nd-info-tooltip').textContent, 'A T1-weighted head scan. Run to download a brain mask.');
@@ -347,4 +347,52 @@ test('resolved upload scope exposes misplaced selectors to the interface audit',
   selector.remove();
   assert.equal(selector.uploadScope, undefined);
   window.close();
+});
+
+test('the menu ends with file actions that open the scope input and hide its drop box', async () => {
+  const { window } = new JSDOM('<body><div id="scope"><label class="nd-file"><input type="file" data-neurodesk-input="image"></label></div></body>');
+  const scope = window.document.getElementById('scope');
+  const control = createExampleSelector({ examples, onLoad: async () => {}, scope }, window.document);
+  scope.prepend(control);
+  const input = scope.querySelector('input');
+  let opened = 0;
+  input.click = () => { opened++; };
+  const actions = [...control.select.options].filter(option => option.dataset.action);
+  assert.deepEqual(actions.map(option => option.textContent), ['Choose files…', 'Choose folder…']);
+  assert.deepEqual([...control.select.options].map(option => option.value).filter(Boolean), ['brain'], 'only examples carry values');
+  assert.ok(scope.querySelector('.nd-file').classList.contains('nd-file-merged'));
+  actions[0].selected = true;
+  control.select.dispatchEvent(new window.Event('change'));
+  assert.equal(opened, 1);
+  assert.equal(control.select.value, '');
+  assert.equal(control.dataset.exampleState, 'idle', 'a file action never loads an example');
+  control.destroy();
+});
+
+test('a refused picker brings the drop box back instead of failing silently', () => {
+  const { window } = new JSDOM('<body><div id="scope"><label class="nd-file"><input type="file" data-neurodesk-input="model"></label><label class="nd-file"><input type="file" data-neurodesk-input="image"></label></div></body>');
+  const scope = window.document.getElementById('scope');
+  const control = createExampleSelector({ examples, onLoad: async () => {}, scope }, window.document);
+  scope.prepend(control);
+  const [model, image] = scope.querySelectorAll('input');
+  assert.ok(image.closest('.nd-file').classList.contains('nd-file-merged'), 'the scan input is primary, not the first input');
+  assert.ok(!model.closest('.nd-file').classList.contains('nd-file-merged'));
+  image.showPicker = () => { throw new window.DOMException('No activation', 'NotAllowedError'); };
+  [...control.select.options].find(option => option.dataset.action === 'files').selected = true;
+  control.select.dispatchEvent(new window.Event('change'));
+  assert.ok(!image.closest('.nd-file').classList.contains('nd-file-merged'));
+  assert.match(control.textContent, /file box below/);
+  control.destroy();
+});
+
+test('a replaced file field takes over the menu and loses its box', () => {
+  const { window } = new JSDOM('<body><div id="scope"><label class="nd-file" id="old"><input type="file" data-neurodesk-input="image"></label></div></body>');
+  const scope = window.document.getElementById('scope');
+  const control = createExampleSelector({ examples, onLoad: async () => {}, scope }, window.document);
+  scope.prepend(control);
+  scope.querySelector('#old').replaceWith(Object.assign(window.document.createElement('label'), { className: 'nd-file', id: 'new', innerHTML: '<input type="file" data-neurodesk-input="image">' }));
+  control.select.dispatchEvent(new window.Event('focus'));
+  assert.ok(scope.querySelector('#new').classList.contains('nd-file-merged'));
+  assert.equal(control.select.querySelectorAll('option[data-action="files"]').length, 1, 'actions are not duplicated');
+  control.destroy();
 });

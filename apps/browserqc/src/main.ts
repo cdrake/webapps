@@ -502,7 +502,7 @@ async function init(): Promise<void> {
   }
   viewerReady = true
   exampleControl.setDisabled(false)
-  setStatus('Choose an example or open a brain scan.')
+  setStatus('Drag and drop files')
 }
 
 const exampleControl = createExampleSelector({

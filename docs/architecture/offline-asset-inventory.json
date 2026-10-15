@@ -353,14 +353,6 @@
           "id": "totalspineseg-step1",
           "support_status": "supported",
           "filename": "totalspineseg-step1.onnx"
-        },
-        {
-          "url": "https://cdn.jsdelivr.net/npm/localforage@1.10.0/+esm",
-          "kind": "runtime-cdn",
-          "sources": [
-            "apps/spinalcordtoolbox/web/js/inference-worker.js"
-          ],
-          "verification": "source reference; production bundling may rewrite it"
         }
       ],
       "url_mappings": [],
@@ -370,8 +362,7 @@
         "@neurodesk/webapp-components": "workspace:*"
       },
       "notes": [
-        "Runtime asset resolver prefers downloadUrl, falling back to MODEL_BASE_URL/filename. Status is preserved for each detailed asset; packaging promises should follow exposed supported tasks.",
-        "Worker dynamically imports localforage from jsDelivr. Installed offline package must replace/bundle this import and its transitive modules."
+        "Runtime asset resolver prefers downloadUrl, falling back to MODEL_BASE_URL/filename. Status is preserved for each detailed asset; packaging promises should follow exposed supported tasks."
       ],
       "unknowns": [
         {

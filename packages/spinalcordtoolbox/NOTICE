@@ -1,0 +1,19 @@
+Spinal Cord Toolbox web app segmentation, extracted from apps/spinalcordtoolbox
+in neurodesk/webapps. Imported application source: NOASSERTION.
+No blanket MIT license is asserted for this package.
+
+Models: ONNX conversions of Spinal Cord Toolbox (SCT) deep-learning models
+(contrast-agnostic spinal cord, gray matter, SCIsegV2, MS lesion single fold)
+and TotalSpineSeg step 1, hosted at pinned revisions of the Hugging Face dataset
+sbollmann/sct-webapp-data. Sources and versions are listed per model in
+model.manifest.json; their licences are those of the upstream releases.
+The portable release includes only the spinalcord model.
+
+Spinal Cord Toolbox:
+De Leener B, Lévy S, Dupont SM, et al. SCT: Spinal Cord Toolbox, an open-source
+software for processing spinal cord MRI data. NeuroImage. 2017;145:24-43.
+doi:10.1016/j.neuroimage.2016.10.009.
+
+sct-webapp is not the native Spinal Cord Toolbox.
+Shared webapp-components: MIT, included in its dependency LICENSE.
+ONNX Runtime: MIT, included in its dependency distribution.
