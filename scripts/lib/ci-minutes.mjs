@@ -52,7 +52,8 @@ export function classifyRun({ planJob, log, jobs, catalogSize }) {
   const logged = selectionFromLog(log);
   if (logged) return logged;
   const created = jobs.filter((job) => /^app-tests \(/.test(job.name)).length;
-  const kind = created === catalogSize ? 'full' : created === 0 ? 'no apps' : 'narrowed';
+  // A pull request that adds an app tests one more than main's catalog.
+  const kind = created >= catalogSize ? 'full' : created === 0 ? 'no apps' : 'narrowed';
   return { kind: `${kind} (inferred)`, selected: created };
 }
 

@@ -31,7 +31,8 @@ test('a run is classified only when its planner job succeeded', () => {
   const appJobs = (count) => Array.from({ length: count }, (_, index) => ({ name: `app-tests (app${index}, app${index})` }));
   assert.equal(classifyRun({ planJob, log: 'x Selected 2 of 31 apps; site build runs.', jobs: appJobs(5), catalogSize: 31 }).kind, 'narrowed');
   assert.deepEqual(classifyRun({ planJob, log: '', jobs: appJobs(31), catalogSize: 31 }), { kind: 'full (inferred)', selected: 31 });
-  assert.equal(classifyRun({ planJob, log: '', jobs: appJobs(4), catalogSize: 31 }).kind, 'narrowed (inferred)');
+  assert.equal(classifyRun({ planJob, log: '', jobs: appJobs(32), catalogSize: 31 }).kind, 'full (inferred)');
+  assert.equal(classifyRun({ planJob, log: '', jobs: appJobs(30), catalogSize: 31 }).kind, 'narrowed (inferred)');
   assert.equal(classifyRun({ planJob, log: '', jobs: [], catalogSize: 31 }).kind, 'no apps (inferred)');
   for (const conclusion of ['cancelled', 'failure', null]) {
     assert.equal(classifyRun({ planJob: { ...planJob, conclusion }, log: '', jobs: [], catalogSize: 31 }), null, String(conclusion));

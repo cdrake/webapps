@@ -57,7 +57,8 @@ merged in between whose narrowed selection skipped that app. It also lists merge
 Every completed `ci` run in the window, from the Actions API: 163 runs (117 pull request, 43 push to main, 3 nightly).
 Each run is classified by the planner's own summary line in the `app-plan` job log (`Selected N of 31 apps` or
 `Full catalog and site selected`); runs from before that line existed (#273, 2026-10-14) are classified by their
-number of `app-tests` jobs and marked *inferred* in `minutes.md`. A run whose `app-plan` job did not succeed (mostly
+number of `app-tests` jobs against main's catalog when the run was created (31 apps throughout this window) and
+marked *inferred* in `minutes.md`. A run whose `app-plan` job did not succeed (mostly
 cancelled by a newer push) is unclassified. The tables below merge the two. Per job:
 
 - **queue** = `started_at − created_at`. A job is created once the jobs it `needs` finish, so this is time waiting for

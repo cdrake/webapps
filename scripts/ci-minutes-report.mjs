@@ -9,9 +9,11 @@
 //
 // Needs an authenticated `gh`. Rerunning over the same window gives the same
 // numbers, except for runs still in progress, which are left out.
+import { execFileSync } from 'node:child_process';
 import { writeFile } from 'node:fs/promises';
+import { parse } from 'yaml';
 import { aggregate, aggregateJobs, classifyRun, summarizeRun } from './lib/ci-minutes.mjs';
-import { loadAppsRegistry } from './lib/apps-registry.mjs';
+import { repoRoot } from './lib/apps-registry.mjs';
 import { jobLog, listJobs, listRuns, mapLimited } from './lib/github-actions.mjs';
 
 const argv = process.argv.slice(2);
@@ -21,8 +23,17 @@ const until = option('--until');
 const events = option('--event', 'pull_request,push,schedule').split(',');
 const limit = Number(option('--limit', 1000));
 // Runs before the planner printed its summary are classified by how many
-// app-tests jobs they created; the catalog has had this many apps since 2026-10-09.
-const catalogSize = Number(option('--catalog-size', (await loadAppsRegistry()).apps.length));
+// app-tests jobs they created, against the catalog on main when the run was
+// created (a pull request's own head may no longer be fetchable).
+const catalogSizes = new Map();
+function catalogSizeAt(createdAt) {
+  const commit = execFileSync('git', ['rev-list', '-1', `--before=${createdAt}`, 'origin/main'], { cwd: repoRoot, encoding: 'utf8' }).trim();
+  if (!catalogSizes.has(commit)) {
+    const registry = parse(execFileSync('git', ['show', `${commit}:registry/apps.yml`], { cwd: repoRoot, encoding: 'utf8' }));
+    catalogSizes.set(commit, registry.apps.length);
+  }
+  return catalogSizes.get(commit);
+}
 
 // The window is filtered before the limit, which keeps the newest runs over all events.
 const runs = (await Promise.all(events.map((event) => listRuns({ since, event }))))
@@ -36,7 +47,7 @@ const summaries = await mapLimited(runs, 6, async (run) => {
   const jobs = await listJobs(run.id);
   const planJob = jobs.find((job) => job.name === 'app-plan');
   const log = planJob ? await jobLog(planJob.id) : '';
-  return { ...summarizeRun(run, jobs, classifyRun({ planJob, log, jobs, catalogSize })), event: run.event };
+  return { ...summarizeRun(run, jobs, classifyRun({ planJob, log, jobs, catalogSize: catalogSizeAt(run.created_at) })), event: run.event };
 });
 
 const byEvent = Object.fromEntries(events.map((event) => [event, aggregate(summaries.filter((run) => run.event === event))]));
