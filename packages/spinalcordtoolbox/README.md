@@ -26,7 +26,7 @@ Tasks are the web app's runnable ones: `spinalcord` (the default), `graymatter`,
 `lesion_sci_t2`, `lesion_ms` and `spine` (TotalSpineSeg). `--threshold`,
 `--minimum-component-size` and `--test-time-augmentation` follow the automation
 contract; omitted values use each model's defaults, as the app does. The output
-directory must be new or empty. It receives the app's downloads:
+directory must be new or empty. It uses the app's output formats and names:
 `<task>_<stage>.nii` for every mask (`spinalcord_segmentation.nii`,
 `lesion_sci_t2_lesion.nii`, `spine_spine_discs.nii`, ...) in the input's grid,
 and `<task>_lesion_metrics.csv` for lesion tasks. A JSON report with voxel counts,
@@ -68,10 +68,27 @@ cases: the T2 spinal cord fixture (bundled model), SCT's fake-lesion image with
 SCIsegV2, and the SCT course MS image with `lesion_ms`. Each mask must pass the
 web app's parity gates against SCT's own output
 (`apps/spinalcordtoolbox/scripts/parity-gates.cjs`: Dice, foreground, lesion count
-within one and total volume within 20 % for MS). Each download must also be byte
-for byte the one the app's worker produces, run in Node on the same ONNX Runtime
-CPU backend. The check refuses a tampered model, a missing model offline, an
-unsupported task and an out-of-range threshold.
+within one and total volume within 20 % for MS). Each download must also match
+the app's worker byte for byte when adapted to Node on the same ONNX Runtime
+CPU 1.29.0 backend. The check refuses a tampered model, a missing model offline,
+an unsupported task and an out-of-range threshold.
+
+The production browser uses ONNX Runtime Web 1.21.0 with its WebAssembly
+backend. It shares the pipeline and output formats, but its masks and lesion
+tables are not guaranteed byte-identical to the native CPU results. A production
+Chromium check of those three public cases passed the unchanged SCT scientific
+gates. Browser/native mask comparisons were:
+
+| Case and mask | Differing voxels | Dice |
+| --- | ---: | ---: |
+| T2 spinal cord | 5 | 0.999894 |
+| SCIseg spinal cord | 9 | 0.999377 |
+| SCIseg lesion | 1 | 0.997230 |
+| MS lesion | 2 | 0.994118 |
+
+The NIfTI headers matched in all four comparisons; both lesion tables differed.
+These three cases do not establish cross-backend equality for every task or
+option.
 
 ## Licensing
 

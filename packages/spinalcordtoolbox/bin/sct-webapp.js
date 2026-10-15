@@ -21,8 +21,9 @@ Segment options:
   --cache-dir PATH                downloaded models (default: ~/.cache/neurodesk/sct-webapp)
   --offline                       never download; fail when a model is missing
 
-Outputs are the web app's downloads: <task>_<stage>.nii for each mask and
+Outputs use the web app's names: <task>_<stage>.nii for each mask and
 <task>_lesion_metrics.csv for lesion tasks. A JSON report is printed on stdout.
+Native CPU and browser WebAssembly results can differ slightly.
 
 The spinalcord model ships with the portable release. Download any other task's
 model once with "sct-webapp download-models --task TASK". NEURODESK_OFFLINE=1,

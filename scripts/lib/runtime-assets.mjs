@@ -94,7 +94,7 @@ async function rewriteFile(file, runtimeRoot, app, relativePath) {
   source = source.replace(/(['"])(?:\.\.?\/)*nifti-js\/index\.js\1/g, (_match, quote) =>
     `${quote}${moduleReference(file, niftiReader)}${quote}`);
   source = source.replace(
-    /(?<=['"])(?:\.\.\/|\.\/)*(?:vendor\/)?webapp-components\/src(?=\/|['"])/g,
+    /(?<=['"])(?:\.\.\/|\.\/)*vendor\/webapp-components\/src(?=\/|['"])/g,
     moduleReference(file, sharedSource),
   );
 

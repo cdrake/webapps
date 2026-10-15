@@ -38,7 +38,8 @@ pnpm --filter spinalcordtoolbox dev
 
 The **Standalone** action offers two command lines. `sct-webapp` runs this
 app's segmentation models on Linux, Windows and macOS without a browser and
-writes the same files as the app's downloads
+writes the app's output formats and filenames. Native CPU and browser
+WebAssembly results can differ slightly. See the measured backend comparisons
 ([`packages/spinalcordtoolbox`](../../packages/spinalcordtoolbox/README.md)):
 
 ```bash

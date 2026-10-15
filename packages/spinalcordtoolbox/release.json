@@ -9,7 +9,7 @@
     "notes": [
       "The spinalcord model is included; the run above needs no network connection.",
       "Other tasks: graymatter, lesion_sci_t2, lesion_ms and spine. Download a task's pinned model once with sct-webapp download-models --task TASK (120 to 540 MB); every model is SHA-256 checked when downloaded and when loaded.",
-      "Outputs are the web app's downloads: <task>_<stage>.nii masks and, for lesion tasks, <task>_lesion_metrics.csv.",
+      "Outputs use the web app's formats and names: <task>_<stage>.nii masks and, for lesion tasks, <task>_lesion_metrics.csv. Native CPU and browser WebAssembly results can differ slightly.",
       "sct-webapp is not the native Spinal Cord Toolbox and does not replace its sct_* commands; SCT analysis, DICOM import and manual mask editing use the web app.",
       "Research software; inspect every mask. Imported source and converted SCT model weights retain NOASSERTION licensing."
     ]

@@ -3,7 +3,8 @@
 // For each pinned SCT case it runs the command line, holds every mask to the web
 // app's parity gates against SCT's own output (apps/spinalcordtoolbox/scripts/
 // parity-gates.cjs), and requires every download to be byte-identical to the web
-// worker's, which runs here in Node on the same ONNX Runtime CPU backend.
+// worker's, adapted here to Node on the same ONNX Runtime CPU 1.29.0 backend.
+// This does not assert byte identity with production's ORT Web 1.21.0 backend.
 // Without --executable it checks the repository's bin/sct-webapp.js.
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -106,9 +107,9 @@ for (const testCase of cases) {
   assert.deepEqual(files, [...worker.keys()].sort(), `${testCase.id}: the command line writes the web app's downloads`);
   assert.deepEqual(report.files.slice().sort(), files);
   for (const name of files) {
-    assert.ok((await readFile(join(output, name))).equals(worker.get(name)), `${testCase.id}/${name} is byte-identical to the web worker's`);
+    assert.ok((await readFile(join(output, name))).equals(worker.get(name)), `${testCase.id}/${name} is byte-identical to the Node-adapted worker's`);
   }
-  console.log(`PASS ${testCase.id}: ${files.join(', ')} byte-identical to the web worker (ONNX Runtime CPU)`);
+  console.log(`PASS ${testCase.id}: ${files.join(', ')} byte-identical to the Node-adapted worker (ONNX Runtime CPU 1.29.0)`);
 
   const referencePaths = {};
   for (const [stage, reference] of Object.entries(testCase.references)) {

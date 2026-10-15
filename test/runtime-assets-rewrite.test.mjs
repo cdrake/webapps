@@ -133,7 +133,7 @@ test('composite rewrite preserves vendored component file suffixes before removi
   await writeFile(join(repoRoot, 'packages', 'components', 'src', 'index.js'), 'export {};');
   await writeFile(join(repoRoot, 'packages', 'components', 'src', 'worker', 'index.js'), "export const sharedWorker = 'shared worker';");
   await writeFile(join(repoRoot, 'packages', 'components', 'src', 'styles', 'base.css'), ':root {}');
-  await writeFile(nestedModule, "export { sharedWorker } from '../../webapp-components/src/worker/index.js';");
+  await writeFile(nestedModule, "export { sharedWorker } from '../../../vendor/webapp-components/src/worker/index.js';");
   await writeFile(join(appDist, 'index.html'), `
     <script type="importmap">{"imports":{"@neurodesk/webapp-components":"./vendor/webapp-components/src/index.js"}}</script>
     <link rel="stylesheet" href="vendor/webapp-components/src/styles/base.css">
