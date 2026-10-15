@@ -2,6 +2,7 @@ import * as ort from 'onnxruntime-web/webgpu';
 import wasmURL from 'onnxruntime-web/ort-wasm-simd-threaded.asyncify.wasm?url';
 import wasmModuleURL from 'onnxruntime-web/ort-wasm-simd-threaded.asyncify.mjs?url';
 import { runSynthstrip } from '@neurodesk/synthstrip';
+import { createBrowserSession } from '@neurodesk/synthstrip/browser';
 import { fetchModel } from '@neurodesk/webapp-components/worker';
 import { SYNTHSTRIP_MODEL } from '@neurodesk/synthstrip/model';
 
@@ -26,7 +27,8 @@ export async function extractSynthstrip({ volume, onProgress }) {
       });
       return { bytes: model, hash: sha256 };
     },
-    createSession: bytes => ort.InferenceSession.create(bytes, { executionProviders: ['wasm'], graphOptimizationLevel: 'all' }),
+    // Layer by layer in slabs: one whole-graph session outgrows the 4 GB WebAssembly heap at 256³.
+    createSession: (bytes, dims) => createBrowserSession(bytes, dims, ort),
     Tensor: ort.Tensor,
     onProgress,
   });

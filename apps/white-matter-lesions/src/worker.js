@@ -3,6 +3,7 @@ import wasmURL from 'onnxruntime-web/ort-wasm-simd-threaded.asyncify.wasm?url';
 import wasmModuleURL from 'onnxruntime-web/ort-wasm-simd-threaded.asyncify.mjs?url';
 import { readVolume } from '@neurodesk/synthsr';
 import { runSynthstrip } from '@neurodesk/synthstrip';
+import { createBrowserSession as createStripSession } from '@neurodesk/synthstrip/browser';
 import { fetchModel } from '@neurodesk/webapp-components/worker';
 import { MAX_INPUT_VOXELS, runFolds, toNetworkResolution } from '@neurodesk/white-matter-lesions';
 import { FLAMES_FOLDS, SYNTHSTRIP } from '@neurodesk/white-matter-lesions/assets';
@@ -39,7 +40,8 @@ async function brainMask(volume, cache) {
   const result = await runSynthstrip({
     volume,
     loadModel: async () => ({ bytes: await download(SYNTHSTRIP, 'brain extraction model', 0.02, 0.08, cache), hash: SYNTHSTRIP.sha256 }),
-    createSession: (bytes) => ort.InferenceSession.create(bytes, { executionProviders: ['wasm'], graphOptimizationLevel: 'all' }),
+    // Layer by layer in slabs: one whole-graph session outgrows the 4 GB WebAssembly heap at 256³.
+    createSession: (bytes, dims) => createStripSession(bytes, dims, ort),
     Tensor: ort.Tensor,
     onProgress: (value, message) => progress(0.08 + 0.12 * value, message),
   });

@@ -11,12 +11,13 @@ import { fileURLToPath } from 'node:url';
 import * as ort from 'onnxruntime-web';
 import { readVolume } from '@neurodesk/synthsr';
 import { runSynthstrip } from '@neurodesk/synthstrip';
+import { createBrowserSession as createStripSession } from '@neurodesk/synthstrip/browser';
 import { FLAMES_FOLDS, SYNTHSTRIP } from '../src/assets.js';
 import { downloadModels, resolveFolds } from '../src/node.js';
 import { MAX_INPUT_VOXELS, runFolds, toNetworkResolution } from '../src/pipeline.js';
 import { lesionResults, outputNames, resampledFlairName } from '../src/results.js';
 
-// worker.js's session options; its WebGPU attempt falls back to exactly this on a CPU.
+// worker.js's FLAMeS session options; its WebGPU attempt falls back to exactly this on a CPU.
 const createSession = (bytes) => ort.InferenceSession.create(bytes, { executionProviders: ['wasm'], graphOptimizationLevel: 'all' });
 const arrayBuffer = (bytes) => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
 
@@ -28,7 +29,7 @@ export async function webReference({ input, output, folds = 1, cacheDir, threads
   const stripped = await runSynthstrip({
     volume,
     loadModel: async () => ({ bytes: await model(SYNTHSTRIP), hash: SYNTHSTRIP.sha256 }),
-    createSession,
+    createSession: (bytes, dims) => createStripSession(bytes, dims, ort),
     Tensor: ort.Tensor,
   });
   const selected = FLAMES_FOLDS.slice(0, resolveFolds(folds));
