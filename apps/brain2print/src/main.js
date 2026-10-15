@@ -282,7 +282,7 @@ async function init() {
   nv.isLegendVisible = false
   extension = nv.createExtensionContext()
   extension.on('locationChange', (event) => { $('location').textContent = event.detail.string })
-  status('Ready · choose an example or upload a brain MRI.')
+  status('Drag and drop files')
 }
 
 window.addEventListener('pagehide', () => {

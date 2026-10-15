@@ -21,6 +21,7 @@ test('adds the shared theme to a standalone app distribution', async (t) => {
     '<!doctype html><html lang="en"><head><title>App</title></head><body></body></html>',
   );
   await writeFile(themeFile, ':root { --neurodesk-primary: #6aa329; }');
+  await mkdir(join(root, 'fonts'));
   await writeFile(themeScriptFile, '/* shared theme controller */');
   await writeFile(shellFile, '/* shared app shell */');
   await writeFile(analyticsFile, '/* page-view analytics */');
@@ -82,6 +83,7 @@ test('keeps an app-provided favicon and does not copy the site mark', async (t) 
     files[name] = join(root, name);
     await writeFile(files[name], `/* ${name} */`);
   }
+  await mkdir(join(root, 'fonts'));
 
   await applyAppTheme({
     app: { id: 'example-app', title: 'Example App', description: 'An example scientific app.' },

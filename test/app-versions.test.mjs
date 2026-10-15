@@ -192,6 +192,23 @@ test('an app release uses the strongest linked bump and updates pinned dependent
   assert.deepEqual(await embeddedVersionMismatches(await workspacePackages(root), root), []);
 });
 
+test('linked packages inherit the app release series for every changeset bump', async (t) => {
+  const { root, put, json } = await fixture(t);
+  const app = await json('apps/synthsr');
+  await put('apps/synthsr/package.json', JSON.stringify({ ...app, releaseSeries: '0.2' }));
+  for (const bump of ['patch', 'minor', 'major']) {
+    await put('.changeset/a.md', `---\n"@neurodesk/synthsr": ${bump}\n---\n\nShared pipeline change.\n`);
+    const release = await planRelease(root, { date: '20261001' });
+    for (const name of ['synthsr', '@neurodesk/synthsr']) {
+      assert.equal(release.plan.releases.find((item) => item.name === name).newVersion, '0.2.20261001', `${name}: ${bump}`);
+    }
+  }
+  await applyRelease(await planRelease(root, { date: '20261001' }));
+  assert.equal((await json('apps/synthsr')).version, '0.2.20261001');
+  assert.equal((await json('packages/synthsr')).version, '0.2.20261001');
+  assert.deepEqual(await embeddedVersionMismatches(await workspacePackages(root), root), []);
+});
+
 test('same-day updates are explicit and retain one changelog version heading', async (t) => {
   const { root, put } = await fixture(t);
   await put('.changeset/a.md', "---\n'zarro': patch\n---\n\nSame-day fix.\n");

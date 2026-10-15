@@ -233,7 +233,9 @@ test('resizable and tabbed console vocabulary lives in the shared stylesheet', a
 
 test('custom element hosts retain block layout in the shared stylesheet', async () => {
   const css = await readFile(new URL('../src/styles/imaging-workspace.css', import.meta.url), 'utf8');
-  assert.match(css, /nd-console,\s*nd-viewer-toolbar,\s*nd-file-field,\s*nd-result-list,\s*nd-example-selector\s*\{\s*display: block;/);
+  assert.match(css, /nd-console,\s*nd-viewer-toolbar,\s*nd-file-field,\s*nd-result-list\s*\{\s*display: block;/);
+  const base = await readFile(new URL('../src/styles/base.css', import.meta.url), 'utf8');
+  assert.match(base, /nd-example-selector\s*\{[^}]*display:\s*grid/, 'the input menu keeps its info icon beside the select');
 });
 
 test('raster panels, slice controls and file tables fit the shared workspace', async () => {

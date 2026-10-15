@@ -8,7 +8,7 @@ async function loadExample(page) {
   await proxyAssets(page);
   await forceCpu(page);
   await page.goto("/");
-  await page.getByRole("combobox", { name: "Example", exact: true }).selectOption(EXAMPLE);
+  await page.getByRole("combobox", { name: "Input", exact: true }).selectOption(EXAMPLE);
   await expect(page.locator("#t1Info")).toContainText("256 × 256 × 204", { timeout: 300000 });
   await expect(page.locator("#t1Canvas")).toBeVisible();
   await expect(page.locator("#viewerNotice")).toBeHidden();

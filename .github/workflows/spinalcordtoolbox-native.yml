@@ -1,0 +1,58 @@
+name: spinalcordtoolbox-native
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/spinalcordtoolbox-native.yml'
+      - 'packages/spinalcordtoolbox/**'
+      - 'packages/components/src/worker/**'
+      - 'packages/components/src/volume/**'
+      - 'packages/components/src/file-io/**'
+      - 'apps/spinalcordtoolbox/**'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/spinalcordtoolbox-native.yml'
+      - '.github/workflows/node-cli-portable.yml'
+      - 'exes/node-cli/**'
+      - 'packages/spinalcordtoolbox/**'
+      - 'packages/components/src/worker/**'
+      - 'packages/components/src/volume/**'
+      - 'packages/components/src/file-io/**'
+      - 'apps/spinalcordtoolbox/**'
+  workflow_dispatch:
+    inputs:
+      sign_release:
+        description: Sign and notarize the macOS installer, then attach every verified package to the existing Spinal Cord Toolbox release
+        type: boolean
+        default: false
+
+concurrency:
+  group: spinalcordtoolbox-native-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  portable:
+    uses: ./.github/workflows/node-cli-portable.yml
+    permissions:
+      contents: write
+      id-token: write
+    with:
+      package: packages/spinalcordtoolbox
+      targets: >-
+        [{"os": "ubuntu-22.04", "platform": "linux-x64"},
+         {"os": "windows-latest", "platform": "windows-x64"},
+         {"os": "macos-15", "platform": "macos-arm64"}]
+      publish_release: ${{ github.event_name == 'workflow_dispatch' && inputs.sign_release }}
+      sign_release: ${{ github.event_name == 'workflow_dispatch' && inputs.sign_release }}
+    secrets:
+      APPLEID: ${{ secrets.APPLEID }}
+      APPLEIDPASS: ${{ secrets.APPLEIDPASS }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      CSC_LINK: ${{ secrets.CSC_LINK }}
+      CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+      CSC_INSTALLER_LINK: ${{ secrets.CSC_INSTALLER_LINK }}
+      CSC_INSTALLER_KEY_PASSWORD: ${{ secrets.CSC_INSTALLER_KEY_PASSWORD }}

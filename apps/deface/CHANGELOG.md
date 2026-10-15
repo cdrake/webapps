@@ -1,5 +1,46 @@
 # deface
 
+## 1.4.20261015
+
+### Minor Changes
+
+- 0569da8: Add the `deface` command line. The defacing pipeline moves out of the web app into `@neurodesk/deface`, which the app and the command line share: niimath's affine `-deface` (fast or Hellinger, with or without robustfov) and MindGrab brain extraction (tight or with an 8 mm border). The command line runs the app's frozen BSD-2 niimath WebAssembly through `@neurodesk/node-drivers/niimath` and MindGrab's threaded CPU module through `@neurodesk/node-drivers/mindgrab`, writes the app's `defaced.nii` (and `brain-mask.nii` for MindGrab), and installs the MNI template and face mask with SHA-256 checks. It ships as portable Linux x64 and Windows x64 archives and a signed macOS arm64 installer. Each release must reproduce the app's pipeline as recorded in Chromium on the app's example: niimath output identical byte for byte and a MindGrab mask Dice of 0.99 or better.
+
+  The web app now runs MindGrab from `@brainchop/mindgrab` 0.1.20260925 instead of its own WebGPU copy of the model. The weights are byte-identical; the package adds its own conform, normalisation and largest-component cleanup, and runs on a hardware GPU or, without one, the threaded CPU module, so MindGrab no longer needs `shader-f16`. The app stops downloading `net_mindgrab.safetensors`. `@neurodesk/runtime-support` gains `niimath/command`, which runs a niimath argv in the vendored worker, and `mindgrab`, the browser MindGrab runtime that Brain2Print used, which now lives there for both apps.
+
+  Report niimath startup and worker failures through the operation's error state and start a fresh worker on retry. Keep Brain2Print's browser runtime out of its portable Node dependency tree and pin Deface's threaded CPU runtime inside its app service-worker scope.
+
+  Store the browser's packed validation masks in the commit-pinned dataset instead of Git. Both validators download and reverify cached masks outside the source repository, and the recorder writes new masks outside it. Numerical output fingerprints and Dice requirements stay unchanged.
+
+### Patch Changes
+
+- a1a9b25: Let Deface archive validation use the launcher's bundled model directory instead
+  of supplying an empty temporary override. Source validation retains its temporary
+  template cache, and explicit model-directory overrides remain respected.
+- Updated dependencies [a1a9b25]
+  - @neurodesk/deface@1.4.20261015
+- dd65e6a: Visual refresh: Inter, neutral greys with the Neurodesk logo green for action,
+  focus and selection only, a compact 48px app bar, sentence-case section titles
+  and a quieter status bar. The example menu is now the input control: examples,
+  then Choose files… and Choose folder…. The whole window, the viewer included,
+  accepts dropped files; a drop mid-session replaces the inputs with Undo in the
+  status bar. Before any input the status reads "Drag and drop files". MuscleMap
+  drops its separate drop box and Add File(s) button.
+
+  Page drops fill empty image slots in order while keeping DICOM series together.
+  New selections supersede unfinished drop traversal, and registration apps load
+  each dropped image in order. The shared drop handler also respects the different
+  native input and file-field event contracts.
+  Failed imports leave only successfully loaded slots occupied, and Undo can
+  restore loaded examples.
+
+- Updated dependencies [0569da8]
+- Updated dependencies [dd65e6a]
+- Updated dependencies [dcc74e7]
+  - @neurodesk/deface@1.4.20261015
+  - @neurodesk/runtime-support@0.6.0
+  - @neurodesk/webapp-components@0.14.0
+
 ## 1.3.20261014
 
 ### Patch Changes

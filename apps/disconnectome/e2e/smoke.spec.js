@@ -39,7 +39,7 @@ test('About explains the sample-versus-measurement distinction and points at the
 
 test('run is gated on a lesion, and the colorbar waits for a result', async ({ page }) => {
   await page.goto('./');
-  await expect(page.locator('#statusText')).toContainText('Ready · choose', { timeout: 60_000 });
+  await expect(page.locator('#statusText')).toHaveText('Drag and drop files', { timeout: 60_000 });
   await expect(page.locator('#runButton')).toBeDisabled();
   await expect(page.locator('#colorbar')).toBeHidden();
   await expect(page.locator('#saveButton')).toBeDisabled();
@@ -49,7 +49,7 @@ test('run is gated on a lesion, and the colorbar waits for a result', async ({ p
 
 test('a lesion off the atlas grid is refused with advice, not answered', async ({ page }) => {
   await page.goto('./');
-  await expect(page.locator('#statusText')).toContainText('Ready · choose', { timeout: 60_000 });
+  await expect(page.locator('#statusText')).toHaveText('Drag and drop files', { timeout: 60_000 });
   // 20 mm cube: valid NIfTI, wrong grid.
   const wrong = readFileSync(fileURLToPath(new URL('../../../exes/nii2tvx/test/fixtures/lesion.nii.gz', import.meta.url)));
   await page.locator('#imageInput').setInputFiles({ name: 'wrong_grid.nii.gz', mimeType: 'application/gzip', buffer: wrong });
@@ -119,7 +119,7 @@ test('each atlas scores, draws and downloads its own CLI table', async ({ page }
 test('example download failure can be retried', async ({ page }) => {
   test.setTimeout(180_000);
   await page.goto('./');
-  await expect(page.locator('#statusText')).toContainText('Ready · choose', { timeout: 60_000 });
+  await expect(page.locator('#statusText')).toHaveText('Drag and drop files', { timeout: 60_000 });
   const examples = page.locator('[data-neurodesk-examples]');
   const selector = page.locator('select[data-neurodesk-example]');
   await page.route('**/disconnectome/examples/**', (route) => route.fulfill({ status: 503, body: 'Unavailable' }));
@@ -145,7 +145,7 @@ test('cancelling during image preparation preserves the previous lesion', async 
     };
   });
   await page.goto('./');
-  await expect(page.locator('#statusText')).toContainText('Ready · choose', { timeout: 60_000 });
+  await expect(page.locator('#statusText')).toHaveText('Drag and drop files', { timeout: 60_000 });
   const buffer = readFileSync(fileURLToPath(new URL('../../../exes/nii2tvx/test/fixtures/lesion.nii.gz', import.meta.url)));
   await page.locator('#imageInput').setInputFiles({ name: 'previous_lesion.nii.gz', mimeType: 'application/gzip', buffer });
   await expect(page.locator('#runButton')).toBeEnabled();
@@ -166,7 +166,7 @@ test('cancelling during image preparation preserves the previous lesion', async 
 test('extensionless DICOM series converts alongside a NIfTI lesion', async ({ page }) => {
   test.setTimeout(180_000);
   await page.goto('./');
-  await expect(page.locator('#statusText')).toContainText('Ready · choose', { timeout: 60_000 });
+  await expect(page.locator('#statusText')).toHaveText('Drag and drop files', { timeout: 60_000 });
   const buffer = readFileSync(fileURLToPath(new URL('../../../exes/nii2tvx/test/fixtures/lesion.nii.gz', import.meta.url)));
   await page.locator('#imageInput').setInputFiles([
     { name: 'lesion.nii.gz', mimeType: 'application/gzip', buffer },

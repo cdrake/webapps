@@ -467,7 +467,7 @@ const fire = (id, type) => document.getElementById(id).dispatchEvent(new dom.win
 // ---- boot ----
 {
   assert.deepEqual(viewerCalls[0], ['attachTo', 'gl1'], 'NiiVue attaches to the #gl1 canvas');
-  assert.equal(text($('#statusText')), 'Ready');
+  assert.equal(text($('#statusText')), 'Drag and drop files');
   assert.match(text($('#consoleOutput')), /Ready\.$/, 'the analysis log reports readiness');
   assert.equal(text($('#appVersion')), `v${VERSION} (abc1234, feature/x)`, 'header version label');
   assert.equal(text($('#aboutAppVersion')), `v${VERSION} (abc1234, feature/x)`, 'About version label');

@@ -94,3 +94,28 @@ test('no app loads threaded runtimes outside its service-worker scope', async ()
     }
   }
 });
+
+test('composite JPEG DICOM workers use one pinned WASM without moving the workers', async () => {
+  const registry = await loadAppsRegistry();
+  const manifest = JSON.parse(await readFile(join(repoRoot, 'runtime-assets/manifest.json'), 'utf8'));
+  const family = manifest.families.find(family => family.id === 'dcm2niix-jpeg');
+  assert.ok(family?.deduplicate, 'JPEG DICOM WASM must declare physical deduplication');
+  const asset = family.files[0];
+  const runtime = join(dist, '_runtime', family.target, asset.name);
+  assert.equal(createHash('sha256').update(await readFile(runtime)).digest('hex'), asset.sha256);
+  let consumers = 0;
+  for (const app of registry.apps) {
+    const standalone = await readdir(join(repoRoot, 'apps', app.id, 'dist'), { recursive: true });
+    const copies = standalone.filter(file => /(?:^|\/)dcm2niix\.jpeg[^/]*\.wasm$/.test(file));
+    if (!copies.length) continue;
+    consumers++;
+    for (const copy of copies) await assert.rejects(access(join(dist, app.path, copy)), { code: 'ENOENT' });
+    const workers = standalone.filter(file => /(?:^|\/)worker\.jpeg[^/]*\.js$/.test(file));
+    assert.ok(workers.length, `${app.id}: JPEG worker must remain app-local`);
+    for (const worker of workers) {
+      const source = await readFile(join(dist, app.path, worker), 'utf8');
+      assert.match(source, /_runtime\/dcm2niix-jpeg\/1\.2\.0\/dcm2niix\.jpeg\.wasm/);
+    }
+  }
+  assert.ok(consumers > 1, 'multiple app consumers must share the JPEG runtime');
+});

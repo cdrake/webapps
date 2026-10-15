@@ -30,6 +30,10 @@ import { resolveShellAdapter } from './shell-adapters/index.js';
     .then(({ initAnalytics }) => initAnalytics(metadata.measurementId))
     .catch((error) => console.warn('Neurodesk page-view analytics could not start:', error));
 
+  import(/* @vite-ignore */ new URL('ui/pageDrop.js', metadata.componentsHref).href)
+    .then(({ bindPageDrop }) => bindPageDrop(document))
+    .catch((error) => console.warn('Neurodesk page-wide file drop could not start:', error));
+
   const icons = {
     about: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg>',
     cite: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3.5h12a2 2 0 0 1 2 2V21H7a2 2 0 0 1-2-2V3.5Z"/><path d="M7 17h12M9 7h6"/></svg>',
@@ -434,7 +438,9 @@ import { resolveShellAdapter } from './shell-adapters/index.js';
       const identity = bar.querySelector('.nd-app-bar__identity');
       if (!identity) return;
       bar.classList.remove('nd-app-bar--compact');
-      if (identity.scrollWidth > identity.clientWidth + 1) bar.classList.add('nd-app-bar--compact');
+      // The description shrinks before anything clips, so a truncated description is the signal too.
+      const clipped = (node) => node && node.scrollWidth > node.clientWidth + 1;
+      if (clipped(identity) || clipped(identity.querySelector('.nd-app-bar__description'))) bar.classList.add('nd-app-bar--compact');
     });
   }
 

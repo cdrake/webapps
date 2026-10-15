@@ -28,6 +28,7 @@ import { homedir } from 'node:os';
 import { dirname, extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { setTimeout as sleep } from 'node:timers/promises';
+import { SHELL_COMPONENTS } from './lib/standalone.mjs';
 
 const args = process.argv.slice(2);
 function flagValue(name, fallback) {
@@ -275,10 +276,10 @@ const SHELL_FILES = new Map([
   ['/theme.js', 'site/theme.js'],
   ['/app-shell.js', 'site/app-shell.js'],
   ['/neurodesk-logo.svg', 'site/neurodesk-logo.svg'],
+  ['/fonts/inter.woff2', 'site/fonts/inter.woff2'],
   // The Standalone action's data and modules, as stageStandaloneAssets copies them.
   ['/standalone.json', 'registry/standalone.json'],
-  ...['core/dom.js', 'ui/renderInfoDialog.js', 'ui/renderStandalone.js', 'styles/imaging-workspace.css', 'styles/base.css']
-    .map(name => [`/shell-adapters/components/${name}`, `packages/components/src/${name}`]),
+  ...SHELL_COMPONENTS.map(name => [`/shell-adapters/components/${name}`, `packages/components/src/${name}`]),
 ]);
 
 function sendText(req, res, body, type) {

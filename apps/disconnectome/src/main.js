@@ -379,7 +379,7 @@ async function init() {
   try {
     await attachViewer();
     await showImages();
-    status('Ready · choose an example or drop a lesion map');
+    status('Drag and drop files');
   } catch (error) {
     $('viewerError').hidden = false;
     $('viewerError').textContent = `Visualization unavailable: ${error instanceof Error ? error.message : error}`;

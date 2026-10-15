@@ -5,7 +5,7 @@ import examples from '../examples.json' with { type: 'json' };
 
 async function start(page, file) {
   await page.goto('./');
-  await expect(page.locator('#statusText')).toContainText('Ready', { timeout: 120_000 });
+  await expect(page.locator('#statusText')).toContainText('Drag and drop files', { timeout: 120_000 });
   await page.locator('#neurodesk-input-transfer').setInputFiles(file);
   await page.evaluate(() => globalThis.neurodeskAutomation.dispatch('adopt', { role: 'lesion' }));
   await page.evaluate(() => globalThis.neurodeskAutomation.dispatch('start', { operation: 'analyze' }));

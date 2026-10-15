@@ -1049,7 +1049,7 @@ async function init() {
     }
   });
 
-  setStatus('Load a surface to begin.');
+  setStatus('Drag and drop files');
 }
 
 /**

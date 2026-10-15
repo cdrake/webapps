@@ -17,8 +17,7 @@ const ort = require('onnxruntime-node');
 const fixtures = require('./batch-parity-fixtures.cjs');
 const { loadNifti, compareNiftiOutputs } = require('./batch-parity-lib.cjs');
 const { ensureHostedAsset } = require('./hosted-assets.cjs');
-const loadClassicScript = require('./load-classic-script.cjs');
-const pipeline = loadClassicScript(path.resolve(__dirname, '../web/js/inference-pipeline.js'));
+const pipeline = require('@neurodesk/spinalcordtoolbox/inference-pipeline');
 
 const ROOT = path.resolve(__dirname, '..');
 const MANIFEST = JSON.parse(fs.readFileSync(path.join(ROOT, 'web/models/manifest.json'), 'utf8'));

@@ -1,5 +1,45 @@
 # spinalcordtoolbox
 
+## 0.9.20261015
+
+### Minor Changes
+
+- 7269dab: Add `sct-webapp`, a portable command line for the app's SCT segmentation tasks.
+  The inference pipeline moves into `@neurodesk/spinalcordtoolbox`, shared by the
+  browser worker and the command line, with shared output formats and names. Native
+  CPU and browser WebAssembly results can differ slightly. The release bundles
+  the spinalcord model; `sct-webapp download-models --task TASK`
+  fetches any other task's pinned model on first use. The web app now verifies
+  each model's size and SHA-256 when it downloads or reads it from its cache, and
+  no longer loads localforage from a CDN.
+
+  Keep the staged SCT package's shared imports working after composite-site
+  deduplication removes the app-local component copy, and resolve its CLI test
+  entrypoint through the native file path on every platform.
+
+### Patch Changes
+
+- dd65e6a: Visual refresh: Inter, neutral greys with the Neurodesk logo green for action,
+  focus and selection only, a compact 48px app bar, sentence-case section titles
+  and a quieter status bar. The example menu is now the input control: examples,
+  then Choose files… and Choose folder…. The whole window, the viewer included,
+  accepts dropped files; a drop mid-session replaces the inputs with Undo in the
+  status bar. Before any input the status reads "Drag and drop files". MuscleMap
+  drops its separate drop box and Add File(s) button.
+
+  Page drops fill empty image slots in order while keeping DICOM series together.
+  New selections supersede unfinished drop traversal, and registration apps load
+  each dropped image in order. The shared drop handler also respects the different
+  native input and file-field event contracts.
+  Failed imports leave only successfully loaded slots occupied, and Undo can
+  restore loaded examples.
+
+- Updated dependencies [dd65e6a]
+- Updated dependencies [7269dab]
+- Updated dependencies [dcc74e7]
+  - @neurodesk/webapp-components@0.14.0
+  - @neurodesk/spinalcordtoolbox@0.9.20261015
+
 ## 0.8.20261014
 
 ### Patch Changes

@@ -1,5 +1,42 @@
 # dicom2vid
 
+## 0.5.20261015
+
+### Minor Changes
+
+- bf4a4ae: Add the `dicom2vid` command line for Linux x64, Windows x64 and macOS on Apple
+  silicon. It reads NIfTI, MGZ and DICOM folders with the app's readers and
+  series selection, renders the app's frames and encodes them with libvpx VP9,
+  so its WebM matches the app's video in frame count, size, timing and key
+  frames. The app's pipeline moved into the shared `@neurodesk/dicom2vid`
+  package; its videos are byte-identical to before. The example volume now
+  carries its SHA-256 pin.
+
+### Patch Changes
+
+- dd65e6a: Visual refresh: Inter, neutral greys with the Neurodesk logo green for action,
+  focus and selection only, a compact 48px app bar, sentence-case section titles
+  and a quieter status bar. The example menu is now the input control: examples,
+  then Choose files… and Choose folder…. The whole window, the viewer included,
+  accepts dropped files; a drop mid-session replaces the inputs with Undo in the
+  status bar. Before any input the status reads "Drag and drop files". MuscleMap
+  drops its separate drop box and Add File(s) button.
+
+  Page drops fill empty image slots in order while keeping DICOM series together.
+  New selections supersede unfinished drop traversal, and registration apps load
+  each dropped image in order. The shared drop handler also respects the different
+  native input and file-field event contracts.
+  Failed imports leave only successfully loaded slots occupied, and Undo can
+  restore loaded examples.
+
+- 744ecdf: Preserve distinct DICOM records with identical file names. Verify browser MP4 frame content and download checksummed video references from pinned Hugging Face URLs.
+- Updated dependencies [dd65e6a]
+- Updated dependencies [bf4a4ae]
+- Updated dependencies [744ecdf]
+- Updated dependencies [dcc74e7]
+  - @neurodesk/webapp-components@0.14.0
+  - @neurodesk/dicom2vid@0.5.20261015
+
 ## 0.4.20261014
 
 ### Patch Changes

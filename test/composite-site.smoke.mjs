@@ -235,6 +235,7 @@ try {
       if (url.origin !== origin || url.pathname === `/favicon.ico`) return;
       if (url.pathname.startsWith('/_runtime/')) return;
       if (url.pathname === '/app-theme.css') return;
+      if (url.pathname.startsWith('/fonts/')) return;
       if (url.pathname === '/theme.js') return;
       if (url.pathname === '/app-shell.js') return;
       if (url.pathname.startsWith('/shell-adapters/')) return;
@@ -362,11 +363,11 @@ try {
     if (themeState.appId !== app.id) failures.push(`${app.id}: document theme identity is ${themeState.appId ?? 'missing'}`);
     if (themeState.theme !== 'dark') failures.push(`${app.id}: document dark-theme identity is ${themeState.theme ?? 'missing'}`);
     if (themeState.colorScheme !== 'dark') failures.push(`${app.id}: browser color scheme is ${themeState.colorScheme || 'missing'}`);
-    if (themeState.brandPrimary !== '#91c84a') failures.push(`${app.id}: Neurocontainers dark-theme tokens were not applied`);
-    if (!['rgb(16, 20, 13)', 'rgb(10, 12, 8)'].includes(themeState.pageBackground)) {
+    if (themeState.brandPrimary !== '#6ba442') failures.push(`${app.id}: Neurodesk dark-theme tokens were not applied`);
+    if (!['rgb(13, 14, 13)', 'rgb(20, 21, 20)'].includes(themeState.pageBackground)) {
       failures.push(`${app.id}: page background is outside the dark palette: ${themeState.pageBackground}`);
     }
-    if (darkStartPage && !['rgb(22, 26, 14)', 'rgb(16, 20, 13)', 'rgb(10, 12, 8)'].includes(darkStartPage)) {
+    if (darkStartPage && !['rgb(13, 14, 13)', 'rgb(20, 21, 20)', 'rgb(28, 29, 28)'].includes(darkStartPage)) {
       failures.push(`${app.id}: start page background is outside the dark palette: ${darkStartPage}`);
     }
     for (const { selector, foreground, background, ratio } of darkStartPageContrast) {
@@ -400,7 +401,7 @@ try {
       if (lightThemeState.theme !== 'light' || lightThemeState.colorScheme !== 'light') {
         failures.push(`${app.id}: theme toggle did not apply the light color scheme`);
       }
-      if (lightThemeState.brandPrimary !== '#3f6f24') {
+      if (lightThemeState.brandPrimary !== '#467d25') {
         failures.push(`${app.id}: Neurodesk light-theme tokens were not applied`);
       }
       await appThemeToggle.click();

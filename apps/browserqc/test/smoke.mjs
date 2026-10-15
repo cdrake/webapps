@@ -76,7 +76,7 @@ await runVitePreviewSmoke({
       return
     }
 
-    await page.getByRole('combobox', { name: 'Example', exact: true }).selectOption('t1-head')
+    await page.getByRole('combobox', { name: 'Input', exact: true }).selectOption('t1-head')
     await page.waitForSelector('#runButton:not([disabled])', { timeout: 120000 })
     await page.click('#runButton')
     await page.waitForFunction(

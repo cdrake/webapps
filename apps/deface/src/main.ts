@@ -356,7 +356,7 @@ async function init(): Promise<void> {
     fetchBytes(MASK_URL, TEMPLATE_NAMES.mask),
   ])
   refFiles = { template: mni, mask }
-  setStatus('Choose an example or open a scan, then click Apply.')
+  setStatus('Drag and drop files')
 }
 
 const exampleControl = createExampleSelector({

@@ -437,7 +437,9 @@ function refreshRunState() {
       ? `Ready: ${mode === "sa2rage" ? "SA2RAGE" : "B1-map"} correction${
           inv2 ? "" : " (no INV2 → mask from UNI)"
         }.`
-      : "Need a UNI and a B1 source (SA2RAGE or B1 map).";
+      : uni || sa || b1
+        ? "Need a UNI and a B1 source (SA2RAGE or B1 map)."
+        : "Drag and drop files";
     if (ok && sa && b1)
       status = `Ready: SA2RAGE correction${
         inv2 ? "" : " (mask from UNI)"

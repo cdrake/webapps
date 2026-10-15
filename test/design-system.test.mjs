@@ -337,3 +337,22 @@ test('no app defines its own Cite control or citation dialog', async () => {
   }
   assert.deepEqual(failures, []);
 });
+
+// Before any input the status bar invites a drop: the whole window is a drop target
+// (ui/pageDrop.js). Zarro opens remote OME-Zarr by URL; DICOMpare sets its status in React.
+const IDLE_STATUS = 'Drag and drop files';
+const IDLE_STATUS_EXEMPT = new Set(['zarro', 'dicompare', 'browserqc', 'deface']);
+
+test(`the status bar starts with "${IDLE_STATUS}"`, async () => {
+  const failures = [];
+  for (const app of registry.apps) {
+    if (IDLE_STATUS_EXEMPT.has(app.id)) continue;
+    const entry = await appEntryHtml(app);
+    const initial = entry?.html.match(/id="statusText"[^>]*>\s*([^<]*?)\s*</)?.[1];
+    // An app that must load before it can take files says so, then invites the drop.
+    const loadsFirst = initial === 'Loading…' && (await appSources(app, ['.js', '.ts'])).some(({ text }) => text.includes(`'${IDLE_STATUS}'`) || text.includes(`"${IDLE_STATUS}"`));
+    if (initial !== IDLE_STATUS && !loadsFirst) failures.push(`${entry?.path ?? app.id}: #statusText starts as "${initial}"`);
+  }
+  assert.deepEqual(failures, []);
+});
+

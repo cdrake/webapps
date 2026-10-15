@@ -1010,6 +1010,8 @@ export class SpinalCordToolboxApp {
       },
       modelName: selectedAsset?.filename || Config.MODEL.name,
       modelUrl: modelUrl ? new URL(modelUrl, window.location.href).href : null,
+      modelSha256: selectedAsset.checksum?.replace(/^sha256:/, '') || null,
+      modelBytes: selectedAsset.sizeBytes ?? null,
       patchSize: effectivePatchSize,
       preprocessing: selectedAsset?.preprocessing || {},
       output: selectedAsset?.output || {},

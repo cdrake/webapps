@@ -85,10 +85,10 @@ test('the workspace uses the Neurodesk palette and accessible custom upload cont
   });
 
   // The standalone build carries the hosted theme, which opens in dark mode.
-  expect(design.primary).toBe('#91c84a');
-  expect(design.menu).toBe('#0a0c08');
-  expect(design.headerBackground).toBe('rgb(10, 12, 8)');
-  expect(design.headerText).toBe('rgb(232, 245, 208)');
+  expect(design.primary).toBe('#6ba442');
+  expect(design.menu).toBe('#121312');
+  expect(design.headerBackground).toBe('rgb(18, 19, 18)');
+  expect(design.headerText).toBe('rgb(237, 237, 237)');
   expect(design.fileInputWidth).toBeLessThanOrEqual(1);
   expect(design.fileInputClip).toBe('inset(50%)');
 
@@ -136,14 +136,14 @@ test('the hosted dark theme keeps upload states and information links readable',
   });
 
   expect(colours).toEqual({
-    enabledUploadText: 'rgb(232, 245, 208)',
-    enabledUploadBackground: 'rgb(16, 20, 13)',
-    disabledUploadText: 'rgb(156, 163, 175)',
-    disabledUploadBackground: 'rgb(31, 46, 24)',
-    disabledUploadActionText: 'rgb(156, 163, 175)',
-    disabledUploadActionBackground: 'rgb(16, 20, 13)',
-    informationLink: 'rgb(196, 227, 130)',
-    informationBackground: 'rgb(22, 26, 14)'
+    enabledUploadText: 'rgb(237, 237, 237)',
+    enabledUploadBackground: 'rgb(13, 14, 13)',
+    disabledUploadText: 'rgb(133, 136, 133)',
+    disabledUploadBackground: 'rgb(28, 29, 28)',
+    disabledUploadActionText: 'rgb(133, 136, 133)',
+    disabledUploadActionBackground: 'rgb(13, 14, 13)',
+    informationLink: 'rgb(181, 216, 154)',
+    informationBackground: 'rgb(20, 21, 20)'
   });
 });
 

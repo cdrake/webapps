@@ -31,5 +31,5 @@ packages/musclemap/src/model-catalog.generated.js text eol=lf
 models/musclemap.manifest.json text eol=lf
 
 # The SynthSeg population norms fixtures are checked against the manifest's byte counts and SHA-256.
-**/brainquant_norms.json -text
+packages/synthseg/test/fixtures/brainquant_norms.json -text
 packages/synthseg/test/fixtures/brainquant_norms_7t.json -text
