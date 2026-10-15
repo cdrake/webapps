@@ -31,7 +31,7 @@
     "test:worker:protocol": "node scripts/test_inference_worker_protocol.cjs",
     "test:server": "bash scripts/test_run_server_restart.sh",
     "test:ci-summary": "node scripts/test_summarize_test_failures.cjs",
-    "vendor": "node ../../scripts/vendor-components.mjs",
+    "vendor": "node ../../scripts/vendor-components.mjs && node ../../packages/spinalcordtoolbox/scripts/stage-browser.mjs",
     "runtime-support": "node ../../scripts/vendor-runtime-support.mjs",
     "predev": "pnpm vendor && pnpm runtime-support && node scripts/stage-browser-analysis.mjs",
     "dev": "node ../../scripts/dev-server.mjs --dir web --app spinalcordtoolbox --port 8080 --cache-policy 'no-store, must-revalidate'",
@@ -45,7 +45,8 @@
     "test:browser-parity": "node scripts/test_browser_analysis.mjs"
   },
   "dependencies": {
-    "onnxruntime-node": "^1.24.3",
+    "onnxruntime-node": "1.29.0",
+    "@neurodesk/spinalcordtoolbox": "workspace:*",
     "@neurodesk/webapp-components": "workspace:*"
   },
   "devDependencies": {

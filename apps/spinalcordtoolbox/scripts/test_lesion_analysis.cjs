@@ -2,9 +2,7 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const path = require('node:path');
-const loadClassicScript = require('./load-classic-script.cjs');
-const lesionAnalysis = loadClassicScript(path.join(__dirname, '../web/js/modules/lesion-analysis.js'));
+const lesionAnalysis = require('@neurodesk/spinalcordtoolbox/lesion-analysis');
 
 function idx(x, y, z, dims) {
   return x + y * dims[0] + z * dims[0] * dims[1];

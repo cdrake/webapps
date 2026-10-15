@@ -1,0 +1,37 @@
+{
+  "name": "@neurodesk/spinalcordtoolbox",
+  "version": "0.8.20261014",
+  "description": "Spinal Cord Toolbox web app segmentation for browsers and the portable sct-webapp command line",
+  "type": "module",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "sct-webapp": "./bin/sct-webapp.js"
+  },
+  "exports": {
+    ".": "./src/segment.js",
+    "./tasks": "./src/tasks.js",
+    "./node": "./src/node.js",
+    "./inference-pipeline": "./src/inference-pipeline.js",
+    "./lesion-analysis": "./src/lesion-analysis.js",
+    "./totalspineseg": "./src/totalspineseg.js"
+  },
+  "files": [
+    "src",
+    "bin",
+    "model.manifest.json",
+    "LICENSE",
+    "NOTICE",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "lint": "node --check src/segment.js && node --check src/node.js && node --check bin/sct-webapp.js"
+  },
+  "dependencies": {
+    "@neurodesk/webapp-components": "workspace:*",
+    "onnxruntime-node": "1.29.0"
+  }
+}

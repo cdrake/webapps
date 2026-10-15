@@ -91,7 +91,7 @@ async function main() {
 // an error and treat 'complete' as the failure mode.
 async function runErrorCase() {
   const ort = require('onnxruntime-node');
-  const nifti = loadClassicScript(path.resolve(ROOT, 'web/nifti-js/index.js'));
+  const nifti = loadClassicScript(path.resolve(ROOT, '../../packages/runtime-support/src/nifti-js/index.js'));
   const WORKER_PATH = path.join(ROOT, 'web/js/inference-worker.js');
   const workerSource = prepareModuleWorkerSource(fs.readFileSync(WORKER_PATH, 'utf8'));
   const sharedBindings = await loadSharedWorkerBindings();
@@ -106,34 +106,16 @@ async function runErrorCase() {
       messages.push(msg);
       if (msg && (msg.type === 'error' || msg.type === 'complete')) resolveDone();
     },
-    _modelCacheKey: null,
     _appVersion: 'test',
     _currentTaskId: null
   };
 
   const sandbox = {
     self: selfObj,
-    importScripts: (relPath) => {
-      if (typeof relPath !== 'string') return;
-      if (!/(inference-pipeline|modules\/lesion-analysis|modules\/totalspineseg)\.js$/.test(relPath)) return;
-      const abs = path.resolve(path.dirname(WORKER_PATH), relPath);
-      if (!fs.existsSync(abs)) return;
-      const src = fs.readFileSync(abs, 'utf8');
-      vm.runInContext(src, sandbox, { filename: abs });
-      for (const name of ['SCTInferencePipeline', 'SCTLesionAnalysis', 'TotalSpineSeg']) {
-        if (selfObj[name]) sandbox[name] = selfObj[name];
-      }
-    },
     ort: {
       Tensor: ort.Tensor,
       InferenceSession: { create: async () => ({ run: async () => ({}) }) },
       env: { wasm: { numThreads: 1, wasmPaths: '' } }
-    },
-    localforage: {
-      config: () => {},
-      getItem: async () => null,
-      setItem: async () => {},
-      removeItem: async () => {}
     },
     nifti,
     fetch: async () => { throw new Error('no model fetch on error path'); },
@@ -149,7 +131,7 @@ async function runErrorCase() {
   Object.assign(sandbox, sharedBindings);
   vm.createContext(sandbox);
   sandbox.globalThis = sandbox;
-  installModuleLoader(sandbox, selfObj, sandbox.localforage);
+  installModuleLoader(sandbox);
   vm.runInContext(workerSource, sandbox, { filename: 'inference-worker.js' });
   assert.equal(typeof selfObj.onmessage, 'function', 'worker registered onmessage');
 
