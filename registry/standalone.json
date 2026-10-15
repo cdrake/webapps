@@ -662,13 +662,13 @@
         {
           "kind": "cli",
           "platform": "linux-x64",
-          "version": "0.9.20261015",
-          "url": "https://github.com/neurodesk/webapps/releases/download/synthseg-v0.9.20261015/synthseg-0.9.20261015-linux-x64.tar.gz",
-          "sha256": "f979d65d625c5ad2f22e3470fe1e04bad6a6c62feea5503637c003d17f6acfd3",
-          "bytes": 111178571,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/synthseg-v0.9.20261015/synthseg-0.9.20261015-linux-x64.tar.gz.validation.txt",
+          "version": "0.10.20261015",
+          "url": "https://github.com/neurodesk/webapps/releases/download/synthseg-v0.10.20261015/synthseg-0.10.20261015-linux-x64.tar.gz",
+          "sha256": "269e7b9de3028cf7379f2b6922a33aa9760fb60b14bcbaef6631517f4f18b933",
+          "bytes": 111187120,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/synthseg-v0.10.20261015/synthseg-0.10.20261015-linux-x64.tar.gz.validation.txt",
           "modelsIncluded": true,
-          "command": "tar -xzf synthseg-0.9.20261015-linux-x64.tar.gz\n./synthseg-0.9.20261015-linux-x64/synthseg input.nii.gz results"
+          "command": "tar -xzf synthseg-0.10.20261015-linux-x64.tar.gz\n./synthseg-0.10.20261015-linux-x64/synthseg input.nii.gz results"
         },
         {
           "kind": "cli",
@@ -683,13 +683,13 @@
         {
           "kind": "cli",
           "platform": "windows-x64",
-          "version": "0.9.20261015",
-          "url": "https://github.com/neurodesk/webapps/releases/download/synthseg-v0.9.20261015/synthseg-0.9.20261015-windows-x64.zip",
-          "sha256": "bdae20559bfc3b4cc862c20d17e2182c6ae1f7f6f69cba7f90f0d693df627ca2",
-          "bytes": 112671022,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/synthseg-v0.9.20261015/synthseg-0.9.20261015-windows-x64.zip.validation.txt",
+          "version": "0.10.20261015",
+          "url": "https://github.com/neurodesk/webapps/releases/download/synthseg-v0.10.20261015/synthseg-0.10.20261015-windows-x64.zip",
+          "sha256": "b57c714e929fffb5de0eb7a81a62bb850a627bd2d0051dce2dbd13d35e7921cd",
+          "bytes": 112679779,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/synthseg-v0.10.20261015/synthseg-0.10.20261015-windows-x64.zip.validation.txt",
           "modelsIncluded": true,
-          "command": "Expand-Archive -Path .\\synthseg-0.9.20261015-windows-x64.zip -DestinationPath .\n.\\synthseg-0.9.20261015-windows-x64\\synthseg.exe input.nii.gz results"
+          "command": "Expand-Archive -Path .\\synthseg-0.10.20261015-windows-x64.zip -DestinationPath .\n.\\synthseg-0.10.20261015-windows-x64\\synthseg.exe input.nii.gz results"
         }
       ],
       "containers": [
