@@ -2,170 +2,170 @@
   "schema_version": 1,
   "repository": "neurodesk/webapps",
   "suite": {
-    "version": "0.28.20261014",
-    "revision": "4b28789cc9db959d18894e1b5107a39998e032b8",
+    "version": "0.28.20261015",
+    "revision": "df706c36d116935377ef67318656dc1ccef9f5a1",
     "apps": [
       {
         "id": "musclemap",
-        "version": "1.5.20261012"
+        "version": "1.5.20261014"
       },
       {
         "id": "vesselboost",
-        "version": "0.6.20261012"
+        "version": "0.6.20261014"
       },
       {
         "id": "spinalcordtoolbox",
-        "version": "0.8.20261012"
+        "version": "0.8.20261014"
       },
       {
         "id": "calmar",
-        "version": "0.6.20261012"
+        "version": "0.6.20261014"
       },
       {
         "id": "qsmbly",
-        "version": "0.30.20261012"
+        "version": "0.30.20261014"
       },
       {
         "id": "seedseg",
-        "version": "0.6.20261012"
+        "version": "0.6.20261014"
       },
       {
         "id": "dicompare",
-        "version": "0.14.20261012"
+        "version": "0.14.20261014"
       },
       {
         "id": "deface",
-        "version": "1.3.20261012"
+        "version": "1.3.20261014"
       },
       {
         "id": "easy-mp2rage",
-        "version": "0.8.20261012"
+        "version": "0.8.20261014"
       },
       {
         "id": "niimath",
-        "version": "1.3.20261012"
+        "version": "1.3.20261014"
       },
       {
         "id": "dicom2vid",
-        "version": "0.4.20261012"
+        "version": "0.4.20261014"
       },
       {
         "id": "browserqc",
-        "version": "1.5.20261012"
+        "version": "1.5.20261014"
       },
       {
         "id": "surfannotate",
-        "version": "0.6.20261012"
+        "version": "0.6.20261014"
       },
       {
         "id": "zarro",
-        "version": "0.4.20261012"
+        "version": "0.4.20261014"
       },
       {
         "id": "synthsr",
-        "version": "0.6.20261012"
+        "version": "0.6.20261015"
       },
       {
         "id": "synthseg",
-        "version": "0.6.20261012"
+        "version": "0.8.20261014"
       },
       {
         "id": "syncro",
-        "version": "0.6.20261012"
+        "version": "0.6.20261015"
       },
       {
         "id": "dwi2trx",
-        "version": "0.5.20261012"
+        "version": "0.5.20261014"
       },
       {
         "id": "edgereg",
-        "version": "0.4.20261012"
+        "version": "0.4.20261014"
       },
       {
         "id": "disconnectome",
-        "version": "0.3.20261012"
+        "version": "0.3.20261014"
       },
       {
         "id": "greedy",
-        "version": "0.5.20261012"
+        "version": "0.5.20261014"
       },
       {
         "id": "ants",
-        "version": "0.4.20261012"
+        "version": "0.4.20261014"
       },
       {
         "id": "brain2print",
-        "version": "0.5.20261012"
+        "version": "0.5.20261014"
       },
       {
         "id": "topofit",
-        "version": "0.15.20261012"
+        "version": "0.15.20261014"
       },
       {
         "id": "fireants",
-        "version": "0.3.20261012"
+        "version": "0.3.20261014"
       },
       {
         "id": "brain-extraction",
-        "version": "0.4.20261012"
+        "version": "0.4.20261015"
       },
       {
         "id": "carotid-flow",
-        "version": "0.4.20261012"
+        "version": "0.4.20261014"
       },
       {
         "id": "lcmodel",
-        "version": "0.8.20261013"
+        "version": "0.8.20261014"
       },
       {
         "id": "white-matter-lesions",
-        "version": "0.3.20261012"
+        "version": "0.3.20261015"
       },
       {
         "id": "nesvor",
-        "version": "0.3.20261012"
+        "version": "0.3.20261015"
       },
       {
         "id": "elastix",
-        "version": "0.2.20261012"
+        "version": "0.3.20261014"
       }
     ],
     "downloads": [
       {
         "kind": "desktop",
         "platform": "macos-arm64",
-        "version": "0.28.20261014",
-        "bytes": 1109059376,
-        "url": "https://github.com/neurodesk/webapps/releases/download/webapps-v0.28.20261014/webapps-0.28.20261014-mac-arm64.zip",
-        "sha256": "2d8e2dcf56f91629de265cf4c047ff1b5ffc54376e5d2bb59a8a78906e4d4558",
-        "command": "unzip webapps-0.28.20261014-mac-arm64.zip"
+        "version": "0.28.20261015",
+        "bytes": 1109463335,
+        "url": "https://github.com/neurodesk/webapps/releases/download/webapps-v0.28.20261015/webapps-0.28.20261015-mac-arm64.zip",
+        "sha256": "ffed372d2481b1f4568a36d0585e4de6c3b723c9ab1e0b9fa5f4778a4e901600",
+        "command": "unzip webapps-0.28.20261015-mac-arm64.zip"
       },
       {
         "kind": "desktop",
         "platform": "linux-x64",
-        "version": "0.28.20261014",
-        "bytes": 1124662797,
-        "url": "https://github.com/neurodesk/webapps/releases/download/webapps-v0.28.20261014/webapps-0.28.20261014-linux-x64.tar.gz",
-        "sha256": "c5ffdd0c8c91dcbd00dc9b047af789d5650b5263f1bbf3a162d909e0724100d6",
-        "command": "tar -xzf webapps-0.28.20261014-linux-x64.tar.gz"
+        "version": "0.28.20261015",
+        "bytes": 1125089489,
+        "url": "https://github.com/neurodesk/webapps/releases/download/webapps-v0.28.20261015/webapps-0.28.20261015-linux-x64.tar.gz",
+        "sha256": "0fc55685dc5151ec7ed04622229e919c897f797e0106281ae515a16116cb7b12",
+        "command": "tar -xzf webapps-0.28.20261015-linux-x64.tar.gz"
       },
       {
         "kind": "desktop",
         "platform": "windows-x64",
-        "version": "0.28.20261014",
-        "bytes": 1148793136,
-        "url": "https://github.com/neurodesk/webapps/releases/download/webapps-v0.28.20261014/webapps-0.28.20261014-win-x64.zip",
-        "sha256": "4df1ce6df9aeceeadba3a0ca9e1d4e45636dffa18328a3e113689ca161c78621",
-        "command": "Expand-Archive webapps-0.28.20261014-win-x64.zip -DestinationPath NeurodeskWebapps"
+        "version": "0.28.20261015",
+        "bytes": 1149211663,
+        "url": "https://github.com/neurodesk/webapps/releases/download/webapps-v0.28.20261015/webapps-0.28.20261015-win-x64.zip",
+        "sha256": "07f55d3b672ef59b3329be1eb06ad9d0f5fc3711f2e45e6c07de3359584798c8",
+        "command": "Expand-Archive webapps-0.28.20261015-win-x64.zip -DestinationPath NeurodeskWebapps"
       },
       {
         "kind": "container",
         "platform": "linux-x64-apptainer",
-        "version": "0.28.20261014",
-        "bytes": 1075781632,
-        "url": "https://github.com/neurodesk/webapps/releases/download/webapps-v0.28.20261014/webapps-0.28.20261014-linux-x64.sif",
-        "sha256": "61c04ab013e51afc34299297771a53f40dd870c73860c1ea7818d8a8fabb7ff1",
-        "command": "apptainer run webapps-0.28.20261014-linux-x64.sif --verify"
+        "version": "0.28.20261015",
+        "bytes": 1075838976,
+        "url": "https://github.com/neurodesk/webapps/releases/download/webapps-v0.28.20261015/webapps-0.28.20261015-linux-x64.sif",
+        "sha256": "88eabb2a3f85ea11ca10802470a43098bc053ce46619d65c7ac044dede241e89",
+        "command": "apptainer run webapps-0.28.20261015-linux-x64.sif --verify"
       }
     ],
     "models": {
@@ -627,8 +627,8 @@
           "platform": "macos-arm64",
           "version": "0.6.20261015",
           "url": "https://github.com/neurodesk/webapps/releases/download/synthsr-v0.6.20261015/synthsr-0.6.20261015-macos-arm64.pkg",
-          "sha256": "8e41651b47b0b58c538c10ac43bf902874e5a5b3a945b73244bba7819727ea20",
-          "bytes": 60672720,
+          "sha256": "952dd35c2f5231e98141aa52fa6afe9bc2d3118babc4b60da837a6dde7fedcc6",
+          "bytes": 60672721,
           "validationUrl": "https://github.com/neurodesk/webapps/releases/download/synthsr-v0.6.20261015/synthsr-0.6.20261015-macos-arm64.pkg.validation.txt",
           "modelsIncluded": true
         },
@@ -637,7 +637,7 @@
           "platform": "windows-x64",
           "version": "0.6.20261015",
           "url": "https://github.com/neurodesk/webapps/releases/download/synthsr-v0.6.20261015/synthsr-0.6.20261015-windows-x64.zip",
-          "sha256": "769cdaad5bc076c9f6c7851296c8fcac45661e2b0d1ad760a0c0f567bea66810",
+          "sha256": "0b3bc83e879de67c9c9d2484e09842b46350d5af8545c53596326da4cc7de008",
           "bytes": 58228440,
           "validationUrl": "https://github.com/neurodesk/webapps/releases/download/synthsr-v0.6.20261015/synthsr-0.6.20261015-windows-x64.zip.validation.txt",
           "modelsIncluded": true
@@ -662,13 +662,13 @@
         {
           "kind": "cli",
           "platform": "linux-x64",
-          "version": "0.6.20261009",
-          "url": "https://github.com/neurodesk/webapps/releases/download/synthseg-v0.6.20261009/synthseg-0.6.20261009-linux-x64.tar.gz",
-          "sha256": "126403ff1a60a88b724d5fb12f9b729109b476de47ce83817a1c5d14c61461ac",
-          "bytes": 111173558,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/synthseg-v0.6.20261009/synthseg-0.6.20261009-linux-x64.tar.gz.validation.txt",
+          "version": "0.9.20261015",
+          "url": "https://github.com/neurodesk/webapps/releases/download/synthseg-v0.9.20261015/synthseg-0.9.20261015-linux-x64.tar.gz",
+          "sha256": "f979d65d625c5ad2f22e3470fe1e04bad6a6c62feea5503637c003d17f6acfd3",
+          "bytes": 111178571,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/synthseg-v0.9.20261015/synthseg-0.9.20261015-linux-x64.tar.gz.validation.txt",
           "modelsIncluded": true,
-          "command": "tar -xzf synthseg-0.6.20261009-linux-x64.tar.gz\n./synthseg-0.6.20261009-linux-x64/synthseg input.nii.gz results"
+          "command": "tar -xzf synthseg-0.9.20261015-linux-x64.tar.gz\n./synthseg-0.9.20261015-linux-x64/synthseg input.nii.gz results"
         },
         {
           "kind": "cli",
@@ -683,13 +683,13 @@
         {
           "kind": "cli",
           "platform": "windows-x64",
-          "version": "0.6.20261009",
-          "url": "https://github.com/neurodesk/webapps/releases/download/synthseg-v0.6.20261009/synthseg-0.6.20261009-windows-x64.zip",
-          "sha256": "a5431bc58d3f24401010a09af07342428bfd3b92a98f379a68a0e84b316f4e52",
-          "bytes": 112653929,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/synthseg-v0.6.20261009/synthseg-0.6.20261009-windows-x64.zip.validation.txt",
+          "version": "0.9.20261015",
+          "url": "https://github.com/neurodesk/webapps/releases/download/synthseg-v0.9.20261015/synthseg-0.9.20261015-windows-x64.zip",
+          "sha256": "bdae20559bfc3b4cc862c20d17e2182c6ae1f7f6f69cba7f90f0d693df627ca2",
+          "bytes": 112671022,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/synthseg-v0.9.20261015/synthseg-0.9.20261015-windows-x64.zip.validation.txt",
           "modelsIncluded": true,
-          "command": "Expand-Archive -Path .\\synthseg-0.6.20261009-windows-x64.zip -DestinationPath .\n.\\synthseg-0.6.20261009-windows-x64\\synthseg.exe input.nii.gz results"
+          "command": "Expand-Archive -Path .\\synthseg-0.9.20261015-windows-x64.zip -DestinationPath .\n.\\synthseg-0.9.20261015-windows-x64\\synthseg.exe input.nii.gz results"
         }
       ],
       "containers": [
@@ -806,35 +806,35 @@
         {
           "kind": "cli",
           "platform": "linux-x64",
-          "version": "0.4.20261009",
-          "url": "https://github.com/neurodesk/webapps/releases/download/edgereg-v0.4.20261009/edgereg-0.4.20261009-linux-x64.tar.gz",
-          "sha256": "31cf9bd47d5902537f39f57ffc12fe41fb02979ccc7eea2ab3a87acef130a6b2",
-          "bytes": 62295892,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/edgereg-v0.4.20261009/edgereg-0.4.20261009-linux-x64.tar.gz.validation.txt",
+          "version": "0.4.20261014",
+          "url": "https://github.com/neurodesk/webapps/releases/download/edgereg-v0.4.20261014/edgereg-0.4.20261014-linux-x64.tar.gz",
+          "sha256": "3399c465581b19b433f3caeda5809a023cfa3266ac1a26e027d834a21513540b",
+          "bytes": 44893861,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/edgereg-v0.4.20261014/edgereg-0.4.20261014-linux-x64.tar.gz.validation.txt",
           "modelsIncluded": true,
-          "command": "tar -xzf edgereg-0.4.20261009-linux-x64.tar.gz\n./edgereg-0.4.20261009-linux-x64/edgereg moving.nii.gz fixed.nii.gz results"
+          "command": "tar -xzf edgereg-0.4.20261014-linux-x64.tar.gz\n./edgereg-0.4.20261014-linux-x64/edgereg moving.nii.gz fixed.nii.gz results"
         },
         {
           "kind": "cli",
           "platform": "macos-arm64",
-          "version": "0.4.20261009",
-          "url": "https://github.com/neurodesk/webapps/releases/download/edgereg-v0.4.20261009/edgereg-0.4.20261009-macos-arm64.pkg",
-          "sha256": "0e942f2470c10e32951464797be893baef67a6d0e20966b13ac837cd8b299e56",
-          "bytes": 56323982,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/edgereg-v0.4.20261009/edgereg-0.4.20261009-macos-arm64.pkg.validation.txt",
+          "version": "0.4.20261014",
+          "url": "https://github.com/neurodesk/webapps/releases/download/edgereg-v0.4.20261014/edgereg-0.4.20261014-macos-arm64.pkg",
+          "sha256": "5562db0300f12d64913f66a5263fbd261f1466041008a5ab5cc241fcaab3dad7",
+          "bytes": 38498256,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/edgereg-v0.4.20261014/edgereg-0.4.20261014-macos-arm64.pkg.validation.txt",
           "modelsIncluded": true,
-          "command": "sudo installer -pkg edgereg-0.4.20261009-macos-arm64.pkg -target /\nedgereg self-check\nedgereg moving.nii.gz fixed.nii.gz results"
+          "command": "sudo installer -pkg edgereg-0.4.20261014-macos-arm64.pkg -target /\nedgereg self-check\nedgereg moving.nii.gz fixed.nii.gz results"
         },
         {
           "kind": "cli",
           "platform": "windows-x64",
-          "version": "0.4.20261009",
-          "url": "https://github.com/neurodesk/webapps/releases/download/edgereg-v0.4.20261009/edgereg-0.4.20261009-windows-x64.zip",
-          "sha256": "8ba8dd1d75a6fd2627b2055871dc8e7cc748f73a19b67a4d483ca5de7fe7c478",
-          "bytes": 56599030,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/edgereg-v0.4.20261009/edgereg-0.4.20261009-windows-x64.zip.validation.txt",
+          "version": "0.4.20261014",
+          "url": "https://github.com/neurodesk/webapps/releases/download/edgereg-v0.4.20261014/edgereg-0.4.20261014-windows-x64.zip",
+          "sha256": "75bc0019f2bd880e5e9302340ac8fd28cd5358654ca9a00a8e0bc75662dc6d02",
+          "bytes": 35207301,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/edgereg-v0.4.20261014/edgereg-0.4.20261014-windows-x64.zip.validation.txt",
           "modelsIncluded": true,
-          "command": "Expand-Archive -Path .\\edgereg-0.4.20261009-windows-x64.zip -DestinationPath .\n.\\edgereg-0.4.20261009-windows-x64\\edgereg.exe moving.nii.gz fixed.nii.gz results"
+          "command": "Expand-Archive -Path .\\edgereg-0.4.20261014-windows-x64.zip -DestinationPath .\n.\\edgereg-0.4.20261014-windows-x64\\edgereg.exe moving.nii.gz fixed.nii.gz results"
         }
       ],
       "containers": []
