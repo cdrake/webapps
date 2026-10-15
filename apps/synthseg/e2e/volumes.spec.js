@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import manifest from '../../../packages/synthseg/model.manifest.json' with { type: 'json' };
 import { parseVolumesCsv } from '../../../packages/synthseg/src/results.js';
 import { dicomSeries } from '../../../test-utils/dicom-fixture.mjs';
+import { readVolume, writeFloat32Volume } from '../../../test-utils/nifti-fixture.mjs';
 
 const FIXTURES = '../../packages/synthseg/test/fixtures/';
 const SMALL = '../../exes/synthseg/test/fixtures/small.nii.gz';
@@ -26,26 +27,40 @@ async function fakeInference(page) {
   });
 }
 
+// Serves the pinned norms from their checksummed fixtures and counts the requests per reference.
 async function serveNorms(page, status = 200) {
-  const body = await readFile(`${FIXTURES}brainquant_norms.json`);
-  let requests = 0;
-  await page.route(manifest.norms.url, (route) => {
-    requests++;
-    return status === 200 ? route.fulfill({ status, body, contentType: 'text/plain' }) : route.fulfill({ status, body: 'missing' });
-  });
+  const fixtures = { ixi: 'brainquant_norms.json', ahead: 'brainquant_norms_7t.json' };
+  const requests = { ixi: 0, ahead: 0 };
+  for (const [id, name] of Object.entries(fixtures)) {
+    const body = await readFile(`${FIXTURES}${name}`);
+    await page.route(manifest.norms[id].url, (route) => {
+      requests[id]++;
+      return status === 200 ? route.fulfill({ status, body, contentType: 'text/plain' }) : route.fulfill({ status, body: 'missing' });
+    });
+  }
   return () => requests;
+}
+
+async function finishInference(page) {
+  const labels = await readFile('../../exes/synthseg/test/fixtures/small_fast.nii.gz');
+  const { header, data } = readVolume(labels);
+  const map = writeFloat32Volume(header, new Float32Array(data.length));
+  await page.evaluate(async ({ bytes, mapBytes, volumes }) => {
+    await window.inferenceWorker.onmessage({
+      data: {
+        type: 'result', buffer: new Uint8Array(bytes).buffer, volumes,
+        tissues: Object.fromEntries(['gm', 'wm', 'csf'].map((id) => [id, new Uint8Array(mapBytes).buffer])),
+        provenance: { outputShape: [1, 1, 1], seconds: 0 },
+      },
+    });
+  }, { bytes: [...labels], mapBytes: [...map], volumes });
+  await expect(page.locator('#statusText')).toHaveAttribute('data-neurodesk-state', 'succeeded');
 }
 
 async function segment(page) {
   await expect(page.locator('#processButton')).toBeEnabled();
   await page.locator('#processButton').click();
-  const labels = await readFile('../../exes/synthseg/test/fixtures/small_fast.nii.gz');
-  await page.evaluate(async ({ bytes, volumes }) => {
-    await window.inferenceWorker.onmessage({
-      data: { type: 'result', buffer: new Uint8Array(bytes).buffer, volumes, provenance: { outputShape: [1, 1, 1], seconds: 0 } },
-    });
-  }, { bytes: [...labels], volumes });
-  await expect(page.locator('#statusText')).toHaveAttribute('data-neurodesk-state', 'succeeded');
+  await finishInference(page);
 }
 
 test('fast mode is the default processing mode', async ({ page }) => {
@@ -71,12 +86,18 @@ test('the Volumes view charts each structure against age and follows the Age and
   await segment(page);
 
   const { report } = JSON.parse(await page.locator('#neurodesk-run').textContent());
-  expect(report.parameters).toMatchObject({ mode: 'fast', age: 72, sex: 'male' });
+  expect(report.parameters).toMatchObject({ mode: 'fast', age: 72, sex: 'male', reference: 'auto' });
   expect(report.measurements.softVolumesMm3).toEqual(volumes);
   expect(report.measurements.volumeReport.norms).toEqual({
-    version: 'b23bda1938a5',
-    url: manifest.norms.url,
-    sha256: manifest.norms.sha256,
+    id: 'ixi',
+    version: 'c3e75dbe830b',
+    url: manifest.norms.ixi.url,
+    sha256: manifest.norms.ixi.sha256,
+  });
+  expect(report.measurements.volumeReport.reference).toEqual({
+    choice: 'auto',
+    fieldStrengthT: null,
+    reason: 'the scanner field strength is unknown',
   });
   const hippocampus = report.measurements.volumeReport.results[0];
   expect(hippocampus).toMatchObject({ id: 'hippocampus_left', flag: '>95th' });
@@ -98,7 +119,8 @@ test('the Volumes view charts each structure against age and follows the Age and
   await expect(panel.locator('tbody tr').first()).toHaveAttribute('data-flag', '>95th');
   await expect(panel).toContainText('Research use only. Not for diagnostic use.');
   await expect(panel).toContainText('Total intracranial volume 1592 mL.');
-  await expect(panel).toContainText('Population data: IXI, version b23bda1938a5.');
+  await expect(panel).toContainText('Population data: IXI, version c3e75dbe830b.');
+  await expect(panel).toContainText('The IXI reference was chosen because the scanner field strength is unknown.');
 
   await page.locator('#age').fill('');
   await page.locator('#sex').selectOption('');
@@ -107,7 +129,7 @@ test('the Volumes view charts each structure against age and follows the Age and
   await expect(panel).toContainText('Sex unknown: compared with the combined female and male reference.');
   await page.locator('#age').fill('95');
   await expect(panel.locator('figure svg rect.nd-chart-range')).toHaveCount(10);
-  expect(requests()).toBe(1);
+  expect(requests()).toEqual({ ixi: 1, ahead: 0 });
 
   await page.getByRole('button', { name: 'Axial', exact: true }).click();
   await expect(panel).toBeHidden();
@@ -124,7 +146,7 @@ test('the Volumes view charts each structure against age and follows the Age and
   const saved = JSON.parse(await readFile(await (await json).path(), 'utf8'));
   expect(saved.measurements.volumeReport.subject).toEqual({ age: 95, sex: null });
   expect(saved.measurements.volumeReport.outsideReferenceAge).toBe(true);
-  expect(saved.measurements.volumeReport.norms.version).toBe('b23bda1938a5');
+  expect(saved.measurements.volumeReport.norms.version).toBe('c3e75dbe830b');
 
   await page.locator('#imageInput').setInputFiles(SMALL);
   await expect(page.locator('#statusText')).toHaveAttribute('data-neurodesk-state', 'ready');
@@ -132,6 +154,39 @@ test('the Volumes view charts each structure against age and follows the Age and
   await expect(panel).toBeHidden();
   await expect(page.locator('#age')).toHaveValue('');
   await expect(page.locator('#volumesBtn')).toBeDisabled();
+});
+
+test('the Reference field switches the Volumes view to the AHEAD 7 T norms', async ({ page }) => {
+  await fakeInference(page);
+  const requests = await serveNorms(page);
+  await page.goto('./');
+  await page.locator('#imageInput').setInputFiles(SMALL);
+  await expect(page.locator('#reference')).toHaveValue('auto');
+  await expect(page.locator('#referenceHint')).toHaveText('Auto: IXI (1.5 T / 3 T) · field strength unknown');
+  await page.locator('#age').fill('30');
+  await segment(page);
+  await page.getByRole('button', { name: 'Volumes', exact: true }).click();
+  const panel = page.locator('#volumeReport');
+  await expect(panel).toContainText('Reference: IXI 1.5 T and 3 T (n=561,');
+
+  await page.locator('#reference').selectOption('ahead');
+  await expect(page.locator('#referenceHint')).toBeHidden();
+  await expect(panel).toContainText('Reference: AHEAD 7 T (n=105, 60 F / 45 M, age 18-80 y, CC BY 4.0)');
+  await expect(panel).toContainText('Population data: AHEAD, version c3e75dbe830b.');
+  await expect(panel).toContainText('The AHEAD reference was chosen because it was selected manually.');
+  await expect(panel.locator('figure')).toHaveCount(10);
+  expect(requests()).toEqual({ ixi: 1, ahead: 1 });
+
+  const json = page.waitForEvent('download');
+  await page.locator('#reportBtn').click();
+  const saved = JSON.parse(await readFile(await (await json).path(), 'utf8'));
+  expect(saved.measurements.volumeReport.norms).toEqual({
+    id: 'ahead',
+    version: 'c3e75dbe830b',
+    url: manifest.norms.ahead.url,
+    sha256: manifest.norms.ahead.sha256,
+  });
+  expect(saved.measurements.volumeReport.reference).toEqual({ choice: 'ahead', fieldStrengthT: null, reason: 'it was selected manually' });
 });
 
 test('without the reference volumes the Volumes view says why and the table still downloads', async ({ page }) => {
@@ -149,17 +204,60 @@ test('without the reference volumes the Volumes view says why and the table stil
   expect(await readFile(await (await csv).path(), 'utf8')).toContain('total intracranial');
 });
 
-test('a DICOM series fills Age and Sex from its header, and an edit overrides them', async ({ page }) => {
+test('a DICOM series fills Age, Sex and the Auto reference from its header, and an edit overrides them', async ({ page }) => {
   test.setTimeout(120000);
   await page.goto('./');
-  await page.locator('#imageInput').setInputFiles(dicomSeries({ slices: 4, patient: { birthDate: '19700615', sex: 'F', studyDate: '20200614' } }));
+  await page.locator('#imageInput').setInputFiles(dicomSeries({ slices: 4, patient: { birthDate: '19700615', sex: 'F', studyDate: '20200614' }, fieldStrength: '6.98' }));
   await expect(page.locator('#statusText')).toHaveAttribute('data-neurodesk-state', /ready|failed/, { timeout: 60000 });
   await expect(page.locator('#age')).toHaveValue('49');
   await expect(page.locator('#sex')).toHaveValue('female');
   await expect(page.locator('#subjectHint')).toHaveText('From DICOM header');
+  await expect(page.locator('#reference')).toHaveValue('auto');
+  await expect(page.locator('#referenceHint')).toHaveText('Auto: AHEAD (7 T) · scanner 6.98 T');
   await page.locator('#age').fill('50');
   await expect(page.locator('#subjectHint')).toBeHidden();
   await page.locator('#imageInput').setInputFiles(SMALL);
   await expect(page.locator('#age')).toHaveValue('');
   await expect(page.locator('#sex')).toHaveValue('');
+  await expect(page.locator('#referenceHint')).toHaveText('Auto: IXI (1.5 T / 3 T) · field strength unknown');
+});
+
+test('automation selects the DICOM reference, preserves demographic overrides and resets for NIfTI', async ({ page }) => {
+  test.setTimeout(120000);
+  await fakeInference(page);
+  await serveNorms(page);
+  await page.goto('./');
+  const dispatch = (command, request = {}) => page.evaluate(({ command, request }) => globalThis.neurodeskAutomation.dispatch(command, request), { command, request });
+  const run = async (files, parameters = {}) => {
+    await page.locator('#neurodesk-input-transfer').setInputFiles(files);
+    await dispatch('adopt', { role: 'image' });
+    await page.evaluate(() => { window.inferenceJob = null; });
+    await dispatch('start', { operation: 'segment', parameters });
+    await expect.poll(async () => {
+      const snapshot = await dispatch('snapshot');
+      if (snapshot.state === 'failed') throw new Error(JSON.stringify(snapshot.error));
+      return page.evaluate(() => Boolean(window.inferenceJob));
+    }).toBe(true);
+    await finishInference(page);
+    await expect.poll(async () => (await dispatch('snapshot')).state).toBe('succeeded');
+    return (await dispatch('snapshot')).report.measurements.volumeReport;
+  };
+  const dicom = dicomSeries({ slices: 4, patient: { birthDate: '19700615', sex: 'F', studyDate: '20200614' }, fieldStrength: '6.98' });
+  const automatic = await run(dicom);
+  expect(automatic.norms.id).toBe('ahead');
+  expect(automatic.reference).toEqual({ choice: 'auto', fieldStrengthT: 6.98, reason: 'the scanner field strength is 6.98 T' });
+  expect(automatic.subject).toEqual({ age: 49, sex: 'female' });
+
+  const ageOverride = await run(dicom, { age: 55, reference: 'ixi' });
+  expect(ageOverride.norms.id).toBe('ixi');
+  expect(ageOverride.reference).toEqual({ choice: 'ixi', fieldStrengthT: 6.98, reason: 'it was selected manually' });
+  expect(ageOverride.subject).toEqual({ age: 55, sex: 'female' });
+  const sexOverride = await run(dicom, { sex: 'male', reference: 'auto' });
+  expect(sexOverride.norms.id).toBe('ahead');
+  expect(sexOverride.subject).toEqual({ age: 49, sex: 'male' });
+
+  const nifti = await run(SMALL);
+  expect(nifti.norms.id).toBe('ixi');
+  expect(nifti.reference).toEqual({ choice: 'auto', fieldStrengthT: null, reason: 'the scanner field strength is unknown' });
+  expect(nifti.subject).toEqual({ age: null, sex: null });
 });

@@ -1087,12 +1087,20 @@
       "kind": "model",
       "dependencies": []
     },
-    "https://raw.githubusercontent.com/neurodesk/neurocontainers/b23bda1938a5e95e073e34176c1ada526f2382cd/recipes/synthseg/brainquant_norms.json": {
-      "sha256": "db01bdff445db7b8e1fd5e6eaa837edc0b8e27e2b28d3c8cdb0b89427d8eb710",
-      "bytes": 12233,
+    "https://raw.githubusercontent.com/neurodesk/neurocontainers/c3e75dbe830bd5439810724718fdeaeb5d0c3a2e/recipes/synthseg/brainquant_norms.json": {
+      "sha256": "c9bdc4dfa6ea3266d58ec729916ed9c7c1c981cc903bf26543c17f41e52e8acd",
+      "bytes": 12272,
       "contentType": "text/plain; charset=utf-8",
       "kind": "reference-data",
       "license": "CC-BY-SA-3.0",
+      "dependencies": []
+    },
+    "https://raw.githubusercontent.com/neurodesk/neurocontainers/c3e75dbe830bd5439810724718fdeaeb5d0c3a2e/recipes/synthseg/brainquant_norms_7t.json": {
+      "sha256": "f597123515ccccb6f8f2302670eb5be1dc73354d6b9791651bd4569a76d7ab95",
+      "bytes": 12257,
+      "contentType": "text/plain; charset=utf-8",
+      "kind": "reference-data",
+      "license": "CC-BY-4.0",
       "dependencies": []
     },
     "https://raw.githubusercontent.com/neurolabusc/py_synthsr/04ab5548f4609c2b44ca51b3f4bc319b585dafa7/FLAIR.nii.gz": {
@@ -3623,7 +3631,8 @@
     "synthseg": [
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/356a4adbce52cf9052d61ef90b14ba263e7c25e9/synthseg/models/synthseg-2.0.onnx",
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/356a4adbce52cf9052d61ef90b14ba263e7c25e9/synthseg/validation/T1_head.nii.gz",
-      "https://raw.githubusercontent.com/neurodesk/neurocontainers/b23bda1938a5e95e073e34176c1ada526f2382cd/recipes/synthseg/brainquant_norms.json"
+      "https://raw.githubusercontent.com/neurodesk/neurocontainers/c3e75dbe830bd5439810724718fdeaeb5d0c3a2e/recipes/synthseg/brainquant_norms.json",
+      "https://raw.githubusercontent.com/neurodesk/neurocontainers/c3e75dbe830bd5439810724718fdeaeb5d0c3a2e/recipes/synthseg/brainquant_norms_7t.json"
     ],
     "syncro": [
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/88c3dd6b9aac13429f760d9b0b48249040d3ee5f/synthsr/models/synthsr-v2.onnx",

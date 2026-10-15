@@ -17,9 +17,14 @@ entries with `node scripts/freesurfer-lut.mjs <FreeSurferColorLUT.txt>`.
 - **Input image** — NIfTI or DICOM (drag-drop supported), or the `T1_head` example.
 - **Age and Sex** — the subject for the volume report. A DICOM series fills them from
   its dcm2niix sidecar (`PatientAge`, or whole years from `PatientBirthDate` to the
-  acquisition date, and `PatientSex`); the sidecar stays in memory and nothing else is
-  read from it. A new image resets them. Blank means unknown: no percentile, and the
+  acquisition date, and `PatientSex`); the sidecar stays in memory. The run report
+  records age, sex and scanner field strength. A new image resets them. Blank means unknown: no percentile, and the
   pooled female and male reference.
+- **Reference** — the norms the volume report compares against: IXI (1.5 T and 3 T) or
+  AHEAD (7 T). **Auto**, the default and what a new image resets to, reads
+  `MagneticFieldStrength` from the same sidecar and uses AHEAD from 5 T upward, like the
+  container's `select_norms`. Below 5 T, and for NIfTI input, which has no field
+  strength, it uses IXI. The report names the reference and why it was chosen.
 - **Mode** — `fast` (the default) is a single pass and matches the volume norms;
   `default` adds flip averaging and topological correction.
 - **CT** — auto-checked when the loaded image contains negative intensities.
@@ -41,13 +46,13 @@ entries with `node scripts/freesurfer-lut.mjs <FreeSurferColorLUT.txt>`.
   the grouping is in `exes/synthseg/README.md`). View shows a map over the input. Label
   edits do not change the maps.
 - **Volumes** — a viewer tab after a run. It charts each structure's
-  head-size-adjusted volume against age over the IXI cohort's percentile bands, with a
+  head-size-adjusted volume against age over the chosen reference's percentile bands, with a
   table below (`src/volume-report.js`, a port of the neurocontainers SynthSeg recipe's
-  `brainquant.py` in `@neurodesk/synthseg/brainquant`). The norms come from
-  `manifest.norms`, a commit-pinned neurocontainers URL, fetched once and checked
-  against its SHA-256. Its data version is the first 12 characters of the source
-  commit, shown above the charts and saved with the URL and checksum in the JSON
-  report. Without them the labels and the CSV still work and the view
+  `brainquant.py` in `@neurodesk/synthseg/brainquant`). Each reference's norms come from
+  `manifest.norms.ixi` or `manifest.norms.ahead`, commit-pinned neurocontainers URLs,
+  each fetched once when first needed and checked against its SHA-256. The data version
+  is the first 12 characters of the source commit, shown above the charts and saved with
+  the reference id, URL, checksum, Reference choice and reason in the JSON report. Without them the labels and the CSV still work and the view
   says why. Research use only.
 - **Edit** — corrects the labels in the viewer with the shared mask editor. Download then
   saves the edited labels (uint8, same name and grid); the JSON report keeps the pipeline's.

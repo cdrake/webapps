@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readImageFiles, readImageSeries } from '../src/dcm2niix-client/index.ts';
+import { readImageFiles, readImageSeries, runDcm2niix } from '../src/dcm2niix-client/index.ts';
 
 function file(name, text = '') {
   return new File([text], name);
@@ -89,6 +89,18 @@ test('readImageFiles keeps dcm2niix anonymisation and its niftiOnly contract', a
   assert.deepEqual(filtered.calls[0].inputs, ['IM0001']);
   const unfiltered = await withFakeWorker(outputs, () => readImageFiles([file('IM0001')], { niftiOnly: false }));
   assert.deepEqual(unfiltered.result.map((image) => image.name), ['scan_5.nii', 'scan_5.json']);
+});
+
+test('runDcm2niix keeps default anonymisation and requires an explicit sidecar opt-in', async () => {
+  const outputs = [file('scan_5.nii'), file('scan_5.json', '{}')];
+  for (const options of [{}, { anonymizeSidecar: true }]) {
+    const converted = await withFakeWorker(outputs, () => runDcm2niix([file('IM0001')], { ...options, niftiOnly: false }));
+    assert.deepEqual(converted.result.map((image) => image.name), ['scan_5.nii', 'scan_5.json']);
+    assert.deepEqual(converted.calls[0].cmd, []);
+  }
+  const retained = await withFakeWorker(outputs, () => runDcm2niix([file('IM0001')], { niftiOnly: false, anonymizeSidecar: false }));
+  assert.deepEqual(retained.result.map((image) => image.name), ['scan_5.nii', 'scan_5.json']);
+  assert.deepEqual(retained.calls[0].cmd, ['-b', 'y', '-ba', 'n']);
 });
 
 test('readImageSeries honours an aborted signal before starting dcm2niix', async () => {

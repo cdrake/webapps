@@ -1,5 +1,11 @@
 # @neurodesk/runtime-support
 
+## 0.6.1
+
+### Patch Changes
+
+- c74b26f: Allow callers of `runDcm2niix` to opt into non-anonymized BIDS sidecars with `anonymizeSidecar: false`, matching `readImageSeries`. The default retains dcm2niix's anonymization. Identifying sidecar fields stay in memory; SynthSeg automation uses them to select its population reference and fill omitted age and sex without saving the sidecar.
+
 ## 0.6.0
 
 ### Minor Changes

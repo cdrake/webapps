@@ -7,6 +7,8 @@ const MODEL_KEYS = ['female', 'male', 'all'];
 const LOW_PERCENTILE = 5;
 const HIGH_PERCENTILE = 95;
 const HEADER_SEX = { F: 'female', M: 'male' };
+// Scanners at or above this field strength are compared with the 7 T reference, as in brainquant.py.
+export const ULTRA_HIGH_FIELD_T = 5.0;
 
 function pyRepr(value) {
   if (value === undefined || value === null) {
@@ -108,6 +110,7 @@ export function parseNorms(raw) {
         ageMin: number(field(reference, 'age_min'), 'reference.age_min'),
         ageMax: number(field(reference, 'age_max'), 'reference.age_max'),
         synthseg: String(field(reference, 'synthseg')),
+        fieldStrength: String(reference.field_strength ?? ''),
       },
       ageCenter: number(field(raw, 'age_center'), 'age_center'),
       ageScale: number(field(raw, 'age_scale'), 'age_scale'),
@@ -358,7 +361,7 @@ export function headerLines(report, norms) {
     lines.push('Sex unknown: compared with the combined female and male reference.');
   }
   lines.push(
-    `Reference: ${reference.cohort} (n=${reference.subjects}, ${reference.female} F / ${reference.male} M, age ${ageRange(reference)}, ${licenseText(reference.license)}), ${reference.synthseg}.`,
+    `Reference: ${reference.cohort}${reference.fieldStrength ? ` ${reference.fieldStrength}` : ''} (n=${reference.subjects}, ${reference.female} F / ${reference.male} M, age ${ageRange(reference)}, ${licenseText(reference.license)}), ${reference.synthseg}.`,
   );
   lines.push('Research use only. Not for diagnostic use.');
   return lines;
@@ -412,6 +415,33 @@ function sidecarAge(value) {
   }
   const match = /^(\d{3})Y$/.exec(String(value ?? '').trim().toUpperCase());
   return match ? Number(match[1]) : null;
+}
+
+// Scanner field strength in tesla from a dcm2niix BIDS sidecar, or null when it is not recorded.
+export function fieldStrengthFromSidecar(json) {
+  const value = json.MagneticFieldStrength;
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : null;
+}
+
+/**
+ * The reference norms for a choice of 'auto' or a reference id, and the reason for the report.
+ * Auto follows brainquant.py's select_norms: AHEAD from 5 T, IXI below or when the field strength is unknown.
+ */
+export function selectReference(choice, fieldStrengthT) {
+  if (choice !== 'auto') {
+    return { id: choice, reason: 'it was selected manually' };
+  }
+  if (fieldStrengthT === null) {
+    return { id: 'ixi', reason: 'the scanner field strength is unknown' };
+  }
+  return {
+    id: fieldStrengthT >= ULTRA_HIGH_FIELD_T ? 'ahead' : 'ixi',
+    reason: `the scanner field strength is ${formatG(fieldStrengthT)} T`,
+  };
+}
+
+export function referenceNote(norms, reason) {
+  return `The ${norms.reference.cohort} reference was chosen because ${reason}.`;
 }
 
 // Age and sex from a dcm2niix BIDS sidecar of a non-anonymised series.

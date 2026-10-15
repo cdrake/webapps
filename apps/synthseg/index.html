@@ -34,6 +34,15 @@
             </div>
           </div>
           <p id="subjectHint" class="nd-hint" hidden>From DICOM header</p>
+          <div class="nd-field">
+            <label for="reference">Reference <span class="nd-info-icon" tabindex="0" aria-label="About the reference">i<span class="nd-info-tooltip">Auto compares scans from 5 T upward with AHEAD (7 T) and others with IXI (1.5 T and 3 T), using the field strength in the DICOM header. NIfTI files carry no field strength, so Auto uses IXI. Healthy 7 T scans look atypical against IXI.</span></span></label>
+            <select id="reference">
+              <option value="auto" selected>Auto (from scanner field strength)</option>
+              <option value="ixi">IXI (1.5 T / 3 T)</option>
+              <option value="ahead">AHEAD (7 T)</option>
+            </select>
+            <p id="referenceHint" class="nd-hint" hidden></p>
+          </div>
         </div>
       </details>
       <details class="nd-sidebar-section" id="segmentSection" open>
@@ -98,7 +107,7 @@
     <template id="privacyContent">
       <p>SynthSeg processes scans locally in your browser. It does not upload your input image, labels, or processing report.</p>
       <p>The pretrained model and optional example image are downloaded from Hugging Face. The reference volumes for the volume report are downloaded from GitHub.</p>
-      <p>Age and sex read from a DICOM header stay in this browser, and no other header field is kept. The run report records the age and sex its volume report used.</p>
+      <p>Age, sex and scanner field strength read from a DICOM header stay in this browser. The downloaded run report includes them and the reference choice, but not the original sidecar.</p>
     </template>
     <template id="standaloneContent">
       <p>The native command-line SynthSeg uses ONNX Runtime on CPU or Metal on Apple silicon. Build and run it with:</p>

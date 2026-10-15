@@ -50,6 +50,15 @@
             "female",
             "male"
           ]
+        },
+        "reference": {
+          "type": "string",
+          "description": "Norms for the volume report; auto or omitted picks AHEAD (7 T) from 5 T in the DICOM header, otherwise IXI",
+          "enum": [
+            "auto",
+            "ixi",
+            "ahead"
+          ]
         }
       },
       "artifacts": {

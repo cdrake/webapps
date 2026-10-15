@@ -50,6 +50,12 @@ export interface RunDcm2niixOptions {
    * BIDS sidecars and other dcm2niix outputs are dropped. Default: `true`.
    */
   niftiOnly?: boolean
+  /**
+   * Use dcm2niix's default BIDS anonymisation. Set `false` to use `-b y -ba n`:
+   * sidecars then retain identifying fields. Keep them in memory; never persist them.
+   * Default: `true`.
+   */
+  anonymizeSidecar?: boolean
 }
 
 /**
@@ -70,7 +76,9 @@ export async function runDcm2niix(
   files: FileList | File[] | null | undefined,
   options: RunDcm2niixOptions = {},
 ): Promise<File[]> {
-  return convertDicom(files, options, (processor) => processor)
+  return convertDicom(files, options, (processor) => options.anonymizeSidecar === false
+    ? processor.bids('y').bidsAnonymize('n')
+    : processor)
 }
 
 async function convertDicom(
@@ -122,7 +130,7 @@ function withTimeout<T>(p: Promise<T>, ms: number, label: string, signal?: Abort
 }
 
 /** Options for {@link readImageFiles}: `directVolume` names the files that skip dcm2niix. */
-export type ReadImageFilesOptions = RunDcm2niixOptions & { directVolume?: RegExp }
+export type ReadImageFilesOptions = Omit<RunDcm2niixOptions, 'anonymizeSidecar'> & { directVolume?: RegExp }
 
 /** One image and its parsed BIDS sidecar (`null` when absent or unparsable). */
 export interface ImageSeries {

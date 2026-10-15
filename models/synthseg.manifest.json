@@ -26,12 +26,22 @@
   "graph_optimization": "None; float32 ONNX rebuilt from the Keras checkpoint by exes/synthseg/scripts/export_model.py",
   "classes": 33,
   "norms": {
-    "version": "b23bda1938a5",
-    "description": "IXI age norms for the volume report, fitted on FreeSurfer 8.2.0 mri_synthseg --fast --vol (neurodesk/neurocontainers recipes/synthseg)",
-    "url": "https://raw.githubusercontent.com/neurodesk/neurocontainers/b23bda1938a5e95e073e34176c1ada526f2382cd/recipes/synthseg/brainquant_norms.json",
-    "sha256": "db01bdff445db7b8e1fd5e6eaa837edc0b8e27e2b28d3c8cdb0b89427d8eb710",
-    "bytes": 12233,
-    "license": "CC-BY-SA-3.0"
+    "ixi": {
+      "version": "c3e75dbe830b",
+      "description": "IXI (1.5 T and 3 T) age norms for the volume report, fitted on FreeSurfer 8.2.0 mri_synthseg --fast --vol (neurodesk/neurocontainers recipes/synthseg)",
+      "url": "https://raw.githubusercontent.com/neurodesk/neurocontainers/c3e75dbe830bd5439810724718fdeaeb5d0c3a2e/recipes/synthseg/brainquant_norms.json",
+      "sha256": "c9bdc4dfa6ea3266d58ec729916ed9c7c1c981cc903bf26543c17f41e52e8acd",
+      "bytes": 12272,
+      "license": "CC-BY-SA-3.0"
+    },
+    "ahead": {
+      "version": "c3e75dbe830b",
+      "description": "AHEAD (7 T) age norms for the volume report, fitted on FreeSurfer 8.2.0 mri_synthseg --fast --vol (neurodesk/neurocontainers recipes/synthseg)",
+      "url": "https://raw.githubusercontent.com/neurodesk/neurocontainers/c3e75dbe830bd5439810724718fdeaeb5d0c3a2e/recipes/synthseg/brainquant_norms_7t.json",
+      "sha256": "f597123515ccccb6f8f2302670eb5be1dc73354d6b9791651bd4569a76d7ab95",
+      "bytes": 12257,
+      "license": "CC-BY-4.0"
+    }
   },
   "validation": {
     "base_url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/356a4adbce52cf9052d61ef90b14ba263e7c25e9/synthseg/validation/",
