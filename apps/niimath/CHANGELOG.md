@@ -1,5 +1,16 @@
 # niimath
 
+## 1.3.20261014
+
+### Patch Changes
+
+- 4df4334: Add a portable `niimath` command line for Linux, Windows and macOS. It runs the web app's `@niivue/niimath` 1.3.2 WebAssembly build, now pinned exactly in the app, so each output equals the app's download for the same image and command byte for byte; its release check runs the app's 14 commands on both pinned examples against the recorded browser downloads.
+- Updated dependencies [27c9549]
+- Updated dependencies [850e642]
+- Updated dependencies [ad92e2f]
+  - @neurodesk/runtime-support@0.5.0
+  - @neurodesk/webapp-components@0.13.0
+
 ## 1.3.20261012
 
 ### Patch Changes

@@ -4,20 +4,25 @@ Segment white matter lesions on one FLAIR image, in the browser. Choose the mult
 FLAIR from **Example**, or load one NIfTI image or DICOM series, and select **Segment lesions**.
 The outputs are a lesion mask, a lesion probability map and a lesion table (TSV: voxels,
 volume in ml and centroid in scanner coordinates, one row per 26-connected lesion). Every output
-keeps the input grid and affine. **Edit** on the mask row corrects the mask in the viewer;
+keeps the input grid and affine, unless the input is finer than FLAMeS's 1 × 0.9 × 0.9 mm grid:
+then those axes are downsampled to it first, the outputs use it, and the resampled FLAIR is shown
+and offered for download. **Edit** on the mask row corrects the mask in the viewer;
 Apply recomputes the lesion count, volume and table from the edited mask. The probability map
 and run report stay as the model produced them.
 
 ## Pipeline
 
-1. SynthStrip (`@neurodesk/synthstrip`, the shared browser port) finds the brain. Tick
+1. An input finer than 1 × 0.9 × 0.9 mm along any axis is downsampled to it, with nnU-Net's
+   cubic resampling (`toNetworkResolution`). The network never sees finer detail, and a
+   0.4 mm 3D FLAIR would otherwise hold well over 100 million voxels through every step.
+2. SynthStrip (`@neurodesk/synthstrip`, the shared browser port) finds the brain. Tick
    *Image is already skull-stripped* in the advanced settings to use nonzero voxels instead.
-2. `packages/white-matter-lesions/src/pipeline.js` (`@neurodesk/white-matter-lesions`)
+3. `packages/white-matter-lesions/src/pipeline.js` (`@neurodesk/white-matter-lesions`)
    repeats nnU-Net's inference for FLAMeS without reorienting: permute the axes as the plans' `transpose_forward` does, crop to the brain, z-score inside it, resample to
    1 × 0.9 × 0.9 mm with nnU-Net's cubic, per-slice-when-anisotropic resampling, run
    112 × 128 × 160 patches at half overlap with Gaussian weighting, resample the lesion
    probability back and threshold at 0.5.
-3. `src/worker.js` runs the network with ONNX Runtime Web, on WebGPU when the browser has an
+4. `src/worker.js` runs the network with ONNX Runtime Web, on WebGPU when the browser has an
    adapter and on WebAssembly threads otherwise. A WebGPU run that fails, or returns non-finite
    or constant scores (GitHub's macOS runners return all zeros), restarts on WebAssembly.
 

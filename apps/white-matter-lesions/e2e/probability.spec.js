@@ -17,22 +17,24 @@ for (let z = 4; z < 28; z++) {
 }
 const volume = (data) => Buffer.from(writeVolume({ dims, affine, data }));
 const bytesOf = (buffer) => buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+const buffer = (bytes) => `new Uint8Array(${JSON.stringify([...bytes])}).buffer`;
 
 // Supply deterministic worker results; use the real output controls and NiiVue renderer.
-async function segmentWithMockedWorker(page) {
+async function segmentWithMockedWorker(page, { input = volume(flair), resampledFlair = null } = {}) {
   await page.route(/\/worker-[^/]+\.js$/, (route) => route.fulfill({
     contentType: "text/javascript",
     headers: { "cross-origin-embedder-policy": "require-corp" },
     body: `self.onmessage = () => self.postMessage({
       type: "result",
-      mask: new Uint8Array(${JSON.stringify([...volume(Uint8Array.from(probability, (p) => p > 0.5))])}).buffer,
-      probability: new Uint8Array(${JSON.stringify([...volume(probability)])}).buffer,
+      mask: ${buffer(volume(Uint8Array.from(probability, (p) => p > 0.5)))},
+      probability: ${buffer(volume(probability))},
+      resampledFlair: ${resampledFlair ? buffer(resampledFlair) : "null"},
       tsv: "lesion\\tvoxels\\n1\\t64\\n",
       summary: { count: 1, totalMl: 0.064 }, provenance: {}
     });`,
   }));
   await page.goto("./");
-  await page.locator("#imageInput").setInputFiles({ name: "flair.nii", mimeType: "application/octet-stream", buffer: volume(flair) });
+  await page.locator("#imageInput").setInputFiles({ name: "flair.nii", mimeType: "application/octet-stream", buffer: input });
   await expect(page.locator("#runButton")).toBeEnabled();
   await page.locator("#runButton").click();
   await expect(page.locator("#statusText")).toContainText("Segmentation complete");
@@ -132,4 +134,24 @@ test("editing the lesion mask replaces its download and recomputes the lesion su
   await page.locator("#imageInput").setInputFiles({ name: "flair.nii", mimeType: "application/octet-stream", buffer: volume(flair) });
   await expect(editor).toBeHidden();
   await expect(rows).toHaveCount(1);
+});
+
+test("a FLAIR finer than the FLAMeS grid is replaced by its resampled copy, so the mask can be edited over it", async ({ page }) => {
+  // The worker downsampled a 0.5 mm input onto the 1 mm grid the results use.
+  const fine = new Float32Array(64 ** 3).fill(100);
+  const input = Buffer.from(writeVolume({ dims: [64, 64, 64], affine: [[0.5, 0, 0, -16.25], [0, 0.5, 0, -16.25], [0, 0, 0.5, -16.25], [0, 0, 0, 1]], data: fine }));
+  const resampled = volume(flair);
+  await segmentWithMockedWorker(page, { input, resampledFlair: resampled });
+  const rows = page.locator("#resultList .nd-volume-toggle");
+  const flairRow = rows.filter({ hasText: "FLAIR" }).first();
+  await expect(flairRow.locator(".nd-stage-label")).toHaveText("FLAIR · downsampled for FLAMeS");
+  const pending = page.waitForEvent("download");
+  await flairRow.getByRole("button", { name: "Download", exact: true }).click();
+  const file = await pending;
+  expect(file.suggestedFilename()).toBe("flair_flair_resampled.nii");
+  expect((await readFile(await file.path())).equals(resampled)).toBe(true);
+  const maskRow = rows.filter({ hasText: "Lesion mask" });
+  await maskRow.getByRole("button", { name: "Edit", exact: true }).click();
+  await expect(page.locator("nd-mask-editor")).toBeVisible();
+  await expect(page.locator("#statusText")).toContainText("Editing Lesion mask");
 });

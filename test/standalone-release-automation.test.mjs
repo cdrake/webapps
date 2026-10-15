@@ -336,7 +336,9 @@ test('release tags name the app and version; specs are read from the tag itself'
   const natives = nativeReleases(current);
   assert.deepEqual(natives.get('synthseg').map((source) => [source.workflow, source.targets]), [['synthseg-native.yml', ['macos-arm64']], ['synthseg-portable.yml', ['linux-x64', 'windows-x64']]]);
   const catalog = JSON.parse(await readFile(new URL('../registry/standalone.json', import.meta.url), 'utf8'));
-  assert.ok(catalogReleases(catalog, natives).some(({ id, version }) => id === 'synthseg' && version === '0.2.20260910'), 'a refresh still finds the Rust macOS installer');
+  // The catalog workflow republishes this entry on every release, so read the version from it.
+  const macos = catalog.apps.synthseg.downloads.find((download) => download.platform === 'macos-arm64');
+  assert.ok(catalogReleases(catalog, natives).some(({ id, version }) => id === 'synthseg' && version === macos.version), 'a refresh still finds the Rust macOS installer');
 });
 
 // Runs scripts/dispatch-native-release.mjs with a stand-in gh that records each call instead of dispatching.

@@ -1,5 +1,21 @@
 # vesselboost
 
+## 0.6.20261014
+
+### Patch Changes
+
+- 850e642: Remove code that nothing calls, found by the unused-code report and checked by
+  repository-wide reference searches. The shared preview module no longer carries
+  a second NIfTI parser and writer; NiftiUtils remains the only one. Outputs and
+  behaviour are unchanged.
+- 498263f: Cite always opens the shared citation list, which ends with the Neurodesk
+  paper; the app's own Citations dialog is removed.
+- Updated dependencies [27c9549]
+- Updated dependencies [850e642]
+- Updated dependencies [ad92e2f]
+  - @neurodesk/webapp-components@0.13.0
+  - @neurodesk/vesselboost@0.6.20261014
+
 ## 0.6.20261012
 
 ### Patch Changes

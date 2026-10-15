@@ -5,13 +5,13 @@ import * as nifti from 'nifti-reader-js';
 const product = (dims) => dims.reduce((a, b) => a * b, 1);
 const index = (x, y, z, d) => x + d[0] * (y + d[1] * z);
 
-export function readVolume(buffer) {
+export function readVolume(buffer, { maxVoxels = 128 * 1024 * 1024 } = {}) {
   if (nifti.isCompressed(buffer)) buffer = nifti.decompress(buffer);
   if (!nifti.isNIFTI(buffer)) throw new Error('Choose a NIfTI image (.nii or .nii.gz).');
   const h = nifti.readHeader(buffer);
   if (h.dims.slice(4, h.dims[0] + 1).some((d) => d > 1)) throw new Error('SynthSR needs a single 3D image. Extract a volume from this 4D image first.');
   const dims = h.dims.slice(1, 4);
-  if (dims.some((d) => !Number.isInteger(d) || d < 2) || product(dims) > 128 * 1024 * 1024) throw new Error('Unsupported image dimensions.');
+  if (dims.some((d) => !Number.isInteger(d) || d < 2) || product(dims) > maxVoxels) throw new Error('Unsupported image dimensions.');
   const raw = nifti.readImage(h, buffer);
   const types = { 2: ['getUint8', 1], 4: ['getInt16', 2], 8: ['getInt32', 4], 16: ['getFloat32', 4], 64: ['getFloat64', 8], 256: ['getInt8', 1], 512: ['getUint16', 2], 768: ['getUint32', 4] };
   const type = types[h.datatypeCode];
