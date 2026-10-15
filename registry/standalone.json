@@ -2,170 +2,170 @@
   "schema_version": 1,
   "repository": "neurodesk/webapps",
   "suite": {
-    "version": "0.28.20261014",
-    "revision": "4b28789cc9db959d18894e1b5107a39998e032b8",
+    "version": "0.28.20261015",
+    "revision": "df706c36d116935377ef67318656dc1ccef9f5a1",
     "apps": [
       {
         "id": "musclemap",
-        "version": "1.5.20261012"
+        "version": "1.5.20261014"
       },
       {
         "id": "vesselboost",
-        "version": "0.6.20261012"
+        "version": "0.6.20261014"
       },
       {
         "id": "spinalcordtoolbox",
-        "version": "0.8.20261012"
+        "version": "0.8.20261014"
       },
       {
         "id": "calmar",
-        "version": "0.6.20261012"
+        "version": "0.6.20261014"
       },
       {
         "id": "qsmbly",
-        "version": "0.30.20261012"
+        "version": "0.30.20261014"
       },
       {
         "id": "seedseg",
-        "version": "0.6.20261012"
+        "version": "0.6.20261014"
       },
       {
         "id": "dicompare",
-        "version": "0.14.20261012"
+        "version": "0.14.20261014"
       },
       {
         "id": "deface",
-        "version": "1.3.20261012"
+        "version": "1.3.20261014"
       },
       {
         "id": "easy-mp2rage",
-        "version": "0.8.20261012"
+        "version": "0.8.20261014"
       },
       {
         "id": "niimath",
-        "version": "1.3.20261012"
+        "version": "1.3.20261014"
       },
       {
         "id": "dicom2vid",
-        "version": "0.4.20261012"
+        "version": "0.4.20261014"
       },
       {
         "id": "browserqc",
-        "version": "1.5.20261012"
+        "version": "1.5.20261014"
       },
       {
         "id": "surfannotate",
-        "version": "0.6.20261012"
+        "version": "0.6.20261014"
       },
       {
         "id": "zarro",
-        "version": "0.4.20261012"
+        "version": "0.4.20261014"
       },
       {
         "id": "synthsr",
-        "version": "0.6.20261012"
+        "version": "0.6.20261015"
       },
       {
         "id": "synthseg",
-        "version": "0.6.20261012"
+        "version": "0.8.20261014"
       },
       {
         "id": "syncro",
-        "version": "0.6.20261012"
+        "version": "0.6.20261015"
       },
       {
         "id": "dwi2trx",
-        "version": "0.5.20261012"
+        "version": "0.5.20261014"
       },
       {
         "id": "edgereg",
-        "version": "0.4.20261012"
+        "version": "0.4.20261014"
       },
       {
         "id": "disconnectome",
-        "version": "0.3.20261012"
+        "version": "0.3.20261014"
       },
       {
         "id": "greedy",
-        "version": "0.5.20261012"
+        "version": "0.5.20261014"
       },
       {
         "id": "ants",
-        "version": "0.4.20261012"
+        "version": "0.4.20261014"
       },
       {
         "id": "brain2print",
-        "version": "0.5.20261012"
+        "version": "0.5.20261014"
       },
       {
         "id": "topofit",
-        "version": "0.15.20261012"
+        "version": "0.15.20261014"
       },
       {
         "id": "fireants",
-        "version": "0.3.20261012"
+        "version": "0.3.20261014"
       },
       {
         "id": "brain-extraction",
-        "version": "0.4.20261012"
+        "version": "0.4.20261015"
       },
       {
         "id": "carotid-flow",
-        "version": "0.4.20261012"
+        "version": "0.4.20261014"
       },
       {
         "id": "lcmodel",
-        "version": "0.8.20261013"
+        "version": "0.8.20261014"
       },
       {
         "id": "white-matter-lesions",
-        "version": "0.3.20261012"
+        "version": "0.3.20261015"
       },
       {
         "id": "nesvor",
-        "version": "0.3.20261012"
+        "version": "0.3.20261015"
       },
       {
         "id": "elastix",
-        "version": "0.2.20261012"
+        "version": "0.3.20261014"
       }
     ],
     "downloads": [
       {
         "kind": "desktop",
         "platform": "macos-arm64",
-        "version": "0.28.20261014",
-        "bytes": 1109059376,
-        "url": "https://github.com/neurodesk/webapps/releases/download/webapps-v0.28.20261014/webapps-0.28.20261014-mac-arm64.zip",
-        "sha256": "2d8e2dcf56f91629de265cf4c047ff1b5ffc54376e5d2bb59a8a78906e4d4558",
-        "command": "unzip webapps-0.28.20261014-mac-arm64.zip"
+        "version": "0.28.20261015",
+        "bytes": 1109463335,
+        "url": "https://github.com/neurodesk/webapps/releases/download/webapps-v0.28.20261015/webapps-0.28.20261015-mac-arm64.zip",
+        "sha256": "ffed372d2481b1f4568a36d0585e4de6c3b723c9ab1e0b9fa5f4778a4e901600",
+        "command": "unzip webapps-0.28.20261015-mac-arm64.zip"
       },
       {
         "kind": "desktop",
         "platform": "linux-x64",
-        "version": "0.28.20261014",
-        "bytes": 1124662797,
-        "url": "https://github.com/neurodesk/webapps/releases/download/webapps-v0.28.20261014/webapps-0.28.20261014-linux-x64.tar.gz",
-        "sha256": "c5ffdd0c8c91dcbd00dc9b047af789d5650b5263f1bbf3a162d909e0724100d6",
-        "command": "tar -xzf webapps-0.28.20261014-linux-x64.tar.gz"
+        "version": "0.28.20261015",
+        "bytes": 1125089489,
+        "url": "https://github.com/neurodesk/webapps/releases/download/webapps-v0.28.20261015/webapps-0.28.20261015-linux-x64.tar.gz",
+        "sha256": "0fc55685dc5151ec7ed04622229e919c897f797e0106281ae515a16116cb7b12",
+        "command": "tar -xzf webapps-0.28.20261015-linux-x64.tar.gz"
       },
       {
         "kind": "desktop",
         "platform": "windows-x64",
-        "version": "0.28.20261014",
-        "bytes": 1148793136,
-        "url": "https://github.com/neurodesk/webapps/releases/download/webapps-v0.28.20261014/webapps-0.28.20261014-win-x64.zip",
-        "sha256": "4df1ce6df9aeceeadba3a0ca9e1d4e45636dffa18328a3e113689ca161c78621",
-        "command": "Expand-Archive webapps-0.28.20261014-win-x64.zip -DestinationPath NeurodeskWebapps"
+        "version": "0.28.20261015",
+        "bytes": 1149211663,
+        "url": "https://github.com/neurodesk/webapps/releases/download/webapps-v0.28.20261015/webapps-0.28.20261015-win-x64.zip",
+        "sha256": "07f55d3b672ef59b3329be1eb06ad9d0f5fc3711f2e45e6c07de3359584798c8",
+        "command": "Expand-Archive webapps-0.28.20261015-win-x64.zip -DestinationPath NeurodeskWebapps"
       },
       {
         "kind": "container",
         "platform": "linux-x64-apptainer",
-        "version": "0.28.20261014",
-        "bytes": 1075781632,
-        "url": "https://github.com/neurodesk/webapps/releases/download/webapps-v0.28.20261014/webapps-0.28.20261014-linux-x64.sif",
-        "sha256": "61c04ab013e51afc34299297771a53f40dd870c73860c1ea7818d8a8fabb7ff1",
-        "command": "apptainer run webapps-0.28.20261014-linux-x64.sif --verify"
+        "version": "0.28.20261015",
+        "bytes": 1075838976,
+        "url": "https://github.com/neurodesk/webapps/releases/download/webapps-v0.28.20261015/webapps-0.28.20261015-linux-x64.sif",
+        "sha256": "88eabb2a3f85ea11ca10802470a43098bc053ce46619d65c7ac044dede241e89",
+        "command": "apptainer run webapps-0.28.20261015-linux-x64.sif --verify"
       }
     ],
     "models": {
