@@ -210,7 +210,7 @@ apps:
   - id: easy-mp2rage
     path: easy-mp2rage
     title: Easy MP2RAGE T1 Map
-    description: Browser-native MP2RAGE T1 mapping, B1 correction, and UNI denoising.
+    description: MP2RAGE T1 mapping, B1 correction and denoising.
     categories: [quantitative-imaging]
     keywords: [MP2RAGE, T1 mapping, B1 correction, UNI, denoising, MRI]
     legacy_domain: thomshaw92.github.io/Easy-MP2RAGE-T1-Map
@@ -231,7 +231,7 @@ apps:
   - id: niimath
     path: niimath
     title: NiiMath
-    description: Interactive browser-native neuroimaging maths and visualization.
+    description: Interactive neuroimaging maths and visualization.
     categories: [image-processing]
     keywords: [NIfTI, image maths, image processing, visualization, MRI, statistics]
     legacy_domain: niivue.github.io/niivue-niimath
@@ -251,7 +251,7 @@ apps:
   - id: dicom2vid
     path: dicom2vid
     title: MRI2VID
-    description: Convert DICOM, NIfTI, or MGZ volumes into scrolling videos in the browser.
+    description: Convert DICOM, NIfTI or MGZ volumes into scrolling videos.
     categories: [visualization]
     keywords: [DICOM, NIfTI, MGZ, video, conversion, volume]
     legacy_domain: thomshaw92.github.io/DICOM2Vid
@@ -271,7 +271,7 @@ apps:
   - id: browserqc
     path: browserqc
     title: BrowserQC
-    description: Automated browser-native MRI segmentation and image-quality metrics.
+    description: Automated MRI segmentation and image-quality metrics.
     categories: [quality-control]
     keywords: [quality control, QC, MRI, segmentation, metrics, review]
     legacy_domain: neurolabusc.github.io/BrowserQC
@@ -293,7 +293,7 @@ apps:
   - id: surfannotate
     path: surfannotate
     title: SurfAnnotate
-    description: Cortical surface viewer with manual ROI delineation and vertex selection.
+    description: Cortical surface viewer for ROI and vertex annotation.
     categories: [visualization, surfaces]
     keywords: [cortical surface, annotation, ROI, mesh, vertex, FreeSurfer]
     legacy_domain: null
@@ -313,7 +313,7 @@ apps:
   - id: zarro
     path: zarro
     title: ZARRo
-    description: Stream and explore multiscale OME-Zarr volumes directly in the browser.
+    description: Stream and explore multiscale OME-Zarr volumes.
     categories: [visualization]
     keywords: [OME-Zarr, Zarr, microscopy, DANDI, multiscale, volume, visualization, measurement]
     legacy_domain: null
@@ -333,7 +333,7 @@ apps:
   - id: synthsr
     path: synthsr
     title: SynthSR
-    description: Synthesize a 1 mm T1-weighted brain image locally in your browser.
+    description: Synthesize a 1 mm T1-weighted image from a brain MRI.
     categories: [data-preparation]
     keywords: [SynthSR, MRI, CT, super-resolution, T1]
     legacy_domain: null
@@ -356,7 +356,7 @@ apps:
   - id: synthseg
     path: synthseg
     title: SynthSeg
-    description: Segment brain MRI into FreeSurfer labels locally in your browser.
+    description: Segment brain MRI into FreeSurfer labels.
     categories: [segmentation-analysis]
     keywords: [SynthSeg, MRI, CT, segmentation, FreeSurfer, WebGPU]
     legacy_domain: null
@@ -400,7 +400,7 @@ apps:
   - id: dwi2trx
     path: dwi2trx
     title: dwi2trx
-    description: Browser-native diffusion tensor fitting and GPU streamline tractography.
+    description: Diffusion tensor fitting and GPU streamline tractography.
     categories: [diffusion-imaging]
     keywords: [diffusion MRI, DTI, tractography, TRX, WebGPU, DICOM]
     legacy_domain: null
@@ -441,7 +441,7 @@ apps:
   - id: disconnectome
     path: disconnectome
     title: Disconnectome
-    description: Score which white-matter bundles a lesion disconnects, in the browser.
+    description: Score which white-matter bundles a lesion disconnects.
     categories: [segmentation-analysis]
     keywords: [lesion, disconnection, tractography, white matter, ENIGMA, HCP1065, stroke]
     legacy_domain: null
@@ -461,7 +461,7 @@ apps:
   - id: greedy
     path: greedy
     title: Greedy
-    description: Affine and deformable MRI registration in the browser with Greedy.
+    description: Affine and deformable MRI registration with Greedy.
     categories: [registration]
     keywords: [registration, affine, deformable, NIfTI, Greedy]
     legacy_domain: null
@@ -482,7 +482,7 @@ apps:
   - id: ants
     path: ants
     title: ANTs
-    description: Affine and SyN diffeomorphic MRI registration in the browser with ANTs.
+    description: Affine and SyN diffeomorphic MRI registration with ANTs.
     categories: [registration]
     keywords: [registration, SyN, diffeomorphic, affine, NIfTI, ANTs]
     legacy_domain: null
@@ -503,7 +503,7 @@ apps:
   - id: brain2print
     path: brain2print
     title: Brain2Print
-    description: Create printable brain meshes from NIfTI or DICOM scans in your browser.
+    description: Create printable brain meshes from NIfTI or DICOM scans.
     categories: [visualization]
     keywords: [brain, mri, segmentation, mesh, 3d-printing]
     legacy_domain: null
@@ -524,7 +524,7 @@ apps:
   - id: topofit
     path: topofit
     title: TopoFit
-    description: Reconstruct cortical white, pial, and registration surfaces locally from a brain MRI.
+    description: Reconstruct cortical white, pial and registration surfaces.
     categories: [visualization, surfaces]
     keywords: [TopoFit, cortical surface, MRI, FreeSurfer, BrainNet, ONNX]
     legacy_domain: null
@@ -545,7 +545,7 @@ apps:
   - id: fireants
     path: fireants
     title: FireANTs
-    description: Register brain images in the browser with CPU or WebGPU FireANTs.
+    description: Register brain images with CPU or WebGPU FireANTs.
     categories: [registration]
     keywords: [FireANTs, registration, SyN, greedy, WebGPU, MRI, NIfTI]
     legacy_domain: null
@@ -566,7 +566,7 @@ apps:
   - id: brain-extraction
     path: brain-extraction
     title: Brain extraction
-    description: Extract the brain and a brain mask with BET, MindGrab or SynthStrip, locally in your browser.
+    description: Brain extraction with BET, MindGrab or SynthStrip.
     categories: [segmentation-analysis, data-preparation]
     keywords: [brain, skull-stripping, BET, MindGrab, SynthStrip]
     legacy_domain: null
@@ -587,7 +587,7 @@ apps:
   - id: carotid-flow
     path: carotid-flow
     title: Carotid Flow
-    description: Find the carotid arteries in a phase-contrast neck slice and extract their flow curves, in the browser.
+    description: Carotid artery flow curves from phase-contrast MRI.
     categories: [quantitative-imaging]
     keywords: [phase contrast, carotid, blood flow, PC-MRI, pulsatility, cardiac gating]
     legacy_domain: null
@@ -607,7 +607,7 @@ apps:
   - id: lcmodel
     path: lcmodel
     title: LCModel
-    description: Preprocess single-voxel MR spectroscopy with FID-A and quantify metabolites with LCModel, in the browser.
+    description: Single-voxel MRS quantification with FID-A and LCModel.
     categories: [quantitative-imaging]
     keywords: [MRS, spectroscopy, LCModel, FID-A, metabolites, NAA, creatine, basis set, quantification]
     legacy_domain: null
@@ -627,7 +627,7 @@ apps:
   - id: white-matter-lesions
     path: white-matter-lesions
     title: White matter lesions
-    description: Segment white matter lesions on a FLAIR image with FLAMeS, locally in your browser.
+    description: Segment white matter lesions on FLAIR with FLAMeS.
     categories: [segmentation-analysis]
     keywords: [FLAIR, white matter hyperintensities, WMH, multiple sclerosis, lesion segmentation, FLAMeS, nnU-Net]
     legacy_domain: null
@@ -648,7 +648,7 @@ apps:
   - id: nesvor
     path: nesvor
     title: NeSVoR
-    description: Reconstruct an isotropic 3D fetal or neonatal brain volume from motion-corrupted 2D MRI stacks in the browser with WebGPU or on a GPU compute server in your network.
+    description: Reconstruct a 3D fetal brain volume from 2D MRI stacks.
     categories: [data-preparation]
     keywords: [NeSVoR, SVoRT, fetal MRI, slice-to-volume reconstruction, motion correction, neonatal MRI]
     legacy_domain: null
@@ -670,7 +670,7 @@ apps:
   - id: elastix
     path: elastix
     title: elastix
-    description: Rigid, affine and B-spline registration of MRI, OME-Zarr and TIFF images with elastix, in the browser.
+    description: Rigid, affine and B-spline registration with elastix.
     categories: [registration]
     keywords: [registration, elastix, affine, B-spline, OME-Zarr, TIFF, microscopy]
     legacy_domain: null

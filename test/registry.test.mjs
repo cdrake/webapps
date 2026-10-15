@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { parse, stringify } from 'yaml';
-import { loadAppsRegistry, repoRoot } from '../scripts/lib/apps-registry.mjs';
+import { loadAppsRegistry, MAX_DESCRIPTION_LENGTH, repoRoot } from '../scripts/lib/apps-registry.mjs';
 import { validateAssetManifest } from '../scripts/lib/scientific-assets.mjs';
 
 test('catalog contains every app workspace without a repeated inventory', async () => {
@@ -110,6 +110,18 @@ test('registry validation rejects ci.hardware_gpu without a browser suite', asyn
   const path = join(await mkdtemp(join(tmpdir(), 'apps-registry-')), 'apps.yml');
   await writeFile(path, stringify(raw));
   await assert.rejects(loadAppsRegistry(path), /ci\.hardware_gpu needs ci\.browser_test/);
+});
+
+test('registry validation rejects a description too long for the app bar', async () => {
+  const raw = parse(await readFile(join(repoRoot, 'registry', 'apps.yml'), 'utf8'));
+  raw.apps[0].description = 'x'.repeat(MAX_DESCRIPTION_LENGTH);
+  const fits = join(await mkdtemp(join(tmpdir(), 'apps-registry-')), 'apps.yml');
+  await writeFile(fits, stringify(raw));
+  await loadAppsRegistry(fits);
+  raw.apps[0].description = 'x'.repeat(MAX_DESCRIPTION_LENGTH + 1);
+  const path = join(await mkdtemp(join(tmpdir(), 'apps-registry-')), 'apps.yml');
+  await writeFile(path, stringify(raw));
+  await assert.rejects(loadAppsRegistry(path), /description must be at most 60 characters/);
 });
 
 test('registry validation rejects a non-boolean ci.browser_test', async () => {

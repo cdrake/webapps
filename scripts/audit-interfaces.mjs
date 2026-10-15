@@ -151,6 +151,17 @@ try {
                 .filter(node => node.getBoundingClientRect().right > identity.getBoundingClientRect().right + 1 || node.scrollWidth > node.clientWidth + 1)
                 .map(node => node.textContent.trim())));
             if (clipped.length) result.failures.push(`App bar clips ${clipped.join(', ')} at ${width}px`);
+            // The description shows whole or not at all, and never costs the action labels at 1280 px.
+            const bar = await page.evaluate(() => {
+              const visible = [...document.querySelectorAll('.nd-app-bar')].filter(node => node.checkVisibility());
+              return {
+                cutDescription: visible.some(node => [...node.querySelectorAll('.nd-app-bar__description')]
+                  .some(description => description.checkVisibility() && description.scrollWidth > description.clientWidth + 1)),
+                compact: visible.some(node => node.classList.contains('nd-app-bar--compact')),
+              };
+            });
+            if (bar.cutDescription) result.failures.push(`App bar cuts the description at ${width}px`);
+            if (bar.compact && width >= 1280) result.failures.push(`App bar drops action labels at ${width}px`);
           }
           await page.setViewportSize(viewport);
         }
