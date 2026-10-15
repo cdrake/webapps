@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { aggregate, aggregateJobs, jobTiming, osOf, percentile, selectionFromLog, summarizeRun } from '../scripts/lib/ci-minutes.mjs';
+import { aggregate, aggregateJobs, classifyRun, jobTiming, osOf, percentile, selectionFromLog, summarizeRun } from '../scripts/lib/ci-minutes.mjs';
 
 const at = (minute, second = 0) => new Date(Date.UTC(2026, 9, 15, 0, minute, second)).toISOString();
 const job = (name, labels, created, started, completed, conclusion = 'success') => ({ name, labels, created_at: created, started_at: started, completed_at: completed, conclusion });
@@ -24,6 +24,19 @@ test('the planner summary line classifies a run', () => {
   assert.equal(selectionFromLog('x Selected 0 of 31 apps; site build skipped.').kind, 'no apps');
   assert.equal(selectionFromLog('x Selected 31 of 31 apps; site build runs.').kind, 'full');
   assert.equal(selectionFromLog('no planner output'), null);
+});
+
+test('a run is classified only when its planner job succeeded', () => {
+  const planJob = { name: 'app-plan', conclusion: 'success' };
+  const appJobs = (count) => Array.from({ length: count }, (_, index) => ({ name: `app-tests (app${index}, app${index})` }));
+  assert.equal(classifyRun({ planJob, log: 'x Selected 2 of 31 apps; site build runs.', jobs: appJobs(5), catalogSize: 31 }).kind, 'narrowed');
+  assert.deepEqual(classifyRun({ planJob, log: '', jobs: appJobs(31), catalogSize: 31 }), { kind: 'full (inferred)', selected: 31 });
+  assert.equal(classifyRun({ planJob, log: '', jobs: appJobs(4), catalogSize: 31 }).kind, 'narrowed (inferred)');
+  assert.equal(classifyRun({ planJob, log: '', jobs: [], catalogSize: 31 }).kind, 'no apps (inferred)');
+  for (const conclusion of ['cancelled', 'failure', null]) {
+    assert.equal(classifyRun({ planJob: { ...planJob, conclusion }, log: '', jobs: [], catalogSize: 31 }), null, String(conclusion));
+  }
+  assert.equal(classifyRun({ planJob: undefined, log: '', jobs: [], catalogSize: 31 }), null);
 });
 
 test('a run summary splits minutes and queue by OS and counts per-app jobs', () => {

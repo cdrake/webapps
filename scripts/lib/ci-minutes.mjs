@@ -44,6 +44,18 @@ export function selectionFromLog(log) {
   return { kind: selected === total ? 'full' : selected === 0 ? 'no apps' : 'narrowed', selected, total, site: narrowed[3] === 'runs' };
 }
 
+// What the planner selected for a run: its logged summary, or, for runs from
+// before it logged one, the number of app-tests jobs it created. Only a planner
+// job that succeeded selected anything; otherwise the run stays unknown.
+export function classifyRun({ planJob, log, jobs, catalogSize }) {
+  if (planJob?.conclusion !== 'success') return null;
+  const logged = selectionFromLog(log);
+  if (logged) return logged;
+  const created = jobs.filter((job) => /^app-tests \(/.test(job.name)).length;
+  const kind = created === catalogSize ? 'full' : created === 0 ? 'no apps' : 'narrowed';
+  return { kind: `${kind} (inferred)`, selected: created };
+}
+
 export function summarizeRun(run, jobs, selection) {
   const timings = jobs.map(jobTiming).filter(Boolean);
   const minutes = {};

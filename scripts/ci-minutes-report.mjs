@@ -10,7 +10,7 @@
 // Needs an authenticated `gh`. Rerunning over the same window gives the same
 // numbers, except for runs still in progress, which are left out.
 import { writeFile } from 'node:fs/promises';
-import { aggregate, aggregateJobs, selectionFromLog, summarizeRun } from './lib/ci-minutes.mjs';
+import { aggregate, aggregateJobs, classifyRun, summarizeRun } from './lib/ci-minutes.mjs';
 import { loadAppsRegistry } from './lib/apps-registry.mjs';
 import { jobLog, listJobs, listRuns, mapLimited } from './lib/github-actions.mjs';
 
@@ -24,19 +24,19 @@ const limit = Number(option('--limit', 1000));
 // app-tests jobs they created; the catalog has had this many apps since 2026-10-09.
 const catalogSize = Number(option('--catalog-size', (await loadAppsRegistry()).apps.length));
 
-const runs = (await Promise.all(events.map((event) => listRuns({ since, event, limit }))))
+// The window is filtered before the limit, which keeps the newest runs over all events.
+const runs = (await Promise.all(events.map((event) => listRuns({ since, event }))))
   .flat()
   .filter((run) => run.status === 'completed' && (!until || run.created_at < until))
+  .sort((a, b) => b.created_at.localeCompare(a.created_at))
   .slice(0, limit);
 console.error(`Reading ${runs.length} completed ci runs since ${since}${until ? ` until ${until}` : ''}`);
 
 const summaries = await mapLimited(runs, 6, async (run) => {
   const jobs = await listJobs(run.id);
   const planJob = jobs.find((job) => job.name === 'app-plan');
-  const logged = planJob ? selectionFromLog(await jobLog(planJob.id)) : null;
-  const created = jobs.filter((job) => /^app-tests \(/.test(job.name)).length;
-  const selection = logged ?? (planJob ? { kind: created === catalogSize ? 'full (inferred)' : created === 0 ? 'no apps (inferred)' : 'narrowed (inferred)', selected: created } : null);
-  return { ...summarizeRun(run, jobs, selection), event: run.event };
+  const log = planJob ? await jobLog(planJob.id) : '';
+  return { ...summarizeRun(run, jobs, classifyRun({ planJob, log, jobs, catalogSize })), event: run.event };
 });
 
 const byEvent = Object.fromEntries(events.map((event) => [event, aggregate(summaries.filter((run) => run.event === event))]));

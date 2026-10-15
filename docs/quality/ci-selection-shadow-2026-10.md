@@ -57,7 +57,8 @@ merged in between whose narrowed selection skipped that app. It also lists merge
 Every completed `ci` run in the window, from the Actions API: 163 runs (117 pull request, 43 push to main, 3 nightly).
 Each run is classified by the planner's own summary line in the `app-plan` job log (`Selected N of 31 apps` or
 `Full catalog and site selected`); runs from before that line existed (#273, 2026-10-14) are classified by their
-number of `app-tests` jobs and marked *inferred* in `minutes.md`. The tables below merge the two. Per job:
+number of `app-tests` jobs and marked *inferred* in `minutes.md`. A run whose `app-plan` job did not succeed (mostly
+cancelled by a newer push) is unclassified. The tables below merge the two. Per job:
 
 - **queue** = `started_at − created_at`. A job is created once the jobs it `needs` finish, so this is time waiting for
   a runner, not for earlier jobs;
@@ -196,15 +197,15 @@ Window: `ci` runs created 2026-10-13 00:00 to 2026-10-15 18:30 UTC.
 | --- | --- | --- | --- | --- | --- | --- |
 | Full catalog | 70 (45 / 25) | 52.1 / 91.7 | 353 / 381 | 0 / 0 | 228 / 1576 / 3401 | – |
 | Narrowed | 30 (25 / 5) | 32.4 / 64.9 | 94 / 344 | 0 / 61 | 37 / 782 / 1566 | 250 / 2073 / 4048 |
-| No apps | 14 (10 / 4) | 5.7 / 12.1 | 11 / 23 | 0 / 0 | 2 / 34 / 153 | – |
-| Unclassified | 3 (0 / 3) | – | – | – | – | – |
+| No apps | 11 (10 / 1) | 5.7 / 12.1 | 11 / 23 | 0 / 0 | 3 / 43 / 153 | – |
+| Unclassified (planner cancelled) | 6 (0 / 6) | – | – | – | – | – |
 
 Totals: 29 733 Linux and 576 macOS runner minutes. Full-catalog runs are 70 of 117 runs and used 25 603 Linux minutes
 (86 %). Full-catalog pull requests skip the macOS GPU lane by design (it runs after merge and nightly); narrowed ones
 run it for the selected GPU apps, so narrowing adds the pull request's macOS minutes and macOS queue.
 
 Reading the medians: a narrowed run uses about a quarter of a full run's Linux minutes (94 against 353) and a run that
-selects no app about 3 %. The 44 narrowed and no-app runs used 4 130 Linux minutes in total, cancelled runs included;
+selects no app about 3 %. The 41 narrowed and no-app runs used 4 118 Linux minutes in total, cancelled runs included;
 the 35 that finished would have used about 12 300 at the full-catalog median. That is an estimate from medians, not a
 replay.
 
@@ -212,10 +213,10 @@ replay.
 
 | Selection | Runs (finished / cancelled) | Wall min, median / p90 | Linux min per run, median / p90 | macOS min per run, median / p90 | Linux job queue s, median / p90 / max | macOS job queue s, median / p90 / max |
 | --- | --- | --- | --- | --- | --- | --- |
-| Push, full catalog | 19 (9 / 10) | 53 / 67 | 391 / 420 | 75 / 83 | 49 / 879 / 1738 | 283 / 1493 / 4304 |
+| Push, full catalog | 18 (9 / 9) | 53 / 67 | 391 / 420 | 75 / 83 | 49 / 879 / 1738 | 283 / 1493 / 4304 |
 | Push, narrowed | 11 (5 / 6) | 27.5 / 46.4 | 56 / 220 | 0 / 62 | 2 / 455 / 646 | 186 / 1407 / 1748 |
-| Push, no apps | 11 (3 / 8) | 16.1 / 31.6 | 26 / 30 | 0 / 0 | 0 / 120 / 722 | – |
-| Push, unclassified | 2 (0 / 2) | – | – | – | – | – |
+| Push, no apps | 6 (3 / 3) | 16.1 / 31.6 | 26 / 30 | 0 / 0 | 2 / 202 / 422 | – |
+| Push, unclassified (planner cancelled) | 8 (0 / 8) | – | – | – | – | – |
 | Nightly | 3 (1 / 2) | 109.7 | 454 | 73 | 2 / 796 / 1243 | 10 / 795 / 983 |
 
 Totals: pushes 7 410 Linux and 1 249 macOS minutes; nightly 1 611 Linux and 199 macOS minutes.
