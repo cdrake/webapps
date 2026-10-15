@@ -34,7 +34,15 @@ test('CPU segmentation can be cancelled and retried to produce native-grid label
     if (snapshot.state === 'failed') throw new Error(JSON.stringify(snapshot.error));
     return snapshot.state;
   }, { timeout: 840000, intervals: [1000, 2000, 5000] }).toBe('succeeded');
-  const labels = readVolume(source(await download(page, 'labels')));
+  const labelBytes = await download(page, 'labels');
+  const rows = page.locator('#resultList .nd-volume-toggle');
+  await expect(rows.locator('.nd-stage-label')).toHaveText(['Brain mask', 'Label map']);
+  const visibleLabels = page.waitForEvent('download');
+  await rows.nth(1).locator('.nd-download-btn').click();
+  const labelFile = await visibleLabels;
+  expect(labelFile.suggestedFilename()).toBe('T1_labels.nii');
+  expect((await readFile(await labelFile.path())).equals(labelBytes)).toBe(true);
+  const labels = readVolume(source(labelBytes));
   const input = readVolume(source(await readFile(fixture)));
   expect(labels.dims).toEqual(input.dims);
   expect(labels.affine).toEqual(input.affine);
@@ -69,6 +77,8 @@ test('QC failure after real segmentation fails the operation instead of publishi
   const regions = await dispatch(page, 'viewers.regions', { viewerId: 'main' });
   expect(regions.find(region => region.name === 'Hippocampus').voxels).toBeGreaterThan(0);
   await expect(page.locator('#saveBtn')).toBeDisabled();
+  // Segmentation succeeded, so its downloads stay when only QC fails.
+  await expect(page.locator('#resultList .nd-stage-label')).toHaveText(['Brain mask', 'Label map']);
 });
 
 test('an air template with other bytes fails QC instead of publishing metrics', async ({ page }) => {
@@ -95,8 +105,22 @@ test('default PVE analysis publishes native-grid fractions and an independent ma
     return snapshot.state;
   }, { timeout: 840000, intervals: [1000, 2000, 5000] }).toBe('succeeded');
   const input = readVolume(source(await readFile(fixture)));
+  // The sidebar result list offers the automation's bytes under names that start with the input name.
+  await expect(page.locator('#resultsSection')).toHaveJSProperty('open', true);
+  const rows = page.locator('#resultList .nd-volume-toggle');
+  await expect(rows.locator('.nd-stage-label')).toHaveText(['Brain mask', 'Ventricular CSF fraction', 'GM fraction', 'WM fraction']);
+  const visible = {};
+  for (const row of await rows.all()) {
+    const downloading = page.waitForEvent('download');
+    await row.locator('.nd-download-btn').click();
+    const file = await downloading;
+    visible[file.suggestedFilename()] = await readFile(await file.path());
+  }
+  expect(Object.keys(visible)).toEqual(['T1_brain-mask.nii', 'T1_csf.nii', 'T1_gm.nii', 'T1_wm.nii']);
   for (const name of ['csf', 'gm', 'wm', 'mask']) {
-    const volume = readVolume(source(await download(page, name)));
+    const bytes = await download(page, name);
+    expect(visible[`T1_${name === 'mask' ? 'brain-mask' : name}.nii`].equals(bytes)).toBe(true);
+    const volume = readVolume(source(bytes));
     expect(volume.dims).toEqual(input.dims);
     expect(volume.affine).toEqual(input.affine);
     expect(volume.data.every(value => Number.isFinite(value) && value >= 0 && value <= 1)).toBe(true);

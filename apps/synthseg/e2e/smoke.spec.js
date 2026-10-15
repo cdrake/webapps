@@ -113,6 +113,8 @@ test('worker results publish a checksummed report and label volumes; replacement
   expect(report.measurements.labels.find(label => label.id === 2)).toEqual({
     id: 2, name: 'Left-Cerebral-White-Matter', voxels: 2, volumeMl: 0.048,
   });
+  // A result without tissue maps offers no map downloads.
+  for (const tissue of ['gm', 'wm', 'csf']) await expect(page.locator(`#${tissue}SaveBtn`)).toBeDisabled();
   const downloads = [];
   page.on('download', download => downloads.push(download));
   const outputDownload = page.waitForEvent('download');
@@ -132,6 +134,38 @@ test('worker results publish a checksummed report and label volumes; replacement
   expect(JSON.parse(await page.locator('#neurodesk-run').textContent()).report).toBeUndefined();
   await expect(page.locator('#reportBtn')).toBeDisabled();
   await expect(page.locator('#saveBtn')).toBeDisabled();
+});
+
+test('worker tissue maps become GM, WM and CSF downloads in the report', async ({ page }) => {
+  await fakeInference(page);
+  await page.goto('./');
+  await page.locator('#imageInput').setInputFiles(SMALL);
+  for (const tissue of ['gm', 'wm', 'csf']) await expect(page.locator(`#${tissue}SaveBtn`)).toBeDisabled();
+  await page.locator('#processButton').click();
+  const labels = await readFile('../../exes/synthseg/test/fixtures/small_fast.nii.gz');
+  // GM is a real image so View can load it; WM and CSF only need distinct bytes.
+  const maps = Object.fromEntries(['gm', 'wm', 'csf'].map((tissue, index) => [tissue, [...(tissue === 'gm' ? labels : gzipSync(Buffer.from(`${tissue}${index}`)))]]));
+  await page.evaluate(async ({ bytes, maps }) => {
+    const tissues = Object.fromEntries(Object.entries(maps).map(([name, value]) => [name, new Uint8Array(value).buffer]));
+    await window.inferenceWorker.onmessage({
+      data: { type: 'result', buffer: new Uint8Array(bytes).buffer, tissues, provenance: { outputShape: [1, 1, 1], seconds: 0 } },
+    });
+  }, { bytes: [...labels], maps });
+  await expect(page.locator('#statusText')).toHaveAttribute('data-neurodesk-state', 'succeeded');
+  const { report } = JSON.parse(await page.locator('#neurodesk-run').textContent());
+  for (const tissue of ['gm', 'wm', 'csf']) {
+    const saved = await download(page, page.locator(`#${tissue}SaveBtn`));
+    expect(saved.name).toBe(`small_synthseg_${tissue}.nii.gz`);
+    expect(saved.name).toBe(report.artifacts[tissue].filename);
+    expect(report.artifacts[tissue].type).toBe('neuro:volume');
+    expect([...saved.bytes]).toEqual(maps[tissue]);
+  }
+  await page.locator('#gmViewBtn').click();
+  await expect(page.locator('#imageLabel')).toHaveText('ORIGINAL IMAGE · GM PROBABILITY');
+  await expect(page.locator('#viewerError')).toBeHidden();
+  await page.locator('#imageInput').setInputFiles(SMALL);
+  await expect(page.locator('#statusText')).toHaveAttribute('data-neurodesk-state', 'ready');
+  for (const tissue of ['gm', 'wm', 'csf']) await expect(page.locator(`#${tissue}SaveBtn`)).toBeDisabled();
 });
 
 const SMALL = '../../exes/synthseg/test/fixtures/small.nii.gz';

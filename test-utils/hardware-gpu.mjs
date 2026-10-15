@@ -3,17 +3,26 @@ import assert from 'node:assert/strict';
 // Browser launch for WebGPU and WebGL2 tests. Playwright's default headless
 // shell only ever gets SwiftShader, even on a Mac. Full Chromium in new headless
 // mode reaches Metal on Apple silicon, including GitHub's free macOS runners
-// (niivue/mono#199). NEURODESK_HARDWARE_GPU=1 selects it; without the variable
-// every suite keeps the SwiftShader adapter it has on Linux CI.
+// (niivue/mono#199), and Vulkan on Linux. NEURODESK_HARDWARE_GPU=1 selects it;
+// without the variable every suite keeps the SwiftShader adapter it has on Linux CI.
 export const hardwareGpu = process.env.NEURODESK_HARDWARE_GPU === '1';
 
 // --use-webgpu-adapter keeps WebGPU on SwiftShader on a Mac too, where Chromium
 // would otherwise refuse the headless shell an adapter.
 const SWIFTSHADER = ['--use-webgpu-adapter=swiftshader', '--use-angle=swiftshader', '--use-vulkan=swiftshader', '--enable-features=Vulkan', '--disable-vulkan-surface'];
 
+// On Linux, full Chromium gives WebGPU a Vulkan GPU (for example Mesa on Intel)
+// only with both flags; with either flag alone its WebGPU adapter stays SwiftShader.
+const LINUX_VULKAN = ['--enable-features=Vulkan', '--use-angle=vulkan'];
+
+/** Chromium arguments for a hardware GPU run on `platform`. */
+export function hardwareGpuArgs(platform = process.platform) {
+  return ['--enable-unsafe-webgpu', '--ignore-gpu-blocklist', ...(platform === 'linux' ? LINUX_VULKAN : [])];
+}
+
 // Spread into a config's `use` or pass to `test.use()`.
 export const gpuBrowser = hardwareGpu
-  ? { channel: 'chromium', launchOptions: { args: ['--enable-unsafe-webgpu', '--ignore-gpu-blocklist'] } }
+  ? { channel: 'chromium', launchOptions: { args: hardwareGpuArgs() } }
   : { launchOptions: { args: ['--enable-unsafe-webgpu', ...SWIFTSHADER] } };
 
 // Fails unless the page's WebGPU adapter is real hardware. When

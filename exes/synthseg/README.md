@@ -10,6 +10,7 @@ builds anywhere the `ort` crate does.
 synthseg --i T1_head.nii.gz --o seg.nii.gz      # default: flip averaging + topology cleanup
 synthseg T1_head.nii.gz --fast                   # writes T1_head_synthseg.nii.gz, no flip/topology
 synthseg T1_head.nii.gz --vol T1_head_vol.csv    # also writes mri_synthseg --vol soft volumes (mm³)
+synthseg T1_head.nii.gz --tissues                # also writes T1_head_synthseg_gm/_wm/_csf.nii.gz
 synthseg ct.nii.gz out.nii.gz --ct               # clip Hounsfield units to [0, 80]
 synthseg --self-check
 ```
@@ -29,6 +30,37 @@ Blur, flip averaging, connected components and argmax run on the CPU for every
 device ([src/post.rs](src/post.rs)); the GPU runs only the U-Net. The CPU path
 will swap on a 16 GB machine (ORT arena); first fix would be arena options or
 spatial tiling.
+
+## Tissue probability maps
+
+`--tissues` also writes `OUTPUT_gm`, `OUTPUT_wm` and `OUTPUT_csf`, with the
+label map's extension and compression: float32 NIfTI with the label map's
+header geometry. mri_synthseg has no equivalent; its `--post` writes all 33
+posteriors. Each voxel holds the sum of the normalised posteriors of one group
+of structures (`post::GM_LABELS`, `WM_LABELS`, `CSF_LABELS`), from the same
+postprocessed posteriors as the labels and the `--vol` table. The groups follow
+FreeSurfer's convention:
+
+| Map | FreeSurfer labels |
+| --- | --- |
+| GM | cerebral cortex 3/42, cerebellar cortex 8/47, and the structures in FreeSurfer's SubCortGrayVol: thalamus 10/49, caudate 11/50, putamen 12/51, pallidum 13/52, hippocampus 17/53, amygdala 18/54, accumbens 26/58, ventral DC 28/60 |
+| WM | cerebral white matter 2/41, cerebellar white matter 7/46, brainstem 16 |
+| CSF | lateral ventricles 4/43, inferior lateral ventricles 5/44, 3rd ventricle 14, 4th ventricle 15, CSF 24 |
+
+Ventral DC is GM because SubCortGrayVol counts it, although it contains some
+white matter. The brainstem is WM because it is mostly white matter;
+FreeSurfer puts it in no tissue total. The three groups cover every label
+except background, so GM + WM + CSF = 1 − P(background). These are aggregated
+anatomical class probabilities, not the output of a tissue-segmentation model.
+The grid is the label grid: the input grid when each voxel side is 0.95 to
+1.05 mm, otherwise the resampled 1 mm grid. In `--fast` mode the 0.2 posterior
+threshold makes the maps sparse; the default mode keeps lower values.
+
+The maps change neither the labels nor the volumes, and the label path writes
+the same bytes with and without `--tissues`. No FreeSurfer golden exists for
+them (`mri_synthseg --post` goldens are future work), so the tests hold them to
+their own label map: same header geometry, values in [0, 1], a sum of at most
+1, and per-tissue totals equal to the `--vol` table's grouped soft volumes.
 
 Not supported: `--robust`, `--parc`, `--qc`, `--v1`, `--photo`, `--keepgeom`,
 `--crop`, `--autocrop`, `--vol`, `--post`, `--resample`, folder input, CUDA.

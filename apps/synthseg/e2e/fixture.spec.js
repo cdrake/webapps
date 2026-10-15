@@ -9,6 +9,7 @@ import { expect, test } from '@playwright/test';
 import { readNifti } from '../../../packages/components/src/file-io/NiftiUtils.js';
 import { planGpuGraph } from '../../../packages/runtime-support/src/gpu-unet/session.js';
 import { hardwareGpu } from '../../../test-utils/hardware-gpu.mjs';
+import { compareTissues } from '../../../packages/synthseg/validation/compare.mjs';
 
 const graph = JSON.parse(readFileSync(new URL('../../../packages/synthseg/src/gpu-model.json', import.meta.url), 'utf8'));
 const gates = JSON.parse(readFileSync(new URL('../../../packages/synthseg/validation/gates.json', import.meta.url), 'utf8'));
@@ -162,6 +163,13 @@ async function checkCase(page, { input, reference, mode, limit, pinned }) {
   const report = JSON.parse(readFileSync(await reportDownload.path(), 'utf8'));
   const volumesDownload = await Promise.all([page.waitForEvent('download'), page.locator('#volumesBtn').click()]).then(([value]) => value);
   const [volumeHeader, volumeRow] = readFileSync(await volumesDownload.path(), 'utf8').trim().split('\r\n');
+  const tissues = {};
+  for (const tissue of ['gm', 'wm', 'csf']) {
+    const tissueDownload = await Promise.all([page.waitForEvent('download'), page.locator(`#${tissue}SaveBtn`).click()]).then(([value]) => value);
+    expect(tissueDownload.suggestedFilename()).toBe(report.artifacts[tissue].filename);
+    tissues[tissue] = readFileSync(await tissueDownload.path());
+    expect(checksum(tissues[tissue])).toBe(report.artifacts[tissue].sha256);
+  }
   // The hosted norms, fetched and checksum-verified by the page, chart every structure.
   await page.getByRole('button', { name: 'Volumes', exact: true }).click();
   await expect(page.locator('#volumeReport figure svg circle.nd-chart-marker, #volumeReport figure svg line.nd-chart-level')).toHaveCount(10, { timeout: 60000 });
@@ -238,6 +246,10 @@ async function checkCase(page, { input, reference, mode, limit, pinned }) {
   expect(produced.header.xyztUnits).toBe(golden.header.xyztUnits);
   expect(affineError).toBeLessThanOrEqual(gates.maxAffineErrorMm);
   expect(result.mismatch_fraction).toBeLessThanOrEqual(limit);
+  // No golden exists for the tissue maps: they must sit on the label grid and sum to the soft volumes.
+  result.tissueChecks = compareTissues(`${input} ${mode}`, producedBytes, tissues, report.measurements.softVolumesMm3);
+  save();
+  for (const [passed, line] of result.tissueChecks) expect(passed, line).toBe(true);
   result.pass = true;
   save();
   console.log(`${input} ${mode}: ${mismatches}/${produced.data.length} mismatched, ${report.provenance.seconds.toFixed(1)} s`);
@@ -276,17 +288,50 @@ if (!probeOnly) {
     await expect(page.locator('#statusText')).toContainText('Labels ready');
     const pending = page.waitForEvent('download');
     await page.locator('#saveBtn').click();
-    const image = await readNifti(readFileSync(await (await pending).path()));
+    const labelBytes = readFileSync(await (await pending).path());
+    const image = await readNifti(labelBytes);
     const { report } = JSON.parse(await page.locator('#neurodesk-run').textContent());
     expect(report.provenance.voxelSizeMm).toBe(1.3);
     expect(report.provenance.preparation).toMatchObject({ voxelSizeMm: 1.3 });
     expect(report.artifacts.labels.space).toBe('subject-1.3mm');
+    // The tissue maps follow the labels onto the coarser grid.
+    const tissues = {};
+    for (const tissue of ['gm', 'wm', 'csf']) {
+      expect(report.artifacts[tissue].space).toBe('subject-1.3mm');
+      const map = page.waitForEvent('download');
+      await page.locator(`#${tissue}SaveBtn`).click();
+      tissues[tissue] = readFileSync(await (await map).path());
+    }
+    for (const [passed, line] of compareTissues('1.3 mm grid', labelBytes, tissues, report.measurements.softVolumesMm3)) expect(passed, line).toBe(true);
     expect(image.dims).toEqual(report.provenance.outputShape);
     for (const spacing of image.header.voxelSize) expect(spacing).toBeCloseTo(1.3, 5);
     expect(new Set(image.data).size).toBeGreaterThan(5);
     expect(report.measurements.softVolumesMm3['total intracranial']).toBeGreaterThan(0);
     await page.getByRole('button', { name: 'Volumes', exact: true }).click();
     await expect(page.locator('#volumeReport')).toContainText('The 1 mm reference norms have not been validated for this grid.');
+  });
+
+  test('an automation run keeps the declared 1 mm grid when the form holds a coarser one', async ({ page }) => {
+    test.setTimeout(1800000);
+    const dispatch = (command, request = {}) => page.evaluate(({ command, request }) => globalThis.neurodeskAutomation.dispatch(command, request), { command, request });
+    await page.goto('./');
+    await page.locator('#preparationSection > summary').click();
+    await page.locator('#voxelSizeMm').fill('1.3');
+    await page.locator('#neurodesk-input-transfer').setInputFiles(`${fixtures}/small.nii.gz`);
+    await dispatch('adopt', { role: 'image' });
+    await dispatch('start', { operation: 'segment', parameters: { mode: 'fast' } });
+    await expect.poll(async () => {
+      const snapshot = await dispatch('snapshot');
+      if (snapshot.state === 'failed') throw new Error(JSON.stringify(snapshot.error));
+      return snapshot.state;
+    }, { timeout: 1700000, intervals: [1000, 5000] }).toBe('succeeded');
+    const { report } = await dispatch('snapshot');
+    expect(report.provenance.voxelSizeMm).toBe(1);
+    for (const role of ['labels', 'gm', 'wm', 'csf']) expect(report.artifacts[role].space).toBe('subject-1mm');
+    const pending = page.waitForEvent('download');
+    await dispatch('download', { artifactId: 'labels' });
+    const image = await readNifti(readFileSync(await (await pending).path()));
+    for (const spacing of image.header.voxelSize) expect(spacing).toBeCloseTo(1, 5);
   });
 }
 

@@ -2,6 +2,7 @@
 // exes/synthseg/tests/parity.rs (./gates.json). Each check is [passed, line].
 import { gunzipSync } from 'node:zlib';
 import gates from './gates.json' with { type: 'json' };
+import { TISSUES, tissueVolumes } from '../src/results.js';
 
 export { gates };
 
@@ -100,5 +101,58 @@ export function compareVolumeTable(name, actual, reference) {
   }
   const largest = `${worst.column} ${(100 * worst.relative).toFixed(4)} %, ${worst.absolute.toFixed(3)} mm³`;
   checks.push([failing.length === 0, `${name} structure volumes within ${100 * limits.maxRelativeError} % or ${limits.maxAbsoluteErrorMm3} mm³ of FreeSurfer's (largest ${largest}${failing.length ? `; failing ${failing.join(', ')}` : ''})`]);
+  return checks;
+}
+
+/** float32 voxels of a NIfTI-1 image. */
+function readFloats({ view, dims }) {
+  const offset = view.getFloat32(108, true);
+  const data = new Float32Array(dims[0] * dims[1] * dims[2]);
+  for (let index = 0; index < data.length; index++) data[index] = view.getFloat32(offset + 4 * index, true);
+  return data;
+}
+
+/**
+ * The GM, WM and CSF maps against their own label map and soft volumes (mri_synthseg --vol columns, mm³):
+ * float32 on the label grid with the label header's geometry, probabilities whose sum is at most 1, and
+ * totals that equal the summed soft volumes of each tissue's structures. No independent golden exists.
+ */
+export function compareTissues(name, labelBytes, tissueBytes, volumes) {
+  const limits = gates.tissues;
+  const labels = readLabels(labelBytes);
+  const maps = Object.fromEntries(TISSUES.map((tissue) => [tissue, readLabels(tissueBytes[tissue])]));
+  const checks = [];
+  // Header bytes outside datatype (70-71) and description (148-227) equal the label map's.
+  const geometry = (header) => [...header.subarray(0, 70), ...header.subarray(72, 148), ...header.subarray(228, 352)];
+  for (const tissue of TISSUES) {
+    const map = maps[tissue];
+    checks.push([map.datatype === 16, `${name} ${tissue} map is float32 (datatype ${map.datatype})`]);
+    checks.push([sameList(geometry(map.header), geometry(labels.header)), `${name} ${tissue} map has the label map's grid and header geometry`]);
+  }
+  const data = Object.fromEntries(TISSUES.map((tissue) => [tissue, readFloats(maps[tissue])]));
+  const sums = Object.fromEntries(TISSUES.map((tissue) => [tissue, 0]));
+  let outside = 0;
+  let largestSum = 0;
+  for (let index = 0; index < labels.data.length; index++) {
+    let total = 0;
+    for (const tissue of TISSUES) {
+      const value = data[tissue][index];
+      if (!(value >= 0 && value <= 1)) outside++;
+      sums[tissue] += value;
+      total += value;
+    }
+    largestSum = Math.max(largestSum, total);
+  }
+  checks.push([outside === 0, `${name} tissue maps have ${outside} values outside [0, 1]`]);
+  checks.push([largestSum <= 1 + limits.maxProbabilitySumExcess, `${name} GM + WM + CSF is at most ${largestSum} <= 1 + ${limits.maxProbabilitySumExcess}`]);
+  // The volumes use the product of the voxel axis lengths, as post.rs voxel_mm3 does.
+  const voxelMm3 = [0, 1, 2].reduce((product, axis) => product * Math.hypot(...labels.affine.map((row) => row[axis])), 1);
+  const expected = tissueVolumes(volumes);
+  for (const tissue of TISSUES) {
+    const actual = sums[tissue] * voxelMm3;
+    const error = Math.abs(actual - expected[tissue]);
+    const passed = error <= limits.maxVolumeErrorMm3 || error <= limits.maxVolumeRelativeError * expected[tissue];
+    checks.push([passed, `${name} ${tissue} map sums to ${actual.toFixed(3)} mm³ (grouped soft volumes ${expected[tissue].toFixed(3)} mm³)`]);
+  }
   return checks;
 }

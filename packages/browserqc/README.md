@@ -96,7 +96,7 @@ same names:
 | --- | --- |
 | `qc.json` | niimath's QC report, with `provenance.segmentation`, `provenance.air_template` and the optional `bids_meta` |
 | `brain-mask.nii` | MindGrab brain mask, uint8, on the input grid |
-| `csf.nii`, `gm.nii`, `wm.nii` | Tissue fractions, float32, on the input grid (`mindmap-pve`) |
+| `csf.nii`, `gm.nii`, `wm.nii` | Tissue fractions, uint8 scaled to 0-1 by `scl_slope`, on the input grid (`mindmap-pve`). The CSF map covers the ventricles only |
 | `labels.nii` | Label map on the input grid (label models) |
 
 The command line reads NIfTI only. Convert DICOM with dcm2niix first. The app

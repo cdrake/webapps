@@ -269,10 +269,10 @@ pub fn flip_x(input: &[f32], dims: &[usize; 3]) -> Vec<f32> {
     out
 }
 
-/// Aligned-space labels (`mi` order over `p.aligned`) back to the input axis order.
-pub fn restore(labels: &[i32], p: &Prepared) -> Volume<i32> {
+/// Aligned-space labels or maps (`mi` order over `p.aligned`) back to the input axis order.
+pub fn restore<T: Copy + Default>(labels: &[T], p: &Prepared) -> Volume<T> {
     let d = &p.aligned;
-    let mut data = vec![0i32; product(&p.dims)];
+    let mut data = vec![T::default(); product(&p.dims)];
     for x in 0..d[0] {
         for y in 0..d[1] {
             for z in 0..d[2] {

@@ -1,7 +1,7 @@
 // ponytail: loops mirror the Python index for index; clamp differs from max/min only for NaN, which is rejected earlier.
 #![allow(clippy::needless_range_loop, clippy::manual_clamp)]
 // Minimal NIfTI-1 scalar volume I/O (from exes/synthsr). Reads to f64 like nibabel get_fdata,
-// averages 4D channels like SynthSeg's preprocess(), writes int32 label maps.
+// averages 4D channels like SynthSeg's preprocess(), writes int32 label maps and float32 probability maps.
 use neurodesk_nifti::affine::inverse3;
 use neurodesk_nifti::Nifti1Header;
 use std::io::Read;
@@ -215,7 +215,30 @@ fn quaternion(affine: &Affine, pixdim: &[f64; 3]) -> Option<(f64, [f64; 3])> {
     Some((qfac, [b * sign, c * sign, d * sign]))
 }
 
-pub fn write(v: &Volume<i32>) -> Vec<u8> {
+/// A voxel type `write` stores: int32 labels or float32 probabilities, both 32 bits wide.
+pub trait Sample: Copy {
+    const DATATYPE: i16;
+    const DESCRIP: &'static [u8];
+    fn le_bytes(self) -> [u8; 4];
+}
+
+impl Sample for i32 {
+    const DATATYPE: i16 = 8;
+    const DESCRIP: &'static [u8] = b"SynthSeg 2.0 segmentation";
+    fn le_bytes(self) -> [u8; 4] {
+        self.to_le_bytes()
+    }
+}
+
+impl Sample for f32 {
+    const DATATYPE: i16 = 16;
+    const DESCRIP: &'static [u8] = b"SynthSeg 2.0 tissue probability";
+    fn le_bytes(self) -> [u8; 4] {
+        self.to_le_bytes()
+    }
+}
+
+pub fn write<T: Sample>(v: &Volume<T>) -> Vec<u8> {
     let mut b = vec![0u8; 352 + v.data.len() * 4];
     let put16 = |b: &mut [u8], o: usize, x: i16| b[o..o + 2].copy_from_slice(&x.to_le_bytes());
     let put32 = |b: &mut [u8], o: usize, x: f32| b[o..o + 4].copy_from_slice(&x.to_le_bytes());
@@ -224,7 +247,7 @@ pub fn write(v: &Volume<i32>) -> Vec<u8> {
     for a in 0..7 {
         put16(&mut b, 42 + a * 2, if a < 3 { v.dims[a] as i16 } else { 1 });
     }
-    put16(&mut b, 70, 8);
+    put16(&mut b, 70, T::DATATYPE);
     put16(&mut b, 72, 32);
     let pixdim: [f64; 3] = std::array::from_fn(|a| {
         (0..3)
@@ -246,8 +269,7 @@ pub fn write(v: &Volume<i32>) -> Vec<u8> {
     put32(&mut b, 108, 352.0);
     put32(&mut b, 112, 1.0);
     b[123] = v.units;
-    let desc = b"SynthSeg 2.0 segmentation";
-    b[148..148 + desc.len()].copy_from_slice(desc);
+    b[148..148 + T::DESCRIP.len()].copy_from_slice(T::DESCRIP);
     // nibabel stores the quaternion even when qform_code is 0.
     if let Some((qfac, q)) = quaternion(&v.affine, &pixdim) {
         put32(&mut b, 76, qfac as f32);
@@ -265,7 +287,7 @@ pub fn write(v: &Volume<i32>) -> Vec<u8> {
     }
     b[344..348].copy_from_slice(b"n+1\0");
     for (i, x) in v.data.iter().enumerate() {
-        b[352 + 4 * i..356 + 4 * i].copy_from_slice(&x.to_le_bytes());
+        b[352 + 4 * i..356 + 4 * i].copy_from_slice(&x.le_bytes());
     }
     b
 }
