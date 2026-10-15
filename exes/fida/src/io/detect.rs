@@ -12,10 +12,11 @@
 //!   `<stem>_water_off`, `<stem>_nows` (file stem or containing directory)
 //!   pair with `<stem>`, `<stem>_ws` or `<stem>_act` (Philips' names, and
 //!   spec2nii's when it converts them);
-//! * an unmatched Siemens DICOM water series pairs within a folder only when
-//!   its StudyInstanceUID matches and it is the folder's one water series:
-//!   with the folder's one spectrum, else with every spectrum of the same
-//!   protocol (the averaged `_ave` and unaveraged series of one acquisition);
+//! * unmatched Siemens DICOM series pair within a folder only when their
+//!   StudyInstanceUID matches and there is one spectrum and one water series;
+//! * a Siemens DICOM water series also serves every spectrum of its folder,
+//!   study and protocol (the averaged `_ave` and unaveraged series of one
+//!   acquisition) when it is that protocol's only water series;
 //! * LCModel `<stem>.H2O` pairs with `<stem>.RAW`;
 //! * GE P-files carry their own water frames, and some twix sequences
 //!   (CMRR / Columbia sLASER) their own water scans.
@@ -477,6 +478,10 @@ pub fn detect(files: &[NamedFile]) -> Detection {
     let identities: HashMap<usize, (String, String)> = datasets.iter()
         .filter_map(|ds| dicom_identity(ds, files).map(|identity| (ds.files[0], identity)))
         .collect();
+    let protocols: HashMap<usize, String> = datasets.iter()
+        .filter(|ds| ds.format == Format::SiemensDicom)
+        .filter_map(|ds| dicom_protocol(ds, files).map(|protocol| (ds.files[0], protocol)))
+        .collect();
     let key = |ds: &Dataset| -> (Format, String) { (ds.format, ds.name.to_ascii_lowercase()) };
     let (water, metab): (Vec<Dataset>, Vec<Dataset>) = datasets.into_iter().partition(|d| d.is_water);
     let mut water: Vec<Option<Dataset>> = water.into_iter().map(Some).collect();
@@ -524,19 +529,33 @@ pub fn detect(files: &[NamedFile]) -> Detection {
             continue;
         }
         let here: Vec<usize> = (0..det.pairs.len()).filter(|&k| det.pairs[k].metabolite.format == *fmt && folder(&det.pairs[k].metabolite) == *wf).collect();
-        let Some(w) = water[wi].as_ref() else { continue };
-        let open = |k: &usize| det.pairs[*k].water.is_none() && same_dicom_study(identities.get(&det.pairs[*k].metabolite.files[0]), identities.get(&w.files[0]));
-        let targets: Vec<usize> = if here.len() == 1 {
-            here.into_iter().filter(open).collect()
-        } else {
-            let protocol = dicom_protocol(w, files);
-            here.into_iter().filter(open).filter(|&k| protocol.is_some() && dicom_protocol(&det.pairs[k].metabolite, files) == protocol).collect()
-        };
-        if !targets.is_empty() {
-            let w = water[wi].take();
-            for k in targets {
-                det.pairs[k].water = w.clone();
+        if let [k] = here[..] {
+            if det.pairs[k].water.is_none() && water[wi].as_ref().is_some_and(|w| same_dicom_study(identities.get(&det.pairs[k].metabolite.files[0]), identities.get(&w.files[0]))) {
+                det.pairs[k].water = water[wi].take();
             }
+        }
+    }
+    // The averaged and unaveraged series of one Siemens acquisition share its
+    // water series, paired or not: every spectrum of the same folder, study
+    // and protocol gets it, when it is that protocol's only water series.
+    let shares = |a: &Dataset, b: &Dataset| {
+        let protocol = protocols.get(&a.files[0]);
+        protocol.is_some() && protocol == protocols.get(&b.files[0]) && folder(a) == folder(b)
+            && same_dicom_study(identities.get(&a.files[0]), identities.get(&b.files[0]))
+    };
+    let sources: Vec<(Dataset, Option<usize>)> = det.pairs.iter().filter_map(|p| p.water.clone().map(|w| (w, None)))
+        .chain(water.iter().enumerate().filter_map(|(wi, w)| w.clone().map(|w| (w, Some(wi)))))
+        .collect();
+    for (w, unpaired) in &sources {
+        if sources.iter().filter(|(other, _)| shares(w, other)).count() != 1 {
+            continue;
+        }
+        let targets: Vec<usize> = (0..det.pairs.len()).filter(|&k| det.pairs[k].water.is_none() && shares(w, &det.pairs[k].metabolite)).collect();
+        for &k in &targets {
+            det.pairs[k].water = Some(w.clone());
+        }
+        if let (Some(wi), false) = (unpaired, targets.is_empty()) {
+            water[*wi] = None;
         }
     }
     let mut unpaired: Vec<Dataset> = water.into_iter().flatten().collect();
@@ -978,6 +997,22 @@ mod tests {
             assert_eq!(water_of("-21-"), Some(vec![2]), "{d:#?}");
             assert_eq!(water_of("-23-"), None, "{d:#?}");
         }
+    }
+
+    #[test]
+    fn a_water_series_paired_by_name_also_serves_the_averaged_series() {
+        let series = |uid: &str, description: &str| dicom_series(true, "1.2.3", uid, "subject-01", description);
+        let (plain, ave, water) = (series("21", "press"), series("20", "press_ave"), series("22", "press_water_off"));
+        let files = [nf("flat/1.dcm", &plain), nf("flat/2.dcm", &ave), nf("flat/3.dcm", &water)];
+        let d = detect(&files);
+        assert!(d.unpaired_water.is_empty(), "{d:#?}");
+        assert!(d.pairs.iter().all(|p| p.water.as_ref().is_some_and(|w| w.files == [2])), "{d:#?}");
+        // Two water series of one protocol: neither is shared beyond its name match.
+        let second = series("23", "press_water_off");
+        let files = [nf("flat/1.dcm", &plain), nf("flat/2.dcm", &ave), nf("flat/3.dcm", &water), nf("flat/4.dcm", &second)];
+        let d = detect(&files);
+        let ave_pair = d.pairs.iter().find(|p| p.metabolite.files == [1]).unwrap();
+        assert!(ave_pair.water.is_none(), "{d:#?}");
     }
 
     #[test]
