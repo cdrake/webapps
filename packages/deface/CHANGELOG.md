@@ -14,5 +14,8 @@
 
 ### Patch Changes
 
+- a1a9b25: Let Deface archive validation use the launcher's bundled model directory instead
+  of supplying an empty temporary override. Source validation retains its temporary
+  template cache, and explicit model-directory overrides remain respected.
 - Updated dependencies [0569da8]
   - @neurodesk/runtime-support@0.6.0

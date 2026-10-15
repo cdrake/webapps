@@ -14,6 +14,11 @@
 
 ### Patch Changes
 
+- a1a9b25: Let Deface archive validation use the launcher's bundled model directory instead
+  of supplying an empty temporary override. Source validation retains its temporary
+  template cache, and explicit model-directory overrides remain respected.
+- Updated dependencies [a1a9b25]
+  - @neurodesk/deface@1.4.20261015
 - dd65e6a: Visual refresh: Inter, neutral greys with the Neurodesk logo green for action,
   focus and selection only, a compact 48px app bar, sentence-case section titles
   and a quieter status bar. The example menu is now the input control: examples,
