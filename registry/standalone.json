@@ -778,8 +778,8 @@
           "platform": "macos-arm64",
           "version": "0.5.20261014",
           "url": "https://github.com/neurodesk/webapps/releases/download/dwi2trx-v0.5.20261014/dwi2trx-0.5.20261014-macos-arm64.pkg",
-          "sha256": "beaabce54b57445529a84898c390283d3a5081e43ca28c0a39dee6ff16defa5f",
-          "bytes": 46402889,
+          "sha256": "75081b6bd7c9149eb49254c0ac6cd73ab21a94db5a071b04e5fa6121cd53a76c",
+          "bytes": 46403089,
           "validationUrl": "https://github.com/neurodesk/webapps/releases/download/dwi2trx-v0.5.20261014/dwi2trx-0.5.20261014-macos-arm64.pkg.validation.txt",
           "modelsIncluded": true,
           "command": "sudo installer -pkg dwi2trx-0.5.20261014-macos-arm64.pkg -target /\ndwi2trx self-check\ndwi2trx dwi.nii.gz dwi.bval dwi.bvec results"
@@ -789,8 +789,8 @@
           "platform": "windows-x64",
           "version": "0.5.20261014",
           "url": "https://github.com/neurodesk/webapps/releases/download/dwi2trx-v0.5.20261014/dwi2trx-0.5.20261014-windows-x64.zip",
-          "sha256": "24e64489f61c6844ce355975692ba6328c9d8943467f208bca9d9cbfb30ec605",
-          "bytes": 43108532,
+          "sha256": "9731aa6443569ebe0c683536d13a7a11f9e09f4d0fdde9e7d9ed19117726a0f4",
+          "bytes": 43108534,
           "validationUrl": "https://github.com/neurodesk/webapps/releases/download/dwi2trx-v0.5.20261014/dwi2trx-0.5.20261014-windows-x64.zip.validation.txt",
           "modelsIncluded": true,
           "command": "Expand-Archive -Path .\\dwi2trx-0.5.20261014-windows-x64.zip -DestinationPath .\n.\\dwi2trx-0.5.20261014-windows-x64\\dwi2trx.exe dwi.nii.gz dwi.bval dwi.bvec results"
