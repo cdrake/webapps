@@ -131,6 +131,10 @@ test('contract tests, tooling, docs and other workflows select no apps and no si
     'packages/components/CHANGELOG.md',
     'test/app-plan.test.mjs',
     'test/standalone-links.test.mjs',
+    // The mutation-testing config names these; composite-site never reads it.
+    'test/lockfile-impact.test.mjs',
+    'test/date-versions.test.mjs',
+    'scripts/lib/mutation-modules.mjs',
     'scripts/check-standalone-links.mjs',
     '.github/workflows/lcmodel-native.yml',
     '.github/workflows/standalone-links.yml',
@@ -367,18 +371,6 @@ test('without a workspace graph a lockfile change to a package selects the whole
   const plan = createAppPlan(registry, ['pnpm-lock.yaml'], null, new Map([['pnpm-lock.yaml', manifest(baseLock, after)]]));
   assert.equal(plan.allApps, true);
   assert.match(plan.reasons.fallback, /no workspace graph/);
-});
-
-test('an importer is affected through the workspace importers it links, but the root is not', () => {
-  const after = changeLock((lock) => {
-    lock.importers['scripts/quality'].devDependencies.knip = dep('5.1.0');
-    resolve(lock, 'knip@5.1.0');
-    lock.importers['packages/components'] = { dependencies: { pako: dep('2.1.0') } };
-  });
-  const affected = lockfileImpact(manifest(baseLock, after));
-  assert.deepEqual([...affected.keys()].sort(), ['apps/niimath', 'packages/components', 'scripts/quality']);
-  assert.equal(affected.get('apps/niimath'), 'importer apps/niimath links affected importer packages/components');
-  assert.equal(lockfileImpact(manifest(baseLock, baseLock)).size, 0);
 });
 
 test("the repository's own lockfile resolves every importer's dependencies", async () => {
