@@ -960,35 +960,35 @@
         {
           "kind": "cli",
           "platform": "linux-x64",
-          "version": "0.4.20261009",
-          "url": "https://github.com/neurodesk/webapps/releases/download/carotid-flow-v0.4.20261009/carotid-flow-0.4.20261009-linux-x64.tar.gz",
-          "sha256": "caeae6b326a25e079264f31374e04334b14e04a5419b97881a50d3e659ee8f41",
-          "bytes": 44497781,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/carotid-flow-v0.4.20261009/carotid-flow-0.4.20261009-linux-x64.tar.gz.validation.txt",
+          "version": "0.4.20261014",
+          "url": "https://github.com/neurodesk/webapps/releases/download/carotid-flow-v0.4.20261014/carotid-flow-0.4.20261014-linux-x64.tar.gz",
+          "sha256": "93b9c3503b619ee926a03c83dc60f2c634e9eecfec8790f52c0f3cc422abcd8b",
+          "bytes": 44496847,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/carotid-flow-v0.4.20261014/carotid-flow-0.4.20261014-linux-x64.tar.gz.validation.txt",
           "modelsIncluded": true,
-          "command": "tar -xzf carotid-flow-0.4.20261009-linux-x64.tar.gz\n./carotid-flow-0.4.20261009-linux-x64/carotid-flow amplitude.nii.gz phase.nii.gz results"
+          "command": "tar -xzf carotid-flow-0.4.20261014-linux-x64.tar.gz\n./carotid-flow-0.4.20261014-linux-x64/carotid-flow amplitude.nii.gz phase.nii.gz results"
         },
         {
           "kind": "cli",
           "platform": "macos-arm64",
-          "version": "0.4.20261009",
-          "url": "https://github.com/neurodesk/webapps/releases/download/carotid-flow-v0.4.20261009/carotid-flow-0.4.20261009-macos-arm64.pkg",
-          "sha256": "b2446e46fe61ed6c557008cba50bcb85440b3ef2ba8957f600da44dac062439d",
-          "bytes": 38097899,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/carotid-flow-v0.4.20261009/carotid-flow-0.4.20261009-macos-arm64.pkg.validation.txt",
+          "version": "0.4.20261014",
+          "url": "https://github.com/neurodesk/webapps/releases/download/carotid-flow-v0.4.20261014/carotid-flow-0.4.20261014-macos-arm64.pkg",
+          "sha256": "fe4687d622d5c5a984e1943639982c7cccb9daa18d4f7fc4431ae6f2b776501c",
+          "bytes": 38098659,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/carotid-flow-v0.4.20261014/carotid-flow-0.4.20261014-macos-arm64.pkg.validation.txt",
           "modelsIncluded": true,
-          "command": "sudo installer -pkg carotid-flow-0.4.20261009-macos-arm64.pkg -target /\ncarotid-flow self-check\ncarotid-flow amplitude.nii.gz phase.nii.gz results"
+          "command": "sudo installer -pkg carotid-flow-0.4.20261014-macos-arm64.pkg -target /\ncarotid-flow self-check\ncarotid-flow amplitude.nii.gz phase.nii.gz results"
         },
         {
           "kind": "cli",
           "platform": "windows-x64",
-          "version": "0.4.20261009",
-          "url": "https://github.com/neurodesk/webapps/releases/download/carotid-flow-v0.4.20261009/carotid-flow-0.4.20261009-windows-x64.zip",
-          "sha256": "1b68f75746c50e2458963c35bebe84aa31cccf764021f110eb17b6b77103283d",
-          "bytes": 34801951,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/carotid-flow-v0.4.20261009/carotid-flow-0.4.20261009-windows-x64.zip.validation.txt",
+          "version": "0.4.20261014",
+          "url": "https://github.com/neurodesk/webapps/releases/download/carotid-flow-v0.4.20261014/carotid-flow-0.4.20261014-windows-x64.zip",
+          "sha256": "f65b8097346a75b42126949e68032b9550c520d725247ebf5e244e32de70fae9",
+          "bytes": 34803614,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/carotid-flow-v0.4.20261014/carotid-flow-0.4.20261014-windows-x64.zip.validation.txt",
           "modelsIncluded": true,
-          "command": "Expand-Archive -Path .\\carotid-flow-0.4.20261009-windows-x64.zip -DestinationPath .\n.\\carotid-flow-0.4.20261009-windows-x64\\carotid-flow.exe amplitude.nii.gz phase.nii.gz results"
+          "command": "Expand-Archive -Path .\\carotid-flow-0.4.20261014-windows-x64.zip -DestinationPath .\n.\\carotid-flow-0.4.20261014-windows-x64\\carotid-flow.exe amplitude.nii.gz phase.nii.gz results"
         }
       ],
       "containers": []
