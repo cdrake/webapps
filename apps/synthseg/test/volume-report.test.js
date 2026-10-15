@@ -7,19 +7,28 @@ import { chartSvg, legendEntries, tickStep, volumeReport } from '../src/volume-r
 
 const fixtures = new URL('../../../packages/synthseg/test/fixtures/', import.meta.url);
 const norms = parseNorms(JSON.parse(await readFile(new URL('brainquant_norms.json', fixtures), 'utf8')));
+const ahead = parseNorms(JSON.parse(await readFile(new URL('brainquant_norms_7t.json', fixtures), 'utf8')));
 const { volumes } = parseVolumesCsv(await readFile(new URL('T1_head_fast_vol.csv', fixtures), 'utf8'));
+const IXI = { reference: { id: 'ixi', reason: 'the scanner field strength is unknown' } };
 const golden = JSON.parse(await readFile(new URL('brainquant-golden.json', fixtures), 'utf8'));
 
 const attribute = (svg, element, name) => svg.match(new RegExp(`<${element} class="[^"]*"[^>]*\\b${name}="([^"]+)"`))?.[1];
 
 test('the population data version is visible above the charts', () => {
-  const { header } = volumeReport(norms, volumes, { age: 45, sex: 'female' });
-  assert.ok(header.includes('Population data: IXI, version b23bda1938a5.'));
+  const { header } = volumeReport(norms, volumes, { age: 45, sex: 'female' }, IXI);
+  assert.ok(header.includes('Population data: IXI, version c3e75dbe830b.'));
+});
+
+test('the report names the reference it compared against and why', () => {
+  const { header, footer } = volumeReport(ahead, volumes, { age: 30, sex: 'male' }, { reference: { id: 'ahead', reason: 'the scanner field strength is 6.98 T' } });
+  assert.ok(header.some((line) => line.startsWith('Reference: AHEAD 7 T (n=105,')));
+  assert.ok(header.includes('Population data: AHEAD, version c3e75dbe830b.'));
+  assert.equal(footer[0], 'The AHEAD reference was chosen because the scanner field strength is 6.98 T.');
 });
 
 test('the report rows carry the reference implementation\'s numbers', () => {
   const expected = golden.cases.find((entry) => entry.age === 72 && entry.sex === 'male');
-  const { rows, charts } = volumeReport(norms, volumes, { age: 72, sex: 'male' });
+  const { rows, charts } = volumeReport(norms, volumes, { age: 72, sex: 'male' }, IXI);
   assert.equal(rows.length, expected.results.length);
   for (const [index, row] of rows.entries()) {
     const reference = expected.results[index];
@@ -33,7 +42,7 @@ test('the report rows carry the reference implementation\'s numbers', () => {
 });
 
 test('a known age places the subject as a dot at that age and adjusted volume', () => {
-  const { charts, report } = volumeReport(norms, volumes, { age: 45, sex: 'female' });
+  const { charts, report } = volumeReport(norms, volumes, { age: 45, sex: 'female' }, IXI);
   const svg = charts[0].svg;
   assert.match(svg, /<circle class="nd-chart-marker"/);
   assert.doesNotMatch(svg, /nd-chart-level|nd-chart-range/);
@@ -42,7 +51,7 @@ test('a known age places the subject as a dot at that age and adjusted volume', 
 });
 
 test('an unknown age draws a dashed level across the chart and uses the pooled model', () => {
-  const { charts, header } = volumeReport(norms, volumes, { age: null, sex: null });
+  const { charts, header } = volumeReport(norms, volumes, { age: null, sex: null }, IXI);
   assert.match(charts[0].svg, /<line class="nd-chart-level"/);
   assert.doesNotMatch(charts[0].svg, /<circle/);
   assert.equal(charts[0].caption, 'Left hippocampus: n/a');
@@ -50,7 +59,7 @@ test('an unknown age draws a dashed level across the chart and uses the pooled m
 });
 
 test('an age outside the cohort extends the axis, boxes the reference ages and says so', () => {
-  const { charts, footer } = volumeReport(norms, volumes, { age: 95, sex: 'female' });
+  const { charts, footer } = volumeReport(norms, volumes, { age: 95, sex: 'female' }, IXI);
   assert.match(charts[0].svg, /<rect class="nd-chart-range"/);
   assert.match(charts[0].svg, /outside reference age range/);
   assert.ok(footer.some((line) => line.startsWith('Patient age 95 y is outside the reference age range 20-86.3 y')));
@@ -58,15 +67,15 @@ test('an age outside the cohort extends the axis, boxes the reference ages and s
 });
 
 test('a default-mode run is footnoted, a fast run is not', () => {
-  const fast = volumeReport(norms, volumes, { age: 45, sex: 'female' });
-  const slow = volumeReport(norms, volumes, { age: 45, sex: 'female' }, { fast: false });
+  const fast = volumeReport(norms, volumes, { age: 45, sex: 'female' }, IXI);
+  const slow = volumeReport(norms, volumes, { age: 45, sex: 'female' }, { ...IXI, fast: false });
   assert.equal(slow.footer.length, fast.footer.length + 1);
-  assert.match(slow.footer[0], /fast mode/);
+  assert.ok(slow.footer.some((line) => /fast mode/.test(line)));
 });
 
 test('coarser grids carry a warning beside the normative volume results', () => {
-  const standard = volumeReport(norms, volumes, { age: 45, sex: 'female' });
-  const coarse = volumeReport(norms, volumes, { age: 45, sex: 'female' }, { voxelSizeMm: 1.5 });
+  const standard = volumeReport(norms, volumes, { age: 45, sex: 'female' }, IXI);
+  const coarse = volumeReport(norms, volumes, { age: 45, sex: 'female' }, { ...IXI, voxelSizeMm: 1.5 });
   assert.equal(coarse.header.length, standard.header.length + 1);
   assert.equal(coarse.header.at(-1), 'This run used 1.5 mm voxels. The 1 mm reference norms have not been validated for this grid.');
   assert.deepEqual(coarse.footer, standard.footer);

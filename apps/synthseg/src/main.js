@@ -17,7 +17,7 @@ import { downloadBlob, downloadFile, readNifti } from '@neurodesk/webapp-compone
 import { fetchModel } from '@neurodesk/webapp-components/worker';
 import { readImageSeries, runDcm2niix } from '@neurodesk/runtime-support/dcm2niix-client';
 import manifest from '@neurodesk/synthseg/manifest';
-import { parseNorms, subjectFromSidecar } from '@neurodesk/synthseg/brainquant';
+import { fieldStrengthFromSidecar, parseNorms, selectReference, subjectFromSidecar } from '@neurodesk/synthseg/brainquant';
 import { LABELS_ARTIFACT, TISSUES, TISSUE_ARTIFACT, TISSUE_NAMES, outputNames, outputStem, volumesCsv } from '@neurodesk/synthseg/results';
 import { editedResult, gridOf, labelNames, labelsResult, looksLikeCt, sameGrid } from './logic.js';
 import { legendEntries, volumeReport } from './volume-report.js';
@@ -105,7 +105,9 @@ let importedImages = [];
 let volumes = null;
 let volumesFast = true;
 let volumesVoxelSizeMm = 1;
-let normsLoad = null;
+const normsLoads = new Map();
+// Scanner field strength in tesla from the DICOM header; null for NIfTI input.
+let fieldStrengthT = null;
 // The last run's GM, WM and CSF probability maps as Files, or null.
 let tissues = null;
 renderResults();
@@ -143,7 +145,7 @@ function status(message, error = false) {
 function setBusy(value, cancellable = false) {
   busy = value;
   exampleControl.setDisabled(value);
-  for (const id of ['imageInput', 'seriesSelect', 'mode', 'ct', 'age', 'sex', 'robustFov', 'voxelSizeMm', 'downsampleButton'])
+  for (const id of ['imageInput', 'seriesSelect', 'mode', 'ct', 'age', 'sex', 'reference', 'robustFov', 'voxelSizeMm', 'downsampleButton'])
     $(id).disabled = value;
   $('processButton').disabled = value || !source || !webgpu;
   progressManager.setCancellable(value && cancellable);
@@ -315,25 +317,49 @@ function setSubject({ age = null, sex = null } = {}, fromHeader = false) {
   $('sex').value = sex ?? '';
   $('subjectHint').hidden = !fromHeader || (age === null && sex === null);
 }
-// The norms are fetched once, after the first run that needs them, and checked against the manifest.
-function loadNorms() {
-  normsLoad ??= fetchModel({ url: manifest.norms.url, integrity: { bytes: manifest.norms.bytes, sha256: manifest.norms.sha256 } }, {
-    cache: 'neurodesk-synthseg-norms-v1',
-    requestFailureMessage: 'Could not download the reference volumes.',
-  }).then((bytes) => parseNorms(JSON.parse(new TextDecoder().decode(bytes))));
-  normsLoad.catch(() => {
-    normsLoad = null;
-  });
-  return normsLoad;
+/** A new image's field strength, which Auto reads; the Reference field returns to Auto. */
+function setFieldStrength(value) {
+  fieldStrengthT = value;
+  $('reference').value = 'auto';
+  showReferenceHint();
+}
+/** The reference norms the report uses: the Reference field, Auto deciding from the field strength. */
+function reference() {
+  return selectReference($('reference').value, fieldStrengthT);
+}
+function showReferenceHint() {
+  const { id } = reference();
+  const hint = $('referenceHint');
+  hint.hidden = !source || $('reference').value !== 'auto';
+  hint.textContent = `Auto: ${$('reference').querySelector(`option[value="${id}"]`).textContent} · ${
+    fieldStrengthT === null ? 'field strength unknown' : `scanner ${fieldStrengthT} T`}`;
+}
+// Each reference's norms are fetched once, when a report first needs them, and checked against the manifest.
+function loadNorms(id) {
+  if (!normsLoads.has(id)) {
+    const pin = manifest.norms[id];
+    const load = fetchModel({ url: pin.url, integrity: { bytes: pin.bytes, sha256: pin.sha256 } }, {
+      cache: 'neurodesk-synthseg-norms-v1',
+      requestFailureMessage: 'Could not download the reference volumes.',
+    }).then((bytes) => parseNorms(JSON.parse(new TextDecoder().decode(bytes))));
+    load.catch(() => normsLoads.delete(id));
+    normsLoads.set(id, load);
+  }
+  return normsLoads.get(id);
 }
 /** The report as the JSON run report and automation record it, or why it is missing. */
 async function reportSummary() {
   if (!volumes) return null;
   const used = subject();
+  const selected = reference();
+  const { version, url, sha256 } = manifest.norms[selected.id];
+  const referenceRecord = { choice: $('reference').value, fieldStrengthT, reason: selected.reason };
   try {
-    const { report } = volumeReport(await loadNorms(), volumes, used, { fast: volumesFast, voxelSizeMm: volumesVoxelSizeMm });
+    const norms = await loadNorms(selected.id);
+    const { report } = volumeReport(norms, volumes, used, { reference: selected, fast: volumesFast, voxelSizeMm: volumesVoxelSizeMm });
     return {
-      norms: { version: manifest.norms.version, url: manifest.norms.url, sha256: manifest.norms.sha256 },
+      norms: { id: selected.id, version, url, sha256 },
+      reference: referenceRecord,
       subject: used,
       voxelSizeMm: volumesVoxelSizeMm,
       icvMm3: report.icvMm3,
@@ -341,7 +367,7 @@ async function reportSummary() {
       results: report.results,
     };
   } catch (error) {
-    return { subject: used, unavailable: error.message };
+    return { subject: used, reference: referenceRecord, unavailable: error.message };
   }
 }
 function element(tag, { className, text } = {}, children = []) {
@@ -373,9 +399,10 @@ async function renderVolumes() {
   const panel = $('volumeReport');
   if (!volumes || panel.hidden) return;
   const revision = ++renderRevision;
+  const selected = reference();
   let norms;
   try {
-    norms = await loadNorms();
+    norms = await loadNorms(selected.id);
   } catch (error) {
     if (revision !== renderRevision) return;
     panel.replaceChildren(element('p', { className: 'nd-message error', text: `The reference volumes could not be loaded: ${error.message} The labels and the volume table remain available.` }));
@@ -383,7 +410,7 @@ async function renderVolumes() {
   }
   if (revision !== renderRevision || !volumes) return;
   const used = subject();
-  const view = volumeReport(norms, volumes, used, { fast: volumesFast, voxelSizeMm: volumesVoxelSizeMm });
+  const view = volumeReport(norms, volumes, used, { reference: selected, fast: volumesFast, voxelSizeMm: volumesVoxelSizeMm });
   const lines = view.header.map((text) => element('p', { text }));
   lines.at(-1).className = 'nd-report-lead';
   const legend = element('ul', { className: 'nd-chart-legend' }, legendEntries(used.age !== null).map(({ label, svg }) => element('li', {}, [svgElement(svg), label])));
@@ -401,6 +428,10 @@ function subjectChanged() {
 }
 $('age').oninput = subjectChanged;
 $('sex').onchange = subjectChanged;
+$('reference').onchange = () => {
+  showReferenceHint();
+  void renderVolumes();
+};
 function clearOutputs() {
   const cancelled = editor?.cancel();
   labels = null;
@@ -449,6 +480,7 @@ async function load(file, signal, existingRun, sidecar = null) {
     source = file;
     sourceGrid = gridOf(image);
     setSubject(sidecar ? subjectFromSidecar(sidecar) : {}, Boolean(sidecar));
+    setFieldStrength(sidecar ? fieldStrengthFromSidecar(sidecar) : null);
     $('ct').checked = looksLikeCt(data);
     progressManager.reset();
     $('fileInfo').hidden = false;
@@ -479,7 +511,7 @@ async function importImages(filesPromise) {
   try {
     const files = await filesPromise;
     run.signal.throwIfAborted();
-    // The sidecars carry identifying fields; only age and sex are read from them, and nothing is saved.
+    // The sidecars carry identifying fields; only age, sex and field strength are read from them, and nothing is saved.
     const images = await readImageSeries(files, { signal: run.signal });
     run.signal.throwIfAborted();
     if (!images.length) throw new Error('Choose NIfTI files or a complete DICOM series.');
@@ -560,9 +592,13 @@ async function segmentImage(parameters, { signal, progress = () => {}, voxelSize
   const options = { fast: parameters.mode === 'fast', ct: parameters.ct ?? $('ct').checked,
     robustFov: $('robustFov').checked, voxelSizeMm };
   if (parameters.age !== undefined || parameters.sex !== undefined) setSubject({ age: parameters.age ?? null, sex: parameters.sex ?? null });
+  if (parameters.reference !== undefined) {
+    $('reference').value = parameters.reference;
+    showReferenceHint();
+  }
   const run = runs.begin('running', {
     inputs: { image: source },
-    parameters: { mode: parameters.mode, ct: options.ct, ...subject() },
+    parameters: { mode: parameters.mode, ct: options.ct, ...subject(), reference: $('reference').value },
   });
   operation = run;
   setBusy(true, true);
@@ -707,7 +743,7 @@ $('cancelBtn').onclick = cancel;
 $('reportBtn').onclick = async () => {
   const { report } = runs.snapshot();
   if (!report || busy) return;
-  // The Age and Sex fields may have changed since the run, so the volume report follows them.
+  // The Age, Sex and Reference fields may have changed since the run, so the volume report follows them.
   const current = { ...report, measurements: { ...report.measurements, volumeReport: await reportSummary() } };
   downloadBlob(new Blob([JSON.stringify(current, null, 2)], { type: 'application/json' }), report.artifacts.labels.filename.replace(/\.nii\.gz$/, '.json'));
 };

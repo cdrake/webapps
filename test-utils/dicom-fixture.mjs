@@ -1,6 +1,7 @@
 // Synthetic, uncompressed MR slices. Values encode slice order for conversion checks.
 // `patient` adds demographics: { birthDate, sex, age, studyDate } as DICOM DA/CS/AS strings.
-export function dicomSeries({ series = 1, slices = 4, extension = '.dcm', patient = {} } = {}) {
+// `fieldStrength` adds MagneticFieldStrength in tesla as a DICOM DS string.
+export function dicomSeries({ series = 1, slices = 4, extension = '.dcm', patient = {}, fieldStrength } = {}) {
   const uid = `1.2.826.0.1.3680043.10.543.99.${series}`;
   const us = value => { const b = Buffer.alloc(2); b.writeUInt16LE(value); return b; };
   function tag(group, element, vr, value) {
@@ -30,6 +31,7 @@ export function dicomSeries({ series = 1, slices = 4, extension = '.dcm', patien
       ...(patient.age ? [tag(0x10, 0x1010, 'AS', patient.age)] : []),
       tag(0x18, 0x1030, 'LO', `test_scan_${series}`),
       tag(0x18, 0x50, 'DS', '1'), tag(0x18, 0x80, 'DS', '2000'), tag(0x18, 0x81, 'DS', '20'),
+      ...(fieldStrength ? [tag(0x18, 0x87, 'DS', fieldStrength)] : []),
       tag(0x20, 0x0d, 'UI', '1.2.826.0.1.3680043.10.543.99'), tag(0x20, 0x0e, 'UI', uid),
       tag(0x20, 0x11, 'IS', series), tag(0x20, 0x13, 'IS', slice + 1),
       tag(0x20, 0x32, 'DS', `0\\0\\${slice}`), tag(0x20, 0x37, 'DS', '1\\0\\0\\0\\1\\0'),

@@ -45,9 +45,9 @@ function run(args, env = {}) {
 }
 
 test('the command line takes the app automation operation\'s parameters', () => {
-  // Age and sex only shape the app's volume report, which the command line does not write.
-  const { age, sex, ...segmentation } = automation.operations.segment.parameters;
-  assert.deepEqual(Object.keys({ age, sex }), ['age', 'sex']);
+  // Age, sex and reference only shape the app's volume report, which the command line does not write.
+  const { age, sex, reference, ...segmentation } = automation.operations.segment.parameters;
+  assert.deepEqual(Object.keys({ age, sex, reference }), ['age', 'sex', 'reference']);
   assert.deepEqual(PARAMETERS, segmentation);
   assert.deepEqual(parseParameters({}), { mode: 'fast' });
   assert.deepEqual(parseParameters({ mode: 'fast', ct: true }), { mode: 'fast', ct: true });

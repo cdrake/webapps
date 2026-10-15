@@ -6,8 +6,10 @@ import manifest from '../model.manifest.json' with { type: 'json' };
 
 import {
   NORMS_SCHEMA,
+  ULTRA_HIGH_FIELD_T,
   assess,
   centile,
+  fieldStrengthFromSidecar,
   footerLines,
   headerLines,
   modelKey,
@@ -15,7 +17,9 @@ import {
   normalQuantile,
   parseNorms,
   percentileText,
+  referenceNote,
   scaledAge,
+  selectReference,
   subjectFromSidecar,
   wholeYears,
 } from '../src/brainquant.js';
@@ -25,13 +29,19 @@ const rawNorms = JSON.parse(readFileSync(fixture('brainquant_norms.json'), 'utf8
 const golden = JSON.parse(readFileSync(fixture('brainquant-golden.json'), 'utf8'));
 const norms = parseNorms(rawNorms);
 
-test('the population data version identifies the immutable, checksummed reference', () => {
-  const commit = new URL(manifest.norms.url).pathname.split('/')[3];
-  assert.match(commit, /^[a-f0-9]{40}$/);
-  assert.equal(manifest.norms.version, commit.slice(0, 12));
-  const bytes = readFileSync(fixture('brainquant_norms.json'));
-  assert.equal(bytes.byteLength, manifest.norms.bytes);
-  assert.equal(createHash('sha256').update(bytes).digest('hex'), manifest.norms.sha256);
+const pinnedFixtures = { ixi: 'brainquant_norms.json', ahead: 'brainquant_norms_7t.json' };
+
+test('each population data version identifies an immutable, checksummed reference', () => {
+  assert.deepEqual(Object.keys(manifest.norms), Object.keys(pinnedFixtures));
+  for (const [id, name] of Object.entries(pinnedFixtures)) {
+    const pin = manifest.norms[id];
+    const commit = new URL(pin.url).pathname.split('/')[3];
+    assert.match(commit, /^[a-f0-9]{40}$/, id);
+    assert.equal(pin.version, commit.slice(0, 12), id);
+    const bytes = readFileSync(fixture(name));
+    assert.equal(bytes.byteLength, pin.bytes, id);
+    assert.equal(createHash('sha256').update(bytes).digest('hex'), pin.sha256, id);
+  }
 });
 
 function readVolumes(text) {
@@ -56,6 +66,27 @@ function assertAbsolute(actual, expected, tolerance, label) {
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
+
+test('both pinned references parse and norm the same structures from the same columns', () => {
+  const [ixi, ahead] = Object.values(pinnedFixtures).map((name) => parseNorms(JSON.parse(readFileSync(fixture(name), 'utf8'))));
+  const shape = (parsed) => parsed.structures.map(({ id, columns }) => ({ id, columns }));
+  assert.deepEqual(shape(ahead), shape(ixi));
+  assert.equal(ahead.icvColumn, ixi.icvColumn);
+  assert.deepEqual(
+    [ixi.reference.cohort, ixi.reference.fieldStrength, ahead.reference.cohort, ahead.reference.fieldStrength],
+    ['IXI', '1.5 T and 3 T', 'AHEAD', '7 T'],
+  );
+  assert.deepEqual([ahead.reference.ageMin, ahead.reference.ageMax], [18, 80]);
+});
+
+test('norms without a field strength still parse, with an empty field strength', () => {
+  const withoutFieldStrength = clone(rawNorms);
+  delete withoutFieldStrength.reference.field_strength;
+  const parsed = parseNorms(withoutFieldStrength);
+  assert.equal(parsed.reference.fieldStrength, '');
+  const report = assess(parsed, volumes, { age: 45, sex: 'female' });
+  assert.match(headerLines(report, parsed)[1], /^Reference: IXI \(n=561,/);
+});
 
 test('assess reproduces brainquant.py on every golden case', () => {
   assert.equal(golden.cases.length, 5);
@@ -237,7 +268,7 @@ test('percentileText rounds half to even like Python', () => {
   }
 });
 
-const reference = 'Reference: IXI (n=561, 311 F / 250 M, age 20-86.3 y, CC BY-SA 3.0), SynthSeg 2.0, fast mode, FreeSurfer 8.2.0 mri_synthseg --vol.';
+const reference = 'Reference: IXI 1.5 T and 3 T (n=561, 311 F / 250 M, age 20-86.3 y, CC BY-SA 3.0), SynthSeg 2.0, fast mode, FreeSurfer 8.2.0 mri_synthseg --vol.';
 const adjusted = 'Adjusted volume: scaled to the reference total intracranial volume of 1500 mL. Bands: 5th-95th and 25th-75th percentiles; line: median.';
 
 test('report text for a known subject outside the reference age', () => {
@@ -292,4 +323,35 @@ test('wholeYears counts completed birthdays', () => {
   assert.equal(wholeYears({ year: 2000, month: 2, day: 29 }, { year: 2021, month: 2, day: 28 }), 20);
   assert.equal(wholeYears({ year: 2000, month: 2, day: 29 }, { year: 2021, month: 3, day: 1 }), 21);
   assert.equal(wholeYears({ year: 1980, month: 6, day: 15 }, { year: 2020, month: 6, day: 15 }), 40);
+});
+
+test('fieldStrengthFromSidecar reads MagneticFieldStrength in tesla', () => {
+  assert.equal(fieldStrengthFromSidecar({ MagneticFieldStrength: 6.98 }), 6.98);
+  assert.equal(fieldStrengthFromSidecar({ MagneticFieldStrength: 2.89 }), 2.89);
+  assert.equal(fieldStrengthFromSidecar({}), null);
+  assert.equal(fieldStrengthFromSidecar({ MagneticFieldStrength: 0 }), null);
+  assert.equal(fieldStrengthFromSidecar({ MagneticFieldStrength: '3' }), null);
+});
+
+test('Auto picks AHEAD from 5 T, IXI below it or without a field strength, and an explicit choice wins', () => {
+  assert.equal(ULTRA_HIGH_FIELD_T, 5);
+  assert.deepEqual(selectReference('auto', 6.98), { id: 'ahead', reason: 'the scanner field strength is 6.98 T' });
+  assert.deepEqual(selectReference('auto', 5), { id: 'ahead', reason: 'the scanner field strength is 5 T' });
+  assert.deepEqual(selectReference('auto', 2.89), { id: 'ixi', reason: 'the scanner field strength is 2.89 T' });
+  assert.deepEqual(selectReference('auto', null), { id: 'ixi', reason: 'the scanner field strength is unknown' });
+  assert.deepEqual(selectReference('ixi', 6.98), { id: 'ixi', reason: 'it was selected manually' });
+  assert.deepEqual(selectReference('ahead', 2.89), { id: 'ahead', reason: 'it was selected manually' });
+});
+
+test('the report names the AHEAD reference, its field strength and why it was chosen', () => {
+  const ahead = parseNorms(JSON.parse(readFileSync(fixture('brainquant_norms_7t.json'), 'utf8')));
+  const report = assess(ahead, volumes, { age: 30, sex: 'male' });
+  assert.equal(
+    headerLines(report, ahead)[1],
+    'Reference: AHEAD 7 T (n=105, 60 F / 45 M, age 18-80 y, CC BY 4.0), SynthSeg 2.0, fast mode, FreeSurfer 8.2.0 mri_synthseg --vol on skull-stripped images, corrected to whole-head volumes.',
+  );
+  assert.equal(
+    referenceNote(ahead, selectReference('auto', 6.98).reason),
+    'The AHEAD reference was chosen because the scanner field strength is 6.98 T.',
+  );
 });

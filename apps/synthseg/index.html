@@ -34,6 +34,15 @@
             </div>
           </div>
           <p id="subjectHint" class="nd-hint" hidden>From DICOM header</p>
+          <div class="nd-field">
+            <label for="reference">Reference <span class="nd-info-icon" tabindex="0" aria-label="About the reference">i<span class="nd-info-tooltip">Auto compares scans from 5 T upward with AHEAD (7 T) and others with IXI (1.5 T and 3 T), using the field strength in the DICOM header. NIfTI files carry no field strength, so Auto uses IXI. Healthy 7 T scans look atypical against IXI.</span></span></label>
+            <select id="reference">
+              <option value="auto" selected>Auto (from scanner field strength)</option>
+              <option value="ixi">IXI (1.5 T / 3 T)</option>
+              <option value="ahead">AHEAD (7 T)</option>
+            </select>
+            <p id="referenceHint" class="nd-hint" hidden></p>
+          </div>
         </div>
       </details>
       <details class="nd-sidebar-section" id="segmentSection" open>
