@@ -475,8 +475,8 @@
           "platform": "macos-arm64",
           "version": "0.8.20261014",
           "url": "https://github.com/neurodesk/webapps/releases/download/easy-mp2rage-v0.8.20261014/easy-mp2rage-0.8.20261014-macos-arm64.pkg",
-          "sha256": "2e10acc436f5d6325d27a8e8bb26d67aba20d6d4f0551cbb0d364ed161eb074f",
-          "bytes": 38273864,
+          "sha256": "8bbd983de2de4c0e255c5a21a0230776de07ba1264990f8fc143e0776b139f15",
+          "bytes": 38273838,
           "validationUrl": "https://github.com/neurodesk/webapps/releases/download/easy-mp2rage-v0.8.20261014/easy-mp2rage-0.8.20261014-macos-arm64.pkg.validation.txt",
           "modelsIncluded": true,
           "command": "sudo installer -pkg easy-mp2rage-0.8.20261014-macos-arm64.pkg -target /\neasy-mp2rage self-check\neasy-mp2rage correct --uni UNI.nii.gz --inv2 INV2.nii.gz --b1 B1.nii.gz --b1-type tfl --mp2rage TR,TI1,TI2,FA1,FA2,NZ1,NZ2,TRFLASH,EFF results"
@@ -486,8 +486,8 @@
           "platform": "windows-x64",
           "version": "0.8.20261014",
           "url": "https://github.com/neurodesk/webapps/releases/download/easy-mp2rage-v0.8.20261014/easy-mp2rage-0.8.20261014-windows-x64.zip",
-          "sha256": "0491615e843bc32dee9b783fa3bbf1e2e77cf0f88087a197c29e5bef27b4971d",
-          "bytes": 34975525,
+          "sha256": "64d5b733eb520b021893ed139e3c982160b9e33af6d513810664b1b1af666934",
+          "bytes": 34975529,
           "validationUrl": "https://github.com/neurodesk/webapps/releases/download/easy-mp2rage-v0.8.20261014/easy-mp2rage-0.8.20261014-windows-x64.zip.validation.txt",
           "modelsIncluded": true,
           "command": "Expand-Archive -Path .\\easy-mp2rage-0.8.20261014-windows-x64.zip -DestinationPath .\n.\\easy-mp2rage-0.8.20261014-windows-x64\\easy-mp2rage.exe correct --uni UNI.nii.gz --inv2 INV2.nii.gz --b1 B1.nii.gz --b1-type tfl --mp2rage TR,TI1,TI2,FA1,FA2,NZ1,NZ2,TRFLASH,EFF results"
