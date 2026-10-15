@@ -257,12 +257,14 @@ try {
           window.scrollTo(0, 0);
           document.querySelectorAll('body *').forEach(node => { node.scrollTop = 0; });
         });
-        if (output) await page.screenshot({ path: join(output, `${app.id}-${viewport.width}.png`), fullPage: true });
+        // CI's desktop Disconnectome capture exceeded 10s after its interface checks passed.
+        // Artifact readback gets its own budget; interface readiness keeps the 10s default.
+        if (output) await page.screenshot({ path: join(output, `${app.id}-${viewport.width}.png`), fullPage: true, timeout: 30000 });
       } catch (error) {
         result.failures.push(error.message);
         const example = page.locator('[data-neurodesk-examples]');
         if (await example.count()) result.failures.push(await example.locator('[role="status"]').textContent());
-        if (output) await page.screenshot({ path: join(output, `${app.id}-${viewport.width}-failure.png`), fullPage: true }).catch(() => {});
+        if (output) await page.screenshot({ path: join(output, `${app.id}-${viewport.width}-failure.png`), fullPage: true, timeout: 30000 }).catch(() => {});
       } finally {
         await context.close();
       }

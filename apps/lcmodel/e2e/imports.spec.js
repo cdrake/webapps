@@ -85,6 +85,8 @@ test("a mixed session imports anatomical DICOM slices and spectroscopy in either
     const images = dicomSeries({ extension: "" });
     await page.locator("#dataInput").setInputFiles(imageFirst ? [...images, ...files] : [...files, ...images]);
     await expect(page.locator("#t1Info")).toContainText("16 × 16 × 4", { timeout: 60000 });
+    // Anatomy is reported before its viewer presentation finishes and releases the inputs.
+    await expect(page.locator("#dataInput")).toBeEnabled({ timeout: 60000 });
     await expect(page.locator("#datasetSummary")).toContainText("with water");
     await expect(page.locator("#t1Canvas")).toBeVisible();
     await expect(page.locator("#viewerNotice")).toBeHidden();

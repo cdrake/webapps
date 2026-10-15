@@ -171,29 +171,27 @@ test('surface scenes hide 3D anatomy by default and honor FreeBrowse visibility 
   }
   await page.getByTitle('Show sidebar', { exact: true }).click();
   await page.getByRole('tab', { name: 'Volumes', exact: true }).click();
-  await page.getByRole('radio', { name: 'Multi+Render', exact: true }).click();
-  const canvas = await page.locator('#gl1').boundingBox();
-  const render = {
-    x: canvas.x + canvas.width / 2,
-    y: canvas.y + canvas.height / 2,
-    width: Math.floor(canvas.width / 2),
-    height: Math.floor(canvas.height / 2),
-  };
-  const axial = { ...render, x: canvas.x };
-  const before3D = await page.screenshot({ clip: render });
-  const before2D = await page.screenshot({ clip: axial });
+  const canvas = page.locator('#gl1');
+  // Multi+Render adapts to the narrow canvas beside FreeBrowse's sidebar;
+  // compare each complete view instead of assuming four equal quadrants.
+  await page.getByRole('radio', { name: 'Axial view', exact: true }).click();
+  const before2D = await canvas.screenshot();
+  await page.getByRole('radio', { name: 'Render view', exact: true }).click();
+  const before3D = await canvas.screenshot({ path: testInfo.outputPath('clipped-anatomy-before.png') });
   await page.getByRole('button', { name: 'Toggle visibility', exact: true }).click();
-  await expect.poll(async () => before2D.equals(await page.screenshot({ clip: axial }))).toBe(false);
-  expect(before3D.equals(await page.screenshot({ clip: render })), 'Hiding already-clipped anatomy must leave the 3D view unchanged').toBe(true);
+  expect(before3D.equals(await canvas.screenshot({ path: testInfo.outputPath('clipped-anatomy-hidden.png') })), 'Hiding already-clipped anatomy must leave the 3D view unchanged').toBe(true);
+  await page.getByRole('radio', { name: 'Axial view', exact: true }).click();
+  await expect.poll(async () => before2D.equals(await canvas.screenshot())).toBe(false);
+  await page.getByRole('radio', { name: 'Render view', exact: true }).click();
   await page.getByRole('button', { name: 'Toggle visibility', exact: true }).click();
-  await expect.poll(async () => before3D.equals(await page.screenshot({ clip: render })), {
+  await expect.poll(async () => before3D.equals(await canvas.screenshot()), {
     message: 'Explicitly showing anatomy in FreeBrowse must reveal it in 3D',
   }).toBe(false);
   await page.locator('.nd-volume-toggle').filter({ hasText: 'Right mid-surface' }).getByRole('button', { name: 'View', exact: true }).click();
   await expect(page.getByRole('checkbox', { name: 'Show Right mid-surface', exact: true })).toBeEnabled();
-  const anatomyAfterSelection = await page.screenshot({ clip: render });
+  const anatomyAfterSelection = await canvas.screenshot();
   await page.getByRole('button', { name: 'Toggle visibility', exact: true }).click();
-  await expect.poll(async () => anatomyAfterSelection.equals(await page.screenshot({ clip: render })), {
+  await expect.poll(async () => anatomyAfterSelection.equals(await canvas.screenshot()), {
     message: 'Anatomy must remain visible after selecting another surface, until explicitly hidden',
   }).toBe(false);
   await page.getByTitle('Hide sidebar', { exact: true }).click();
