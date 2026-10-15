@@ -77,7 +77,6 @@ const WITHOUT_COMMAND_LINE = {
   zarro: 'interactive OME-Zarr viewer: it has no batch output',
   nesvor: 'needs CUDA; its standalone form is the neurodesk-compute server',
   spinalcordtoolbox: 'not built yet (#285)',
-  dicom2vid: 'not built yet (#282)',
 };
 
 test('every app ships its own command line or states why it cannot', async () => {
