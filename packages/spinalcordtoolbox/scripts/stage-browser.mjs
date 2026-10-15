@@ -5,10 +5,12 @@ import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
 const BROWSER_SOURCES = ['segment.js', 'inference-pipeline.js', 'lesion-analysis.js', 'totalspineseg.js'];
+// Spelled through `vendor/webapp-components/src` so the composite site's runtime
+// rewrite (scripts/lib/runtime-assets.mjs) points them at its shared copy.
 const SPECIFIERS = {
-  '@neurodesk/webapp-components/worker': '../../webapp-components/src/worker/index.js',
-  '@neurodesk/webapp-components/file-io/nifti': '../../webapp-components/src/file-io/NiftiUtils.js',
-  '@neurodesk/webapp-components/volume': '../../webapp-components/src/volume/index.js',
+  '@neurodesk/webapp-components/worker': '../../../vendor/webapp-components/src/worker/index.js',
+  '@neurodesk/webapp-components/file-io/nifti': '../../../vendor/webapp-components/src/file-io/NiftiUtils.js',
+  '@neurodesk/webapp-components/volume': '../../../vendor/webapp-components/src/volume/index.js',
 };
 
 const root = new URL('../../../', import.meta.url);

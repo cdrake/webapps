@@ -503,7 +503,7 @@ apps:
   deface:
     packages:
       - { name: niimath (WebAssembly), url: https://github.com/rordenlab/niimath, role: affine registration and face voxel removal }
-      - { name: MindGrab (brainchop), url: https://github.com/neuroneural/brainchop, role: optional deep-learning brain extraction on WebGPU }
+      - { name: MindGrab (brainchop), url: https://github.com/neuroneural/brainchop, role: optional deep-learning brain extraction on the GPU or CPU }
       - { name: NiiVue, url: https://github.com/niivue/niivue, role: image viewer }
       - { name: dcm2niix (WebAssembly), url: https://github.com/rordenlab/dcm2niix, role: DICOM to NIfTI conversion }
     citations:

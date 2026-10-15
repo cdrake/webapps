@@ -64,6 +64,8 @@ class ReleaseTarget:
     validation: pathlib.Path
     onnx_runtime: str | None
     build: bool
+    bundle_models: bool
+    native_executables: tuple[str, ...]
     node_version: str
     node_url: str
     node_sha256: str
@@ -82,6 +84,11 @@ class ReleaseTarget:
     @property
     def installer(self) -> bool:
         return self.archive_kind == "pkg"
+
+    @property
+    def executables(self) -> tuple[str, ...]:
+        """Files installed executable: the launcher, the private runtime and any native tools."""
+        return (self.executable, self.private_node, *self.native_executables)
 
     @property
     def install_directory(self) -> pathlib.PurePosixPath:
@@ -158,6 +165,11 @@ def load_target(repo: pathlib.Path, package_dir: str, target_id: str) -> Release
     if (archive_kind == "pkg") != (system == "macos"):
         raise ValueError(f"{target_id} must ship as {'a .pkg installer' if system == 'macos' else 'an archive'}")
     archive_name = f"{tool}-{version}-{target_id}.{archive_kind}"
+    native = tuple(definition.get("native", ()))
+    for path in native:
+        parts = pathlib.PurePosixPath(path).parts
+        if parts[:1] != ("app",) or ".." in parts or pathlib.PurePosixPath(path).is_absolute():
+            raise ValueError(f"{target_id} native executable must be inside app/: {path}")
     if not all(character.isalnum() or character in ".-_" for character in archive_name):
         raise ValueError("release target produced an unsafe archive name")
     return ReleaseTarget(
@@ -177,6 +189,8 @@ def load_target(repo: pathlib.Path, package_dir: str, target_id: str) -> Release
         validation=directory / release["validation"],
         onnx_runtime=package.get("dependencies", {}).get("onnxruntime-node"),
         build="build" in package.get("scripts", {}),
+        bundle_models=release.get("bundleModels", True),
+        native_executables=native,
         node_version=runtimes["version"],
         node_url=runtime["url"],
         node_sha256=runtime["sha256"],
@@ -375,7 +389,8 @@ def _copy_dependency_licenses(app: pathlib.Path, destination: pathlib.Path) -> N
 
 
 def _build_launcher(destination: pathlib.Path, target: ReleaseTarget) -> None:
-    _run(["cargo", "build", "--release", "--locked"], cwd=HERE)
+    environment = {**os.environ, "NEURODESK_BUNDLE_MODELS": str(target.bundle_models).lower()}
+    _run(["cargo", "build", "--release", "--locked"], cwd=HERE, env=environment)
     suffix = ".exe" if target.windows else ""
     source = HERE / f"target/release/node-cli-launcher{suffix}"
     shutil.copy2(source, destination / target.executable)
@@ -494,7 +509,7 @@ Check the installation:
 
 
 def _normalized_mode(relative: pathlib.PurePath, target: ReleaseTarget) -> int:
-    return 0o755 if relative.as_posix() in (target.executable, target.private_node) else 0o644
+    return 0o755 if relative.as_posix() in target.executables else 0o644
 
 
 def _write_zip(stage: pathlib.Path, target: ReleaseTarget, archive: pathlib.Path) -> None:
@@ -572,6 +587,9 @@ def package_target(target: ReleaseTarget) -> pathlib.Path:
         stage.mkdir()
         _deploy_application(stage, target)
         _flatten_node_modules(stage / "app", target.package)
+        missing = [path for path in target.native_executables if not (stage / path).is_file()]
+        if missing:
+            raise ValueError(f"{target.package} build did not stage its native executables: {missing}")
         if target.onnx_runtime:
             _prune_onnx_runtime(stage / "app", target)
         runtime_archive = _download_runtime(target, work)
@@ -579,7 +597,9 @@ def package_target(target: ReleaseTarget) -> pathlib.Path:
         if target.installer:
             check_node_entitlements(stage / target.private_node)
         entry = stage / "app/bin" / f"{target.tool}.js"
-        _run([str(stage / target.private_node), str(entry), "download-models", "--cache-dir", str(stage / "models")], cwd=stage)
+        # A package whose models are too large to ship downloads them on first use instead.
+        if target.bundle_models:
+            _run([str(stage / target.private_node), str(entry), "download-models", "--cache-dir", str(stage / "models")], cwd=stage)
         _build_launcher(stage, target)
         shutil.copy2(target.package_dir / "LICENSE", stage / "LICENSE")
         shutil.copy2(target.package_dir / "NOTICE", stage / "NOTICE")
@@ -591,7 +611,7 @@ def package_target(target: ReleaseTarget) -> pathlib.Path:
         if target.installer:
             _sign_macos(stage, target, signing)
         if target.id.startswith("windows-"):
-            windows_signing.sign_tree(stage, (target.executable, target.private_node))
+            windows_signing.sign_tree(stage, target.executables)
         manifest = create_manifest(stage, target.version, target.id)
         (stage / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf8")
         if target.installer:
@@ -798,7 +818,7 @@ def verify_target(repo: pathlib.Path, target: ReleaseTarget) -> pathlib.Path:
             _extract_archive(archive, extracted)
             root = extracted / target.directory
             if target.id.startswith("windows-"):
-                windows_signing.verify_tree(root, (target.executable, target.private_node), native=True)
+                windows_signing.verify_tree(root, target.executables, native=True)
             report, validation = _exercise(repo, target, root, root / target.executable)
     receipt.write_text(
         f"PASS {target.id}\narchive_sha256={expected}\nself_check={json.dumps(report, sort_keys=True)}\n{validation}{evidence}",
@@ -837,7 +857,7 @@ def verify_release_set(repo: pathlib.Path, package_dir: str, directory: pathlib.
         if not receipt.startswith(f"PASS {target.id}\n"):
             raise ValueError(f"release validation receipt is missing: {target.id}")
         if target.id.startswith("windows-"):
-            windows_signing.verify_zip(archive, (target.executable, target.private_node))
+            windows_signing.verify_zip(archive, target.executables)
         if target.installer and not xar_is_signed(archive):
             raise ValueError(f"release installer is unsigned: {target.archive_name}")
         if target.installer and "source=Notarized Developer ID" not in receipt:

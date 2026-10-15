@@ -6,8 +6,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import zlib from 'node:zlib';
 
-import { gunzip, MAX_DECOMPRESSED } from '../../web/js/readers/gzip.js';
-import { readDicomHeader } from '../../web/js/readers/dicom.js';
+import { gunzip, MAX_DECOMPRESSED } from '@neurodesk/dicom2vid/readers/gzip.js';
+import { readDicomHeader } from '@neurodesk/dicom2vid/readers/dicom.js';
 
 test('gunzip rejects output larger than the cap (decompression bomb)', async () => {
   const raw = Buffer.alloc(50000, 0); // tiny gzip, inflates to 50000 bytes

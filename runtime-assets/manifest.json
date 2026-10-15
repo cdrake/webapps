@@ -74,6 +74,50 @@
           "sha256": "8c074d09c40516d03e0d33cb979bc38a08a886424b899388ed8a0c1507c40f47"
         }
       ]
+    },
+    {
+      "id": "mindgrab-20260925",
+      "version": "0.1.20260925",
+      "target": "mindgrab/0.1.20260925",
+      "reason": "Keep the MindGrab backend modules and adjacent WASM inside each app's service-worker scope so the threaded CPU fallback stays cross-origin isolated. The common store pins and verifies this runtime version.",
+      "files": [
+        {
+          "name": "brainchop-mindgrab.js",
+          "source_app": "deface",
+          "source": "mindgrab/brainchop-mindgrab.js",
+          "sha256": "f90cacdfa16fee0c9bf1ee6e0274d9ca6f5a989d05826836372742640e9a5b98"
+        },
+        {
+          "name": "brainchop-mindgrab.wasm",
+          "source_app": "deface",
+          "source": "mindgrab/brainchop-mindgrab.wasm",
+          "sha256": "1aac837550ca836f069ed354742edd7ec89ee7abd7d57ffe5831435baf3311c3"
+        },
+        {
+          "name": "brainchop-mindgrab-gl.js",
+          "source_app": "deface",
+          "source": "mindgrab/brainchop-mindgrab-gl.js",
+          "sha256": "2bbcda0eb7622fa42ad1046fed7ae3a33df56a638912d25815ac3e0a2082a94f"
+        },
+        {
+          "name": "brainchop-mindgrab-gl.wasm",
+          "source_app": "deface",
+          "source": "mindgrab/brainchop-mindgrab-gl.wasm",
+          "sha256": "d638db543b05ce3e8801b4aca970edc520d9632d3b34d1349f80a4de2431667e"
+        },
+        {
+          "name": "brainchop-mindgrab-gpu.js",
+          "source_app": "deface",
+          "source": "mindgrab/brainchop-mindgrab-gpu.js",
+          "sha256": "d670e2d470f59d646b254e96182d09512a3a27914db4a983d787973430903a4b"
+        },
+        {
+          "name": "brainchop-mindgrab-gpu.wasm",
+          "source_app": "deface",
+          "source": "mindgrab/brainchop-mindgrab-gpu.wasm",
+          "sha256": "ef5671590c9e38258beaa6c5ab90be4c830f68a684cd5cc47cb57e2aa95480d6"
+        }
+      ]
     }
   ],
   "downloads": [

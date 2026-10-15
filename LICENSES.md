@@ -9,6 +9,8 @@ for each app are recorded in `registry/apps.yml`.
 - `packages/components`: MIT (`packages/components/LICENSE`)
 - `apps/musclemap`: MIT (`apps/musclemap/web/LICENSE`)
 - `apps/qsmbly`: MIT (`apps/qsmbly/LICENSE`)
+- `packages/qsmbly`: GPL-3.0-only (`packages/qsmbly/LICENSE`, `packages/qsmbly/NOTICE`); its
+  release archives redistribute the unmodified GPL-3.0-only QSMxT 9.22.0 binaries and dcm2niix
 - `apps/synthsr`: Apache-2.0 (`apps/synthsr/LICENSE`); upstream attribution in `apps/synthsr/NOTICE`
 - `packages/synthsr`: Apache-2.0 (`packages/synthsr/LICENSE`); shared browser/native SynthSR pipeline
 - `apps/seedseg` web application: MIT (`apps/seedseg/web/LICENSE`)
@@ -17,6 +19,12 @@ for each app are recorded in `registry/apps.yml`.
 - `apps/niimath`: BSD-2-Clause (`apps/niimath/LICENSE`)
 - `packages/niimath`: BSD-2-Clause (`packages/niimath/LICENSE`); niimath attribution in `packages/niimath/NOTICE`
 - `apps/dicom2vid`: BSD-3-Clause (`apps/dicom2vid/LICENSE`)
+- `packages/dicom2vid`: BSD-3-Clause (`packages/dicom2vid/LICENSE`); the shared
+  dicom2vid pipeline and its command line. The vendored muxers are MIT and the
+  label font is public domain. The command line's VP9 encoder,
+  `@libav.js/variant-vp9-opus`, is FFmpeg (LGPL-2.1-or-later) with libvpx and
+  Opus (BSD-3-Clause), shipped unmodified as a separate replaceable module
+  (`packages/dicom2vid/NOTICE`).
 - `apps/browserqc`: BSD-2-Clause (`apps/browserqc/LICENSE`)
 - `apps/surfannotate`: MIT (`apps/surfannotate/LICENSE`); bundled third-party
   notices in `apps/surfannotate/THIRD-PARTY.md`

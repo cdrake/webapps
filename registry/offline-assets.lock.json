@@ -892,14 +892,6 @@
       "license": "NOASSERTION",
       "dependencies": []
     },
-    "https://huggingface.co/datasets/sbollmann/neurodesk-webapps-assets/resolve/49b12b87f4e5def9672cf582b93ecd4a54273608/deface/models/net_mindgrab.safetensors": {
-      "sha256": "aba8754c83fce20e35c41ce2c4db205250ca84737e6b73cf0faf809fdc3884ef",
-      "bytes": 587404,
-      "contentType": "application/octet-stream",
-      "kind": "model",
-      "license": "NOASSERTION",
-      "dependencies": []
-    },
     "https://huggingface.co/datasets/sbollmann/neurodesk-webapps-assets/resolve/49b12b87f4e5def9672cf582b93ecd4a54273608/deface/t1_crop.nii.gz": {
       "sha256": "9f5708dd1980fe0017ad70f63d895bae66bd9f5487eb1c38d129591116113613",
       "bytes": 3068922,
@@ -3569,7 +3561,6 @@
     "deface": [
       "https://huggingface.co/datasets/sbollmann/neurodesk-webapps-assets/resolve/49b12b87f4e5def9672cf582b93ecd4a54273608/deface/avg152T1.nii.gz",
       "https://huggingface.co/datasets/sbollmann/neurodesk-webapps-assets/resolve/49b12b87f4e5def9672cf582b93ecd4a54273608/deface/avg152T1mask.nii.gz",
-      "https://huggingface.co/datasets/sbollmann/neurodesk-webapps-assets/resolve/49b12b87f4e5def9672cf582b93ecd4a54273608/deface/models/net_mindgrab.safetensors",
       "https://huggingface.co/datasets/sbollmann/neurodesk-webapps-assets/resolve/49b12b87f4e5def9672cf582b93ecd4a54273608/deface/t1_crop.nii.gz",
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/356a4adbce52cf9052d61ef90b14ba263e7c25e9/synthseg/validation/T1_head.nii.gz"
     ],
