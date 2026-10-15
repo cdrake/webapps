@@ -27,17 +27,18 @@ test('SynthSeg input replacement waits for an entered editor callback to finish 
   const context = vm.createContext({
     editor: { cancel: () => oldLoad },
     runs: { begin: () => run },
+    progressManager: { reset() {} },
     $: id => {
       if (!nodes.has(id)) nodes.set(id, {});
       return nodes.get(id);
     },
-    renderResults() {}, setBusy() {}, status() {},
+    renderResults() {}, setBusy() {}, status() {}, hideVolumes() {}, setSubject() {},
     readNifti: async () => ({ data: [], dims: [1, 1, 1] }),
     gridOf: () => ({}), looksLikeCt: () => false,
     show() { replacementLoads++; visible = 'new input'; },
     file: { name: 'new.nii', arrayBuffer: async () => new ArrayBuffer(0) },
   });
-  vm.runInContext(`let source, sourceGrid, labels, provenance, operation;
+  vm.runInContext(`let source, sourceGrid, labels, provenance, operation, memoryRecommendation;
     let viewRevision = 0, busy = false, webgpu = true;
     ${section(synthseg, 'function clearOutputs()', '\nasync function importImages(')}`, context);
   const loading = vm.runInContext('load(file)', context);
@@ -108,6 +109,9 @@ for (const app of ['brain-extraction', 'white-matter-lesions']) {
       },
       readImageFiles: async files => files,
       readVolume: () => ({ dims: [1, 1, 1] }),
+      decodeNiftiBuffer: async () => new ArrayBuffer(0),
+      parseNiftiHeader: () => ({ nx: 1, ny: 1, nz: 1 }),
+      MAX_INPUT_VOXELS: 1,
       show: () => { loads.push(file); },
       files: Promise.resolve([file]),
     });

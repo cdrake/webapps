@@ -1,6 +1,6 @@
 {
   "name": "nesvor",
-  "version": "0.3.20261012",
+  "version": "0.3.20261015",
   "private": true,
   "type": "module",
   "scripts": {
@@ -22,7 +22,6 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.44.0",
-    "eslint": "^9.0.0",
     "vite": "^5.0.0"
   }
 }

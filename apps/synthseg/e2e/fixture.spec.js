@@ -160,6 +160,12 @@ async function checkCase(page, { input, reference, mode, limit, pinned }) {
   const produced = await readNifti(producedBytes, Float64Array);
   const golden = await readNifti(goldenBytes, Float64Array);
   const report = JSON.parse(readFileSync(await reportDownload.path(), 'utf8'));
+  const volumesDownload = await Promise.all([page.waitForEvent('download'), page.locator('#volumesBtn').click()]).then(([value]) => value);
+  const [volumeHeader, volumeRow] = readFileSync(await volumesDownload.path(), 'utf8').trim().split('\r\n');
+  // The hosted norms, fetched and checksum-verified by the page, chart every structure.
+  await page.getByRole('button', { name: 'Volumes', exact: true }).click();
+  await expect(page.locator('#volumeReport figure svg circle.nd-chart-marker, #volumeReport figure svg line.nd-chart-level')).toHaveCount(10, { timeout: 60000 });
+  await expect(page.locator('#volumeReport tbody tr')).toHaveCount(10);
   const inputDescriptor = Array.isArray(report.inputs.image) ? report.inputs.image[0] : report.inputs.image;
   const outputDescriptor = report.artifacts.labels || Object.values(report.artifacts).find(value => value.role === 'labels');
   await test.info().attach(`${mode}-labels.nii.gz`, { path: await download.path(), contentType: 'application/gzip' });
@@ -199,6 +205,10 @@ async function checkCase(page, { input, reference, mode, limit, pinned }) {
   save();
   expect(result.gpuPosteriors).toHaveLength(mode === 'default' ? 2 : 1);
   expect(report.status).toBe('succeeded');
+  expect(volumeHeader.split(',')).toEqual(['subject', ...Object.keys(report.measurements.softVolumesMm3)]);
+  expect(Number(volumeRow.split(',')[1])).toBe(report.measurements.softVolumesMm3['total intracranial']);
+  expect(report.measurements.softVolumesMm3['total intracranial']).toBeGreaterThan(0);
+  expect(report.measurements.volumeReport.results).toHaveLength(10);
   expect(inputDescriptor.sha256).toBe(checksum(readFileSync(input)));
   expect(outputDescriptor.sha256).toBe(checksum(producedBytes));
   expect(report.provenance.gpuImplementation).toBe('synthseg-blocked-fp32-v1');
@@ -252,6 +262,32 @@ if (!probeOnly) {
       });
     });
   }
+
+  test('segments and downloads labels on a chosen coarser grid', async ({ page }) => {
+    test.setTimeout(1800000);
+    await page.goto('./');
+    await page.locator('#exampleSelect').selectOption({ index: 1 });
+    await expect(page.locator('#processButton')).toBeEnabled({ timeout: 120000 });
+    await page.locator('#preparationSection > summary').click();
+    await page.locator('#voxelSizeMm').fill('1.3');
+    await page.locator('#processButton').click();
+    await expect(page.locator('#statusText')).toHaveAttribute('data-neurodesk-state', /succeeded|failed/, { timeout: 1700000 });
+    await expect(page.locator('#statusText')).toHaveAttribute('data-neurodesk-state', 'succeeded');
+    await expect(page.locator('#statusText')).toContainText('Labels ready');
+    const pending = page.waitForEvent('download');
+    await page.locator('#saveBtn').click();
+    const image = await readNifti(readFileSync(await (await pending).path()));
+    const { report } = JSON.parse(await page.locator('#neurodesk-run').textContent());
+    expect(report.provenance.voxelSizeMm).toBe(1.3);
+    expect(report.provenance.preparation).toMatchObject({ voxelSizeMm: 1.3 });
+    expect(report.artifacts.labels.space).toBe('subject-1.3mm');
+    expect(image.dims).toEqual(report.provenance.outputShape);
+    for (const spacing of image.header.voxelSize) expect(spacing).toBeCloseTo(1.3, 5);
+    expect(new Set(image.data).size).toBeGreaterThan(5);
+    expect(report.measurements.softVolumesMm3['total intracranial']).toBeGreaterThan(0);
+    await page.getByRole('button', { name: 'Volumes', exact: true }).click();
+    await expect(page.locator('#volumeReport')).toContainText('The 1 mm reference norms have not been validated for this grid.');
+  });
 }
 
 // Hardware only: the full volumes plan a 1.98 GB activation buffer and SwiftShader stops at 1 GB.

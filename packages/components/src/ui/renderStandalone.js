@@ -5,11 +5,9 @@ const platforms = {
   'macos-arm64': 'macOS · Apple silicon',
   'windows-x64': 'Windows · x64',
   'linux-x64': 'Linux · x64',
-  'linux-x64-apptainer': 'Apptainer · Linux x64',
-  any: 'Every platform',
 };
 
-export function openStandalone({ title, app, suite, installed = false }, doc = globalThis.document) {
+export function openStandalone({ title, app, installed = false }, doc = globalThis.document) {
   const content = doc.createElement('div');
   const element = (tag, text, attributes = {}) => createElement(tag, { text, ...attributes, ownerDocument: doc });
   const section = (id, heading, description) => {
@@ -22,23 +20,15 @@ export function openStandalone({ title, app, suite, installed = false }, doc = g
   const command = (parent, id, text) => parent.append(renderCommand({ id, command: text }, doc).root);
   const addDownload = (root, download, id) => {
     const row = element('div', undefined, { className: 'nd-download-option' });
-    const label = `${download.kind === 'cli' ? `${title} command line · ` : ''}${platforms[download.platform] || download.platform}`;
-    const size = !download.bytes ? '' : download.bytes < 1e9 ? ` · ${(download.bytes / 1e6).toFixed(0)} MB` : ` · ${(download.bytes / 1e9).toFixed(2)} GB`;
+    const label = `${title} command line · ${platforms[download.platform] || download.platform}`;
+    const size = !download.bytes ? '' : ` · ${(download.bytes / 1e6).toFixed(0)} MB`;
     row.append(element('h4', `${label}${size}`));
-    if (download.parts?.length) {
-      const links = element('p');
-      for (const [partIndex, part] of download.parts.entries()) {
-        if (partIndex) links.append(doc.createTextNode(' · '));
-        links.append(element('a', `Part ${partIndex + 1} of ${download.parts.length}`, { href: part.url }));
-      }
-      row.append(links);
-    } else row.append(element('a', 'Download', { href: download.url }));
+    row.append(element('a', 'Download', { href: download.url }));
     // Integrity metadata stays in the release catalog, outside the user flow.
     const instructions = download.command?.split('\n').filter(line => !/sha256|sha-256|shasum|get-filehash/i.test(line)).join('\n');
-    if (instructions && (download.parts?.length || download.kind === 'cli')) {
+    if (instructions) {
       const details = element('details');
-      const summary = download.parts?.length ? 'Installation instructions' : download.url?.endsWith('.pkg') ? 'Install and run' : 'Extract and run';
-      details.append(element('summary', summary));
+      details.append(element('summary', download.url.endsWith('.pkg') ? 'Install and run' : 'Extract and run'));
       command(details, `install-${id}`, instructions);
       row.append(details);
     }
@@ -128,16 +118,12 @@ export function openStandalone({ title, app, suite, installed = false }, doc = g
       doc.createTextNode('.'));
     root.append(download, build);
   }
-  const downloads = [...(suite?.downloads || []), ...app.downloads];
+  // Only this app's own command line: the all-apps desktop suite is linked from the catalog page.
+  const downloads = app.downloads;
   if (downloads.length) {
     const models = downloads.every(download => download.modelsIncluded) ? 'Models are included.' : 'Models download when first used.';
-    const root = section('standalone-downloads', 'Webapp standalone', `Download the archive for your platform. ${models}`);
+    const root = section('standalone-downloads', 'Command line', `Download the archive for your platform. ${models}`);
     for (const [index, download] of downloads.entries()) addDownload(root, download, `platform-${index}`);
-  }
-  if (suite?.models) {
-    const root = section('standalone-models', 'Model pack · optional',
-      'Add every model for offline use. Extract the pack and point NEURODESK_MODELS_DIR at that folder before starting the application.');
-    addDownload(root, suite.models, 'models');
   }
   if (!downloads.length && !installed) content.append(element('p', 'Standalone downloads have not been published yet.'));
   doc.getElementById('neurodeskStandaloneDialog')?.remove();

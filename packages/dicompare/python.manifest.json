@@ -1,0 +1,254 @@
+{
+  "pyodide": "0.27.0",
+  "core": [
+    {
+      "name": "pyodide.asm.js",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/pyodide.asm.js",
+      "sha256": "adf46cdb1c1b3fbc7fa68e2b015368156f9c9ccce91880e8150cca909e541b1a",
+      "bytes": 1253545
+    },
+    {
+      "name": "pyodide.asm.wasm",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/pyodide.asm.wasm",
+      "sha256": "bde4193eb41f6356126d4b21077fee498cef393009eaf27a3a4ba798c571e591",
+      "bytes": 10104029
+    },
+    {
+      "name": "python_stdlib.zip",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/python_stdlib.zip",
+      "sha256": "1c86cd198ab1de5d9e1ad7fea4c88f1eeca917f059c01764523e7b7acab81dde",
+      "bytes": 2358641
+    },
+    {
+      "name": "pyodide-lock.json",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/pyodide-lock.json",
+      "sha256": "92bc66cf0095ea9dbbdab7f86dd6a1c51dc0e1a21f8ed90794304dc5f220dc64",
+      "bytes": 106813
+    }
+  ],
+  "packages": [
+    "attrs",
+    "contourpy",
+    "cycler",
+    "fonttools",
+    "jsonschema",
+    "jsonschema-specifications",
+    "kiwisolver",
+    "matplotlib",
+    "matplotlib-pyodide",
+    "micropip",
+    "numpy",
+    "openblas",
+    "packaging",
+    "pandas",
+    "pillow",
+    "pyparsing",
+    "pyrsistent",
+    "python-dateutil",
+    "pytz",
+    "referencing",
+    "rpds-py",
+    "scipy",
+    "setuptools",
+    "six",
+    "sqlite3",
+    "tqdm",
+    "typing-extensions"
+  ],
+  "packageFiles": [
+    {
+      "name": "attrs-23.2.0-py3-none-any.whl",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/attrs-23.2.0-py3-none-any.whl",
+      "sha256": "628272b8c53bf9223091b874ff9a242455ae84118b8f1a41f7189d3b81cddcc7",
+      "bytes": 209507
+    },
+    {
+      "name": "contourpy-1.3.0-cp312-cp312-pyodide_2024_0_wasm32.whl",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/contourpy-1.3.0-cp312-cp312-pyodide_2024_0_wasm32.whl",
+      "sha256": "cbac8892b34cffeccaf10bb986030ac5d502deb404d1be2ab6c020b578112321",
+      "bytes": 413241
+    },
+    {
+      "name": "cycler-0.12.1-py3-none-any.whl",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/cycler-0.12.1-py3-none-any.whl",
+      "sha256": "73edd524330bd1d390243fda1267ae6bc178b9c566e7cce1710e589c29426482",
+      "bytes": 23552
+    },
+    {
+      "name": "fonttools-4.51.0-py3-none-any.whl",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/fonttools-4.51.0-py3-none-any.whl",
+      "sha256": "c8709879a5f048021f4fcf90020548493ef8f3886374b580fa8af1e274966d5b",
+      "bytes": 4266602
+    },
+    {
+      "name": "jsonschema-4.21.1-py3-none-any.whl",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/jsonschema-4.21.1-py3-none-any.whl",
+      "sha256": "5f6894a44d3af00eab758dc92b18c72aaafb1fa520e8ef647135cc0cea4b371f",
+      "bytes": 279581
+    },
+    {
+      "name": "jsonschema_specifications-2023.12.1-py3-none-any.whl",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/jsonschema_specifications-2023.12.1-py3-none-any.whl",
+      "sha256": "2977393e41dc3550e0a3da980410e6acf5f2883881ee5bff28c7d683a543c5ac",
+      "bytes": 51191
+    },
+    {
+      "name": "kiwisolver-1.4.5-cp312-cp312-pyodide_2024_0_wasm32.whl",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/kiwisolver-1.4.5-cp312-cp312-pyodide_2024_0_wasm32.whl",
+      "sha256": "44aea2b3efb0948542a5648840723b023a3c1b39e434c2965817af170cbe98a4",
+      "bytes": 133464
+    },
+    {
+      "name": "matplotlib-3.8.4-cp312-cp312-pyodide_2024_0_wasm32.whl",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/matplotlib-3.8.4-cp312-cp312-pyodide_2024_0_wasm32.whl",
+      "sha256": "eacf3a16bce2726ae71fca4837ddddbf3e449830cf345b13d2851b4b8ae7f850",
+      "bytes": 16660698
+    },
+    {
+      "name": "matplotlib_pyodide-0.2.3-py3-none-any.whl",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/matplotlib_pyodide-0.2.3-py3-none-any.whl",
+      "sha256": "739748e1cab28bf10a479d086cb09f496424c8d9e523ada396f030f0a570ab21",
+      "bytes": 83783
+    },
+    {
+      "name": "micropip-0.8.0-py3-none-any.whl",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/micropip-0.8.0-py3-none-any.whl",
+      "sha256": "4164be7009905e63038cb278667beac17edbeae00641a31b0c7a0b21466fb886",
+      "bytes": 140739
+    },
+    {
+      "name": "numpy-2.0.2-cp312-cp312-pyodide_2024_0_wasm32.whl",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/numpy-2.0.2-cp312-cp312-pyodide_2024_0_wasm32.whl",
+      "sha256": "a6ccf853fa81e17c00ef594298410284a9cdde836efd7664dcc28c3b7ecad819",
+      "bytes": 12461368
+    },
+    {
+      "name": "openblas-0.3.26.zip",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/openblas-0.3.26.zip",
+      "sha256": "ab914da96f9ae92417d71f3834f679b119f4bdfdb9da8f8a64c41ceb454e6726",
+      "bytes": 6117592
+    },
+    {
+      "name": "packaging-23.2-py3-none-any.whl",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/packaging-23.2-py3-none-any.whl",
+      "sha256": "1b2d8e2658c66d163aa25d1d2bf648010b495c33a05e2ec1b5cbb3cf49f5196f",
+      "bytes": 194236
+    },
+    {
+      "name": "pandas-2.2.3-cp312-cp312-pyodide_2024_0_wasm32.whl",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/pandas-2.2.3-cp312-cp312-pyodide_2024_0_wasm32.whl",
+      "sha256": "1818fc2fed99f0464488bbd699d209708757b1581df9cfaea903a695af051979",
+      "bytes": 23774182
+    },
+    {
+      "name": "pillow-10.2.0-cp312-cp312-pyodide_2024_0_wasm32.whl",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/pillow-10.2.0-cp312-cp312-pyodide_2024_0_wasm32.whl",
+      "sha256": "f64cf341b63ea818598febda483c44a39babda536f213eb14381c66e1ab1ff34",
+      "bytes": 3042002
+    },
+    {
+      "name": "pyparsing-3.1.2-py3-none-any.whl",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/pyparsing-3.1.2-py3-none-any.whl",
+      "sha256": "4f13b892bc9ada3976bfaf9ee5a1af409245e3833a38dd87cc3b7bdadf4fc383",
+      "bytes": 394748
+    },
+    {
+      "name": "pyrsistent-0.20.0-cp312-cp312-pyodide_2024_0_wasm32.whl",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/pyrsistent-0.20.0-cp312-cp312-pyodide_2024_0_wasm32.whl",
+      "sha256": "5197578a11a89bc95c4b6be9f7149ff9e8a08e94f81e9f11d43339ac16bf8501",
+      "bytes": 217345
+    },
+    {
+      "name": "python_dateutil-2.9.0.post0-py2.py3-none-any.whl",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/python_dateutil-2.9.0.post0-py2.py3-none-any.whl",
+      "sha256": "4fb331abf67d8590201c29dd6e73e40699667a26440a1df04318831a9a5ff479",
+      "bytes": 444927
+    },
+    {
+      "name": "pytz-2024.1-py2.py3-none-any.whl",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/pytz-2024.1-py2.py3-none-any.whl",
+      "sha256": "cbe9677d98cac379578f10742efab99e31e6ff870ca7d2391f7f954fab7bd232",
+      "bytes": 1083571
+    },
+    {
+      "name": "referencing-0.34.0-py3-none-any.whl",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/referencing-0.34.0-py3-none-any.whl",
+      "sha256": "03415856af9a00017a5c5e2bb5249e48dd94a6f3c1ce3b4175868673dc775572",
+      "bytes": 60038
+    },
+    {
+      "name": "rpds_py-0.18.0-cp312-cp312-pyodide_2024_0_wasm32.whl",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/rpds_py-0.18.0-cp312-cp312-pyodide_2024_0_wasm32.whl",
+      "sha256": "3af27122275cccae2edfd7b39ca82bcb893830ea9a79c9902944212aab4bb79b",
+      "bytes": 426963
+    },
+    {
+      "name": "scipy-1.14.1-cp312-cp312-pyodide_2024_0_wasm32.whl",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/scipy-1.14.1-cp312-cp312-pyodide_2024_0_wasm32.whl",
+      "sha256": "79bef26f529e6bd48def51d72a3fa3b03cbdf6df224859a825c1de0f34ef364c",
+      "bytes": 48058017
+    },
+    {
+      "name": "setuptools-69.5.1-py3-none-any.whl",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/setuptools-69.5.1-py3-none-any.whl",
+      "sha256": "c8a8ccfd2afb1d1c8dfeca729aa38fb6670de2947f2af956a83ac0a678f0161d",
+      "bytes": 3059220
+    },
+    {
+      "name": "six-1.16.0-py2.py3-none-any.whl",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/six-1.16.0-py2.py3-none-any.whl",
+      "sha256": "b8d069ae521a27110f9c147261172bfe168da0267c13edc1a8cdb0b7988e69b0",
+      "bytes": 38737
+    },
+    {
+      "name": "sqlite3-1.0.0-py2.py3-none-any.whl",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/sqlite3-1.0.0-py2.py3-none-any.whl",
+      "sha256": "86e74516bbf295e9d6b10b0dd5517066e934d68f7f71e95a02a8d889b847bf52",
+      "bytes": 1455224
+    },
+    {
+      "name": "tqdm-4.66.2-py3-none-any.whl",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/tqdm-4.66.2-py3-none-any.whl",
+      "sha256": "7ffeb735b2a45996b9d4ce58790091fc8ea1fbf25bb285695674dbd811cb1e0e",
+      "bytes": 229445
+    },
+    {
+      "name": "typing_extensions-4.11.0-py3-none-any.whl",
+      "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/typing_extensions-4.11.0-py3-none-any.whl",
+      "sha256": "bb4467344036f0647e579933726725e3c5e45f6a44de9d056dd62d4dc6ec2b54",
+      "bytes": 140469
+    }
+  ],
+  "wheels": [
+    {
+      "name": "pydicom-2.4.5-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/db/5b/4e7d67d880b3344afff01708725a39717694a79391a32711fd40a8958bed/pydicom-2.4.5-py3-none-any.whl",
+      "sha256": "35a594cc8ebae8dd40b1f632cd7c9f08ecaa147cb9305a9f9fbca2c03f5ccc93",
+      "bytes": 1771963
+    },
+    {
+      "name": "tabulate-0.9.0-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/40/44/4a5f08c96eb108af5cb50b41f76142f0afa346dfa99d5296fe7202a11854/tabulate-0.9.0-py3-none-any.whl",
+      "sha256": "024ca478df22e9340661486f85298cff5f6dcdba14f3813e8830015b9ed1948f",
+      "bytes": 35252
+    },
+    {
+      "name": "nibabel-5.3.3-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/b8/f5/7f6aa3bbff013c0bf993129cbb2b1505790091f812accbe85cf001514737/nibabel-5.3.3-py3-none-any.whl",
+      "sha256": "e8b17423ee8464da3b69e6a15799eb19f2350a7d38377026d527b6b84938adac",
+      "bytes": 3293989
+    },
+    {
+      "name": "twixtools-0.24-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/93/ab/9db91133fb05d5aa4be55d5068175bc878dc9dac6edd5525c8b89dc3641c/twixtools-0.24-py3-none-any.whl",
+      "sha256": "d19b53e0dc34f4b179a62c9b454482a7f8a5a226a3b0ea4b52b39e5b08c12adb",
+      "bytes": 43180
+    },
+    {
+      "name": "dicompare-0.11.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/64/52/fc88de4696f87c4b7316bb26082e7652961c59fb66de8da5c05667cdcdac/dicompare-0.11.1-py3-none-any.whl",
+      "sha256": "b1d9ff53eabba5791c7b9a3a3da16ed4ebcb0e0f435924687992db49b5ac76e8",
+      "bytes": 396689
+    }
+  ]
+}

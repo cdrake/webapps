@@ -1,0 +1,36 @@
+{
+  "name": "@neurodesk/niimath",
+  "version": "1.3.20261014",
+  "description": "niimath command line running the NiiMath web app's WebAssembly build",
+  "type": "module",
+  "license": "BSD-2-Clause",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "niimath": "./bin/niimath.js"
+  },
+  "exports": {
+    "./node": "./src/node.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "LICENSE",
+    "NOTICE",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "lint": "node --check src/node.js && node --check bin/niimath.js"
+  },
+  "dependencies": {
+    "@neurodesk/node-drivers": "workspace:*",
+    "@niivue/niimath": "1.3.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neurodesk/webapps.git",
+    "directory": "packages/niimath"
+  }
+}

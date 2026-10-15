@@ -1,6 +1,6 @@
 {
   "name": "lcmodel",
-  "version": "0.8.20261013",
+  "version": "0.8.20261014",
   "private": true,
   "type": "module",
   "scripts": {
@@ -21,7 +21,6 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.44.0",
-    "eslint": "^9.0.0",
     "vite": "^5.0.0"
   }
 }

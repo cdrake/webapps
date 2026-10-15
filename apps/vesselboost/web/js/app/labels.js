@@ -36,10 +36,3 @@ export function generateNiivueColormap() {
 export function getLabelName(index) {
   return LABELS[index]?.name || `Label ${index}`;
 }
-
-/**
- * Get label color as [R, G, B, A] (0-255).
- */
-export function getLabelColor(index) {
-  return LABELS[index]?.color || [128, 128, 128, 255];
-}

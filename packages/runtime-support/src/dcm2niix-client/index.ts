@@ -29,7 +29,7 @@
  * ```
  */
 
-import { Dcm2niix } from '@niivue/dcm2niix'
+import { Dcm2niix, type Dcm2niixProcessor } from '@niivue/dcm2niix'
 
 // Re-export so callers can drop down to the raw API when they need flags
 // like compression level, BIDS sidecars, etc.
@@ -70,6 +70,14 @@ export async function runDcm2niix(
   files: FileList | File[] | null | undefined,
   options: RunDcm2niixOptions = {},
 ): Promise<File[]> {
+  return convertDicom(files, options, (processor) => processor)
+}
+
+async function convertDicom(
+  files: FileList | File[] | null | undefined,
+  options: RunDcm2niixOptions,
+  configure: (processor: Dcm2niixProcessor) => Dcm2niixProcessor,
+): Promise<File[]> {
   const { niftiOnly = true, signal } = options
   signal?.throwIfAborted()
   if (!files || files.length === 0) return []
@@ -85,14 +93,14 @@ export async function runDcm2niix(
     const result = (await withTimeout(
       (async () => {
         await dcm2niix.init()
-        return dcm2niix.input(files).run() as Promise<File[]>
+        return configure(dcm2niix.input(files)).run()
       })(),
       RUN_TIMEOUT_MS,
       'dcm2niix',
       signal,
     )) as File[]
     return niftiOnly
-      ? result.filter((f) => /\.nii(\.gz)?$/i.test(f.name))
+      ? result.filter(isNifti)
       : result
   } finally {
     dcm2niix.worker?.terminate()
@@ -113,22 +121,94 @@ function withTimeout<T>(p: Promise<T>, ms: number, label: string, signal?: Abort
   })
 }
 
+/** Options for {@link readImageFiles}: `directVolume` names the files that skip dcm2niix. */
+export type ReadImageFilesOptions = RunDcm2niixOptions & { directVolume?: RegExp }
+
+/** One image and its parsed BIDS sidecar (`null` when absent or unparsable). */
+export interface ImageSeries {
+  image: File
+  sidecar: Record<string, unknown> | null
+}
+
 /** Keep direct volumes and convert all DICOM slices together, including extensionless files. */
 export async function readImageFiles(
   files: FileList | File[],
-  options: RunDcm2niixOptions & { directVolume?: RegExp } = {},
+  options: ReadImageFilesOptions = {},
 ): Promise<File[]> {
-  const directVolume = options.directVolume ?? /\.nii(\.gz)?$/i
+  const { direct, dicom } = splitInputs(files, options.directVolume)
+  if (!dicom.length) return direct
+  const converted = await convertDicom(dicom, options, (processor) => processor)
+  return [...direct, ...requireImages(converted)]
+}
+
+/**
+ * Like {@link readImageFiles}, but pairs each image with its BIDS sidecar by file stem.
+ * dcm2niix runs with `-b y -ba n`, so converted sidecars keep identifying fields
+ * (patient name, birth date, acquisition time). Keep them in memory; never persist them.
+ * A direct volume pairs with a supplied `.json` of the same stem.
+ */
+export async function readImageSeries(
+  files: FileList | File[],
+  options: Omit<ReadImageFilesOptions, 'niftiOnly'> = {},
+): Promise<ImageSeries[]> {
+  const { direct, sidecars, dicom } = splitInputs(files, options.directVolume)
+  const directSeries = await pairSidecars(direct, sidecars)
+  if (!dicom.length) return directSeries
+  const outputs = await convertDicom(
+    dicom,
+    { ...options, niftiOnly: false },
+    (processor) => processor.bids('y').bidsAnonymize('n'),
+  )
+  const images = requireImages(outputs.filter(isNifti))
+  return [...directSeries, ...(await pairSidecars(images, outputs))]
+}
+
+function splitInputs(files: FileList | File[], directVolume = /\.nii(\.gz)?$/i) {
   const direct: File[] = []
+  const sidecars: File[] = []
   const dicom: File[] = []
   for (const file of Array.from(files)) {
     if (directVolume.test(file.name)) direct.push(file)
-    else if (!/\.(json|bval|bvec)$/i.test(file.name)) dicom.push(file)
+    else if (/\.json$/i.test(file.name)) sidecars.push(file)
+    else if (!/\.(bval|bvec)$/i.test(file.name)) dicom.push(file)
   }
-  if (!dicom.length) return direct
-  const converted = await runDcm2niix(dicom, options)
-  if (!converted.length) throw new Error('No images produced. Choose NIfTI files or a complete DICOM series.')
-  return [...direct, ...converted]
+  return { direct, sidecars, dicom }
+}
+
+function requireImages(images: File[]): File[] {
+  if (!images.length) throw new Error('No images produced. Choose NIfTI files or a complete DICOM series.')
+  return images
+}
+
+function isNifti(file: File): boolean {
+  return /\.nii(\.gz)?$/i.test(file.name)
+}
+
+function stem(name: string): string {
+  return name.replace(/\.(nii\.gz|[^.]*)$/i, '')
+}
+
+async function pairSidecars(images: File[], candidates: File[]): Promise<ImageSeries[]> {
+  const sidecars = new Map(
+    candidates
+      .filter((file) => /\.json$/i.test(file.name))
+      .map((file) => [stem(file.name), file]),
+  )
+  return Promise.all(images.map(async (image) => {
+    const sidecar = sidecars.get(stem(image.name))
+    return { image, sidecar: sidecar ? await parseSidecar(sidecar) : null }
+  }))
+}
+
+async function parseSidecar(file: File): Promise<Record<string, unknown> | null> {
+  try {
+    const value: unknown = JSON.parse(await file.text())
+    return value && typeof value === 'object' && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : null
+  } catch {
+    return null
+  }
 }
 
 /**

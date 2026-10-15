@@ -3,10 +3,10 @@
     "type": "string",
     "description": "Fast mode skips flip averaging and topology postprocessing",
     "enum": [
-      "default",
-      "fast"
+      "fast",
+      "default"
     ],
-    "default": "default"
+    "default": "fast"
   },
   "ct": {
     "type": "boolean",

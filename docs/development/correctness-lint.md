@@ -46,13 +46,21 @@ package `pnpm lint` command for scoped inventory and baseline handling; direct
 
 ## Typed promise handling
 
-Zarro's `src/**/*.{ts,tsx,mts,cts}` is checked against its real strict TypeScript
-project for `@typescript-eslint/no-floating-promises` and
-`@typescript-eslint/no-misused-promises`. New source files in that directory
-receive both rules. Missing type information fails the parser; it cannot be
-recorded in the lint baseline. The CI gate installs Zarro's dependencies and
-runs its type checker before lint so an unresolved import cannot silently turn
-a library's promise types into `any`.
+`scripts/quality/typed-projects.mjs` lists the TypeScript projects whose
+sources are checked against their real strict TypeScript project for
+`@typescript-eslint/no-floating-promises` and
+`@typescript-eslint/no-misused-promises`. A source is a directory, covering every
+`**/*.{ts,tsx,mts,cts}` file below it, or a single file. New source files in
+those directories receive both rules; the project's `include` must cover them.
+The coverage check fails when either rule is missing, when `void promise`
+counts as handled, or when a file is typed by another project.
+
+The lint parser does not report semantic errors: an unresolved import becomes
+`any` and hides the promise it returns. Before linting, `scripts/lint.mjs`
+therefore compiles each selected project with the pinned TypeScript 5.9.3 in
+`scripts/quality`, the compiler that builds the lint program, and fails if it
+does not compile. Parser failures cannot be recorded in the lint baseline. The
+apps' own `tsc --noEmit` checks still run as before.
 
 Await work whose completion is needed before the next mutation. At synchronous
 browser callbacks, attach a rejection handler that reports the failure through
@@ -60,14 +68,40 @@ the existing status path. `void promise` alone does not pass. Async functions
 passed to callbacks that expect `void` also fail; use a synchronous callback
 that invokes the task with explicit rejection reporting.
 
-Typed promise checking currently covers Zarro only. BrowserQC, Deface,
-Dicompare, DWI2TRX and root agentic tests still need their own project audit and
-promise policy. JavaScript remains covered by the correctness rules; enabling
-`checkJs` for the entire catalog is a separate migration.
+To add a project, make its tsconfig compile with the pinned compiler, add it to
+`typed-projects.mjs`, fix every finding in the same change, and add a behavioral
+test showing a failure reaches the app's status bar or caller. Do not record
+promise findings in the baseline.
 
-CI checks Zarro with the same pinned TypeScript 5.9.3 compiler that builds the
-lint program, so unresolved imports cannot silently weaken promise analysis.
-Its stream buffer annotations require ArrayBuffer storage, normalizing the
+### Inventory
+
+Counted on 2026-10-14 with both rules enabled against each project's program.
+JavaScript remains covered by the correctness rules; enabling `checkJs` for the
+entire catalog is a separate migration.
+
+| Project | TS sources | Project and TS 5.9.3 check | Findings | State |
+| --- | --- | --- | --- | --- |
+| Zarro (`apps/zarro/src`) | 29 | `apps/zarro/tsconfig.json` compiles | 0 | Typed since PR #245 |
+| Deface (`apps/deface/src`) | 7 | `apps/deface/tsconfig.json` compiles | 2: 1 floating, 1 misused, both in `main.ts` | Typed; findings fixed |
+| BrowserQC (`apps/browserqc/src`) | 7 | `apps/browserqc/tsconfig.json` compiles | 3: 2 floating, 1 misused, all in `main.ts` | Deferred; upstream-synced, record adaptations in `upstream.json` |
+| Root agentic tests (`test/agentic`, `test-utils/agentic-browser.ts`, `e2e.config.ts`) | 3 | `tsconfig.agentic.json` compiles | 0 | Typed; `test:e2e:types` still compiles it with TypeScript 7 |
+| DWI2TRX (`apps/dwi2trx/src`) | 19 | No tsconfig; a strict project has 47 errors | 10 floating, all in `main.ts` | Deferred; needs a compiling project first |
+| Dicompare (`apps/dicompare/src`) | 142 | `apps/dicompare/tsconfig.json` compiles | 85: 38 floating, 47 misused, in 30 files | Deferred; upstream-owned, record adaptations in `upstream.json` |
+
+The root agentic tests had no findings: their promises are already awaited.
+Their project now includes `test/agentic/**/*.ts` so a new file in a
+subdirectory is typed rather than rejected by the parser.
+
+Deface's findings were both teardown paths. `pagehide` discarded the
+`cleanup()` promise, so a teardown failure became an unhandled rejection; it
+now reports through the status bar and technical log like a failed task.
+Vite's HMR client awaits a dispose callback's promise before importing the
+updated module, although its type says `void`. `src/vite-hot.d.ts` declares
+the promise overload so the callback keeps that ordering and handles its
+rejection. `e2e/automation.spec.js` makes teardown fail and checks the status
+bar, the technical log and the absence of page errors.
+
+Zarro's stream buffer annotations require ArrayBuffer storage, normalizing the
 encoded bytes once before streaming; compressed contents are unchanged. NiiVue 1.0.0-rc.14's `setFocus` and `setBudget`
 return its `refocus` barrier, which resolves on supersede, failed swaps and
 disposal. Awaiting these methods does not turn cancelled chunk reads into

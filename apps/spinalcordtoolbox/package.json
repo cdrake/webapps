@@ -45,7 +45,6 @@
     "test:browser-parity": "node scripts/test_browser_analysis.mjs"
   },
   "dependencies": {
-    "nifti-reader-js": "^0.8.0",
     "onnxruntime-node": "^1.24.3",
     "@neurodesk/webapp-components": "workspace:*"
   },
@@ -54,7 +53,7 @@
     "jsdom": "^24.0.0"
   },
   "name": "spinalcordtoolbox",
-  "version": "0.8.20261012",
+  "version": "0.8.20261014",
   "private": true,
   "type": "module",
   "neurodeskWebapp": {

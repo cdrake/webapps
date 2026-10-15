@@ -22,6 +22,7 @@ pub struct Segmenter {
     scratch: Vec<f32>,
     posteriors: Vec<f32>,
     output: Vec<u8>,
+    volumes: [f64; post::N],
 }
 
 #[no_mangle]
@@ -53,8 +54,27 @@ pub extern "C" fn seg_error_len() -> u32 {
 /// `ptr`/`len` must describe a readable NIfTI byte range.
 #[no_mangle]
 pub unsafe extern "C" fn seg_new(ptr: *const u8, len: usize, ct: u32) -> *mut Segmenter {
+    seg_new_at_resolution(ptr, len, ct, 1.0)
+}
+
+/// # Safety
+/// `ptr`/`len` must describe a readable NIfTI byte range.
+#[no_mangle]
+pub unsafe extern "C" fn seg_new_at_resolution(
+    ptr: *const u8,
+    len: usize,
+    ct: u32,
+    voxel_size_mm: f64,
+) -> *mut Segmenter {
     let read = nifti::read(std::slice::from_raw_parts(ptr, len));
-    match read.and_then(|v| volume::prepare(&v, ct != 0).map(|p| (v.dims, p))) {
+    match read.and_then(|v| {
+        let prep = if voxel_size_mm == 1.0 {
+            volume::prepare(&v, ct != 0)
+        } else {
+            volume::prepare_at_resolution(&v, ct != 0, voxel_size_mm)
+        };
+        prep.map(|p| (v.dims, p))
+    }) {
         Ok((dims, prep)) => Box::into_raw(Box::new(Segmenter {
             padded: prep.padded.map(|d| d as u32),
             input_dims: dims.map(|d| d as u32),
@@ -64,6 +84,7 @@ pub unsafe extern "C" fn seg_new(ptr: *const u8, len: usize, ct: u32) -> *mut Se
             scratch: Vec::new(),
             posteriors: Vec::new(),
             output: Vec::new(),
+            volumes: [0.0; post::N],
         })),
         Err(message) => {
             ERROR.with(|e| *e.borrow_mut() = message);
@@ -91,6 +112,8 @@ accessors! {
     seg_affine(s) -> *const f64 { s.prep.affine[0].as_ptr() }
     seg_input(s) -> *const f32 { s.prep.input.as_ptr() }
     seg_labels_len(s) -> u32 { s.output.len() as u32 }
+    // mri_synthseg --vol columns after `seg_labels`: total intracranial, then LABELS[1..], in mm³.
+    seg_volumes(s) -> *const f64 { s.volumes.as_ptr() }
     seg_flipped_input(s) -> *const f32 {
         if s.flipped.is_empty() {
             s.flipped = volume::flip_x(&s.prep.input, &s.prep.padded);
@@ -129,9 +152,10 @@ pub unsafe extern "C" fn seg_labels(seg: *mut Segmenter, fast: u32) -> *const u8
     // Postprocessing peaks around another copy of the posteriors, so release what it no longer needs.
     s.scratch = Vec::new();
     s.flipped = Vec::new();
-    let labels = post::labels(std::mem::take(&mut s.posteriors), &s.prep, fast != 0);
-    let image = nifti::write(&volume::restore(&labels, &s.prep));
-    drop(labels);
+    let segmentation = post::segment(std::mem::take(&mut s.posteriors), &s.prep, fast != 0);
+    s.volumes = segmentation.volumes_mm3;
+    let image = nifti::write(&volume::restore(&segmentation.labels, &s.prep));
+    drop(segmentation);
     let mut gz = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::default());
     gz.write_all(&image).expect("gzip into a Vec cannot fail");
     s.output = gz.finish().expect("gzip into a Vec cannot fail");

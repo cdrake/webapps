@@ -1,6 +1,6 @@
 {
   "name": "topofit",
-  "version": "0.15.20261012",
+  "version": "0.15.20261014",
   "private": true,
   "type": "module",
   "scripts": {
@@ -21,7 +21,6 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.44.0",
-    "eslint": "^9.0.0",
     "vite": "^6.3.2"
   },
   "license": "GPL-3.0-only",

@@ -1,4 +1,4 @@
-// Turn a released GitHub release into the Standalone catalog's command-line downloads.
+// Turn a released GitHub release into the Standalone catalog's command-line downloads, or into its suite entry.
 // Never guess URLs: every entry comes from an uploaded asset, GitHub's own digest and a validation receipt.
 // An app can have several release sources (scripts/lib/native-releases.mjs). Each owns its platforms and
 // can version independently, so an update replaces and version-checks only the platforms of the source it
@@ -7,6 +7,9 @@ import { portableCommand, releasePlatform } from './portable-command.mjs';
 
 export const RELEASE_ARGUMENT = /^([a-z0-9][a-z0-9-]*)@(\d+\.\d+\.\d{8})$/;
 const RELEASE_TAG = /^([a-z0-9][a-z0-9-]*)-v(\d+\.\d+\.\d{8})$/;
+// The nightly desktop suite releases as webapps-vVERSION with its own catalog entry, standalone-catalog.json,
+// which scripts/desktop/publish.mjs writes after checking every archive.
+export const SUITE_ID = 'webapps';
 
 export function parseReleases(values) {
   return values.map((value) => {
@@ -70,7 +73,7 @@ export function checkReceipt({ name, digest, platform, native, text: raw }) {
   const recorded = recordedDigests(text, name);
   if (recorded.some((value) => value !== digest)) throw new Error(`${name}: its receipt validated different bytes`);
   if (!recorded.length) throw new Error(`${name}: its receipt records no SHA-256 of the archive`);
-  if (native.startsWithAppRelease && !text.startsWith(`PASS ${platform}\n`)) throw new Error(`${name}: its receipt does not pass these exact bytes`);
+  if (native.portable && !text.startsWith(`PASS ${platform}\n`)) throw new Error(`${name}: its receipt does not pass these exact bytes`);
 }
 
 // The file-name stem of a source's archives: the portable executable's name (FLAMeS ships as flames-...),
@@ -119,6 +122,10 @@ export async function releaseDownloads({ id, version, release, native, previous 
 export async function catalogUpdate(catalog, releases, { fetchRelease, fetchText, nativeAt }) {
   const update = [];
   for (const { id, version } of releases) {
+    if (id === SUITE_ID) {
+      update.push(await suiteUpdate(version, { fetchRelease, fetchText }));
+      continue;
+    }
     if (!catalog.apps[id]) throw new Error(`${id}: not in the Standalone catalog`);
     const tag = `${id}-v${version}`;
     const sources = nativeAt(tag).get(id) ?? [];
@@ -134,11 +141,48 @@ export async function catalogUpdate(catalog, releases, { fetchRelease, fetchText
   return update;
 }
 
+// Every file a suite entry lists, archive parts included. The publisher reuses unchanged archives from an
+// earlier suite release, so a file can live under another tag.
+function suiteFiles(suite) {
+  return [...suite.downloads, suite.models].filter(Boolean).flatMap((record) => [record, ...(record.parts || [])]);
+}
+
+async function checkSuiteFiles(suite, fetchRelease) {
+  const releases = new Map();
+  for (const file of suiteFiles(suite)) {
+    const [tag, name] = new URL(file.url).pathname.split('/').slice(-2).map(decodeURIComponent);
+    if (!releases.has(tag)) releases.set(tag, await fetchRelease(tag));
+    const release = releases.get(tag);
+    if (release.draft || release.prerelease) throw new Error(`${name}: release ${tag} is not released yet`);
+    const asset = release.assets.find((item) => item.name === name);
+    if (!asset || asset.browser_download_url !== file.url || asset.digest !== `sha256:${file.sha256}`) {
+      throw new Error(`${name}: release ${tag} does not serve the bytes the suite catalog records`);
+    }
+  }
+}
+
+// The suite's catalog entry, taken from its release and held to GitHub's digests of every listed file.
+export async function suiteUpdate(version, { fetchRelease, fetchText }) {
+  const tag = `${SUITE_ID}-v${version}`;
+  const release = await fetchRelease(tag);
+  if (release.draft || release.prerelease) throw new Error(`${SUITE_ID}: release ${tag} is not released yet`);
+  const asset = release.assets.find((item) => item.name === 'standalone-catalog.json');
+  if (!asset) throw new Error(`${SUITE_ID}: release ${tag} has no standalone-catalog.json`);
+  const { suite } = JSON.parse(await fetchText(asset.browser_download_url));
+  if (suite?.version !== version) throw new Error(`${SUITE_ID}: release ${tag} describes suite ${suite?.version}`);
+  await checkSuiteFiles(suite, fetchRelease);
+  return { id: SUITE_ID, version, suite };
+}
+
 // Publishers re-upload with --clobber, so an update computed before a re-upload names bytes the release no
 // longer serves. The publish job calls this just before each commit; a changed asset stops the commit, and
 // the run that re-uploaded it publishes its own update.
 export async function checkUpdateAssets(update, fetchRelease) {
-  for (const { id, version, downloads } of update) {
+  for (const { id, version, downloads, suite } of update) {
+    if (suite) {
+      await checkSuiteFiles(suite, fetchRelease);
+      continue;
+    }
     const tag = `${id}-v${version}`;
     const release = await fetchRelease(tag);
     for (const download of downloads) {
@@ -170,7 +214,13 @@ export function compareVersions(a, b) {
 // same source. Another source's version is never compared: the sources number their releases independently.
 export function applyCatalogUpdate(catalog, update) {
   if (!Array.isArray(update)) throw new Error('A catalog update is a list of { id, version, downloads } releases');
-  for (const { id, version, downloads } of update) {
+  for (const { id, version, downloads, suite } of update) {
+    if (suite) {
+      if (catalog.suite && compareVersions(version, catalog.suite.version) < 0) {
+        console.log(`${id}: catalog already lists suite ${catalog.suite.version}; keeping it over ${version}`);
+      } else catalog.suite = suite;
+      continue;
+    }
     const app = catalog.apps[id];
     if (!app) throw new Error(`${id}: not in the Standalone catalog`);
     const platforms = downloads.map((download) => download.platform);

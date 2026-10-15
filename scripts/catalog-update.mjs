@@ -1,11 +1,12 @@
 // Compute the Standalone catalog changes for released native archives, without writing the catalog.
 // Usage: node scripts/catalog-update.mjs --out update.json (app@VERSION ... | --tag APP-vVERSION)
+// webapps@VERSION (tag webapps-vVERSION) is the nightly desktop suite.
 // --tag serves the release "released" event: a release without native archives yet is skipped, because
 // its native workflow announces it again once the archives are attached.
 import { readFile, writeFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import { nativeReleases, portableSpecsAt } from './lib/native-releases.mjs';
-import { catalogUpdate, parseReleases, releaseFromTag, releaseSources } from './lib/standalone-import.mjs';
+import { SUITE_ID, catalogUpdate, parseReleases, releaseFromTag, releaseSources } from './lib/standalone-import.mjs';
 
 const { values, positionals } = parseArgs({ allowPositionals: true, options: { out: { type: 'string' }, tag: { type: 'string' } } });
 if (!values.out) throw new Error('--out is required');
@@ -27,7 +28,9 @@ async function fetchText(url) {
 
 const nativeAt = (tag) => nativeReleases(portableSpecsAt(`refs/tags/${tag}`));
 let releases = parseReleases(positionals);
-if (values.tag) {
+if (values.tag && releaseFromTag(values.tag)?.id === SUITE_ID) {
+  releases = [releaseFromTag(values.tag)];
+} else if (values.tag) {
   const release = releaseFromTag(values.tag);
   const sources = (release && nativeAt(values.tag).get(release.id)) ?? [];
   const built = sources.length ? releaseSources(sources, await fetchRelease(values.tag)) : [];
@@ -39,5 +42,5 @@ if (values.tag) {
   }
 }
 const update = await catalogUpdate(catalog, releases, { fetchRelease, fetchText, nativeAt });
-for (const { id, version, downloads } of update) console.log(`${id}@${version}: ${downloads.length} verified downloads`);
+for (const { id, version, downloads, suite } of update) console.log(`${id}@${version}: ${(downloads ?? suite.downloads).length} verified downloads`);
 await writeFile(values.out, `${JSON.stringify(update, null, 2)}\n`);

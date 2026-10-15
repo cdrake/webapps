@@ -1,6 +1,6 @@
 {
   "name": "disconnectome",
-  "version": "0.3.20261012",
+  "version": "0.3.20261014",
   "private": true,
   "type": "module",
   "license": "BSD-2-Clause",
@@ -20,7 +20,6 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.44.0",
-    "eslint": "^9.0.0",
     "vite": "^6.3.2"
   }
 }

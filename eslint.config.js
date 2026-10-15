@@ -2,6 +2,7 @@ import js from '@eslint/js';
 import tsParser from '@neurodesk/code-quality';
 import tsPlugin from '@neurodesk/code-quality/plugin';
 import globals from 'globals';
+import { typedPromiseProjects, typedSourceGlobs } from './scripts/quality/typed-projects.mjs';
 
 // Correctness only. Existing findings are reviewed in scripts/quality/lint-baseline.json.
 // The inventory runner checks every tracked source, including files hidden by an ignore.
@@ -77,12 +78,12 @@ export default [
       'no-undef': 'off',
     },
   },
-  {
-    // Begin with Zarro's strict TS5 project. Other apps need their own typed audit.
-    files: ['apps/zarro/src/**/*.{ts,tsx,mts,cts}'],
+  // Each typed project's real TS5 program supplies the promise types; scripts/lint.mjs compiles it first.
+  ...typedPromiseProjects.map((project) => ({
+    files: typedSourceGlobs(project),
     languageOptions: {
       parserOptions: {
-        project: ['./apps/zarro/tsconfig.json'],
+        project: [`./${project.tsconfig}`],
         tsconfigRootDir: import.meta.dirname,
       },
     },
@@ -91,7 +92,7 @@ export default [
       '@typescript-eslint/no-floating-promises': ['error', { ignoreVoid: false, checkThenables: true }],
       '@typescript-eslint/no-misused-promises': 'error',
     },
-  },
+  })),
   {
     files: ['**/*.{cjs,cts}'],
     languageOptions: { sourceType: 'commonjs' },

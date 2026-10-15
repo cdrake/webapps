@@ -29,6 +29,14 @@ const { buffer, provenance } = await runSynthseg({
 `fast` skips left–right flip averaging and topology postprocessing (roughly half
 the work, slightly noisier labels). `ct` clips Hounsfield units to [0, 80].
 
+The browser can explicitly set `options.voxelSizeMm` between 1 and 3 to use a
+coarser processing grid after exceeding GPU memory. The default remains 1 mm.
+The labels' affine and soft volumes reflect the chosen physical voxel size.
+This fallback changes the scale seen by the model and is not validated against
+the 1 mm volume norms. `./input-memory` plans the required padded buffers and
+prepares oversized inputs with an injected niimath robust FOV crop; it proposes
+a coarser grid without applying it automatically.
+
 ## Command line
 
 The `synthseg` command runs the web app's pipeline on your own computer: the
@@ -54,7 +62,7 @@ On Windows, use `Expand-Archive` and `synthseg.exe`.
 ### Commands
 
 ```text
-synthseg INPUT.nii[.gz] OUTPUT_DIR [--mode default|fast] [--ct | --no-ct]
+synthseg INPUT.nii[.gz] OUTPUT_DIR [--mode fast|default] [--ct | --no-ct]
                                    [--threads N] [--cache-dir DIR] [--offline]
 synthseg download-models [--cache-dir DIR]
 synthseg self-check
@@ -62,8 +70,10 @@ synthseg --help
 ```
 
 The options are the web app's automation parameters for `segment`
-(`src/parameters.json`, which a test holds equal to `apps/synthseg/automation.json`).
-`--mode fast` skips flip averaging and topology postprocessing. `--ct` treats the
+(`src/parameters.json`, which a test holds equal to `apps/synthseg/automation.json`
+apart from the app's volume-report `age` and `sex`). `--mode fast`, the default,
+skips flip averaging and topology postprocessing; the app's volume norms were
+fitted on fast-mode volumes. `--mode default` adds both. `--ct` treats the
 input as CT in Hounsfield units and `--no-ct` as MRI. Without either, the input
 counts as CT when any voxel is negative, as the app decides. The decision is
 recorded in the report.
@@ -102,13 +112,16 @@ delete. With `--offline`, a missing model stops the run instead of downloading.
 
 ### Outputs
 
-The output directory receives the web app's two downloads, named by the same
+The output directory receives the web app's three downloads, named by the same
 code (`src/results.js`). For `T1.nii.gz`:
 
 - `T1_synthseg.nii.gz`, int32 FreeSurfer labels on the 1 mm grid
 - `T1_synthseg.json`, the app's run report: input and output checksums,
-  parameters, provenance (model digest, ONNX Runtime version, threads, timings)
-  and every label's voxel count and volume in ml
+  parameters, provenance (model digest, ONNX Runtime version, threads, timings),
+  every label's voxel count and volume in ml, and the soft volumes
+- `T1_synthseg_vol.csv`, the soft-posterior volumes in mm³ in the format of
+  FreeSurfer's `mri_synthseg --vol`. The release check holds each column to
+  FreeSurfer 8.2.0's table for the same input and mode (`validation/gates.json`)
 
 ### Accuracy
 

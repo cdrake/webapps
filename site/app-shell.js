@@ -319,7 +319,7 @@ import { resolveShellAdapter } from './shell-adapters/index.js';
           }
         }
         await standaloneStylesReady;
-        openStandalone({ title: metadata.title, app: catalog.apps[metadata.id], suite: catalog.suite, installed: document.documentElement.hasAttribute('data-neurodesk-offline') });
+        openStandalone({ title: metadata.title, app: catalog.apps[metadata.id], installed: document.documentElement.hasAttribute('data-neurodesk-offline') });
       } catch (error) {
         console.error('Standalone information could not be loaded', error);
         window.alert('Standalone downloads could not be loaded. Please try again.');

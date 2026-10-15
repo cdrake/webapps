@@ -64,3 +64,22 @@ test('an unsupported WebGPU adapter fails the operation with the app initializat
   await expect(page.locator('#applyBtn')).toBeDisabled();
   await expect(page.locator('#saveBtn')).toBeDisabled();
 });
+
+test('a teardown failure reaches the status bar instead of an unhandled rejection', async ({ page }) => {
+  const pageErrors = [];
+  page.on('pageerror', error => pageErrors.push(error.message));
+  await page.goto('./');
+  // Initialization has settled, so no later status update can replace the failure.
+  await expect(page.locator('#statusMsg')).toHaveText(/Choose an example|WebGPU/);
+  await page.evaluate(() => {
+    const selector = document.querySelector('#exampleControl nd-example-selector');
+    selector.destroy = () => { throw new Error('teardown canary'); };
+    window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: false }));
+  });
+  await expect(page.locator('#statusMsg')).toHaveText('Failed: teardown canary');
+  await expect(page.locator('#consoleOutput')).toContainText('Failed: teardown canary');
+  // Teardown continued past the failing first step: the workspace listeners are gone.
+  const dragAccepted = await page.evaluate(() => !document.dispatchEvent(new DragEvent('dragover', { cancelable: true })));
+  expect(dragAccepted).toBe(false);
+  expect(pageErrors).toEqual([]);
+});

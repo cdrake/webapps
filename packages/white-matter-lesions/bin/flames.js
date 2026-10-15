@@ -12,7 +12,9 @@ const HELP = `Usage: flames INPUT.nii[.gz] OUTPUT_DIR [options]
 
 Segments white matter lesions on one FLAIR NIfTI image with FLAMeS, on the CPU.
 Writes INPUT_lesions.nii (mask), INPUT_lesion_probability.nii and
-INPUT_lesions.tsv (one row per 26-connected lesion), on the input grid.
+INPUT_lesions.tsv (one row per 26-connected lesion), on the input grid. An input
+finer than 1 x 0.9 x 0.9 mm is downsampled to it first; the outputs then use that
+grid and INPUT_flair_resampled.nii holds the resampled FLAIR.
 
 Options:
   --folds N         1 (default, fold 0) or 5 (the published five-fold ensemble)

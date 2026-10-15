@@ -1,5 +1,18 @@
 # lcmodel
 
+## 0.8.20261014
+
+### Patch Changes
+
+- fc978bd: A user's basis file without a field strength or echo time is now named as the file missing it, instead of saying the data do not record it.
+- Updated dependencies [fc978bd]
+- Updated dependencies [27c9549]
+- Updated dependencies [850e642]
+- Updated dependencies [ad92e2f]
+  - @neurodesk/lcmodel@0.8.20261014
+  - @neurodesk/runtime-support@0.5.0
+  - @neurodesk/webapp-components@0.13.0
+
 ## 0.8.20261013
 
 ### Patch Changes

@@ -1,8 +1,10 @@
 // Shared SynthSeg pipeline. Spatial processing and postprocessing come from the CLI's Rust
 // compiled to wasm (./wasm.js); the runtime only supplies model bytes and an inference session.
 // Order mirrors exes/synthseg/src/main.rs.
+import { VOLUME_COLUMNS } from './results.js';
+
 const CITATION = 'Billot et al. (2023) SynthSeg: Segmentation of brain MRI scans of any contrast and resolution without retraining. Med Image Anal. PMID: 36857946';
-const VERSION = '0.6.20261012';
+const VERSION = '0.8.20261014';
 
 export async function runSynthseg({ buffer, options = {}, loadModel, createSession, wasm,
   onProgress = () => {}, runtime = {} }) {
@@ -19,7 +21,7 @@ export async function runSynthseg({ buffer, options = {}, loadModel, createSessi
     output.dispose?.();
   };
   try {
-    onProgress(0.01, 'Reading NIfTI and resampling to 1 mm…');
+    onProgress(0.01, `Reading NIfTI and resampling to ${settings.voxelSizeMm ?? 1} mm…`);
     seg = new wasm.Segmenter(new Uint8Array(buffer), settings);
     mark('preprocess');
     onProgress(0.12, `Prepared ${seg.padded.join(' × ')} voxels`);
@@ -38,14 +40,18 @@ export async function runSynthseg({ buffer, options = {}, loadModel, createSessi
     await session.release(); session = null;
     mark('release');
     onProgress(0.92, 'Postprocessing and saving labels…');
-    const { buffer: labels, geometry } = seg.labels(settings);
+    const { buffer: labels, volumes, geometry } = seg.labels(settings);
     mark('postprocess');
     const provenance = {
       package: '@neurodesk/synthseg', version: VERSION, model: 'synthseg_2.0', modelSha256: model.hash,
       citation: CITATION, ...runtime, ...settings, flip: !settings.fast, ...geometry,
       seconds: (performance.now() - started) / 1000, timings,
     };
-    return { buffer: labels.buffer, provenance };
+    return {
+      buffer: labels.buffer,
+      provenance,
+      volumes: Object.fromEntries(VOLUME_COLUMNS.map((name, index) => [name, volumes[index]])),
+    };
   } finally {
     await session?.release();
     seg?.free();

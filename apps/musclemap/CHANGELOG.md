@@ -1,5 +1,25 @@
 # musclemap
 
+## 1.5.20261014
+
+### Patch Changes
+
+- 3fbc9ad: A NIfTI or DICOM folder dropped anywhere in the workspace, including the
+  viewer canvas and the technical log, now becomes the segmentation input. Cite
+  always opens the shared citation list, which ends with the Neurodesk paper; the
+  app's own Citations modal is removed.
+- 313275d: The offline bundle no longer downloads the retired compressed whole-body v1.3
+  model, which no MuscleMap version loads.
+- 850e642: Remove code that nothing calls, found by the unused-code report and checked by
+  repository-wide reference searches. The shared preview module no longer carries
+  a second NIfTI parser and writer; NiftiUtils remains the only one. Outputs and
+  behaviour are unchanged.
+- Updated dependencies [27c9549]
+- Updated dependencies [850e642]
+- Updated dependencies [ad92e2f]
+  - @neurodesk/webapp-components@0.13.0
+  - @neurodesk/musclemap@1.5.20261014
+
 ## 1.5.20261012
 
 ### Patch Changes

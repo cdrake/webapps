@@ -58,6 +58,17 @@ test('web releases and deployments do not wait for the desktop suite', async () 
   }
 });
 
+test('Standalone link checks run nightly and on main, never as a pull request gate', async () => {
+  const flow = await workflow('standalone-links');
+  assert.deepEqual(Object.keys(flow.on).sort(), ['push', 'schedule', 'workflow_dispatch']);
+  assert.deepEqual(flow.on.push.branches, ['main']);
+  assert.ok(flow.on.push.paths.includes('registry/standalone.json'));
+  assert.deepEqual(flow.permissions, { contents: 'read' });
+  assert.ok(flow.jobs.links.steps.some(step => /node scripts\/check-standalone-links\.mjs/.test(step.run || '')));
+  const ci = await workflow('ci');
+  assert.doesNotMatch(JSON.stringify(ci), /check-standalone-links/);
+});
+
 test('routine CI uses the lightweight SCT gate and full inference runs independently', async () => {
   const ci = await workflow('ci');
   const full = await workflow('sct-full-tests');
@@ -97,7 +108,8 @@ test('native packages share one gated publisher while signing stays isolated', a
   const sign = steps.findIndex(step => step.name === 'Sign and notarize installer');
   const publish = steps.findIndex(step => step.name === 'Attach verified release assets');
   assert.ok(target >= 0 && target < sign && sign < publish);
-  assert.match(steps[target].run, /isDraft or .isPrerelease/);
+  assert.match(steps[target].run, /gh release view "\$tag" >\/dev\/null/);
+  assert.doesNotMatch(steps[target].run, /isDraft|isPrerelease/);
   assert.match(steps[target].run, /git rev-parse/);
   assert.match(steps[target].run, /GITHUB_SHA/);
   assert.ok(steps.some(step => step.uses?.startsWith('actions/download-artifact@')));
@@ -105,7 +117,7 @@ test('native packages share one gated publisher while signing stays isolated', a
 
 test('native and independent test workflows pin actions and discard checkout credentials', async () => {
   const portable = (await portableCallers()).map(([name]) => name);
-  for (const name of ['synthsr-native', 'synthseg-native', ...portable, 'node-cli-portable', 'node-cli', 'greedy-native', 'sct-full-tests', 'native-nifti', 'native-publish']) {
+  for (const name of ['synthsr-native', 'synthseg-native', ...portable, 'node-cli-portable', 'node-cli', 'greedy-native', 'sct-full-tests', 'native-nifti', 'native-publish', 'standalone-links']) {
     const flow = await workflow(name);
     for (const job of Object.values(flow.jobs)) {
       if (job.uses) assert.match(job.uses, /^\.\/\.github\/workflows\/[\w-]+\.yml$/, `${name}: ${job.uses}`);
@@ -230,8 +242,18 @@ test('SynthSeg verifies native parity before its isolated signing job', async ()
   const sign = steps.findIndex(step => step.name === 'Sign and notarize installer');
   const publish = steps.findIndex(step => step.name === 'Attach verified release assets');
   assert.ok(target >= 0 && target < sign && sign < publish);
-  assert.match(steps[target].run, /isDraft or .isPrerelease/);
+  assert.match(steps[target].run, /gh release view "\$tag" >\/dev\/null/);
+  assert.doesNotMatch(steps[target].run, /isDraft|isPrerelease/);
   assert.match(steps[target].run, /GITHUB_SHA/);
+  // A backfill builds a published tag's own source with main's workflow, never another ref's.
+  assert.equal(flow.on.workflow_dispatch.inputs.release_tag.type, 'string');
+  for (const job of [flow.jobs.verify, flow.jobs.release]) {
+    assert.equal(job.steps.find(step => step.uses?.startsWith('actions/checkout@')).with.ref, '${{ inputs.release_tag }}');
+  }
+  assert.equal(steps[target].env.BACKFILL_TAG, '${{ inputs.release_tag }}');
+  assert.match(steps[target].run, /test "\$GITHUB_REF" = refs\/heads\/main/);
+  assert.match(steps[target].run, /test "\$BACKFILL_TAG" = "\$tag"/);
+  assert.match(steps[target].run, /test "\$\(git rev-parse "\$tag\^\{commit\}"\)" = "\$\(git rev-parse HEAD\)"/);
 });
 
 

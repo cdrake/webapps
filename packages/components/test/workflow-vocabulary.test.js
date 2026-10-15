@@ -275,3 +275,23 @@ test('small buttons and viewer checkbox labels reserve touch targets without a t
   const touchRules = css.slice(css.indexOf('@media (pointer: coarse), (max-width: 780px)'));
   assert.match(touchRules, /\.nd-btn-sm,\s*\.nd-viewer-checkbox\s*\{[^}]*min-width: 44px;[^}]*min-height: 44px;/);
 });
+
+test('the viewer report and chart vocabulary colours only through tokens', async () => {
+  const source = await readFile(new URL('../src/styles/imaging-workspace.css', import.meta.url), 'utf8');
+  const css = source.replace(/\/\*[\s\S]*?\*\//g, '');
+  const rules = [...css.matchAll(/([^{}]*\.nd-(?:viewer-report|report-|chart)[^{}]*)\{([^}]*)\}/g)];
+  const selectors = rules.map(([, selector]) => selector.trim()).join('\n');
+  for (const part of ['nd-chart-band-outer', 'nd-chart-band-inner', 'nd-chart-median', 'nd-chart-marker', 'nd-chart-level', 'nd-chart-range', 'nd-chart-gridline', 'nd-chart-axis', 'nd-chart-note']) {
+    assert.match(selectors, new RegExp(`\\.${part}\\b`), `${part} is styled`);
+  }
+  for (const [, selector, body] of rules) {
+    assert.doesNotMatch(body, /#[0-9a-f]{3,8}\b|\brgba?\(|\bhsla?\(/i, `${selector.trim()} uses a colour literal`);
+    for (const property of body.matchAll(/(?:^|;)\s*(fill|stroke|color|background)\s*:\s*([^;]+)/g)) {
+      assert.match(property[2], /^var\(--nd-color-[a-z-]+\)|^none$/, `${selector.trim()} ${property[1]} must be a token`);
+    }
+  }
+  const report = rules.find(([, selector]) => selector.trim() === '.nd-viewer-report');
+  assert.match(report[2], /position:\s*absolute/);
+  assert.match(report[2], /inset:\s*0/);
+  assert.match(report[2], /overflow:\s*auto/);
+});

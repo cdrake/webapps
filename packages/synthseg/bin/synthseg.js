@@ -11,11 +11,13 @@ const HELP = `Usage: synthseg INPUT.nii[.gz] OUTPUT_DIR [options]
        synthseg self-check
 
 Segments one head image into FreeSurfer labels with SynthSeg 2.0 on the CPU.
-Writes INPUT_synthseg.nii.gz (labels on a 1 mm grid) and INPUT_synthseg.json
-(parameters, provenance and label volumes), as the web app's downloads.
+Writes INPUT_synthseg.nii.gz (labels on a 1 mm grid), INPUT_synthseg.json
+(parameters, provenance and label volumes) and INPUT_synthseg_vol.csv
+(mri_synthseg --vol soft volumes in mm³), as the web app's downloads.
 
 Options:
-  --mode MODE       default (flip averaging and topology postprocessing) or fast
+  --mode MODE       fast (the default; the volume norms come from fast mode) or
+                    default (flip averaging and topology postprocessing)
   --ct, --no-ct     Treat the input as CT in Hounsfield units, or as MRI.
                     Without either, CT is assumed when any voxel is negative.
   --threads N       ONNX Runtime threads (default SLURM_CPUS_PER_TASK or all cores)
