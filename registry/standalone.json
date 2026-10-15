@@ -222,8 +222,8 @@
           "platform": "macos-arm64",
           "version": "1.5.20261014",
           "url": "https://github.com/neurodesk/webapps/releases/download/musclemap-v1.5.20261014/musclemap-1.5.20261014-macos-arm64.pkg",
-          "sha256": "e8a0bf8c592c1fc5f4432bd9759633487e412578e1c9ad9cd1afcd0aad86de2c",
-          "bytes": 646964894,
+          "sha256": "45be5fc7986380eb4000efe17f46edbd69d070e03792c994512e2f7ecf2a93f1",
+          "bytes": 646964889,
           "validationUrl": "https://github.com/neurodesk/webapps/releases/download/musclemap-v1.5.20261014/musclemap-1.5.20261014-macos-arm64.pkg.validation.txt",
           "modelsIncluded": true,
           "command": "sudo installer -pkg musclemap-1.5.20261014-macos-arm64.pkg -target /\nmusclemap self-check\nmusclemap image.nii.gz results"
@@ -233,8 +233,8 @@
           "platform": "windows-x64",
           "version": "1.5.20261014",
           "url": "https://github.com/neurodesk/webapps/releases/download/musclemap-v1.5.20261014/musclemap-1.5.20261014-windows-x64.zip",
-          "sha256": "21db56627e1968980156c6d67267b6acc7d3e21d0a2c78d842502e1b93c41ce5",
-          "bytes": 646933828,
+          "sha256": "827c387c24912090772ad326b2fece9b34e3f6b03a0cdbf8cd62f9eaa50f12a4",
+          "bytes": 646933832,
           "validationUrl": "https://github.com/neurodesk/webapps/releases/download/musclemap-v1.5.20261014/musclemap-1.5.20261014-windows-x64.zip.validation.txt",
           "modelsIncluded": true,
           "command": "Expand-Archive -Path .\\musclemap-1.5.20261014-windows-x64.zip -DestinationPath .\n.\\musclemap-1.5.20261014-windows-x64\\musclemap.exe image.nii.gz results"
