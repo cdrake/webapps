@@ -10,6 +10,7 @@
   `sub-SUBJECT-SERIES-` folder convention, preserving numeric protocol parameters.
   Sharing refuses different known VOI geometry. Missing geometry leaves a
   protocol-matching heuristic; the site's private acquisition has not been tested.
+
 - Updated dependencies [dd65e6a]
 - Updated dependencies [dcc74e7]
   - @neurodesk/webapp-components@0.14.0

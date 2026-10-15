@@ -4,6 +4,7 @@
 
 ### Patch Changes
 
+- @neurodesk/synthsr@0.6.20261015
 - Updated dependencies [dd65e6a]
 - Updated dependencies [dcc74e7]
   - @neurodesk/webapp-components@0.14.0
