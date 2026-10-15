@@ -12,6 +12,11 @@ build of the pipeline the web app runs. For processing commands, replace
   qsmbly run BIDS_DIR OUTPUT_DIR --qsm-algorithm rts
 Run "qsmbly help" for the QSMxT commands.
 
+Browser inversion assumes B0 along image +z; native QSMxT derives B0 from
+the affine unless a phase sidecar sets B0_dir. To replay the browser's current
+assumption, put "B0_dir": [0, 0, 1] in each phase image's JSON sidecar.
+Use the B0 direction appropriate to the acquisition for analysis.
+
 Deep-learning weights are not included. Native compute first verifies all
 19 weights (1.7 GB), downloading missing files from pinned URLs into
 ~/.cache/neurodesk/qsmbly/models. This also applies to classical runs:

@@ -3,12 +3,23 @@
 QSMbly's portable command line is QSMxT 9.22.0, the native build of the
 pipeline the web app runs. The app compiles qsm-core v0.38.0 and qsmxt-config
 v9.22.0 to WebAssembly (`apps/qsmbly/rust-wasm`); QSMxT 9.22.0 is the release
-built from that qsmxt-config tag, on the same qsm-core tag. The command the
-app's Export dialog prints runs unchanged with `qsmbly` in place of `qsmxt`.
+built from that qsmxt-config tag, on the same qsm-core tag. Replace `qsmxt`
+with `qsmbly` in exported commands to use the native command syntax.
+
+The browser currently inverts with B0 along image +z. Native QSMxT derives B0
+from the image affine unless a phase sidecar supplies `B0_dir`, so an unchanged
+exported command can produce a different χ map for oblique acquisitions.
+To replay the browser's current assumption, set `"B0_dir": [0, 0, 1]` in each
+phase image's JSON sidecar, as the release validation does. Use the B0 direction
+appropriate to the acquisition for analysis.
 
 The package does not compile QSMxT. `qsmxt.json` pins QSMxT's own release
 archive for each target by SHA-256, and `pnpm --filter @neurodesk/qsmbly build`
-stages the host's archive in `native/`:
+stages the host's archive in `native/`. Every build verifies and re-extracts
+the pinned archive; existing binaries and their stamp are not trusted.
+`npm pack` runs the same staging automatically. Its tarball contains native
+binaries for the packing host, so use it on that platform; the portable
+release archives are also built separately on each target:
 
 | Target | QSMxT archive |
 | --- | --- |
@@ -71,8 +82,9 @@ The wrapper refuses `qsmbly update`, which would replace the pinned binary.
 ## Validation
 
 `validation/cli-check.mjs --executable PATH` stages the app's example
-(`apps/qsmbly/examples.json`) as a BIDS dataset, runs the command the app
-exported for it, and compares the χ map with the browser's. The browser
+(`apps/qsmbly/examples.json`) as a BIDS dataset, replays its exported command
+with `B0_dir: [0, 0, 1]` in the phase sidecar to match the browser's assumption,
+and compares the χ map with the browser's. The browser
 reference is a fingerprint, not the map: mask and support voxel counts,
 percentiles, and mean χ in 10-voxel blocks (`validation/measure.mjs`).
 WebAssembly SIMD and native code sum in different orders, so the maps are not
