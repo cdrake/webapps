@@ -5,6 +5,10 @@
 
 const MEASUREMENT_ID_PATTERN = /^G-[A-Z0-9]+$/;
 
+function isProductionHost(hostname) {
+  return hostname === 'neurodesk.org' || hostname.endsWith('.neurodesk.org');
+}
+
 export function isTrackingAllowed(navigatorObject = globalThis.navigator) {
   if (!navigatorObject) return true;
   const dnt = navigatorObject.doNotTrack || globalThis.doNotTrack || navigatorObject.msDoNotTrack;
@@ -22,11 +26,17 @@ export function initAnalytics(measurementId, environment = {}) {
   if (!isTrackingAllowed(navigatorObject)) {
     return Object.freeze({ enabled: false, reason: 'privacy-signal' });
   }
+  if (navigatorObject?.webdriver === true) {
+    return Object.freeze({ enabled: false, reason: 'automation' });
+  }
 
   const documentObject = environment.document ?? globalThis.document;
   const windowObject = environment.window ?? globalThis.window;
   if (!documentObject || !windowObject) {
     return Object.freeze({ enabled: false, reason: 'no-browser' });
+  }
+  if (!isProductionHost(windowObject.location?.hostname ?? '')) {
+    return Object.freeze({ enabled: false, reason: 'non-production-host' });
   }
 
   const selector = `script[data-neurodesk-ga4="${measurementId}"]`;

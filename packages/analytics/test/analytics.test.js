@@ -2,14 +2,14 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as analytics from '../src/index.js';
 
-function fakeBrowser() {
+function fakeBrowser(hostname = 'webapps.neurodesk.org') {
   const scripts = [];
   const document = {
     createElement: () => ({ dataset: {} }),
     head: { append: (script) => scripts.push(script) },
     querySelector: (selector) => scripts.find((script) => selector.includes(script.dataset.neurodeskGa4)),
   };
-  return { document, scripts, window: {} };
+  return { document, scripts, window: { location: { hostname } } };
 }
 
 test('exports page-view initialization without a custom-event API', () => {
@@ -44,6 +44,27 @@ test('loads GA4 exactly once and configures only an automatic page view', () => 
     allow_google_signals: false,
     allow_ad_personalization_signals: false,
   }]);
+});
+
+test('does not load Google in automated browsers', () => {
+  const browser = fakeBrowser();
+  const result = analytics.initAnalytics('G-4Z9774J59Y', { ...browser, navigator: { webdriver: true } });
+  assert.deepEqual(result, { enabled: false, reason: 'automation' });
+  assert.equal(browser.scripts.length, 0);
+  assert.equal(browser.window.dataLayer, undefined);
+});
+
+test('loads GA4 only on neurodesk.org hosts', () => {
+  for (const hostname of ['127.0.0.1', 'localhost', 'example.github.io', 'neurodesk.org.example.com', 'notneurodesk.org']) {
+    const browser = fakeBrowser(hostname);
+    const result = analytics.initAnalytics('G-4Z9774J59Y', { ...browser, navigator: {} });
+    assert.deepEqual(result, { enabled: false, reason: 'non-production-host' }, hostname);
+    assert.equal(browser.scripts.length, 0);
+  }
+  for (const hostname of ['webapps.neurodesk.org', 'musclemap.neurodesk.org', 'neurodesk.org']) {
+    const browser = fakeBrowser(hostname);
+    assert.equal(analytics.initAnalytics('G-4Z9774J59Y', { ...browser, navigator: {} }).enabled, true, hostname);
+  }
 });
 
 test('rejects malformed measurement ids', () => {
