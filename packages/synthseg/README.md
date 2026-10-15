@@ -24,7 +24,15 @@ const { buffer, provenance } = await runSynthseg({
   runtime: browserRuntime(),
 });
 // buffer: .nii.gz int32 FreeSurfer labels on the 1 mm grid. provenance: the CLI's JSON sidecar fields.
+// tissues: { gm, wm, csf }, .nii.gz float32 probability maps on the same grid.
+// volumes: mri_synthseg --vol soft volumes in mm³.
 ```
+
+`tissues` holds the native CLI's `--tissues` maps: each is the sum of SynthSeg's
+normalised posteriors over one group of structures (`TISSUE_GROUPS` in
+`src/results.js`; `exes/synthseg/README.md` lists the grouping). Each map times
+the voxel volume sums to `tissueVolumes(volumes)`, which
+`validation/compare.mjs` `compareTissues` checks.
 
 `fast` skips left–right flip averaging and topology postprocessing (roughly half
 the work, slightly noisier labels). `ct` clips Hounsfield units to [0, 80].
@@ -112,7 +120,7 @@ delete. With `--offline`, a missing model stops the run instead of downloading.
 
 ### Outputs
 
-The output directory receives the web app's three downloads, named by the same
+The output directory receives the web app's downloads, named by the same
 code (`src/results.js`). For `T1.nii.gz`:
 
 - `T1_synthseg.nii.gz`, int32 FreeSurfer labels on the 1 mm grid
@@ -122,6 +130,11 @@ code (`src/results.js`). For `T1.nii.gz`:
 - `T1_synthseg_vol.csv`, the soft-posterior volumes in mm³ in the format of
   FreeSurfer's `mri_synthseg --vol`. The release check holds each column to
   FreeSurfer 8.2.0's table for the same input and mode (`validation/gates.json`)
+- `T1_synthseg_gm.nii.gz`, `T1_synthseg_wm.nii.gz` and `T1_synthseg_csf.nii.gz`,
+  float32 GM, WM and CSF probability maps on the label grid. No FreeSurfer
+  golden exists for them. The release check holds them to their own label map
+  and volume table: the same header geometry, values in [0, 1], GM + WM + CSF
+  at most 1, and each map's total equal to its structures' soft volumes
 
 ### Accuracy
 

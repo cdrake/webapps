@@ -36,7 +36,10 @@ entries with `node scripts/freesurfer-lut.mjs <FreeSurferColorLUT.txt>`.
   processed grid, with its physical affine, and the JSON records the crop, original
   and cropped dimensions, and processing voxel size.
 - **Output** — label-overlay opacity, `<stem>_synthseg.nii.gz`, `<stem>_synthseg_vol.csv`
-  (mri_synthseg `--vol` soft volumes in mm³), `<stem>_synthseg.json`.
+  (mri_synthseg `--vol` soft volumes in mm³), `<stem>_synthseg.json`, and the GM, WM and
+  CSF probability maps `<stem>_synthseg_gm/_wm/_csf.nii.gz` (float32 on the label grid;
+  the grouping is in `exes/synthseg/README.md`). View shows a map over the input. Label
+  edits do not change the maps.
 - **Volumes** — a viewer tab after a run. It charts each structure's
   head-size-adjusted volume against age over the IXI cohort's percentile bands, with a
   table below (`src/volume-report.js`, a port of the neurocontainers SynthSeg recipe's

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { assertHardwareAdapter } from '../test-utils/hardware-gpu.mjs';
+import { assertHardwareAdapter, hardwareGpuArgs } from '../test-utils/hardware-gpu.mjs';
 
 const hardware = { vendor: 'apple', architecture: 'metal-3', isFallbackAdapter: false };
 
@@ -22,4 +22,9 @@ test('hardware verification requires an adapter and a matching vendor', () => {
   assert.throws(() => assertHardwareAdapter(null, 'apple'), /available adapter/);
   assert.throws(() => assertHardwareAdapter(hardware, 'nvidia'), /match the runner/);
   assert.throws(() => assertHardwareAdapter({ ...hardware, isFallbackAdapter: true }, 'apple'), /fallback adapter/);
+});
+
+test('hardware runs select Vulkan on Linux and keep the macOS arguments', () => {
+  assert.deepEqual(hardwareGpuArgs('darwin'), ['--enable-unsafe-webgpu', '--ignore-gpu-blocklist']);
+  assert.deepEqual(hardwareGpuArgs('linux'), ['--enable-unsafe-webgpu', '--ignore-gpu-blocklist', '--enable-features=Vulkan', '--use-angle=vulkan']);
 });
