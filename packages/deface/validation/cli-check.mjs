@@ -37,10 +37,11 @@ async function files(directory) {
 
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
-// The release check runs with an empty home that must stay empty, so everything goes under the
-// temporary directory, the templates included unless the launcher supplies its own.
+// Source checks keep downloaded templates outside HOME. Archive checks leave the default to
+// the launcher, which uses its bundled models while preserving explicit directory overrides.
 const work = await mkdtemp(join(tmpdir(), 'deface-cli-check-'));
-const env = { ...process.env, NEURODESK_DEFACE_MODEL_DIR: process.env.NEURODESK_DEFACE_MODEL_DIR ?? join(tmpdir(), 'neurodesk-deface-validation', 'templates') };
+const env = { ...process.env };
+if (!values.executable) env.NEURODESK_DEFACE_MODEL_DIR ??= join(tmpdir(), 'neurodesk-deface-validation', 'templates');
 try {
   const example = await exampleInput();
   for (const [id, expected] of Object.entries(reference.cases)) {
