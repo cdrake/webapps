@@ -77,9 +77,11 @@ synthseg self-check
 synthseg --help
 ```
 
-The options are the web app's automation parameters for `segment`
+The segmentation options are the web app's automation parameters for `segment`
 (`src/parameters.json`, which a test holds equal to `apps/synthseg/automation.json`
-apart from the app's volume-report `age` and `sex`). `--mode fast`, the default,
+apart from the app's volume-report `age`, `sex` and `reference`). The command
+line writes raw segmentation measurements; population percentiles and reference
+selection belong to the browser's volume report. `--mode fast`, the default,
 skips flip averaging and topology postprocessing; the app's volume norms were
 fitted on fast-mode volumes. `--mode default` adds both. `--ct` treats the
 input as CT in Hounsfield units and `--no-ct` as MRI. Without either, the input

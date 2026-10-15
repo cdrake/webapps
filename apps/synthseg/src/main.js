@@ -593,7 +593,10 @@ async function segmentImage(parameters, { signal, progress = () => {}, voxelSize
   $('downsampleButton').hidden = true;
   const options = { fast: parameters.mode === 'fast', ct: parameters.ct ?? $('ct').checked,
     robustFov: $('robustFov').checked, voxelSizeMm };
-  if (parameters.age !== undefined || parameters.sex !== undefined) setSubject({ age: parameters.age ?? null, sex: parameters.sex ?? null });
+  if (parameters.age !== undefined || parameters.sex !== undefined) {
+    const current = subject();
+    setSubject({ age: parameters.age ?? current.age, sex: parameters.sex ?? current.sex });
+  }
   if (parameters.reference !== undefined) {
     $('reference').value = parameters.reference;
     showReferenceHint();
@@ -722,11 +725,13 @@ for (const id of ['robustFov', 'voxelSizeMm']) {
 }
 const automation = registerAppAutomation({
   app: 'synthseg',
-  convertDicom: runDcm2niix,
+  convertDicom: (files, options) => runDcm2niix(files, { ...options, anonymizeSidecar: false }),
   operations: {
-    segment: async ({ inputs, parameters, signal, progress }) => {
+    segment: async ({ inputs, inputDetails, parameters, signal, progress }) => {
       exampleControl.cancel();
-      if (!await load(inputs.image[0], signal)) throw new Error('The input image could not be loaded.');
+      const sidecars = inputDetails.image.sidecars.filter((file) => /\.json$/i.test(file.name));
+      const [series] = await readImageSeries([...inputs.image, ...sidecars], { signal });
+      if (!await load(series.image, signal, undefined, series.sidecar)) throw new Error('The input image could not be loaded.');
       return segmentImage(parameters, { signal, progress, voxelSizeMm: 1 });
     },
   },

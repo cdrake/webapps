@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import manifest from '../../../packages/synthseg/model.manifest.json' with { type: 'json' };
 import { parseVolumesCsv } from '../../../packages/synthseg/src/results.js';
 import { dicomSeries } from '../../../test-utils/dicom-fixture.mjs';
+import { readVolume, writeFloat32Volume } from '../../../test-utils/nifti-fixture.mjs';
 
 const FIXTURES = '../../packages/synthseg/test/fixtures/';
 const SMALL = '../../exes/synthseg/test/fixtures/small.nii.gz';
@@ -40,16 +41,26 @@ async function serveNorms(page, status = 200) {
   return () => requests;
 }
 
+async function finishInference(page) {
+  const labels = await readFile('../../exes/synthseg/test/fixtures/small_fast.nii.gz');
+  const { header, data } = readVolume(labels);
+  const map = writeFloat32Volume(header, new Float32Array(data.length));
+  await page.evaluate(async ({ bytes, mapBytes, volumes }) => {
+    await window.inferenceWorker.onmessage({
+      data: {
+        type: 'result', buffer: new Uint8Array(bytes).buffer, volumes,
+        tissues: Object.fromEntries(['gm', 'wm', 'csf'].map((id) => [id, new Uint8Array(mapBytes).buffer])),
+        provenance: { outputShape: [1, 1, 1], seconds: 0 },
+      },
+    });
+  }, { bytes: [...labels], mapBytes: [...map], volumes });
+  await expect(page.locator('#statusText')).toHaveAttribute('data-neurodesk-state', 'succeeded');
+}
+
 async function segment(page) {
   await expect(page.locator('#processButton')).toBeEnabled();
   await page.locator('#processButton').click();
-  const labels = await readFile('../../exes/synthseg/test/fixtures/small_fast.nii.gz');
-  await page.evaluate(async ({ bytes, volumes }) => {
-    await window.inferenceWorker.onmessage({
-      data: { type: 'result', buffer: new Uint8Array(bytes).buffer, volumes, provenance: { outputShape: [1, 1, 1], seconds: 0 } },
-    });
-  }, { bytes: [...labels], volumes });
-  await expect(page.locator('#statusText')).toHaveAttribute('data-neurodesk-state', 'succeeded');
+  await finishInference(page);
 }
 
 test('fast mode is the default processing mode', async ({ page }) => {
@@ -209,4 +220,44 @@ test('a DICOM series fills Age, Sex and the Auto reference from its header, and 
   await expect(page.locator('#age')).toHaveValue('');
   await expect(page.locator('#sex')).toHaveValue('');
   await expect(page.locator('#referenceHint')).toHaveText('Auto: IXI (1.5 T / 3 T) · field strength unknown');
+});
+
+test('automation selects the DICOM reference, preserves demographic overrides and resets for NIfTI', async ({ page }) => {
+  test.setTimeout(120000);
+  await fakeInference(page);
+  await serveNorms(page);
+  await page.goto('./');
+  const dispatch = (command, request = {}) => page.evaluate(({ command, request }) => globalThis.neurodeskAutomation.dispatch(command, request), { command, request });
+  const run = async (files, parameters = {}) => {
+    await page.locator('#neurodesk-input-transfer').setInputFiles(files);
+    await dispatch('adopt', { role: 'image' });
+    await page.evaluate(() => { window.inferenceJob = null; });
+    await dispatch('start', { operation: 'segment', parameters });
+    await expect.poll(async () => {
+      const snapshot = await dispatch('snapshot');
+      if (snapshot.state === 'failed') throw new Error(JSON.stringify(snapshot.error));
+      return page.evaluate(() => Boolean(window.inferenceJob));
+    }).toBe(true);
+    await finishInference(page);
+    await expect.poll(async () => (await dispatch('snapshot')).state).toBe('succeeded');
+    return (await dispatch('snapshot')).report.measurements.volumeReport;
+  };
+  const dicom = dicomSeries({ slices: 4, patient: { birthDate: '19700615', sex: 'F', studyDate: '20200614' }, fieldStrength: '6.98' });
+  const automatic = await run(dicom);
+  expect(automatic.norms.id).toBe('ahead');
+  expect(automatic.reference).toEqual({ choice: 'auto', fieldStrengthT: 6.98, reason: 'the scanner field strength is 6.98 T' });
+  expect(automatic.subject).toEqual({ age: 49, sex: 'female' });
+
+  const ageOverride = await run(dicom, { age: 55, reference: 'ixi' });
+  expect(ageOverride.norms.id).toBe('ixi');
+  expect(ageOverride.reference).toEqual({ choice: 'ixi', fieldStrengthT: 6.98, reason: 'it was selected manually' });
+  expect(ageOverride.subject).toEqual({ age: 55, sex: 'female' });
+  const sexOverride = await run(dicom, { sex: 'male', reference: 'auto' });
+  expect(sexOverride.norms.id).toBe('ahead');
+  expect(sexOverride.subject).toEqual({ age: 49, sex: 'male' });
+
+  const nifti = await run(SMALL);
+  expect(nifti.norms.id).toBe('ixi');
+  expect(nifti.reference).toEqual({ choice: 'auto', fieldStrengthT: null, reason: 'the scanner field strength is unknown' });
+  expect(nifti.subject).toEqual({ age: null, sex: null });
 });

@@ -107,6 +107,27 @@ test('assess reproduces brainquant.py on every golden case', () => {
   }
 });
 
+test('AHEAD numerical results reproduce Python for unknown, female and male sex', () => {
+  const ahead = parseNorms(JSON.parse(readFileSync(fixture('brainquant_norms_7t.json'), 'utf8')));
+  // Recorded from brainquant.py at neurocontainers c3e75dbe830b on T1_head_fast_vol.csv.
+  const cases = [
+    { age: 30, sex: null, z: -3.1805749233717893, percentile: 0.07349156297887112, flag: '<5th' },
+    { age: 50, sex: 'female', z: -1.0215890627573843, percentile: 15.348771819390006, flag: '' },
+    { age: 50, sex: 'male', z: -0.9871839020289267, percentile: 16.177624602978124, flag: '' },
+  ];
+  for (const expected of cases) {
+    const report = assess(ahead, volumes, { age: expected.age, sex: expected.sex });
+    const cortex = report.results.find((result) => result.id === 'cortical_grey_matter');
+    const label = `AHEAD age ${expected.age} sex ${expected.sex}`;
+    assertRelative(report.icvMm3, 1591999.2, 1e-9, `${label} icv mm3`);
+    assertRelative(cortex.volumeMm3, 540129.72, 1e-9, `${label} cortex mm3`);
+    assertRelative(cortex.adjustedMm3, 510670.53213593207, 1e-9, `${label} adjusted mm3`);
+    assertAbsolute(cortex.z, expected.z, 1e-9, `${label} z`);
+    assertAbsolute(cortex.percentile, expected.percentile, 1e-9, `${label} percentile`);
+    assert.equal(cortex.flag, expected.flag, `${label} flag`);
+  }
+});
+
 test('the golden cases exercise both flags and the unknown-age path', () => {
   const flags = new Set(golden.cases.flatMap((entry) => entry.results.map((result) => result.flag)));
   assert.ok(flags.has('<5th') || flags.has('>95th'), 'a golden case is flagged');
