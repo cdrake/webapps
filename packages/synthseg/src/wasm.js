@@ -2,6 +2,9 @@
 // Every typed-array view is re-taken after any export call, because growing the wasm
 // heap for the posteriors detaches the previous ArrayBuffer.
 
+// exes/synthseg/src/post.rs TISSUES order.
+const TISSUES = ['gm', 'wm', 'csf'];
+
 /** @param source a Response, a Promise of one, an ArrayBuffer/TypedArray or a WebAssembly.Module */
 export async function loadSynthseg(source) {
   const wasm = await instantiate(await source);
@@ -40,7 +43,14 @@ export async function loadSynthseg(source) {
       const buffer = u8().slice(ptr, ptr + wasm.seg_labels_len(this.seg));
       // mri_synthseg --vol columns: total intracranial, then each label after background, in mm³.
       const volumes = new Float64Array(wasm.memory.buffer, wasm.seg_volumes(this.seg), 33).slice();
-      return { buffer, volumes, geometry: this.geometry };
+      // Gzipped float32 NIfTI tissue probability maps on the label grid.
+      const tissues = Object.fromEntries(TISSUES.map((name, index) => {
+        const start = wasm.seg_tissue(this.seg, index);
+        const length = wasm.seg_tissue_len(this.seg, index);
+        if (!start || !length) throw new Error(`SynthSeg wasm wrote no ${name} map.`);
+        return [name, u8().slice(start, start + length)];
+      }));
+      return { buffer, volumes, tissues, geometry: this.geometry };
     }
     free() { if (this.seg) { wasm.seg_free(this.seg); this.seg = 0; } }
   }

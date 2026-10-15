@@ -22,6 +22,8 @@ pub struct Segmenter {
     scratch: Vec<f32>,
     posteriors: Vec<f32>,
     output: Vec<u8>,
+    // Gzipped float32 NIfTI GM, WM and CSF maps on the label grid (`post::TISSUES` order).
+    tissues: [Vec<u8>; post::TISSUES.len()],
     volumes: [f64; post::N],
 }
 
@@ -84,6 +86,7 @@ pub unsafe extern "C" fn seg_new_at_resolution(
             scratch: Vec::new(),
             posteriors: Vec::new(),
             output: Vec::new(),
+            tissues: Default::default(),
             volumes: [0.0; post::N],
         })),
         Err(message) => {
@@ -152,14 +155,53 @@ pub unsafe extern "C" fn seg_labels(seg: *mut Segmenter, fast: u32) -> *const u8
     // Postprocessing peaks around another copy of the posteriors, so release what it no longer needs.
     s.scratch = Vec::new();
     s.flipped = Vec::new();
-    let segmentation = post::segment(std::mem::take(&mut s.posteriors), &s.prep, fast != 0);
+    let segmentation = post::segment(std::mem::take(&mut s.posteriors), &s.prep, fast != 0, true);
     s.volumes = segmentation.volumes_mm3;
-    let image = nifti::write(&volume::restore(&segmentation.labels, &s.prep));
-    drop(segmentation);
-    let mut gz = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::default());
-    gz.write_all(&image).expect("gzip into a Vec cannot fail");
-    s.output = gz.finish().expect("gzip into a Vec cannot fail");
+    s.output = gzip(&nifti::write(&volume::restore(
+        &segmentation.labels,
+        &s.prep,
+    )));
+    drop(segmentation.labels);
+    // Each map is freed once written, so at most one aligned map and its NIfTI copy are live at once.
+    for (out, map) in s
+        .tissues
+        .iter_mut()
+        .zip(segmentation.tissues.into_iter().flatten())
+    {
+        *out = gzip(&nifti::write(&volume::restore(&map, &s.prep)));
+    }
     s.output.as_ptr()
+}
+
+fn gzip(image: &[u8]) -> Vec<u8> {
+    let mut gz = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::default());
+    gz.write_all(image).expect("gzip into a Vec cannot fail");
+    gz.finish().expect("gzip into a Vec cannot fail")
+}
+
+/// Gzipped NIfTI of tissue map `index` (`post::TISSUES` order), valid after `seg_labels`; null
+/// for an index outside `post::TISSUES`.
+///
+/// # Safety
+/// `seg` must be a live pointer from `seg_new`.
+#[no_mangle]
+pub unsafe extern "C" fn seg_tissue(seg: *mut Segmenter, index: u32) -> *const u8 {
+    (*seg)
+        .tissues
+        .get(index as usize)
+        .map_or(std::ptr::null(), |map| map.as_ptr())
+}
+
+/// Byte length of tissue map `index`; 0 for an index outside `post::TISSUES`.
+///
+/// # Safety
+/// `seg` must be a live pointer from `seg_new`.
+#[no_mangle]
+pub unsafe extern "C" fn seg_tissue_len(seg: *mut Segmenter, index: u32) -> u32 {
+    (*seg)
+        .tissues
+        .get(index as usize)
+        .map_or(0, |map| map.len() as u32)
 }
 
 /// # Safety

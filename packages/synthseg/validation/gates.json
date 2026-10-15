@@ -1,5 +1,5 @@
 {
-  "description": "SynthSeg label maps against the FreeSurfer 8.1.0 goldens, and soft volumes (mri_synthseg --vol) against FreeSurfer 8.2.0's tables. exes/synthseg/tests/parity.rs, the package's pipeline test, the app's fixture e2e and validation/cli-check.mjs all read these gates. maxQuaternionError is exclusive; the other limits are inclusive.",
+  "description": "SynthSeg label maps against the FreeSurfer 8.1.0 goldens, and soft volumes (mri_synthseg --vol) against FreeSurfer 8.2.0's tables. exes/synthseg/tests/parity.rs, the package's pipeline test, the app's fixture e2e and validation/cli-check.mjs all read these gates; the tissue map gates are read by validation/compare.mjs. maxQuaternionError is exclusive; the other limits are inclusive.",
   "maxAffineErrorMm": 0.0001,
   "maxQuaternionError": 0.0001,
   "maxMismatchFraction": {
@@ -16,5 +16,11 @@
     "maxIcvRelativeError": 0.001,
     "maxRelativeError": 0.01,
     "maxAbsoluteErrorMm3": 20
+  },
+  "tissues": {
+    "description": "GM, WM and CSF maps against their own label map and soft volumes; no FreeSurfer golden exists for them. A tissue total passes within either volume limit: the soft volumes are rounded to 0.001 mm³ and the header affine is float32.",
+    "maxProbabilitySumExcess": 1e-5,
+    "maxVolumeErrorMm3": 0.05,
+    "maxVolumeRelativeError": 1e-6
   }
 }

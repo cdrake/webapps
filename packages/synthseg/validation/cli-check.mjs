@@ -3,6 +3,7 @@
 // FreeSurfer 8.1.0 golden with the gates of exes/synthseg/tests/parity.rs (./gates.json), and each
 // volume table to FreeSurfer 8.2.0's mri_synthseg --vol table for the same input and mode. FreeSurfer's
 // Keras/TensorFlow SynthSeg made the goldens, so the reference shares no code with the command line.
+// The GM, WM and CSF maps have no golden; they are held to their own label map and volume table.
 // With --native PATH, each fast-mode map is also compared with the native Rust synthseg on the same input.
 // Only fast mode: the native CPU path holds ONNX Runtime's memory arena and peaks near 14 GB in the default
 // mode (exes/synthseg/README.md), more than the release runners or a shared host can spare.
@@ -14,8 +15,8 @@ import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import manifest from '../model.manifest.json' with { type: 'json' };
-import { outputNames, parseVolumesCsv } from '../src/results.js';
-import { compareLabels, compareVolumeTable, compareVolumes, gates } from './compare.mjs';
+import { TISSUES, outputNames, parseVolumesCsv } from '../src/results.js';
+import { compareLabels, compareTissues, compareVolumeTable, compareVolumes, gates } from './compare.mjs';
 
 const { values } = parseArgs({ options: { executable: { type: 'string' }, native: { type: 'string' } } });
 const command = values.executable
@@ -61,7 +62,8 @@ async function segment(work, { input, mode }) {
   const result = JSON.parse(stdout);
   const names = outputNames(`${input}.nii.gz`);
   const files = (await readdir(output)).sort();
-  check(JSON.stringify(files) === JSON.stringify([names.labels, names.report, names.volumes].sort()), `${name} outputs ${files.join(', ')}`);
+  const expected = [names.labels, names.report, names.volumes, ...TISSUES.map((tissue) => names[tissue])];
+  check(JSON.stringify(files) === JSON.stringify(expected.sort()), `${name} outputs ${files.join(', ')}`);
   const labels = await readFile(join(output, names.labels));
   const report = JSON.parse(await readFile(join(output, names.report), 'utf8'));
   const provenance = report.provenance;
@@ -76,6 +78,8 @@ async function segment(work, { input, mode }) {
   const freesurfer = parseVolumesCsv((await validationFile(`${input}_${mode}_vol.csv`, manifest.validation.volumes)).toString('utf8'));
   check(table.subject === input, `${name} volume table names subject ${table.subject}`);
   for (const [passed, line] of compareVolumeTable(name, table.volumes, freesurfer.volumes)) check(passed, line);
+  const tissues = Object.fromEntries(await Promise.all(TISSUES.map(async (tissue) => [tissue, await readFile(join(output, names[tissue]))])));
+  for (const [passed, line] of compareTissues(name, labels, tissues, table.volumes)) check(passed, line);
   if (values.native && mode === 'fast') {
     const nativeOutput = join(work, `${input}-${mode}-native.nii.gz`);
     const native = run([resolve(values.native)], ['--i', inputPath, '--o', nativeOutput, '--quiet', '--fast']);

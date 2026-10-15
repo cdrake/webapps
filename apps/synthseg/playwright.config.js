@@ -13,7 +13,7 @@ export default defineConfig({
   },
   use: {
     baseURL: 'http://127.0.0.1:4175/synthseg/',
-    // The full-model run needs NEURODESK_HARDWARE_GPU=1 (Metal); SwiftShader is too slow.
+    // The full-model run needs NEURODESK_HARDWARE_GPU=1 (Metal, or Vulkan on Linux); SwiftShader is too slow.
     ...gpuBrowser,
     screenshot: 'only-on-failure',
   },

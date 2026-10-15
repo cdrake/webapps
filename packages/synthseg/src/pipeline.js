@@ -40,7 +40,7 @@ export async function runSynthseg({ buffer, options = {}, loadModel, createSessi
     await session.release(); session = null;
     mark('release');
     onProgress(0.92, 'Postprocessing and saving labels…');
-    const { buffer: labels, volumes, geometry } = seg.labels(settings);
+    const { buffer: labels, volumes, tissues, geometry } = seg.labels(settings);
     mark('postprocess');
     const provenance = {
       package: '@neurodesk/synthseg', version: VERSION, model: 'synthseg_2.0', modelSha256: model.hash,
@@ -51,6 +51,8 @@ export async function runSynthseg({ buffer, options = {}, loadModel, createSessi
       buffer: labels.buffer,
       provenance,
       volumes: Object.fromEntries(VOLUME_COLUMNS.map((name, index) => [name, volumes[index]])),
+      // P(GM), P(WM) and P(CSF) as gzipped float32 NIfTI on the label grid (see TISSUE_GROUPS).
+      tissues: Object.fromEntries(Object.entries(tissues).map(([name, bytes]) => [name, bytes.buffer])),
     };
   } finally {
     await session?.release();

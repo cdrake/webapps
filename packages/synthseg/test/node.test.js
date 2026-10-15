@@ -7,7 +7,8 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import automation from '../../../apps/synthseg/automation.json' with { type: 'json' };
 import { MODEL_ASSETS, PARAMETERS, defaultCacheDir, downloadModels, parseParameters, segment } from '../src/node.js';
-import { VOLUME_COLUMNS, outputNames, parseVolumesCsv } from '../src/results.js';
+import { TISSUES, TISSUE_ARTIFACT, VOLUME_COLUMNS, outputNames, parseVolumesCsv } from '../src/results.js';
+import { compareTissues } from '../validation/compare.mjs';
 
 const cli = fileURLToPath(new URL('../bin/synthseg.js', import.meta.url));
 const fixture = fileURLToPath(new URL('../../../exes/synthseg/test/fixtures/small.nii.gz', import.meta.url));
@@ -55,7 +56,13 @@ test('the command line takes the app automation operation\'s parameters', () => 
     labels: 'sub-01_T1w_synthseg.nii.gz',
     report: 'sub-01_T1w_synthseg.json',
     volumes: 'sub-01_T1w_synthseg_vol.csv',
+    gm: 'sub-01_T1w_synthseg_gm.nii.gz',
+    wm: 'sub-01_T1w_synthseg_wm.nii.gz',
+    csf: 'sub-01_T1w_synthseg_csf.nii.gz',
   });
+  for (const tissue of TISSUES) {
+    assert.deepEqual(automation.operations.segment.artifacts[tissue], { ...TISSUE_ARTIFACT, minimum: 1, maximum: 1 });
+  }
 });
 
 test('installation holds the pinned 53 MB model and the model directory comes from the launcher', () => {
@@ -144,12 +151,14 @@ test('invalid options fail before any model or output is touched', async (t) => 
 const localModel = fileURLToPath(new URL('../../../exes/synthseg/models/', import.meta.url));
 const skipWithoutModel = await readFile(join(localModel, MODEL.filename)).then(() => false, () => 'needs exes/synthseg/models (make -C exes/synthseg check-model)');
 
-test('the command line writes the app\'s label map and report for the small fixture', { skip: skipWithoutModel, timeout: 10 * 60_000 }, async (t) => {
+test('the command line writes the app\'s label map, report and tissue maps for the small fixture', { skip: skipWithoutModel, timeout: 10 * 60_000 }, async (t) => {
   const { root, input } = await workspace(t);
   const output = join(root, 'out');
   const result = run([input, output, '--mode', 'fast', '--threads', '2'], { NEURODESK_SYNTHSEG_MODEL_DIR: localModel });
   assert.equal(result.status, 0, result.stderr);
-  assert.deepEqual((await readdir(output)).sort(), ['input_synthseg.json', 'input_synthseg.nii.gz', 'input_synthseg_vol.csv']);
+  assert.deepEqual((await readdir(output)).sort(), [
+    'input_synthseg.json', 'input_synthseg.nii.gz', 'input_synthseg_csf.nii.gz', 'input_synthseg_gm.nii.gz', 'input_synthseg_vol.csv', 'input_synthseg_wm.nii.gz',
+  ]);
   const report = JSON.parse(await readFile(join(output, 'input_synthseg.json'), 'utf8'));
   assert.deepEqual(Object.keys(report), ['schemaVersion', 'app', 'appVersion', 'runId', 'status', 'inputs', 'parameters', 'provenance', 'artifacts', 'measurements']);
   assert.deepEqual(report.parameters, { mode: 'fast', ct: false });
@@ -162,4 +171,11 @@ test('the command line writes the app\'s label map and report for the small fixt
   assert.deepEqual(table.volumes, report.measurements.softVolumesMm3);
   assert.deepEqual(Object.keys(table.volumes), VOLUME_COLUMNS);
   assert.ok(table.volumes['total intracranial'] > 0, 'the fixture has an intracranial volume');
+  const tissues = {};
+  for (const tissue of TISSUES) {
+    tissues[tissue] = await readFile(join(output, `input_synthseg_${tissue}.nii.gz`));
+    assert.equal(report.artifacts[tissue].filename, `input_synthseg_${tissue}.nii.gz`);
+    assert.equal(report.artifacts[tissue].type, 'neuro:volume');
+  }
+  for (const [passed, line] of compareTissues('fixture fast', await readFile(join(output, 'input_synthseg.nii.gz')), tissues, table.volumes)) assert.ok(passed, line);
 });
