@@ -1220,8 +1220,8 @@
           "platform": "macos-arm64",
           "version": "0.3.20261015",
           "url": "https://github.com/neurodesk/webapps/releases/download/white-matter-lesions-v0.3.20261015/flames-0.3.20261015-macos-arm64.pkg",
-          "sha256": "7c0006c8c01648354cfe1ed3deeb0be4045fe46145e3f3886832e6c587ae994e",
-          "bytes": 244976317,
+          "sha256": "3de4e09628e4fb0475b03e4220a7bec2a6d36f8cb05cb701223d65d8d86db74b",
+          "bytes": 244976081,
           "validationUrl": "https://github.com/neurodesk/webapps/releases/download/white-matter-lesions-v0.3.20261015/flames-0.3.20261015-macos-arm64.pkg.validation.txt",
           "modelsIncluded": true,
           "command": "sudo installer -pkg flames-0.3.20261015-macos-arm64.pkg -target /\nflames self-check\nflames flair.nii.gz results"
@@ -1231,8 +1231,8 @@
           "platform": "windows-x64",
           "version": "0.3.20261015",
           "url": "https://github.com/neurodesk/webapps/releases/download/white-matter-lesions-v0.3.20261015/flames-0.3.20261015-windows-x64.zip",
-          "sha256": "1f9bc9dad3259fadbe6e7c3239ef95ce0acaa70ef6db6cc6f2c864d5bcf815cb",
-          "bytes": 244490104,
+          "sha256": "30335218b2b732483700ae7c996199e7ddbba1bb1a6c1576fcb448c8ea973244",
+          "bytes": 244490101,
           "validationUrl": "https://github.com/neurodesk/webapps/releases/download/white-matter-lesions-v0.3.20261015/flames-0.3.20261015-windows-x64.zip.validation.txt",
           "modelsIncluded": true,
           "command": "Expand-Archive -Path .\\flames-0.3.20261015-windows-x64.zip -DestinationPath .\n.\\flames-0.3.20261015-windows-x64\\flames.exe flair.nii.gz results"
