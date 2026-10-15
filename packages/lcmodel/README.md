@@ -80,6 +80,17 @@ inside it, so each subject's spectrum pairs with its own water reference as in
 a folder drop. The last argument is the output directory, which must be new or
 empty.
 
+Siemens DICOM averaged and unaveraged series can share one water reference
+when their session, study and protocol match and no second water series makes
+the choice ambiguous. Stripping a leading number from a description requires
+matching DICOM `SeriesNumber`. Without a description, numbered `sub-SUBJECT-SERIES-`
+folders are supported; unknown exporter prefixes are not stripped. Numbers inside
+protocol names remain significant. Sharing requires exactly matching VOI geometry
+when both series record it. Without geometry, protocol matching is a heuristic,
+so check the assigned water reference for repeated acquisitions. This pairing has
+synthetic DICOM coverage;
+the requesting site's private data has not been tested.
+
 The options are the app's automation parameters for `fit`, in kebab case:
 `--basis-set ID` (default `auto`, the recommendation), `--[no-]edited`,
 `--macromolecule-model co-edited|none`, `--line-broadening widened|lcmodel`,
