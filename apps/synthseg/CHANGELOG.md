@@ -1,5 +1,54 @@
 # synthseg
 
+## 0.9.20261015
+
+### Minor Changes
+
+- db746d4: SynthSeg exports GM, WM and CSF probability maps. Each map is the sum of the
+  normalized SynthSeg posteriors of a group of structures, on the label grid, as
+  float32 NIfTI. GM is cerebral and cerebellar cortex and the structures that
+  FreeSurfer's subcortical grey volume counts, ventral DC included. WM is cerebral
+  and cerebellar white matter and the brainstem. CSF is the ventricles and the CSF
+  label. The labels and the soft volumes do not change.
+
+  - The app's Output section adds GM, WM and CSF probability rows with View and
+    Download. The run report and the automation `segment` operation list them as
+    `gm`, `wm` and `csf` artifacts.
+  - The `synthseg` command line writes `INPUT_synthseg_gm.nii.gz`,
+    `INPUT_synthseg_wm.nii.gz` and `INPUT_synthseg_csf.nii.gz` beside its other
+    outputs, and its release check holds each map to its label map and volume
+    table.
+  - The native executable gains `--tissues`, which writes `OUTPUT_gm`, `OUTPUT_wm`
+    and `OUTPUT_csf` beside the label map.
+  - `runSynthseg` returns `tissues: { gm, wm, csf }`, and `@neurodesk/synthseg/results`
+    adds `TISSUE_GROUPS` and `tissueVolumes`.
+
+### Patch Changes
+
+- dd65e6a: Visual refresh: Inter, neutral greys with the Neurodesk logo green for action,
+  focus and selection only, a compact 48px app bar, sentence-case section titles
+  and a quieter status bar. The example menu is now the input control: examples,
+  then Choose files… and Choose folder…. The whole window, the viewer included,
+  accepts dropped files; a drop mid-session replaces the inputs with Undo in the
+  status bar. Before any input the status reads "Drag and drop files". MuscleMap
+  drops its separate drop box and Add File(s) button.
+
+  Page drops fill empty image slots in order while keeping DICOM series together.
+  New selections supersede unfinished drop traversal, and registration apps load
+  each dropped image in order. The shared drop handler also respects the different
+  native input and file-field event contracts.
+  Failed imports leave only successfully loaded slots occupied, and Undo can
+  restore loaded examples.
+
+- e1643c5: The Windows command-line build keeps the population norms fixture byte for byte, so its checksum test passes and the Windows archive is published again.
+- Updated dependencies [0569da8]
+- Updated dependencies [dd65e6a]
+- Updated dependencies [dcc74e7]
+- Updated dependencies [db746d4]
+  - @neurodesk/runtime-support@0.6.0
+  - @neurodesk/webapp-components@0.14.0
+  - @neurodesk/synthseg@0.9.20261015
+
 ## 0.8.20261014
 
 ### Minor Changes

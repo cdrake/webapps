@@ -1,5 +1,16 @@
 # @neurodesk/musclemap
 
+## 1.5.20261015
+
+### Patch Changes
+
+- 48a61b7: Keep a command-line package on its application's declared release series when
+  applying changesets, so MuscleMap's app and portable package retain identical
+  date versions.
+- Updated dependencies [dd65e6a]
+- Updated dependencies [dcc74e7]
+  - @neurodesk/webapp-components@0.14.0
+
 ## 1.5.20261014
 
 ### Patch Changes

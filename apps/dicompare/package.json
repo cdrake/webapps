@@ -1,6 +1,6 @@
 {
   "name": "dicompare",
-  "version": "0.14.20261014",
+  "version": "0.15.20261015",
   "description": "DICOM compliance validation tool for medical imaging",
   "author": {
     "name": "Ashley Stewart",
