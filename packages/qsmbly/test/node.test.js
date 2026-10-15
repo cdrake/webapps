@@ -5,12 +5,13 @@ import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promis
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import appManifest from '../../../models/qsmbly.manifest.json' with { type: 'json' };
 import { EXAMPLE_ASSETS, MODEL_ASSETS, QSMXT, ensureModels, ensureNativeModelDirectory, nativeModelAssets, qsmxtEnvironment, runQsmxt } from '../src/node.js';
 import { verifyNativeExamples, verifyNativeWeights } from '../src/native-registry.js';
 
-const bin = new URL('../bin/qsmbly.js', import.meta.url).pathname;
+const bin = fileURLToPath(new URL('../bin/qsmbly.js', import.meta.url));
 const run = (args, env = {}) => spawnSync(process.execPath, [bin, ...args], { encoding: 'utf8', env: { ...process.env, ...env } });
 
 test('the CLI pins the same weights as the web app wherever both list a file', () => {
