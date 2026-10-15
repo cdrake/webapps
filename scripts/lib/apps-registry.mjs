@@ -15,6 +15,7 @@ export const RUNTIMES = new Set([
   'vite-wasm',
   'vite-webgpu',
 ]);
+export const MAX_DESCRIPTION_LENGTH = 60;
 export const SHELLS = new Set(['static-html', 'imaging-workspace', 'react']);
 export const SUPPORT_STATUSES = new Set(['active', 'experimental', 'maintenance', 'retired']);
 const TOOLCHAINS = new Set(['node', 'rust-wasm', 'python-reference']);
@@ -124,6 +125,10 @@ export async function loadAppsRegistry(path = registryPath) {
     }
     if (!app.title || !app.description || !app.source || !app.license) {
       errors.push(`incomplete catalog entry: ${app.id}`);
+    }
+    // The app bar shows the description beside the title; a longer one hides at 1440 px.
+    if (app.description?.length > MAX_DESCRIPTION_LENGTH) {
+      errors.push(`description must be at most ${MAX_DESCRIPTION_LENGTH} characters for ${app.id}`);
     }
     if (app.support_status === 'active' && !PINNED_SOURCE.test(app.source)) {
       errors.push(`active app source must be an immutable 40-character commit for ${app.id}`);

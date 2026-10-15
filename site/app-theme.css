@@ -797,6 +797,10 @@
   white-space: nowrap !important;
 }
 
+.nd-app-bar--no-description .nd-app-bar__description {
+  display: none !important;
+}
+
 @media (max-width: 1120px) {
   .nd-app-bar {
     gap: 12px !important;

@@ -432,15 +432,16 @@ import { resolveShellAdapter } from './shell-adapters/index.js';
     });
   }
 
-  // Titles differ in length, so no breakpoint fits every app: drop action labels only when the title and version would clip.
+  // Titles differ in length, so no breakpoint fits every app. Action labels outrank the description:
+  // a description that would be cut is hidden whole, and labels drop only when the title and version would clip.
   function fitBars() {
     document.querySelectorAll('.nd-app-bar').forEach((bar) => {
       const identity = bar.querySelector('.nd-app-bar__identity');
       if (!identity) return;
-      bar.classList.remove('nd-app-bar--compact');
-      // The description shrinks before anything clips, so a truncated description is the signal too.
+      bar.classList.remove('nd-app-bar--compact', 'nd-app-bar--no-description');
       const clipped = (node) => node && node.scrollWidth > node.clientWidth + 1;
-      if (clipped(identity) || clipped(identity.querySelector('.nd-app-bar__description'))) bar.classList.add('nd-app-bar--compact');
+      if (clipped(identity.querySelector('.nd-app-bar__description'))) bar.classList.add('nd-app-bar--no-description');
+      if (clipped(identity)) bar.classList.add('nd-app-bar--compact');
     });
   }
 
@@ -462,6 +463,8 @@ import { resolveShellAdapter } from './shell-adapters/index.js';
   syncScientificVersion();
   fitBars();
   window.addEventListener('resize', refresh);
+  // Inter swaps in after the first fit and changes every width the fit measured.
+  document.fonts?.addEventListener('loadingdone', refresh);
   new MutationObserver(refresh).observe(document.body, {
     childList: true,
     subtree: true,

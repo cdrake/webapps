@@ -72,6 +72,15 @@ test('normalizes head metadata from the registry', () => {
   assert.equal(injectCompositeTheme(themed, { ...metadata, url: 'https://webapps.neurodesk.org/example/' }), themed);
 });
 
+test('refreshes the shell title and description of an already themed app', () => {
+  const themed = injectCompositeTheme('<!doctype html><html><head></head><body></body></html>', { ...metadata, description: 'A stale explanation from a cached build.' });
+  const refreshed = injectCompositeTheme(themed, metadata);
+
+  assert.match(refreshed, /data-app-description="A short explanation\."/);
+  assert.doesNotMatch(refreshed, /stale explanation/);
+  assert.equal(injectCompositeTheme(refreshed, metadata), refreshed);
+});
+
 test('inserts title and metadata when the app ships none', () => {
   const bare = '<!doctype html><html><head><meta charset="utf-8"></head><body></body></html>';
   const themed = injectCompositeTheme(bare, metadata);
