@@ -12,8 +12,10 @@
 //!   `<stem>_water_off`, `<stem>_nows` (file stem or containing directory)
 //!   pair with `<stem>`, `<stem>_ws` or `<stem>_act` (Philips' names, and
 //!   spec2nii's when it converts them);
-//! * unmatched Siemens DICOM series pair within a folder only when their
-//!   StudyInstanceUID matches and there is one spectrum and one water series;
+//! * an unmatched Siemens DICOM water series pairs within a folder only when
+//!   its StudyInstanceUID matches and it is the folder's one water series:
+//!   with the folder's one spectrum, else with every spectrum of the same
+//!   protocol (the averaged `_ave` and unaveraged series of one acquisition);
 //! * LCModel `<stem>.H2O` pairs with `<stem>.RAW`;
 //! * GE P-files carry their own water frames, and some twix sequences
 //!   (CMRR / Columbia sLASER) their own water scans.
@@ -293,6 +295,29 @@ fn same_dicom_study(a: Option<&(String, String)>, b: Option<&(String, String)>) 
         && (a_patient.is_empty() || b_patient.is_empty() || a_patient == b_patient)
 }
 
+/// The protocol a Siemens series was acquired with: its description (else its
+/// name after the series number), without the suffixes Siemens and sites add
+/// for the averaged and water-unsuppressed series of one acquisition.
+fn dicom_protocol(ds: &Dataset, files: &[NamedFile]) -> Option<String> {
+    let i = ds.files.iter().copied().find(|&i| !split_path(files[i].name).1.starts_with('.'))?;
+    let description = super::dicom_siemens::parse_dicom(files[i].bytes).ok()?.string(0x0008, 0x103e).unwrap_or_default();
+    let name = if description.trim().is_empty() { after_series_number(&ds.name) } else { description.trim() };
+    let name = name.to_ascii_lowercase();
+    let name = water_base(&name).unwrap_or(name);
+    let name = name.strip_suffix("_ave").unwrap_or(&name);
+    (!name.is_empty()).then(|| name.to_string())
+}
+
+/// `sub-01-20-PRESS_svs` -> `PRESS_svs`: what follows the last all-digit
+/// `-` field, as exporters number a series folder.
+fn after_series_number(name: &str) -> &str {
+    let fields: Vec<&str> = name.split('-').collect();
+    match fields[..fields.len() - 1].iter().rposition(|f| !f.is_empty() && f.bytes().all(|b| b.is_ascii_digit())) {
+        Some(k) => &name[fields[..=k].iter().map(|f| f.len() + 1).sum::<usize>()..],
+        None => name,
+    }
+}
+
 /// Leading directory components two paths share.
 fn shared_dirs(a: &str, b: &str) -> usize {
     let parts = |p: &str| p.trim_start_matches("./").split(['/', '\\']).filter(|c| !c.is_empty()).map(str::to_ascii_lowercase).collect::<Vec<_>>();
@@ -499,9 +524,18 @@ pub fn detect(files: &[NamedFile]) -> Detection {
             continue;
         }
         let here: Vec<usize> = (0..det.pairs.len()).filter(|&k| det.pairs[k].metabolite.format == *fmt && folder(&det.pairs[k].metabolite) == *wf).collect();
-        if let [k] = here[..] {
-            if det.pairs[k].water.is_none() && water[wi].as_ref().is_some_and(|w| same_dicom_study(identities.get(&det.pairs[k].metabolite.files[0]), identities.get(&w.files[0]))) {
-                det.pairs[k].water = water[wi].take();
+        let Some(w) = water[wi].as_ref() else { continue };
+        let open = |k: &usize| det.pairs[*k].water.is_none() && same_dicom_study(identities.get(&det.pairs[*k].metabolite.files[0]), identities.get(&w.files[0]));
+        let targets: Vec<usize> = if here.len() == 1 {
+            here.into_iter().filter(open).collect()
+        } else {
+            let protocol = dicom_protocol(w, files);
+            here.into_iter().filter(open).filter(|&k| protocol.is_some() && dicom_protocol(&det.pairs[k].metabolite, files) == protocol).collect()
+        };
+        if !targets.is_empty() {
+            let w = water[wi].take();
+            for k in targets {
+                det.pairs[k].water = w.clone();
             }
         }
     }
@@ -914,6 +948,44 @@ mod tests {
         }
         assert_eq!(d.images.len(), 1, "{d:#?}");
         assert!(files[d.images[0].files[0]].name.contains("-21-"), "{d:#?}");
+    }
+
+    #[test]
+    fn a_water_series_serves_every_series_of_its_protocol() {
+        // Siemens writes the averaged (`_ave`) and unaveraged series of one
+        // acquisition beside the water-unsuppressed one; a second protocol in
+        // the session must not take that water.
+        for described in [true, false] {
+            let series = |uid: &str, description: &str| if described {
+                dicom_series(true, "1.2.3", uid, "subject-01", description)
+            } else {
+                dicom_study("1.2.3", "subject-01")
+            };
+            let ave = series("20", "PRESS_svs_se_30_ave");
+            let raw = series("21", "PRESS_svs_se_30");
+            let water = series("22", "PRESS_svs_se_30_water_off");
+            let other = series("23", "PRESS_svs_se_144");
+            let files = [
+                nf("sub-01/mrs/sub-01-20-PRESS_svs_se_30_ave/1.dcm", &ave),
+                nf("sub-01/mrs/sub-01-21-PRESS_svs_se_30/1.dcm", &raw),
+                nf("sub-01/mrs/sub-01-22-PRESS_svs_se_30_water_off/1.dcm", &water),
+                nf("sub-01/mrs/sub-01-23-PRESS_svs_se_144/1.dcm", &other),
+            ];
+            let d = detect(&files);
+            assert!(d.unpaired_water.is_empty(), "{d:#?}");
+            let water_of = |n: &str| d.pairs.iter().find(|p| files[p.metabolite.files[0]].name.contains(n)).unwrap().water.as_ref().map(|w| w.files.clone());
+            assert_eq!(water_of("-20-"), Some(vec![2]), "{d:#?}");
+            assert_eq!(water_of("-21-"), Some(vec![2]), "{d:#?}");
+            assert_eq!(water_of("-23-"), None, "{d:#?}");
+        }
+    }
+
+    #[test]
+    fn series_numbers_are_not_part_of_the_protocol() {
+        assert_eq!(after_series_number("sub-01-20-PRESS_svs_se_30_ave"), "PRESS_svs_se_30_ave");
+        assert_eq!(after_series_number("20-PRESS"), "PRESS");
+        assert_eq!(after_series_number("PRESS-2"), "PRESS-2");
+        assert_eq!(after_series_number("press"), "press");
     }
 
     #[test]
