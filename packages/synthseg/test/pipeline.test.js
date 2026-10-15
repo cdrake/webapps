@@ -9,7 +9,7 @@ import { runSynthseg, loadSynthseg } from '../src/index.js';
 import manifest from '../model.manifest.json' with { type: 'json' };
 import gates from '../validation/gates.json' with { type: 'json' };
 import { parseVolumesCsv } from '../src/results.js';
-import { compareVolumeTable } from '../validation/compare.mjs';
+import { compareTissues, compareVolumeTable } from '../validation/compare.mjs';
 
 const repo = new URL('../../../', import.meta.url);
 const modelPath = fileURLToPath(new URL('exes/synthseg/models/synthseg-2.0.onnx', repo));
@@ -64,11 +64,12 @@ async function createSession(bytes) {
 async function segment(input, options) {
   const started = performance.now();
   const file = await readFile(input);
-  const { buffer, provenance, volumes } = await runSynthseg({
+  const { buffer, provenance, volumes, tissues } = await runSynthseg({
     buffer: file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength),
     options, loadModel, createSession, wasm,
   });
-  return { bytes: new Uint8Array(buffer), provenance, volumes, seconds: (performance.now() - started) / 1000 };
+  const maps = Object.fromEntries(Object.entries(tissues).map(([name, bytes]) => [name, new Uint8Array(bytes)]));
+  return { bytes: new Uint8Array(buffer), provenance, volumes, tissues: maps, seconds: (performance.now() - started) / 1000 };
 }
 
 before(async () => {
@@ -91,8 +92,9 @@ test('wasm preprocessing reports the fixture geometry', async () => {
 for (const fast of [true, false]) {
   test(`fixture parity (${fast ? 'fast' : 'default'})`, { timeout: 30 * 60_000, skip: existsSync(modelPath) ? false : `missing ${modelPath}` }, async () => {
     const golden = new URL(fast ? 'small_fast.nii.gz' : 'small_default.nii.gz', fixtures);
-    const { bytes, provenance, seconds } = await segment(new URL('small.nii.gz', fixtures), { fast });
+    const { bytes, provenance, volumes, tissues, seconds } = await segment(new URL('small.nii.gz', fixtures), { fast });
     const diff = gate(bytes, await readFile(golden), gates.maxMismatchFraction.fixture);
+    for (const [passed, line] of compareTissues(`small ${fast ? 'fast' : 'default'}`, bytes, tissues, volumes)) assert.ok(passed, line);
     assert.equal(provenance.fast, fast);
     assert.deepEqual(provenance.paddedShape, [128, 128, 128]);
     console.log(`small ${fast ? 'fast' : 'default'}: ${seconds.toFixed(1)} s, ${diff.mismatched}/${diff.total} mismatched`);
@@ -104,8 +106,9 @@ for (const stem of ['T1_head_2mm', 'T1_head']) {
   for (const fast of [true, false]) {
     test(`${stem} parity (${fast ? 'fast' : 'default'})`, { timeout: 4 * 60 * 60_000, skip: references && existsSync(modelPath) ? false : 'set SYNTHSEG_REFERENCE_DIR' }, async () => {
       const mode = fast ? 'fast' : 'default';
-      const { bytes, volumes, seconds } = await segment(`${references}/${stem}.nii.gz`, { fast });
+      const { bytes, volumes, tissues, seconds } = await segment(`${references}/${stem}.nii.gz`, { fast });
       const diff = gate(bytes, await readFile(`${references}/${stem}_${mode}.nii.gz`), gates.maxMismatchFraction.fullVolume);
+      for (const [passed, line] of compareTissues(`${stem} ${mode}`, bytes, tissues, volumes)) assert.ok(passed, line);
       console.log(`${stem} ${mode}: ${seconds.toFixed(1)} s, ${diff.mismatched}/${diff.total} mismatched (${diff.fraction})`);
       const reference = parseVolumesCsv(await readFile(`${references}/${stem}_${mode}_vol.csv`, 'utf8')).volumes;
       for (const [passed, line] of compareVolumeTable(`${stem} ${mode}`, volumes, reference)) {

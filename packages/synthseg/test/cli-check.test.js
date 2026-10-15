@@ -7,8 +7,8 @@ import { gunzipSync } from 'node:zlib';
 import { summarizeLabels } from '@neurodesk/webapp-components/automation';
 import freesurferLut from '@neurodesk/webapp-components/automation/freesurfer-lut' with { type: 'json' };
 import { readNifti } from '@neurodesk/webapp-components/file-io';
-import { parseVolumesCsv } from '../src/results.js';
-import { compareLabels, compareVolumeTable, compareVolumes, gates } from '../validation/compare.mjs';
+import { TISSUES, TISSUE_GROUPS, VOLUME_COLUMNS, parseVolumesCsv } from '../src/results.js';
+import { compareLabels, compareTissues, compareVolumeTable, compareVolumes, gates } from '../validation/compare.mjs';
 
 const golden = gunzipSync(await readFile(new URL('../../../exes/synthseg/test/fixtures/small_default.nii.gz', import.meta.url)));
 const limit = gates.maxMismatchFraction.fixture;
@@ -96,4 +96,48 @@ test('the volume table gates pass FreeSurfer\'s table and fail each kind of drif
   const { csf, ...missing } = volumes;
   assert.ok(csf > 0);
   assert.match(failed(compareVolumeTable('missing', missing, volumes)).join(';'), /columns/);
+});
+
+// Hard tissue maps from the golden's labels: each voxel is 1 in its label's tissue, and each structure's soft
+// volume is its voxel count (1 mm grid), so the maps and the table agree exactly.
+function hardTissues() {
+  const view = new DataView(golden.buffer, golden.byteOffset, golden.byteLength);
+  const voxels = (golden.length - offset) / 4;
+  const labels = Int32Array.from({ length: voxels }, (_, index) => view.getInt32(offset + 4 * index, true));
+  const maps = Object.fromEntries(TISSUES.map((tissue) => {
+    const bytes = Buffer.from(golden);
+    const map = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    map.setInt16(70, 16, true);
+    for (let index = 0; index < voxels; index++) map.setFloat32(offset + 4 * index, TISSUE_GROUPS[tissue].includes(labels[index]) ? 1 : 0, true);
+    return [tissue, bytes];
+  }));
+  const counts = new Map();
+  for (const label of labels) counts.set(label, (counts.get(label) ?? 0) + 1);
+  // VOLUME_COLUMNS order is post.rs LABELS order; the first column is the total intracranial volume.
+  const order = [0, 2, 3, 4, 5, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 24, 26, 28, 41, 42, 43, 44, 46, 47, 49, 50, 51, 52, 53, 54, 58, 60];
+  const volumes = Object.fromEntries(VOLUME_COLUMNS.map((column, index) => [column, index ? counts.get(order[index]) ?? 0 : voxels - (counts.get(0) ?? 0)]));
+  return { maps, volumes };
+}
+
+test('the tissue map gates pass maps that match their labels and fail each kind of defect', () => {
+  const { maps, volumes } = hardTissues();
+  assert.deepEqual(Object.values(TISSUE_GROUPS).flat().sort((a, b) => a - b), [2, 3, 4, 5, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 24, 26, 28, 41, 42, 43, 44, 46, 47, 49, 50, 51, 52, 53, 54, 58, 60]);
+  assert.deepEqual(failed(compareTissues('golden', golden, maps, volumes)), []);
+  const change = (tissue, edit) => {
+    const bytes = Buffer.from(maps[tissue]);
+    edit(new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength));
+    return { ...maps, [tissue]: bytes };
+  };
+  const cases = [
+    ['float32', change('gm', (view) => view.setInt16(70, 8, true)), volumes],
+    ['grid', change('wm', (view) => view.setFloat32(292, view.getFloat32(292, true) + 1, true)), volumes],
+    ['outside [0, 1]', change('csf', (view) => view.setFloat32(offset, -0.5, true)), volumes],
+    // A white-matter voxel that is also half CSF: GM + WM + CSF = 1.5.
+    ['at most', change('csf', (view) => view.setFloat32(offset + 4 * labelled(new DataView(golden.buffer, golden.byteOffset), 1)[0], 0.5, true)), volumes],
+    ['grouped soft volumes', maps, { ...volumes, 'left hippocampus': volumes['left hippocampus'] + 1 }],
+  ];
+  for (const [defect, mutated, table] of cases) {
+    const failures = failed(compareTissues('mutated', golden, mutated, table));
+    assert.ok(failures.some((line) => line.includes(defect)), `${defect}: failed ${failures.join('; ')}`);
+  }
 });

@@ -7,8 +7,8 @@ import { readVolume } from '@neurodesk/synthsr';
 import { runSynthstrip } from '@neurodesk/synthstrip';
 import packageJson from '../package.json' with { type: 'json' };
 import { ENSEMBLE_SIZES, FLAMES_FOLDS, SYNTHSTRIP } from './assets.js';
-import { nonzeroMask, runFolds } from './pipeline.js';
-import { lesionResults, outputNames } from './results.js';
+import { MAX_INPUT_VOXELS, runFolds, toNetworkResolution } from './pipeline.js';
+import { lesionResults, outputNames, resampledFlairName } from './results.js';
 
 // Set before loading the native library, including direct users of the Node API.
 process.env.ORT_DISABLE_TELEMETRY ??= '1';
@@ -143,7 +143,7 @@ export async function segment({
   const intraOpNumThreads = resolveThreads(threads);
   const destination = resolve(output);
   await assertNewOutput(destination);
-  const volume = readVolume(arrayBuffer(await readFile(input)));
+  const flair = readVolume(arrayBuffer(await readFile(input)), { maxVoxels: MAX_INPUT_VOXELS });
   const options = { cacheDir, offline, onProgress: (message) => onProgress(undefined, message) };
   const load = async (asset) => {
     const bytes = await readFile(await ensureAsset(asset, options));
@@ -166,10 +166,9 @@ export async function segment({
     await ensureAsset(asset, options);
   }
   const started = performance.now();
-  let brainMask;
-  if (skullStripped) {
-    brainMask = nonzeroMask(volume);
-  } else {
+  const { volume, brainMask: nonzero, resampledFrom } = toNetworkResolution(flair, { skullStripped });
+  let brainMask = nonzero;
+  if (!skullStripped) {
     const stripped = await runSynthstrip({
       volume,
       loadModel: async () => ({ bytes: await load(SYNTHSTRIP), hash: SYNTHSTRIP.sha256 }),
@@ -188,15 +187,17 @@ export async function segment({
     Tensor: ort.Tensor,
     onPatch: (n, total) => onProgress(0.1 + 0.9 * n / total, `Segmenting lesions · patch ${n} of ${total}`),
   });
-  const results = lesionResults(volume, probability);
+  const results = lesionResults(volume, probability, { resampled: Boolean(resampledFrom) });
   const names = outputNames(basename(input));
+  const files = [names.mask, names.probability, names.table, ...(resampledFrom ? [resampledFlairName(basename(input))] : [])];
   await mkdir(destination, { recursive: true });
   await writeAtomically(join(destination, names.mask), new Uint8Array(results.mask));
   await writeAtomically(join(destination, names.probability), new Uint8Array(results.probability));
   await writeAtomically(join(destination, names.table), results.tsv);
+  if (resampledFrom) await writeAtomically(join(destination, files[3]), new Uint8Array(results.resampledFlair));
   return {
     output: destination,
-    files: [names.mask, names.probability, names.table],
+    files,
     ...results.summary,
     provenance: {
       app: `FLAMeS command line ${packageJson.version}`,
@@ -206,6 +207,7 @@ export async function segment({
       onnxruntime: ort.env.versions.node,
       executionProvider: 'cpu',
       threads: intraOpNumThreads,
+      ...(resampledFrom && { inputResampled: { from: resampledFrom, to: volume.dims } }),
       resampledShape,
       windows,
       seconds: Math.round((performance.now() - started) / 100) / 10,

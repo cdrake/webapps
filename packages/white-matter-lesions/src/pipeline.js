@@ -374,6 +374,46 @@ export function nonzeroMask(volume) {
   return Uint8Array.from(volume.data, (v) => (v !== 0 ? 1 : 0));
 }
 
+// Inputs up to this size are read; finer ones are downsampled straight away (toNetworkResolution).
+export const MAX_INPUT_VOXELS = 512 * 1024 * 1024;
+
+// The NIfTI grid with every axis finer than the network's spacing coarsened to it, or null when
+// no axis is. Voxel edges stay aligned, as skimage.transform.resize keeps them.
+export function networkResolutionGrid(volume) {
+  const { shape, spacing } = networkGrid(volume);
+  const target = targetShape(shape, spacing);
+  const reduced = [0, 1, 2].map((a) => Math.min(shape[a], target[a]));
+  if (reduced.every((n, a) => n === shape[a])) return null;
+  const [nx, nz, ny] = reduced;
+  const dims = [nx, ny, nz];
+  const scale = dims.map((n, a) => volume.dims[a] / n);
+  const affine = volume.affine.map((row, r) => {
+    if (r === 3) return [...row];
+    const origin = row[3] + [0, 1, 2].reduce((sum, a) => sum + row[a] * (scale[a] - 1) / 2, 0);
+    return [row[0] * scale[0], row[1] * scale[1], row[2] * scale[2], origin];
+  });
+  return { dims, affine };
+}
+
+// A FLAIR finer than FLAMeS's 1 x 0.9 x 0.9 mm grid is resampled to it before brain extraction,
+// so SynthStrip, inference and the outputs all run at the resolution the network was trained on.
+// segmentFlair's own resampling then has nothing left to do. A nonzero brain mask is taken on the
+// input grid and resampled linearly, as the cubic spline rings into the zero background.
+export function toNetworkResolution(volume, { skullStripped = false } = {}) {
+  const brainMask = skullStripped ? nonzeroMask(volume) : null;
+  const grid = networkResolutionGrid(volume);
+  if (!grid) return { volume, brainMask, resampledFrom: null };
+  const shape = [...volume.dims].reverse();
+  const newShape = [...grid.dims].reverse();
+  const spacing = (affine) => [2, 1, 0].map((a) => Math.hypot(affine[0][a], affine[1][a], affine[2][a]));
+  const resampleTo = (data, order) => resample(data, shape, newShape, spacing(volume.affine), spacing(grid.affine), order);
+  return {
+    volume: { data: resampleTo(volume.data, 3), ...grid },
+    brainMask: brainMask && threshold(resampleTo(brainMask, 1)),
+    resampledFrom: volume.dims,
+  };
+}
+
 // Load one verified graph after the previous fold's session has released its memory.
 export async function runFolds({ volume, brainMask, folds, loadModel, createSession, Tensor, onPatch, signal }) {
   if (!Number.isSafeInteger(folds) || folds < 1) throw new Error('A positive fold count is required.');

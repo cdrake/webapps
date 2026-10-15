@@ -7,7 +7,6 @@ import { serveSite } from '../test-utils/serve-site.mjs';
 
 const registry = await loadAppsRegistry();
 const catalog = JSON.parse(await readFile(join(repoRoot, 'registry/standalone.json')));
-assert.ok(catalog.suite?.downloads.length, 'The tested suite must be published before checking its interface links');
 const server = process.env.BASE_URL ? null : await serveSite(join(repoRoot, 'dist'));
 const base = `${(process.env.BASE_URL || server.origin).replace(/\/$/, '')}/`;
 const browser = await chromium.launch({ headless: true });
@@ -50,11 +49,10 @@ try {
         }
       }
       await expect(dialog).toBeVisible();
-      await expect(dialog).toContainText('Webapp standalone');
       await expect(dialog).not.toContainText(/cargo build|compile from source|make macos-release|sha-256|sha256|shasum|Prepare this upstream/i);
       const sections = await dialog.locator('section > h3').allTextContents();
-      assert.ok(sections.includes('Webapp standalone'));
-      assert.equal(sections.at(-1), 'Model pack · optional');
+      const downloads = catalog.apps[app.id].downloads;
+      assert.equal(sections.includes('Command line'), downloads.length > 0, `${app.id}: lists a command line exactly when it has released one`);
       const computeServer = catalog.apps[app.id].computeServer;
       if (computeServer) {
         assert.equal(sections[0], 'Compute server · Linux with NVIDIA GPU');
@@ -66,7 +64,7 @@ try {
       const scanner = dialog.locator('section[aria-labelledby="standalone-openrecon"]');
       await expect(scanner).toHaveCount(openrecon ? 1 : 0);
       if (openrecon) {
-        assert.ok(sections.indexOf('OpenRecon · MRI scanner console') < sections.indexOf('Webapp standalone'));
+        if (downloads.length) assert.ok(sections.indexOf('OpenRecon · MRI scanner console') < sections.indexOf('Command line'));
         await expect(scanner).toContainText(`Run the ${openrecon.label} container on the MRI scanner console`);
         await expect(scanner.getByRole('link', { name: 'Siemens teamplay C2P exchange' })).toHaveAttribute('href', 'https://webclient.us.api.teamplay.siemens-healthineers.com/c2p');
         await expect(scanner.getByRole('link', { name: 'neurodesk/openrecon', exact: true })).toHaveAttribute('href', 'https://github.com/neurodesk/openrecon/');
@@ -76,12 +74,9 @@ try {
       if (computeServer?.download) {
         assert.ok(links.includes(computeServer.download.url), `${app.id}: missing compute-server download`);
       }
-      for (const download of [...catalog.suite.downloads, catalog.suite.models, ...catalog.apps[app.id].downloads]) {
-        for (const file of download.parts || [download]) {
-          assert.ok(links.includes(file.url), `${app.id}: missing visible ${download.platform} download ${file.url}`);
-        }
-      }
-      console.log(`PASS ${app.id}: published desktop and HPC downloads are visible`);
+      for (const download of downloads) assert.ok(links.includes(download.url), `${app.id}: missing visible ${download.platform} download ${download.url}`);
+      assert.ok(links.every(href => !/\/releases\/download\/webapps-v/.test(href)), `${app.id}: links the all-apps desktop suite instead of its own release`);
+      console.log(`PASS ${app.id}: its own released downloads are visible`);
     } finally {
       await context.close();
     }

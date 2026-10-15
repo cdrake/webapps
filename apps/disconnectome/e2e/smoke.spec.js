@@ -31,10 +31,10 @@ test('About explains the sample-versus-measurement distinction and points at the
   await expect(dialog).toContainText('decimated sample');
   await expect(dialog).toContainText('exes/nii2tvx');
   await page.locator('#infoDialog').getByRole('button', { name: 'Close' }).click();
-  // Standalone is the shell's own dialog, rendered from registry/standalone.json. This app
-  // ships no CLI release of its own, so it offers the shared desktop bundle.
+  // Standalone is the shell's own dialog, rendered from registry/standalone.json: the app's
+  // own command line, never the shared desktop bundle.
   await page.locator('.nd-app-bar:visible').getByRole('button', { name: 'Standalone', exact: true }).click();
-  await expect(page.locator('dialog[open]').last()).toContainText('Webapp standalone');
+  await expect(page.locator('dialog[open]').last()).toContainText('Disconnectome command line');
 });
 
 test('run is gated on a lesion, and the colorbar waits for a result', async ({ page }) => {

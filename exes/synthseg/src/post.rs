@@ -20,6 +20,30 @@ const TOPOLOGY: [u8; N] = [
     18, 19, 20, 21, 22, 23,
 ];
 
+/// Tissue classes of the GM, WM and CSF probability maps, by FreeSurfer label, after FreeSurfer's
+/// convention. GM is cerebral and cerebellar cortex plus the structures that FreeSurfer's
+/// SubCortGrayVol counts: thalamus, caudate, putamen, pallidum, hippocampus, amygdala, accumbens and
+/// ventral DC. Ventral DC is mostly grey nuclei (hypothalamus, substantia nigra, red nucleus) with
+/// some white matter; it is GM here because SubCortGrayVol counts it. WM is cerebral and cerebellar
+/// white matter plus the brainstem, which is mostly white matter; FreeSurfer counts the brainstem in
+/// no tissue total. CSF is the ventricles and the extracerebral CSF label. Together the three lists
+/// cover every channel except background, so GM + WM + CSF = 1 - P(background).
+pub const GM_LABELS: [i32; 20] = [
+    3, 42, 8, 47, 10, 49, 11, 50, 12, 51, 13, 52, 17, 53, 18, 54, 26, 58, 28, 60,
+];
+pub const WM_LABELS: [i32; 5] = [2, 41, 7, 46, 16];
+pub const CSF_LABELS: [i32; 7] = [4, 43, 5, 44, 14, 15, 24];
+/// File suffixes of the three maps, in `Segmentation::tissues` order.
+pub const TISSUES: [&str; 3] = ["gm", "wm", "csf"];
+
+/// Tissue of each channel: 0 GM, 1 WM, 2 CSF, 3 none (background).
+fn tissue(label: i32) -> usize {
+    [&GM_LABELS[..], &WM_LABELS, &CSF_LABELS]
+        .iter()
+        .position(|group| group.contains(&label))
+        .unwrap_or(3)
+}
+
 /// GaussianBlur(sigma=0.5): 3x3x3 kernel with zero padding, per channel, in place. The kernel is an
 /// outer product of the 1-D kernel, so three separable passes; channels run on all cores.
 pub fn blur(post: &mut [f32], d: &[usize; 3], threads: usize) {
@@ -171,10 +195,14 @@ fn mask_foreground(post: &mut [f32], d: &[usize; 3]) {
 pub struct Segmentation {
     pub labels: Vec<i32>,
     pub volumes_mm3: [f64; N],
+    /// With `tissues`: P(GM), P(WM) and P(CSF) on the label grid (`mi` order over `p.aligned`), the
+    /// sums of the normalised posteriors that give the volumes, over GM_LABELS, WM_LABELS, CSF_LABELS.
+    pub tissues: Option<[Vec<f32>; 3]>,
 }
 
-/// SynthSeg postprocess() on padded posteriors.
-pub fn segment(post: Vec<f32>, p: &Prepared, fast: bool) -> Segmentation {
+/// SynthSeg postprocess() on padded posteriors. `tissues` also keeps the GM, WM and CSF maps; the
+/// labels and volumes are the same either way.
+pub fn segment(post: Vec<f32>, p: &Prepared, fast: bool, tissues: bool) -> Segmentation {
     let mut post = post;
     let mut d = p.padded;
     if fast {
@@ -210,6 +238,8 @@ pub fn segment(post: Vec<f32>, p: &Prepared, fast: bool) -> Segmentation {
     }
     let voxels = d[0] * d[1] * d[2];
     let mut sums = [0f64; N];
+    let group = LABELS.map(tissue);
+    let mut maps = tissues.then(|| std::array::from_fn(|_| vec![0f32; voxels]));
     // Dividing by the channel sum does not move the argmax; an all-zero voxel is NaN in NumPy and argmax gives 0.
     let labels = (0..voxels)
         .map(|v| {
@@ -222,8 +252,16 @@ pub fn segment(post: Vec<f32>, p: &Prepared, fast: bool) -> Segmentation {
                 }
             }
             if total > 0.0 {
+                let mut voxel = [0f64; 4];
                 for c in 1..N {
-                    sums[c] += post[c * voxels + v] as f64 / total;
+                    let share = post[c * voxels + v] as f64 / total;
+                    sums[c] += share;
+                    voxel[group[c]] += share;
+                }
+                if let Some(maps) = maps.as_mut() {
+                    for (map, value) in maps.iter_mut().zip(voxel) {
+                        map[v] = value as f32;
+                    }
                 }
             }
             LABELS[best]
@@ -232,6 +270,7 @@ pub fn segment(post: Vec<f32>, p: &Prepared, fast: bool) -> Segmentation {
     Segmentation {
         labels,
         volumes_mm3: volumes(sums, voxel_mm3(&p.affine)),
+        tissues: maps,
     }
 }
 
@@ -291,13 +330,111 @@ mod tests {
             [0.0, 0.0, 1.5, 0.0],
             [0.0, 1.0, 0.0, 0.0],
         ];
-        let seg = segment(post, &prepared(d, affine), true);
+        let seg = segment(post, &prepared(d, affine), true, false);
+        assert!(seg.tissues.is_none());
         assert_eq!(seg.labels, vec![LABELS[1]; voxels]);
         let voxel = 2.0 * 1.0 * 1.5;
         assert!((seg.volumes_mm3[1] - 8.0 * 0.45 * voxel).abs() < 1e-3);
         assert!((seg.volumes_mm3[2] - 8.0 * 0.3 * voxel).abs() < 1e-3);
         assert!((seg.volumes_mm3[0] - 8.0 * 0.75 * voxel).abs() < 1e-3);
         assert!(seg.volumes_mm3[3..].iter().all(|&v| v == 0.0));
+    }
+
+    #[test]
+    fn tissue_groups_cover_every_foreground_channel_once() {
+        for label in GM_LABELS.iter().chain(&WM_LABELS).chain(&CSF_LABELS) {
+            assert!(
+                LABELS.contains(label),
+                "label {label} is not a SynthSeg channel"
+            );
+        }
+        let mut count = [0usize; 4];
+        for &label in &LABELS[1..] {
+            count[tissue(label)] += 1;
+        }
+        assert_eq!(count, [20, 5, 7, 0]);
+        assert_eq!(tissue(0), 3);
+        assert_eq!(tissue(16), 1, "brainstem is WM");
+        assert_eq!(tissue(28), 0, "ventral DC is GM");
+    }
+
+    // A deterministic pseudo-random posterior: every voxel has its own mix of all 33 channels.
+    fn synthetic(voxels: usize) -> Vec<f32> {
+        let mut state = 0x2545_f491u32;
+        (0..N * voxels)
+            .map(|_| {
+                state ^= state << 13;
+                state ^= state >> 17;
+                state ^= state << 5;
+                (state >> 8) as f32 / (1u32 << 24) as f32
+            })
+            .collect()
+    }
+
+    #[test]
+    fn tissue_maps_are_probabilities_that_agree_with_the_labels() {
+        let d = [4, 3, 5];
+        let voxels = 60;
+        let mut post = synthetic(voxels);
+        // One empty voxel: every channel zero, so the maps must be zero there too.
+        for c in 0..N {
+            post[c * voxels + 7] = 0.0;
+        }
+        let affine = [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+        ];
+        let p = prepared(d, affine);
+        let plain = segment(post.clone(), &p, true, false);
+        let seg = segment(post.clone(), &p, true, true);
+        assert_eq!(seg.labels, plain.labels);
+        assert_eq!(seg.volumes_mm3, plain.volumes_mm3);
+        let maps = seg.tissues.expect("tissue maps");
+        // Recompute the postprocessed posteriors the maps came from (fast mode: mask, then threshold).
+        let mut kept = post;
+        mask_foreground(&mut kept, &d);
+        for value in kept[voxels..].iter_mut() {
+            if *value <= 0.2 {
+                *value = 0.0;
+            }
+        }
+        let mut sums = [0f64; 3];
+        for v in 0..voxels {
+            let values = [maps[0][v], maps[1][v], maps[2][v]];
+            assert!(values.iter().all(|x| (0.0..=1.0).contains(x)), "{values:?}");
+            assert!(values.iter().sum::<f32>() <= 1.0 + 1e-5);
+            let total: f64 = (0..N).map(|c| kept[c * voxels + v] as f64).sum();
+            if total == 0.0 {
+                assert_eq!(values, [0.0; 3]);
+                continue;
+            }
+            let background = kept[v] as f64 / total;
+            assert!(
+                (values.iter().map(|&x| x as f64).sum::<f64>() - (1.0 - background)).abs() < 1e-5
+            );
+            // The labelled channel's own share is part of its tissue's map.
+            let label = seg.labels[v];
+            if label != 0 {
+                let c = LABELS.iter().position(|&l| l == label).unwrap();
+                let share = kept[c * voxels + v] as f64 / total;
+                assert!(values[tissue(label)] as f64 >= share - 1e-6);
+            }
+            for (sum, x) in sums.iter_mut().zip(values) {
+                *sum += x as f64;
+            }
+        }
+        // The maps sum to the soft volumes of their structures.
+        for (t, sum) in sums.iter().enumerate() {
+            let expected: f64 = (1..N)
+                .filter(|&c| tissue(LABELS[c]) == t)
+                .map(|c| seg.volumes_mm3[c])
+                .sum();
+            assert!(
+                (sum - expected).abs() < 0.02,
+                "tissue {t}: {sum} != {expected}"
+            );
+        }
     }
 
     #[test]

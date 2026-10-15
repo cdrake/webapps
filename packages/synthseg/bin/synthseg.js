@@ -12,8 +12,10 @@ const HELP = `Usage: synthseg INPUT.nii[.gz] OUTPUT_DIR [options]
 
 Segments one head image into FreeSurfer labels with SynthSeg 2.0 on the CPU.
 Writes INPUT_synthseg.nii.gz (labels on a 1 mm grid), INPUT_synthseg.json
-(parameters, provenance and label volumes) and INPUT_synthseg_vol.csv
-(mri_synthseg --vol soft volumes in mm³), as the web app's downloads.
+(parameters, provenance and label volumes), INPUT_synthseg_vol.csv
+(mri_synthseg --vol soft volumes in mm³) and INPUT_synthseg_gm, _wm and _csf
+.nii.gz (float32 tissue probability maps on the label grid), as the web app's
+downloads.
 
 Options:
   --mode MODE       fast (the default; the volume norms come from fast mode) or

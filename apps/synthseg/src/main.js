@@ -18,7 +18,7 @@ import { fetchModel } from '@neurodesk/webapp-components/worker';
 import { readImageSeries, runDcm2niix } from '@neurodesk/runtime-support/dcm2niix-client';
 import manifest from '@neurodesk/synthseg/manifest';
 import { parseNorms, subjectFromSidecar } from '@neurodesk/synthseg/brainquant';
-import { LABELS_ARTIFACT, outputNames, outputStem, volumesCsv } from '@neurodesk/synthseg/results';
+import { LABELS_ARTIFACT, TISSUES, TISSUE_ARTIFACT, TISSUE_NAMES, outputNames, outputStem, volumesCsv } from '@neurodesk/synthseg/results';
 import { editedResult, gridOf, labelNames, labelsResult, looksLikeCt, sameGrid } from './logic.js';
 import { legendEntries, volumeReport } from './volume-report.js';
 import freesurferLut from '@neurodesk/webapp-components/automation/freesurfer-lut';
@@ -75,11 +75,11 @@ $('opacity').disabled = true;
 toolbar.control('overlayOpacityValue').textContent = '60%';
 const results = createResultList({
   element: $('resultList'),
-  onView: () => {
-    if (labels && !busy) void view('labels');
+  onView: (stage) => {
+    if (outputFile(stage) && !busy) void view(stage);
   },
-  onDownload: () => {
-    if (labels && !busy) downloadFile(labels.file);
+  onDownload: (stage) => {
+    if (outputFile(stage) && !busy) downloadFile(outputFile(stage));
   },
   onEdit: () => void editLabels(),
 });
@@ -106,14 +106,32 @@ let volumes = null;
 let volumesFast = true;
 let volumesVoxelSizeMm = 1;
 let normsLoad = null;
+// The last run's GM, WM and CSF probability maps as Files, or null.
+let tissues = null;
 renderResults();
 
+const outputFile = (stage) => (stage === 'labels' ? labels?.file : tissues?.[stage]);
 function renderResults() {
-  results.render({ labels: labels ?? { description: 'FreeSurfer labels' } });
-  $('resultList').querySelector('.nd-download-btn').id = 'saveBtn';
-  $('resultList').querySelector('.nd-view-btn').id = 'viewResultBtn';
+  results.render({
+    labels: labels ?? { description: 'FreeSurfer labels' },
+    ...Object.fromEntries(TISSUES.map((tissue) => [tissue, { description: TISSUE_NAMES[tissue] }])),
+  });
+  const row = (stage) => $('resultList').querySelector(`[data-stage="${stage}"]`);
+  row('labels').querySelector('.nd-download-btn').id = 'saveBtn';
+  row('labels').querySelector('.nd-view-btn').id = 'viewResultBtn';
+  for (const tissue of TISSUES) {
+    row(tissue).querySelector('.nd-download-btn').id = `${tissue}SaveBtn`;
+    row(tissue).querySelector('.nd-view-btn').id = `${tissue}ViewBtn`;
+  }
+  syncResultButtons();
+}
+function syncResultButtons() {
   $('saveBtn').disabled = busy || !labels;
   $('viewResultBtn').disabled = busy || !labels;
+  for (const tissue of TISSUES) {
+    $(`${tissue}SaveBtn`).disabled = busy || !tissues;
+    $(`${tissue}ViewBtn`).disabled = busy || !tissues;
+  }
 }
 const editing = () => Boolean(editor) && editor.session.state !== 'idle';
 function status(message, error = false) {
@@ -130,8 +148,7 @@ function setBusy(value, cancellable = false) {
   $('processButton').disabled = value || !source || !webgpu;
   progressManager.setCancellable(value && cancellable);
   $('opacity').disabled = value || !labels || editing();
-  $('saveBtn').disabled = value || !labels;
-  $('viewResultBtn').disabled = value || !labels;
+  syncResultButtons();
   results.setEditingEnabled(!value && !editing());
   $('reportBtn').disabled = value || runs.snapshot().state !== 'succeeded';
   $('volumesBtn').disabled = value || !volumes;
@@ -182,6 +199,7 @@ async function ensureViewer() {
         list: () => [
           ...(source ? [{ id: 'original', label: 'Original', active: displayedStage === 'original' }] : []),
           ...(labels ? [{ id: 'labels', label: 'FreeSurfer labels', active: displayedStage === 'labels' }] : []),
+          ...(tissues ? TISSUES.map((id) => ({ id, label: TISSUE_NAMES[id], active: displayedStage === id })) : []),
         ],
         select: id => view(id),
       },
@@ -204,6 +222,14 @@ function stack(stage) {
     return {
       title: `ORIGINAL IMAGE ON THE ${provenance?.voxelSizeMm ?? 1} MM LABEL GRID · EDITING LABELS`,
       volumes: [{ ...overlay, opacity: 0 }, input],
+      labelOverlay: false,
+    };
+  }
+  if (TISSUES.includes(stage) && tissues) {
+    const map = { url: tissues[stage], name: tissues[stage].name, colormap: 'warm', calMin: 0.1, calMax: 1, isTransparentBelowCalMin: true };
+    return {
+      title: `ORIGINAL IMAGE · ${TISSUE_NAMES[stage].toUpperCase()}`,
+      volumes: [input, { ...map, opacity: Number($('opacity').value) }],
       labelOverlay: false,
     };
   }
@@ -378,6 +404,7 @@ $('sex').onchange = subjectChanged;
 function clearOutputs() {
   const cancelled = editor?.cancel();
   labels = null;
+  tissues = null;
   provenance = null;
   volumes = null;
   renderResults();
@@ -514,14 +541,15 @@ $('exampleControl').replaceWith(exampleControl);
 $('opacity').oninput = () => {
   const value = Number($('opacity').value);
   toolbar.control('overlayOpacityValue').textContent = `${Math.round(value * 100)}%`;
-  if (labels && viewer && displayedStage === 'labels') void viewer.setVolume(1, { opacity: value });
+  if (labels && viewer && (displayedStage === 'labels' || TISSUES.includes(displayedStage))) void viewer.setVolume(1, { opacity: value });
 };
-async function segmentImage(parameters, { signal, progress = () => {} } = {}) {
+// Automation passes voxelSizeMm: its contract declares the 1 mm grid, whatever the form holds.
+async function segmentImage(parameters, { signal, progress = () => {}, voxelSizeMm: fixedVoxelSizeMm } = {}) {
   if (!source || busy) throw new Error('Load an image before starting segmentation.');
   if (!webgpu) throw new Error('SynthSeg requires WebGPU.');
   signal?.throwIfAborted();
-  const voxelSizeMm = Number($('voxelSizeMm').value);
-  if (!$('voxelSizeMm').checkValidity()) {
+  const voxelSizeMm = fixedVoxelSizeMm ?? Number($('voxelSizeMm').value);
+  if (fixedVoxelSizeMm === undefined && !$('voxelSizeMm').checkValidity()) {
     $('preparationSection').open = true;
     $('voxelSizeMm').reportValidity();
     throw new Error('Choose a processing voxel size between 1 and 3 mm.');
@@ -590,6 +618,12 @@ async function segmentImage(parameters, { signal, progress = () => {} } = {}) {
               volumes = data.volumes ?? null;
               volumesFast = options.fast;
               volumesVoxelSizeMm = options.voxelSizeMm;
+              const names = outputNames(source.name);
+              // A result without all three maps offers none, rather than files that hold no image.
+              const maps = TISSUES.every((tissue) => data.tissues?.[tissue]?.byteLength > 0)
+                ? Object.fromEntries(TISSUES.map((tissue) => [tissue, new File([data.tissues[tissue]], names[tissue], { type: TISSUE_ARTIFACT.mediaType })]))
+                : null;
+              const space = voxelSizeMm > 1 ? `subject-${voxelSizeMm}mm` : LABELS_ARTIFACT.space;
               const measurements = {
                 ...summarizeLabels(image, freesurferLut),
                 softVolumesMm3: volumes,
@@ -597,13 +631,16 @@ async function segmentImage(parameters, { signal, progress = () => {} } = {}) {
               };
               if (!run.current) throw new DOMException('Cancelled', 'AbortError');
               const succeeded = await run.succeed({
-                artifacts: { labels: { file, ...LABELS_ARTIFACT,
-                  space: voxelSizeMm > 1 ? `subject-${voxelSizeMm}mm` : LABELS_ARTIFACT.space } },
+                artifacts: {
+                  labels: { file, ...LABELS_ARTIFACT, space },
+                  ...Object.fromEntries(Object.entries(maps ?? {}).map(([tissue, map]) => [tissue, { file: map, ...TISSUE_ARTIFACT, space }])),
+                },
                 provenance: data.provenance,
                 measurements,
               });
               if (!succeeded) throw new DOMException('Cancelled', 'AbortError');
               labels = labelsResult(file, gridOf(image));
+              tissues = maps;
               renderResults();
               provenance = data.provenance;
               $('outputSection').open = true;
@@ -615,7 +652,8 @@ async function segmentImage(parameters, { signal, progress = () => {} } = {}) {
               const preparation = provenance.preparation;
               const adjustments = `${preparation?.robustFov ? ' · robust FOV' : ''}${options.voxelSizeMm > 1 ? ` · ${options.voxelSizeMm} mm` : ''}`;
               status(`Labels ready · ${provenance.outputShape.join(' × ')} · ${Math.round(provenance.seconds)} s${adjustments}`);
-              resolve({ artifacts: [{ role: 'labels', file }], provenance, measurements });
+              const artifacts = [{ role: 'labels', file }, ...Object.entries(maps ?? {}).map(([role, map]) => ({ role, file: map }))];
+              resolve({ artifacts, provenance, measurements });
             } catch (error) { fail(error); }
           }
         };
@@ -651,7 +689,7 @@ const automation = registerAppAutomation({
     segment: async ({ inputs, parameters, signal, progress }) => {
       exampleControl.cancel();
       if (!await load(inputs.image[0], signal)) throw new Error('The input image could not be loaded.');
-      return segmentImage(parameters, { signal, progress });
+      return segmentImage(parameters, { signal, progress, voxelSizeMm: 1 });
     },
   },
 });

@@ -52,16 +52,16 @@ self.onmessage = async ({ data: job }) => {
       onProgress: progress,
     });
     const wasm = await loadSynthseg(fetch(wasmUrl));
-    const { buffer, provenance, volumes } = await runSynthseg({
+    const { buffer, provenance, volumes, tissues } = await runSynthseg({
       buffer: input,
       options: job.options,
       wasm,
       loadModel: () => modelBytes(job.model),
       createSession: createBrowserSession,
       onProgress: progress,
-      runtime: { app: 'SynthSeg web 0.7.20261014', ...browserRuntime(), preparation },
+      runtime: { app: 'SynthSeg web 0.8.20261014', ...browserRuntime(), preparation },
     });
-    self.postMessage({ type: 'result', buffer, provenance, volumes }, [buffer]);
+    self.postMessage({ type: 'result', buffer, provenance, volumes, tissues }, [buffer, ...Object.values(tissues)]);
   } catch (error) {
     self.postMessage({ type: 'error', message: error.message || String(error),
       ...(error instanceof InputMemoryError ? { recommendation: error.recommendation } : {}) });

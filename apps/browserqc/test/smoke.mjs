@@ -97,6 +97,8 @@ await runVitePreviewSmoke({
     if (!/CJV/.test(await qcText())) await fail('QC panel did not populate after segmentation', page)
     if (await page.locator('#saveBtn').isDisabled()) await fail('QC JSON save did not enable', page)
     console.log('✓ auto segmentation + niimath QC ran, panel populated')
+    // The default PVE model offers the mask and three fraction maps.
+    if (await page.locator('#resultList .nd-download-btn').count() !== 4) await fail('Mask and tissue map downloads missing', page)
 
     // 3. Opacity slider drives the overlay (last volume) without throwing.
     await page.$eval('#ovlSlider', (el) => {

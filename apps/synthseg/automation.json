@@ -60,6 +60,27 @@
           "labelSystem": "FreeSurfer",
           "minimum": 1,
           "maximum": 1
+        },
+        "gm": {
+          "type": "neuro:volume",
+          "mediaType": "application/gzip",
+          "space": "subject-1mm",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "wm": {
+          "type": "neuro:volume",
+          "mediaType": "application/gzip",
+          "space": "subject-1mm",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "csf": {
+          "type": "neuro:volume",
+          "mediaType": "application/gzip",
+          "space": "subject-1mm",
+          "minimum": 1,
+          "maximum": 1
         }
       },
       "engines": [

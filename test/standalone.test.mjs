@@ -10,14 +10,15 @@ import { ciWorkflowApps } from '../scripts/desktop/ci-apps.mjs';
 import { workflowApps } from '../scripts/desktop/workflows.mjs';
 import { openStandalone } from '../packages/components/src/ui/renderStandalone.js';
 import { portableCommand, releasePlatform } from '../scripts/lib/portable-command.mjs';
+import { nativeReleases, portableSpecs } from '../scripts/lib/native-releases.mjs';
 
 test('scanner packages link the supported apps to their OpenRecon recipes', async () => {
   const catalog = await loadStandalone(await loadAppsRegistry());
   const expected = { musclemap: 'musclemap', qsmbly: 'qsmxt', spinalcordtoolbox: 'spinalcordtoolbox', synthseg: 'synthseg', topofit: 'topofit', vesselboost: 'vesselboost' };
   assert.deepEqual(Object.fromEntries(Object.entries(catalog.apps).filter(([, app]) => app.openrecon).map(([id, app]) => [id, app.openrecon.recipe])), expected);
   const dom = new JSDOM('<html><body></body></html>');
-  const dialog = openStandalone({ title: 'QSMbly', app: catalog.apps.qsmbly, suite: catalog.suite }, dom.window.document);
-  assert.deepEqual([...dialog.root.querySelectorAll('section > h3')].map(node => node.textContent), ['Neurodesk containers', 'OpenRecon · MRI scanner console', 'Webapp standalone', 'Model pack · optional']);
+  const dialog = openStandalone({ title: 'QSMbly', app: catalog.apps.qsmbly }, dom.window.document);
+  assert.deepEqual([...dialog.root.querySelectorAll('section > h3')].map(node => node.textContent), ['Neurodesk containers', 'OpenRecon · MRI scanner console']);
   const scanner = dialog.root.querySelector('section[aria-labelledby="standalone-openrecon"]');
   assert.match(scanner.textContent, /Run the QSMxT container on the MRI scanner console/);
   assert.match(scanner.textContent, /official OpenRecon package/);
@@ -35,10 +36,9 @@ test('a future app cannot be silently omitted from desktop packaging', async t =
 
 test('shared dialog displays verified releases and keeps unpublished platforms unlinked', () => {
   const dom = new JSDOM('<html><body></body></html>');
-  const app = { downloads: [{ kind: 'desktop', platform: 'macOS ARM64', version: '0.1.20260915', url: 'https://github.com/neurodesk/webapps/releases/download/demo-v0.1.20260915/demo.zip' }], containers: [] };
+  const app = { downloads: [{ kind: 'cli', platform: 'macOS ARM64', version: '0.1.20260915', url: 'https://github.com/neurodesk/webapps/releases/download/demo-v0.1.20260915/demo.zip' }], containers: [] };
   const dialog = openStandalone({ title: 'Demo', app }, dom.window.document);
-  assert.match(dialog.root.textContent, /Webapp standalone/);
-  assert.doesNotMatch(dialog.root.textContent, /Model pack/);
+  assert.match(dialog.root.textContent, /Command line/);
   assert.equal(dialog.root.querySelectorAll('a').length, 1);
   assert.match(dialog.root.querySelector('a').href, /demo.zip$/);
   assert.equal(dialog.root.querySelector('dialog'), null);
@@ -51,20 +51,16 @@ test('every app has an executable offline workflow test', async () => {
   assert.deepEqual([...workflowApps].sort(), registry.apps.map(app => app.id).sort(), 'Implement an offline computation or interactive workflow test before adding an app');
 });
 
-test('standalone choices are ordered and omit technical clutter', () => {
+test('standalone choices are ordered, omit technical clutter and never offer the all-apps suite', async () => {
   const dom = new JSDOM('<html><body></body></html>');
-  const download = { kind: 'desktop', platform: 'macos-arm64', version: '0.1.20260915', url: 'https://example.test/install.txt', archiveSha256: 'b'.repeat(64), parts: [{ url: 'https://example.test/part1' }], command: "echo 'hash' | shasum -a 256 -c -\nunzip app.zip" };
-  const models = { kind: 'models', platform: 'any', version: download.version, bytes: 2.1e9, url: 'https://example.test/models.install.txt', archiveSha256: 'c'.repeat(64), parts: [{ url: 'https://example.test/models.part01' }, { url: 'https://example.test/models.part02' }], command: "cat models.part01 models.part02 > models.tar.gz\nmkdir models\ntar -xzf models.tar.gz -C models" };
-  const suite = { downloads: [download], models };
-  const app = { downloads: [], containers: [{ id: 'demo', label: 'Demo 1', url: 'https://hub.docker.com/r/demo', dockerImage: 'demo:1', apptainerUrl: 'https://neurocontainers.neurodesk.workers.dev/demo_1_20260915.simg' }] };
+  const download = { kind: 'cli', platform: 'macos-arm64', version: '0.1.20260915', url: 'https://example.test/demo.zip', command: "echo 'hash' | shasum -a 256 -c -\nunzip app.zip" };
+  const app = { downloads: [download], containers: [{ id: 'demo', label: 'Demo 1', url: 'https://hub.docker.com/r/demo', dockerImage: 'demo:1', apptainerUrl: 'https://neurocontainers.neurodesk.workers.dev/demo_1_20260915.simg' }] };
+  const { suite } = await loadStandalone(await loadAppsRegistry());
   const dialog = openStandalone({ title: 'Demo', app, suite }, dom.window.document);
-  assert.deepEqual([...dialog.root.querySelectorAll('section > h3')].map(node => node.textContent), ['Neurodesk containers', 'Webapp standalone', 'Model pack · optional']);
-  const pack = dialog.root.querySelector('section[aria-labelledby="standalone-models"]');
-  assert.match(pack.textContent, /Every platform · 2.10 GB/);
-  assert.match(pack.textContent, /NEURODESK_MODELS_DIR/);
-  assert.deepEqual([...pack.querySelectorAll('a')].map(node => node.href), ['https://example.test/models.part01', 'https://example.test/models.part02']);
-  assert.match(pack.textContent, /tar -xzf models.tar.gz -C models/);
-  assert.doesNotMatch(dialog.root.textContent, /sha256|sha-256|shasum|Prepare this upstream/i);
+  assert.deepEqual([...dialog.root.querySelectorAll('section > h3')].map(node => node.textContent), ['Neurodesk containers', 'Command line']);
+  const links = [...dialog.root.querySelectorAll('a')].map(node => node.href);
+  assert.ok(links.every(href => !/\/webapps-v\d/.test(href)), 'an app links only its own releases, never the desktop suite');
+  assert.doesNotMatch(dialog.root.textContent, /sha256|sha-256|shasum|Prepare this upstream|Model pack/i);
   assert.match(dialog.root.textContent, /docker pull demo:1/);
   assert.match(dialog.root.textContent, /curl -X GET https:\/\/neurocontainers.neurodesk.workers.dev\/demo_1_20260915.simg -O/);
   assert.equal(dialog.root.querySelector('details').open, false);
@@ -72,6 +68,28 @@ test('standalone choices are ordered and omit technical clutter', () => {
   dom.window.close();
 });
 
+
+// An app's Standalone download is its own command line, never the all-apps desktop suite. Every app ships
+// one (packages/<app>/release.json or a Rust release source) unless it is listed here with the reason.
+// Remove an entry in the change that adds its command line.
+const WITHOUT_COMMAND_LINE = {
+  surfannotate: 'interactive surface annotation: every result is a manual choice in the viewer',
+  zarro: 'interactive OME-Zarr viewer: it has no batch output',
+  nesvor: 'needs CUDA; its standalone form is the neurodesk-compute server',
+  spinalcordtoolbox: 'not built yet (#285)',
+  qsmbly: 'not built yet (#284)',
+  deface: 'not built yet (#281)',
+  dicom2vid: 'not built yet (#282)',
+};
+
+test('every app ships its own command line or states why it cannot', async () => {
+  const registry = await loadAppsRegistry();
+  const natives = nativeReleases(await portableSpecs());
+  for (const { id } of registry.apps) {
+    assert.notEqual(natives.has(id), id in WITHOUT_COMMAND_LINE, natives.has(id) ? `${id} has a command line: remove it from WITHOUT_COMMAND_LINE` : `${id}: add packages/${id}/release.json, or list it in WITHOUT_COMMAND_LINE with the reason`);
+  }
+  assert.deepEqual(Object.keys(WITHOUT_COMMAND_LINE).filter(id => !registry.apps.some(app => app.id === id)), []);
+});
 
 test('future apps automatically receive real offline workflow coverage on hosted CI', () => {
   assert.deepEqual(ciWorkflowApps({ apps: [{ id: 'future-app' }, { id: 'synthseg' }] }), ['future-app']);

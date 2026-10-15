@@ -34,6 +34,8 @@ Options:
   --ct            Clip CT scans in Hounsfield units to [0, 80]
   --fast          Skip left–right averaging and topology postprocessing
   --vol FILE.csv  Write structure volumes in mm³ as mri_synthseg --vol does
+  --tissues       Also write OUTPUT_gm, OUTPUT_wm and OUTPUT_csf: float32 tissue
+                  probability maps on the label grid (see README)
   --force         Replace existing output and JSON sidecar
   --quiet         Suppress progress messages
   --self-check    Report build, model checksum and runtime, then exit
@@ -51,6 +53,7 @@ struct Args {
     ct: bool,
     fast: bool,
     vol: Option<PathBuf>,
+    tissues: bool,
     force: bool,
     quiet: bool,
     device: String,
@@ -83,6 +86,7 @@ fn parse_args() -> Result<Args, String> {
         ct: false,
         fast: false,
         vol: None,
+        tissues: false,
         force: false,
         quiet: false,
         device: DEFAULT_DEVICE.into(),
@@ -112,6 +116,7 @@ fn parse_args() -> Result<Args, String> {
             "--ct" => a.ct = true,
             "--fast" => a.fast = true,
             "--vol" => a.vol = Some(it.next().map(PathBuf::from).ok_or("--vol needs a path.")?),
+            "--tissues" => a.tissues = true,
             "--force" => a.force = true,
             "--quiet" => a.quiet = true,
             "--threads" => {
@@ -281,10 +286,21 @@ fn run(a: &Args) -> Result<(), String> {
         ),
     };
     let stem = strip_nii(&output).ok_or("Output must end with .nii or .nii.gz.")?;
-    let report = PathBuf::from(stem + ".json");
+    let report = PathBuf::from(stem.clone() + ".json");
+    // OUTPUT_gm.nii.gz and so on, with the label map's extension and so its compression.
+    let extension = &output.to_string_lossy()[stem.len()..];
+    let tissue_paths: Vec<PathBuf> = if a.tissues {
+        post::TISSUES
+            .iter()
+            .map(|t| PathBuf::from(format!("{stem}_{t}{extension}")))
+            .collect()
+    } else {
+        Vec::new()
+    };
     for path in [Some(&output), Some(&report), a.vol.as_ref()]
         .into_iter()
         .flatten()
+        .chain(&tissue_paths)
     {
         if same_file(path, &input) {
             return Err("Output must not overwrite the input image.".into());
@@ -341,19 +357,25 @@ fn run(a: &Args) -> Result<(), String> {
     drop(session);
     mark("release");
     progress("Postprocessing and saving labels…");
-    let segmentation = post::segment(posteriors, &prep, a.fast);
+    let segmentation = post::segment(posteriors, &prep, a.fast, a.tissues);
     let out = volume::restore(&segmentation.labels, &prep);
-    let mut image = nifti::write(&out);
-    if output
+    let gzip = output
         .to_string_lossy()
         .to_ascii_lowercase()
-        .ends_with(".gz")
-    {
+        .ends_with(".gz");
+    let encode = |image: Vec<u8>| -> Result<Vec<u8>, String> {
+        if !gzip {
+            return Ok(image);
+        }
         let mut enc = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::default());
         enc.write_all(&image)
             .and_then(|_| enc.finish())
-            .map(|v| image = v)
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| e.to_string())
+    };
+    let image = encode(nifti::write(&out))?;
+    let mut tissue_images = Vec::new();
+    for map in segmentation.tissues.iter().flatten() {
+        tissue_images.push(encode(nifti::write(&volume::restore(map, &prep)))?);
     }
     mark("postprocess");
 
@@ -364,6 +386,7 @@ fn run(a: &Args) -> Result<(), String> {
         "threads": a.threads, "ct": a.ct, "fast": a.fast, "flip": !a.fast,
         "inputShape": vol.dims, "paddedShape": prep.padded, "outputShape": out.dims, "outputAffine": out.affine,
         "seconds": started.elapsed().as_secs_f64(), "timings": timings, "input": input, "output": output,
+        "tissues": a.tissues.then_some(&tissue_paths),
     });
     let mut files = vec![
         (
@@ -372,6 +395,7 @@ fn run(a: &Args) -> Result<(), String> {
         ),
         (output.as_path(), image),
     ];
+    files.extend(tissue_paths.iter().map(PathBuf::as_path).zip(tissue_images));
     if let Some(vol) = &a.vol {
         let subject = strip_nii(&input).unwrap_or_default();
         let subject = Path::new(&subject)

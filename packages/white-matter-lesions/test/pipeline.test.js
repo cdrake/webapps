@@ -1,8 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readVolume, writeVolume } from "@neurodesk/synthsr";
 import {
+  MAX_INPUT_VOXELS,
   fromNetworkOrder,
   networkGrid,
+  networkResolutionGrid,
   brainBox,
   checkLogits,
   gaussianWeights,
@@ -15,6 +18,7 @@ import {
   targetShape,
   threshold,
   toNetworkOrder,
+  toNetworkResolution,
   windowStarts,
   windows,
 } from "../src/pipeline.js";
@@ -61,6 +65,52 @@ test("an axis over three times coarser is resampled per slice, then by nearest s
   close(resample(cube, [2, 2, 2], [2, 4, 4], [4, 1, 1], [4, 0.5, 0.5], 3).subarray(0, 4), [0, 0.021454, 0.590084, 0.902885]);
   const deeper = resample(cube, [2, 2, 2], [4, 2, 2], [4, 1, 1], [2, 1, 1], 1);
   close([deeper[0], deeper[4], deeper[8], deeper[12]], [0, 0, 4, 4]);
+});
+
+test("a 0.4 mm FLAIR over SynthSR's 128 Mi voxel cap is still read", () => {
+  // The scan that failed: a 544 x 544 x 480 sagittal FLAIR. The header alone is enough here,
+  // as the voxel count is checked before the data is read.
+  const buffer = writeVolume({ data: new Uint8Array(8), dims: [2, 2, 2], affine: [[0.4, 0, 0, 0], [0, 0.4, 0, 0], [0, 0, 0.4, 0]] });
+  const header = new DataView(buffer);
+  for (const [axis, size] of [544, 544, 480].entries()) header.setInt16(42 + 2 * axis, size, true);
+  assert.throws(() => readVolume(buffer), /Unsupported image dimensions/);
+  assert.throws(() => readVolume(buffer, { maxVoxels: MAX_INPUT_VOXELS }), /truncated/);
+});
+
+test("axes finer than the network's spacing are coarsened to it; coarser ones are kept", () => {
+  // NIfTI x runs along the network's 1 mm axis, y and z along its 0.9 mm axes.
+  const affine = [[0.45, 0, 0, 10], [0, 0.45, 0, 20], [0, 0, 3, 30], [0, 0, 0, 1]];
+  const grid = networkResolutionGrid({ dims: [20, 18, 6], affine });
+  assert.deepEqual(grid.dims, [9, 9, 6]);
+  const expected = [[1, 0, 0, 10 + 0.45 * (20 / 9 - 1) / 2], [0, 0.9, 0, 20 + 0.225], [0, 0, 3, 30], [0, 0, 0, 1]];
+  for (let r = 0; r < 4; r++) close(grid.affine[r], expected[r], 1e-9);
+  assert.equal(networkResolutionGrid({ dims: [20, 18, 6], affine: [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 2.3, 0], [0, 0, 0, 1]] }), null);
+});
+
+test("a fine FLAIR is resampled once, so segmentation's own resampling has nothing to do", () => {
+  const dims = [24, 24, 24];
+  const affine = [[0, 0, 0.45, -5], [-0.45, 0, 0, 5], [0, 0.45, 0, -5], [0, 0, 0, 1]];
+  const data = new Float32Array(dims[0] * dims[1] * dims[2]);
+  // A skull-stripped cube of brain: nonzero inside voxels 6..17.
+  for (let z = 6; z < 18; z++) for (let y = 6; y < 18; y++) for (let x = 6; x < 18; x++) data[x + 24 * (y + 24 * z)] = 100;
+  const { volume, brainMask, resampledFrom } = toNetworkResolution({ data, dims, affine }, { skullStripped: true });
+  assert.deepEqual(resampledFrom, dims);
+  assert.deepEqual(volume.dims, [11, 12, 12]);
+  const { shape, spacing } = networkGrid(volume);
+  assert.deepEqual(targetShape(shape, spacing), shape);
+  // Voxel (0, 0, 0) is centred on the mean of the input voxels it covers.
+  const covered = (n, m) => (n / m - 1) / 2;
+  close([0, 1, 2].map((r) => volume.affine[r][3]), [-5 + 0.45 * covered(24, 12), 5 - 0.45 * covered(24, 11), -5 + 0.45 * covered(24, 12)], 1e-9);
+  // The brain is the same 5.4 mm cube, without ringing from the zero background.
+  const voxels = brainMask.reduce((sum, v) => sum + v, 0);
+  assert.ok(Math.abs(voxels * 0.9 * 0.9 * 1 - 5.4 ** 3) < 0.15 * 5.4 ** 3, `${voxels} voxels`);
+  assert.equal(brainMask.length, volume.data.length);
+  assert.ok(volume.data.every((v) => v >= 0 && v <= 100));
+});
+
+test("an image already at the network's resolution is passed through untouched", () => {
+  const volume = { data: new Float32Array(8), dims: [2, 2, 2], affine: [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]] };
+  assert.equal(toNetworkResolution(volume).volume, volume);
 });
 
 test("the importance map peaks at the patch centre and falls to exp(-24) at the corner", () => {

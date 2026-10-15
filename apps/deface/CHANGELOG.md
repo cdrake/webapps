@@ -1,5 +1,19 @@
 # deface
 
+## 1.3.20261014
+
+### Patch Changes
+
+- 55d5c20: A failure while the page closes or reloads now appears in the status bar and
+  the technical log instead of being lost as an unhandled rejection. During
+  development, the reloaded module still waits for the previous one to release
+  its GPU device and workers.
+- Updated dependencies [27c9549]
+- Updated dependencies [850e642]
+- Updated dependencies [ad92e2f]
+  - @neurodesk/runtime-support@0.5.0
+  - @neurodesk/webapp-components@0.13.0
+
 ## 1.3.20261012
 
 ### Patch Changes
