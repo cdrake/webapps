@@ -296,13 +296,18 @@ fn same_dicom_study(a: Option<&(String, String)>, b: Option<&(String, String)>) 
         && (a_patient.is_empty() || b_patient.is_empty() || a_patient == b_patient)
 }
 
-/// The protocol a Siemens series was acquired with: its description (else its
-/// name after the series number), without the suffixes Siemens and sites add
-/// for the averaged and water-unsuppressed series of one acquisition.
-fn dicom_protocol(ds: &Dataset, files: &[NamedFile]) -> Option<String> {
+/// The protocol a Siemens series was acquired with: its description, else
+/// the name of its own folder after the series number (`own_folder`: no other
+/// series shares that folder), without the suffixes Siemens and sites add for
+/// the averaged and water-unsuppressed series of one acquisition.
+fn dicom_protocol(ds: &Dataset, files: &[NamedFile], own_folder: bool) -> Option<String> {
     let i = ds.files.iter().copied().find(|&i| !split_path(files[i].name).1.starts_with('.'))?;
     let description = super::dicom_siemens::parse_dicom(files[i].bytes).ok()?.string(0x0008, 0x103e).unwrap_or_default();
-    let name = if description.trim().is_empty() { after_series_number(&ds.name) } else { description.trim() };
+    let name = match description.trim() {
+        "" if own_folder => after_series_number(split_path(split_path(files[i].name).0).1),
+        "" => return None,
+        d => d,
+    };
     let name = name.to_ascii_lowercase();
     let name = water_base(&name).unwrap_or(name);
     let name = name.strip_suffix("_ave").unwrap_or(&name);
@@ -478,9 +483,13 @@ pub fn detect(files: &[NamedFile]) -> Detection {
     let identities: HashMap<usize, (String, String)> = datasets.iter()
         .filter_map(|ds| dicom_identity(ds, files).map(|identity| (ds.files[0], identity)))
         .collect();
-    let protocols: HashMap<usize, String> = datasets.iter()
-        .filter(|ds| ds.format == Format::SiemensDicom)
-        .filter_map(|ds| dicom_protocol(ds, files).map(|protocol| (ds.files[0], protocol)))
+    let dicom: Vec<&Dataset> = datasets.iter().filter(|ds| ds.format == Format::SiemensDicom).collect();
+    let dir_of = |ds: &Dataset| split_path(files[ds.files[0]].name).0;
+    let protocols: HashMap<usize, String> = dicom.iter()
+        .filter_map(|ds| {
+            let own_folder = !dir_of(ds).is_empty() && dicom.iter().filter(|other| dir_of(other) == dir_of(ds)).count() == 1;
+            dicom_protocol(ds, files, own_folder).map(|protocol| (ds.files[0], protocol))
+        })
         .collect();
     let key = |ds: &Dataset| -> (Format, String) { (ds.format, ds.name.to_ascii_lowercase()) };
     let (water, metab): (Vec<Dataset>, Vec<Dataset>) = datasets.into_iter().partition(|d| d.is_water);
@@ -1013,6 +1022,16 @@ mod tests {
         let d = detect(&files);
         let ave_pair = d.pairs.iter().find(|p| p.metabolite.files == [1]).unwrap();
         assert!(ave_pair.water.is_none(), "{d:#?}");
+    }
+
+    #[test]
+    fn a_flat_folder_without_descriptions_names_no_protocol() {
+        let series = |uid: &str| dicom_series(true, "1.2.3", uid, "subject-01", "");
+        let (a, b, w) = (series("20"), series("21"), series("22"));
+        let files = [nf("flat/press_water_off.dcm", &w), nf("flat/1.dcm", &a), nf("flat/2.dcm", &b)];
+        let d = detect(&files);
+        assert!(d.pairs.iter().all(|p| p.water.is_none()), "{d:#?}");
+        assert_eq!(d.unpaired_water.len(), 1, "{d:#?}");
     }
 
     #[test]
