@@ -4,10 +4,11 @@ import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 import packageJson from '../package.json' with { type: 'json' };
 import { niftiBytes } from './nifti-fixture.js';
 
-const bin = new URL('../bin/sct-webapp.js', import.meta.url).pathname;
+const bin = fileURLToPath(new URL('../bin/sct-webapp.js', import.meta.url));
 
 async function scratch(t) {
   const directory = await mkdtemp(join(tmpdir(), 'sct-webapp-test-'));

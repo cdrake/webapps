@@ -121,14 +121,19 @@ test('composite rewrite preserves vendored component file suffixes before removi
   await prepareParameterRuntimeFixture(repoRoot);
   await mkdir(join(repoRoot, 'runtime-assets'), { recursive: true });
   await mkdir(join(repoRoot, 'packages', 'components', 'src', 'styles'), { recursive: true });
+  await mkdir(join(repoRoot, 'packages', 'components', 'src', 'worker'), { recursive: true });
   await mkdir(join(appDist, 'js'), { recursive: true });
   await mkdir(join(appDist, 'vendor', 'webapp-components', 'src'), { recursive: true });
+  const nestedModule = join(appDist, 'vendor', 'pipeline', 'src', 'segment.js');
+  await mkdir(join(appDist, 'vendor', 'pipeline', 'src'), { recursive: true });
   await writeFile(join(repoRoot, 'runtime-assets', 'manifest.json'), JSON.stringify({
     schema_version: 1,
     families: [],
   }));
   await writeFile(join(repoRoot, 'packages', 'components', 'src', 'index.js'), 'export {};');
+  await writeFile(join(repoRoot, 'packages', 'components', 'src', 'worker', 'index.js'), "export const sharedWorker = 'shared worker';");
   await writeFile(join(repoRoot, 'packages', 'components', 'src', 'styles', 'base.css'), ':root {}');
+  await writeFile(nestedModule, "export { sharedWorker } from '../../webapp-components/src/worker/index.js';");
   await writeFile(join(appDist, 'index.html'), `
     <script type="importmap">{"imports":{"@neurodesk/webapp-components":"./vendor/webapp-components/src/index.js"}}</script>
     <link rel="stylesheet" href="vendor/webapp-components/src/styles/base.css">
@@ -159,6 +164,8 @@ test('composite rewrite preserves vendored component file suffixes before removi
   assert.match(worker, /\.\.\/\.\.\/_runtime\/webapp-components\/0\.1\.2\/src\/index\.js/);
   assert.doesNotMatch(`${html}\n${worker}`, /vendor\/webapp-components/);
   await assert.rejects(access(join(appDist, 'vendor', 'webapp-components')));
+  // A nested package must still import after deduplication removes its sibling component copy.
+  assert.equal((await import(pathToFileURL(nestedModule))).sharedWorker, 'shared worker');
 });
 
 test('declared single-file runtime deduplication rewrites references and removes the real app copy', async t => {
