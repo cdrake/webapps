@@ -1,5 +1,16 @@
 # synthseg
 
+## 0.10.20261016
+
+### Patch Changes
+
+- 6ec972a: Pin the IXI and AHEAD volume norms to neurocontainers commit 347cf6fb, the merge of the 7 T reference into main. The files are byte-identical to the previous pin, so every report is unchanged; only the population data version shown in the report and About changes.
+- Updated dependencies [7443048]
+- Updated dependencies [6ec972a]
+  - @neurodesk/webapp-components@0.14.1
+  - @neurodesk/synthseg@0.10.20261016
+  - @neurodesk/runtime-support@0.6.2
+
 ## 0.10.20261015
 
 ### Minor Changes
@@ -12,8 +23,6 @@
 
 ### Patch Changes
 
-- Keep the raw volume table visible and explain why when the population volume report cannot be computed or its reference cannot be loaded.
-  - @neurodesk/synthseg@0.10.20261015
 - Clarify that the volume report records the DICOM-derived scanner field strength and reference choice alongside age and sex. The Privacy dialog and README now describe these fields accurately; the original sidecar is not included in the downloaded report.
   - @neurodesk/synthseg@0.10.20261015
 - Updated dependencies [c74b26f]
