@@ -216,6 +216,7 @@ export class LesionNetworkMappingApp {
     this.progress = new ProgressManager(Config.PROGRESS_CONFIG);
     this.structuralFile = null;
     this.viewerBaseFile = null;
+    this._viewerBaseLoad = Promise.resolve();
     this.nativeStructuralFile = null;
     this.deepIslesDwiFile = null;
     this.deepIslesAdcFile = null;
@@ -1129,8 +1130,11 @@ export class LesionNetworkMappingApp {
     });
   }
 
+  // Serialised so a slow base load cannot finish after, and replace, a later one.
   async loadViewerBaseVolume(file, options = {}) {
-    await this.viewerController.loadBaseVolume(file, options);
+    const load = this._viewerBaseLoad.then(() => this.viewerController.loadBaseVolume(file, options));
+    this._viewerBaseLoad = load.catch(() => {});
+    await load;
     this.viewerBaseFile = file;
   }
 
@@ -1296,8 +1300,24 @@ export class LesionNetworkMappingApp {
     else this.deepIslesAdcFile = file;
     this.deepIslesSeedFile = null;
     this.deepIslesSeedCompatibleWithNativeT1 = false;
+    await this.showDeepIslesInput(file, kind);
     this.updateOutput(`DeepISLES ${kind === 'dwi' ? 'DWI/TRACE' : 'ADC'} input ready: ${file.name}`);
     return file;
+  }
+
+  // Display only. With a T1 or lesion loaded, the DWI/ADC is an overlay so the
+  // base, and every space check against it, stays the T1 or lesion.
+  async showDeepIslesInput(file, kind) {
+    if (this.maskReviewActive) return;
+    if (!this.structuralFile && !this.lesionFile) {
+      await this.loadViewerBaseVolume(file, { stage: `deepisles-${kind}` });
+    } else {
+      // A pending base load would clear an overlay added now.
+      await this._viewerBaseLoad;
+      if (this.maskReviewActive) return;
+      await this.viewerController.replaceOverlayForStage('deepisles-input', file, 'hot', 0.7, { scalar: true });
+    }
+    this.refreshViewerLayerControls();
   }
 
   async deepIslesSeedCanReviewOnNativeT1() {
@@ -1614,6 +1634,8 @@ export class LesionNetworkMappingApp {
       throw new Error(`'lnm-synthstrip' is ${entry.supportStatus}; cannot run brain extraction.`);
     }
     const { base, name } = splitModelUrl(entry.sourceUrl);
+    // A pending T1 base load must finish so the brain mask overlays the T1.
+    await this._viewerBaseLoad;
 
     this.updateOutput('Starting SynthStrip brain extraction...');
     const brainmaskReady = this._waitForStageData('brainmask');
@@ -1751,12 +1773,15 @@ export class LesionNetworkMappingApp {
       // Render as a translucent overlay over the structural; if the user
       // dropped a lesion manually before the structural, the lesion stage
       // re-renders normally on its next setLesion() call.
+      // The overlay is cosmetic: a render failure must not strand the waiter below.
       if (this.structuralFile) {
-        this.assertViewerOverlaySpace(file, 'Brain mask overlay');
-        this.viewerController
-          .loadOverlay(file, 'green', 0.4, {
-            stage: 'brainmask',
-            visible: this.layerVisible('brainmask')
+        Promise.resolve()
+          .then(() => {
+            this.assertViewerOverlaySpace(file, 'Brain mask overlay');
+            return this.viewerController.loadOverlay(file, 'green', 0.4, {
+              stage: 'brainmask',
+              visible: this.layerVisible('brainmask')
+            });
           })
           .catch(err => this.updateOutput(`Brain mask render error: ${err.message}`));
       }

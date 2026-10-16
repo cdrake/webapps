@@ -61,6 +61,27 @@ function makeApp(manifestForApp) {
   app.messages = [];
   app.updateOutput = message => app.messages.push(message);
   app.ensureManifest = async () => manifestForApp;
+  // The viewer as NiiVue sees it: the base, then overlays in load order.
+  app.viewerStack = [];
+  app.viewerController = {
+    loadBaseVolume: async (file, options) => {
+      await app.viewerDelay?.(file);
+      app.viewerStack = [[file.name, options.stage]];
+      return true;
+    },
+    loadOverlay: async (file, colormap, opacity, options) => {
+      app.viewerStack.push([file.name, options.stage]);
+      return true;
+    },
+    replaceOverlayForStage: async (stage, file) => {
+      app.viewerStack = app.viewerStack.filter(([, s]) => s !== stage);
+      app.viewerStack.push([file.name, stage]);
+      return true;
+    }
+  };
+  app.refreshViewerLayerControls = () => {};
+  app.refreshMaskDrawingControls = () => {};
+  app._autoPromotePipeline = () => {};
   app.executorCalls = [];
   for (const method of ['runDeepIslesInference', 'runInference', 'runSynthStrip', 'runRegistration']) {
     app.executor[method] = async settings => {
@@ -87,7 +108,9 @@ const structural = niftiFile('sub-1_T1w.nii', [8, 8, 8], [[1, 0, 0, -4], [0, 1, 
   const app = makeApp(manifest);
   assert.equal(VOLUME_SPACES.NATIVE_DWI, 'native-dwi');
   assert.equal(await app.setDeepIslesInput('dwi', dwi), dwi);
+  assert.deepEqual(app.viewerStack, [['sub-1_trace.nii', 'deepisles-dwi']], 'with nothing else loaded, DWI/TRACE is shown as the base');
   assert.equal(await app.setDeepIslesInput('adc', adc), adc);
+  assert.deepEqual(app.viewerStack, [['sub-1_adc.nii', 'deepisles-adc']]);
   assert.equal(app.deepIslesDwiFile, dwi);
   assert.equal(app.deepIslesAdcFile, adc);
   const meta = getSpatialMetadata(dwi);
@@ -99,6 +122,76 @@ const structural = niftiFile('sub-1_T1w.nii', [8, 8, 8], [[1, 0, 0, -4], [0, 1, 
   ]);
   await assert.rejects(app.setDeepIslesInput('flair', dwi), /Unknown DeepISLES input kind 'flair'/);
   assert.equal(await app.setDeepIslesInput('dwi', null), null);
+}
+
+// ---- with a T1 loaded, DWI/ADC is an overlay and the T1 stays the base ----
+{
+  const app = makeApp(manifest);
+  await app.setStructural(structural);
+  await app.setDeepIslesInput('dwi', dwi);
+  await app.setDeepIslesInput('adc', adc);
+  assert.deepEqual(app.viewerStack, [['sub-1_T1w.nii', 'structural'], ['sub-1_adc.nii', 'deepisles-input']],
+    'the T1 stays the base and the latest diffusion input replaces the previous overlay');
+  assert.equal(app.getActiveViewerBaseFile(), structural, 'T1-space overlays are still checked against the T1');
+
+  app.maskReviewActive = true;
+  await app.setDeepIslesInput('dwi', dwi);
+  assert.deepEqual(app.viewerStack.at(-1), ['sub-1_adc.nii', 'deepisles-input'], 'mask review leaves the viewer alone');
+  assert.equal(app.deepIslesDwiFile, dwi, 'the input is still stored during mask review');
+}
+
+// ---- a slow DWI base load cannot finish after, and replace, a later T1 ----
+{
+  const app = makeApp(manifest);
+  let release;
+  app.viewerDelay = file => file === dwi ? new Promise(resolve => { release = resolve; }) : null;
+  const dwiLoad = app.setDeepIslesInput('dwi', dwi);
+  await new Promise(resolve => setImmediate(resolve));
+  const t1Load = app.setStructural(structural);
+  release();
+  await Promise.all([dwiLoad, t1Load]);
+  assert.deepEqual(app.viewerStack, [['sub-1_T1w.nii', 'structural']]);
+  assert.equal(app.getActiveViewerBaseFile(), structural);
+
+  // An overlay chosen while the T1 is still loading lands on the T1, not under it.
+  app.viewerDelay = file => file === structural ? new Promise(resolve => { release = resolve; }) : null;
+  const reload = app.setStructural(structural);
+  const adcLoad = app.setDeepIslesInput('adc', adc);
+  await new Promise(resolve => setImmediate(resolve));
+  release();
+  await Promise.all([reload, adcLoad]);
+  assert.deepEqual(app.viewerStack, [['sub-1_T1w.nii', 'structural'], ['sub-1_adc.nii', 'deepisles-input']]);
+}
+
+// ---- brain extraction waits for a pending T1 base, and a render error never strands it ----
+{
+  const app = makeApp(manifest);
+  const synthstrip = manifest.modelAssets.find(entry => entry.id === 'lnm-synthstrip');
+  app.executor.loadVolume = async () => true;
+  app.executor.runSynthStrip = async () => {
+    app.executorCalls.push(['runSynthStrip', app.viewerStack.map(([name]) => name)]);
+    app.handleStageData({ stage: 'brainmask', niftiData: await structural.arrayBuffer() });
+    app.handleStepComplete('brainmask');
+  };
+  await app.setDeepIslesInput('dwi', dwi);
+  let release;
+  app.viewerDelay = file => file === structural ? new Promise(resolve => { release = resolve; }) : null;
+  const t1Load = app.setStructural(structural);
+  const extraction = app.runBrainExtraction();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(app.executorCalls, [], 'SynthStrip waits while the T1 base is still loading');
+  release();
+  await Promise.all([t1Load, extraction]);
+  assert.deepEqual(app.executorCalls, [['runSynthStrip', ['sub-1_T1w.nii']]], 'SynthStrip starts once the T1 is the base');
+  assert.ok(synthstrip, 'the manifest has the SynthStrip asset this check exercises');
+
+  // A brain mask that cannot be drawn on the current base is logged, and the waiter still resolves.
+  app.viewerBaseFile = dwi;
+  const waited = app._waitForStageData('brainmask');
+  app.handleStageData({ stage: 'brainmask', niftiData: await structural.arrayBuffer() });
+  await waited;
+  await new Promise(resolve => setImmediate(resolve));
+  assert.ok(app.messages.some(message => /^Brain mask render error: Brain mask overlay/.test(message)));
 }
 
 // ---- preconditions ----
