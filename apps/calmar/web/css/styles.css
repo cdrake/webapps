@@ -79,18 +79,6 @@ input[type="file"]::file-selector-button:hover { border-color: var(--nd-color-bo
 .param-row label { font-size: 0.78rem; color: var(--nd-color-text); }
 .param-input { margin-top: 2px; }
 .param-value { margin-left: auto; color: var(--nd-color-text-muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
-.threshold-summary { color: var(--nd-color-text-muted); line-height: 1.4; }
-
-.warning {
-  background: var(--nd-color-warning-bg);
-  border: 1px solid var(--nd-color-warning);
-  color: var(--nd-color-warning);
-  border-radius: 6px;
-  padding: var(--nd-space-sm);
-  margin-bottom: var(--nd-space-sm);
-  font-size: 0.75rem;
-  line-height: 1.4;
-}
 
 .overlap-pct-cell {
   /* % label on top, thin magnitude bar underneath; keeps the table at 3 columns. */

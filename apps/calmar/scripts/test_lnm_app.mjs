@@ -269,7 +269,11 @@ for (const [input, load] of [
   app.nativeBrainmaskFile = { name: 'case-a-native-brainmask.nii' };
   app.mniLesionFile = { name: 'case-a-lesion-mni.nii' };
   app.lesionFile = { name: 'lnm-lesion-schaefer400.nii' };
+  const maskDownloads = ['downloadBrainMaskButton', 'downloadLesionMaskButton'].map(id => document.getElementById(id));
+  for (const button of maskDownloads) button.disabled = false;
   await app.setStructural({ name: 'case-b-T1.nii' });
+  assert.deepEqual(maskDownloads.map(button => button.disabled), [true, true],
+    'a new T1 disables the downloads of the masks it dropped');
   assert.equal(app.brainmaskFile, null, 'a new T1 drops the previous brain mask, so brain extraction runs again');
   assert.equal(app.nativeBrainmaskFile, null);
   assert.equal(app.mniLesionFile, null);
@@ -278,11 +282,21 @@ for (const [input, load] of [
   assert.equal(app.overlapResult, null, 'overlap cannot be recomputed from the previous case');
   assert.equal(app.messages.at(-1), 'Drop a lesion mask before computing overlap.');
 
+}
+
+// ---- A lesion the user loaded on the atlas grid survives its overlap and a later T1 ----
+{
+  const app = makeApp();
+  app.viewerController = { setViewType() {}, removeVolumeForStage() {} };
+  app.loadViewerBaseVolume = async () => {};
+  app.refreshViewerLayerControls = () => {};
+  app.refreshMaskDrawingControls = () => {};
+  app._autoPromotePipeline = () => {};
   const atlasLesion = { name: 'atlas-grid-lesion.nii' };
-  app.lesionFile = atlasLesion;
-  app.tagFileSpace(atlasLesion, { space: 'atlas:yeo7-mni2mm', role: 'lesion', sourceStage: 'input' });
+  await app.setLesion(atlasLesion);
+  app.tagFileSpace(atlasLesion, { space: 'atlas:yeo7-mni2mm', role: 'lesion', sourceStage: 'atlas-overlap' });
   await app.setStructural({ name: 'case-c-T1.nii' });
-  assert.equal(app.lesionFile, atlasLesion, 'a lesion the user loaded on the atlas grid stays');
+  assert.equal(app.lesionFile, atlasLesion, 'a lesion the user loaded on the atlas grid stays after overlap retags it');
 }
 
 // ---- duration formatting (hand-worked) ----

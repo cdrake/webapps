@@ -1267,7 +1267,11 @@ export class LesionNetworkMappingApp {
     this.nativeBrainmaskFile = null;
     this.mniLesionFile = null;
     // A lesion the user loaded on its own atlas grid stays; anything else came from the previous T1.
-    if (getSpatialMetadata(this.lesionFile)?.sourceStage !== 'input') this.lesionFile = null;
+    if (this.lesionFile !== this.userLesionFile) this.lesionFile = null;
+    for (const id of ['downloadBrainMaskButton', 'downloadLesionMaskButton']) {
+      const el = document.getElementById(id);
+      if (el) el.disabled = true;
+    }
     this.setMaskReview3DRenderEnabled(true);
     this.clearDerivedResults();
     this._pendingMaskResume = null;
@@ -1342,6 +1346,7 @@ export class LesionNetworkMappingApp {
       });
     }
     this.lesionFile = file;
+    this.userLesionFile = this.structuralFile ? null : file;
     this.clearDerivedResults();
     if (this.structuralFile) {
       this.assertViewerOverlaySpace(file, 'Lesion mask overlay');
@@ -1384,9 +1389,11 @@ export class LesionNetworkMappingApp {
       this.updateOutput('Drop a lesion mask before computing overlap.');
       return;
     }
+    const generation = this._resultsGeneration;
     const atlasOption = this.getAtlasOption();
     this.updateOutput(`Loading ${atlasSpaceName(atlasOption)} atlas...`);
     const atlas = await loadAtlasFromManifest(atlasOption.overlapAtlasAssetId);
+    if (generation !== this._resultsGeneration) return this.discardStaleResult('Overlap');
     const overlapSpace = atlasOptionSpace(atlasOption, 'overlap');
     assertSpace(this.lesionFile, overlapSpace, 'Direct lesion overlap');
     this.updateOutput('Decoding lesion mask...');
@@ -1397,10 +1404,11 @@ export class LesionNetworkMappingApp {
       this.updateOutput(`Lesion dims ${lesion.dims.join('x')} do not match atlas ${atlas.dims.join('x')}. Re-register or warp the mask to the selected atlas first.`);
       return;
     }
+    if (generation !== this._resultsGeneration) return this.discardStaleResult('Overlap');
     this.tagDecodedFileSpace(this.lesionFile, lesion, {
       space: overlapSpace,
       role: 'lesion',
-      sourceStage: 'atlas-overlap'
+      sourceStage: this.lesionFile === this.userLesionFile ? 'input' : 'atlas-overlap'
     });
 
     const lesionBin = binarise(lesion.data);
@@ -2391,12 +2399,14 @@ export class LesionNetworkMappingApp {
   // seven network overlaps; Schaefer weights by parcel overlaps and can
   // lazy-load only the hit parcel channels.
   async runFcNetworkMap() {
-    if (!this.overlapResult) {
+    const generation = this._resultsGeneration;
+    const overlap = this.overlapResult;
+    if (!overlap) {
       this.updateOutput('Run "Compute overlap" first to get atlas weights.');
       return;
     }
-    const atlasOption = this.overlapResult.atlasOption || this.getAtlasOption();
-    if (!this.overlapResult.parcelResult.parcels.length) {
+    const atlasOption = overlap.atlasOption || this.getAtlasOption();
+    if (!overlap.parcelResult.parcels.length) {
       this.updateOutput(`No labelled ${atlasSpaceName(atlasOption)} parcels overlap the lesion; network map skipped.`);
       return;
     }
@@ -2422,7 +2432,7 @@ export class LesionNetworkMappingApp {
     let lastTick = 0;
     let requestedLabels = null;
     if (atlasOption.weightSource === 'parcel') {
-      requestedLabels = this.overlapResult.parcelResult.parcels.map(parcel => String(parcel.label));
+      requestedLabels = overlap.parcelResult.parcels.map(parcel => String(parcel.label));
     }
     const progressOptions = {
       onProgress: ({ received, total, label }) => {
@@ -2455,6 +2465,7 @@ export class LesionNetworkMappingApp {
       atlasOption.overlapAtlasAssetId;
     const networkMapSpace = atlasVolumeSpace(atlasAssetId);
     const atlas = await loadAtlasFromManifest(atlasAssetId);
+    if (generation !== this._resultsGeneration) return this.discardStaleResult('Network map');
     if (!dimsEqual(dims, atlas.dims)) {
       throw new Error(
         `FC pack grid ${dims.join('x')} does not match ${atlasAssetId} atlas ` +
@@ -2464,7 +2475,7 @@ export class LesionNetworkMappingApp {
     const atlasAffine = affineFromHeader(atlas.header);
     const flatAffine = flattenAffine3Rows(atlasAffine);
     const mapped = await mapReviewedLesion({
-      overlap: this.overlapResult,
+      overlap: overlap,
       atlasOption,
       reviewed: true,
       threshold: {
@@ -2485,6 +2496,7 @@ export class LesionNetworkMappingApp {
       }]`
     );
     const fcMap = mapped.data;
+    if (generation !== this._resultsGeneration) return this.discardStaleResult('Network map');
 
     // Stash for Phase 5 re-thresholding without recomputing the FC sum.
     this.networkMapData = fcMap;
@@ -3767,6 +3779,11 @@ export class LesionNetworkMappingApp {
   // viewer, and the threshold UI surface; preserves the structural file
   // (the user usually wants to re-run on the same input) unless `full`
   // is set.
+  discardStaleResult(name) {
+    this.updateOutput(`${name} discarded: the case or atlas changed while it was computed.`, { level: 'warning' });
+    return { stopPipeline: true };
+  }
+
   /** Forget the overlap, network map and threshold derived from the current lesion. */
   clearDerivedResults() {
     this._resultsGeneration += 1;

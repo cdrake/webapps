@@ -3262,6 +3262,22 @@ async function waitForMicrotaskCondition(predicate, message, attempts = 20) {
     );
 
     const nonemptyOverlap = app.overlapResult;
+    {
+      const overlapRun = app.runAtlasOverlap();
+      app.clearDerivedResults();
+      assert.deepEqual(await overlapRun, { stopPipeline: true },
+        'an overlap whose case or atlas changed while it loaded must stop the pipeline');
+      assert.equal(app.overlapResult, null, 'and must not publish its result');
+      assert.match(app._messages.at(-1), /Overlap discarded: the case or atlas changed/);
+
+      app.overlapResult = nonemptyOverlap;
+      const mapRun = app.runFcNetworkMap();
+      app.clearDerivedResults();
+      assert.deepEqual(await mapRun, { stopPipeline: true },
+        'a network map whose case or atlas changed while it loaded must stop the pipeline');
+      assert.equal(app.networkMapData, null, 'and must not publish its map');
+      assert.match(app._messages.at(-1), /Network map discarded: the case or atlas changed/);
+    }
     for (const atlasId of ['yeo7', 'schaefer400']) {
       app.overlapResult = {
         atlasOption: app.atlasOptions.find(option => option.id === atlasId),
