@@ -3277,6 +3277,27 @@ async function waitForMicrotaskCondition(predicate, message, attempts = 20) {
         'a network map whose case or atlas changed while it loaded must stop the pipeline');
       assert.equal(app.networkMapData, null, 'and must not publish its map');
       assert.match(app._messages.at(-1), /Network map discarded: the case or atlas changed/);
+
+      const viewerController = app.viewerController;
+      const updateDirectFunctionProfile = app.updateDirectFunctionProfile;
+      app.updateDirectFunctionProfile = async () => { app.clearDerivedResults(); };
+      assert.deepEqual(await app.runAtlasOverlap(), { stopPipeline: true },
+        'a reset during the functional-profile load must stop the pipeline');
+      app.updateDirectFunctionProfile = updateDirectFunctionProfile;
+
+      const removedStages = [];
+      app.viewerController = {
+        ...viewerController,
+        loadVolumeStack: async () => { app.clearDerivedResults(); },
+        removeVolumeForStage: stage => removedStages.push(stage),
+        getVolumeIndexForStage: () => null
+      };
+      app.overlapResult = nonemptyOverlap;
+      assert.deepEqual(await app.runFcNetworkMap(), { stopPipeline: true },
+        'a reset while the network map is displayed must stop the pipeline');
+      assert.equal(networkDownloadEl.disabled, true, 'and must not re-enable the cleared download');
+      assert.ok(removedStages.includes('network-map'), 'and must remove the stale map from the viewer');
+      app.viewerController = viewerController;
     }
     for (const atlasId of ['yeo7', 'schaefer400']) {
       app.overlapResult = {

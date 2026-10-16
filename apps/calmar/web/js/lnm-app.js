@@ -1431,6 +1431,7 @@ export class LesionNetworkMappingApp {
     );
     if (showResults) this.setViewerView('results');
     await this.updateDirectFunctionProfile();
+    if (generation !== this._resultsGeneration) return this.discardStaleResult('Overlap');
   }
 
   async ensureFunctionProfiles() {
@@ -2523,6 +2524,11 @@ export class LesionNetworkMappingApp {
     });
 
     await this.displayNetworkMapOnAtlasTemplate(atlas, flatAffine);
+    if (generation !== this._resultsGeneration) {
+      try { this.viewerController?.removeVolumeForStage?.('network-map'); }
+      catch (e) { /* non-fatal: stale viewer state is cosmetic */ }
+      return this.discardStaleResult('Network map');
+    }
     const dlBtn = document.getElementById('downloadNetworkMapButton');
     if (dlBtn) dlBtn.disabled = false;
 
