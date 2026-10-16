@@ -696,35 +696,35 @@
         {
           "kind": "cli",
           "platform": "linux-x64",
-          "version": "1.6.20261015",
-          "url": "https://github.com/neurodesk/webapps/releases/download/browserqc-v1.6.20261015/browserqc-1.6.20261015-linux-x64.tar.gz",
-          "sha256": "688116089d61f9a17333acc942d1af19a563b1bc2f38bcb9eaeca1c72aba4bbf",
-          "bytes": 52388901,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/browserqc-v1.6.20261015/browserqc-1.6.20261015-linux-x64.tar.gz.validation.txt",
+          "version": "1.6.20261016",
+          "url": "https://github.com/neurodesk/webapps/releases/download/browserqc-v1.6.20261016/browserqc-1.6.20261016-linux-x64.tar.gz",
+          "sha256": "969981aa51bf2eddf580e2915477ae3d6b84f840da31ed687070d1d091f60a28",
+          "bytes": 52388946,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/browserqc-v1.6.20261016/browserqc-1.6.20261016-linux-x64.tar.gz.validation.txt",
           "modelsIncluded": true,
-          "command": "tar -xzf browserqc-1.6.20261015-linux-x64.tar.gz\n./browserqc-1.6.20261015-linux-x64/browserqc T1w.nii.gz results"
+          "command": "tar -xzf browserqc-1.6.20261016-linux-x64.tar.gz\n./browserqc-1.6.20261016-linux-x64/browserqc T1w.nii.gz results"
         },
         {
           "kind": "cli",
           "platform": "macos-arm64",
-          "version": "1.6.20261015",
-          "url": "https://github.com/neurodesk/webapps/releases/download/browserqc-v1.6.20261015/browserqc-1.6.20261015-macos-arm64.pkg",
-          "sha256": "2a00064396f730c8f2216cc7e22a786ae23730be790c731f60da4e97c2dba2b3",
-          "bytes": 45823396,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/browserqc-v1.6.20261015/browserqc-1.6.20261015-macos-arm64.pkg.validation.txt",
+          "version": "1.6.20261016",
+          "url": "https://github.com/neurodesk/webapps/releases/download/browserqc-v1.6.20261016/browserqc-1.6.20261016-macos-arm64.pkg",
+          "sha256": "5a986fbfa1ad519923f65f911710622110d9fcfa07e6fdc1116740449a8ecdab",
+          "bytes": 45823352,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/browserqc-v1.6.20261016/browserqc-1.6.20261016-macos-arm64.pkg.validation.txt",
           "modelsIncluded": true,
-          "command": "sudo installer -pkg browserqc-1.6.20261015-macos-arm64.pkg -target /\nbrowserqc self-check\nbrowserqc T1w.nii.gz results"
+          "command": "sudo installer -pkg browserqc-1.6.20261016-macos-arm64.pkg -target /\nbrowserqc self-check\nbrowserqc T1w.nii.gz results"
         },
         {
           "kind": "cli",
           "platform": "windows-x64",
-          "version": "1.6.20261015",
-          "url": "https://github.com/neurodesk/webapps/releases/download/browserqc-v1.6.20261015/browserqc-1.6.20261015-windows-x64.zip",
-          "sha256": "73d0090ca48f020a12ceedd18a801f1c27637cffa0c74963601e763171cba0ae",
-          "bytes": 42061062,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/browserqc-v1.6.20261015/browserqc-1.6.20261015-windows-x64.zip.validation.txt",
+          "version": "1.6.20261016",
+          "url": "https://github.com/neurodesk/webapps/releases/download/browserqc-v1.6.20261016/browserqc-1.6.20261016-windows-x64.zip",
+          "sha256": "fbd193c5803225bbb1788719b59bb2f6febd995238aa5dceb2154a9a822da219",
+          "bytes": 42061061,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/browserqc-v1.6.20261016/browserqc-1.6.20261016-windows-x64.zip.validation.txt",
           "modelsIncluded": true,
-          "command": "Expand-Archive -Path .\\browserqc-1.6.20261015-windows-x64.zip -DestinationPath .\n.\\browserqc-1.6.20261015-windows-x64\\browserqc.exe T1w.nii.gz results"
+          "command": "Expand-Archive -Path .\\browserqc-1.6.20261016-windows-x64.zip -DestinationPath .\n.\\browserqc-1.6.20261016-windows-x64\\browserqc.exe T1w.nii.gz results"
         }
       ],
       "containers": []
