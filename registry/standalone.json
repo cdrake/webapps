@@ -605,35 +605,35 @@
         {
           "kind": "cli",
           "platform": "linux-x64",
-          "version": "1.3.20261015",
-          "url": "https://github.com/neurodesk/webapps/releases/download/niimath-v1.3.20261015/niimath-1.3.20261015-linux-x64.tar.gz",
-          "sha256": "c64033501a80a5e2df30ffc75f85a830f37481dcef065e830bce159a582a7e0b",
-          "bytes": 44223566,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/niimath-v1.3.20261015/niimath-1.3.20261015-linux-x64.tar.gz.validation.txt",
+          "version": "1.3.20261016",
+          "url": "https://github.com/neurodesk/webapps/releases/download/niimath-v1.3.20261016/niimath-1.3.20261016-linux-x64.tar.gz",
+          "sha256": "0b11164062650331a19f0a782adfceda58dc3919654124bd9581e2d9bbdd86bc",
+          "bytes": 44223422,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/niimath-v1.3.20261016/niimath-1.3.20261016-linux-x64.tar.gz.validation.txt",
           "modelsIncluded": true,
-          "command": "tar -xzf niimath-1.3.20261015-linux-x64.tar.gz\n./niimath-1.3.20261015-linux-x64/niimath T1.nii.gz -s 2 smooth.nii.gz"
+          "command": "tar -xzf niimath-1.3.20261016-linux-x64.tar.gz\n./niimath-1.3.20261016-linux-x64/niimath T1.nii.gz -s 2 smooth.nii.gz"
         },
         {
           "kind": "cli",
           "platform": "macos-arm64",
-          "version": "1.3.20261015",
-          "url": "https://github.com/neurodesk/webapps/releases/download/niimath-v1.3.20261015/niimath-1.3.20261015-macos-arm64.pkg",
-          "sha256": "8c6f63f2d0b79a80cdba30a02f61141b29822a19a8c8392cc6faa77e36f94f58",
-          "bytes": 37678638,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/niimath-v1.3.20261015/niimath-1.3.20261015-macos-arm64.pkg.validation.txt",
+          "version": "1.3.20261016",
+          "url": "https://github.com/neurodesk/webapps/releases/download/niimath-v1.3.20261016/niimath-1.3.20261016-macos-arm64.pkg",
+          "sha256": "8bcd0eea3317d7c2a083db3aa460f9ae907cac2c0b5da12dbd9a5e3e959c7e8e",
+          "bytes": 37678418,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/niimath-v1.3.20261016/niimath-1.3.20261016-macos-arm64.pkg.validation.txt",
           "modelsIncluded": true,
-          "command": "sudo installer -pkg niimath-1.3.20261015-macos-arm64.pkg -target /\nniimath self-check\nniimath T1.nii.gz -s 2 smooth.nii.gz"
+          "command": "sudo installer -pkg niimath-1.3.20261016-macos-arm64.pkg -target /\nniimath self-check\nniimath T1.nii.gz -s 2 smooth.nii.gz"
         },
         {
           "kind": "cli",
           "platform": "windows-x64",
-          "version": "1.3.20261015",
-          "url": "https://github.com/neurodesk/webapps/releases/download/niimath-v1.3.20261015/niimath-1.3.20261015-windows-x64.zip",
-          "sha256": "7b0124a61f2ef1b450b3637fa60c6b0182c5db46f9fd1ae2715f7a55a3ef6bcc",
-          "bytes": 33958263,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/niimath-v1.3.20261015/niimath-1.3.20261015-windows-x64.zip.validation.txt",
+          "version": "1.3.20261016",
+          "url": "https://github.com/neurodesk/webapps/releases/download/niimath-v1.3.20261016/niimath-1.3.20261016-windows-x64.zip",
+          "sha256": "02f582250c0fafed62dbb491b9747a7ffd0940c468689a0fd6af84d2dac43cb9",
+          "bytes": 33958267,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/niimath-v1.3.20261016/niimath-1.3.20261016-windows-x64.zip.validation.txt",
           "modelsIncluded": true,
-          "command": "Expand-Archive -Path .\\niimath-1.3.20261015-windows-x64.zip -DestinationPath .\n.\\niimath-1.3.20261015-windows-x64\\niimath.exe T1.nii.gz -s 2 smooth.nii.gz"
+          "command": "Expand-Archive -Path .\\niimath-1.3.20261016-windows-x64.zip -DestinationPath .\n.\\niimath-1.3.20261016-windows-x64\\niimath.exe T1.nii.gz -s 2 smooth.nii.gz"
         }
       ],
       "containers": [
