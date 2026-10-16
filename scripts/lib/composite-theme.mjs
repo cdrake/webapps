@@ -127,9 +127,14 @@ export function injectCompositeTheme(html, {
     );
   }
 
-  // Composite builds may receive an already themed standalone app. Update its
-  // resource locations before removing the app-local copies during assembly.
-  for (const [name, value] of [['standalone-href', standaloneHref], ['components-href', componentsHref]]) {
+  // Composite builds may receive an already themed standalone app, restored from a cache keyed
+  // without the registry. Update its registry text and resource locations during assembly.
+  for (const [name, value] of [
+    ['app-title', title],
+    ['app-description', description],
+    ['standalone-href', standaloneHref],
+    ['components-href', componentsHref],
+  ]) {
     if (value === undefined) continue;
     themed = themed.replace(/<script\b[^>]*\bdata-neurodesk-app-shell(?:\s|=|>)[^>]*>/i, tag => {
       const attribute = ` data-${name}="${escapeAttribute(value)}"`;

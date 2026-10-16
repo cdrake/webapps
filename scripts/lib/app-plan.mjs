@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { parse } from 'yaml';
 import { LockfileAnalysisError, lockfileImpact } from './lockfile-impact.mjs';
-import { CATALOG, SITE, reachableFrom } from './workspace-graph.mjs';
+import { CATALOG, INDEPENDENT_CONFIG, SITE, reachableFrom } from './workspace-graph.mjs';
 
 const NON_CODE_PREFIXES = ['docs/', '.changeset/'];
 // Self-contained packages outside apps/ with their own CI job (the homepage
@@ -16,7 +16,7 @@ const INDEPENDENT_CHECK_PATHS = [
   /^[^/]+\.md$/,
   /^\.gitignore$/,
   /^\.github\/workflows\/(?!ci\.yml$)[^/]+$/,
-  /^(?:eslint|knip|stryker)\.config\.m?js$/,
+  INDEPENDENT_CONFIG,
   /^config\/dependency-/,
   /^templates\//,
 ];
@@ -272,4 +272,31 @@ export function changedPathsFromGit({ base, head = 'HEAD', cwd }) {
   } catch {
     return [];
   }
+}
+
+const MANIFEST = /^(?:(?:packages|apps|exes)\/[^/]+\/)?package\.json$|^registry\/(?:offline-assets\.lock\.json|apps\.yml)$|^pnpm-lock\.yaml$/;
+
+// The text of each changed manifest createAppPlan compares, at the merge base
+// (changedPathsFromGit diffs from there) and at head. A manifest missing on
+// either side, or every manifest when there is no merge base, is left out and
+// counts as an ordinary code change.
+export function changedManifests({ base, head = 'HEAD', cwd, changedPaths }) {
+  const manifests = new Map();
+  const paths = changedPaths.filter((path) => MANIFEST.test(path));
+  if (!paths.length) return manifests;
+  const show = (args) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 256 * 1024 * 1024 });
+  let mergeBase;
+  try {
+    mergeBase = show(['merge-base', base, head]).trim();
+  } catch {
+    return manifests;
+  }
+  for (const path of paths) {
+    try {
+      manifests.set(path, { before: show(['show', `${mergeBase}:${path}`]), after: show(['show', `${head}:${path}`]) });
+    } catch {
+      // An added or deleted manifest is a code change like any other.
+    }
+  }
+  return manifests;
 }

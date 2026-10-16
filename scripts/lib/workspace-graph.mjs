@@ -39,6 +39,8 @@ const ROOT_DIRS = ['scripts/', 'test-utils/', 'registry/', 'test/', 'packages/',
 const ROOT_CONFIG = /^[\w.-]+\.(?:[cm]?[jt]s|json)$/;
 const SOURCE_FILE = /\.[cm]?[jt]s$/;
 const ROOT_SCRIPT_CALL = /\bpnpm (?:run )?([\w:-]+)/g;
+// Lint and mutation-testing configs: their own workflows read them, composite-site never does.
+export const INDEPENDENT_CONFIG = /^(?:eslint|knip|stryker)\.config\.m?js$/;
 export const CATALOG = '(catalog)';
 export const SITE = '(site)';
 // The ci.yml jobs that run once per selected app.
@@ -150,7 +152,7 @@ export async function loadConservativeWorkspaceGraph(root) {
   ];
   // Root tool configs (e2e.config.ts, tsconfig.agentic.json) are read implicitly
   // by the commands composite-site runs, so the site build follows them too.
-  const rootConfigs = (await readdir(root)).filter((name) => /^(?:[\w-]+\.config\.[cm]?[jt]s|tsconfig[\w.-]*\.json)$/.test(name));
+  const rootConfigs = (await readdir(root)).filter((name) => /^(?:[\w-]+\.config\.[cm]?[jt]s|tsconfig[\w.-]*\.json)$/.test(name) && !INDEPENDENT_CONFIG.test(name));
   const rootScriptsRun = new Map();
   for (const [node, commands] of entries) {
     const { named, expanded } = namedByCommands(commands, rootScripts);

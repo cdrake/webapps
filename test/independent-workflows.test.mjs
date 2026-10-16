@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { access, readFile, readdir } from 'node:fs/promises';
 import test from 'node:test';
+import { runInNewContext } from 'node:vm';
 import YAML from 'yaml';
 import { loadAppsRegistry } from '../scripts/lib/apps-registry.mjs';
 import { createAppPlan } from '../scripts/lib/app-plan.mjs';
@@ -206,6 +207,15 @@ test('pull requests build the portable packager on linux-x64, except the package
   assert.equal(gate.jobs.packager.uses,'./.github/workflows/node-cli-portable.yml');
   assert.equal(gate.jobs.packager.with.all_platforms_on_pull_request,true);
   assert.deepEqual(JSON.parse(gate.jobs.packager.with.targets).map(entry=>entry.platform).sort(),['linux-x64','macos-arm64','windows-x64']);
+});
+
+test('a push to main never cancels the nightly full-catalog CI run', async () => {
+  const ci = await workflow('ci');
+  const group = (event, ref) => ci.concurrency.group.replace(/\$\{\{(.*?)\}\}/g, (_, expression) => runInNewContext(expression, {
+    github: { workflow: 'ci', event_name: event, ref },
+  }));
+  assert.notEqual(group('schedule', 'refs/heads/main'), group('push', 'refs/heads/main'));
+  assert.notEqual(group('pull_request', 'refs/pull/1/merge'), group('pull_request', 'refs/pull/2/merge'));
 });
 
 test('no pull request trigger depends on contract tests or release-only signing scripts', async () => {
