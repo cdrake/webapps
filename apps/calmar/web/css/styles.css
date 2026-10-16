@@ -74,10 +74,6 @@ input[type="file"]::file-selector-button:hover { border-color: var(--nd-color-bo
 .panel-title-row h3 { flex: 1; min-width: 0; font-size: 0.75rem; text-transform: uppercase; color: var(--nd-color-text-muted); margin: 0; letter-spacing: 0.05em; }
 .results-filter-controls { margin-bottom: var(--nd-space-sm); }
 .threshold-controls { margin-top: var(--nd-space-md); }
-.results-report { display: flex; flex-direction: column; gap: var(--nd-space-lg); max-width: 760px; }
-.results-report section { display: flex; flex-direction: column; gap: var(--nd-space-sm); }
-.results-report section section { margin-top: var(--nd-space-md); }
-.results-report .panel-title-row { margin-bottom: 0; }
 .param-row { margin-bottom: var(--nd-space-sm); }
 .param-row:last-child { margin-bottom: 0; }
 .param-row label { font-size: 0.78rem; color: var(--nd-color-text); }

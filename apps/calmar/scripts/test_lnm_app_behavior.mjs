@@ -3215,6 +3215,25 @@ async function waitForMicrotaskCondition(predicate, message, attempts = 20) {
       app.setViewerView = setViewerView;
       app.updateDirectFunctionProfile = updateDirectFunctionProfile;
     }
+    {
+      const ensureFunctionProfiles = app.ensureFunctionProfiles;
+      const loaded = await ensureFunctionProfiles.call(app);
+      let releaseProfiles;
+      app.ensureFunctionProfiles = () => new Promise(resolve => { releaseProfiles = () => resolve(loaded); });
+      const directTable = globalThis.document.getElementById('directFunctionProfileTable');
+      const render = app.updateDirectFunctionProfile();
+      for (let i = 0; i < 50 && !releaseProfiles; i += 1) await new Promise(resolve => setTimeout(resolve, 0));
+      assert.ok(releaseProfiles, 'the functional profile render must reach the profile load');
+      app.clearDerivedResults();
+      const rowsAfterReset = directTable?.querySelectorAll?.('tbody tr').length ?? 0;
+      releaseProfiles();
+      assert.equal(await render, null, 'a profile load that finishes after a reset must not render');
+      assert.equal(directTable?.querySelectorAll?.('tbody tr').length ?? 0, rowsAfterReset,
+        'a stale profile load must not restore the previous associations');
+      app.ensureFunctionProfiles = ensureFunctionProfiles;
+      await app.runAtlasOverlap();
+      await app._functionalProfileRenderPromise;
+    }
     let fcStack = null;
     app.viewerController = {
       loadVolumeStack: async entries => { fcStack = entries; },
@@ -3273,6 +3292,8 @@ async function waitForMicrotaskCondition(predicate, message, attempts = 20) {
       }
     };
     const bridgeFile = await app.applyRegistrationToLesion();
+    assert.equal(app.overlapResult, null,
+      'a re-warped lesion must drop the overlap computed from the previous lesion');
     assert.equal(bridgeFile.name, 'lnm-lesion-schaefer400.nii',
       'registration bridge output filename must reflect the selected atlas');
     const bridged = decodeNiftiForTest(await bridgeFile.arrayBuffer());

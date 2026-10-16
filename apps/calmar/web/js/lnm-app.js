@@ -253,6 +253,7 @@ export class LesionNetworkMappingApp {
     this.affectedNetworkResult = null;
     this.functionProfiles = null;
     this._functionalProfileRenderPromise = Promise.resolve();
+    this._resultsGeneration = 0;
     this._thresholdPreviewTimer = null;
     this._thresholdPreviewRenderPromise = Promise.resolve();
     this._thresholdPreviewVersion = 0;
@@ -749,25 +750,9 @@ export class LesionNetworkMappingApp {
     const option = getAtlasOptionById(value, this.atlasOptions);
     if (!option) return;
     this.selectedAtlasOptionId = option.id;
-    this.overlapResult = null;
-    this.affectedNetworkResult = null;
-    this.networkMapFile = null;
-    this.networkMapData = null;
-    this.networkMapDims = null;
-    this.networkMapSpacing = null;
-    this.networkMapAffine = null;
-    this.networkMapBaseFile = null;
-    this.networkMapLabelAtlas = null;
-    this.thresholdedMaskFile = null;
-    this.patientThresholdedMaskFile = null;
+    this.clearDerivedResults();
     this.patientAtlasFile = null;
     this.functionProfiles = null;
-    this.clearAffectedNetworkTable();
-    this.clearFunctionProfileTable('directFunctionProfileResults', 'directFunctionProfileTable');
-    const csvButton = document.getElementById('downloadOverlapCsv');
-    if (csvButton) csvButton.disabled = true;
-    this.showAtlasCoverageNote(0, 0);
-    this.refreshResultsView();
     this.updateOutput(`Atlas set to ${option.displayName}.`);
   }
 
@@ -1278,6 +1263,11 @@ export class LesionNetworkMappingApp {
     this.lesionMaskFile = null;
     this.lesionMaskConfirmed = false;
     this.maskReviewActive = false;
+    this.brainmaskFile = null;
+    this.nativeBrainmaskFile = null;
+    this.mniLesionFile = null;
+    // A lesion the user loaded on its own atlas grid stays; anything else came from the previous T1.
+    if (getSpatialMetadata(this.lesionFile)?.sourceStage !== 'input') this.lesionFile = null;
     this.setMaskReview3DRenderEnabled(true);
     this.clearDerivedResults();
     this._pendingMaskResume = null;
@@ -1446,7 +1436,7 @@ export class LesionNetworkMappingApp {
       atlasOption.functionProfileAssetId,
       { manifest }
     );
-    this.functionProfiles = profiles;
+    if (this.getAtlasOption() === atlasOption) this.functionProfiles = profiles;
     return profiles;
   }
 
@@ -1533,7 +1523,9 @@ export class LesionNetworkMappingApp {
       return null;
     }
 
+    const generation = this._resultsGeneration;
     const profiles = await this.ensureFunctionProfiles();
+    if (generation !== this._resultsGeneration) return null;
     const ranked = rankFunctionalTerms(summary, profiles, {
       topN: 8,
       minScore: 0.01
@@ -3566,6 +3558,7 @@ export class LesionNetworkMappingApp {
       dims: atlas.dims,
       affine: atlasAffine
     });
+    this.clearDerivedResults();
     this.lesionFile = atlasFile;
     this.refreshViewerLayerControls();
     this.updateOutput(
@@ -3776,6 +3769,7 @@ export class LesionNetworkMappingApp {
   // is set.
   /** Forget the overlap, network map and threshold derived from the current lesion. */
   clearDerivedResults() {
+    this._resultsGeneration += 1;
     this.overlapResult = null;
     this.affectedNetworkResult = null;
     this.networkMapFile = null;
