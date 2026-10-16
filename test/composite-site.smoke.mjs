@@ -91,7 +91,8 @@ const server = createServer(async (request, response) => {
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 const address = server.address();
 const origin = `http://127.0.0.1:${address.port}`;
-const browser = await chromium.launch({ headless: true });
+// Clear navigator.webdriver so the GA4 checks run; Google requests are stubbed below.
+const browser = await chromium.launch({ headless: true, args: ['--disable-blink-features=AutomationControlled'] });
 const failures = [];
 
 try {

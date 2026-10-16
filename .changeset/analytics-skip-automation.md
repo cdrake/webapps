@@ -2,4 +2,4 @@
 '@neurodesk/analytics': patch
 ---
 
-Skip page views from automated browsers and hosts outside neurodesk.org.
+Skip page views from automated browsers.
