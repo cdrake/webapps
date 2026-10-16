@@ -61,6 +61,14 @@ function makeApp(manifestForApp) {
   app.messages = [];
   app.updateOutput = message => app.messages.push(message);
   app.ensureManifest = async () => manifestForApp;
+  app.viewerLoads = [];
+  app.viewerController = {
+    loadBaseVolume: async (file, options) => {
+      app.viewerLoads.push([file.name, options.stage]);
+      return true;
+    }
+  };
+  app.refreshViewerLayerControls = () => {};
   app.executorCalls = [];
   for (const method of ['runDeepIslesInference', 'runInference', 'runSynthStrip', 'runRegistration']) {
     app.executor[method] = async settings => {
@@ -85,9 +93,19 @@ const structural = niftiFile('sub-1_T1w.nii', [8, 8, 8], [[1, 0, 0, -4], [0, 1, 
 // ---- inputs are tagged as native DWI space ----
 {
   const app = makeApp(manifest);
+  const shown = app.viewerLoads;
   assert.equal(VOLUME_SPACES.NATIVE_DWI, 'native-dwi');
   assert.equal(await app.setDeepIslesInput('dwi', dwi), dwi);
+  assert.equal(app.getActiveViewerBaseFile(), dwi, 'a loaded DWI/TRACE is shown in the viewer');
   assert.equal(await app.setDeepIslesInput('adc', adc), adc);
+  assert.equal(app.getActiveViewerBaseFile(), adc, 'a loaded ADC is shown in the viewer');
+  assert.deepEqual(shown, [['sub-1_trace.nii', 'deepisles-dwi'], ['sub-1_adc.nii', 'deepisles-adc']]);
+
+  app.structuralFile = structural;
+  await app.ensureStructuralViewerBase();
+  assert.equal(app.getActiveViewerBaseFile(), structural, 'T1 stages restore the T1 as the viewer base');
+  assert.deepEqual(shown.at(-1), ['sub-1_T1w.nii', 'structural']);
+  app.structuralFile = null;
   assert.equal(app.deepIslesDwiFile, dwi);
   assert.equal(app.deepIslesAdcFile, adc);
   const meta = getSpatialMetadata(dwi);

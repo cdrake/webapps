@@ -1139,6 +1139,17 @@ export class LesionNetworkMappingApp {
     this.viewerBaseFile = entries[0]?.file || null;
   }
 
+  // Loading DWI/TRACE or ADC shows it as the viewer base; T1 stages need the T1 back.
+  async ensureStructuralViewerBase() {
+    const base = this.viewerBaseFile;
+    if (!base || (base !== this.deepIslesDwiFile && base !== this.deepIslesAdcFile)) return;
+    await this.loadViewerBaseVolume(this.structuralFile, {
+      stage: 'structural',
+      visible: this.layerVisible('structural')
+    });
+    this.refreshViewerLayerControls();
+  }
+
   getActiveViewerBaseFile() {
     return this.viewerBaseFile || this.structuralFile;
   }
@@ -1296,6 +1307,8 @@ export class LesionNetworkMappingApp {
     else this.deepIslesAdcFile = file;
     this.deepIslesSeedFile = null;
     this.deepIslesSeedCompatibleWithNativeT1 = false;
+    await this.loadViewerBaseVolume(file, { stage: `deepisles-${kind}` });
+    this.refreshViewerLayerControls();
     this.updateOutput(`DeepISLES ${kind === 'dwi' ? 'DWI/TRACE' : 'ADC'} input ready: ${file.name}`);
     return file;
   }
@@ -1614,6 +1627,7 @@ export class LesionNetworkMappingApp {
       throw new Error(`'lnm-synthstrip' is ${entry.supportStatus}; cannot run brain extraction.`);
     }
     const { base, name } = splitModelUrl(entry.sourceUrl);
+    await this.ensureStructuralViewerBase();
 
     this.updateOutput('Starting SynthStrip brain extraction...');
     const brainmaskReady = this._waitForStageData('brainmask');
