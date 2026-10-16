@@ -208,11 +208,7 @@ export class LesionNetworkMappingApp {
       onLocationChange: (data) => this.updateViewerInfo(data)
     });
 
-    this.console = new CalmarConsoleOutput('consoleOutput', { copyButtonId: 'copyConsole' });
-    this.technicalConsole = new CalmarConsoleOutput('technicalConsoleOutput', {
-      copyButtonId: 'copyTechnicalConsole',
-      mirrorToBrowserConsole: false
-    });
+    this.technicalConsole = new CalmarConsoleOutput();
     this.progress = new ProgressManager(Config.PROGRESS_CONFIG);
     this.structuralFile = null;
     this.viewerBaseFile = null;
@@ -266,7 +262,6 @@ export class LesionNetworkMappingApp {
     this._mniLesionResolver = null;  // Phase 6: one-shot promise for warp-mask stage data
     this._perfStats = [];            // Phase 19: per-stage runtime markers
     this._perfRunStart = null;       // Phase 19: total runFullPipeline start
-    this._lastClinicalLogMessage = null;
     this._pipelineRunning = false;
     this._lastStageFailure = null;
     this._stageDataResolvers = new Map();
@@ -287,8 +282,7 @@ export class LesionNetworkMappingApp {
     };
 
     this.executor = new CalmarPipeline({
-      updateOutput: (msg) => this.updateOutput(msg),
-      updateDebugOutput: (msg, options) => this.updateDebugOutput(msg, options),
+      updateOutput: (msg, options) => this.updateOutput(msg, options),
       setProgress: (frac, label) => this.handleWorkerProgress(frac, label),
       onStageData: (data) => this.handleStageData(data),
       onStepComplete: (step) => this.handleStepComplete(step),
@@ -297,7 +291,7 @@ export class LesionNetworkMappingApp {
         this.failStatus(`Error: ${msg}`);
         this._rejectPendingWorkerWaits(msg);
       },
-      onInitialized: () => this.updateDebugOutput('Inference worker ready.', { source: 'worker' })
+      onInitialized: () => this.updateOutput('Inference worker ready.', { source: 'worker' })
     });
   }
 
@@ -649,12 +643,6 @@ export class LesionNetworkMappingApp {
       downloadAtlasQcBtn.disabled = true;
       downloadAtlasQcBtn.addEventListener('click', () => this.downloadSubjectSpaceAtlas());
     }
-
-    const copyConsole = document.getElementById('copyConsole');
-    if (copyConsole) copyConsole.addEventListener('click', () => this.console.copyToClipboard());
-
-    const clearConsole = document.getElementById('clearConsole');
-    if (clearConsole) clearConsole.addEventListener('click', () => this.console.clear());
 
     const copyTechnicalConsole = document.getElementById('copyTechnicalConsole');
     if (copyTechnicalConsole) {
@@ -3901,18 +3889,8 @@ export class LesionNetworkMappingApp {
   }
 
   updateOutput(message, options = {}) {
-    const level = this.logLevelForMessage(message, options);
-    this.updateDebugOutput(message, { source: options.source || 'app', level });
-    const clinicalMessage = this.clinicalLogMessage(message, { ...options, level });
-    if (clinicalMessage && clinicalMessage !== this._lastClinicalLogMessage) {
-      this._lastClinicalLogMessage = clinicalMessage;
-      this.console.log(clinicalMessage, { level });
-    }
-  }
-
-  updateDebugOutput(message, options = {}) {
-    this.technicalConsole?.log(message, {
-      level: options.level || this.logLevelForMessage(message, options),
+    this.technicalConsole.log(message, {
+      level: this.logLevelForMessage(message, options),
       source: options.source || 'app'
     });
   }
@@ -3927,85 +3905,6 @@ export class LesionNetworkMappingApp {
       return 'warning';
     }
     return 'info';
-  }
-
-  shouldShowClinicalLog(message, options = {}) {
-    return !!this.clinicalLogMessage(message, options);
-  }
-
-  clinicalLogMessage(message, options = {}) {
-    if (options.audience === 'technical') return null;
-    const text = String(message || '');
-    if (!text) return null;
-    if (options.level === 'error' || options.level === 'warning') return text;
-    if (/^No labelled .+ parcels overlap the lesion\b/.test(text)) {
-      return 'Network map skipped: no labelled atlas parcels overlap the lesion.';
-    }
-
-    const directPatterns = [
-      /^Ready\.$/,
-      /^Atlas set to\b/,
-      /^Drop\b/,
-      /^No\b/,
-      /^Run "Compute overlap" first\b/,
-      /^Compute the network map first\.$/,
-      /^Confirm\b/,
-      /^Review and confirm\b/,
-      /^Review\/edit the lesion mask\b/,
-      /^3D render view is hidden\b/,
-      /^Smooth mask needs\b/,
-      /^Interpolate needs\b/,
-      /^All state cleared\.$/,
-      /^Results cleared\b/,
-      /^Overlap computed for\b/,
-      /^Network map ready\b/,
-      /^Registration QC:/,
-      /^Atlas alignment QC overlay displayed\b/
-    ];
-    if (directPatterns.some(pattern => pattern.test(text))) return text;
-
-    const condensedPatterns = [
-      [/^Structural image ready:/, 'Structural image ready.'],
-      [/^Lesion mask ready:/, 'Lesion mask ready.'],
-      [/^=== Running\b/, 'Analysis started.'],
-      [/^=== Pipeline complete\b/, 'Analysis complete.'],
-      [/^Starting SynthStrip brain extraction\b/, 'Brain extraction started.'],
-      [/^Running brain extraction\b/, 'Brain extraction started.'],
-      [/^Brain mask ready\.$/, 'Brain extraction complete.'],
-      [/^Starting lesion segmentation\b/, 'Lesion segmentation started.'],
-      [/^Automatic lesion seed ready for manual review\.$/, 'Lesion mask ready for review.'],
-      [/^Blank editable lesion mask ready\.$/, 'Lesion mask ready for review.'],
-      [/^Editable lesion seed loaded:/, 'Lesion mask ready for review.'],
-      [/^Manual lesion mask ready for editing:/, 'Lesion mask ready for review.'],
-      [/^Edited lesion mask confirmed\b/, 'Lesion mask confirmed.'],
-      [/^Resuming analysis with confirmed lesion mask\b/, 'Analysis resumed.'],
-      [/^Starting MNI registration\b/, 'MNI registration started.'],
-      [/^Registered T1 QC volume ready\b/, 'MNI registration complete.'],
-      [/^Prealign complete\b/, 'Pre-align complete.'],
-      [/^Loading .+ atlas\.\.\.$/, 'Atlas overlap started.'],
-      [/^Loading .+ group-FC pack\.\.\.$/, 'Connectivity map started.'],
-      [/^Lesion ready on .+ grid for overlap\b/, 'Lesion warped to atlas grid.'],
-      [/^Threshold map projected to patient T1 space\.$/, 'Threshold map projected to patient space.']
-    ];
-    const match = condensedPatterns.find(([pattern]) => pattern.test(text));
-    return match ? match[1] : null;
-  }
-
-  isTechnicalLogMessage(message) {
-    const text = String(message || '');
-    return (
-      /^\[perf\]/.test(text) ||
-      /^Worker step\b/.test(text) ||
-      /^(Initializing ONNX Runtime|ONNX Runtime ready|Inference worker ready)\b/.test(text) ||
-      /^Decoding\b/.test(text) ||
-      /^Downloading .+:\s+\d/.test(text) ||
-      /^Computing network map: weights=/.test(text) ||
-      /^Prepared mask download:/.test(text) ||
-      /download route unavailable|Cached download unavailable/.test(text) ||
-      /^Resampling warped lesion onto\b/.test(text) ||
-      /^Structural already matches lnm-mni160\b/.test(text) ||
-      /already present, skipping\b/.test(text)
-    );
   }
 
   updateViewerInfo(data) {

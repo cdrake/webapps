@@ -427,12 +427,12 @@ test('Phase 2a.1.5 browser smoke: structural T1 -> SynthStrip -> brain mask down
         }
         if (!synthDone) {
           const inPageConsole = await page
-            .$eval('#consoleOutput', el => el ? el.innerText : '(missing)')
+            .$eval('#technicalConsoleOutput', el => el ? el.innerText : '(missing)')
             .catch(() => '(unavailable)');
           throw new Error(
             `Brain mask did not appear within ${SYNTH_TIMEOUT_MS}ms\n` +
             `--- captured browser-console messages ---\n${consoleMessages.slice(-30).join('\n')}\n` +
-            `--- in-page #consoleOutput widget ---\n${inPageConsole}`
+            `--- in-page #technicalConsoleOutput widget ---\n${inPageConsole}`
           );
         }
         t.diagnostic(`SynthStrip elapsed: ${((Date.now() - synthStart) / 1000).toFixed(1)}s`);

@@ -58,16 +58,7 @@ input[type="file"]::file-selector-button:hover { border-color: var(--nd-color-bo
 .mask-approval-copy strong { color: #fff7ed; font-size: 0.9rem; font-weight: 700; white-space: nowrap; }
 .mask-approval-copy span { color: var(--nd-color-text); font-size: 0.78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.console-stack { flex-shrink: 0; background: var(--nd-color-surface); border-top: 1px solid var(--nd-color-border); }
-.console-container { height: 120px; flex-shrink: 0; background: var(--nd-color-surface); display: flex; flex-direction: column; }
-.console-primary-log { height: 118px; }
-.console-header { display: flex; align-items: center; justify-content: space-between; gap: var(--nd-space-md); padding: var(--nd-space-xs) var(--nd-space-md); border-bottom: 1px solid var(--nd-color-border); flex-shrink: 0; }
-.console-line { display: flex; align-items: baseline; gap: var(--nd-space-md); }
-.console-message { color: var(--nd-color-text-muted); min-width: 0; overflow-wrap: anywhere; }
 .console-source { color: var(--nd-color-text-dim); flex-shrink: 0; }
-.console-line-warning .console-message { color: var(--nd-color-warning); }
-.console-line-error .console-message { color: var(--nd-color-error); }
-.console-technical-log { height: 160px; border-top: 1px solid var(--nd-color-border); }
 
 .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 7000; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
 

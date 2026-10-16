@@ -458,28 +458,15 @@
       <span class="viewer-info-label" id="viewerInfoLabel"></span>
     </div>
 
-    <div class="console-stack">
-      <div data-disclosure class="collapsed console-container console-primary-log" id="analysisLog" aria-label="Analysis log">
-        <div class="console-header">
-          <button type="button" class="console-title" data-disclosure-toggle>Analysis log</button>
-          <div class="nd-console-actions">
-            <button type="button" class="nd-console-clear" id="copyConsole" title="Copy to clipboard">Copy</button>
-            <button type="button" class="nd-console-clear" id="clearConsole">Clear</button>
-          </div>
+    <div data-disclosure class="collapsed nd-console-container" id="technicalLogDetails" aria-label="Technical log">
+      <div class="nd-console-header">
+        <button type="button" class="nd-console-title" data-disclosure-toggle>Technical log</button>
+        <div class="nd-console-actions">
+          <button type="button" class="nd-console-clear" id="copyTechnicalConsole" title="Copy technical log to clipboard">Copy</button>
+          <button type="button" class="nd-console-clear" id="clearTechnicalConsole">Clear</button>
         </div>
-        <div class="console-output" id="consoleOutput" data-disclosure-panel></div>
       </div>
-
-      <div data-disclosure class="collapsed console-container console-technical-log" id="technicalLogDetails" aria-label="Technical log: model and processing details">
-        <div class="console-header">
-          <button type="button" class="console-title" data-disclosure-toggle>Technical log</button>
-          <div class="nd-console-actions">
-            <button type="button" class="nd-console-clear" id="copyTechnicalConsole" title="Copy technical log to clipboard">Copy</button>
-            <button type="button" class="nd-console-clear" id="clearTechnicalConsole">Clear</button>
-          </div>
-        </div>
-        <div class="console-output" id="technicalConsoleOutput" data-disclosure-panel></div>
-      </div>
+      <div class="nd-console-output" id="technicalConsoleOutput" data-disclosure-panel></div>
     </div>
   </main>
 

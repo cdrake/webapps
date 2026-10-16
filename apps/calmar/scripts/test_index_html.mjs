@@ -355,27 +355,20 @@ assert.deepEqual(
   assert.equal(banner.querySelector('button'), null, 'confirm and download stay in the toolbar');
 }
 
-// ---- logs: two collapsed consoles below the viewer ----
+// ---- log: one collapsed technical log below the viewer ----
 {
-  const consoles = $$('.app-main .console-stack > [data-disclosure]');
-  assert.deepEqual(ids(consoles), ['analysisLog', 'technicalLogDetails']);
-  assert.ok(precedes($('.viewer-canvas-wrapper'), consoles[0]), 'consoles sit below the viewer');
-  const expected = [
-    ['Analysis log', 'consoleOutput', ['copyConsole', 'clearConsole']],
-    ['Technical log', 'technicalConsoleOutput', ['copyTechnicalConsole', 'clearTechnicalConsole']]
-  ];
-  consoles.forEach((element, i) => {
-    const [title, outputId, actionIds] = expected[i];
-    assert.ok(element.classList.contains('console-container'));
-    assert.ok(element.classList.contains('collapsed'), `${title} is collapsed by default`);
-    const toggle = element.querySelector('.console-header [data-disclosure-toggle]');
-    assert.equal(text(toggle), title);
-    assert.equal(element.querySelector('[data-disclosure-panel]').id, outputId);
-    const actions = Array.from(element.querySelectorAll('.console-header .nd-console-actions button'));
-    assert.deepEqual(ids(actions), actionIds, 'Copy and Clear live in the console header');
-    assert.deepEqual(actions.map(text), ['Copy', 'Clear']);
-  });
-  assert.equal($('.app-sidebar .console-output'), null, 'no second log in the sidebar');
+  const consoles = $$('[data-disclosure-panel].nd-console-output, .console-output, #consoleOutput, #analysisLog');
+  assert.deepEqual(ids(consoles), ['technicalConsoleOutput'], 'the technical log is the only log');
+  const element = $('#technicalLogDetails');
+  assert.equal(element.parentElement, $('.app-main'));
+  assert.ok(precedes($('.viewer-canvas-wrapper'), element), 'the log sits below the viewer');
+  assert.ok(element.classList.contains('nd-console-container'));
+  assert.ok(element.classList.contains('collapsed'), 'the technical log is collapsed by default');
+  assert.equal(text(element.querySelector('.nd-console-header [data-disclosure-toggle]')), 'Technical log');
+  assert.equal(element.querySelector('[data-disclosure-panel]').id, 'technicalConsoleOutput');
+  const actions = Array.from(element.querySelectorAll('.nd-console-header .nd-console-actions button'));
+  assert.deepEqual(ids(actions), ['copyTechnicalConsole', 'clearTechnicalConsole'], 'Copy and Clear live in the console header');
+  assert.deepEqual(actions.map(text), ['Copy', 'Clear']);
 }
 
 // ---- About and Privacy copy ----
@@ -468,7 +461,7 @@ const fire = (id, type) => document.getElementById(id).dispatchEvent(new dom.win
 {
   assert.deepEqual(viewerCalls[0], ['attachTo', 'gl1'], 'NiiVue attaches to the #gl1 canvas');
   assert.equal(text($('#statusText')), 'Drag and drop files');
-  assert.match(text($('#consoleOutput')), /Ready\.$/, 'the analysis log reports readiness');
+  assert.match(text($('#technicalConsoleOutput')), /Ready\.$/, 'the technical log reports readiness');
   assert.equal(text($('#appVersion')), `v${VERSION} (abc1234, feature/x)`, 'header version label');
   assert.equal(text($('#aboutAppVersion')), `v${VERSION} (abc1234, feature/x)`, 'About version label');
   const selector = $('#stepLoadSection .section-content').firstElementChild;
@@ -638,7 +631,7 @@ const fire = (id, type) => document.getElementById(id).dispatchEvent(new dom.win
   assert.equal(app.getAtlasOption().displayName, 'Yeo 7 networks');
   assert.equal(app.overlapResult, null, 'results from the previous atlas are dropped');
   assert.equal($('#downloadOverlapCsv').disabled, true);
-  assert.match(text($('#consoleOutput')), /Atlas set to Yeo 7 networks\.$/);
+  assert.match(text($('#technicalConsoleOutput')), /Atlas set to Yeo 7 networks\.$/);
   $('#atlasSelect').value = 'schaefer400';
   fire('atlasSelect', 'change');
   assert.equal(app.selectedAtlasOptionId, 'schaefer400');
@@ -670,18 +663,18 @@ const fire = (id, type) => document.getElementById(id).dispatchEvent(new dom.win
   }
 }
 
-// ---- consoles: Copy and Clear ----
+// ---- technical log: every message once, Clear empties it ----
 {
+  click('clearTechnicalConsole');
   app.updateOutput('Starting MNI registration (SynthMorph deformable)...');
-  assert.match(text($('#consoleOutput')), /MNI registration started\.$/, 'the analysis log shows the condensed message');
-  assert.match(
-    text($('#technicalConsoleOutput')),
-    /Starting MNI registration \(SynthMorph deformable\)\.\.\.$/,
-    'the technical log keeps the full message'
+  app.updateOutput("Stage 'register' (registration) failed: synthetic failure");
+  const lines = $$('#technicalConsoleOutput .nd-console-line');
+  assert.deepEqual(
+    lines.map(line => line.querySelector('.nd-console-message').textContent),
+    ['Starting MNI registration (SynthMorph deformable)...', "Stage 'register' (registration) failed: synthetic failure"],
+    'a former analysis-log message lands in the technical log once, in full'
   );
-  click('clearConsole');
-  assert.equal(text($('#consoleOutput')), '');
-  assert.notEqual(text($('#technicalConsoleOutput')), '', 'clearing one log leaves the other');
+  assert.ok(lines[1].classList.contains('nd-console-error'), 'a failure keeps its error level');
   click('clearTechnicalConsole');
   assert.equal(text($('#technicalConsoleOutput')), '');
 }
