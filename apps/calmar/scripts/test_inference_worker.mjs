@@ -28,8 +28,7 @@ const { CalmarPipeline } = await import('../web/js/controllers/CalmarPipeline.js
 function makePipeline() {
   const events = { logs: [], errors: [], steps: [], stages: {}, descriptions: {}, completed: 0, volumeInfo: null };
   const pipeline = new CalmarPipeline({
-    updateOutput: () => {},
-    updateDebugOutput: message => events.logs.push(String(message)),
+    updateOutput: message => events.logs.push(String(message)),
     onStageData: data => {
       events.stages[data.stage] = data.niftiData;
       events.descriptions[data.stage] = data.description;

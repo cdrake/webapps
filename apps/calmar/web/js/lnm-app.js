@@ -208,11 +208,7 @@ export class LesionNetworkMappingApp {
       onLocationChange: (data) => this.updateViewerInfo(data)
     });
 
-    this.console = new CalmarConsoleOutput('consoleOutput', { copyButtonId: 'copyConsole' });
-    this.technicalConsole = new CalmarConsoleOutput('technicalConsoleOutput', {
-      copyButtonId: 'copyTechnicalConsole',
-      mirrorToBrowserConsole: false
-    });
+    this.technicalConsole = new CalmarConsoleOutput();
     this.progress = new ProgressManager(Config.PROGRESS_CONFIG);
     this.structuralFile = null;
     this.viewerBaseFile = null;
@@ -235,6 +231,7 @@ export class LesionNetworkMappingApp {
     this.nativeLesionSeedFile = null;
     this.confirmedNativeLesionFile = null;
     this.maskReviewActive = false;
+    this.viewerView = 'multiplanar'; // an image layout, or 'results' for the report in place of the canvas
     this._pendingMaskResume = null;
     this.networkMapFile = null;    // Phase 4: populated by runFcNetworkMap
     this.networkMapData = null;    // Phase 5: raw Float32Array for re-thresholding
@@ -256,6 +253,7 @@ export class LesionNetworkMappingApp {
     this.affectedNetworkResult = null;
     this.functionProfiles = null;
     this._functionalProfileRenderPromise = Promise.resolve();
+    this._resultsGeneration = 0;
     this._thresholdPreviewTimer = null;
     this._thresholdPreviewRenderPromise = Promise.resolve();
     this._thresholdPreviewVersion = 0;
@@ -266,7 +264,6 @@ export class LesionNetworkMappingApp {
     this._mniLesionResolver = null;  // Phase 6: one-shot promise for warp-mask stage data
     this._perfStats = [];            // Phase 19: per-stage runtime markers
     this._perfRunStart = null;       // Phase 19: total runFullPipeline start
-    this._lastClinicalLogMessage = null;
     this._pipelineRunning = false;
     this._lastStageFailure = null;
     this._stageDataResolvers = new Map();
@@ -287,8 +284,7 @@ export class LesionNetworkMappingApp {
     };
 
     this.executor = new CalmarPipeline({
-      updateOutput: (msg) => this.updateOutput(msg),
-      updateDebugOutput: (msg, options) => this.updateDebugOutput(msg, options),
+      updateOutput: (msg, options) => this.updateOutput(msg, options),
       setProgress: (frac, label) => this.handleWorkerProgress(frac, label),
       onStageData: (data) => this.handleStageData(data),
       onStepComplete: (step) => this.handleStepComplete(step),
@@ -297,7 +293,7 @@ export class LesionNetworkMappingApp {
         this.failStatus(`Error: ${msg}`);
         this._rejectPendingWorkerWaits(msg);
       },
-      onInitialized: () => this.updateDebugOutput('Inference worker ready.', { source: 'worker' })
+      onInitialized: () => this.updateOutput('Inference worker ready.', { source: 'worker' })
     });
   }
 
@@ -409,7 +405,9 @@ export class LesionNetworkMappingApp {
     }
 
     const computeButton = document.getElementById('computeOverlapButton');
-    if (computeButton) computeButton.addEventListener('click', () => this.runAtlasOverlap());
+    if (computeButton) {
+      computeButton.addEventListener('click', () => this.runAtlasOverlap({ showResults: true }));
+    }
 
     const csvButton = document.getElementById('downloadOverlapCsv');
     if (csvButton) {
@@ -650,12 +648,6 @@ export class LesionNetworkMappingApp {
       downloadAtlasQcBtn.addEventListener('click', () => this.downloadSubjectSpaceAtlas());
     }
 
-    const copyConsole = document.getElementById('copyConsole');
-    if (copyConsole) copyConsole.addEventListener('click', () => this.console.copyToClipboard());
-
-    const clearConsole = document.getElementById('clearConsole');
-    if (clearConsole) clearConsole.addEventListener('click', () => this.console.clear());
-
     const copyTechnicalConsole = document.getElementById('copyTechnicalConsole');
     if (copyTechnicalConsole) {
       copyTechnicalConsole.addEventListener('click', () => this.technicalConsole.copyToClipboard());
@@ -758,24 +750,9 @@ export class LesionNetworkMappingApp {
     const option = getAtlasOptionById(value, this.atlasOptions);
     if (!option) return;
     this.selectedAtlasOptionId = option.id;
-    this.overlapResult = null;
-    this.affectedNetworkResult = null;
-    this.networkMapFile = null;
-    this.networkMapData = null;
-    this.networkMapDims = null;
-    this.networkMapSpacing = null;
-    this.networkMapAffine = null;
-    this.networkMapBaseFile = null;
-    this.networkMapLabelAtlas = null;
-    this.thresholdedMaskFile = null;
-    this.patientThresholdedMaskFile = null;
+    this.clearDerivedResults();
     this.patientAtlasFile = null;
     this.functionProfiles = null;
-    this.clearAffectedNetworkTable();
-    this.clearFunctionProfileTable('directFunctionProfileResults', 'directFunctionProfileTable');
-    const csvButton = document.getElementById('downloadOverlapCsv');
-    if (csvButton) csvButton.disabled = true;
-    this.showAtlasCoverageNote(0, 0);
     this.updateOutput(`Atlas set to ${option.displayName}.`);
   }
 
@@ -1082,12 +1059,34 @@ export class LesionNetworkMappingApp {
     return this.viewerLayerVisibility[layer] !== false;
   }
 
+  resultsViewAvailable() {
+    return !!this.overlapResult && !this.maskReviewActive;
+  }
+
   setViewerView(view) {
     if (!view) return;
+    if (view === 'results' && !this.resultsViewAvailable()) return;
+    this.viewerView = view;
     document.querySelectorAll('.view-tab[data-view]').forEach(tab => {
       tab.classList.toggle('active', tab.dataset.view === view);
     });
-    this.viewerController?.setViewType?.(view);
+    const report = document.getElementById('resultsReport');
+    if (report) report.hidden = view !== 'results';
+    if (view !== 'results') this.viewerController?.setViewType?.(view);
+  }
+
+  // The report also gives way during mask review: the drawing tools need the canvas.
+  refreshResultsView() {
+    const available = this.resultsViewAvailable();
+    const tab = document.querySelector('.view-tab[data-view="results"]');
+    if (tab) tab.disabled = !available;
+    if (!available && this.viewerView === 'results') this.setViewerView('multiplanar');
+  }
+
+  showResultsView() {
+    document.getElementById('resultsSection')?.classList.remove('collapsed');
+    this.refreshResultsView();
+    this.setViewerView('results');
   }
 
   setMaskReview3DRenderEnabled(enabled) {
@@ -1264,10 +1263,19 @@ export class LesionNetworkMappingApp {
     this.lesionMaskFile = null;
     this.lesionMaskConfirmed = false;
     this.maskReviewActive = false;
+    this.brainmaskFile = null;
+    this.nativeBrainmaskFile = null;
+    this.mniLesionFile = null;
+    // A lesion the user loaded on its own atlas grid stays; anything else came from the previous T1.
+    if (this.lesionFile !== this.userLesionFile) this.lesionFile = null;
+    for (const id of ['downloadBrainMaskButton', 'downloadLesionMaskButton']) {
+      const el = document.getElementById(id);
+      if (el) el.disabled = true;
+    }
     this.setMaskReview3DRenderEnabled(true);
+    this.clearDerivedResults();
     this._pendingMaskResume = null;
     this.hasRegistrationDisplacement = false;
-    this.patientThresholdedMaskFile = null;
     this.patientAtlasFile = null;
     this.registeredT1MniFile = null;
     this.displacementMagnitudeFile = null;
@@ -1338,6 +1346,8 @@ export class LesionNetworkMappingApp {
       });
     }
     this.lesionFile = file;
+    this.userLesionFile = this.structuralFile ? null : file;
+    this.clearDerivedResults();
     if (this.structuralFile) {
       this.assertViewerOverlaySpace(file, 'Lesion mask overlay');
       await this.viewerController.loadOverlay(file, LESION_MASK_COLORMAP_ID, 0.5, {
@@ -1374,14 +1384,16 @@ export class LesionNetworkMappingApp {
     return this.runAtlasOverlap();
   }
 
-  async runAtlasOverlap() {
+  async runAtlasOverlap({ showResults = false } = {}) {
     if (!this.lesionFile) {
       this.updateOutput('Drop a lesion mask before computing overlap.');
       return;
     }
+    const generation = this._resultsGeneration;
     const atlasOption = this.getAtlasOption();
     this.updateOutput(`Loading ${atlasSpaceName(atlasOption)} atlas...`);
     const atlas = await loadAtlasFromManifest(atlasOption.overlapAtlasAssetId);
+    if (generation !== this._resultsGeneration) return this.discardStaleResult('Overlap');
     const overlapSpace = atlasOptionSpace(atlasOption, 'overlap');
     assertSpace(this.lesionFile, overlapSpace, 'Direct lesion overlap');
     this.updateOutput('Decoding lesion mask...');
@@ -1392,16 +1404,18 @@ export class LesionNetworkMappingApp {
       this.updateOutput(`Lesion dims ${lesion.dims.join('x')} do not match atlas ${atlas.dims.join('x')}. Re-register or warp the mask to the selected atlas first.`);
       return;
     }
+    if (generation !== this._resultsGeneration) return this.discardStaleResult('Overlap');
     this.tagDecodedFileSpace(this.lesionFile, lesion, {
       space: overlapSpace,
       role: 'lesion',
-      sourceStage: 'atlas-overlap'
+      sourceStage: this.lesionFile === this.userLesionFile ? 'input' : 'atlas-overlap'
     });
 
     const lesionBin = binarise(lesion.data);
     const { parcelResult, summary, networkSizes } = atlasOverlap(lesionBin, atlas, atlasOption);
     this.overlapResult = { parcelResult, summary, atlas, networkSizes, atlasOption };
     document.getElementById('resultsSection').classList.remove('collapsed');
+    this.refreshResultsView();
     this.showAtlasCoverageNote(parcelResult.voxelsOutsideAtlas, parcelResult.totalLesionVoxels);
 
     this.renderDirectOverlapTable();
@@ -1415,7 +1429,9 @@ export class LesionNetworkMappingApp {
       `${parcelResult.totalLesionVoxels} lesion voxels assigned to ${atlasSpaceName(atlasOption)} ` +
       `labels; ${parcelResult.voxelsOutsideAtlas} unlabeled).`
     );
+    if (showResults) this.setViewerView('results');
     await this.updateDirectFunctionProfile();
+    if (generation !== this._resultsGeneration) return this.discardStaleResult('Overlap');
   }
 
   async ensureFunctionProfiles() {
@@ -1429,7 +1445,7 @@ export class LesionNetworkMappingApp {
       atlasOption.functionProfileAssetId,
       { manifest }
     );
-    this.functionProfiles = profiles;
+    if (this.getAtlasOption() === atlasOption) this.functionProfiles = profiles;
     return profiles;
   }
 
@@ -1495,7 +1511,7 @@ export class LesionNetworkMappingApp {
     if (tableEl) {
       renderOverlapTable(tableEl, displaySummary, {
         colormap: this.getAtlasColormap(atlasOption),
-        percentHeader: '% of map',
+        percentHeader: 'Map %',
         emptyLabel: this.minClusterEmptyLabel('No affected voxels')
       });
     }
@@ -1516,7 +1532,9 @@ export class LesionNetworkMappingApp {
       return null;
     }
 
+    const generation = this._resultsGeneration;
     const profiles = await this.ensureFunctionProfiles();
+    if (generation !== this._resultsGeneration) return null;
     const ranked = rankFunctionalTerms(summary, profiles, {
       topN: 8,
       minScore: 0.01
@@ -2223,6 +2241,7 @@ export class LesionNetworkMappingApp {
     });
     await this.ensureNativeStructuralInfo();
     this.maskReviewActive = true;
+    this.refreshResultsView();
     this.lesionMaskConfirmed = false;
     this.lesionMaskFile = null;
     this.viewerLayerVisibility.brainmask = false;
@@ -2303,6 +2322,7 @@ export class LesionNetworkMappingApp {
     this.lesionMaskConfirmed = true;
     this.maskReviewActive = false;
     this.setMaskReview3DRenderEnabled(true);
+    this.clearDerivedResults();
     this.maskDrawingController.close({ clearDrawing: true });
     await this.renderConfirmedNativeLesionOverlay();
     const btn = document.getElementById('downloadLesionMaskButton');
@@ -2380,12 +2400,14 @@ export class LesionNetworkMappingApp {
   // seven network overlaps; Schaefer weights by parcel overlaps and can
   // lazy-load only the hit parcel channels.
   async runFcNetworkMap() {
-    if (!this.overlapResult) {
+    const generation = this._resultsGeneration;
+    const overlap = this.overlapResult;
+    if (!overlap) {
       this.updateOutput('Run "Compute overlap" first to get atlas weights.');
       return;
     }
-    const atlasOption = this.overlapResult.atlasOption || this.getAtlasOption();
-    if (!this.overlapResult.parcelResult.parcels.length) {
+    const atlasOption = overlap.atlasOption || this.getAtlasOption();
+    if (!overlap.parcelResult.parcels.length) {
       this.updateOutput(`No labelled ${atlasSpaceName(atlasOption)} parcels overlap the lesion; network map skipped.`);
       return;
     }
@@ -2411,7 +2433,7 @@ export class LesionNetworkMappingApp {
     let lastTick = 0;
     let requestedLabels = null;
     if (atlasOption.weightSource === 'parcel') {
-      requestedLabels = this.overlapResult.parcelResult.parcels.map(parcel => String(parcel.label));
+      requestedLabels = overlap.parcelResult.parcels.map(parcel => String(parcel.label));
     }
     const progressOptions = {
       onProgress: ({ received, total, label }) => {
@@ -2444,6 +2466,7 @@ export class LesionNetworkMappingApp {
       atlasOption.overlapAtlasAssetId;
     const networkMapSpace = atlasVolumeSpace(atlasAssetId);
     const atlas = await loadAtlasFromManifest(atlasAssetId);
+    if (generation !== this._resultsGeneration) return this.discardStaleResult('Network map');
     if (!dimsEqual(dims, atlas.dims)) {
       throw new Error(
         `FC pack grid ${dims.join('x')} does not match ${atlasAssetId} atlas ` +
@@ -2453,7 +2476,7 @@ export class LesionNetworkMappingApp {
     const atlasAffine = affineFromHeader(atlas.header);
     const flatAffine = flattenAffine3Rows(atlasAffine);
     const mapped = await mapReviewedLesion({
-      overlap: this.overlapResult,
+      overlap: overlap,
       atlasOption,
       reviewed: true,
       threshold: {
@@ -2474,6 +2497,7 @@ export class LesionNetworkMappingApp {
       }]`
     );
     const fcMap = mapped.data;
+    if (generation !== this._resultsGeneration) return this.discardStaleResult('Network map');
 
     // Stash for Phase 5 re-thresholding without recomputing the FC sum.
     this.networkMapData = fcMap;
@@ -2499,7 +2523,18 @@ export class LesionNetworkMappingApp {
       affine: atlasAffine
     });
 
+    const mapFile = this.networkMapFile;
     await this.displayNetworkMapOnAtlasTemplate(atlas, flatAffine);
+    if (generation !== this._resultsGeneration) {
+      const viewer = this.viewerController;
+      const index = viewer?.getVolumeIndexForStage?.('network-map');
+      // A newer run may already own the network-map stage; remove only this run's overlay.
+      if (index !== null && index !== undefined && viewer.volumeFiles?.[index] === mapFile) {
+        try { viewer.removeVolumeAtIndex(index); }
+        catch (e) { /* non-fatal: stale viewer state is cosmetic */ }
+      }
+      return this.discardStaleResult('Network map');
+    }
     const dlBtn = document.getElementById('downloadNetworkMapButton');
     if (dlBtn) dlBtn.disabled = false;
 
@@ -3441,20 +3476,11 @@ export class LesionNetworkMappingApp {
     this.setMaskReview3DRenderEnabled(true);
     this.lesionFile = null;
     this.mniLesionFile = null;
-    this.overlapResult = null;
-    this.affectedNetworkResult = null;
-    this.networkMapFile = null;
-    this.networkMapData = null;
-    this.thresholdedMaskFile = null;
-    this.patientThresholdedMaskFile = null;
+    this.clearDerivedResults();
     this.patientAtlasFile = null;
     this.registeredT1MniFile = null;
     this.displacementMagnitudeFile = null;
     this.registrationCheckerboardFile = null;
-    this.networkMapBaseFile = null;
-    this.networkMapLabelAtlas = null;
-    this.cancelThresholdPreviewOverlay({ removeOverlay: true });
-    this.clearAffectedNetworkTable();
 
     // Refresh viewer with the aligned T1 + brainmask overlay.
     await this.loadViewerBaseVolume(this.structuralFile, {
@@ -3556,6 +3582,7 @@ export class LesionNetworkMappingApp {
       dims: atlas.dims,
       affine: atlasAffine
     });
+    this.clearDerivedResults();
     this.lesionFile = atlasFile;
     this.refreshViewerLayerControls();
     this.updateOutput(
@@ -3622,8 +3649,10 @@ export class LesionNetworkMappingApp {
       throw err;
     }
     if (!this._pipelineRunning) return status; // cancelled or failed by the worker
-    if (status === 'complete') this.endStatus('Complete');
-    else if (status === 'paused') this.endStatus('Review and confirm the lesion mask');
+    if (status === 'complete') {
+      this.endStatus('Complete');
+      if (this.overlapResult) this.showResultsView();
+    } else if (status === 'paused') this.endStatus('Review and confirm the lesion mask');
     else if (status === 'failed') this.failStatus(this._lastStageFailure || 'Analysis failed');
     else this.endStatus('Stopped');
     return status;
@@ -3762,10 +3791,43 @@ export class LesionNetworkMappingApp {
   // viewer, and the threshold UI surface; preserves the structural file
   // (the user usually wants to re-run on the same input) unless `full`
   // is set.
-  clearResults({ full = false } = {}) {
-    document.getElementById('resultsSection').classList.add('collapsed');
+  discardStaleResult(name) {
+    this.updateOutput(`${name} discarded: the case or atlas changed while it was computed.`, { level: 'warning' });
+    return { stopPipeline: true };
+  }
+
+  /** Forget the overlap, network map and threshold derived from the current lesion. */
+  clearDerivedResults() {
+    this._resultsGeneration += 1;
     this.overlapResult = null;
     this.affectedNetworkResult = null;
+    this.networkMapFile = null;
+    this.networkMapData = null;
+    this.networkMapDims = null;
+    this.networkMapSpacing = null;
+    this.networkMapAffine = null;
+    this.networkMapBaseFile = null;
+    this.networkMapLabelAtlas = null;
+    this.thresholdedMaskFile = null;
+    this.patientThresholdedMaskFile = null;
+    this.cancelThresholdPreviewOverlay({ removeOverlay: true });
+    for (const id of ['downloadOverlapCsv', 'downloadNetworkMapButton', 'downloadThresholdedNetworkMapButton']) {
+      const el = document.getElementById(id);
+      if (el) el.disabled = true;
+    }
+    const tbody = document.querySelector('#networkOverlapTable tbody');
+    if (tbody) tbody.innerHTML = '';
+    this.clearFunctionProfileTable('directFunctionProfileResults', 'directFunctionProfileTable');
+    const summaryEl = document.getElementById('networkThresholdSummary');
+    if (summaryEl) summaryEl.textContent = 'Run analysis first to enable thresholding.';
+    this.clearAffectedNetworkTable();
+    this.showAtlasCoverageNote(0, 0);
+    this.refreshResultsView();
+  }
+
+  clearResults({ full = false } = {}) {
+    document.getElementById('resultsSection').classList.add('collapsed');
+    this.clearDerivedResults();
     this.brainmaskFile = null;
     this.nativeBrainmaskFile = null;
     this.lesionMaskFile = null;
@@ -3776,22 +3838,12 @@ export class LesionNetworkMappingApp {
     this.maskReviewActive = false;
     this.setMaskReview3DRenderEnabled(true);
     this._pendingMaskResume = null;
-    this.networkMapFile = null;
-    this.networkMapData = null;
-    this.networkMapDims = null;
-    this.networkMapSpacing = null;
-    this.networkMapAffine = null;
-    this.networkMapBaseFile = null;
-    this.networkMapLabelAtlas = null;
-    this.thresholdedMaskFile = null;
-    this.patientThresholdedMaskFile = null;
     this.patientAtlasFile = null;
     this.registeredT1MniFile = null;
     this.displacementMagnitudeFile = null;
     this.registrationCheckerboardFile = null;
     this.hasRegistrationDisplacement = false;
     this._thresholdProjectionWarningShown = false;
-    this.cancelThresholdPreviewOverlay({ removeOverlay: true });
     this.mniLesionFile = null;
     if (full) {
       this.structuralFile = null;
@@ -3806,11 +3858,8 @@ export class LesionNetworkMappingApp {
     // Re-disable every download / threshold-output button so the UI matches
     // the cleared state.
     const buttonIds = [
-      'downloadOverlapCsv',
       'downloadBrainMaskButton',
       'downloadLesionMaskButton',
-      'downloadNetworkMapButton',
-      'downloadThresholdedNetworkMapButton',
       'downloadEditedLesionMaskButton',
       'checkAtlasAlignmentButton',
       'showSubjectAtlasButton',
@@ -3820,16 +3869,6 @@ export class LesionNetworkMappingApp {
       const el = document.getElementById(id);
       if (el) el.disabled = true;
     }
-    // Wipe the overlap table body if present.
-    const tbody = document.querySelector('#networkOverlapTable tbody');
-    if (tbody) tbody.innerHTML = '';
-    this.clearFunctionProfileTable('directFunctionProfileResults', 'directFunctionProfileTable');
-    // Reset the threshold summary.
-    const summaryEl = document.getElementById('networkThresholdSummary');
-    if (summaryEl) summaryEl.textContent = 'Compute a network map first to enable thresholding.';
-    this.clearAffectedNetworkTable();
-    // Hide atlas-label coverage note.
-    this.showAtlasCoverageNote(0, 0);
 
     if (this.executor && typeof this.executor.clearResults === 'function') {
       this.executor.clearResults();
@@ -3901,18 +3940,8 @@ export class LesionNetworkMappingApp {
   }
 
   updateOutput(message, options = {}) {
-    const level = this.logLevelForMessage(message, options);
-    this.updateDebugOutput(message, { source: options.source || 'app', level });
-    const clinicalMessage = this.clinicalLogMessage(message, { ...options, level });
-    if (clinicalMessage && clinicalMessage !== this._lastClinicalLogMessage) {
-      this._lastClinicalLogMessage = clinicalMessage;
-      this.console.log(clinicalMessage, { level });
-    }
-  }
-
-  updateDebugOutput(message, options = {}) {
-    this.technicalConsole?.log(message, {
-      level: options.level || this.logLevelForMessage(message, options),
+    this.technicalConsole.log(message, {
+      level: this.logLevelForMessage(message, options),
       source: options.source || 'app'
     });
   }
@@ -3927,85 +3956,6 @@ export class LesionNetworkMappingApp {
       return 'warning';
     }
     return 'info';
-  }
-
-  shouldShowClinicalLog(message, options = {}) {
-    return !!this.clinicalLogMessage(message, options);
-  }
-
-  clinicalLogMessage(message, options = {}) {
-    if (options.audience === 'technical') return null;
-    const text = String(message || '');
-    if (!text) return null;
-    if (options.level === 'error' || options.level === 'warning') return text;
-    if (/^No labelled .+ parcels overlap the lesion\b/.test(text)) {
-      return 'Network map skipped: no labelled atlas parcels overlap the lesion.';
-    }
-
-    const directPatterns = [
-      /^Ready\.$/,
-      /^Atlas set to\b/,
-      /^Drop\b/,
-      /^No\b/,
-      /^Run "Compute overlap" first\b/,
-      /^Compute the network map first\.$/,
-      /^Confirm\b/,
-      /^Review and confirm\b/,
-      /^Review\/edit the lesion mask\b/,
-      /^3D render view is hidden\b/,
-      /^Smooth mask needs\b/,
-      /^Interpolate needs\b/,
-      /^All state cleared\.$/,
-      /^Results cleared\b/,
-      /^Overlap computed for\b/,
-      /^Network map ready\b/,
-      /^Registration QC:/,
-      /^Atlas alignment QC overlay displayed\b/
-    ];
-    if (directPatterns.some(pattern => pattern.test(text))) return text;
-
-    const condensedPatterns = [
-      [/^Structural image ready:/, 'Structural image ready.'],
-      [/^Lesion mask ready:/, 'Lesion mask ready.'],
-      [/^=== Running\b/, 'Analysis started.'],
-      [/^=== Pipeline complete\b/, 'Analysis complete.'],
-      [/^Starting SynthStrip brain extraction\b/, 'Brain extraction started.'],
-      [/^Running brain extraction\b/, 'Brain extraction started.'],
-      [/^Brain mask ready\.$/, 'Brain extraction complete.'],
-      [/^Starting lesion segmentation\b/, 'Lesion segmentation started.'],
-      [/^Automatic lesion seed ready for manual review\.$/, 'Lesion mask ready for review.'],
-      [/^Blank editable lesion mask ready\.$/, 'Lesion mask ready for review.'],
-      [/^Editable lesion seed loaded:/, 'Lesion mask ready for review.'],
-      [/^Manual lesion mask ready for editing:/, 'Lesion mask ready for review.'],
-      [/^Edited lesion mask confirmed\b/, 'Lesion mask confirmed.'],
-      [/^Resuming analysis with confirmed lesion mask\b/, 'Analysis resumed.'],
-      [/^Starting MNI registration\b/, 'MNI registration started.'],
-      [/^Registered T1 QC volume ready\b/, 'MNI registration complete.'],
-      [/^Prealign complete\b/, 'Pre-align complete.'],
-      [/^Loading .+ atlas\.\.\.$/, 'Atlas overlap started.'],
-      [/^Loading .+ group-FC pack\.\.\.$/, 'Connectivity map started.'],
-      [/^Lesion ready on .+ grid for overlap\b/, 'Lesion warped to atlas grid.'],
-      [/^Threshold map projected to patient T1 space\.$/, 'Threshold map projected to patient space.']
-    ];
-    const match = condensedPatterns.find(([pattern]) => pattern.test(text));
-    return match ? match[1] : null;
-  }
-
-  isTechnicalLogMessage(message) {
-    const text = String(message || '');
-    return (
-      /^\[perf\]/.test(text) ||
-      /^Worker step\b/.test(text) ||
-      /^(Initializing ONNX Runtime|ONNX Runtime ready|Inference worker ready)\b/.test(text) ||
-      /^Decoding\b/.test(text) ||
-      /^Downloading .+:\s+\d/.test(text) ||
-      /^Computing network map: weights=/.test(text) ||
-      /^Prepared mask download:/.test(text) ||
-      /download route unavailable|Cached download unavailable/.test(text) ||
-      /^Resampling warped lesion onto\b/.test(text) ||
-      /^Structural already matches lnm-mni160\b/.test(text) ||
-      /already present, skipping\b/.test(text)
-    );
   }
 
   updateViewerInfo(data) {
