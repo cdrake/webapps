@@ -22,6 +22,9 @@ export function initAnalytics(measurementId, environment = {}) {
   if (!isTrackingAllowed(navigatorObject)) {
     return Object.freeze({ enabled: false, reason: 'privacy-signal' });
   }
+  if (navigatorObject?.webdriver === true) {
+    return Object.freeze({ enabled: false, reason: 'automation' });
+  }
 
   const documentObject = environment.document ?? globalThis.document;
   const windowObject = environment.window ?? globalThis.window;

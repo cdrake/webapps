@@ -32,7 +32,9 @@ async function stubInference(page, { deviceMemory = 8, failFirst = false } = {})
 }
 
 async function reconstruct(page) {
+  const before = (await jobs(page)).length;
   await page.locator('#runButton').click();
+  await expect.poll(async () => (await jobs(page)).length).toBeGreaterThan(before);
   await expect(page.locator('#statusText')).toContainText('Surfaces ready');
 }
 

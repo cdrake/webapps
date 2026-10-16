@@ -46,6 +46,14 @@ test('loads GA4 exactly once and configures only an automatic page view', () => 
   }]);
 });
 
+test('does not load Google in automated browsers', () => {
+  const browser = fakeBrowser();
+  const result = analytics.initAnalytics('G-4Z9774J59Y', { ...browser, navigator: { webdriver: true } });
+  assert.deepEqual(result, { enabled: false, reason: 'automation' });
+  assert.equal(browser.scripts.length, 0);
+  assert.equal(browser.window.dataLayer, undefined);
+});
+
 test('rejects malformed measurement ids', () => {
   assert.throws(() => analytics.initAnalytics('not-an-id'), /Invalid GA4 measurement id/);
 });
