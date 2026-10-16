@@ -211,20 +211,46 @@ assert.deepEqual(
 {
   const results = $('#resultsSection');
   assert.ok(results.classList.contains('collapsed'), 'results start collapsed');
+  assert.deepEqual(Array.from(results.querySelectorAll('h3')).map(text), ['Threshold connectivity map'],
+    'the sidebar keeps only the result controls');
+  assert.equal(results.querySelector('table'), null, 'no result table in the sidebar');
+  const minCluster = $('#networkThresholdMinCluster');
+  assert.equal(text($('label[for="networkThresholdMinCluster"]')), 'Min cluster size (voxels)');
+  assert.deepEqual([minCluster.type, minCluster.value, minCluster.min], ['number', '30', '0']);
+  assert.ok(precedes(minCluster, results.querySelector('h3')), 'min cluster size leads the result controls');
+
+  const report = $('#resultsReport');
+  assert.equal(report.parentElement, $('.viewer-canvas-wrapper'), 'the report sits in the viewer, over the canvas');
+  assert.ok(report.classList.contains('nd-viewer-report'));
+  assert.equal(report.hidden, true, 'the report starts hidden');
   assert.deepEqual(
-    Array.from(results.querySelectorAll('h3')).map(text),
+    Array.from(report.querySelectorAll('h3')).map(text),
     [
       'Direct lesion overlap',
       'Functional associations from direct lesion overlap',
-      'Threshold connectivity map',
       'Connectivity-map effects',
       'Functional associations from connectivity-map effects'
     ]
   );
-  const minCluster = $('#networkThresholdMinCluster');
-  assert.equal(text($('label[for="networkThresholdMinCluster"]')), 'Min cluster size (voxels)');
-  assert.deepEqual([minCluster.type, minCluster.value, minCluster.min], ['number', '30', '0']);
-  assert.ok(precedes(minCluster, results.querySelector('h3')), 'min cluster size leads the results it filters');
+  assert.deepEqual(
+    ids(Array.from(report.querySelectorAll('[id]')).filter(element => !element.parentElement.closest('table'))),
+    [
+      'outsideAtlasWarning',
+      'networkOverlapTable',
+      'directFunctionProfileResults',
+      'directFunctionProfileTable',
+      'networkThresholdSummary',
+      'affectedNetworkResults',
+      'affectedNetworkTable',
+      'mapFunctionProfileResults',
+      'mapFunctionProfileTable'
+    ],
+    'the report keeps the result ids in reading order'
+  );
+  for (const table of report.querySelectorAll('table')) {
+    assert.ok(table.classList.contains('nd-data-table'), `#${table.id} uses the shared data table`);
+    assert.ok(table.parentElement.classList.contains('nd-table-scroll'), `#${table.id} scrolls inside .nd-table-scroll`);
+  }
 
   const columns = id => Array.from(document.getElementById(id).querySelectorAll('thead th')).map(text);
   assert.deepEqual(columns('networkOverlapTable'), ['Atlas label', 'Voxels', 'Lesion %']);
@@ -244,10 +270,10 @@ assert.deepEqual(
   assert.equal(symmetric.type, 'checkbox');
   assert.equal(text(symmetric.closest('label')), 'Use |t| magnitude');
 
-  const helpFor = name => text($(`#resultsSection .nd-info-icon[aria-label="${name}"] .nd-info-tooltip`));
-  assert.match(helpFor('Direct lesion overlap help'), /^Atlas labels listed here contain lesion voxels directly\./);
+  const helpFor = name => text($(`:is(#resultsSection, #resultsReport) .nd-info-icon[aria-label="${name}"] .nd-info-tooltip`));
+  assert.match(helpFor('Direct lesion overlap help'), /^Atlas labels listed here contain lesion voxels directly\. Lesion % /);
   assert.match(helpFor('Threshold connectivity map help'), /group-FC weighted t-map derived from the direct lesion-overlap profile/);
-  assert.match(helpFor('Connectivity-map effects help'), /surviving the thresholded connectivity map/);
+  assert.match(helpFor('Connectivity-map effects help'), /surviving the thresholded connectivity map\. Map % /);
   for (const name of ['Direct functional associations help', 'Connectivity-map functional associations help']) {
     assert.equal(
       helpFor(name),
@@ -292,8 +318,9 @@ assert.deepEqual(
   assert.equal($('#gl1').tagName, 'CANVAS');
   assert.deepEqual(
     $$('.view-tabs .view-tab').map(tab => [tab.dataset.view, text(tab)]),
-    [['multiplanar', '3-Plane'], ['axial', 'Axial'], ['coronal', 'Coronal'], ['sagittal', 'Sagittal'], ['render', '3D']]
+    [['multiplanar', '3-Plane'], ['axial', 'Axial'], ['coronal', 'Coronal'], ['sagittal', 'Sagittal'], ['render', '3D'], ['results', 'Results']]
   );
+  assert.equal($('.view-tab[data-view="results"]').disabled, true, 'Results is disabled until there is a result');
   assert.deepEqual(
     $$('[aria-label="Viewer layers"] label').map(element => [element.querySelector('input').id, text(element)]),
     [
@@ -611,6 +638,22 @@ const fire = (id, type) => document.getElementById(id).dispatchEvent(new dom.win
   $('.view-tab[data-view="render"]').dispatchEvent(new dom.window.Event('click'));
   assert.deepEqual($$('.view-tab.active').map(tab => tab.dataset.view), ['multiplanar'], '3D is replaced by 3-plane during review');
   app.maskReviewActive = false;
+
+  // The Results tab swaps the canvas for the report; an image tab swaps it back.
+  calls.length = 0;
+  $('.view-tab[data-view="results"]').dispatchEvent(new dom.window.Event('click'));
+  assert.equal($('#resultsReport').hidden, true, 'no report without a result');
+  app.overlapResult = { summary: { networks: [] } };
+  app.refreshResultsView();
+  assert.equal($('.view-tab[data-view="results"]').disabled, false);
+  $('.view-tab[data-view="results"]').dispatchEvent(new dom.window.Event('click'));
+  assert.equal($('#resultsReport').hidden, false, 'Results shows the report');
+  assert.deepEqual($$('.view-tab.active').map(tab => tab.dataset.view), ['results']);
+  $('.view-tab[data-view="coronal"]').dispatchEvent(new dom.window.Event('click'));
+  assert.equal($('#resultsReport').hidden, true, 'an image tab hides the report');
+  assert.deepEqual(calls, [['setViewType', 'coronal']], 'only image tabs change the NiiVue layout');
+  app.overlapResult = null;
+  app.refreshResultsView();
 
   // Viewer checkboxes.
   viewerCalls.length = 0;

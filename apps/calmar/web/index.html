@@ -184,8 +184,7 @@
         </div>
       </section>
 
-      <!-- 3. RESULTS — overlap table, threshold panel, primary downloads.
-           Intermediate masks (brain / lesion) hidden under Advanced. -->
+      <!-- 3. RESULTS — result filters and downloads; the tables are in the viewer's Results view. -->
       <section class="sidebar-section collapsed" id="resultsSection" data-disclosure>
         <h2 class="section-title"><button type="button" class="section-toggle" data-disclosure-toggle>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-7"/></svg>
@@ -198,46 +197,6 @@
               <input type="number" id="networkThresholdMinCluster" class="param-input" min="0" step="1" value="30">
             </div>
           </div>
-          <div class="panel-title-row">
-            <h3>Direct lesion overlap</h3>
-            <span class="nd-info-icon" aria-label="Direct lesion overlap help" tabindex="0">i
-              <span class="nd-info-tooltip" role="tooltip">
-                Atlas labels listed here contain lesion voxels directly. Lesion % is the share of lesion voxels in each label.
-              </span>
-            </span>
-          </div>
-          <div id="outsideAtlasWarning" class="warning hidden"></div>
-          <table id="networkOverlapTable" class="results-table">
-            <thead>
-              <tr>
-                <th>Atlas label</th>
-                <th>Voxels</th>
-                <th>Lesion %</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-          <div id="directFunctionProfileResults" class="function-profile-results hidden">
-            <div class="panel-title-row">
-              <h3>Functional associations from direct lesion overlap</h3>
-              <span class="nd-info-icon" aria-label="Direct functional associations help" tabindex="0">i
-                <span class="nd-info-tooltip" role="tooltip">
-                  Exploratory literature terms are available for selected atlas labels; they are not clinical predictions.
-                </span>
-              </span>
-            </div>
-            <table id="directFunctionProfileTable" class="results-table function-profile-table">
-              <thead>
-                <tr>
-                  <th>Term</th>
-                  <th>Score</th>
-                  <th>Atlas label drivers</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-
           <div class="threshold-controls" id="thresholdControls">
             <div class="panel-title-row">
               <h3>Threshold connectivity map</h3>
@@ -256,47 +215,6 @@
             </div>
             <div class="param-row">
               <label><input type="checkbox" id="networkThresholdSymmetric" checked> Use |t| magnitude</label>
-            </div>
-            <p class="threshold-summary" id="networkThresholdSummary">Run analysis first to enable thresholding.</p>
-            <div id="affectedNetworkResults" class="affected-network-results hidden">
-              <div class="panel-title-row">
-                <h3>Connectivity-map effects</h3>
-                <span class="nd-info-icon" aria-label="Connectivity-map effects help" tabindex="0">i
-                  <span class="nd-info-tooltip" role="tooltip">
-                    Atlas labels listed here contain voxels surviving the thresholded connectivity map. Map % is the share of thresholded map voxels in each label.
-                  </span>
-                </span>
-              </div>
-              <table id="affectedNetworkTable" class="results-table">
-                <thead>
-                  <tr>
-                    <th>Atlas label</th>
-                    <th>Voxels</th>
-                    <th>Map %</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-              <div id="mapFunctionProfileResults" class="function-profile-results hidden">
-                <div class="panel-title-row">
-                  <h3>Functional associations from connectivity-map effects</h3>
-                  <span class="nd-info-icon" aria-label="Connectivity-map functional associations help" tabindex="0">i
-                    <span class="nd-info-tooltip" role="tooltip">
-                      Exploratory literature terms are available for selected atlas labels; they are not clinical predictions.
-                    </span>
-                  </span>
-                </div>
-                <table id="mapFunctionProfileTable" class="results-table function-profile-table">
-                  <thead>
-                    <tr>
-                      <th>Term</th>
-                      <th>Score</th>
-                      <th>Atlas label drivers</th>
-                    </tr>
-                  </thead>
-                  <tbody></tbody>
-                </table>
-              </div>
             </div>
           </div>
 
@@ -330,6 +248,7 @@
         <button class="view-tab" data-view="coronal">Coronal</button>
         <button class="view-tab" data-view="sagittal">Sagittal</button>
         <button class="view-tab" data-view="render">3D</button>
+        <button class="view-tab" data-view="results" disabled>Results</button>
       </div>
 
       <div class="mask-drawing-toolbar hidden" id="maskDrawingToolbar" aria-label="Lesion mask drawing tools">
@@ -451,6 +370,100 @@
 
     <div class="viewer-canvas-wrapper">
       <canvas id="gl1"></canvas>
+      <section id="resultsReport" class="nd-viewer-report" aria-label="Results" hidden>
+        <div class="results-report">
+          <div id="outsideAtlasWarning" class="warning hidden"></div>
+          <section aria-label="Direct lesion overlap">
+            <div class="panel-title-row">
+              <h3>Direct lesion overlap</h3>
+              <span class="nd-info-icon" aria-label="Direct lesion overlap help" tabindex="0">i
+                <span class="nd-info-tooltip" role="tooltip">
+                  Atlas labels listed here contain lesion voxels directly. Lesion % is the share of lesion voxels in each label.
+                </span>
+              </span>
+            </div>
+            <div class="nd-table-scroll">
+              <table id="networkOverlapTable" class="nd-data-table">
+                <thead>
+                  <tr>
+                    <th>Atlas label</th>
+                    <th class="nd-numeric">Voxels</th>
+                    <th class="nd-numeric">Lesion %</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </section>
+          <section id="directFunctionProfileResults" class="hidden" aria-label="Functional associations from direct lesion overlap">
+            <div class="panel-title-row">
+              <h3>Functional associations from direct lesion overlap</h3>
+              <span class="nd-info-icon" aria-label="Direct functional associations help" tabindex="0">i
+                <span class="nd-info-tooltip" role="tooltip">
+                  Exploratory literature terms are available for selected atlas labels; they are not clinical predictions.
+                </span>
+              </span>
+            </div>
+            <div class="nd-table-scroll">
+              <table id="directFunctionProfileTable" class="nd-data-table">
+                <thead>
+                  <tr>
+                    <th>Term</th>
+                    <th class="nd-numeric">Score</th>
+                    <th>Atlas label drivers</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </section>
+          <p class="threshold-summary" id="networkThresholdSummary">Run analysis first to enable thresholding.</p>
+          <section id="affectedNetworkResults" class="hidden" aria-label="Connectivity-map effects">
+            <div class="panel-title-row">
+              <h3>Connectivity-map effects</h3>
+              <span class="nd-info-icon" aria-label="Connectivity-map effects help" tabindex="0">i
+                <span class="nd-info-tooltip" role="tooltip">
+                  Atlas labels listed here contain voxels surviving the thresholded connectivity map. Map % is the share of thresholded map voxels in each label.
+                </span>
+              </span>
+            </div>
+            <div class="nd-table-scroll">
+              <table id="affectedNetworkTable" class="nd-data-table">
+                <thead>
+                  <tr>
+                    <th>Atlas label</th>
+                    <th class="nd-numeric">Voxels</th>
+                    <th class="nd-numeric">Map %</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <section id="mapFunctionProfileResults" class="hidden" aria-label="Functional associations from connectivity-map effects">
+              <div class="panel-title-row">
+                <h3>Functional associations from connectivity-map effects</h3>
+                <span class="nd-info-icon" aria-label="Connectivity-map functional associations help" tabindex="0">i
+                  <span class="nd-info-tooltip" role="tooltip">
+                    Exploratory literature terms are available for selected atlas labels; they are not clinical predictions.
+                  </span>
+                </span>
+              </div>
+              <div class="nd-table-scroll">
+                <table id="mapFunctionProfileTable" class="nd-data-table">
+                  <thead>
+                    <tr>
+                      <th>Term</th>
+                      <th class="nd-numeric">Score</th>
+                      <th>Atlas label drivers</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </section>
+          </section>
+        </div>
+      </section>
     </div>
 
     <div class="viewer-info">

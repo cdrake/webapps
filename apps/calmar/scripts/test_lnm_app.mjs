@@ -142,6 +142,78 @@ const STAGE_METHODS = [
   assert.equal(document.getElementById('statusText').textContent, 'Review and confirm the lesion mask');
 }
 
+// ---- Results view: the report takes the viewer's place once there is a result ----
+{
+  const app = makeApp();
+  const calls = record(app, STAGE_METHODS);
+  const viewTypes = [];
+  app.viewerController = {
+    setViewType: view => viewTypes.push(view),
+    clearVolumes() {},
+    clearAll() {},
+    removeVolumeForStage() {}
+  };
+  const tab = document.querySelector('.view-tab[data-view="results"]');
+  const report = document.getElementById('resultsReport');
+  const resultsSection = document.getElementById('resultsSection');
+  const activeTabs = () => Array.from(document.querySelectorAll('.view-tab.active')).map(element => element.dataset.view);
+
+  assert.equal(tab.disabled, true, 'Results is disabled before there is a result');
+  app.setViewerView('results');
+  assert.equal(report.hidden, true, 'Results cannot open without a result');
+  assert.deepEqual(activeTabs(), ['multiplanar']);
+
+  app.lesionFile = { name: 'lesion-atlas-grid.nii' };
+  app._lesionFileMatchesAtlasGrid = async () => true;
+  app.runAtlasOverlap = async () => {
+    calls.push(['runAtlasOverlap']);
+    app.overlapResult = { summary: { networks: [] } };
+  };
+  app.selectedPipeline = {
+    id: 'manual',
+    stages: [{ id: 'overlap', module: 'parcel-overlap' }, { id: 'fc', module: 'fc-weighted-sum' }]
+  };
+  resultsSection.classList.add('collapsed');
+  await app.runFullPipeline();
+  assert.deepEqual(calls.map(([method]) => method), ['runAtlasOverlap', 'runFcNetworkMap']);
+  assert.equal(tab.disabled, false, 'a finished analysis enables Results');
+  assert.equal(report.hidden, false, 'a finished analysis opens the report');
+  assert.deepEqual(activeTabs(), ['results']);
+  assert.equal(resultsSection.classList.contains('collapsed'), false, 'and the sidebar Results section');
+  assert.deepEqual(viewTypes, [], 'showing the report leaves the image layout alone');
+
+  app.applyNetworkThreshold();
+  assert.deepEqual(activeTabs(), ['results'], 're-thresholding keeps the current view');
+
+  app.setViewerView('axial');
+  assert.equal(report.hidden, true, 'an image layout hides the report');
+  assert.deepEqual(activeTabs(), ['axial']);
+  assert.deepEqual(viewTypes, ['axial']);
+  app.setViewerView('results');
+  assert.equal(report.hidden, false);
+
+  app.nativeStructuralFile = { name: 'T1.nii' };
+  app.ensureNativeStructuralInfo = async () => {};
+  app.loadViewerBaseVolume = async () => {};
+  app.applyMaskDrawingVisibility = () => {};
+  app.refreshViewerLayerControls = () => {};
+  app.maskDrawingController = { startBlank() {}, ensureDrawing() {}, setTool() {} };
+  await LesionNetworkMappingApp.prototype.startLesionMaskReview.call(app, { blank: true });
+  assert.equal(report.hidden, true, 'mask review shows the image, not the report');
+  assert.equal(tab.disabled, true, 'Results is unavailable while the mask is under review');
+  assert.deepEqual(activeTabs(), ['multiplanar']);
+  app.setViewerView('results');
+  assert.equal(report.hidden, true, 'and cannot be opened during review');
+
+  app.maskReviewActive = false;
+  app.showResultsView();
+  assert.equal(report.hidden, false, 'a resumed analysis returns to the report');
+  app.clearResults({ full: false });
+  assert.equal(tab.disabled, true, 'Start over disables Results again');
+  assert.equal(report.hidden, true, 'and hides the report');
+  assert.deepEqual(activeTabs(), ['multiplanar']);
+}
+
 // ---- duration formatting (hand-worked) ----
 {
   const app = makeApp();

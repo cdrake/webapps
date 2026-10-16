@@ -1698,7 +1698,7 @@ async function waitForMicrotaskCondition(predicate, message, attempts = 20) {
       'affected-network table must become visible after thresholding');
     assert.ok(renderedText.includes('Somatomotor'),
       'affected-network table must render the dominant Yeo network name');
-    assert.ok(renderedText.includes('% of map'),
+    assert.ok(renderedText.includes('Map %'),
       'affected-network table must use map-specific percent copy');
     assert.equal(mapFunctionResultsEl.classList.contains('hidden'), false,
       'connectivity-map functional profile table must become visible after thresholding');
@@ -3163,9 +3163,19 @@ async function waitForMicrotaskCondition(predicate, message, attempts = 20) {
     );
 
     app.lesionFile = makeNiftiFile('lesion-schaefer-grid.nii', lesionAtlasBuffer);
-    await app.runAtlasOverlap();
+    const resultsTab = { disabled: true };
+    const originalQuerySelector = globalThis.document.querySelector;
+    globalThis.document.querySelector = selector => (
+      selector === '.view-tab[data-view="results"]' ? resultsTab : originalQuerySelector(selector)
+    );
+    try {
+      await app.runAtlasOverlap();
+    } finally {
+      globalThis.document.querySelector = originalQuerySelector;
+    }
     assert.equal(resultsSection.classList.contains('collapsed'), false,
       'successful overlap must reveal the Results panel');
+    assert.equal(resultsTab.disabled, false, 'a computed overlap enables the Results view');
     assert.deepEqual(
       app.overlapResult.summary.networks.map(row => row.network),
       ['LH_Vis_1', 'RH_Default_2'],

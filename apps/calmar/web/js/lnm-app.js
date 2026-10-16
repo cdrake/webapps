@@ -231,6 +231,7 @@ export class LesionNetworkMappingApp {
     this.nativeLesionSeedFile = null;
     this.confirmedNativeLesionFile = null;
     this.maskReviewActive = false;
+    this.viewerView = 'multiplanar'; // an image layout, or 'results' for the report in place of the canvas
     this._pendingMaskResume = null;
     this.networkMapFile = null;    // Phase 4: populated by runFcNetworkMap
     this.networkMapData = null;    // Phase 5: raw Float32Array for re-thresholding
@@ -403,7 +404,13 @@ export class LesionNetworkMappingApp {
     }
 
     const computeButton = document.getElementById('computeOverlapButton');
-    if (computeButton) computeButton.addEventListener('click', () => this.runAtlasOverlap());
+    if (computeButton) {
+      computeButton.addEventListener('click', async () => {
+        const previous = this.overlapResult;
+        await this.runAtlasOverlap();
+        if (this.overlapResult && this.overlapResult !== previous) this.setViewerView('results');
+      });
+    }
 
     const csvButton = document.getElementById('downloadOverlapCsv');
     if (csvButton) {
@@ -764,6 +771,7 @@ export class LesionNetworkMappingApp {
     const csvButton = document.getElementById('downloadOverlapCsv');
     if (csvButton) csvButton.disabled = true;
     this.showAtlasCoverageNote(0, 0);
+    this.refreshResultsView();
     this.updateOutput(`Atlas set to ${option.displayName}.`);
   }
 
@@ -1070,12 +1078,34 @@ export class LesionNetworkMappingApp {
     return this.viewerLayerVisibility[layer] !== false;
   }
 
+  resultsViewAvailable() {
+    return !!this.overlapResult && !this.maskReviewActive;
+  }
+
   setViewerView(view) {
     if (!view) return;
+    if (view === 'results' && !this.resultsViewAvailable()) return;
+    this.viewerView = view;
     document.querySelectorAll('.view-tab[data-view]').forEach(tab => {
       tab.classList.toggle('active', tab.dataset.view === view);
     });
-    this.viewerController?.setViewType?.(view);
+    const report = document.getElementById('resultsReport');
+    if (report) report.hidden = view !== 'results';
+    if (view !== 'results') this.viewerController?.setViewType?.(view);
+  }
+
+  // The report also gives way during mask review: the drawing tools need the canvas.
+  refreshResultsView() {
+    const available = this.resultsViewAvailable();
+    const tab = document.querySelector('.view-tab[data-view="results"]');
+    if (tab) tab.disabled = !available;
+    if (!available && this.viewerView === 'results') this.setViewerView('multiplanar');
+  }
+
+  showResultsView() {
+    document.getElementById('resultsSection')?.classList.remove('collapsed');
+    this.refreshResultsView();
+    this.setViewerView('results');
   }
 
   setMaskReview3DRenderEnabled(enabled) {
@@ -1253,6 +1283,7 @@ export class LesionNetworkMappingApp {
     this.lesionMaskConfirmed = false;
     this.maskReviewActive = false;
     this.setMaskReview3DRenderEnabled(true);
+    this.refreshResultsView();
     this._pendingMaskResume = null;
     this.hasRegistrationDisplacement = false;
     this.patientThresholdedMaskFile = null;
@@ -1390,6 +1421,7 @@ export class LesionNetworkMappingApp {
     const { parcelResult, summary, networkSizes } = atlasOverlap(lesionBin, atlas, atlasOption);
     this.overlapResult = { parcelResult, summary, atlas, networkSizes, atlasOption };
     document.getElementById('resultsSection').classList.remove('collapsed');
+    this.refreshResultsView();
     this.showAtlasCoverageNote(parcelResult.voxelsOutsideAtlas, parcelResult.totalLesionVoxels);
 
     this.renderDirectOverlapTable();
@@ -1483,7 +1515,7 @@ export class LesionNetworkMappingApp {
     if (tableEl) {
       renderOverlapTable(tableEl, displaySummary, {
         colormap: this.getAtlasColormap(atlasOption),
-        percentHeader: '% of map',
+        percentHeader: 'Map %',
         emptyLabel: this.minClusterEmptyLabel('No affected voxels')
       });
     }
@@ -2211,6 +2243,7 @@ export class LesionNetworkMappingApp {
     });
     await this.ensureNativeStructuralInfo();
     this.maskReviewActive = true;
+    this.refreshResultsView();
     this.lesionMaskConfirmed = false;
     this.lesionMaskFile = null;
     this.viewerLayerVisibility.brainmask = false;
@@ -2291,6 +2324,7 @@ export class LesionNetworkMappingApp {
     this.lesionMaskConfirmed = true;
     this.maskReviewActive = false;
     this.setMaskReview3DRenderEnabled(true);
+    this.refreshResultsView();
     this.maskDrawingController.close({ clearDrawing: true });
     await this.renderConfirmedNativeLesionOverlay();
     const btn = document.getElementById('downloadLesionMaskButton');
@@ -3430,6 +3464,7 @@ export class LesionNetworkMappingApp {
     this.lesionFile = null;
     this.mniLesionFile = null;
     this.overlapResult = null;
+    this.refreshResultsView();
     this.affectedNetworkResult = null;
     this.networkMapFile = null;
     this.networkMapData = null;
@@ -3610,8 +3645,10 @@ export class LesionNetworkMappingApp {
       throw err;
     }
     if (!this._pipelineRunning) return status; // cancelled or failed by the worker
-    if (status === 'complete') this.endStatus('Complete');
-    else if (status === 'paused') this.endStatus('Review and confirm the lesion mask');
+    if (status === 'complete') {
+      this.endStatus('Complete');
+      if (this.overlapResult) this.showResultsView();
+    } else if (status === 'paused') this.endStatus('Review and confirm the lesion mask');
     else if (status === 'failed') this.failStatus(this._lastStageFailure || 'Analysis failed');
     else this.endStatus('Stopped');
     return status;
@@ -3818,6 +3855,7 @@ export class LesionNetworkMappingApp {
     this.clearAffectedNetworkTable();
     // Hide atlas-label coverage note.
     this.showAtlasCoverageNote(0, 0);
+    this.refreshResultsView();
 
     if (this.executor && typeof this.executor.clearResults === 'function') {
       this.executor.clearResults();
