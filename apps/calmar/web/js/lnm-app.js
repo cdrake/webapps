@@ -3790,7 +3790,7 @@ export class LesionNetworkMappingApp {
     if (tbody) tbody.innerHTML = '';
     this.clearFunctionProfileTable('directFunctionProfileResults', 'directFunctionProfileTable');
     const summaryEl = document.getElementById('networkThresholdSummary');
-    if (summaryEl) summaryEl.textContent = 'Compute a network map first to enable thresholding.';
+    if (summaryEl) summaryEl.textContent = 'Run analysis first to enable thresholding.';
     this.clearAffectedNetworkTable();
     this.showAtlasCoverageNote(0, 0);
     this.refreshResultsView();

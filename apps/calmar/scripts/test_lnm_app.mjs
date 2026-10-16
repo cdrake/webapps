@@ -401,7 +401,7 @@ for (const [input, load] of [
   assert.ok(results.classList.contains('collapsed'), 'the results section collapses');
   assert.equal(document.querySelector('#networkOverlapTable tbody').children.length, 0, 'the overlap table is emptied');
   assert.ok(document.getElementById('outsideAtlasWarning').classList.contains('hidden'));
-  assert.equal(document.getElementById('networkThresholdSummary').textContent, 'Compute a network map first to enable thresholding.');
+  assert.equal(document.getElementById('networkThresholdSummary').textContent, 'Run analysis first to enable thresholding.');
   assert.equal(executorCleared, 1, 'worker results are dropped too');
   assert.deepEqual(viewer, ['remove threshold-preview', 'base T1.nii'], 'the viewer goes back to the structural image');
   assert.equal(app.messages.at(-1), 'Results cleared (structural retained).');
