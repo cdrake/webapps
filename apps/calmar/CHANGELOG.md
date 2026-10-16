@@ -1,5 +1,14 @@
 # calmar
 
+## 0.6.20261016
+
+### Patch Changes
+
+- 311a3fa: Use the shared info icon, so help icons stay round on phones instead of stretching to the 44 px touch height, and keep the Run analysis icon inside the sidebar.
+- Updated dependencies [7443048]
+  - @neurodesk/webapp-components@0.14.1
+  - @neurodesk/calmar@0.6.20261016
+
 ## 0.6.20261015
 
 ### Patch Changes

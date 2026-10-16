@@ -1,5 +1,12 @@
 # @neurodesk/runtime-support
 
+## 0.6.2
+
+### Patch Changes
+
+- Updated dependencies [7443048]
+  - @neurodesk/webapp-components@0.14.1
+
 ## 0.6.1
 
 ### Patch Changes
