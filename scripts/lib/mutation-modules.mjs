@@ -39,6 +39,20 @@ export const modules = [
     files: ['test/lockfile-impact.test.mjs'],
     command: 'node --test test/lockfile-impact.test.mjs',
   },
+  {
+    id: 'carotid-series',
+    file: 'packages/carotid-flow/src/series.js',
+    mutate: 'packages/carotid-flow/src/series.js',
+    files: ['packages/carotid-flow/package.json', 'packages/carotid-flow/src/carotid.js', 'packages/carotid-flow/src/outputs.js', 'packages/carotid-flow/test/series-outputs.test.js'],
+    command: 'node --test packages/carotid-flow/test/series-outputs.test.js',
+  },
+  {
+    id: 'carotid-outputs',
+    file: 'packages/carotid-flow/src/outputs.js',
+    mutate: 'packages/carotid-flow/src/outputs.js',
+    files: ['packages/carotid-flow/package.json', 'packages/carotid-flow/src/carotid.js', 'packages/carotid-flow/src/series.js', 'packages/carotid-flow/test/series-outputs.test.js'],
+    command: 'node --test packages/carotid-flow/test/series-outputs.test.js',
+  },
 ];
 
 // The PR canary: tableName, a small naming function in the first module.
