@@ -2523,10 +2523,16 @@ export class LesionNetworkMappingApp {
       affine: atlasAffine
     });
 
+    const mapFile = this.networkMapFile;
     await this.displayNetworkMapOnAtlasTemplate(atlas, flatAffine);
     if (generation !== this._resultsGeneration) {
-      try { this.viewerController?.removeVolumeForStage?.('network-map'); }
-      catch (e) { /* non-fatal: stale viewer state is cosmetic */ }
+      const viewer = this.viewerController;
+      const index = viewer?.getVolumeIndexForStage?.('network-map');
+      // A newer run may already own the network-map stage; remove only this run's overlay.
+      if (index !== null && index !== undefined && viewer.volumeFiles?.[index] === mapFile) {
+        try { viewer.removeVolumeAtIndex(index); }
+        catch (e) { /* non-fatal: stale viewer state is cosmetic */ }
+      }
       return this.discardStaleResult('Network map');
     }
     const dlBtn = document.getElementById('downloadNetworkMapButton');

@@ -3285,18 +3285,29 @@ async function waitForMicrotaskCondition(predicate, message, attempts = 20) {
         'a reset during the functional-profile load must stop the pipeline');
       app.updateDirectFunctionProfile = updateDirectFunctionProfile;
 
-      const removedStages = [];
-      app.viewerController = {
-        ...viewerController,
-        loadVolumeStack: async () => { app.clearDerivedResults(); },
-        removeVolumeForStage: stage => removedStages.push(stage),
-        getVolumeIndexForStage: () => null
-      };
-      app.overlapResult = nonemptyOverlap;
-      assert.deepEqual(await app.runFcNetworkMap(), { stopPipeline: true },
-        'a reset while the network map is displayed must stop the pipeline');
-      assert.equal(networkDownloadEl.disabled, true, 'and must not re-enable the cleared download');
-      assert.ok(removedStages.includes('network-map'), 'and must remove the stale map from the viewer');
+      for (const newerRunOwnsStage of [false, true]) {
+        const removed = [];
+        const stale = {
+          ...viewerController,
+          volumeFiles: [],
+          loadVolumeStack: async entries => {
+            stale.volumeFiles = entries.map(entry => entry.file);
+            if (newerRunOwnsStage) stale.volumeFiles[entries.length - 1] = { name: 'newer-run-map.nii' };
+            app.clearDerivedResults();
+          },
+          getVolumeIndexForStage: stage => (stage === 'network-map' ? stale.volumeFiles.length - 1 : null),
+          removeVolumeAtIndex: index => removed.push(stale.volumeFiles[index].name)
+        };
+        app.viewerController = stale;
+        app.overlapResult = nonemptyOverlap;
+        assert.deepEqual(await app.runFcNetworkMap(), { stopPipeline: true },
+          'a reset while the network map is displayed must stop the pipeline');
+        assert.equal(networkDownloadEl.disabled, true, 'and must not re-enable the cleared download');
+        assert.deepEqual(removed, newerRunOwnsStage ? [] : ['lnm-network-map.nii'],
+          newerRunOwnsStage
+            ? 'a stale run must leave a newer run\'s network map in place'
+            : 'a stale run must remove its own network map from the viewer');
+      }
       app.viewerController = viewerController;
     }
     for (const atlasId of ['yeo7', 'schaefer400']) {
