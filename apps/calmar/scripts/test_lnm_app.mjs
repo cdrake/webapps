@@ -214,6 +214,41 @@ const STAGE_METHODS = [
   assert.deepEqual(activeTabs(), ['multiplanar']);
 }
 
+// ---- A new input drops the previous patient's results ----
+for (const [input, load] of [
+  ['structural T1', app => app.setStructural({ name: 'case-b-T1.nii' })],
+  ['lesion mask', app => app.setLesion({ name: 'case-b-lesion.nii' })]
+]) {
+  const app = makeApp();
+  app.viewerController = { setViewType() {}, removeVolumeForStage() {}, loadOverlay: async () => {} };
+  app.loadViewerBaseVolume = async () => {};
+  app.refreshViewerLayerControls = () => {};
+  app.refreshMaskDrawingControls = () => {};
+  app.assertViewerOverlaySpace = () => {};
+  app.tagFileSpace = () => {};
+  app._autoPromotePipeline = () => {};
+  const tab = document.querySelector('.view-tab[data-view="results"]');
+  const report = document.getElementById('resultsReport');
+  const tbody = document.querySelector('#networkOverlapTable tbody');
+  const csv = document.getElementById('downloadOverlapCsv');
+  app.overlapResult = { summary: { networks: [{ network: 'Visual' }] } };
+  app.networkMapData = new Float32Array(8);
+  app.thresholdedMaskFile = { name: 'case-a-threshold.nii' };
+  tbody.innerHTML = '<tr><td>case A</td></tr>';
+  csv.disabled = false;
+  app.showResultsView();
+  assert.equal(report.hidden, false);
+
+  await load(app);
+  assert.equal(app.overlapResult, null, `loading a new ${input} drops the previous overlap`);
+  assert.equal(app.networkMapData, null, `loading a new ${input} drops the previous network map`);
+  assert.equal(app.thresholdedMaskFile, null, `loading a new ${input} drops the previous threshold mask`);
+  assert.equal(tbody.children.length, 0, `loading a new ${input} empties the overlap table`);
+  assert.equal(csv.disabled, true, `loading a new ${input} disables the previous CSV download`);
+  assert.equal(tab.disabled, true, `loading a new ${input} disables Results`);
+  assert.equal(report.hidden, true, `loading a new ${input} hides the previous report`);
+}
+
 // ---- duration formatting (hand-worked) ----
 {
   const app = makeApp();

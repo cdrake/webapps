@@ -569,7 +569,7 @@ const fire = (id, type) => document.getElementById(id).dispatchEvent(new dom.win
   await expectClick('runRegistrationButton', [['runRegistration']]);
   await expectClick('checkAtlasAlignmentButton', [['showRegistrationQc']]);
   await expectClick('applyRegistrationToLesionButton', [['applyRegistrationToLesion']]);
-  await expectClick('computeOverlapButton', [['runAtlasOverlap']]);
+  await expectClick('computeOverlapButton', [['runAtlasOverlap', { showResults: true }]]);
   await expectClick('computeNetworkMapButton', [['runFcNetworkMap']]);
   await expectClick('downloadOverlapCsv', [['exportCsv']]);
   await expectClick('downloadNetworkMapButton', [['downloadNetworkMap']]);

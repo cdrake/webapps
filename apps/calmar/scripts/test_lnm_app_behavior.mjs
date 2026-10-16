@@ -407,8 +407,6 @@ async function waitForMicrotaskCondition(predicate, message, attempts = 20) {
   const overlayCalls = [];
   const renderedStacks = [];
   app.structuralFile = { name: 'subject-t1.nii' };
-  app.networkMapFile = { name: 'network-map.nii' };
-  app.networkMapSpacing = [1, 1, 1];
   app.viewerController = {
     loadOverlay: async (...args) => { overlayCalls.push(args); },
     loadVolumeStack: async (entries) => { renderedStacks.push(entries); }
@@ -416,6 +414,8 @@ async function waitForMicrotaskCondition(predicate, message, attempts = 20) {
   const lesion = { name: 'manual-lesion.nii' };
 
   await app.setLesion(lesion);
+  app.networkMapFile = { name: 'network-map.nii' };
+  app.networkMapSpacing = [1, 1, 1];
   assert.equal(overlayCalls.at(-1)[1], LESION_MASK_COLORMAP_ID,
     'manual lesion overlays must render with the blue lesion colormap');
 
@@ -1164,6 +1164,8 @@ async function waitForMicrotaskCondition(predicate, message, attempts = 20) {
     spacing: [1, 1, 1]
   };
   app.resumePipelineAfterMaskConfirmation = async () => { resumed = true; };
+  app.overlapResult = { summary: { networks: [{ network: 'previous mask' }] } };
+  app.networkMapData = new Float32Array(8);
 
   let confirmed;
   let decoded;
@@ -1189,6 +1191,10 @@ async function waitForMicrotaskCondition(predicate, message, attempts = 20) {
     'confirming must mark the lesion mask as user-approved');
   assert.equal(app.maskReviewActive, false,
     'confirming must leave mask-review mode');
+  assert.equal(app.overlapResult, null,
+    'confirming a new mask must drop the overlap computed from the previous mask');
+  assert.equal(app.networkMapData, null,
+    'confirming a new mask must drop the network map computed from the previous mask');
   assert.deepEqual(closeOptions, { clearDrawing: true },
     'confirming must clear the accepted NiiVue drawing overlay');
   assert.equal(toolbarClassList.contains('hidden'), true,
@@ -3190,6 +3196,25 @@ async function waitForMicrotaskCondition(predicate, message, attempts = 20) {
       `Schaefer direct overlap must use atlas-label functional-profile driver copy; got ${renderedText.join(' | ')}`);
     assert.ok(renderedText.includes('language') || renderedText.includes('visual'),
       'Schaefer direct overlap must rank terms from parcel-label profiles');
+    {
+      const views = [];
+      const setViewerView = app.setViewerView;
+      const updateDirectFunctionProfile = app.updateDirectFunctionProfile;
+      let releaseProfile;
+      app.setViewerView = view => views.push(view);
+      app.updateDirectFunctionProfile = () => new Promise(resolve => { releaseProfile = resolve; });
+      let settled = false;
+      const run = app.runAtlasOverlap({ showResults: true }).then(() => { settled = true; });
+      for (let i = 0; i < 50 && !releaseProfile; i += 1) await new Promise(resolve => setTimeout(resolve, 0));
+      assert.ok(releaseProfile, 'manual overlap must reach the functional-profile load');
+      assert.deepEqual(views, ['results'],
+        'manual overlap must open Results as soon as the overlap table is ready');
+      assert.equal(settled, false, 'the functional profile is still loading when Results opens');
+      releaseProfile();
+      await run;
+      app.setViewerView = setViewerView;
+      app.updateDirectFunctionProfile = updateDirectFunctionProfile;
+    }
     let fcStack = null;
     app.viewerController = {
       loadVolumeStack: async entries => { fcStack = entries; },
