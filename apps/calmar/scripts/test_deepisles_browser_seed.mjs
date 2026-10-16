@@ -62,11 +62,20 @@ function makeApp(manifestForApp) {
   app.updateOutput = message => app.messages.push(message);
   app.ensureManifest = async () => manifestForApp;
   app.viewerLoads = [];
+  const stages = new Map();
   app.viewerController = {
     loadBaseVolume: async (file, options) => {
       app.viewerLoads.push([file.name, options.stage]);
+      stages.clear();
+      stages.set(options.stage, 0);
       return true;
-    }
+    },
+    loadOverlay: async (file, colormap, opacity, options) => {
+      app.viewerLoads.push([file.name, options.stage]);
+      stages.set(options.stage, stages.size);
+      return true;
+    },
+    getVolumeIndexForStage: stage => stages.get(stage) ?? null
   };
   app.refreshViewerLayerControls = () => {};
   app.executorCalls = [];
@@ -117,6 +126,41 @@ const structural = niftiFile('sub-1_T1w.nii', [8, 8, 8], [[1, 0, 0, -4], [0, 1, 
   ]);
   await assert.rejects(app.setDeepIslesInput('flair', dwi), /Unknown DeepISLES input kind 'flair'/);
   assert.equal(await app.setDeepIslesInput('dwi', null), null);
+}
+
+// ---- a DWI preview never leaves T1 work on a DWI base ----
+{
+  const t1 = niftiFile('sub-2_T1w.nii', [8, 8, 8], [[1, 0, 0, -4], [0, 1, 0, -4], [0, 0, 1, -4], [0, 0, 0, 1]]);
+  const trace = niftiFile('sub-2_trace.nii', [8, 8, 8], dwiAffine);
+  const lesion = niftiFile('sub-2_lesion.nii', [8, 8, 8], [[1, 0, 0, -4], [0, 1, 0, -4], [0, 0, 1, -4], [0, 0, 0, 1]]);
+  const app = makeApp(manifest);
+  app.refreshMaskDrawingControls = () => {};
+  app._autoPromotePipeline = () => {};
+  await app.setStructural(t1);
+  await app.tagDecodedFileSpace(lesion, { dims: [8, 8, 8] }, { space: VOLUME_SPACES.NATIVE_T1, role: 'lesion' });
+
+  // While mask review or a worker step is pending, the T1 stays the base.
+  app.maskReviewActive = true;
+  await app.setDeepIslesInput('dwi', trace);
+  assert.equal(app.getActiveViewerBaseFile(), t1, 'mask review keeps editing on the T1');
+  app.maskReviewActive = false;
+  const pending = app._waitForStageData('brainmask');
+  await app.setDeepIslesInput('dwi', trace);
+  assert.equal(app.getActiveViewerBaseFile(), t1, 'a pending worker stage keeps its overlay target');
+  app._resolveStageData('brainmask', {});
+  await pending;
+
+  // Otherwise the DWI is shown, and a T1-space lesion brings the T1 back.
+  await app.setDeepIslesInput('dwi', trace);
+  assert.equal(app.getActiveViewerBaseFile(), trace);
+  await app.setLesion(lesion);
+  assert.equal(app.getActiveViewerBaseFile(), t1, 'a lesion overlay restores the T1 base');
+  assert.deepEqual(app.viewerLoads.slice(-2), [['sub-2_T1w.nii', 'structural'], ['sub-2_lesion.nii', 'lesion']]);
+
+  // Re-enabling an overlay layer after a DWI preview restores the T1 too.
+  await app.setDeepIslesInput('dwi', trace);
+  await app.ensureViewerLayerLoaded('lesion');
+  assert.equal(app.getActiveViewerBaseFile(), t1, 'a layer toggle restores the T1 base');
 }
 
 // ---- preconditions ----
