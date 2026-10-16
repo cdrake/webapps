@@ -152,6 +152,15 @@ const structural = niftiFile('sub-1_T1w.nii', [8, 8, 8], [[1, 0, 0, -4], [0, 1, 
   await Promise.all([dwiLoad, t1Load]);
   assert.deepEqual(app.viewerStack, [['sub-1_T1w.nii', 'structural']]);
   assert.equal(app.getActiveViewerBaseFile(), structural);
+
+  // An overlay chosen while the T1 is still loading lands on the T1, not under it.
+  app.viewerDelay = file => file === structural ? new Promise(resolve => { release = resolve; }) : null;
+  const reload = app.setStructural(structural);
+  const adcLoad = app.setDeepIslesInput('adc', adc);
+  await new Promise(resolve => setImmediate(resolve));
+  release();
+  await Promise.all([reload, adcLoad]);
+  assert.deepEqual(app.viewerStack, [['sub-1_T1w.nii', 'structural'], ['sub-1_adc.nii', 'deepisles-input']]);
 }
 
 // ---- brain extraction waits for a pending T1 base, and a render error never strands it ----

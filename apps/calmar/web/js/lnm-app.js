@@ -1312,6 +1312,9 @@ export class LesionNetworkMappingApp {
     if (!this.structuralFile && !this.lesionFile) {
       await this.loadViewerBaseVolume(file, { stage: `deepisles-${kind}` });
     } else {
+      // A pending base load would clear an overlay added now.
+      await this._viewerBaseLoad;
+      if (this.maskReviewActive) return;
       await this.viewerController.replaceOverlayForStage('deepisles-input', file, 'hot', 0.7, { scalar: true });
     }
     this.refreshViewerLayerControls();
