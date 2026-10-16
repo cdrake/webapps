@@ -1,6 +1,6 @@
 {
   "name": "@neurodesk/desktop",
-  "version": "0.28.20261015",
+  "version": "0.28.20261016",
   "private": true,
   "type": "module",
   "main": "src/main.js",
