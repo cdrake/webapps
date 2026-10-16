@@ -2,7 +2,7 @@
 import { expect, test } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import manifest from '../../../packages/synthseg/model.manifest.json' with { type: 'json' };
-import { parseVolumesCsv } from '../../../packages/synthseg/src/results.js';
+import { parseVolumesCsv, VOLUME_COLUMNS, volumesCsv } from '../../../packages/synthseg/src/results.js';
 import { dicomSeries } from '../../../test-utils/dicom-fixture.mjs';
 import { readVolume, writeFloat32Volume } from '../../../test-utils/nifti-fixture.mjs';
 
@@ -41,7 +41,7 @@ async function serveNorms(page, status = 200) {
   return () => requests;
 }
 
-async function finishInference(page) {
+async function finishInference(page, resultVolumes = volumes) {
   const labels = await readFile('../../exes/synthseg/test/fixtures/small_fast.nii.gz');
   const { header, data } = readVolume(labels);
   const map = writeFloat32Volume(header, new Float32Array(data.length));
@@ -53,14 +53,14 @@ async function finishInference(page) {
         provenance: { outputShape: [1, 1, 1], seconds: 0 },
       },
     });
-  }, { bytes: [...labels], mapBytes: [...map], volumes });
+  }, { bytes: [...labels], mapBytes: [...map], volumes: resultVolumes });
   await expect(page.locator('#statusText')).toHaveAttribute('data-neurodesk-state', 'succeeded');
 }
 
-async function segment(page) {
+async function segment(page, resultVolumes = volumes) {
   await expect(page.locator('#processButton')).toBeEnabled();
   await page.locator('#processButton').click();
-  await finishInference(page);
+  await finishInference(page, resultVolumes);
 }
 
 test('fast mode is the default processing mode', async ({ page }) => {
@@ -198,10 +198,64 @@ test('without the reference volumes the Volumes view says why and the table stil
   const { report } = JSON.parse(await page.locator('#neurodesk-run').textContent());
   expect(report.measurements.volumeReport.unavailable).toBeTruthy();
   await page.getByRole('button', { name: 'Volumes', exact: true }).click();
-  await expect(page.locator('#volumeReport .nd-message.error')).toContainText('The reference volumes could not be loaded');
+  await expect(page.locator('#volumeReport .nd-message.error')).toContainText('The population report is unavailable');
+  await expect(page.locator('#volumeReport tbody tr')).toHaveCount(VOLUME_COLUMNS.length);
   const csv = page.waitForEvent('download');
   await page.locator('#volumesBtn').click();
-  expect(await readFile(await (await csv).path(), 'utf8')).toContain('total intracranial');
+  expect(await readFile(await (await csv).path(), 'utf8')).toBe(volumesCsv('small', volumes));
+});
+
+test('a failed population report preserves raw volumes and downloads and recovers on the next run', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await fakeInference(page);
+  await serveNorms(page);
+  await page.goto('./');
+  await page.locator('#imageInput').setInputFiles(SMALL);
+  const invalid = { ...volumes, 'left hippocampus': 0 };
+  await segment(page, invalid);
+  const reason = 'SynthSeg reported no volume for Left hippocampus';
+  const { report } = JSON.parse(await page.locator('#neurodesk-run').textContent());
+  expect(report.measurements.volumeReport.unavailable).toBe(reason);
+  await page.getByRole('button', { name: 'Volumes', exact: true }).click();
+  const panel = page.locator('#volumeReport');
+  await expect(panel.locator('.nd-message.error')).toContainText(reason);
+  await expect(panel.locator('figure')).toHaveCount(0);
+  await expect(panel.locator('th')).toHaveText(['Structure', 'Volume (mL)']);
+  await expect(panel.locator('tbody tr')).toHaveCount(VOLUME_COLUMNS.length);
+  const rows = VOLUME_COLUMNS.map((name) => [name, (invalid[name] / 1000).toFixed(2)]);
+  expect(await panel.locator('tbody tr').evaluateAll((lines) => lines.map((line) => [...line.cells].map((cell) => cell.textContent)))).toEqual(rows);
+
+  await page.locator('#age').fill('72');
+  await page.locator('#reference').selectOption('ahead');
+  await expect(panel.locator('.nd-message.error')).toContainText(reason);
+  await page.getByRole('button', { name: 'Axial', exact: true }).click();
+  await expect(panel).toBeHidden();
+  await page.getByRole('button', { name: 'Volumes', exact: true }).click();
+  await expect(panel.locator('tbody tr')).toHaveCount(VOLUME_COLUMNS.length);
+  const csv = page.waitForEvent('download');
+  await page.locator('#volumesBtn').click();
+  const table = await csv;
+  expect(table.suggestedFilename()).toBe('small_synthseg_vol.csv');
+  expect(await readFile(await table.path(), 'utf8')).toBe(volumesCsv('small', invalid));
+  const json = page.waitForEvent('download');
+  await page.locator('#reportBtn').click();
+  const saved = JSON.parse(await readFile(await (await json).path(), 'utf8'));
+  expect(saved.measurements.softVolumesMm3).toEqual(invalid);
+  expect(saved.measurements.volumeReport.unavailable).toBe(reason);
+  const labels = page.waitForEvent('download');
+  await page.locator('#saveBtn').click();
+  const labelDownload = await labels;
+  expect(labelDownload.suggestedFilename()).toBe('small_synthseg.nii.gz');
+  expect(await readFile(await labelDownload.path())).toEqual(await readFile('../../exes/synthseg/test/fixtures/small_fast.nii.gz'));
+
+  await page.locator('#imageInput').setInputFiles(SMALL);
+  await expect(panel).toBeHidden();
+  await segment(page);
+  await page.getByRole('button', { name: 'Volumes', exact: true }).click();
+  await expect(panel.locator('figure')).toHaveCount(10);
+  await expect(panel.locator('.nd-message.error')).toHaveCount(0);
+  expect(errors).toEqual([]);
 });
 
 test('a DICOM series fills Age, Sex and the Auto reference from its header, and an edit overrides them', async ({ page }) => {

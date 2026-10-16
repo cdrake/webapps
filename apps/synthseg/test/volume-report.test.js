@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { parseNorms } from '@neurodesk/synthseg/brainquant';
-import { parseVolumesCsv } from '@neurodesk/synthseg/results';
-import { chartSvg, legendEntries, tickStep, volumeReport } from '../src/volume-report.js';
+import { parseVolumesCsv, VOLUME_COLUMNS } from '@neurodesk/synthseg/results';
+import { chartSvg, legendEntries, rawVolumeRows, tickStep, volumeReport } from '../src/volume-report.js';
 
 const fixtures = new URL('../../../packages/synthseg/test/fixtures/', import.meta.url);
 const norms = parseNorms(JSON.parse(await readFile(new URL('brainquant_norms.json', fixtures), 'utf8')));
@@ -102,4 +102,16 @@ test('the legend names the dot or the dashed level', () => {
   assert.equal(legendEntries(true)[0].label, 'patient (adjusted volume)');
   assert.equal(legendEntries(false)[0].label, 'patient (age unknown)');
   assert.equal(legendEntries(true).length, 4);
+});
+
+
+test('raw rows preserve all CSV structures when the population assessment rejects a zero volume', () => {
+  const invalid = { ...volumes, 'left hippocampus': 0 };
+  assert.throws(() => volumeReport(norms, invalid, { age: 45, sex: 'female' }, IXI), /no volume for Left hippocampus/);
+  const rows = rawVolumeRows(invalid);
+  assert.deepEqual(rows.map((row) => row.title), VOLUME_COLUMNS);
+  for (const row of rows) assert.equal(row.volumeMl, (invalid[row.title] / 1000).toFixed(2));
+  assert.equal(rows.find((row) => row.title === 'left hippocampus').volumeMl, '0.00');
+  assert.equal(rawVolumeRows({})[0].volumeMl, 'n/a');
+  assert.equal(rawVolumeRows({ 'total intracranial': NaN })[0].volumeMl, 'n/a');
 });
