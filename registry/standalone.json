@@ -209,35 +209,35 @@
         {
           "kind": "cli",
           "platform": "linux-x64",
-          "version": "1.5.20261015",
-          "url": "https://github.com/neurodesk/webapps/releases/download/musclemap-v1.5.20261015/musclemap-1.5.20261015-linux-x64.tar.gz",
-          "sha256": "f8756a36257e9bad217c58e7b7ecfe6c21e5ca2a68750380bd72e4047d028552",
-          "bytes": 645445987,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/musclemap-v1.5.20261015/musclemap-1.5.20261015-linux-x64.tar.gz.validation.txt",
+          "version": "1.5.20261016",
+          "url": "https://github.com/neurodesk/webapps/releases/download/musclemap-v1.5.20261016/musclemap-1.5.20261016-linux-x64.tar.gz",
+          "sha256": "a9180fef9a4d1cc4d39577828c8865a4bbaacd553daa8cb990bdacd2eaa4b8c9",
+          "bytes": 645445717,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/musclemap-v1.5.20261016/musclemap-1.5.20261016-linux-x64.tar.gz.validation.txt",
           "modelsIncluded": true,
-          "command": "tar -xzf musclemap-1.5.20261015-linux-x64.tar.gz\n./musclemap-1.5.20261015-linux-x64/musclemap image.nii.gz results"
+          "command": "tar -xzf musclemap-1.5.20261016-linux-x64.tar.gz\n./musclemap-1.5.20261016-linux-x64/musclemap image.nii.gz results"
         },
         {
           "kind": "cli",
           "platform": "macos-arm64",
-          "version": "1.5.20261015",
-          "url": "https://github.com/neurodesk/webapps/releases/download/musclemap-v1.5.20261015/musclemap-1.5.20261015-macos-arm64.pkg",
-          "sha256": "b538c97babd8eaa017a57b546a2bee170d8805a88ce07ad1c9385d27d0f49a72",
-          "bytes": 646967708,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/musclemap-v1.5.20261015/musclemap-1.5.20261015-macos-arm64.pkg.validation.txt",
+          "version": "1.5.20261016",
+          "url": "https://github.com/neurodesk/webapps/releases/download/musclemap-v1.5.20261016/musclemap-1.5.20261016-macos-arm64.pkg",
+          "sha256": "6fbdc9feb1c2c9d79be0e577a8abb2230778e282bb0b99e636d6c16b50e693c5",
+          "bytes": 646968331,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/musclemap-v1.5.20261016/musclemap-1.5.20261016-macos-arm64.pkg.validation.txt",
           "modelsIncluded": true,
-          "command": "sudo installer -pkg musclemap-1.5.20261015-macos-arm64.pkg -target /\nmusclemap self-check\nmusclemap image.nii.gz results"
+          "command": "sudo installer -pkg musclemap-1.5.20261016-macos-arm64.pkg -target /\nmusclemap self-check\nmusclemap image.nii.gz results"
         },
         {
           "kind": "cli",
           "platform": "windows-x64",
-          "version": "1.5.20261015",
-          "url": "https://github.com/neurodesk/webapps/releases/download/musclemap-v1.5.20261015/musclemap-1.5.20261015-windows-x64.zip",
-          "sha256": "e397e93d43563736af4cf7c7bb16eb4d82f4768efe96234b0d71b087baef7bc1",
-          "bytes": 646938711,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/musclemap-v1.5.20261015/musclemap-1.5.20261015-windows-x64.zip.validation.txt",
+          "version": "1.5.20261016",
+          "url": "https://github.com/neurodesk/webapps/releases/download/musclemap-v1.5.20261016/musclemap-1.5.20261016-windows-x64.zip",
+          "sha256": "2a555336c91e68f4f08fa12eb09ae357f5061563fc1c77207ff75b6dda72aa6e",
+          "bytes": 646940674,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/musclemap-v1.5.20261016/musclemap-1.5.20261016-windows-x64.zip.validation.txt",
           "modelsIncluded": true,
-          "command": "Expand-Archive -Path .\\musclemap-1.5.20261015-windows-x64.zip -DestinationPath .\n.\\musclemap-1.5.20261015-windows-x64\\musclemap.exe image.nii.gz results"
+          "command": "Expand-Archive -Path .\\musclemap-1.5.20261016-windows-x64.zip -DestinationPath .\n.\\musclemap-1.5.20261016-windows-x64\\musclemap.exe image.nii.gz results"
         }
       ],
       "containers": [
