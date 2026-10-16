@@ -941,6 +941,7 @@ nd-result-list {
 .nd-report-notes { margin-top: var(--nd-space-md); color: var(--nd-color-text-muted); font-size: 0.7rem; }
 .nd-data-table [data-flag] td { font-weight: 600; }
 .nd-data-table .nd-numeric { text-align: right; font-variant-numeric: tabular-nums; }
+.nd-data-table caption { caption-side: top; padding-bottom: var(--nd-space-xs); color: var(--nd-color-text-dim); font-size: 0.7rem; text-align: left; }
 
 /* Small-multiple SVG charts: recessive axes and grid, token colours only. */
 .nd-chart-grid {
