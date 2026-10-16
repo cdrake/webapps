@@ -1631,6 +1631,8 @@ export class LesionNetworkMappingApp {
       throw new Error(`'lnm-synthstrip' is ${entry.supportStatus}; cannot run brain extraction.`);
     }
     const { base, name } = splitModelUrl(entry.sourceUrl);
+    // A pending T1 base load must finish so the brain mask overlays the T1.
+    await this._viewerBaseLoad;
 
     this.updateOutput('Starting SynthStrip brain extraction...');
     const brainmaskReady = this._waitForStageData('brainmask');
@@ -1768,12 +1770,15 @@ export class LesionNetworkMappingApp {
       // Render as a translucent overlay over the structural; if the user
       // dropped a lesion manually before the structural, the lesion stage
       // re-renders normally on its next setLesion() call.
+      // The overlay is cosmetic: a render failure must not strand the waiter below.
       if (this.structuralFile) {
-        this.assertViewerOverlaySpace(file, 'Brain mask overlay');
-        this.viewerController
-          .loadOverlay(file, 'green', 0.4, {
-            stage: 'brainmask',
-            visible: this.layerVisible('brainmask')
+        Promise.resolve()
+          .then(() => {
+            this.assertViewerOverlaySpace(file, 'Brain mask overlay');
+            return this.viewerController.loadOverlay(file, 'green', 0.4, {
+              stage: 'brainmask',
+              visible: this.layerVisible('brainmask')
+            });
           })
           .catch(err => this.updateOutput(`Brain mask render error: ${err.message}`));
       }

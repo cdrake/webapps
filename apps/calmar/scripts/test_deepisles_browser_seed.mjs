@@ -154,6 +154,37 @@ const structural = niftiFile('sub-1_T1w.nii', [8, 8, 8], [[1, 0, 0, -4], [0, 1, 
   assert.equal(app.getActiveViewerBaseFile(), structural);
 }
 
+// ---- brain extraction waits for a pending T1 base, and a render error never strands it ----
+{
+  const app = makeApp(manifest);
+  const synthstrip = manifest.modelAssets.find(entry => entry.id === 'lnm-synthstrip');
+  app.executor.loadVolume = async () => true;
+  app.executor.runSynthStrip = async () => {
+    app.executorCalls.push(['runSynthStrip', app.viewerStack.map(([name]) => name)]);
+    app.handleStageData({ stage: 'brainmask', niftiData: await structural.arrayBuffer() });
+    app.handleStepComplete('brainmask');
+  };
+  await app.setDeepIslesInput('dwi', dwi);
+  let release;
+  app.viewerDelay = file => file === structural ? new Promise(resolve => { release = resolve; }) : null;
+  const t1Load = app.setStructural(structural);
+  const extraction = app.runBrainExtraction();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(app.executorCalls, [], 'SynthStrip waits while the T1 base is still loading');
+  release();
+  await Promise.all([t1Load, extraction]);
+  assert.deepEqual(app.executorCalls, [['runSynthStrip', ['sub-1_T1w.nii']]], 'SynthStrip starts once the T1 is the base');
+  assert.ok(synthstrip, 'the manifest has the SynthStrip asset this check exercises');
+
+  // A brain mask that cannot be drawn on the current base is logged, and the waiter still resolves.
+  app.viewerBaseFile = dwi;
+  const waited = app._waitForStageData('brainmask');
+  app.handleStageData({ stage: 'brainmask', niftiData: await structural.arrayBuffer() });
+  await waited;
+  await new Promise(resolve => setImmediate(resolve));
+  assert.ok(app.messages.some(message => /^Brain mask render error: Brain mask overlay/.test(message)));
+}
+
 // ---- preconditions ----
 {
   const app = makeApp(manifest);
