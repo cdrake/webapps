@@ -61,23 +61,27 @@ function makeApp(manifestForApp) {
   app.messages = [];
   app.updateOutput = message => app.messages.push(message);
   app.ensureManifest = async () => manifestForApp;
-  app.viewerLoads = [];
-  const stages = new Map();
+  // The viewer as NiiVue sees it: the base, then overlays in load order.
+  app.viewerStack = [];
   app.viewerController = {
     loadBaseVolume: async (file, options) => {
-      app.viewerLoads.push([file.name, options.stage]);
-      stages.clear();
-      stages.set(options.stage, 0);
+      await app.viewerDelay?.(file);
+      app.viewerStack = [[file.name, options.stage]];
       return true;
     },
     loadOverlay: async (file, colormap, opacity, options) => {
-      app.viewerLoads.push([file.name, options.stage]);
-      stages.set(options.stage, stages.size);
+      app.viewerStack.push([file.name, options.stage]);
       return true;
     },
-    getVolumeIndexForStage: stage => stages.get(stage) ?? null
+    replaceOverlayForStage: async (stage, file) => {
+      app.viewerStack = app.viewerStack.filter(([, s]) => s !== stage);
+      app.viewerStack.push([file.name, stage]);
+      return true;
+    }
   };
   app.refreshViewerLayerControls = () => {};
+  app.refreshMaskDrawingControls = () => {};
+  app._autoPromotePipeline = () => {};
   app.executorCalls = [];
   for (const method of ['runDeepIslesInference', 'runInference', 'runSynthStrip', 'runRegistration']) {
     app.executor[method] = async settings => {
@@ -102,19 +106,11 @@ const structural = niftiFile('sub-1_T1w.nii', [8, 8, 8], [[1, 0, 0, -4], [0, 1, 
 // ---- inputs are tagged as native DWI space ----
 {
   const app = makeApp(manifest);
-  const shown = app.viewerLoads;
   assert.equal(VOLUME_SPACES.NATIVE_DWI, 'native-dwi');
   assert.equal(await app.setDeepIslesInput('dwi', dwi), dwi);
-  assert.equal(app.getActiveViewerBaseFile(), dwi, 'a loaded DWI/TRACE is shown in the viewer');
+  assert.deepEqual(app.viewerStack, [['sub-1_trace.nii', 'deepisles-dwi']], 'with nothing else loaded, DWI/TRACE is shown as the base');
   assert.equal(await app.setDeepIslesInput('adc', adc), adc);
-  assert.equal(app.getActiveViewerBaseFile(), adc, 'a loaded ADC is shown in the viewer');
-  assert.deepEqual(shown, [['sub-1_trace.nii', 'deepisles-dwi'], ['sub-1_adc.nii', 'deepisles-adc']]);
-
-  app.structuralFile = structural;
-  await app.ensureStructuralViewerBase();
-  assert.equal(app.getActiveViewerBaseFile(), structural, 'T1 stages restore the T1 as the viewer base');
-  assert.deepEqual(shown.at(-1), ['sub-1_T1w.nii', 'structural']);
-  app.structuralFile = null;
+  assert.deepEqual(app.viewerStack, [['sub-1_adc.nii', 'deepisles-adc']]);
   assert.equal(app.deepIslesDwiFile, dwi);
   assert.equal(app.deepIslesAdcFile, adc);
   const meta = getSpatialMetadata(dwi);
@@ -128,39 +124,34 @@ const structural = niftiFile('sub-1_T1w.nii', [8, 8, 8], [[1, 0, 0, -4], [0, 1, 
   assert.equal(await app.setDeepIslesInput('dwi', null), null);
 }
 
-// ---- a DWI preview never leaves T1 work on a DWI base ----
+// ---- with a T1 loaded, DWI/ADC is an overlay and the T1 stays the base ----
 {
-  const t1 = niftiFile('sub-2_T1w.nii', [8, 8, 8], [[1, 0, 0, -4], [0, 1, 0, -4], [0, 0, 1, -4], [0, 0, 0, 1]]);
-  const trace = niftiFile('sub-2_trace.nii', [8, 8, 8], dwiAffine);
-  const lesion = niftiFile('sub-2_lesion.nii', [8, 8, 8], [[1, 0, 0, -4], [0, 1, 0, -4], [0, 0, 1, -4], [0, 0, 0, 1]]);
   const app = makeApp(manifest);
-  app.refreshMaskDrawingControls = () => {};
-  app._autoPromotePipeline = () => {};
-  await app.setStructural(t1);
-  await app.tagDecodedFileSpace(lesion, { dims: [8, 8, 8] }, { space: VOLUME_SPACES.NATIVE_T1, role: 'lesion' });
+  await app.setStructural(structural);
+  await app.setDeepIslesInput('dwi', dwi);
+  await app.setDeepIslesInput('adc', adc);
+  assert.deepEqual(app.viewerStack, [['sub-1_T1w.nii', 'structural'], ['sub-1_adc.nii', 'deepisles-input']],
+    'the T1 stays the base and the latest diffusion input replaces the previous overlay');
+  assert.equal(app.getActiveViewerBaseFile(), structural, 'T1-space overlays are still checked against the T1');
 
-  // While mask review or a worker step is pending, the T1 stays the base.
   app.maskReviewActive = true;
-  await app.setDeepIslesInput('dwi', trace);
-  assert.equal(app.getActiveViewerBaseFile(), t1, 'mask review keeps editing on the T1');
-  app.maskReviewActive = false;
-  const pending = app._waitForStageData('brainmask');
-  await app.setDeepIslesInput('dwi', trace);
-  assert.equal(app.getActiveViewerBaseFile(), t1, 'a pending worker stage keeps its overlay target');
-  app._resolveStageData('brainmask', {});
-  await pending;
+  await app.setDeepIslesInput('dwi', dwi);
+  assert.deepEqual(app.viewerStack.at(-1), ['sub-1_adc.nii', 'deepisles-input'], 'mask review leaves the viewer alone');
+  assert.equal(app.deepIslesDwiFile, dwi, 'the input is still stored during mask review');
+}
 
-  // Otherwise the DWI is shown, and a T1-space lesion brings the T1 back.
-  await app.setDeepIslesInput('dwi', trace);
-  assert.equal(app.getActiveViewerBaseFile(), trace);
-  await app.setLesion(lesion);
-  assert.equal(app.getActiveViewerBaseFile(), t1, 'a lesion overlay restores the T1 base');
-  assert.deepEqual(app.viewerLoads.slice(-2), [['sub-2_T1w.nii', 'structural'], ['sub-2_lesion.nii', 'lesion']]);
-
-  // Re-enabling an overlay layer after a DWI preview restores the T1 too.
-  await app.setDeepIslesInput('dwi', trace);
-  await app.ensureViewerLayerLoaded('lesion');
-  assert.equal(app.getActiveViewerBaseFile(), t1, 'a layer toggle restores the T1 base');
+// ---- a slow DWI base load cannot finish after, and replace, a later T1 ----
+{
+  const app = makeApp(manifest);
+  let release;
+  app.viewerDelay = file => file === dwi ? new Promise(resolve => { release = resolve; }) : null;
+  const dwiLoad = app.setDeepIslesInput('dwi', dwi);
+  await new Promise(resolve => setImmediate(resolve));
+  const t1Load = app.setStructural(structural);
+  release();
+  await Promise.all([dwiLoad, t1Load]);
+  assert.deepEqual(app.viewerStack, [['sub-1_T1w.nii', 'structural']]);
+  assert.equal(app.getActiveViewerBaseFile(), structural);
 }
 
 // ---- preconditions ----

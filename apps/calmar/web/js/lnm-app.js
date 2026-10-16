@@ -216,6 +216,7 @@ export class LesionNetworkMappingApp {
     this.progress = new ProgressManager(Config.PROGRESS_CONFIG);
     this.structuralFile = null;
     this.viewerBaseFile = null;
+    this._viewerBaseLoad = Promise.resolve();
     this.nativeStructuralFile = null;
     this.deepIslesDwiFile = null;
     this.deepIslesAdcFile = null;
@@ -986,7 +987,6 @@ export class LesionNetworkMappingApp {
       });
       return;
     }
-    await this.ensureStructuralViewerBase();
     if (!this.isViewerStageLoaded('structural')) {
       throw new Error('Load a structural T1 base before adding overlays.');
     }
@@ -1130,30 +1130,17 @@ export class LesionNetworkMappingApp {
     });
   }
 
+  // Serialised so a slow base load cannot finish after, and replace, a later one.
   async loadViewerBaseVolume(file, options = {}) {
-    await this.viewerController.loadBaseVolume(file, options);
+    const load = this._viewerBaseLoad.then(() => this.viewerController.loadBaseVolume(file, options));
+    this._viewerBaseLoad = load.catch(() => {});
+    await load;
     this.viewerBaseFile = file;
   }
 
   async loadViewerVolumeStack(entries = []) {
     await this.viewerController.loadVolumeStack(entries);
     this.viewerBaseFile = entries[0]?.file || null;
-  }
-
-  hasPendingWorkerWaits() {
-    return this._stageDataResolvers.size > 0 || this._stepCompleteResolvers.size > 0 || !!this._mniLesionResolver;
-  }
-
-  // Loading DWI/TRACE or ADC shows it as the viewer base; T1 stages need the T1 back.
-  async ensureStructuralViewerBase() {
-    const base = this.viewerBaseFile;
-    if (!this.structuralFile || !base) return;
-    if (base !== this.deepIslesDwiFile && base !== this.deepIslesAdcFile) return;
-    await this.loadViewerBaseVolume(this.structuralFile, {
-      stage: 'structural',
-      visible: this.layerVisible('structural')
-    });
-    this.refreshViewerLayerControls();
   }
 
   getActiveViewerBaseFile() {
@@ -1313,15 +1300,21 @@ export class LesionNetworkMappingApp {
     else this.deepIslesAdcFile = file;
     this.deepIslesSeedFile = null;
     this.deepIslesSeedCompatibleWithNativeT1 = false;
-    const label = kind === 'dwi' ? 'DWI/TRACE' : 'ADC';
-    if (this.maskReviewActive || this.hasPendingWorkerWaits()) {
-      this.updateOutput(`DeepISLES ${label} input ready: ${file.name} (viewer keeps the T1 until this step ends)`);
-      return file;
-    }
-    await this.loadViewerBaseVolume(file, { stage: `deepisles-${kind}` });
-    this.refreshViewerLayerControls();
-    this.updateOutput(`DeepISLES ${label} input ready: ${file.name}`);
+    await this.showDeepIslesInput(file, kind);
+    this.updateOutput(`DeepISLES ${kind === 'dwi' ? 'DWI/TRACE' : 'ADC'} input ready: ${file.name}`);
     return file;
+  }
+
+  // Display only. With a T1 or lesion loaded, the DWI/ADC is an overlay so the
+  // base, and every space check against it, stays the T1 or lesion.
+  async showDeepIslesInput(file, kind) {
+    if (this.maskReviewActive) return;
+    if (!this.structuralFile && !this.lesionFile) {
+      await this.loadViewerBaseVolume(file, { stage: `deepisles-${kind}` });
+    } else {
+      await this.viewerController.replaceOverlayForStage('deepisles-input', file, 'hot', 0.7, { scalar: true });
+    }
+    this.refreshViewerLayerControls();
   }
 
   async deepIslesSeedCanReviewOnNativeT1() {
@@ -1343,7 +1336,6 @@ export class LesionNetworkMappingApp {
     }
     this.lesionFile = file;
     if (this.structuralFile) {
-      await this.ensureStructuralViewerBase();
       this.assertViewerOverlaySpace(file, 'Lesion mask overlay');
       await this.viewerController.loadOverlay(file, LESION_MASK_COLORMAP_ID, 0.5, {
         stage: 'lesion',
@@ -1639,7 +1631,6 @@ export class LesionNetworkMappingApp {
       throw new Error(`'lnm-synthstrip' is ${entry.supportStatus}; cannot run brain extraction.`);
     }
     const { base, name } = splitModelUrl(entry.sourceUrl);
-    await this.ensureStructuralViewerBase();
 
     this.updateOutput('Starting SynthStrip brain extraction...');
     const brainmaskReady = this._waitForStageData('brainmask');
