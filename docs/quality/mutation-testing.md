@@ -18,14 +18,19 @@ network.
 | `packages/nii2tvx/src/index.js:24-35` (`formatG`) | The browser TSV must equal the native `printf("%g")` output byte for byte | the `printf("%g")` tests in `packages/nii2tvx/test/parity.test.js` |
 | `scripts/lib/app-versions.mjs:44-73` (`releaseDate`, `validateReleaseDate`, `nextVersion`) | The `MAJOR.MINOR.YYYYMMDD` version `pnpm release`, `pnpm new-app` and the daily desktop stamp write; a wrong result publishes a downgrade or an impossible date | `test/date-versions.test.mjs` |
 | `scripts/lib/lockfile-impact.mjs` | Which workspace importers a `pnpm-lock.yaml` change affects, and so which apps CI tests; a missed importer skips the tests that would catch a broken dependency | `test/lockfile-impact.test.mjs` |
+| `packages/carotid-flow/src/series.js` | The frames, grid and header Carotid Flow measures, and which amplitude and phase pairs it refuses; the app and the `carotid-flow` command line both read through it | `packages/carotid-flow/test/series-outputs.test.js` |
+| `packages/carotid-flow/src/outputs.js` | The names and bytes of Carotid Flow's downloads and the command line's files, and the measurements automation reports | `packages/carotid-flow/test/series-outputs.test.js` |
 
 `formatG` is mutated by line range because the rest of `index.js` drives the
 WebAssembly module. Its command selects the two `printf` tests by name; the rest
 of `parity.test.js` needs a native build and is not part of this run. The
 date-version range likewise leaves out the rest of `app-versions.mjs`, which
 plans releases with Changesets on a workspace; `test/app-versions.test.mjs`
-keeps covering that part. `test/mutation-quality.test.mjs` fails when a range no
-longer covers exactly its functions or the name pattern selects other tests.
+keeps covering that part. The two Carotid Flow modules share one suite of small
+in-memory NIfTI files. `packages/carotid-flow/test/node.test.js` runs the command
+line on the phantom and is not part of this run. `test/mutation-quality.test.mjs`
+fails when a range no longer covers exactly its functions or the name pattern
+selects other tests.
 
 Stryker is pinned to `@stryker-mutator/core@10.0.0`. The current
 [runner configuration](https://stryker-mutator.io/docs/stryker-js/configuration/#testrunner-string)
@@ -76,7 +81,15 @@ Measured locally on 2026-10-15 (two workers, `Done in` from each module's log):
 | date versions | 73 | 0.86 s | 23 s |
 | `lockfile-impact.mjs` | 146 | 0.23 s | 60 s |
 | Full run, five Stryker runs | 561 | - | 122 s wall |
+| Carotid Flow `series.js` (2026-10-16) | 39 | 0.23 s | 9 s |
+| Carotid Flow `outputs.js` (2026-10-16) | 42 | 0.23 s | 14 s |
+| Full run, seven Stryker runs (2026-10-16, loaded host) | 642 | - | 221 s wall |
 | PR smoke (`tableName`) | 2 | 0.13 s | 6 s wall |
+
+On 2026-10-16 the two Carotid Flow modules added 39 and 42 mutants, each with a
+0.23 s baseline: `series.js` took 9 s and `outputs.js` 14 s. The full run of
+seven modules, 642 mutants, took 221 s wall on a host with a load average of 22
+on 8 cores, where the five earlier modules alone took 179 s.
 
 The full run took about 4 s with the canary alone and 96 s with three modules.
 Most of `lockfile-impact.mjs`'s time is its seven timeouts: each is a mutant that
@@ -89,8 +102,8 @@ cost.
 
 The pilot on 2026-10-10 killed all 10 mutants in `disconnectome.js`.
 
-The full run on 2026-10-15 detected 540 of 561 mutants (533 killed, 7 timed
-out), with 21 survivors and no compile or runtime errors:
+The full run on 2026-10-16 detected 620 of 642 mutants (613 killed, 7 timed
+out), with 22 survivors and no compile or runtime errors:
 
 | Module | Killed | Timed out | Survived |
 | --- | --- | --- | --- |
@@ -99,6 +112,8 @@ out), with 21 survivors and no compile or runtime errors:
 | `formatG` | 45 | 0 | 3 |
 | date versions | 73 | 0 | 0 |
 | `lockfile-impact.mjs` | 131 | 7 | 8 |
+| Carotid Flow `series.js` | 38 | 0 | 1 |
+| Carotid Flow `outputs.js` | 42 | 0 | 0 |
 
 `basis-select.js` has grown 10 mutants since 2026-10-14; all 10 are killed.
 The timeouts are real detections: each mutant (dropping the cycle guard, the
@@ -119,7 +134,12 @@ the whole workspace graph, so none of them could run in its sandbox.
 peer-suffixed, optional, dev, aliased and cyclic dependencies, the summary of
 more than five packages, added, removed and edited importers, multi-hop links,
 an order-independent report and every error that sends the planner to the full
-catalog. Behavioral tests now cover these. The survivors that remain do not
+catalog. Neither Carotid Flow module was in the run before 2026-10-16. A one-off
+run against the command-line suite alone detected 33 of 39 `series.js` mutants
+and 18 of 42 `outputs.js` mutants: that suite names every input `neck.nii` and
+never checks an upper-case, doubled or missing extension, the per-side masks,
+the measurements, the spacing tolerance, the frame-count refusal or the error
+text. Behavioral tests now cover these. The survivors that remain do not
 change a result the app, the pipeline, the command line or the CI planner exposes:
 
 Equivalent mutants:
@@ -145,6 +165,11 @@ Equivalent mutants:
 - `lockfile-impact.mjs:76`, `snapshots[key]?.[field]` to `snapshots[key][field]`:
   `snapshotOf` returns only keys present in `snapshots`, and pnpm writes every
   snapshot as a mapping.
+- Carotid Flow `series.js:31`, `<= 1e-5` to `< 1e-5` in the spacing check:
+  both spacings are float32 values read from the headers, and the double nearest
+  `1e-5` has its lowest set bit at 2^-69. Their difference can equal it only if
+  one spacing has a float32 ulp of 2^-69 or less, that is, a spacing below 2^-45
+  mm (about 3e-14 mm), which no scanner writes.
 - `lockfile-impact.mjs:87`, treating every version as a `link:`: the path
   formed from the rest of a registry version (`'1.0.0'.slice(5)` is empty, so the
   importer links itself) never names another importer.
