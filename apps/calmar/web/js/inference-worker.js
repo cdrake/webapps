@@ -504,6 +504,8 @@ async function stepDeepIslesInference(params) {
       rasSpacing: ras.rasSpacing,
       modelArrayBuffer: synthStripModel,
       ort,
+      // Fast mode keeps the conformed volume within the browser memory budget.
+      fast: true,
       onProgress: (frac, label) => postProgress(0.08 + 0.10 * frac, label),
       onLog: (msg) => postLog(msg)
     });

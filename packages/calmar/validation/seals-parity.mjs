@@ -9,7 +9,6 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import * as ort from 'onnxruntime-node';
 import { decodeVolume } from '../src/nifti.js';
-import { resampleAffine } from '../src/resample.js';
 import { segmentSeals } from '../src/seals.js';
 
 const [modelPath, ...cases] = process.argv.slice(2);
@@ -24,11 +23,10 @@ const load = async (dir, name) => decodeVolume(new Uint8Array(await readFile(pat
 let failed = false;
 for (const dir of cases) {
   const [dwi, adc, brain, reference] = await Promise.all(['dwi', 'adc', 'brainmask', 'reference'].map(n => load(dir, `${n}.nii.gz`)));
-  const adcOnDwi = resampleAffine(Float32Array.from(adc.data), adc.dims, adc.affine, dwi.dims, dwi.affine, 'trilinear');
   const start = performance.now();
   const labels = await segmentSeals({
     dwi: Float32Array.from(dwi.data),
-    adc: adcOnDwi,
+    adc: { data: Float32Array.from(adc.data), dims: adc.dims, affine: adc.affine },
     brainMask: Uint8Array.from(brain.data, v => (v > 0 ? 1 : 0)),
     dims: dwi.dims,
     affine: dwi.affine

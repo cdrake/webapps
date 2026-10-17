@@ -311,6 +311,58 @@ function stubRun(app) {
   assert.equal(app.deepIslesSeedCompatibleWithNativeT1, true, 'the seed is reviewed on the TRACE itself');
 }
 
+// ---- inputs from one subject never seed another ----
+{
+  // Replacing the T1 drops the previous subject's diffusion inputs.
+  const app = makeApp(manifest);
+  app.clearResults = () => {};
+  await app.setStructural(structural);
+  await app.setDeepIslesInput('dwi', dwi);
+  await app.setDeepIslesInput('adc', adc);
+  await app.setStructural(niftiFile('sub-2_T1w.nii', [8, 8, 8], t1Affine));
+  assert.equal(app.deepIslesDwiFile, null);
+  assert.equal(app.deepIslesAdcFile, null);
+  assert.equal(app.diffusionSeedReady(), false, 'the new T1 gets the T1 model');
+
+  // A T1 added after a diffusion stand-in belongs to the same subject.
+  const second = makeApp(manifest);
+  await second.setDeepIslesInput('dwi', dwi);
+  await second.setDeepIslesInput('adc', adc);
+  await second.ensureStructuralForDiffusion();
+  await second.setStructural(structural);
+  assert.equal(second.deepIslesDwiFile, dwi, 'the diffusion inputs stay');
+  assert.equal(second.diffusionSeedReady(), true);
+}
+{
+  // Replacing a diffusion input invalidates the lesion built from it, and a
+  // structural stand-in copied from it.
+  const app = makeApp(manifest);
+  const cleared = [];
+  app.clearResults = ({ full }) => {
+    cleared.push(full);
+    app.autoLesionSeedFile = null;
+    if (full) app.structuralFile = null;
+  };
+  const b0 = niftiFile('sub-1_b0.nii', [8, 8, 8], dwiAffine);
+  await app.setDeepIslesInput('dwi', dwi);
+  await app.setDeepIslesInput('b0', b0);
+  assert.deepEqual(cleared, [], 'first loads clear nothing');
+  await app.ensureStructuralForDiffusion();
+  await app.setDeepIslesInput('adc', adc);
+  app.autoLesionSeedFile = { name: 't1-drawing.nii' };
+  await app.setDeepIslesInput('adc', niftiFile('sub-1_adc_v2.nii', [8, 8, 8], dwiAffine));
+  assert.deepEqual(cleared, [], 'a lesion not made from diffusion input stays');
+  assert.equal(app.autoLesionSeedFile.name, 't1-drawing.nii');
+  app.autoLesionSeedFile = app.deepIslesSeedFile = { name: 'old-seed.nii' };
+  await app.setDeepIslesInput('dwi', niftiFile('sub-1_trace_v2.nii', [8, 8, 8], dwiAffine));
+  assert.deepEqual(cleared, [false], 'a new TRACE clears its DeepISLES lesion and results, not the b0 stand-in');
+  assert.equal(app.autoLesionSeedFile, null);
+  assert.equal(app.structuralFromDiffusion, b0);
+  await app.setDeepIslesInput('b0', niftiFile('sub-1_b0_v2.nii', [8, 8, 8], dwiAffine));
+  assert.deepEqual(cleared, [false, true], 'a new b0 also drops the structural copy made from the old one');
+  assert.equal(app.structuralFromDiffusion, null);
+}
+
 // ---- Run analysis picks the seed model from the inputs ----
 for (const [label, setup, expected] of [
   ['T1 only', async app => app.setStructural(structural), 'runLesionSegmentation'],

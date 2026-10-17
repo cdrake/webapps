@@ -221,6 +221,7 @@ export class LesionNetworkMappingApp {
     this.deepIslesDwiFile = null;
     this.deepIslesAdcFile = null;
     this.deepIslesB0File = null;
+    this.structuralFromDiffusion = null;
     this.deepIslesSeedFile = null;
     this.deepIslesSeedCompatibleWithNativeT1 = false;
     this.nativeStructuralInfo = null;
@@ -364,6 +365,8 @@ export class LesionNetworkMappingApp {
         const files = await fetchFiles();
         assertCurrent();
         const structural = files[example.files.findIndex(file => file.role === 'structural')];
+        // The example is a T1 only; diffusion inputs belong to another subject.
+        this.clearDiffusionInputs();
         await this.setStructural(structural);
         assertCurrent();
       },
@@ -1249,6 +1252,11 @@ export class LesionNetworkMappingApp {
 
   async setStructural(file) {
     if (!file) return;
+    // Replacing a structural image the user loaded starts a new subject, so
+    // diffusion inputs from the previous one must not seed it. Adding a T1
+    // after a diffusion stand-in keeps them.
+    if (this.nativeStructuralFile && !this.structuralFromDiffusion) this.clearDiffusionInputs();
+    this.structuralFromDiffusion = null;
     this.tagFileSpace(file, {
       space: VOLUME_SPACES.NATIVE_T1,
       role: 'structural',
@@ -1300,6 +1308,16 @@ export class LesionNetworkMappingApp {
       role: `deepisles-${kind}`,
       sourceStage: 'deepisles-input'
     });
+    const previous = { dwi: this.deepIslesDwiFile, adc: this.deepIslesAdcFile, b0: this.deepIslesB0File }[kind];
+    if (previous) {
+      // A DeepISLES lesion, and everything after it, came from the old
+      // input; so did a structural stand-in copied from it. A lesion drawn or
+      // segmented on the T1 does not depend on the diffusion inputs.
+      const standInReplaced = !!this.structuralFromDiffusion && this.structuralFromDiffusion === previous;
+      const seedFromDiffusion = !!this.deepIslesSeedFile && this.autoLesionSeedFile === this.deepIslesSeedFile;
+      if (standInReplaced || seedFromDiffusion) this.clearResults({ full: standInReplaced });
+      if (standInReplaced) this.structuralFromDiffusion = null;
+    }
     if (kind === 'dwi') this.deepIslesDwiFile = file;
     else if (kind === 'adc') this.deepIslesAdcFile = file;
     else this.deepIslesB0File = file;
@@ -1960,6 +1978,19 @@ export class LesionNetworkMappingApp {
     const source = this.deepIslesB0File || this.deepIslesDwiFile;
     this.updateOutput(`No structural image: using the ${source === this.deepIslesB0File ? 'b0' : 'DWI/TRACE'} as the structural image.`);
     await this.setStructural(new File([source], source.name, { type: source.type }));
+    this.structuralFromDiffusion = source;
+  }
+
+  clearDiffusionInputs() {
+    this.deepIslesDwiFile = null;
+    this.deepIslesAdcFile = null;
+    this.deepIslesB0File = null;
+    this.deepIslesSeedFile = null;
+    this.deepIslesSeedCompatibleWithNativeT1 = false;
+    for (const id of ['deepIslesDwiFileInput', 'deepIslesAdcFileInput', 'deepIslesB0FileInput']) {
+      const input = document.getElementById(id);
+      if (input) input.value = '';
+    }
   }
 
   diffusionSeedReady() {

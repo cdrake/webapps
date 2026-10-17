@@ -389,6 +389,33 @@ globalThis.fetch = async url => {
   assert.ok(events.logs.includes('No ADC: computing it from b0 and DWI/TRACE as ln(b0 / TRACE) / b.'));
   seed = decode(events.stages.segmentation);
   assertVolume(seed.data, boxMask(dims, [5, 7], [5, 7], [5, 7]), 'b0-derived ADC gives the same seed');
+
+  // Without a DWI-grid brain mask the worker strips the DWI/TRACE itself,
+  // in SynthStrip's fast mode so the conformed volume stays in budget.
+  const seals = ortStub.create;
+  ortStub.create = async (bytes, options) => {
+    const session = await seals(bytes, options);
+    return {
+      ...session,
+      run: async feeds => {
+        const tensor = feeds.input;
+        if (tensor.dims[1] === 2) return session.run(feeds);
+        return { logits: { data: Float32Array.from(tensor.data, value => (value > 0.05 ? -4 : 4)) } };
+      }
+    };
+  };
+  events.logs.length = 0;
+  requestedUrls.length = 0;
+  await settle(pipeline.runDeepIslesInference({
+    ...settings,
+    adcBuffer,
+    brainMaskBuffer: null,
+    synthStrip: { modelBaseUrl: 'https://models.example/models', modelName: 'synthstrip.onnx' }
+  }));
+  assert.deepEqual(events.errors.slice(4), []);
+  assert.ok(events.logs.includes('Brain extraction on DWI/TRACE (SynthStrip)...'));
+  assert.ok(events.logs.some(line => /^SynthStrip Fast/.test(line)), 'fast mode');
+  assert.ok(requestedUrls.includes('https://models.example/models/synthstrip.onnx'));
 }
 
 // ---- brain extraction ----
