@@ -1080,35 +1080,35 @@
         {
           "kind": "cli",
           "platform": "linux-x64",
-          "version": "0.5.20261016",
-          "url": "https://github.com/neurodesk/webapps/releases/download/brain2print-v0.5.20261016/brain2print-0.5.20261016-linux-x64.tar.gz",
-          "sha256": "45a88956d8e0ac72af7f94f2aaeecc94abbec072cc385e7a66e62a222ab19faa",
-          "bytes": 52996032,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/brain2print-v0.5.20261016/brain2print-0.5.20261016-linux-x64.tar.gz.validation.txt",
+          "version": "0.5.20261017",
+          "url": "https://github.com/neurodesk/webapps/releases/download/brain2print-v0.5.20261017/brain2print-0.5.20261017-linux-x64.tar.gz",
+          "sha256": "d8720fba31763968e09598dfbcd413ec2809e40a0f84e679454ac6e300fa0110",
+          "bytes": 52996031,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/brain2print-v0.5.20261017/brain2print-0.5.20261017-linux-x64.tar.gz.validation.txt",
           "modelsIncluded": true,
-          "command": "tar -xzf brain2print-0.5.20261016-linux-x64.tar.gz\n./brain2print-0.5.20261016-linux-x64/brain2print t1.nii.gz results"
+          "command": "tar -xzf brain2print-0.5.20261017-linux-x64.tar.gz\n./brain2print-0.5.20261017-linux-x64/brain2print t1.nii.gz results"
         },
         {
           "kind": "cli",
           "platform": "macos-arm64",
-          "version": "0.5.20261016",
-          "url": "https://github.com/neurodesk/webapps/releases/download/brain2print-v0.5.20261016/brain2print-0.5.20261016-macos-arm64.pkg",
-          "sha256": "db1fbad428eb77021d07d9ed49e6902bbaad0f5ea87465426e73c0f5ee48e9d0",
-          "bytes": 46607465,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/brain2print-v0.5.20261016/brain2print-0.5.20261016-macos-arm64.pkg.validation.txt",
+          "version": "0.5.20261017",
+          "url": "https://github.com/neurodesk/webapps/releases/download/brain2print-v0.5.20261017/brain2print-0.5.20261017-macos-arm64.pkg",
+          "sha256": "00b61fad20e94f0a19b26b92efbb4e52f2a0e16af948cde0eb90cfa8b5bc6639",
+          "bytes": 46608138,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/brain2print-v0.5.20261017/brain2print-0.5.20261017-macos-arm64.pkg.validation.txt",
           "modelsIncluded": true,
-          "command": "sudo installer -pkg brain2print-0.5.20261016-macos-arm64.pkg -target /\nbrain2print self-check\nbrain2print t1.nii.gz results"
+          "command": "sudo installer -pkg brain2print-0.5.20261017-macos-arm64.pkg -target /\nbrain2print self-check\nbrain2print t1.nii.gz results"
         },
         {
           "kind": "cli",
           "platform": "windows-x64",
-          "version": "0.5.20261016",
-          "url": "https://github.com/neurodesk/webapps/releases/download/brain2print-v0.5.20261016/brain2print-0.5.20261016-windows-x64.zip",
-          "sha256": "80abca611b91f72d3766b0e5bbb130d653705cac2fb4c4a2ee196e8bf35b9f5a",
-          "bytes": 43327836,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/brain2print-v0.5.20261016/brain2print-0.5.20261016-windows-x64.zip.validation.txt",
+          "version": "0.5.20261017",
+          "url": "https://github.com/neurodesk/webapps/releases/download/brain2print-v0.5.20261017/brain2print-0.5.20261017-windows-x64.zip",
+          "sha256": "5932554c496108660b450b29ce5f51dd151158582ffa13029e398747847c61b3",
+          "bytes": 43329409,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/brain2print-v0.5.20261017/brain2print-0.5.20261017-windows-x64.zip.validation.txt",
           "modelsIncluded": true,
-          "command": "Expand-Archive -Path .\\brain2print-0.5.20261016-windows-x64.zip -DestinationPath .\n.\\brain2print-0.5.20261016-windows-x64\\brain2print.exe t1.nii.gz results"
+          "command": "Expand-Archive -Path .\\brain2print-0.5.20261017-windows-x64.zip -DestinationPath .\n.\\brain2print-0.5.20261017-windows-x64\\brain2print.exe t1.nii.gz results"
         }
       ],
       "containers": []
