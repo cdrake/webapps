@@ -941,6 +941,13 @@ nd-result-list {
 .nd-report-notes { margin-top: var(--nd-space-md); color: var(--nd-color-text-muted); font-size: 0.7rem; }
 .nd-data-table [data-flag] td { font-weight: 600; }
 .nd-data-table .nd-numeric { text-align: right; font-variant-numeric: tabular-nums; }
+/* A report made of stacked sections, each a heading and its table. */
+.nd-report-stack { display: flex; flex-direction: column; gap: var(--nd-space-lg); max-width: 760px; }
+.nd-report-stack section { display: flex; flex-direction: column; gap: var(--nd-space-sm); }
+.nd-report-stack section section { margin-top: var(--nd-space-md); }
+.nd-report-heading { display: flex; align-items: center; gap: var(--nd-space-xs); }
+.nd-report-heading :is(h2, h3) { flex: 1; min-width: 0; margin: 0; color: var(--nd-color-text-muted); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+.nd-data-table caption { caption-side: top; padding-bottom: var(--nd-space-xs); color: var(--nd-color-text-dim); font-size: 0.7rem; text-align: left; }
 
 /* Small-multiple SVG charts: recessive axes and grid, token colours only. */
 .nd-chart-grid {

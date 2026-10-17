@@ -38,7 +38,7 @@ async function serveNorms(page, status = 200) {
   const requests = Object.fromEntries(Object.keys(fixtures).map((id) => [id, 0]));
   for (const [id, name] of Object.entries(fixtures)) {
     const body = await readFile(`${FIXTURES}${name}`);
-    await page.route(manifest.norms[id].url, (route) => {
+    await page.context().route(manifest.norms[id].url, (route) => {
       requests[id]++;
       return status === 200 ? route.fulfill({ status, body, contentType: 'text/plain' }) : route.fulfill({ status, body: 'missing' });
     });
