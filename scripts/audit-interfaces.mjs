@@ -145,6 +145,8 @@ try {
           for (const width of [1280, 1024, 900]) {
             await page.setViewportSize({ width, height: viewport.height });
             await page.waitForTimeout(150);
+            // The shell fits the bar in an animation frame after resize; a busy app delays that frame past any fixed wait.
+            await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
             const clipped = await page.evaluate(() => [...document.querySelectorAll('.nd-app-bar__identity')]
               .filter(node => node.checkVisibility())
               .flatMap(identity => [...identity.querySelectorAll('.nd-app-bar__title, .nd-app-bar__version')]
