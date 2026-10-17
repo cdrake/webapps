@@ -1309,20 +1309,17 @@ export class LesionNetworkMappingApp {
       sourceStage: 'deepisles-input'
     });
     const previous = { dwi: this.deepIslesDwiFile, adc: this.deepIslesAdcFile, b0: this.deepIslesB0File }[kind];
-    if (previous) {
-      // A DeepISLES lesion, and everything after it, came from the old
-      // input; so did a structural stand-in copied from it. A lesion drawn or
-      // segmented on the T1 does not depend on the diffusion inputs.
-      const standInReplaced = !!this.structuralFromDiffusion && this.structuralFromDiffusion === previous;
-      const seedFromDiffusion = !!this.deepIslesSeedFile && this.autoLesionSeedFile === this.deepIslesSeedFile;
-      if (standInReplaced || seedFromDiffusion) this.clearResults({ full: standInReplaced });
-      if (standInReplaced) this.structuralFromDiffusion = null;
-    }
+    // Any change to the diffusion inputs invalidates a DeepISLES lesion and
+    // everything after it; replacing the source of a structural stand-in
+    // invalidates that too. A lesion drawn or segmented on the T1 does not
+    // depend on the diffusion inputs and stays.
+    const standInReplaced = !!previous && this.structuralFromDiffusion === previous;
+    const seedFromDiffusion = !!this.deepIslesSeedFile && this.autoLesionSeedFile === this.deepIslesSeedFile;
+    if (standInReplaced || seedFromDiffusion) this.clearResults({ full: standInReplaced });
+    if (standInReplaced) this.structuralFromDiffusion = null;
     if (kind === 'dwi') this.deepIslesDwiFile = file;
     else if (kind === 'adc') this.deepIslesAdcFile = file;
     else this.deepIslesB0File = file;
-    this.deepIslesSeedFile = null;
-    this.deepIslesSeedCompatibleWithNativeT1 = false;
     await this.showDeepIslesInput(file, kind);
     this.updateOutput(`DeepISLES ${label} input ready: ${file.name}`);
     return file;
@@ -3838,6 +3835,8 @@ export class LesionNetworkMappingApp {
     this.lesionMaskFile = null;
     this.lesionMaskConfirmed = false;
     this.autoLesionSeedFile = null;
+    this.deepIslesSeedFile = null;
+    this.deepIslesSeedCompatibleWithNativeT1 = false;
     this.nativeLesionSeedFile = null;
     this.confirmedNativeLesionFile = null;
     this.maskReviewActive = false;

@@ -649,7 +649,7 @@ and no model segments them on b0.
   step-0.5 Gaussian sliding window, softmax averaged over 8 mirrorings.
   `scripts/run_seals_onnx.py` matches nnU-Net's own inference on the ADS example
   subjects (Dice 0.99991 and 1.0), and the browser pipeline matches it
-  (Dice 0.99904 and 1.0, `packages/calmar/validation/seals-parity.mjs`).
+  (identical masks, Dice 1.0 on both, `packages/calmar/validation/seals-parity.mjs`).
 - SEALS was trained on skull-stripped images, so the app strips the DWI with
   SynthStrip first. A seed on the DWI grid is shown on a separate T1 by scanner
   coordinates; check its position during review.

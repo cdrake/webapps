@@ -362,6 +362,20 @@ function stubRun(app) {
   assert.deepEqual(cleared, [false, true], 'a new b0 also drops the structural copy made from the old one');
   assert.equal(app.structuralFromDiffusion, null);
 }
+{
+  // Adding an input for the first time also changes the seed's inputs:
+  // TRACE + b0 gave the lesion, ADC now arrives, the lesion must go.
+  const app = makeApp(manifest);
+  const cleared = [];
+  app.clearResults = ({ full }) => cleared.push(full);
+  await app.setStructural(structural);
+  await app.setDeepIslesInput('dwi', dwi);
+  await app.setDeepIslesInput('b0', niftiFile('sub-1_b0.nii', [8, 8, 8], dwiAffine));
+  app.autoLesionSeedFile = app.deepIslesSeedFile = { name: 'trace-b0-seed.nii' };
+  app.lesionMaskConfirmed = true;
+  await app.setDeepIslesInput('adc', adc);
+  assert.deepEqual(cleared, [false], 'the first ADC clears the TRACE + b0 lesion and its results');
+}
 
 // ---- Run analysis picks the seed model from the inputs ----
 for (const [label, setup, expected] of [
