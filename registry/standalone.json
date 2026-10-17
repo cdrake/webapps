@@ -317,35 +317,35 @@
         {
           "kind": "cli",
           "platform": "linux-x64",
-          "version": "0.9.20261016",
-          "url": "https://github.com/neurodesk/webapps/releases/download/spinalcordtoolbox-v0.9.20261016/sct-webapp-0.9.20261016-linux-x64.tar.gz",
-          "sha256": "82b3a2ef9354067bb82e98fb61c2e617629e7aabdc4ed4b432ec0c6825979be6",
-          "bytes": 176534906,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/spinalcordtoolbox-v0.9.20261016/sct-webapp-0.9.20261016-linux-x64.tar.gz.validation.txt",
+          "version": "0.9.20261017",
+          "url": "https://github.com/neurodesk/webapps/releases/download/spinalcordtoolbox-v0.9.20261017/sct-webapp-0.9.20261017-linux-x64.tar.gz",
+          "sha256": "837b46bf6107241eaf07aa684967af62b66516b9c3953f31a0c3c3de57ab0083",
+          "bytes": 176539636,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/spinalcordtoolbox-v0.9.20261017/sct-webapp-0.9.20261017-linux-x64.tar.gz.validation.txt",
           "modelsIncluded": true,
-          "command": "tar -xzf sct-webapp-0.9.20261016-linux-x64.tar.gz\n./sct-webapp-0.9.20261016-linux-x64/sct-webapp segment --task spinalcord input.nii.gz results"
+          "command": "tar -xzf sct-webapp-0.9.20261017-linux-x64.tar.gz\n./sct-webapp-0.9.20261017-linux-x64/sct-webapp segment --task spinalcord input.nii.gz results"
         },
         {
           "kind": "cli",
           "platform": "macos-arm64",
-          "version": "0.9.20261016",
-          "url": "https://github.com/neurodesk/webapps/releases/download/spinalcordtoolbox-v0.9.20261016/sct-webapp-0.9.20261016-macos-arm64.pkg",
-          "sha256": "c439a817932c6fbbcf8410a07292015d68f79af456b40aee7828d581ee1d3a4e",
-          "bytes": 178056342,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/spinalcordtoolbox-v0.9.20261016/sct-webapp-0.9.20261016-macos-arm64.pkg.validation.txt",
+          "version": "0.9.20261017",
+          "url": "https://github.com/neurodesk/webapps/releases/download/spinalcordtoolbox-v0.9.20261017/sct-webapp-0.9.20261017-macos-arm64.pkg",
+          "sha256": "995c77e2f95adef6c2e378032e9dd589d54524ba174ee8d2efda3f536bcc9090",
+          "bytes": 178055479,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/spinalcordtoolbox-v0.9.20261017/sct-webapp-0.9.20261017-macos-arm64.pkg.validation.txt",
           "modelsIncluded": true,
-          "command": "sudo installer -pkg sct-webapp-0.9.20261016-macos-arm64.pkg -target /\nsct-webapp self-check\nsct-webapp segment --task spinalcord input.nii.gz results"
+          "command": "sudo installer -pkg sct-webapp-0.9.20261017-macos-arm64.pkg -target /\nsct-webapp self-check\nsct-webapp segment --task spinalcord input.nii.gz results"
         },
         {
           "kind": "cli",
           "platform": "windows-x64",
-          "version": "0.9.20261016",
-          "url": "https://github.com/neurodesk/webapps/releases/download/spinalcordtoolbox-v0.9.20261016/sct-webapp-0.9.20261016-windows-x64.zip",
-          "sha256": "15a36cea5a71752d065f196a396ff48b9499ce26fee445eb103a1aa89a26dee6",
-          "bytes": 178030661,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/spinalcordtoolbox-v0.9.20261016/sct-webapp-0.9.20261016-windows-x64.zip.validation.txt",
+          "version": "0.9.20261017",
+          "url": "https://github.com/neurodesk/webapps/releases/download/spinalcordtoolbox-v0.9.20261017/sct-webapp-0.9.20261017-windows-x64.zip",
+          "sha256": "52680598f36dd36b88c5c6ca8a97c00926083b352a7e63df9188734d46fd162f",
+          "bytes": 178032231,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/spinalcordtoolbox-v0.9.20261017/sct-webapp-0.9.20261017-windows-x64.zip.validation.txt",
           "modelsIncluded": true,
-          "command": "Expand-Archive -Path .\\sct-webapp-0.9.20261016-windows-x64.zip -DestinationPath .\n.\\sct-webapp-0.9.20261016-windows-x64\\sct-webapp.exe segment --task spinalcord input.nii.gz results"
+          "command": "Expand-Archive -Path .\\sct-webapp-0.9.20261017-windows-x64.zip -DestinationPath .\n.\\sct-webapp-0.9.20261017-windows-x64\\sct-webapp.exe segment --task spinalcord input.nii.gz results"
         }
       ],
       "containers": [
