@@ -1252,6 +1252,7 @@ export class LesionNetworkMappingApp {
       sourceStage: 'input'
     });
     this.structuralFile = file;
+    this.structuralIsDwi = false;
     this.nativeStructuralFile = file;
     this.nativeStructuralInfo = null;
     this.fixedMni160Info = null;
@@ -1944,52 +1945,81 @@ export class LesionNetworkMappingApp {
     await Promise.all([segmentationReady, segmentationStepDone]);
   }
 
+  // With diffusion data and no structural image, the DWI/TRACE stands in:
+  // SynthStrip, prealign and SynthMorph do not depend on contrast.
+  async ensureStructuralForDiffusion() {
+    if (this.structuralFile || !this.deepIslesDwiFile) return;
+    const dwi = this.deepIslesDwiFile;
+    this.updateOutput('No structural image: using the DWI/TRACE as the structural image.');
+    await this.setStructural(new File([dwi], dwi.name, { type: dwi.type }));
+    this.structuralIsDwi = true;
+  }
+
+  // The b0 can stand in for ADC when it sits on the DWI/TRACE grid.
+  async diffusionB0File() {
+    const structural = this.nativeStructuralFile || this.structuralFile;
+    if (!structural || !this.deepIslesDwiFile || this.structuralIsDwi) return null;
+    const native = await this.ensureNativeStructuralInfo();
+    const dwi = getSpatialMetadata(this.deepIslesDwiFile);
+    if (!dwi?.dims || !dwi?.affine) return null;
+    return dimsEqual(dwi.dims, native.dims) && affineNearlyEqual(dwi.affine, native.affine, 1e-3) ? structural : null;
+  }
+
+  async diffusionSeedReady() {
+    return !!(this.deepIslesDwiFile && (this.deepIslesAdcFile || await this.diffusionB0File()));
+  }
+
   async runDeepIslesSegmentation() {
-    if (!this.structuralFile && !this.nativeStructuralFile) {
-      this.updateOutput('Drop a structural T1 before running a DeepISLES seed.');
-      return;
+    await this.ensureStructuralForDiffusion();
+    if (!this.deepIslesDwiFile) {
+      throw new Error('DeepISLES requires a DWI/TRACE input.');
     }
-    if (!this.deepIslesDwiFile || !this.deepIslesAdcFile) {
-      throw new Error('DeepISLES requires DWI/TRACE and ADC inputs.');
+    const b0File = this.deepIslesAdcFile ? null : await this.diffusionB0File();
+    if (!this.deepIslesAdcFile && !b0File) {
+      throw new Error('DeepISLES requires ADC, or a b0 on the DWI/TRACE grid as the structural image.');
     }
     const manifest = await this.ensureManifest();
-    const entry = manifest.modelAssets?.find(a => a.id === 'lnm-deepisles-nvauto-browser-seed');
-    if (!entry) throw new Error("Manifest is missing the 'lnm-deepisles-nvauto-browser-seed' model asset.");
+    const entry = manifest.modelAssets?.find(a => a.id === 'lnm-deepisles-seals-fold0');
+    if (!entry) throw new Error("Manifest is missing the 'lnm-deepisles-seals-fold0' model asset.");
     if (entry.supportStatus !== 'supported') {
-      throw new Error(
-        `'lnm-deepisles-nvauto-browser-seed' is ${entry.supportStatus || 'unvalidated'}; ` +
-        'benchmark-only DeepISLES assets must pass the Dice gap analysis and browser budget before app inference is enabled.'
-      );
+      throw new Error(`'lnm-deepisles-seals-fold0' is ${entry.supportStatus || 'unvalidated'}; cannot run DeepISLES.`);
     }
     const { base, name } = splitModelUrl(entry.sourceUrl);
     this.deepIslesSeedCompatibleWithNativeT1 = await this.deepIslesSeedCanReviewOnNativeT1();
+    // A brain mask already on the DWI grid (b0 or TRACE as structural) is
+    // reused; otherwise the worker runs SynthStrip on the DWI/TRACE.
+    const brainMaskFile = this.deepIslesSeedCompatibleWithNativeT1 ? this.nativeBrainmaskFile : null;
+    const synthStripEntry = manifest.modelAssets?.find(a => a.id === 'lnm-synthstrip');
+    const synthStripUrl = synthStripEntry ? splitModelUrl(synthStripEntry.sourceUrl) : null;
 
-    this.updateOutput('Starting DeepISLES DWI/ADC lesion seed...');
+    this.updateOutput(b0File
+      ? 'Starting DeepISLES lesion seed (DWI/TRACE + ADC computed from b0)...'
+      : 'Starting DeepISLES lesion seed (DWI/TRACE + ADC)...');
     await this.prepareViewerForLesionSegmentation();
     const segmentationReady = this._waitForStageData('segmentation');
     const segmentationStepDone = this._waitForStepComplete('inference');
     await this.executor.runDeepIslesInference({
       taskId: 'lnm-deepisles-seed',
       modelAssetId: entry.id,
-      modelName: name || 'lnm-deepisles-nvauto-browser-seed.onnx',
+      modelName: name || 'lnm-deepisles-seals-fold0-128-fp16.onnx',
       modelBaseUrl: base,
       cacheKey: entry.cacheKey,
       supportStatus: entry.supportStatus,
-      patchSize: entry.patchSize || [192, 192, 128],
-      threshold: entry.probabilityThreshold ?? 0.5,
-      minComponentSize: entry.minComponentSize ?? 30,
-      overlap: entry.overlap ?? 0.625,
-      channelOrder: entry.preprocessing?.channelOrder || ['ADC', 'TRACE'],
-      preprocessing: entry.preprocessing || {},
+      channelOrder: entry.preprocessing?.channelOrder || ['TRACE', 'ADC'],
+      testTimeAugmentation: entry.testTimeAugmentation ?? true,
       dwiBuffer: await this.deepIslesDwiFile.arrayBuffer(),
-      adcBuffer: await this.deepIslesAdcFile.arrayBuffer()
+      adcBuffer: this.deepIslesAdcFile ? await this.deepIslesAdcFile.arrayBuffer() : null,
+      b0Buffer: b0File ? await b0File.arrayBuffer() : null,
+      brainMaskBuffer: brainMaskFile ? await brainMaskFile.arrayBuffer() : null,
+      synthStrip: synthStripUrl && {
+        modelBaseUrl: synthStripUrl.base,
+        modelName: synthStripUrl.name || 'synthstrip.onnx',
+        cacheKey: synthStripEntry.cacheKey
+      }
     });
     await Promise.all([segmentationReady, segmentationStepDone]);
     if (!this.deepIslesSeedCompatibleWithNativeT1) {
-      this.updateOutput(
-        'DeepISLES seed is in DWI space and does not match the native T1 grid; ' +
-        'not starting T1 mask review or downstream CALMaR mapping automatically.'
-      );
+      this.updateOutput('DeepISLES seed is on the DWI grid; it is shown on the structural image by scanner coordinates. Check it during review.');
     }
   }
 
@@ -2158,8 +2188,9 @@ export class LesionNetworkMappingApp {
     if (!seedFile) return null;
     const seedMeta = getSpatialMetadata(seedFile);
     const seedSpace = seedMeta?.space;
-    if (seedSpace && ![VOLUME_SPACES.MNI160, VOLUME_SPACES.NATIVE_T1].includes(seedSpace)) {
-      throw new Error(`Editable lesion seed source: expected ${VOLUME_SPACES.MNI160} or ${VOLUME_SPACES.NATIVE_T1}, got ${seedSpace}.`);
+    const seedSpaces = [VOLUME_SPACES.MNI160, VOLUME_SPACES.NATIVE_T1, VOLUME_SPACES.NATIVE_DWI];
+    if (seedSpace && !seedSpaces.includes(seedSpace)) {
+      throw new Error(`Editable lesion seed source: expected ${seedSpaces.join(', ')}, got ${seedSpace}.`);
     }
     const native = await this.ensureNativeStructuralInfo();
     const seed = await decodeNiftiBuffer(await seedFile.arrayBuffer());
@@ -3574,6 +3605,7 @@ export class LesionNetworkMappingApp {
   // implemented (e.g. threshold runs with the pipeline's `defaults` if
   // present, falling back to whatever the UI has set).
   async runFullPipeline() {
+    await this.ensureStructuralForDiffusion();
     const pipeline = this.selectedPipeline;
     if (!pipeline || !Array.isArray(pipeline.stages) || pipeline.stages.length === 0) {
       this.updateOutput('No pipeline selected.');
@@ -3710,7 +3742,9 @@ export class LesionNetworkMappingApp {
           await this.startLesionMaskReview({ seedFile: this.autoLesionSeedFile });
           return { pausedForMaskReview: true };
         }
-        await prepareCandidate(null, { segment: () => this.runLesionSegmentation() });
+        await prepareCandidate(null, {
+          segment: async () => (await this.diffusionSeedReady()) ? this.runDeepIslesSegmentation() : this.runLesionSegmentation()
+        });
         await this.startLesionMaskReview({ seedFile: this.autoLesionSeedFile });
         return { pausedForMaskReview: true };
       case 'registration':

@@ -23,21 +23,18 @@ import { VOLUME_SPACES, getSpatialMetadata } from '../web/js/modules/spatial-fil
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'web/models/manifest.json'), 'utf8'));
 
-// ---- manifest: the asset is registered, pinned and still gated ----
-const asset = manifest.modelAssets.find(entry => entry.id === 'lnm-deepisles-nvauto-browser-seed');
-assert.ok(asset, 'the manifest registers the DeepISLES browser seed candidate');
-assert.equal(
-  asset.supportStatus,
-  'benchmark-only',
-  'DeepISLES stays benchmark-only until the Dice 0.5 gap is explained and a browser candidate passes'
-);
+// ---- manifest: SEALS fold 0 is registered, pinned and enabled ----
+const asset = manifest.modelAssets.find(entry => entry.id === 'lnm-deepisles-seals-fold0');
+assert.ok(asset, 'the manifest registers the SEALS DWI/ADC seed');
+assert.equal(asset.supportStatus, 'supported');
 assert.equal(asset.inputModality, 'DWI_ADC');
-assert.deepEqual(asset.inputContrasts, ['ADC', 'TRACE']);
-assert.deepEqual(asset.patchSize, [192, 192, 128]);
-assert.equal(asset.overlap, 0.625);
-assert.deepEqual(asset.preprocessing?.channelOrder, ['ADC', 'TRACE']);
-assert.equal(asset.preprocessing?.normalize, 'nonzero-zscore-channel-wise');
+assert.deepEqual(asset.inputContrasts, ['TRACE', 'ADC']);
+assert.deepEqual(asset.preprocessing?.channelOrder, ['TRACE', 'ADC'], 'nnU-Net channel 0 is DWI/TRACE, 1 is ADC');
+assert.deepEqual(asset.patchSize, [128, 128, 128]);
+assert.equal(asset.testTimeAugmentation, true, "SEALS' 8 mirrorings");
 assert.match(asset.checksum, /^sha256:[0-9a-f]{64}$/, 'the asset is pinned by checksum');
+assert.match(asset.sourceUrl, /^https:\/\/huggingface\.co\/datasets\/neurodeskorg\/webapps\/resolve\/[0-9a-f]{40}\//, 'the asset is pinned to a dataset commit');
+assert.equal(manifest.modelAssets.some(entry => /nvauto/.test(entry.id)), false, 'the NVAUTO candidate is gone');
 
 // ---- the app ----
 const dom = new JSDOM(fs.readFileSync(path.join(ROOT, 'web/index.html'), 'utf8'), { url: 'http://localhost:8080/' });
@@ -194,83 +191,145 @@ const structural = niftiFile('sub-1_T1w.nii', [8, 8, 8], [[1, 0, 0, -4], [0, 1, 
   assert.ok(app.messages.some(message => /^Brain mask render error: Brain mask overlay/.test(message)));
 }
 
-// ---- preconditions ----
-{
-  const app = makeApp(manifest);
-  await app.runDeepIslesSegmentation();
-  assert.deepEqual(app.messages, ['Drop a structural T1 before running a DeepISLES seed.']);
-
-  app.structuralFile = structural;
-  app.deepIslesDwiFile = dwi;
-  await assert.rejects(app.runDeepIslesSegmentation(), /^Error: DeepISLES requires DWI\/TRACE and ADC inputs\.$/);
-  assert.deepEqual(app.executorCalls, [], 'nothing is sent to the worker');
-}
-
-// ---- the shipped manifest refuses to run DeepISLES, loudly ----
-{
-  const app = makeApp(manifest);
-  app.structuralFile = structural;
-  app.deepIslesDwiFile = dwi;
-  app.deepIslesAdcFile = adc;
-  await assert.rejects(
-    app.runDeepIslesSegmentation(),
-    /'lnm-deepisles-nvauto-browser-seed' is benchmark-only; benchmark-only DeepISLES assets must pass the Dice gap analysis/
-  );
-  assert.deepEqual(app.executorCalls, [], 'no inference runs, and no other model is substituted');
-  assert.equal(app.autoLesionSeedFile, null, 'no seed appears');
-
-  const withoutAsset = makeApp({ ...manifest, modelAssets: manifest.modelAssets.filter(entry => entry !== asset) });
-  withoutAsset.structuralFile = structural;
-  withoutAsset.deepIslesDwiFile = dwi;
-  withoutAsset.deepIslesAdcFile = adc;
-  await assert.rejects(withoutAsset.runDeepIslesSegmentation(), /Manifest is missing the 'lnm-deepisles-nvauto-browser-seed' model asset/);
-}
-
-// ---- once validated: the manifest geometry reaches the worker, and a
-//      DWI-space seed does not start T1 mask review ----
-{
-  const validated = {
-    ...manifest,
-    modelAssets: manifest.modelAssets.map(entry => (entry === asset ? { ...asset, supportStatus: 'supported' } : entry))
-  };
-  const app = makeApp(validated);
-  await app.setDeepIslesInput('dwi', dwi);
-  await app.setDeepIslesInput('adc', adc);
-  app.structuralFile = structural;
-  app.nativeStructuralFile = structural;
+const t1Affine = [[1, 0, 0, -4], [0, 1, 0, -4], [0, 0, 1, -4], [0, 0, 0, 1]];
+function stubRun(app) {
   app.prepareViewerForLesionSegmentation = async () => {};
   app._waitForStageData = async () => {};
   app._waitForStepComplete = async () => {};
+}
 
+// ---- preconditions ----
+{
+  const app = makeApp(manifest);
+  stubRun(app);
+  await assert.rejects(app.runDeepIslesSegmentation(), /^Error: DeepISLES requires a DWI\/TRACE input\.$/);
+
+  // A T1 off the DWI grid cannot stand in for ADC.
+  await app.setStructural(structural);
+  await app.setDeepIslesInput('dwi', dwi);
+  await assert.rejects(app.runDeepIslesSegmentation(), /DeepISLES requires ADC, or a b0 on the DWI\/TRACE grid/);
+  assert.deepEqual(app.executorCalls, [], 'nothing is sent to the worker');
+}
+
+// ---- the asset gate: only a supported, registered asset runs ----
+{
+  for (const [assets, message] of [
+    [manifest.modelAssets.map(entry => (entry === asset ? { ...asset, supportStatus: 'benchmark-only' } : entry)), /'lnm-deepisles-seals-fold0' is benchmark-only/],
+    [manifest.modelAssets.filter(entry => entry !== asset), /Manifest is missing the 'lnm-deepisles-seals-fold0' model asset/]
+  ]) {
+    const app = makeApp({ ...manifest, modelAssets: assets });
+    stubRun(app);
+    await app.setStructural(structural);
+    await app.setDeepIslesInput('dwi', dwi);
+    await app.setDeepIslesInput('adc', adc);
+    await assert.rejects(app.runDeepIslesSegmentation(), message);
+    assert.deepEqual(app.executorCalls, [], 'no inference runs, and no other model is substituted');
+  }
+}
+
+// ---- T1 + DWI/TRACE + ADC: SynthStrip on the DWI, seed projected by scanner coordinates ----
+{
+  const app = makeApp(manifest);
+  stubRun(app);
+  await app.setStructural(structural);
+  await app.setDeepIslesInput('dwi', dwi);
+  await app.setDeepIslesInput('adc', adc);
   await app.runDeepIslesSegmentation();
-  assert.equal(app.executorCalls.length, 1);
   const [method, settings] = app.executorCalls[0];
   assert.equal(method, 'runDeepIslesInference');
-  assert.equal(settings.modelAssetId, 'lnm-deepisles-nvauto-browser-seed');
+  assert.equal(settings.modelAssetId, 'lnm-deepisles-seals-fold0');
   assert.equal(`${settings.modelBaseUrl}/${settings.modelName}`, asset.sourceUrl, 'the pinned asset URL is used');
   assert.equal(settings.cacheKey, asset.cacheKey);
   assert.equal(settings.supportStatus, 'supported');
-  assert.deepEqual(settings.patchSize, [192, 192, 128]);
-  assert.equal(settings.overlap, 0.625);
-  assert.equal(settings.threshold, asset.probabilityThreshold);
-  assert.equal(settings.minComponentSize, asset.minComponentSize);
-  assert.deepEqual(settings.channelOrder, ['ADC', 'TRACE']);
+  assert.deepEqual(settings.channelOrder, ['TRACE', 'ADC']);
+  assert.equal(settings.testTimeAugmentation, true);
   assert.equal(settings.dwiBuffer.byteLength, dwi.size);
   assert.equal(settings.adcBuffer.byteLength, adc.size);
-
-  // The DWI grid (2 mm) is not the native T1 grid (1 mm).
+  assert.equal(settings.b0Buffer, null);
+  assert.equal(settings.brainMaskBuffer, null, 'no brain mask exists on the DWI grid');
+  const synthstrip = manifest.modelAssets.find(entry => entry.id === 'lnm-synthstrip');
+  assert.equal(`${settings.synthStrip.modelBaseUrl}/${settings.synthStrip.modelName}`, synthstrip.sourceUrl, 'the worker strips the DWI with SynthStrip');
   assert.equal(app.deepIslesSeedCompatibleWithNativeT1, false);
-  assert.equal(
-    app.messages.at(-1),
-    'DeepISLES seed is in DWI space and does not match the native T1 grid; ' +
-    'not starting T1 mask review or downstream CALMaR mapping automatically.'
-  );
+  assert.match(app.messages.at(-1), /shown on the structural image by scanner coordinates/);
 
-  // A DWI acquired on the T1 grid may be reviewed on the T1.
-  const aligned = niftiFile('aligned_trace.nii', [8, 8, 8], [[1, 0, 0, -4], [0, 1, 0, -4], [0, 0, 1, -4], [0, 0, 0, 1]]);
-  await app.setDeepIslesInput('dwi', aligned);
+  // The DWI-grid seed (2 mm, 8^3) lands on the T1 grid (1 mm, 8^3) by its affine.
+  const seedBox = new Float32Array(512);
+  for (let z = 3; z < 5; z++) for (let y = 3; y < 5; y++) for (let x = 3; x < 5; x++) seedBox[x + 8 * (y + 8 * z)] = 1;
+  const seed = new File([writeNifti1(seedBox, { dims: [8, 8, 8], affine: Float64Array.from(dwiAffine.flat()) })], 'seed.nii');
+  app.tagFileSpace(seed, { space: VOLUME_SPACES.NATIVE_DWI, role: 'lesion-seed' });
+  const native = await app.resampleSeedMaskToNative(seed);
+  const projected = (await import('nifti-reader-js'));
+  const bytes = await native.arrayBuffer();
+  const data = new Uint8Array(projected.readImage(projected.readHeader(bytes), bytes));
+  // DWI voxels 3 and 4 sit at world -2 and 0 mm; nearest neighbour takes
+  // T1 voxels 1..4 (world -3..0 mm; -3 mm is half-way and rounds up into voxel 3).
+  const lit = [];
+  for (let i = 0; i < data.length; i++) if (data[i]) lit.push([i % 8, Math.floor(i / 8) % 8, Math.floor(i / 64)].join(','));
+  assert.equal(lit.length, 4 ** 3, 'a 2x2x2 seed at 2 mm covers 4x4x4 voxels at 1 mm');
+  assert.ok(lit.includes('1,1,1') && lit.includes('4,4,4') && !lit.includes('5,5,5') && !lit.includes('0,0,0'));
+}
+
+// ---- b0 + DWI/TRACE on one grid: the b0 stands in for ADC, its brain mask is reused ----
+{
+  const app = makeApp(manifest);
+  stubRun(app);
+  const b0 = niftiFile('sub-1_b0.nii', [8, 8, 8], dwiAffine);
+  await app.setStructural(b0);
+  await app.setDeepIslesInput('dwi', dwi);
+  const brainmask = niftiFile('brainmask.nii', [8, 8, 8], dwiAffine);
+  app.nativeBrainmaskFile = brainmask;
+  assert.equal(await app.diffusionSeedReady(), true, 'Run analysis takes the DeepISLES seed');
   await app.runDeepIslesSegmentation();
+  const settings = app.executorCalls[0][1];
+  assert.equal(settings.adcBuffer, null);
+  assert.equal(settings.b0Buffer.byteLength, b0.size, 'the b0 is sent to compute ADC');
+  assert.equal(settings.brainMaskBuffer.byteLength, brainmask.size, 'the b0 brain mask is reused on the DWI grid');
   assert.equal(app.deepIslesSeedCompatibleWithNativeT1, true);
+  assert.match(app.messages.at(-1), /ADC computed from b0/);
+}
+
+// ---- DWI/TRACE + ADC alone: the DWI/TRACE becomes the structural image ----
+{
+  const app = makeApp(manifest);
+  stubRun(app);
+  await app.setDeepIslesInput('dwi', dwi);
+  assert.equal(await app.diffusionSeedReady(), false, 'TRACE alone is not enough');
+  await app.setDeepIslesInput('adc', adc);
+  assert.equal(await app.diffusionSeedReady(), true);
+  await app.runDeepIslesSegmentation();
+  assert.equal(app.structuralFile.name, dwi.name);
+  assert.notEqual(app.structuralFile, dwi, 'a copy, so the DWI keeps its own space tag');
+  assert.equal(getSpatialMetadata(dwi).space, 'native-dwi');
+  assert.equal(app.structuralIsDwi, true);
+  assert.equal(await app.diffusionB0File(), null, 'the TRACE never stands in for b0');
+  assert.equal(app.deepIslesSeedCompatibleWithNativeT1, true, 'the seed is reviewed on the TRACE itself');
+
+  // Loading a real structural image ends the stand-in.
+  await app.setStructural(structural);
+  assert.equal(app.structuralIsDwi, false);
+}
+
+// ---- Run analysis picks the seed model from the inputs ----
+for (const [label, setup, expected] of [
+  ['T1 only', async app => app.setStructural(structural), 'runLesionSegmentation'],
+  ['T1 + DWI/TRACE + ADC', async app => {
+    await app.setStructural(structural);
+    await app.setDeepIslesInput('dwi', dwi);
+    await app.setDeepIslesInput('adc', adc);
+  }, 'runDeepIslesSegmentation'],
+  ['T1 + DWI/TRACE, no ADC', async app => {
+    await app.setStructural(structural);
+    await app.setDeepIslesInput('dwi', dwi);
+  }, 'runLesionSegmentation']
+]) {
+  const app = makeApp(manifest);
+  await setup(app);
+  const ran = [];
+  app.runLesionSegmentation = async () => ran.push('runLesionSegmentation');
+  app.runDeepIslesSegmentation = async () => ran.push('runDeepIslesSegmentation');
+  app.startLesionMaskReview = async () => null;
+  assert.deepEqual(await app._runStage({ module: 'inference-pipeline' }), { pausedForMaskReview: true });
+  assert.deepEqual(ran, [expected], label);
 }
 
 // ---- static contract of the opt-in Python gap harness ----

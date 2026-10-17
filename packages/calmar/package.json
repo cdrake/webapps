@@ -25,7 +25,8 @@
     "./inference-numerics": "./src/inference-numerics.js",
     "./inference-pipeline": "./src/inference-pipeline.js",
     "./pipeline": "./src/pipeline.js",
-    "./alignment": "./src/alignment.js"
+    "./alignment": "./src/alignment.js",
+    "./seals": "./src/seals.js"
   },
   "files": [
     "src",
