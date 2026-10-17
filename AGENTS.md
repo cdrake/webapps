@@ -15,6 +15,7 @@ Before changing UI, adding controls, or scaffolding an app, read [the design sys
 - About and Cite content is data in `registry/app-information.yml` (the lightNIIng ecosystem statement and link live under `shared`) (packages under the hood, a paper per implemented method, builder credits). The shared shell renders it; apps never write citation markup. When an app gains a method, add its paper there and to `test/app-information.test.mjs`.
 
 - Keep one shared application bar. Register app-specific About, Cite and Privacy handlers through the shell's control contract. If an app ships a command-line package, register its Standalone instructions through the optional shell control instead of placing them in the workflow sidebar.
+- Closed class-toggled dialogs must synchronize inert and aria-hidden state, not merely become transparent. Keep this state in the shared `ModalManager`/`dialogFocus` lifecycle so transitions remain intact; `test:mobile` checks About/Privacy/Cite accessibility and focus at phone and wide viewports.
 - Keep the current task visible. Put optional settings, technical logs and inactive output controls in accessible collapsible sections.
 - Place technical logs in a collapsed console below the viewer, following QSMbly's `console-container` disclosure pattern. Keep Copy and Clear actions in the console header.
 - Open straight into the workspace. Do not add start pages, hero sections, landing overlays or welcome modals; an introduction is one paragraph in the About template.
