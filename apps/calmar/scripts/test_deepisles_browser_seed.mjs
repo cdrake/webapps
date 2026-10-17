@@ -349,11 +349,10 @@ function stubRun(app) {
   assert.deepEqual(cleared, [], 'first loads clear nothing');
   await app.ensureStructuralForDiffusion();
   await app.setDeepIslesInput('adc', adc);
-  app.autoLesionSeedFile = { name: 't1-drawing.nii' };
+  app.lesionSource = 'other';
   await app.setDeepIslesInput('adc', niftiFile('sub-1_adc_v2.nii', [8, 8, 8], dwiAffine));
   assert.deepEqual(cleared, [], 'a lesion not made from diffusion input stays');
-  assert.equal(app.autoLesionSeedFile.name, 't1-drawing.nii');
-  app.autoLesionSeedFile = app.deepIslesSeedFile = { name: 'old-seed.nii' };
+  app.lesionSource = 'diffusion';
   await app.setDeepIslesInput('dwi', niftiFile('sub-1_trace_v2.nii', [8, 8, 8], dwiAffine));
   assert.deepEqual(cleared, [false], 'a new TRACE clears its DeepISLES lesion and results, not the b0 stand-in');
   assert.equal(app.autoLesionSeedFile, null);
@@ -371,10 +370,50 @@ function stubRun(app) {
   await app.setStructural(structural);
   await app.setDeepIslesInput('dwi', dwi);
   await app.setDeepIslesInput('b0', niftiFile('sub-1_b0.nii', [8, 8, 8], dwiAffine));
-  app.autoLesionSeedFile = app.deepIslesSeedFile = { name: 'trace-b0-seed.nii' };
+  // The real seed handler records the source; prealign then replaces the
+  // seed file and confirmation keeps only the mask.
+  const seedBytes = writeNifti1(new Float32Array(512), { dims: [8, 8, 8], affine: Float64Array.from(dwiAffine.flat()) });
+  app.refreshMaskDrawingControls = () => {};
+  app.handleStageData({ stage: 'segmentation', niftiData: seedBytes, taskId: 'lnm-deepisles-seed' });
+  assert.equal(app.lesionSource, 'diffusion');
+  app.autoLesionSeedFile = null;
   app.lesionMaskConfirmed = true;
   await app.setDeepIslesInput('adc', adc);
   assert.deepEqual(cleared, [false], 'the first ADC clears the TRACE + b0 lesion and its results');
+}
+{
+  // A blank or uploaded mask after a DeepISLES seed no longer depends on
+  // the diffusion inputs.
+  for (const start of ['blank', 'upload']) {
+    const app = makeApp(manifest);
+    const cleared = [];
+    app.clearResults = ({ full }) => cleared.push(full);
+    await app.setStructural(structural);
+    await app.setDeepIslesInput('dwi', dwi);
+    app.refreshMaskDrawingControls = () => {};
+    app.handleStageData({
+      stage: 'segmentation',
+      niftiData: writeNifti1(new Float32Array(512), { dims: [8, 8, 8], affine: Float64Array.from(dwiAffine.flat()) }),
+      taskId: 'lnm-deepisles-seed'
+    });
+    app.startLesionMaskReview = async ({ blank = false } = {}) => {
+      if (blank) app.lesionSource = 'other';
+    };
+    if (start === 'blank') {
+      // The real method's first lines decide the source; run them.
+      delete app.startLesionMaskReview;
+      app.maskDrawingController = { startBlank() {}, loadSeedFile: async () => {} };
+      app.setMaskDrawingTool = () => {};
+      app.applyMaskDrawingVisibility = () => {};
+      app.setMaskReview3DRenderEnabled = () => {};
+      await app.startLesionMaskReview({ blank: true });
+    } else {
+      await app.startUploadedLesionMaskReview(niftiFile('manual.nii', [8, 8, 8], t1Affine));
+    }
+    assert.equal(app.lesionSource, 'other', start);
+    await app.setDeepIslesInput('adc', adc);
+    assert.deepEqual(cleared, [], `a ${start} mask survives a new ADC`);
+  }
 }
 
 // ---- Run analysis picks the seed model from the inputs ----

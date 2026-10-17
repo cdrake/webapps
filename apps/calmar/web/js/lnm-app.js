@@ -222,6 +222,9 @@ export class LesionNetworkMappingApp {
     this.deepIslesAdcFile = null;
     this.deepIslesB0File = null;
     this.structuralFromDiffusion = null;
+    // Where the current lesion came from: 'diffusion' (DeepISLES) or 'other'.
+    // Prealign and confirmation replace its files, so files cannot tell.
+    this.lesionSource = null;
     this.deepIslesSeedFile = null;
     this.deepIslesSeedCompatibleWithNativeT1 = false;
     this.nativeStructuralInfo = null;
@@ -1270,6 +1273,7 @@ export class LesionNetworkMappingApp {
     this.deepIslesSeedFile = null;
     this.deepIslesSeedCompatibleWithNativeT1 = false;
     this.autoLesionSeedFile = null;
+    this.lesionSource = null;
     this.nativeLesionSeedFile = null;
     this.confirmedNativeLesionFile = null;
     this.lesionMaskFile = null;
@@ -1314,8 +1318,7 @@ export class LesionNetworkMappingApp {
     // invalidates that too. A lesion drawn or segmented on the T1 does not
     // depend on the diffusion inputs and stays.
     const standInReplaced = !!previous && this.structuralFromDiffusion === previous;
-    const seedFromDiffusion = !!this.deepIslesSeedFile && this.autoLesionSeedFile === this.deepIslesSeedFile;
-    if (standInReplaced || seedFromDiffusion) this.clearResults({ full: standInReplaced });
+    if (standInReplaced || this.lesionSource === 'diffusion') this.clearResults({ full: standInReplaced });
     if (standInReplaced) this.structuralFromDiffusion = null;
     if (kind === 'dwi') this.deepIslesDwiFile = file;
     else if (kind === 'adc') this.deepIslesAdcFile = file;
@@ -1350,6 +1353,7 @@ export class LesionNetworkMappingApp {
 
   async setLesion(file) {
     if (!file) return;
+    this.lesionSource = 'other';
     if (!this.structuralFile) {
       this.tagFileSpace(file, {
         space: atlasOptionSpace(this.getAtlasOption(), 'overlap'),
@@ -1823,6 +1827,7 @@ export class LesionNetworkMappingApp {
         sourceStage: isDeepIslesSeed ? 'deepisles-segmentation' : 'segmentation'
       });
       if (isDeepIslesSeed) this.deepIslesSeedFile = file;
+      this.lesionSource = isDeepIslesSeed ? 'diffusion' : 'other';
       this.autoLesionSeedFile = file;
       this.lesionMaskFile = null;
       this.lesionMaskConfirmed = false;
@@ -2260,6 +2265,7 @@ export class LesionNetworkMappingApp {
       role: 'lesion-seed',
       sourceStage: 'mask-upload'
     });
+    this.lesionSource = 'other';
     const seed = await this.startLesionMaskReview({ seedFile: file });
     this.updateOutput(`Manual lesion mask ready for editing: ${file.name}`);
     return seed;
@@ -2305,6 +2311,7 @@ export class LesionNetworkMappingApp {
       }
     }
 
+    if (blank) this.lesionSource = 'other';
     const seed = blank ? null : await this.resampleSeedMaskToNative(seedFile || this.autoLesionSeedFile);
     if (seed) await this.maskDrawingController.loadSeedFile(seed);
     else this.maskDrawingController.startBlank();
@@ -3837,6 +3844,7 @@ export class LesionNetworkMappingApp {
     this.autoLesionSeedFile = null;
     this.deepIslesSeedFile = null;
     this.deepIslesSeedCompatibleWithNativeT1 = false;
+    this.lesionSource = null;
     this.nativeLesionSeedFile = null;
     this.confirmedNativeLesionFile = null;
     this.maskReviewActive = false;
