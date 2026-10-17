@@ -278,6 +278,25 @@ test('console header actions sit in the shared, spaced action group', async () =
   assert.deepEqual(failures, []);
 });
 
+// QSMbly's pipeline settings dialog is opened by its own code, starts at display: none and is never inert.
+const SELF_MANAGED_OVERLAYS = new Set(['pipelineSettingsModal']);
+
+test('a closed opacity overlay is hidden from assistive technology and focus before any script runs', async () => {
+  const failures = [];
+  for (const app of registry.apps) {
+    for (const source of await appSources(app, ['.html'])) {
+      const { document } = new JSDOM(source.text).window;
+      for (const overlay of document.querySelectorAll('.modal-overlay:not(.active)')) {
+        if (SELF_MANAGED_OVERLAYS.has(overlay.id)) continue;
+        if (!overlay.hasAttribute('inert') || overlay.getAttribute('aria-hidden') !== 'true') {
+          failures.push(`${source.path}: #${overlay.id} needs inert and aria-hidden="true" until ModalManager opens it`);
+        }
+      }
+    }
+  }
+  assert.deepEqual(failures, []);
+});
+
 test('no app shows a start page, landing overlay or welcome modal before the workspace', async () => {
   const failures = [];
   for (const app of registry.apps) {
