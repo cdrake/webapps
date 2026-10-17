@@ -376,7 +376,6 @@ globalThis.fetch = async url => {
   });
   await settle(pipeline.runDeepIslesInference({ ...settings, adcBuffer }));
   assert.deepEqual(events.errors.slice(4), [], 'a supported SEALS asset runs');
-  assert.ok(events.logs.includes('Resampling ADC onto the DWI/TRACE grid.'));
   assert.deepEqual(tensors, Array(8).fill([1, 2, 128, 128, 128]), 'one padded 128^3 window, 8 mirrorings');
   let seed = decode(events.stages.segmentation);
   assert.deepEqual(seed.affine, dwiAffine.slice(0, 3), 'the seed is written on the DWI/TRACE grid');

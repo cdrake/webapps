@@ -89,7 +89,7 @@
               <label class="param-label" for="structuralFileInput">Structural T1 (NIfTI / DICOM)</label>
               <span class="nd-info-icon" aria-label="Structural T1 help" tabindex="0">i
                 <span class="nd-info-tooltip" role="tooltip">
-                  Choose a structural T1, or the b0 for diffusion-only data. Loading the image only displays it; processing starts when you click Run analysis.
+                  Choose a structural T1. Loading the image only displays it; processing starts when you click Run analysis.
                 </span>
               </span>
             </div>
@@ -100,7 +100,7 @@
               <label class="param-label" for="deepIslesDwiFileInput">DWI/TRACE (NIfTI / DICOM)</label>
               <span class="nd-info-icon" aria-label="DWI/TRACE help" tabindex="0">i
                 <span class="nd-info-tooltip" role="tooltip">
-                  With DWI/TRACE and ADC, or DWI/TRACE and a b0 as the structural image, Run analysis seeds the lesion with DeepISLES (SEALS) instead of the T1 model. Without a structural image the DWI/TRACE is used for registration.
+                  With DWI/TRACE plus ADC or b0, Run analysis seeds the lesion with DeepISLES (SEALS) instead of the T1 model. Without ADC, it is computed from the b0. Without a T1, the b0 (or DWI/TRACE) is used for registration.
                 </span>
               </span>
             </div>
@@ -109,6 +109,10 @@
           <div class="param-group">
             <label class="param-label" for="deepIslesAdcFileInput">ADC (NIfTI / DICOM)</label>
             <input type="file" data-neurodesk-input="image" id="deepIslesAdcFileInput" multiple>
+          </div>
+          <div class="param-group">
+            <label class="param-label" for="deepIslesB0FileInput">b0 (NIfTI / DICOM)</label>
+            <input type="file" data-neurodesk-input="image" id="deepIslesB0FileInput" multiple>
           </div>
         </div>
       </section>

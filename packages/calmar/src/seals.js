@@ -6,7 +6,7 @@
 // which is the order nnU-Net sees through SimpleITK, so a [X, Y, Z] volume is
 // the model's [Z, Y, X] tensor without a transpose.
 
-import { resampleAffine } from './resample.js';
+import { invertAffine, resampleAffine } from './resample.js';
 
 export const SEALS_PATCH = 128;
 const MIRRORS = [[], [0], [1], [2], [0, 1], [0, 2], [1, 2], [0, 1, 2]];
@@ -18,6 +18,44 @@ export function grid1mm(dims, affine) {
     dims: dims.map((n, i) => Math.round(n * columns[i])),
     affine: affine.map((row, r) => r === 3 ? [...row] : [row[0] / columns[0], row[1] / columns[1], row[2] / columns[2], row[3]])
   };
+}
+
+// SimpleITK's linear resampling (ITK LinearInterpolateImageFunction): a
+// point is inside when its continuous index lies in [-0.5, n - 0.5); there
+// the index is clamped to [0, n - 1] before interpolating, outside it is 0.
+// DeepISLES resamples with SimpleITK, so SEALS must see the same edges.
+export function resampleLinearItk(src, srcDims, srcAffine, dstDims, dstAffine) {
+  const inv = invertAffine(srcAffine);
+  const M = [0, 1, 2].map(r => [0, 1, 2, 3].map(c => inv[r][0] * dstAffine[0][c] + inv[r][1] * dstAffine[1][c] + inv[r][2] * dstAffine[2][c] + inv[r][3] * dstAffine[3][c]));
+  const [SX, SY, SZ] = srcDims;
+  const [DX, DY, DZ] = dstDims;
+  const out = new Float32Array(DX * DY * DZ);
+  const axis = (c, n) => {
+    if (!(c >= -0.5 && c < n - 0.5)) return null;
+    const clamped = Math.min(Math.max(c, 0), n - 1);
+    const i0 = Math.floor(clamped);
+    return [i0, Math.min(i0 + 1, n - 1), clamped - i0];
+  };
+  for (let dz = 0; dz < DZ; dz++) {
+    for (let dy = 0; dy < DY; dy++) {
+      for (let dx = 0; dx < DX; dx++) {
+        const ax = axis(M[0][0] * dx + M[0][1] * dy + M[0][2] * dz + M[0][3], SX);
+        const ay = axis(M[1][0] * dx + M[1][1] * dy + M[1][2] * dz + M[1][3], SY);
+        const az = axis(M[2][0] * dx + M[2][1] * dy + M[2][2] * dz + M[2][3], SZ);
+        if (!ax || !ay || !az) continue;
+        const at = (x, y, z) => src[x + SX * (y + SY * z)];
+        const [x0, x1, fx] = ax;
+        const [y0, y1, fy] = ay;
+        const [z0, z1, fz] = az;
+        const c00 = at(x0, y0, z0) * (1 - fx) + at(x1, y0, z0) * fx;
+        const c10 = at(x0, y1, z0) * (1 - fx) + at(x1, y1, z0) * fx;
+        const c01 = at(x0, y0, z1) * (1 - fx) + at(x1, y0, z1) * fx;
+        const c11 = at(x0, y1, z1) * (1 - fx) + at(x1, y1, z1) * fx;
+        out[dx + DX * (dy + DY * dz)] = (c00 * (1 - fy) + c10 * fy) * (1 - fz) + (c01 * (1 - fy) + c11 * fy) * fz;
+      }
+    }
+  }
+  return out;
 }
 
 // ADC = ln(b0 / TRACE) / b. SEALS z-scores each channel, so b cancels.
@@ -256,17 +294,23 @@ export async function predictLesionProbability(channels, dims, runPatch, { mirro
   return out;
 }
 
-// The whole SEALS seed: brain-masked DWI/TRACE and ADC on the DWI grid in,
-// a binary lesion mask on that grid out.
+// The whole SEALS seed: DWI/TRACE with its brain mask, and ADC on its own
+// grid, in; a binary lesion mask on the DWI/TRACE grid out. Each image is
+// masked on its own grid and sampled once onto the 1 mm grid, as DeepISLES'
+// Task500 conversion does with skull-stripped inputs.
 export async function segmentSeals({ dwi, adc, brainMask = null, dims, affine }, runPatch, options = {}) {
-  const masked = [dwi, adc].map((channel) => {
-    if (!brainMask) return channel;
-    const out = new Float32Array(channel.length);
-    for (let i = 0; i < out.length; i++) out[i] = brainMask[i] ? channel[i] : 0;
+  const applyMask = (data, mask) => {
+    if (!mask) return data;
+    const out = new Float32Array(data.length);
+    for (let i = 0; i < out.length; i++) out[i] = mask[i] ? data[i] : 0;
     return out;
-  });
+  };
+  const adcMask = brainMask && resampleAffine(brainMask, dims, affine, adc.dims, adc.affine, 'nearest');
   const grid = grid1mm(dims, affine);
-  const onGrid = masked.map(channel => resampleAffine(channel, dims, affine, grid.dims, grid.affine, 'trilinear'));
+  const onGrid = [
+    resampleLinearItk(applyMask(dwi, brainMask), dims, affine, grid.dims, grid.affine),
+    resampleLinearItk(applyMask(adc.data, adcMask), adc.dims, adc.affine, grid.dims, grid.affine)
+  ];
   const crop = cropAndNormalize(onGrid, grid.dims);
   const probability = await predictLesionProbability(crop.data, crop.dims, runPatch, options);
   const [GX, GY] = grid.dims;

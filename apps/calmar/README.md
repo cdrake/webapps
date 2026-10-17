@@ -630,11 +630,10 @@ Pipeline-specific dependencies (added incrementally):
 
 ### Diffusion lesion seed (DeepISLES SEALS)
 
-With DWI/TRACE and ADC loaded, or DWI/TRACE and a b0 loaded as the structural
-image on the same grid, Run analysis seeds the lesion with SEALS instead of
-SynthStroke. Without ADC, the app computes it as ln(b0 / TRACE) / b; SEALS
-z-scores each channel, so the b-value does not matter. Without any structural
-image, a copy of the DWI/TRACE is used for brain extraction and registration.
+With DWI/TRACE plus ADC or b0 loaded, Run analysis seeds the lesion with SEALS
+instead of SynthStroke. Without ADC, the app computes it as ln(b0 / TRACE) / b;
+SEALS z-scores each channel, so the b-value does not matter. Without a T1, the
+b0 (or else the DWI/TRACE) is used for brain extraction and registration.
 A b0 alone is not enough: acute lesions are bright on TRACE and dark on ADC,
 and no model segments them on b0.
 

@@ -8,6 +8,7 @@ import {
   gaussianImportance,
   grid1mm,
   predictLesionProbability,
+  resampleLinearItk,
   slidingWindowSteps
 } from '../src/seals.js';
 
@@ -41,6 +42,16 @@ test('crop and normalisation match nnU-Net v1 crop_to_nonzero + masked z-score',
   for (let c = 0; c < 2; c++) {
     const worst = reference.crop_data[c].reduce((m, v, i) => Math.max(m, Math.abs(v - crop.data[c][i])), 0);
     assert.ok(worst < 1e-5, `channel ${c} differs by ${worst}`);
+  }
+});
+
+test('linear resampling matches SimpleITK, including its half-voxel edges', () => {
+  for (const { size, spacing, origin, out_size: outSize, values, expected } of reference.resample) {
+    const affine = [[spacing[0], 0, 0, origin[0]], [0, spacing[1], 0, origin[1]], [0, 0, spacing[2], origin[2]], [0, 0, 0, 1]];
+    const identity = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]];
+    const got = resampleLinearItk(Float32Array.from(values), size, affine, outSize, identity);
+    const worst = expected.reduce((m, v, i) => Math.max(m, Math.abs(v - got[i])), 0);
+    assert.ok(worst < 1e-3, `${size} at ${spacing}: differs by ${worst}`);
   }
 });
 

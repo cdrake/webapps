@@ -220,6 +220,7 @@ export class LesionNetworkMappingApp {
     this.nativeStructuralFile = null;
     this.deepIslesDwiFile = null;
     this.deepIslesAdcFile = null;
+    this.deepIslesB0File = null;
     this.deepIslesSeedFile = null;
     this.deepIslesSeedCompatibleWithNativeT1 = false;
     this.nativeStructuralInfo = null;
@@ -394,6 +395,13 @@ export class LesionNetworkMappingApp {
           .catch(err => this.updateOutput(`DeepISLES ADC input failed: ${err.message}`));
       });
     }
+    const deepIslesB0Input = document.getElementById('deepIslesB0FileInput');
+    if (deepIslesB0Input) {
+      deepIslesB0Input.addEventListener('change', (event) => {
+        this.readScanInput(event.target.files).then(file => file && this.setDeepIslesInput('b0', file))
+          .catch(err => this.updateOutput(`DeepISLES b0 input failed: ${err.message}`));
+      });
+    }
 
     const lesionInput = document.getElementById('lesionFileInput');
     if (lesionInput) {
@@ -443,12 +451,7 @@ export class LesionNetworkMappingApp {
     if (runDeepIslesBtn) {
       runDeepIslesBtn.addEventListener('click', () => {
         this.runDeepIslesSegmentation()
-          .then(() => {
-            if (this.deepIslesSeedCompatibleWithNativeT1) {
-              return this.startLesionMaskReview({ seedFile: this.autoLesionSeedFile });
-            }
-            return null;
-          })
+          .then(() => this.startLesionMaskReview({ seedFile: this.autoLesionSeedFile }))
           .catch(err => this.updateOutput(`DeepISLES lesion seed failed: ${err.message}`));
       });
     }
@@ -1252,7 +1255,6 @@ export class LesionNetworkMappingApp {
       sourceStage: 'input'
     });
     this.structuralFile = file;
-    this.structuralIsDwi = false;
     this.nativeStructuralFile = file;
     this.nativeStructuralInfo = null;
     this.fixedMni160Info = null;
@@ -1288,21 +1290,23 @@ export class LesionNetworkMappingApp {
 
   async setDeepIslesInput(kind, file) {
     if (!file) return null;
-    if (kind !== 'dwi' && kind !== 'adc') {
+    const label = { dwi: 'DWI/TRACE', adc: 'ADC', b0: 'b0' }[kind];
+    if (!label) {
       throw new Error(`Unknown DeepISLES input kind '${kind}'.`);
     }
     const decoded = await decodeNiftiBuffer(await file.arrayBuffer());
     this.tagDecodedFileSpace(file, decoded, {
       space: VOLUME_SPACES.NATIVE_DWI,
-      role: kind === 'dwi' ? 'deepisles-dwi' : 'deepisles-adc',
+      role: `deepisles-${kind}`,
       sourceStage: 'deepisles-input'
     });
     if (kind === 'dwi') this.deepIslesDwiFile = file;
-    else this.deepIslesAdcFile = file;
+    else if (kind === 'adc') this.deepIslesAdcFile = file;
+    else this.deepIslesB0File = file;
     this.deepIslesSeedFile = null;
     this.deepIslesSeedCompatibleWithNativeT1 = false;
     await this.showDeepIslesInput(file, kind);
-    this.updateOutput(`DeepISLES ${kind === 'dwi' ? 'DWI/TRACE' : 'ADC'} input ready: ${file.name}`);
+    this.updateOutput(`DeepISLES ${label} input ready: ${file.name}`);
     return file;
   }
 
@@ -1945,28 +1949,21 @@ export class LesionNetworkMappingApp {
     await Promise.all([segmentationReady, segmentationStepDone]);
   }
 
-  // With diffusion data and no structural image, the DWI/TRACE stands in:
-  // SynthStrip, prealign and SynthMorph do not depend on contrast.
+  // With diffusion data and no structural image, the b0 (or else the
+  // DWI/TRACE) stands in: SynthStrip, prealign and SynthMorph do not depend
+  // on contrast. The lesion seed then needs SEALS, so ADC or b0 is required.
   async ensureStructuralForDiffusion() {
     if (this.structuralFile || !this.deepIslesDwiFile) return;
-    const dwi = this.deepIslesDwiFile;
-    this.updateOutput('No structural image: using the DWI/TRACE as the structural image.');
-    await this.setStructural(new File([dwi], dwi.name, { type: dwi.type }));
-    this.structuralIsDwi = true;
+    if (!this.diffusionSeedReady()) {
+      throw new Error('DWI/TRACE needs ADC or b0 for the lesion seed; add one, or a structural T1.');
+    }
+    const source = this.deepIslesB0File || this.deepIslesDwiFile;
+    this.updateOutput(`No structural image: using the ${source === this.deepIslesB0File ? 'b0' : 'DWI/TRACE'} as the structural image.`);
+    await this.setStructural(new File([source], source.name, { type: source.type }));
   }
 
-  // The b0 can stand in for ADC when it sits on the DWI/TRACE grid.
-  async diffusionB0File() {
-    const structural = this.nativeStructuralFile || this.structuralFile;
-    if (!structural || !this.deepIslesDwiFile || this.structuralIsDwi) return null;
-    const native = await this.ensureNativeStructuralInfo();
-    const dwi = getSpatialMetadata(this.deepIslesDwiFile);
-    if (!dwi?.dims || !dwi?.affine) return null;
-    return dimsEqual(dwi.dims, native.dims) && affineNearlyEqual(dwi.affine, native.affine, 1e-3) ? structural : null;
-  }
-
-  async diffusionSeedReady() {
-    return !!(this.deepIslesDwiFile && (this.deepIslesAdcFile || await this.diffusionB0File()));
+  diffusionSeedReady() {
+    return !!(this.deepIslesDwiFile && (this.deepIslesAdcFile || this.deepIslesB0File));
   }
 
   async runDeepIslesSegmentation() {
@@ -1974,10 +1971,10 @@ export class LesionNetworkMappingApp {
     if (!this.deepIslesDwiFile) {
       throw new Error('DeepISLES requires a DWI/TRACE input.');
     }
-    const b0File = this.deepIslesAdcFile ? null : await this.diffusionB0File();
-    if (!this.deepIslesAdcFile && !b0File) {
-      throw new Error('DeepISLES requires ADC, or a b0 on the DWI/TRACE grid as the structural image.');
+    if (!this.diffusionSeedReady()) {
+      throw new Error('DeepISLES requires ADC or b0 with the DWI/TRACE.');
     }
+    const b0File = this.deepIslesAdcFile ? null : this.deepIslesB0File;
     const manifest = await this.ensureManifest();
     const entry = manifest.modelAssets?.find(a => a.id === 'lnm-deepisles-seals-fold0');
     if (!entry) throw new Error("Manifest is missing the 'lnm-deepisles-seals-fold0' model asset.");
@@ -3605,7 +3602,12 @@ export class LesionNetworkMappingApp {
   // implemented (e.g. threshold runs with the pipeline's `defaults` if
   // present, falling back to whatever the UI has set).
   async runFullPipeline() {
-    await this.ensureStructuralForDiffusion();
+    try {
+      await this.ensureStructuralForDiffusion();
+    } catch (err) {
+      this.updateOutput(err.message);
+      return;
+    }
     const pipeline = this.selectedPipeline;
     if (!pipeline || !Array.isArray(pipeline.stages) || pipeline.stages.length === 0) {
       this.updateOutput('No pipeline selected.');
@@ -3743,7 +3745,7 @@ export class LesionNetworkMappingApp {
           return { pausedForMaskReview: true };
         }
         await prepareCandidate(null, {
-          segment: async () => (await this.diffusionSeedReady()) ? this.runDeepIslesSegmentation() : this.runLesionSegmentation()
+          segment: () => this.diffusionSeedReady() ? this.runDeepIslesSegmentation() : this.runLesionSegmentation()
         });
         await this.startLesionMaskReview({ seedFile: this.autoLesionSeedFile });
         return { pausedForMaskReview: true };

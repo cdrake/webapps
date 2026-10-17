@@ -479,12 +479,14 @@ async function stepDeepIslesInference(params) {
     postLog(`Resampling ${label} onto the DWI/TRACE grid.`);
     return resampleAffine(other.imageData, other.dims, otherAffine, dims, affine, mode);
   };
+  // ADC keeps its own grid; SEALS samples it once onto the 1 mm grid.
   let adc;
   if (adcBuffer) {
-    adc = onDwiGrid(adcBuffer, 'ADC');
+    const parsed = parseNiftiInput(adcBuffer);
+    adc = { data: parsed.imageData, dims: [...parsed.dims], affine: affineFromHeaderBytes(parsed.headerBytes) };
   } else {
     postLog('No ADC: computing it from b0 and DWI/TRACE as ln(b0 / TRACE) / b.');
-    adc = adcFromB0(onDwiGrid(b0Buffer, 'b0'), dwi.imageData);
+    adc = { data: adcFromB0(onDwiGrid(b0Buffer, 'b0'), dwi.imageData), dims, affine };
   }
 
   let brainMask;

@@ -204,10 +204,11 @@ function stubRun(app) {
   stubRun(app);
   await assert.rejects(app.runDeepIslesSegmentation(), /^Error: DeepISLES requires a DWI\/TRACE input\.$/);
 
-  // A T1 off the DWI grid cannot stand in for ADC.
-  await app.setStructural(structural);
+  // A T1 never stands in for b0, even on the DWI grid: geometry is not contrast.
+  await app.setStructural(niftiFile('sub-1_T1w_on_dwi.nii', [8, 8, 8], dwiAffine));
   await app.setDeepIslesInput('dwi', dwi);
-  await assert.rejects(app.runDeepIslesSegmentation(), /DeepISLES requires ADC, or a b0 on the DWI\/TRACE grid/);
+  assert.equal(app.diffusionSeedReady(), false);
+  await assert.rejects(app.runDeepIslesSegmentation(), /DeepISLES requires ADC or b0 with the DWI\/TRACE/);
   assert.deepEqual(app.executorCalls, [], 'nothing is sent to the worker');
 }
 
@@ -269,16 +270,20 @@ function stubRun(app) {
   assert.ok(lit.includes('1,1,1') && lit.includes('4,4,4') && !lit.includes('5,5,5') && !lit.includes('0,0,0'));
 }
 
-// ---- b0 + DWI/TRACE on one grid: the b0 stands in for ADC, its brain mask is reused ----
+// ---- b0 + DWI/TRACE, no T1: the b0 stands in for ADC and for the structural image ----
 {
   const app = makeApp(manifest);
   stubRun(app);
   const b0 = niftiFile('sub-1_b0.nii', [8, 8, 8], dwiAffine);
-  await app.setStructural(b0);
   await app.setDeepIslesInput('dwi', dwi);
+  await app.setDeepIslesInput('b0', b0);
+  assert.equal(app.diffusionSeedReady(), true, 'Run analysis takes the DeepISLES seed');
+  await app.ensureStructuralForDiffusion();
+  assert.equal(app.structuralFile.name, b0.name, 'the b0 is the structural image');
+  assert.notEqual(app.structuralFile, b0, 'a copy, so the b0 keeps its own space tag');
+  assert.equal(getSpatialMetadata(b0).space, 'native-dwi');
   const brainmask = niftiFile('brainmask.nii', [8, 8, 8], dwiAffine);
   app.nativeBrainmaskFile = brainmask;
-  assert.equal(await app.diffusionSeedReady(), true, 'Run analysis takes the DeepISLES seed');
   await app.runDeepIslesSegmentation();
   const settings = app.executorCalls[0][1];
   assert.equal(settings.adcBuffer, null);
@@ -288,25 +293,22 @@ function stubRun(app) {
   assert.match(app.messages.at(-1), /ADC computed from b0/);
 }
 
-// ---- DWI/TRACE + ADC alone: the DWI/TRACE becomes the structural image ----
+// ---- DWI/TRACE + ADC, no T1 or b0: the DWI/TRACE is the structural image ----
 {
   const app = makeApp(manifest);
   stubRun(app);
   await app.setDeepIslesInput('dwi', dwi);
-  assert.equal(await app.diffusionSeedReady(), false, 'TRACE alone is not enough');
+  assert.equal(app.diffusionSeedReady(), false, 'TRACE alone is not enough');
+  await assert.rejects(app.ensureStructuralForDiffusion(), /DWI\/TRACE needs ADC or b0 for the lesion seed/);
+  assert.equal(app.structuralFile, null, 'TRACE alone never reaches the T1 model');
+  await app.runFullPipeline();
+  assert.match(app.messages.at(-1), /DWI\/TRACE needs ADC or b0/);
+  assert.equal(app.structuralFile, null);
+
   await app.setDeepIslesInput('adc', adc);
-  assert.equal(await app.diffusionSeedReady(), true);
   await app.runDeepIslesSegmentation();
   assert.equal(app.structuralFile.name, dwi.name);
-  assert.notEqual(app.structuralFile, dwi, 'a copy, so the DWI keeps its own space tag');
-  assert.equal(getSpatialMetadata(dwi).space, 'native-dwi');
-  assert.equal(app.structuralIsDwi, true);
-  assert.equal(await app.diffusionB0File(), null, 'the TRACE never stands in for b0');
   assert.equal(app.deepIslesSeedCompatibleWithNativeT1, true, 'the seed is reviewed on the TRACE itself');
-
-  // Loading a real structural image ends the stand-in.
-  await app.setStructural(structural);
-  assert.equal(app.structuralIsDwi, false);
 }
 
 // ---- Run analysis picks the seed model from the inputs ----
@@ -317,10 +319,15 @@ for (const [label, setup, expected] of [
     await app.setDeepIslesInput('dwi', dwi);
     await app.setDeepIslesInput('adc', adc);
   }, 'runDeepIslesSegmentation'],
-  ['T1 + DWI/TRACE, no ADC', async app => {
+  ['T1 + DWI/TRACE, no ADC or b0', async app => {
     await app.setStructural(structural);
     await app.setDeepIslesInput('dwi', dwi);
-  }, 'runLesionSegmentation']
+  }, 'runLesionSegmentation'],
+  ['T1 + DWI/TRACE + b0', async app => {
+    await app.setStructural(structural);
+    await app.setDeepIslesInput('dwi', dwi);
+    await app.setDeepIslesInput('b0', niftiFile('sub-1_b0.nii', [8, 8, 8], dwiAffine));
+  }, 'runDeepIslesSegmentation']
 ]) {
   const app = makeApp(manifest);
   await setup(app);

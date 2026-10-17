@@ -4,8 +4,8 @@
 This is the reference the browser port must reproduce. It follows SEALS'
 inference exactly, without nnU-Net installed:
 
-1. DWI/TRACE resampled to 1 mm (linear); ADC resampled onto that grid (linear),
-   as DeepISLES' Task500 conversion does.
+1. DWI/TRACE resampled to 1 mm (linear); ADC resampled directly onto that grid
+   (linear), as DeepISLES' Task500 conversion does.
 2. nnU-Net v1 preprocessing: crop to the hole-filled nonzero mask of both
    channels; per-channel z-score inside that mask, zero outside.
 3. nnU-Net v1 sliding window: 128^3 patches, step 0.5, Gaussian importance
@@ -116,9 +116,10 @@ def segment(session, dwi_path: Path, adc_path: Path, brain_mask_path: Path | Non
     dwi = sitk.ReadImage(str(dwi_path), sitk.sitkFloat32)
     adc = sitk.ReadImage(str(adc_path), sitk.sitkFloat32)
     if brain_mask_path is not None:
-        brain = onto(sitk.ReadImage(str(brain_mask_path), sitk.sitkFloat32), dwi, sitk.sitkNearestNeighbor) > 0
-        dwi = sitk.Mask(dwi, brain)
-        adc = sitk.Mask(onto(adc, dwi), brain)
+        # Mask each image on its own grid, as skull-stripped inputs are.
+        brain = sitk.ReadImage(str(brain_mask_path), sitk.sitkFloat32)
+        dwi = sitk.Mask(dwi, onto(brain, dwi, sitk.sitkNearestNeighbor) > 0)
+        adc = sitk.Mask(adc, onto(brain, adc, sitk.sitkNearestNeighbor) > 0)
     dwi_1mm = respace_1mm(dwi)
     adc_1mm = onto(adc, dwi_1mm)
     channels = np.stack([sitk.GetArrayFromImage(dwi_1mm), sitk.GetArrayFromImage(adc_1mm)])
