@@ -865,11 +865,11 @@
       "containers": [
         {
           "id": "synthseg",
-          "label": "synthseg 8.2.0 (20261010)",
+          "label": "synthseg 8.2.0 (20261016)",
           "url": "https://hub.docker.com/r/vnmd/synthseg_8.2.0",
-          "dockerImage": "vnmd/synthseg_8.2.0:20261010",
-          "apptainerUrl": "https://neurocontainers.neurodesk.workers.dev/synthseg_8.2.0_20261010.simg",
-          "apptainerName": "synthseg_8.2.0_20261010"
+          "dockerImage": "vnmd/synthseg_8.2.0:20261016",
+          "apptainerUrl": "https://neurocontainers.neurodesk.workers.dev/synthseg_8.2.0_20261016.simg",
+          "apptainerName": "synthseg_8.2.0_20261016"
         }
       ],
       "openrecon": {
