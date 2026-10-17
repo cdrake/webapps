@@ -650,8 +650,9 @@ and no model segments them on b0.
   `scripts/run_seals_onnx.py` matches nnU-Net's own inference on the ADS example
   subjects (Dice 0.99991 and 1.0), and the browser pipeline matches it
   (identical masks, Dice 1.0 on both, `packages/calmar/validation/seals-parity.mjs`).
-- SEALS was trained on skull-stripped images, so the app strips the DWI with
-  SynthStrip first. A seed on the DWI grid is shown on a separate T1 by scanner
+- SEALS was trained on skull-stripped images: the app reuses the brain mask
+  when it is already on the DWI grid (b0 or DWI/TRACE as the structural image)
+  and otherwise runs SynthStrip on the DWI/TRACE. A seed on the DWI grid is shown on a separate T1 by scanner
   coordinates; check its position during review.
 - The SOOP benchmark (`deepisles-seals-fold0-fp16-onnx`) has not been run yet.
 

@@ -419,6 +419,35 @@ function stubRun(app) {
   }
 }
 
+// ---- changing an input mid-run cancels DeepISLES; the stand-in mark is synchronous ----
+{
+  const app = makeApp(manifest);
+  app.prepareViewerForLesionSegmentation = async () => {};
+  let cancelled = 0;
+  app.executor.cancel = () => { cancelled++; };
+  await app.setStructural(structural);
+  await app.setDeepIslesInput('dwi', dwi);
+  await app.setDeepIslesInput('adc', adc);
+  const run = app.runDeepIslesSegmentation();
+  const outcome = run.then(() => 'resolved', err => err.message);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(app._deepIslesRunning, true, 'the worker is running SEALS');
+  await app.setDeepIslesInput('adc', niftiFile('sub-1_adc_v2.nii', [8, 8, 8], dwiAffine));
+  assert.equal(cancelled, 1, 'the old run is cancelled');
+  assert.equal(await outcome, 'DeepISLES cancelled: the ADC input changed.');
+  assert.equal(app._deepIslesRunning, false);
+  assert.equal(app.autoLesionSeedFile, null, 'no seed from the old inputs');
+
+  const marked = makeApp(manifest);
+  const source = niftiFile('sub-1_b0.nii', [8, 8, 8], dwiAffine);
+  const loading = marked.setStructural(new File([source], source.name), { fromDiffusion: source });
+  assert.equal(marked.structuralFromDiffusion, source, 'marked before the structural load awaits');
+  await loading;
+  const t1Loading = marked.setStructural(structural);
+  assert.equal(marked.structuralFromDiffusion, null, 'a T1 is never marked as a stand-in');
+  await t1Loading;
+}
+
 // ---- Run analysis picks the seed model from the inputs ----
 for (const [label, setup, expected] of [
   ['T1 only', async app => app.setStructural(structural), 'runLesionSegmentation'],

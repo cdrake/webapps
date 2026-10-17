@@ -31,6 +31,11 @@ for (const dir of cases) {
     dims: dwi.dims,
     affine: dwi.affine
   }, runPatch);
+  const sameGrid = reference.dims.every((n, i) => n === dwi.dims[i]) &&
+    reference.affine.every((row, r) => row.every((v, c) => Math.abs(v - dwi.affine[r][c]) < 1e-3));
+  if (!sameGrid || reference.data.length !== labels.length) {
+    throw new Error(`${path.basename(dir)}: reference.nii.gz is not on the DWI/TRACE grid.`);
+  }
   let both = 0;
   let a = 0;
   let b = 0;

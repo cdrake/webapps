@@ -1252,13 +1252,14 @@ export class LesionNetworkMappingApp {
     }
   }
 
-  async setStructural(file) {
+  async setStructural(file, { fromDiffusion = null } = {}) {
     if (!file) return;
     // Replacing a structural image the user loaded starts a new subject, so
     // diffusion inputs from the previous one must not seed it. Adding a T1
     // after a diffusion stand-in keeps them.
     if (this.nativeStructuralFile && !this.structuralFromDiffusion) this.clearDiffusionInputs();
-    this.structuralFromDiffusion = null;
+    // Recorded before any await, so a T1 loaded meanwhile is never marked.
+    this.structuralFromDiffusion = fromDiffusion;
     this.tagFileSpace(file, {
       space: VOLUME_SPACES.NATIVE_T1,
       role: 'structural',
@@ -1313,6 +1314,13 @@ export class LesionNetworkMappingApp {
     const label = { dwi: 'DWI/TRACE', adc: 'ADC', b0: 'b0' }[kind];
     if (!label) {
       throw new Error(`Unknown DeepISLES input kind '${kind}'.`);
+    }
+    // A DeepISLES run on the old inputs must not deliver its seed.
+    if (this._deepIslesRunning) {
+      try { this.executor.cancel(); }
+      catch (err) { this.updateOutput(`Cancel failed: ${err.message}`); }
+      this._rejectPendingWorkerWaits(new Error(`DeepISLES cancelled: the ${label} input changed.`));
+      this.progress?.reset('Cancelled');
     }
     const decoded = await decodeNiftiBuffer(await file.arrayBuffer());
     this.tagDecodedFileSpace(file, decoded, {
@@ -2001,8 +2009,7 @@ export class LesionNetworkMappingApp {
     }
     const source = this.deepIslesB0File || this.deepIslesDwiFile;
     this.updateOutput(`No structural image: using the ${source === this.deepIslesB0File ? 'b0' : 'DWI/TRACE'} as the structural image.`);
-    await this.setStructural(new File([source], source.name, { type: source.type }));
-    this.structuralFromDiffusion = source;
+    await this.setStructural(new File([source], source.name, { type: source.type }), { fromDiffusion: source });
   }
 
   clearDiffusionInputs() {
@@ -2050,26 +2057,31 @@ export class LesionNetworkMappingApp {
     await this.prepareViewerForLesionSegmentation();
     const segmentationReady = this._waitForStageData('segmentation');
     const segmentationStepDone = this._waitForStepComplete('inference');
-    await this.executor.runDeepIslesInference({
-      taskId: 'lnm-deepisles-seed',
-      modelAssetId: entry.id,
-      modelName: name || 'lnm-deepisles-seals-fold0-128-fp16.onnx',
-      modelBaseUrl: base,
-      cacheKey: entry.cacheKey,
-      supportStatus: entry.supportStatus,
-      channelOrder: entry.preprocessing?.channelOrder || ['TRACE', 'ADC'],
-      testTimeAugmentation: entry.testTimeAugmentation ?? true,
-      dwiBuffer: await this.deepIslesDwiFile.arrayBuffer(),
-      adcBuffer: this.deepIslesAdcFile ? await this.deepIslesAdcFile.arrayBuffer() : null,
-      b0Buffer: b0File ? await b0File.arrayBuffer() : null,
-      brainMaskBuffer: brainMaskFile ? await brainMaskFile.arrayBuffer() : null,
-      synthStrip: synthStripUrl && {
-        modelBaseUrl: synthStripUrl.base,
-        modelName: synthStripUrl.name || 'synthstrip.onnx',
-        cacheKey: synthStripEntry.cacheKey
-      }
-    });
-    await Promise.all([segmentationReady, segmentationStepDone]);
+    this._deepIslesRunning = true;
+    try {
+      await this.executor.runDeepIslesInference({
+        taskId: 'lnm-deepisles-seed',
+        modelAssetId: entry.id,
+        modelName: name || 'lnm-deepisles-seals-fold0-128-fp16.onnx',
+        modelBaseUrl: base,
+        cacheKey: entry.cacheKey,
+        supportStatus: entry.supportStatus,
+        channelOrder: entry.preprocessing?.channelOrder || ['TRACE', 'ADC'],
+        testTimeAugmentation: entry.testTimeAugmentation ?? true,
+        dwiBuffer: await this.deepIslesDwiFile.arrayBuffer(),
+        adcBuffer: this.deepIslesAdcFile ? await this.deepIslesAdcFile.arrayBuffer() : null,
+        b0Buffer: b0File ? await b0File.arrayBuffer() : null,
+        brainMaskBuffer: brainMaskFile ? await brainMaskFile.arrayBuffer() : null,
+        synthStrip: synthStripUrl && {
+          modelBaseUrl: synthStripUrl.base,
+          modelName: synthStripUrl.name || 'synthstrip.onnx',
+          cacheKey: synthStripEntry.cacheKey
+        }
+      });
+      await Promise.all([segmentationReady, segmentationStepDone]);
+    } finally {
+      this._deepIslesRunning = false;
+    }
     if (!this.deepIslesSeedCompatibleWithNativeT1) {
       this.updateOutput('DeepISLES seed is on the DWI grid; it is shown on the structural image by scanner coordinates. Check it during review.');
     }
