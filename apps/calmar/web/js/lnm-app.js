@@ -1318,7 +1318,11 @@ export class LesionNetworkMappingApp {
     // invalidates that too. A lesion drawn or segmented on the T1 does not
     // depend on the diffusion inputs and stays.
     const standInReplaced = !!previous && this.structuralFromDiffusion === previous;
-    if (standInReplaced || this.lesionSource === 'diffusion') this.clearResults({ full: standInReplaced });
+    if (standInReplaced || this.lesionSource === 'diffusion') {
+      this.clearResults({ full: standInReplaced });
+      // The atlas-grid lesion was warped from the DeepISLES mask.
+      this.lesionFile = null;
+    }
     if (standInReplaced) this.structuralFromDiffusion = null;
     if (kind === 'dwi') this.deepIslesDwiFile = file;
     else if (kind === 'adc') this.deepIslesAdcFile = file;
@@ -2266,6 +2270,8 @@ export class LesionNetworkMappingApp {
       sourceStage: 'mask-upload'
     });
     this.lesionSource = 'other';
+    this.autoLesionSeedFile = null;
+    this.deepIslesSeedFile = null;
     const seed = await this.startLesionMaskReview({ seedFile: file });
     this.updateOutput(`Manual lesion mask ready for editing: ${file.name}`);
     return seed;
@@ -2311,7 +2317,12 @@ export class LesionNetworkMappingApp {
       }
     }
 
-    if (blank) this.lesionSource = 'other';
+    if (blank) {
+      // A manual mask replaces the automatic seed, so review re-entry cannot restore it.
+      this.lesionSource = 'other';
+      this.autoLesionSeedFile = null;
+      this.deepIslesSeedFile = null;
+    }
     const seed = blank ? null : await this.resampleSeedMaskToNative(seedFile || this.autoLesionSeedFile);
     if (seed) await this.maskDrawingController.loadSeedFile(seed);
     else this.maskDrawingController.startBlank();

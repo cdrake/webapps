@@ -378,8 +378,10 @@ function stubRun(app) {
   assert.equal(app.lesionSource, 'diffusion');
   app.autoLesionSeedFile = null;
   app.lesionMaskConfirmed = true;
+  app.lesionFile = { name: 'lesion-atlas-grid.nii' };
   await app.setDeepIslesInput('adc', adc);
   assert.deepEqual(cleared, [false], 'the first ADC clears the TRACE + b0 lesion and its results');
+  assert.equal(app.lesionFile, null, 'and the atlas-grid lesion warped from it');
 }
 {
   // A blank or uploaded mask after a DeepISLES seed no longer depends on
@@ -411,6 +413,7 @@ function stubRun(app) {
       await app.startUploadedLesionMaskReview(niftiFile('manual.nii', [8, 8, 8], t1Affine));
     }
     assert.equal(app.lesionSource, 'other', start);
+    if (start === 'blank') assert.equal(app.autoLesionSeedFile, null, 'review re-entry cannot restore the DeepISLES seed');
     await app.setDeepIslesInput('adc', adc);
     assert.deepEqual(cleared, [], `a ${start} mask survives a new ADC`);
   }
