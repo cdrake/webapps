@@ -809,11 +809,11 @@
         {
           "kind": "cli",
           "platform": "macos-arm64",
-          "version": "0.10.20261016",
-          "url": "https://github.com/neurodesk/webapps/releases/download/synthseg-v0.10.20261016/synthseg-0.10.20261016-macos-arm64.pkg",
-          "sha256": "170c6e633f3f56bc6487e864f48e0e2ceaa5e19dc9977413590af513b1236dfc",
-          "bytes": 57295985,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/synthseg-v0.10.20261016/synthseg-0.10.20261016-macos-arm64.pkg.validation.txt",
+          "version": "0.11.20261017",
+          "url": "https://github.com/neurodesk/webapps/releases/download/synthseg-v0.11.20261017/synthseg-0.11.20261017-macos-arm64.pkg",
+          "sha256": "24abde1fc24f86a13ffed52d295bbb9d265f2ba270ccbac5db5780f38db34436",
+          "bytes": 57296021,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/synthseg-v0.11.20261017/synthseg-0.11.20261017-macos-arm64.pkg.validation.txt",
           "modelsIncluded": true
         },
         {
