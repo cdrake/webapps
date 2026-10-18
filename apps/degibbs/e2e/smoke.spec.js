@@ -6,6 +6,7 @@ import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
 import { readNiftiFrames } from "@neurodesk/webapp-components/file-io";
 import { squareSeries } from "./fixtures.mjs";
+import { dicomSeries } from "../../../test-utils/dicom-fixture.mjs";
 
 const examples = JSON.parse(readFileSync(new URL("../examples.json", import.meta.url), "utf8"));
 const imageUrl = examples[0].files.find((file) => file.role === "image").url;
@@ -59,6 +60,22 @@ test("a 4D series is corrected volume by volume and keeps its gradients", async 
   expect(readFileSync(await bval.path(), "utf8")).toBe("0 1000");
 });
 
+for (const role of ["bval", "bvec"]) {
+  test(`a separately supplied ${role} is kept without its companion`, async ({ page }) => {
+    const series = squareSeries();
+    const files = series.files.filter((file) => file.name.endsWith(".nii.gz") || file.name.endsWith(`.${role}`));
+    await page.goto("/");
+    await page.locator("#imageInput").setInputFiles(files);
+    await expect(page.locator("#runButton")).toBeEnabled();
+    await page.locator("#runButton").click();
+    await expect(page.locator("#statusText")).toHaveText("Ringing removed from 2 volumes");
+    const gradient = await download(page, role === "bval" ? "b-values" : "b-vectors");
+    expect(gradient.suggestedFilename()).toBe(`sub-01_desc-degibbs_dwi.${role}`);
+    expect(readFileSync(await gradient.path())).toEqual(files[1].buffer);
+    await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(3);
+  });
+}
+
 test("cancelling stops the workers and permits another run", async ({ page }) => {
   const series = squareSeries({ nx: 128, ny: 128, nz: 60, frames: 8 });
   await page.goto("/");
@@ -67,6 +84,28 @@ test("cancelling stops the workers and permits another run", async ({ page }) =>
   await page.locator("#runButton").click();
   await expect(page.locator("#cancelButton")).toBeVisible();
   await page.locator("#cancelButton").click();
+  await expect(page.locator("#statusText")).toHaveText("Cancelled");
+  await expect(page.locator("#runButton")).toBeEnabled();
+  await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(0);
+});
+
+test("cancelling while packing the image prevents completed outputs", async ({ page }) => {
+  await page.goto("/");
+  await page.locator("#imageInput").setInputFiles(squareSeries().files);
+  await expect(page.locator("#runButton")).toBeEnabled();
+  await page.evaluate(() => {
+    const read = Response.prototype.arrayBuffer;
+    Response.prototype.arrayBuffer = async function () {
+      const buffer = await read.call(this);
+      Response.prototype.arrayBuffer = read;
+      await new Promise((resolve) => { window.finishOutputPacking = resolve; });
+      return buffer;
+    };
+  });
+  await page.locator("#runButton").click();
+  await page.waitForFunction(() => typeof window.finishOutputPacking === "function");
+  await page.locator("#cancelButton").click();
+  await page.evaluate(() => window.finishOutputPacking());
   await expect(page.locator("#statusText")).toHaveText("Cancelled");
   await expect(page.locator("#runButton")).toBeEnabled();
   await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(0);
@@ -141,8 +180,13 @@ test("cancelling during image reading prevents a late commit and permits retry",
   await expect(page.locator("[data-neurodesk-examples]")).toHaveAttribute("data-example-state", "ready", { timeout: 120000 });
 });
 
-test("the automation operation returns the corrected image and its gradients", async ({ page }) => {
+test("the automation operation returns the image, gradients and acquisition sidecar", async ({ page }) => {
   const series = squareSeries();
+  series.files.push({
+    name: "sub-01_dwi.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify({ SliceEncodingDirection: "k", PhaseEncodingDirection: "j-", TotalReadoutTime: 0.05 })),
+  });
   await page.goto("/");
   await page.locator("#neurodesk-input-transfer").setInputFiles(series.files);
   await page.evaluate(async () => {
@@ -152,5 +196,27 @@ test("the automation operation returns the corrected image and its gradients", a
   await expect.poll(() => page.evaluate(async () => (await globalThis.neurodeskAutomation.dispatch("snapshot")).state), { timeout: 60000 }).toBe("succeeded");
   const report = await page.evaluate(async () => (await globalThis.neurodeskAutomation.dispatch("snapshot")).report);
   expect(report.provenance.method).toBe("mrdegibbs-3.0.8-port");
-  expect(Object.keys(report.artifacts).sort()).toEqual(["bval", "bvec", "image"]);
+  expect(Object.keys(report.artifacts).sort()).toEqual(["bval", "bvec", "image", "sidecar"]);
+  const event = page.waitForEvent("download");
+  await page.evaluate(() => globalThis.neurodeskAutomation.dispatch("download", { artifactId: "sidecar" }));
+  const sidecar = await event;
+  expect(sidecar.suggestedFilename()).toBe("sub-01_desc-degibbs_dwi.json");
+  expect(JSON.parse(readFileSync(await sidecar.path(), "utf8"))).toMatchObject({
+    SliceEncodingDirection: "k",
+    PhaseEncodingDirection: "j-",
+    TotalReadoutTime: 0.05,
+  });
+});
+
+test("DICOM derivatives retain acquisition fields without personal metadata", async ({ page }) => {
+  await page.goto("/");
+  await page.locator("#imageInput").setInputFiles(dicomSeries({ slices: 16, patient: { birthDate: "19800102" } }));
+  await expect(page.locator("#fileInfo")).toContainText(".nii", { timeout: 60000 });
+  await page.locator("#runButton").click();
+  await expect(page.locator("#statusText")).toContainText("Ringing removed", { timeout: 60000 });
+  const result = await download(page, "Sidecar");
+  const sidecar = JSON.parse(readFileSync(await result.path(), "utf8"));
+  expect(sidecar.EchoTime).toBe(0.02);
+  expect(sidecar).not.toHaveProperty("PatientName");
+  expect(sidecar).not.toHaveProperty("PatientBirthDate");
 });

@@ -10,7 +10,8 @@ export function splitName(fileName) {
 /** The derivative name of the corrected image and of its passed-through gradient files. */
 export function outputNames(fileName) {
   const [stem, suffix] = splitName(fileName);
-  const base = suffix ? `${stem}_desc-degibbs_${suffix}` : `${stem}_desc-degibbs`;
+  const sourceStem = stem.split("_").filter((entity) => !entity.startsWith("desc-")).join("_");
+  const base = suffix ? `${sourceStem}_desc-degibbs_${suffix}` : `${sourceStem}_desc-degibbs`;
   return { image: `${base}.nii.gz`, bval: `${base}.bval`, bvec: `${base}.bvec`, sidecar: `${base}.json` };
 }
 

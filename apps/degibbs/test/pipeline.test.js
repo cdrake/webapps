@@ -19,3 +19,9 @@ test("the derivative sidecar keeps the input's fields", () => {
   assert.match(out.Description, /mrdegibbs/);
   assert.match(derivativeSidecar(null).Description, /subvoxel/);
 });
+
+test("derivative names replace a previous processing description", () => {
+  assert.equal(outputNames("sub-01_desc-denoise_dwi.nii.gz").image, "sub-01_desc-degibbs_dwi.nii.gz");
+  assert.equal(outputNames("sub-01_desc-degibbs_dwi.nii.gz").image, "sub-01_desc-degibbs_dwi.nii.gz");
+  assert.equal(outputNames("sub-01_desc-denoise_dwi.nii.gz").sidecar, "sub-01_desc-degibbs_dwi.json");
+});

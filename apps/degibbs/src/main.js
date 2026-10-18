@@ -111,21 +111,25 @@ async function loadFiles(filesPromise, signal) {
   progress.begin("Reading image…");
   status("Reading image…");
   try {
-    const series = await readDiffusionSeries(await filesPromise, { signal: controller.signal });
+    const files = await filesPromise;
+    const series = await readDiffusionSeries(files, { signal: controller.signal, anonymizeSidecar: true });
     controller.signal.throwIfAborted();
     if (series.length !== 1) throw new Error(`Choose one image; this selection has ${series.length}.`);
     const [{ image, bval, bvec, sidecar }] = series;
     const buffer = await decodeNiftiBuffer(await image.arrayBuffer());
     controller.signal.throwIfAborted();
     const frames = readNiftiFrames(buffer);
+    const axes = sliceAxes(sidecar?.SliceEncodingDirection);
+    await showVolume(new File([buffer], image.name.replace(/\.gz$/i, "")));
+    controller.signal.throwIfAborted();
     input = { name: image.name, buffer, ...frames, bval, bvec, sidecar };
     clearOutputs();
-    const axes = sliceAxes(sidecar?.SliceEncodingDirection);
     $("sliceAxes").value = axes.join(",");
     $("fileInfo").hidden = false;
-    $("fileInfo").textContent = `${image.name} · ${frames.dims.join("×")}${frames.frames > 1 ? `×${frames.frames}` : ""}${bval ? " · bval, bvec" : ""}`;
+    const gradients = [bval && "bval", bvec && "bvec"].filter(Boolean).join(", ");
+    $("fileInfo").textContent = `${image.name} · ${frames.dims.join("×")}${frames.frames > 1 ? `×${frames.frames}` : ""}${gradients ? ` · ${gradients}` : ""}`;
     $("dropZone").classList.add("has-files");
-    await showVolume(new File([buffer], image.name.replace(/\.gz$/i, "")));
+    $("imageInput").dispatchEvent(new CustomEvent("nd-files", { bubbles: true, detail: { files } }));
     progress.setProgress(0);
     status(`${image.name} loaded`);
   } finally {
@@ -139,6 +143,7 @@ async function loadFiles(filesPromise, signal) {
 
 async function removeRinging(signal) {
   if (!input || loading || running) throw new Error("Load an image before removing ringing.");
+  signal?.throwIfAborted();
   const controller = new AbortController();
   const abort = () => controller.abort();
   signal?.addEventListener("abort", abort, { once: true });
@@ -158,22 +163,27 @@ async function removeRinging(signal) {
       signal: controller.signal,
       onProgress: (fraction) => progress.setProgress(fraction),
     });
+    controller.signal.throwIfAborted();
     const names = outputNames(input.name);
     const dims = input.frames > 1 ? [...input.dims, input.frames] : input.dims;
     const image = await gzipFile(createNiftiFromData(corrected, input.buffer, { dims }), names.image);
+    controller.signal.throwIfAborted();
     const rows = { image: { description: "Corrected image", file: image } };
     const artifacts = [{ role: "image", file: image }];
-    if (input.bval && input.bvec) {
-      rows.bval = { description: "b-values (unchanged)", file: new File([input.bval], names.bval), viewable: false };
-      rows.bvec = { description: "b-vectors (unchanged)", file: new File([input.bvec], names.bvec), viewable: false };
-      artifacts.push({ role: "bval", file: rows.bval.file }, { role: "bvec", file: rows.bvec.file });
+    for (const [role, description] of [["bval", "b-values (unchanged)"], ["bvec", "b-vectors (unchanged)"]]) {
+      if (!input[role]) continue;
+      const file = new File([input[role]], names[role]);
+      rows[role] = { description, file, viewable: false };
+      artifacts.push({ role, file });
     }
     const sidecar = new File([`${JSON.stringify(derivativeSidecar(input.sidecar), null, 2)}\n`], names.sidecar, { type: "application/json" });
     rows.sidecar = { description: "Sidecar", file: sidecar, viewable: false };
+    artifacts.push({ role: "sidecar", file: sidecar });
+    await showVolume(image);
+    controller.signal.throwIfAborted();
     outputs = rows;
     results.render(rows);
     $("outputSection").open = true;
-    await showVolume(image);
     progress.end("Ringing removed");
     status(`Ringing removed from ${input.frames} volume${input.frames === 1 ? "" : "s"}`);
     return { artifacts, provenance: { method: "mrdegibbs-3.0.8-port", sliceAxes: axes, nshifts: 20, minW: 1, maxW: 3 } };
