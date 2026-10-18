@@ -1479,3 +1479,44 @@ apps:
         title: NiiVue
         reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
         url: https://github.com/niivue/niivue
+
+  n4:
+    packages:
+      - name: ANTs N4BiasFieldCorrection (WebAssembly)
+        url: https://github.com/ANTsX/ANTs
+        role: bias-field estimation, at the ANTs commit SYNcro uses
+      - name: MRtrix3 dwibiascorrect ants
+        url: https://github.com/MRtrix3/mrtrix3
+        role: the DWI procedure around N4 (MPL-2.0)
+      - name: NiiVue
+        url: https://github.com/niivue/niivue
+        role: image viewer
+      - name: dcm2niix (WebAssembly)
+        url: https://github.com/rordenlab/dcm2niix
+        role: DICOM to NIfTI conversion
+    citations:
+      - group: Bias-field correction
+        title: N4 bias field correction
+        reference: "Tustison NJ, Avants BB, Cook PA, et al. N4ITK: improved N3 bias correction. IEEE Transactions on Medical Imaging. 2010;29(6):1310–1320."
+        doi: 10.1109/TMI.2010.2046908
+      - group: Bias-field correction
+        title: ANTs evaluation
+        reference: "Avants BB, Tustison NJ, Song G, Cook PA, Klein A, Gee JC. A reproducible evaluation of ANTs similarity metric performance in brain image registration. NeuroImage. 2011;54(3):2033–2044."
+        doi: 10.1016/j.neuroimage.2010.09.025
+        code: https://github.com/ANTsX/ANTs
+      - group: Bias-field correction
+        title: MRtrix3
+        reference: "Tournier JD, Smith R, Raffelt D, et al. MRtrix3: A fast, flexible and open software
+          framework for medical image processing and visualisation. NeuroImage. 2019;202:116137."
+        doi: 10.1016/j.neuroimage.2019.116137
+        code: https://github.com/MRtrix3/mrtrix3
+      - group: DICOM conversion
+        title: dcm2niix
+        reference: "Li X, Morgan PS, Ashburner J, Smith J, Rorden C. The first step for
+          neuroimaging data analysis: DICOM to NIfTI conversion. Journal of
+          Neuroscience Methods. 2016;264:47–56."
+        doi: 10.1016/j.jneumeth.2016.03.001
+      - group: Visualization
+        title: NiiVue
+        reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
+        url: https://github.com/niivue/niivue
