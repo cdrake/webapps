@@ -1,6 +1,7 @@
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { parse } from 'yaml';
 import { dirname, join, relative, resolve, sep } from 'node:path';
+import sourceParser from '@neurodesk/code-quality';
 
 // Which apps/, packages/ and exes/ directories each workspace directory uses.
 // Declared workspace dependencies are not enough: apps also reach shared code
@@ -38,6 +39,9 @@ const ROOT_GLOB = /['"`]((?:scripts|test-utils|test)\/[\w/-]+)\/[^'"`]*\*[^'"`]*
 const ROOT_DIRS = ['scripts/', 'test-utils/', 'registry/', 'test/', 'packages/', 'exes/'];
 const ROOT_CONFIG = /^[\w.-]+\.(?:[cm]?[jt]s|json)$/;
 const SOURCE_FILE = /\.[cm]?[jt]s$/;
+// A whole line that is a `//` comment. Triple-slash lines stay: TypeScript's
+// `/// <reference path>` directives are compiler inputs.
+const LINE_COMMENT = /^[ \t]*\/\/(?!\/).*$/gm;
 const ROOT_SCRIPT_CALL = /\bpnpm (?:run )?([\w:-]+)/g;
 // Lint and mutation-testing configs: their own workflows read them, composite-site never does.
 export const INDEPENDENT_CONFIG = /^(?:eslint|knip|stryker)\.config\.m?js$/;
@@ -64,6 +68,17 @@ function namedByCommands(commands, rootScripts) {
   return { named, expanded };
 }
 const DEPENDENCY_FIELDS = ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies'];
+
+function withoutLineComments(source, file) {
+  let comments;
+  try {
+    comments = sourceParser.parse(source, { filePath: file, sourceType: 'module' }).comments;
+  } catch {
+    return source;
+  }
+  const starts = new Set(comments.filter(({ type }) => type === 'Line').map(({ range }) => range[0]));
+  return source.replace(LINE_COMMENT, (line, offset) => starts.has(offset + line.indexOf('//')) ? '' : line);
+}
 
 async function listDirs(path) {
   const entries = await readdir(path, { withFileTypes: true }).catch(() => []);
@@ -168,8 +183,9 @@ export async function loadConservativeWorkspaceGraph(root) {
     const uses = new Set();
     edges.set(file, uses);
     if (!SOURCE_FILE.test(file)) continue;
-    const text = await readFile(join(root, file), 'utf8').catch(() => null);
-    if (text === null) continue;
+    const source = await readFile(join(root, file), 'utf8').catch(() => null);
+    if (source === null) continue;
+    const text = withoutLineComments(source, file);
     for (const [, top, name, inner] of text.matchAll(SCRIPT_REFERENCE)) {
       if (!nodeSet.has(`${top}/${name}`)) continue;
       const target = inner && `${top}/${name}${inner}`;
