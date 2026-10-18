@@ -47,7 +47,7 @@ test('geometry error keeps the explicit lesion input available before inference'
  await expect(page.locator('#download')).toBeDisabled();
  expect(modelRequests).toEqual([]);
 });
-test('cancellation restores input controls and invalid input cannot reuse an old scan',async({page})=>{
+test('cancellation restores input controls and an unreadable file keeps the previous scan',async({page})=>{
  await page.addInitScript(()=>{
   const OriginalWorker=window.Worker;
   window.Worker=class extends OriginalWorker {
