@@ -1444,6 +1444,9 @@ apps:
       - name: AMICO 1.5.4 (Rust and WebAssembly port)
         url: https://github.com/daducci/AMICO
         role: NODDI fit, ported from the last BSD-licensed release
+      - name: MindGrab (brainchop)
+        url: https://github.com/neuroneural/brainchop
+        role: default brain extraction from the mean b0 on the GPU or CPU
       - name: NiiVue
         url: https://github.com/niivue/niivue
         role: image viewer
@@ -1451,6 +1454,15 @@ apps:
         url: https://github.com/rordenlab/dcm2niix
         role: DICOM to NIfTI conversion
     citations:
+      - group: Brain extraction
+        title: MindGrab
+        reference: "Fani A, Nassar M, Ghosh S, et al. MindGrab for BrainChop: fast and accurate skull stripping for command line and browser. arXiv. 2025."
+        url: https://arxiv.org/abs/2506.11860
+      - group: Brain extraction
+        title: Brainchop
+        reference: "Masoud M, Hu F, Plis S. Brainchop: in-browser MRI volumetric segmentation and rendering. Journal of Open Source Software. 2023;8(83):5098."
+        doi: 10.21105/joss.05098
+        code: https://github.com/neuroneural/brainchop
       - group: Diffusion tensor fitting
         title: Diffusion tensor imaging
         reference: Basser PJ, Mattiello J, LeBihan D. MR diffusion tensor spectroscopy
