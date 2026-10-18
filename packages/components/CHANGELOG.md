@@ -1,5 +1,46 @@
 # @neurodesk/webapp-components
 
+## 0.16.0
+
+### Minor Changes
+
+- 0511cd7: NODDI is a new app that fits diffusion tensor and NODDI maps to a DWI in the browser. Load a DWI NIfTI with its bval and bvec, or a DICOM diffusion series, and choose Fit models. The tensor fit (weighted or ordinary least squares, on the b0 volumes and the shells up to b = 1200 s/mm², or the lowest shell when none is that low) gives FA, MD, AD, RD, S0 and the principal direction. With two or more shells, NODDI by AMICO gives ICVF, ISOVF, ODI and the fibre direction; with one shell the app says so and fits the tensor only. The fit uses an Otsu threshold of the mean b0 as the brain mask, or a mask you supply on the DWI grid, and runs in Web Workers with a cancel. Every map downloads with its BIDS diffusion derivative name, for example `sub-01_model-noddi_param-icvf_dwimap.nii.gz`.
+
+  `@neurodesk/noddi` holds the WebAssembly fit, built from the Rust crates in `exes/dwi`. Its NODDI fit is a port of AMICO 1.5.4, the last BSD-licensed release, and agrees with AMICO 1.5.4 to a median of 1e-4 in white matter. It rotates each atom exactly instead of through AMICO's 1° lookup table.
+
+  `readDiffusionSeries` in `@neurodesk/runtime-support/dcm2niix-client` returns each image with its bval, bvec and sidecar, from NIfTI files or a converted DICOM series. FSL's `bvals` and `bvecs` files count as gradients, with or without a stem: the image readers no longer pass them to dcm2niix as DICOM, and a page drop sends them to an app's gradients input.
+
+  `createNiftiFromData` writes a 4D map when `dims` has a fourth entry greater than 1, so a direction map can be saved as three frames.
+
+- 3329c39: The registration apps load their images through one shared fixed/moving pair
+  (`nd-image-pair`, `createImagePair`). Each app now says fixed and moving, never
+  stationary. The fixed card comes first. Each card has explicit "Load fixed
+  image…" / "Load moving image…" and "Folder…" pickers, a drop zone, a summary
+  of size and spacing, a series select and a clear ×, and Swap exchanges the two.
+  Examples fill the slots by role through the same path as a user's file, and a
+  failed load keeps the previous image. The fixed card offers built-in templates from
+  the new `registry/templates.json`: FSL MNI152 1 mm brain and head and the ICBM152
+  avg152 2 mm head, downloaded and checked with `fetchModel`, and cited in each app.
+  elastix offers them for 3D images only. SYNcro shows its MNI152 template as a
+  locked fixed image, its scan is the moving image, and it fetches the template from
+  the catalogue address. Brain extraction in ANTs, Greedy and FireANTs has its own
+  Fixed and Moving buttons below the pair.
+
+  Cancelling an example preserves the previous image even when the app supplies
+  its own cancellation signal. Image summaries convert NIfTI spatial units to
+  millimetres before showing voxel spacing.
+
+### Patch Changes
+
+- ea2a6d2: Deface and BrowserQC take the avg152 T1 2 mm template from the shared template
+  catalogue (`registry/templates.json`) and download it with `fetchTemplateFile`,
+  which checks its size and SHA-256 and caches it. Before, Deface fetched the template
+  and its face mask with no checksum; the face mask now goes through `fetchModel` with
+  its manifest checksum too. BrowserQC's air template, its manifest and Deface's
+  manifest name the catalogue URL, so the offline bundle carries one copy of the file
+  instead of three. BrowserQC cites the ICBM152 template paper. `fetchTemplateFile`
+  names the template when its bytes do not match the pin.
+
 ## 0.15.0
 
 ### Minor Changes

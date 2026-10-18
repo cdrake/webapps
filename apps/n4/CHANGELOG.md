@@ -1,0 +1,25 @@
+# n4
+
+## 0.2.20261018
+
+### Minor Changes
+
+- 80bd5e9: N4 is a new app that corrects the bias field of MRI in the browser with ANTs N4BiasFieldCorrection. Load a 3D image, or a DWI with its bval and bvec, or a DICOM series, and choose Correct bias field. For a DWI it follows MRtrix `dwibiascorrect ants`: N4 on the mean b0 weighted by the brain mask, the field rescaled to keep the brain's total signal, and every volume divided by it. A 3D image is corrected directly. The mask is one you supply, or an Otsu threshold of the mean b0. N4 runs in a worker with a cancel. The corrected image, the bias field and the mask download with BIDS derivative names, and a bval, bvec and sidecar pass through under the new name.
+
+  `@neurodesk/n4` is ANTs N4BiasFieldCorrection compiled to WebAssembly, separate from `@neurodesk/registration` at the same ANTs commit and ITK-Wasm toolchain. Its bias field on the ds005134 example slab equals native ANTs 2.6.5 exactly.
+
+### Patch Changes
+
+- 4e3015f: Keep cancellation effective during mask import and output compression, and publish downloads only after processing and viewing finish. Preserve independently supplied gradient files, reject invalid b-values and multi-volume masks, replace existing BIDS description entities, report loaded files to the shared input controls, and anonymize converted DICOM sidecars.
+
+  Register NODDI, Degibbs and N4 with the release tool so their apps, scientific packages and embedded version strings receive matching date versions. Their shared Rust diffusion workspace retains its own internal version.
+
+- Updated dependencies [ea2a6d2]
+- Updated dependencies [80bd5e9]
+- Updated dependencies [0511cd7]
+- Updated dependencies [a07f659]
+- Updated dependencies [3329c39]
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/n4@0.2.20261018
+  - @neurodesk/runtime-support@0.8.0
+  - @neurodesk/dwi2trx@0.5.20261018

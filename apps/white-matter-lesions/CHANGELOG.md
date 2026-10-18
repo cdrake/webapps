@@ -14,6 +14,15 @@
 
 ### Patch Changes
 
+- Updated dependencies [ea2a6d2]
+- Updated dependencies [0511cd7]
+- Updated dependencies [a07f659]
+- Updated dependencies [3329c39]
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/runtime-support@0.8.0
+  - @neurodesk/synthsr@0.6.20261018
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/white-matter-lesions@0.5.20261018
 - Updated dependencies [b68209b]
   - @neurodesk/webapp-components@0.15.0
   - @neurodesk/runtime-support@0.7.1

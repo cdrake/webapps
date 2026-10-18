@@ -4,6 +4,10 @@
 
 ### Patch Changes
 
+- Updated dependencies [ea2a6d2]
+- Updated dependencies [0511cd7]
+- Updated dependencies [3329c39]
+  - @neurodesk/webapp-components@0.16.0
 - Updated dependencies [b68209b]
   - @neurodesk/webapp-components@0.15.0
 - Updated dependencies [2ae93ae]
