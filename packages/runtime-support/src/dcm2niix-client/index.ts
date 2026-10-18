@@ -189,8 +189,8 @@ export interface DiffusionSeries extends ImageSeries {
 /**
  * Like {@link readImageSeries}, but also pairs each image with the `.bval` and `.bvec` of the
  * same stem: those dcm2niix writes for a diffusion series, or those supplied with a direct
- * volume. When the selection holds one image and one file of each kind, they pair whatever
- * their names (FSL `data.nii.gz` with `bvals` and `bvecs`); with several images an unmatched
+ * volume. When the selection holds one image, each sole gradient file pairs whatever its
+ * name (FSL `data.nii.gz` with `bvals` or `bvecs`); with several images an unmatched
  * gradient file stays unpaired rather than guessed.
  */
 export async function readDiffusionSeries(
@@ -205,11 +205,11 @@ export async function readDiffusionSeries(
   )
   const bvals = byStem(BVAL_FILE)
   const bvecs = byStem(BVEC_FILE)
-  const single = series.length === 1 && bvals.size === 1 && bvecs.size === 1
+  const singleImage = series.length === 1
   return series.map((entry) => ({
     ...entry,
-    bval: bvals.get(stem(entry.image.name)) ?? (single ? [...bvals.values()][0] : null),
-    bvec: bvecs.get(stem(entry.image.name)) ?? (single ? [...bvecs.values()][0] : null),
+    bval: bvals.get(stem(entry.image.name)) ?? (singleImage && bvals.size === 1 ? [...bvals.values()][0] : null),
+    bvec: bvecs.get(stem(entry.image.name)) ?? (singleImage && bvecs.size === 1 ? [...bvecs.values()][0] : null),
   }))
 }
 
