@@ -74,6 +74,7 @@ test('standalone choices are ordered, omit technical clutter and never offer the
 // one (packages/<app>/release.json or a Rust release source) unless it is listed here with the reason.
 // Remove an entry in the change that adds its command line.
 const WITHOUT_COMMAND_LINE = {
+  dcm2niix: 'interactive BIDS curation: acquisition labels and fieldmap associations are user decisions; upstream dcm2niix supplies the converter command line',
   surfannotate: 'interactive surface annotation: every result is a manual choice in the viewer',
   zarro: 'interactive OME-Zarr viewer: it has no batch output',
   nesvor: 'needs CUDA; its standalone form is the neurodesk-compute server',

@@ -1440,10 +1440,19 @@ apps:
         url: https://cowles.yale.edu/sites/default/files/2023-05/s-0383.pdf
 
   dcm2niix:
+    about:
+      - Convert one MRI scanner examination into a reviewed BIDS dataset, entirely in the browser. Supported acquisitions are T1w, T2w, FLAIR, diffusion MRI and reverse phase encoding EPI fieldmaps.
     packages:
-      - { name: NiiVue, url: https://github.com/niivue/niivue, role: image viewer }
+      - { name: "@niivue/dcm2niix (WebAssembly)", url: https://github.com/rordenlab/dcm2niix, role: DICOM image and gradient conversion }
+      - { name: BIDS, url: https://bids-specification.readthedocs.io/en/v1.11.2/, role: anatomical, diffusion and fieldmap dataset organization }
+      - { name: fflate, url: https://github.com/101arrowz/fflate, role: local archive extraction and export }
     citations:
-      - group: Visualization
-        title: NiiVue
-        reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
-        url: https://github.com/niivue/niivue
+      - group: DICOM conversion
+        title: dcm2niix
+        reference: "Li X, Morgan PS, Ashburner J, Smith J, Rorden C. The first step for neuroimaging data analysis: DICOM to NIfTI conversion. Journal of Neuroscience Methods. 2016;264:47–56."
+        doi: 10.1016/j.jneumeth.2016.03.001
+        code: https://github.com/rordenlab/dcm2niix
+      - group: Dataset organization
+        title: Brain Imaging Data Structure
+        reference: "Gorgolewski KJ, Auer T, Calhoun VD, et al. The brain imaging data structure, a format for organizing and describing outputs of neuroimaging experiments. Scientific Data. 2016;3:160044."
+        doi: 10.1038/sdata.2016.44

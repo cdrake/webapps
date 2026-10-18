@@ -740,7 +740,7 @@ apps:
     model_manifest: null
     asset_manifest_schema: null
     source: neurodesk/webapps@local
-    license: NOASSERTION
+    license: MIT
     maintainers: [neurodesk]
     support_status: experimental
     shell: imaging-workspace
