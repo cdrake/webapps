@@ -577,15 +577,18 @@ test('pinned examples share verified cached files across controls and keep loadi
   assert.deepEqual(states, ['loading', 'ready', 'loading', 'ready']);
 });
 
-test('turning file actions off shows a merged field again and keeps only the examples', () => {
-  const { window } = new JSDOM('<!doctype html><body><label class="nd-file"><input type="file" data-neurodesk-input="image"></label></body>');
-  const control = createExampleSelector({ examples, onLoad: async () => {} }, window.document);
-  window.document.body.prepend(control);
-  control.select.dispatchEvent(new window.Event('focus'));
-  const field = window.document.querySelector('.nd-file');
+test('turning file actions off restores its picker and can enable file actions again', () => {
+  const { window } = new JSDOM('<body><section><label class="nd-file"><input type="file" data-neurodesk-input="image"></label></section></body>');
+  const scope = window.document.querySelector('section');
+  const control = createExampleSelector({ examples, scope, onLoad: async () => {} }, window.document);
+  scope.prepend(control);
+  const field = scope.querySelector('.nd-file');
   assert.equal(field.classList.contains('nd-file-merged'), true);
   control.fileActions = false;
   assert.equal(field.classList.contains('nd-file-merged'), false);
   assert.deepEqual([...control.select.options].map(option => option.textContent), ['Choose an example…', 'Brain MRI']);
+  control.fileActions = true;
+  assert.equal(field.classList.contains('nd-file-merged'), true);
+  assert.equal(control.select.querySelectorAll('option[data-action="files"]').length, 1);
   control.destroy();
 });
