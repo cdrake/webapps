@@ -576,3 +576,19 @@ test('pinned examples share verified cached files across controls and keep loadi
   assert.deepEqual(imported, [['brain.nii', 3], ['brain.nii', 3]]);
   assert.deepEqual(states, ['loading', 'ready', 'loading', 'ready']);
 });
+
+test('disabling file actions restores the connected primary picker and can enable them again', () => {
+  const { window } = new JSDOM('<body><section><label class="nd-file"><input type="file" data-neurodesk-input="image"></label></section></body>');
+  const scope = window.document.querySelector('section');
+  const control = createExampleSelector({ examples, scope, onLoad: async () => {} }, window.document);
+  scope.prepend(control);
+  const field = scope.querySelector('.nd-file');
+  assert.equal(field.classList.contains('nd-file-merged'), true);
+  control.fileActions = false;
+  assert.equal(field.classList.contains('nd-file-merged'), false);
+  assert.equal(control.select.querySelectorAll('option[data-action]').length, 0);
+  control.fileActions = true;
+  assert.equal(field.classList.contains('nd-file-merged'), true);
+  assert.equal(control.select.querySelectorAll('option[data-action="files"]').length, 1);
+  control.destroy();
+});

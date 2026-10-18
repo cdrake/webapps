@@ -37,9 +37,9 @@ async function registerSelectedExample(page, timeout, files) {
   await page.locator("[data-neurodesk-example]").selectOption("t1-mni");
   await expect(page.locator("[data-neurodesk-examples]")).toHaveAttribute("data-example-state", "ready", { timeout: 120_000 });
   await expect(page.locator("#movingInfo")).toContainText("t1_brain.nii.gz");
-  await expect(page.locator("#movingInfo")).toContainText("brain extracted");
+  await expect(page.locator("#movingInfo")).toContainText(/ · brain extracted$/);
   await expect(page.locator("#fixedInfo")).toContainText("MNI152_T1_1mm_brain.nii.gz");
-  await expect(page.locator("#fixedInfo")).toContainText("brain extracted");
+  await expect(page.locator("#fixedInfo")).toContainText(/ · brain extracted$/);
   await expect(page.locator(".nd-viewer-panel")).toHaveCount(3);
   await expect(page.locator("#resultList")).toBeEmpty();
   await page.locator("#runButton").click();

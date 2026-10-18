@@ -251,6 +251,56 @@ for (const cancelledBy of ['example', 'app']) {
   });
 }
 
+test('a replacement waits for a cancelled example rollback before opening its image', async () => {
+  let releaseExample;
+  let enterExample;
+  let releaseRollback;
+  let enterRollback;
+  const exampleStarted = new Promise(resolve => { enterExample = resolve; });
+  const examplePending = new Promise(resolve => { releaseExample = resolve; });
+  const rollbackStarted = new Promise(resolve => { enterRollback = resolve; });
+  const rollbackPending = new Promise(resolve => { releaseRollback = resolve; });
+  const previousFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response('example');
+  let displayed;
+  let exampleOpened = false;
+  let replacement;
+  try {
+    const { pair, window, file } = setup({
+      examples: [{ id: 'pair', label: 'Pair', files: [{ role: 'fixed', name: 'example.nii.gz', url: 'https://example.test/example.nii.gz' }] }],
+      open: async (_slot, candidate) => {
+        if (candidate.name === 'example.nii.gz') {
+          exampleOpened = true;
+          enterExample();
+          await examplePending;
+        } else if (candidate.name === 'old.nii.gz' && exampleOpened) {
+          enterRollback();
+          await rollbackPending;
+        }
+        displayed = candidate.name;
+        return { name: candidate.name, dimensionality: 3 };
+      },
+    });
+    await pair.use('fixed', { name: 'old.nii.gz' });
+    pair.exampleControl.select.value = 'pair';
+    pair.exampleControl.select.dispatchEvent(new window.Event('change'));
+    await exampleStarted;
+    replacement = pair.load('fixed', [file('replacement.nii.gz')]);
+    releaseExample();
+    await rollbackStarted;
+    releaseRollback();
+    await replacement;
+    await settle();
+    assert.equal(pair.fixed.image.name, 'replacement.nii.gz');
+    assert.equal(displayed, 'replacement.nii.gz');
+  } finally {
+    releaseExample?.();
+    releaseRollback?.();
+    await replacement;
+    globalThis.fetch = previousFetch;
+  }
+});
+
 test('loads started together run in turn, as a two-scan drop does', async () => {
   let busy = false;
   const perform = async (message, task) => {
@@ -342,5 +392,39 @@ for (const [units, scale] of [[0, 1], [1, 1000], [2, 1], [3, 0.001]]) {
     view.setUint8(123, units | 8);
     const summary = await describeNiftiFile(new File([header], 'scan.nii'));
     summary.spacingMm.forEach((spacing, axis) => assert.ok(Math.abs(spacing - [2, 2, 3][axis]) < 1e-6));
+  });
+}
+
+async function compressedSummaryFile() {
+  const { gzipSync } = await import('node:zlib');
+  const header = new ArrayBuffer(352);
+  const view = new DataView(header);
+  view.setInt32(0, 348, true);
+  [3, 10, 12, 8, 1, 1, 1, 1].forEach((value, index) => view.setInt16(40 + index * 2, value, true));
+  [1, 2, 2, 3, 1, 0, 0, 0].forEach((value, index) => view.setFloat32(76 + index * 4, value, true));
+  view.setFloat32(108, 352, true);
+  return new File([gzipSync(new Uint8Array(header))], 'scan.nii.gz');
+}
+
+test('describeNiftiFile streams a gzip header without buffering the complete compressed file', async () => {
+  const file = await compressedSummaryFile();
+  file.arrayBuffer = () => { throw new Error('The complete compressed file must not be buffered for a summary.'); };
+  const summary = await describeNiftiFile(file);
+  assert.deepEqual(summary, { name: 'scan.nii.gz', dims: [10, 12, 8], spacingMm: [2, 2, 3], dimensionality: 3, frames: 1 });
+});
+
+for (const unavailable of ['file stream', 'DecompressionStream']) {
+  test(`describeNiftiFile reads gzip headers without ${unavailable}`, async () => {
+    const file = await compressedSummaryFile();
+    const decompressor = globalThis.DecompressionStream;
+    if (unavailable === 'file stream') file.stream = undefined;
+    else globalThis.DecompressionStream = undefined;
+    try {
+      const summary = await describeNiftiFile(file);
+      assert.deepEqual(summary.spacingMm, [2, 2, 3]);
+      assert.deepEqual(summary.dims, [10, 12, 8]);
+    } finally {
+      globalThis.DecompressionStream = decompressor;
+    }
   });
 }

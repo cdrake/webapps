@@ -153,6 +153,7 @@ export function defineExampleSelector(view = globalThis.window) {
     #renderOptions() {
       this.#select.replaceChildren(this.#option(this.#fileActions ? 'Load data or example…' : 'Choose an example…'));
       for (const example of this.#examples) this.#select.append(this.#option(example.label, example.id));
+      this.#actionsFor?.closest('.nd-file')?.classList.remove('nd-file-merged');
       this.#actionsFor = null;
       this.#renderActions();
     }
@@ -162,14 +163,14 @@ export function defineExampleSelector(view = globalThis.window) {
     // this reruns when the select is focused or pressed.
     #renderActions = () => {
       const input = this.#fileActions ? primaryInput(this.#boundScope ?? this.#scope) : null;
-      if (!input) this.#actionsFor = null;
-      if (!input || input === this.#actionsFor) return;
+      if (input === this.#actionsFor) return;
       this.#actionsFor?.closest('.nd-file')?.classList.remove('nd-file-merged');
       this.#select.querySelectorAll('hr, option[data-action]').forEach(node => node.remove());
+      this.#actionsFor = input;
+      if (!input) return;
       this.#select.append(this.ownerDocument.createElement('hr'), this.#option('Load files…', '', 'files'));
       if (input.dataset.neurodeskInput === 'image') this.#select.append(this.#option('Load folder…', '', 'folder'));
       input.closest('.nd-file')?.classList.add('nd-file-merged');
-      this.#actionsFor = input;
     };
 
     async #choose() {
