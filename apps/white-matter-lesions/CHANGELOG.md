@@ -27,6 +27,9 @@
 - Updated dependencies [3329c39]
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
+- Updated dependencies [b67e4e9]
+  - @neurodesk/runtime-support@0.7.2
+  - @neurodesk/webapp-components@0.15.1
   - @neurodesk/synthsr@0.6.20261018
   - @neurodesk/synthstrip@0.1.5
   - @neurodesk/white-matter-lesions@0.5.20261018

@@ -1558,6 +1558,13 @@
       "assets": [],
       "downloads": [],
       "containers": []
+    },
+    "dicom2bids": {
+      "desktop": true,
+      "profile": "interactive",
+      "assets": [],
+      "downloads": [],
+      "containers": []
     }
   }
 }
