@@ -1565,6 +1565,13 @@
       "assets": [],
       "downloads": [],
       "containers": []
+    },
+    "dwidenoise": {
+      "desktop": true,
+      "profile": "interactive",
+      "assets": [],
+      "downloads": [],
+      "containers": []
     }
   }
 }

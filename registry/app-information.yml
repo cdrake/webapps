@@ -1636,3 +1636,37 @@ apps:
         title: Vestibular-Schwannoma-SEG (The Cancer Imaging Archive, CC BY 4.0)
         reference: "Shapey J, Kujawa A, Dorent R, et al. Segmentation of Vestibular Schwannoma from Magnetic Resonance Imaging: An Open Annotated Dataset and Baseline Algorithm (Version 2) [Data set]. The Cancer Imaging Archive. 2021."
         doi: 10.7937/TCIA.9YTJ-5Q73
+
+  dwidenoise:
+    packages:
+      - name: DIPY 1.12.1 Patch2Self version 1 (Rust and WebAssembly port)
+        url: https://github.com/dipy/dipy
+        role: denoising, ported under the BSD-3-Clause licence
+      - name: NiiVue
+        url: https://github.com/niivue/niivue
+        role: image viewer
+      - name: dcm2niix (WebAssembly)
+        url: https://github.com/rordenlab/dcm2niix
+        role: DICOM to NIfTI conversion
+    citations:
+      - group: Denoising
+        title: Patch2Self
+        reference: "Fadnavis S, Batson J, Garyfallidis E. Patch2Self: Denoising Diffusion MRI with
+          Self-Supervised Learning. Advances in Neural Information Processing Systems 33 (NeurIPS 2020). 2020."
+        url: https://arxiv.org/abs/2011.01355
+      - group: Denoising
+        title: DIPY
+        reference: "Garyfallidis E, Brett M, Amirbekian B, et al. Dipy, a library for the analysis of
+          diffusion MRI data. Frontiers in Neuroinformatics. 2014;8:8."
+        doi: 10.3389/fninf.2014.00008
+        code: https://github.com/dipy/dipy
+      - group: DICOM conversion
+        title: dcm2niix
+        reference: "Li X, Morgan PS, Ashburner J, Smith J, Rorden C. The first step for
+          neuroimaging data analysis: DICOM to NIfTI conversion. Journal of
+          Neuroscience Methods. 2016;264:47–56."
+        doi: 10.1016/j.jneumeth.2016.03.001
+      - group: Visualization
+        title: NiiVue
+        reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
+        url: https://github.com/niivue/niivue

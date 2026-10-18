@@ -79,6 +79,7 @@ const WITHOUT_COMMAND_LINE = {
   zarro: 'interactive OME-Zarr viewer: it has no batch output',
   nesvor: 'needs CUDA; its standalone form is the neurodesk-compute server',
   dicomview: 'interactive DICOM browser: dcm2niix and dicompare already ship as command lines',
+  dwidenoise: 'the dwidenoise command line follows its app, as noddi\'s does (docs/architecture/dwi-microstructure-design.md)',
   degibbs: 'the degibbs command line follows its app, as noddi\'s does (docs/architecture/dwi-microstructure-design.md)',
   n4: 'the n4 command line follows its app, as noddi\'s does (docs/architecture/dwi-microstructure-design.md)',
   noddi: 'the noddi command line is the next step of docs/architecture/dwi-microstructure-design.md; the app ships first',
