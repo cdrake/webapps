@@ -1438,3 +1438,12 @@ apps:
         title: Prais-Winsten AR(1) prewhitening
         reference: "Prais SJ, Winsten CB. Trend Estimators and Serial Correlation. Cowles Commission Discussion Paper, Statistics No. 383. 1954."
         url: https://cowles.yale.edu/sites/default/files/2023-05/s-0383.pdf
+
+  dcm2niix:
+    packages:
+      - { name: NiiVue, url: https://github.com/niivue/niivue, role: image viewer }
+    citations:
+      - group: Visualization
+        title: NiiVue
+        reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
+        url: https://github.com/niivue/niivue

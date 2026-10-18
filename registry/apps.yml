@@ -729,3 +729,23 @@ apps:
       browser_test: true
       hardware_gpu: true
       release: false
+  - id: dcm2niix
+    path: dcm2niix
+    title: dcm2niix
+    description: Convert scanner DICOM exports to anatomical and DWI BIDS.
+    categories: [data-preparation]
+    keywords: [DICOM, NIfTI, BIDS, MRI, diffusion, conversion]
+    legacy_domain: null
+    runtime: react-vite
+    model_manifest: null
+    asset_manifest_schema: null
+    source: neurodesk/webapps@local
+    license: NOASSERTION
+    maintainers: [neurodesk]
+    support_status: experimental
+    shell: imaging-workspace
+    ci:
+      toolchains: [node]
+      shared_runtime: false
+      browser_test: true
+      release: false

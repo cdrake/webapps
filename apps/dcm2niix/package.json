@@ -1,0 +1,21 @@
+{
+  "name": "dcm2niix",
+  "version": "0.0.20261018",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && node ../../scripts/theme-app-dist.mjs --app dcm2niix",
+    "preview": "vite preview",
+    "test": "node --test test/*.test.js",
+    "test:e2e": "playwright test",
+    "lint": "node ../../scripts/lint.mjs --workspace"
+  },
+  "dependencies": {
+    "@neurodesk/webapp-components": "workspace:*"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.0",
+    "vite": "^5.0.0"
+  }
+}

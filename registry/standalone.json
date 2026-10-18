@@ -1537,6 +1537,13 @@
       "assets": [],
       "downloads": [],
       "containers": []
+    },
+    "dcm2niix": {
+      "desktop": true,
+      "profile": "interactive",
+      "assets": [],
+      "downloads": [],
+      "containers": []
     }
   }
 }
