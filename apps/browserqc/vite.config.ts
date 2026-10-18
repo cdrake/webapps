@@ -10,7 +10,6 @@ export default neurodeskViteConfig({
   plugins: [mindgrabFromAssetPath()],
   worker: { plugins: () => [mindgrabFromAssetPath()] },
   server: {
-    open: '/index.html',
     port: 8091,
   },
   build: {
