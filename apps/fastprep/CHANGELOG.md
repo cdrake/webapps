@@ -10,6 +10,11 @@
 
 ### Patch Changes
 
+- Updated dependencies [7c0d201]
+  - @neurodesk/webapp-components@0.16.2
+  - @neurodesk/runtime-support@0.9.1
+  - @neurodesk/synthsr@0.6.20261018
+  - @neurodesk/greedy@0.6.20261018
 - @neurodesk/greedy@0.6.20261018
 - 3d1feee: The technical log now shows MindGrab's own output for the brain extraction and tissue segmentation steps: which backend ran (WebGPU, WebGL2 or CPU), its timing, and warnings such as "the network found no brain". Before, a failed step reported only "the mindmap module exited with status 1".
 

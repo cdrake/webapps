@@ -4,6 +4,9 @@
 
 ### Patch Changes
 
+- Updated dependencies [7c0d201]
+  - @neurodesk/webapp-components@0.16.2
+  - @neurodesk/dicom2vid@0.5.20261018
 - Updated dependencies [46935f7]
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/dicom2vid@0.5.20261018

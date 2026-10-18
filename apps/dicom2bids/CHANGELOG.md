@@ -10,6 +10,10 @@
 
 ### Patch Changes
 
+- Updated dependencies [7c0d201]
+  - @neurodesk/webapp-components@0.16.2
+  - @neurodesk/runtime-support@0.9.1
+  - @neurodesk/dicom2vid@0.5.20261018
 - a560d01: Invalidate confirmation while replacement gradients load, keep the latest edit when reads overlap, and block export until the edit settles. Reject materially non-unit b-vectors without changing the supplied values.
 - Updated dependencies [b67e4e9]
   - @neurodesk/runtime-support@0.7.2

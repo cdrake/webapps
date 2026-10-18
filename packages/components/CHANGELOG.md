@@ -1,5 +1,11 @@
 # @neurodesk/webapp-components
 
+## 0.16.2
+
+### Patch Changes
+
+- 7c0d201: Restore the last committed image after cancelled or failed viewer loads. Share queued volume previews across NODDI, Degibbs, N4 and Dwidenoise, retaining source files and calibrated map ranges while rollback finishes before controls unlock.
+
 ## 0.16.1
 
 ### Patch Changes
@@ -46,6 +52,7 @@
   manifest name the catalogue URL, so the offline bundle carries one copy of the file
   instead of three. BrowserQC cites the ICBM152 template paper. `fetchTemplateFile`
   names the template when its bytes do not match the pin.
+
 ## 0.15.1
 
 ### Patch Changes

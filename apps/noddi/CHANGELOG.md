@@ -8,6 +8,12 @@
 
 ### Patch Changes
 
+- 7c0d201: Restore the last committed image after cancelled or failed viewer loads. Share queued volume previews across NODDI, Degibbs, N4 and Dwidenoise, retaining source files and calibrated map ranges while rollback finishes before controls unlock.
+- Updated dependencies [7c0d201]
+  - @neurodesk/webapp-components@0.16.2
+  - @neurodesk/dwi2trx@0.5.20261018
+  - @neurodesk/runtime-support@0.9.1
+  - @neurodesk/noddi@0.3.20261018
 - 870c729: NODDI's About and Cite dialogs now credit MindGrab and Brainchop for the default brain mask. Browser checks verify worker cleanup when MindGrab extraction is cancelled and a complete retry with the real example.
 - Updated dependencies
 - Updated dependencies [46935f7]

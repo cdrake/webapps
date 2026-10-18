@@ -4,6 +4,9 @@
 
 ### Patch Changes
 
+- Updated dependencies [7c0d201]
+  - @neurodesk/webapp-components@0.16.2
+  - @neurodesk/musclemap@1.5.20261018
 - Updated dependencies [46935f7]
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/musclemap@1.5.20261018

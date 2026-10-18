@@ -4,6 +4,7 @@
 
 ### Patch Changes
 
+- @neurodesk/runtime-support@0.9.1
 - Updated dependencies
   - @neurodesk/runtime-support@0.9.0
 - Updated dependencies [0511cd7]
