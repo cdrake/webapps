@@ -4,7 +4,7 @@ import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
 import { readNiftiFrames } from "@neurodesk/webapp-components/file-io";
-import { syntheticDwi } from "./fixtures.mjs";
+import { syntheticDwi, syntheticMask } from "./fixtures.mjs";
 
 const examples = JSON.parse(readFileSync(new URL("../examples.json", import.meta.url), "utf8"));
 const dwiUrl = examples[0].files.find((file) => file.role === "image").url;
@@ -65,6 +65,19 @@ test("a two-shell DWI gives tensor and NODDI maps with the known fibre direction
   const icvf = await readDownload(await download("ICVF"));
   expect(icvf.data[centre]).toBeGreaterThan(0);
   expect(icvf.data[centre]).toBeLessThanOrEqual(1);
+});
+
+test("an empty mask is refused instead of writing empty maps", async ({ page }) => {
+  const dwi = syntheticDwi();
+  await page.goto("/");
+  await page.locator("#imageInput").setInputFiles(dwi.files);
+  await expect(page.locator("#runButton")).toBeEnabled();
+  await page.locator("#advancedSettings").evaluate((section) => { section.open = true; });
+  await page.locator("#maskInput").setInputFiles(syntheticMask());
+  await expect(page.locator("#maskInfo")).toContainText("mask.nii.gz · 0 voxels");
+  await page.locator("#runButton").click();
+  await expect(page.locator("#statusText")).toHaveText(/The brain mask has no voxels/);
+  await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(0);
 });
 
 test("cancelling a fit stops the workers and permits another fit", async ({ page }) => {
