@@ -150,6 +150,18 @@ test('readDiffusionSeries pairs one direct volume with differently named gradien
   assert.equal(calls.length, 0);
 });
 
+test('readDiffusionSeries takes FSL bvals and bvecs files, with or without a stem', async () => {
+  for (const [bval, bvec] of [['bvals', 'bvecs'], ['dwi.bvals', 'dwi.bvecs']]) {
+    const { result, calls } = await withFakeWorker([], () => readDiffusionSeries([
+      file('data.nii.gz'),
+      file(bval),
+      file(bvec),
+    ]));
+    assert.deepEqual(result.map(({ bval: b, bvec: v }) => [b?.name, v?.name]), [[bval, bvec]]);
+    assert.equal(calls.length, 0, `${bval} must not go to dcm2niix`);
+  }
+});
+
 test('readDiffusionSeries leaves gradients unpaired when several volumes make the match ambiguous', async () => {
   const { result } = await withFakeWorker([], () => readDiffusionSeries([
     file('a.nii'),
