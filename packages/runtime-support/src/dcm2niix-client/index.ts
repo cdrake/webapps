@@ -160,16 +160,57 @@ export async function readImageSeries(
   files: FileList | File[],
   options: Omit<ReadImageFilesOptions, 'niftiOnly'> & { anonymizeSidecar?: boolean } = {},
 ): Promise<ImageSeries[]> {
+  return (await readSeriesAndOutputs(files, options)).series
+}
+
+/** readImageSeries, also returning every dcm2niix output (empty without DICOM input). */
+async function readSeriesAndOutputs(
+  files: FileList | File[],
+  options: Omit<ReadImageFilesOptions, 'niftiOnly'> & { anonymizeSidecar?: boolean },
+): Promise<{ series: ImageSeries[], outputs: File[] }> {
   const { direct, sidecars, dicom } = splitInputs(files, options.directVolume)
   const directSeries = await pairSidecars(direct, sidecars)
-  if (!dicom.length) return directSeries
+  if (!dicom.length) return { series: directSeries, outputs: [] }
   const outputs = await convertDicom(
     dicom,
     { ...options, niftiOnly: false },
     (processor) => options.anonymizeSidecar ? processor : processor.bids('y').bidsAnonymize('n'),
   )
   const images = requireImages(outputs.filter(isNifti))
-  return [...directSeries, ...(await pairSidecars(images, outputs))]
+  return { series: [...directSeries, ...(await pairSidecars(images, outputs))], outputs }
+}
+
+/** One image with its FSL gradient files and parsed sidecar; each is `null` when absent. */
+export interface DiffusionSeries extends ImageSeries {
+  bval: File | null
+  bvec: File | null
+}
+
+/**
+ * Like {@link readImageSeries}, but also pairs each image with the `.bval` and `.bvec` of the
+ * same stem: those dcm2niix writes for a diffusion series, or those supplied with a direct
+ * volume. When the selection holds one image and one file of each kind, they pair whatever
+ * their names (FSL `data.nii.gz` with `bvals` and `bvecs`); with several images an unmatched
+ * gradient file stays unpaired rather than guessed.
+ */
+export async function readDiffusionSeries(
+  files: FileList | File[],
+  options: Omit<ReadImageFilesOptions, 'niftiOnly'> & { anonymizeSidecar?: boolean } = {},
+): Promise<DiffusionSeries[]> {
+  const list = Array.from(files)
+  const { series, outputs } = await readSeriesAndOutputs(list, options)
+  const gradients = [...list, ...outputs].filter((file) => /\.(bval|bvec)$/i.test(file.name))
+  const byStem = (ext: string) => new Map(
+    gradients.filter((file) => file.name.toLowerCase().endsWith(ext)).map((file) => [stem(file.name), file]),
+  )
+  const bvals = byStem('.bval')
+  const bvecs = byStem('.bvec')
+  const single = series.length === 1 && bvals.size === 1 && bvecs.size === 1
+  return series.map((entry) => ({
+    ...entry,
+    bval: bvals.get(stem(entry.image.name)) ?? (single ? [...bvals.values()][0] : null),
+    bvec: bvecs.get(stem(entry.image.name)) ?? (single ? [...bvecs.values()][0] : null),
+  }))
 }
 
 function splitInputs(files: FileList | File[], directVolume = /\.nii(\.gz)?$/i) {
