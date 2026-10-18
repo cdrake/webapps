@@ -769,3 +769,24 @@ apps:
       shared_runtime: false
       browser_test: true
       release: false
+
+  - id: n4
+    path: n4
+    title: N4
+    description: N4 bias-field correction for MRI in the browser.
+    categories: [image-processing, diffusion-imaging]
+    keywords: [bias field, N4, ANTs, dwibiascorrect, diffusion MRI, preprocessing, WebAssembly]
+    legacy_domain: null
+    runtime: vite-wasm
+    model_manifest: null
+    asset_manifest_schema: null
+    source: neurodesk/webapps@local
+    license: Apache-2.0 AND MPL-2.0
+    maintainers: [neurodesk]
+    support_status: experimental
+    shell: imaging-workspace
+    ci:
+      toolchains: [node]
+      shared_runtime: false
+      browser_test: true
+      release: false
