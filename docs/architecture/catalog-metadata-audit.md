@@ -2,7 +2,7 @@
 
 Audit of the landing-page metadata in `registry/apps.yml` (title, description,
 categories, keywords) against what each app does, 2026-10-18, updated for the
-37-app catalog. Facts come from each app's `automation.json`, `examples.json`,
+38-app catalog. Facts come from each app's `automation.json`, `examples.json`,
 README, `registry/app-information.yml` and `registry/standalone.json`.
 
 ## How the catalog used the metadata
@@ -108,16 +108,16 @@ changed.
 
 | Id | Title | Apps (secondary in italics) |
 | --- | --- | --- |
-| segmentation | Segmentation | MuscleMap, VesselBoost, Spinal Cord Toolbox, SeedSeg, SynthSeg, White matter lesions, Brain extraction |
-| lesion-mapping | Lesion Mapping | CALMaR, Disconnectome, *SYNcro*, *White matter lesions* |
-| quantitative-mri | Quantitative MRI & Spectroscopy | QSMbly, Easy MP2RAGE, Carotid Flow, LCModel |
-| diffusion-imaging | Diffusion & Tractography | dwi2trx, *Disconnectome* |
+| segmentation | Segmentation | MuscleMap, VesselBoost, Spinal Cord Toolbox, SeedSeg, SynthSeg, Brain extraction, White matter lesions |
+| lesion-mapping | Lesion Mapping | CALMaR, *SYNcro*, Disconnectome, *White matter lesions* |
+| quantitative-mri | Quantitative MRI & Spectroscopy | QSMbly, Easy MP2RAGE T1 Map, Carotid Flow, LCModel |
+| diffusion-imaging | Diffusion & Tractography | dwi2trx, *Disconnectome*, NODDI, *Degibbs*, *N4*, *Dwidenoise* |
 | registration | Registration & Normalization | SYNcro, EdgeReg, Greedy, ANTs, FireANTs, elastix |
 | reconstruction | Reconstruction & Synthesis | SynthSR, NeSVoR |
-| surfaces | Surfaces & Meshes | TopoFit, SurfAnnotate, Brain2Print |
-| image-processing | Processing & Privacy | NiiMath, Deface, fastprep, *Brain extraction* |
-| visualization | Visualization | ZARRo, MRI2VID, DICOM View, *SurfAnnotate* |
-| quality-control | Quality Control | BrowserQC, dicompare, *DICOM View* |
+| surfaces | Surfaces & Meshes | SurfAnnotate, Brain2Print, TopoFit |
+| image-processing | Processing & Privacy | Deface, NiiMath, *Brain extraction*, fastprep, Degibbs, N4, DICOM to BIDS, Dwidenoise |
+| visualization | Visualization | MRI2VID, *SurfAnnotate*, ZARRo, DICOM View |
+| quality-control | Quality Control | dicompare, BrowserQC, *DICOM View* |
 
 ### Facets
 
@@ -134,10 +134,10 @@ and shown as card badges and search terms:
 
 The **Command line** badge comes from `registry/standalone.json` (a `cli`
 download), not from a new field, so it cannot drift. An "Example data" badge was
-considered and dropped: 32 of 33 apps have one, so it would not help a visitor
+considered and dropped: 37 of 38 apps have one, so it would not help a visitor
 choose.
 
-`hardware` records what a visitor gets today, including the gates in finding 1.
+`hardware` records the supported startup paths, including the resolved gates in finding 1.
 
 Keywords stay, for search only: they are no longer shown, so their order no
 longer matters. They now carry plain-language synonyms (skull stripping, stroke,
@@ -154,22 +154,22 @@ fetal, 3D printing, functional MRI) and no longer repeat the title.
 | QSMbly | Make QSM, R2* and SWI maps from multi-echo MRI. | Brain | MRI | DICOM, NIfTI | No GPU needed | yes |
 | SeedSeg | Find gold fiducial markers in prostate MRI. | Prostate | MRI | DICOM, NIfTI | No GPU needed | yes |
 | dicompare | Check DICOM acquisitions against a reference protocol. | Any anatomy | MRI | DICOM | No GPU needed | yes |
-| Deface | Remove facial features from head MRI for sharing. | Brain | MRI | DICOM, NIfTI | Needs WebGPU | yes |
+| Deface | Remove facial features from head MRI for sharing. | Brain | MRI | DICOM, NIfTI | WebGPU optional | yes |
 | Easy MP2RAGE T1 Map | Make B1-corrected T1 maps and denoised MP2RAGE images. | Brain | MRI | DICOM, NIfTI | No GPU needed | yes |
 | NiiMath | Apply image maths, filters and meshing with niimath. | Any anatomy | MRI, CT | DICOM, NIfTI | No GPU needed | yes |
 | MRI2VID | Convert DICOM, NIfTI or MGZ volumes into scrolling videos. | Any anatomy | MRI, CT | DICOM, NIfTI, MGZ | No GPU needed | yes |
-| BrowserQC | Measure MRIQC-style quality metrics on T1-weighted MRI. | Brain | MRI | DICOM, NIfTI | Needs WebGPU | yes |
+| BrowserQC | Measure MRIQC-style quality metrics on T1-weighted MRI. | Brain | MRI | DICOM, NIfTI | WebGPU optional | yes |
 | SurfAnnotate | View cortical surfaces and draw regions of interest. | Brain | Surfaces | FreeSurfer, GIfTI, STL/OBJ/PLY | No GPU needed | – |
 | ZARRo | Stream, view and measure large OME-Zarr images. | Any anatomy | Microscopy | OME-Zarr | No GPU needed | – |
 | SynthSR | Synthesize a 1 mm T1-weighted image from brain MRI or CT. | Brain | MRI, CT | DICOM, NIfTI | WebGPU optional | yes |
 | SynthSeg | Label brain structures in MRI or CT of any contrast. | Brain | MRI, CT | DICOM, NIfTI | Needs WebGPU | yes |
 | SYNcro | Normalize brain scans and lesion masks to MNI space. | Brain | MRI, CT | DICOM, NIfTI | WebGPU optional | yes |
 | dwi2trx | Fit diffusion tensors and track white-matter streamlines. | Brain | MRI | DICOM, NIfTI | Needs WebGPU | yes |
-| EdgeReg | Align two brain images with fast affine registration. | Brain | MRI | DICOM, NIfTI | Needs WebGPU | yes |
+| EdgeReg | Align two brain images with fast affine registration. | Brain | MRI | DICOM, NIfTI | No GPU needed | yes |
 | Disconnectome | Find which white-matter bundles a lesion disconnects. | Brain | MRI | DICOM, NIfTI | No GPU needed | yes |
-| Greedy | Affine and deformable MRI registration with Greedy. | Brain | MRI | DICOM, NIfTI | Needs WebGPU | yes |
-| ANTs | Affine and SyN diffeomorphic MRI registration with ANTs. | Brain | MRI | DICOM, NIfTI | Needs WebGPU | yes |
-| Brain2Print | Make a 3D-printable brain model from an MRI scan. | Brain | MRI | DICOM, NIfTI | Needs WebGPU | yes |
+| Greedy | Affine and deformable MRI registration with Greedy. | Brain | MRI | DICOM, NIfTI | WebGPU optional | yes |
+| ANTs | Affine and SyN diffeomorphic MRI registration with ANTs. | Brain | MRI | DICOM, NIfTI | WebGPU optional | yes |
+| Brain2Print | Make a 3D-printable brain model from an MRI scan. | Brain | MRI | DICOM, NIfTI | WebGPU optional | yes |
 | TopoFit | Reconstruct white and pial cortical surfaces from T1 MRI. | Brain | MRI | DICOM, NIfTI | No GPU needed | yes |
 | FireANTs | Register brain images with CPU or WebGPU FireANTs. | Brain | MRI | DICOM, NIfTI | WebGPU optional | yes |
 | Brain extraction | Remove the skull with BET, MindGrab or SynthStrip. | Brain | MRI | DICOM, NIfTI | WebGPU optional | yes |
@@ -180,14 +180,19 @@ fetal, 3D printing, functional MRI) and no longer repeat the title.
 | elastix | Rigid, affine and B-spline registration with elastix. | Any anatomy | MRI, CT, Microscopy | DICOM, NIfTI, OME-Zarr, TIFF, NRRD/MHA/MINC | No GPU needed | yes |
 | DICOM View | Browse DICOM series, images, headers and protocol. | Any anatomy | MRI, CT | DICOM | No GPU needed | – |
 | fastprep | Preprocess fMRI BOLD runs in the style of fMRIPrep. | Brain | MRI | NIfTI | WebGPU optional | – |
+| NODDI | Fit diffusion tensor and NODDI maps from diffusion MRI. | Brain | MRI | DICOM, NIfTI | WebGPU optional | – |
+| Degibbs | Remove Gibbs ringing from MRI scans. | Any anatomy | MRI | DICOM, NIfTI | No GPU needed | – |
+| N4 | Correct intensity bias fields in MRI scans. | Any anatomy | MRI | DICOM, NIfTI | No GPU needed | – |
+| DICOM to BIDS | Convert scanner DICOM exports to anatomical and DWI BIDS. | Any anatomy | MRI | DICOM | No GPU needed | – |
+| Dwidenoise | Denoise diffusion MRI with Patch2Self. | Brain | MRI | DICOM, NIfTI | No GPU needed | – |
 
 ## Follow-up
 
-- 25 of 33 cards read "DICOM, NIfTI". If that row reads as noise on the live
+- 29 of 38 cards read "DICOM, NIfTI". If that row reads as noise on the live
   site, show only formats beyond that pair and say once, above the catalog,
   that apps accept DICOM and NIfTI unless a card says otherwise.
 - Filter chips for the hardware and command-line facets, once the badges have
   been reviewed on the live site.
 - Per-app `<meta name="description">` and JSON-LD `SoftwareApplication` entries
   generated from the same fields.
-- Findings 1–8 above.
+- Unresolved findings 2–8 above.

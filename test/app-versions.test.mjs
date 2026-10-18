@@ -121,7 +121,7 @@ test('a linked-package changeset releases the app, package and native versions t
 });
 
 test('diffusion app releases synchronize the app, package and embedded version without dating the shared Rust workspace', async (t) => {
-  for (const app of ['noddi', 'degibbs', 'n4']) {
+  for (const app of ['noddi', 'degibbs', 'n4', 'dwidenoise']) {
     const { root, put, json } = await fixture(t);
     await put(`apps/${app}/package.json`, JSON.stringify({ name: app, version: '0.1.20260930', private: true }));
     await put(`packages/${app}/package.json`, JSON.stringify({ name: `@neurodesk/${app}`, version: '0.1.20260930', private: true }));
