@@ -4,6 +4,8 @@ import freebrowseStyles from 'freebrowse/style.css?inline';
 import workspaceStyles from '@neurodesk/webapp-components/styles/imaging-workspace.css?inline';
 import { bindTouchGestures } from './touch-gestures.js';
 import { LOCKED_ATTRIBUTE, applyDrawingLock } from './drawing-lock.js';
+import { activateRowName, labelSliders, syncRowNames } from './accessibility.js';
+import { bindVolumeVisibility } from './volume-visibility.js';
 
 // Mounts FreeBrowse around a host-owned NiiVue instance inside an open shadow
 // root. Returns { nv, ready, setDrawingLocked, destroy };
@@ -49,6 +51,7 @@ export function mountViewer(element, options, embed = {}) {
   const nv = new EmbeddedNiiVue(options);
   nv.sliceType = SLICE_TYPE.MULTIPLANAR;
   nv.showRender = SHOW_RENDER.ALWAYS;
+  const releaseVisibility = bindVolumeVisibility(nv);
   const handle = mountFreeBrowse(container, {
     nv,
     backend: null,
@@ -68,12 +71,15 @@ export function mountViewer(element, options, embed = {}) {
     for (const button of container.querySelectorAll('button:has(svg.lucide-eye), button:has(svg.lucide-eye-off)')) {
       button.setAttribute('aria-label', 'Toggle visibility');
     }
+    syncRowNames(container);
+    labelSliders(container);
     const inputs = container.querySelectorAll('input[type="file"]');
     inputs.forEach((input, index) => {
       input.dataset.neurodeskInput = index === 0 ? 'image' : 'surface';
     });
     if (drawingLocked) applyDrawingLock(container, true);
   };
+  container.addEventListener('keydown', activateRowName);
   const observer = new MutationObserver(syncHost);
   observer.observe(container, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-neurodesk-theme'] });
@@ -94,6 +100,7 @@ export function mountViewer(element, options, embed = {}) {
       clearTimeout(timeout);
       observer.disconnect();
       releaseGestures?.();
+      releaseVisibility();
       handle.destroy();
       nv.destroy();
     },
