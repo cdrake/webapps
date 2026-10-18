@@ -87,6 +87,32 @@ The AMICO source for `noddi` is chosen after a comparison of three candidates on
 AMICO 2.1.1, run for research only, is the common comparison.
 The person who writes the clean-room prototype does not read the AMICO or dmipy source.
 
+### AMICO comparison, 18 October 2026
+
+Data: ds001226 sub-CON01 (b = 0/700/1200/2800, 102 volumes, raw), FSL `bet` b0 mask, white matter = FSL `dtifit` FA > 0.4.
+dmipy fitted 4000 random brain voxels (1029 in white matter); the other fits used every voxel.
+Each method ran with its documented defaults.
+
+| Pair | ICVF r | ISOVF r | OD r | OD p95 abs. difference in WM |
+| --- | --- | --- | --- | --- |
+| AMICO 1.5.4 vs 2.1.1 | 0.999 | 1.000 | 0.909 | 0.168 |
+| AMICO 1.5.4, 32761 vs 500 LUT directions | 1.000 | 1.000 | 0.998 | 0.022 |
+| AMICO 1.5.4 vs clean-room | 0.60 | 0.996 | 0.45 | 0.38 |
+| AMICO 1.5.4 vs dmipy `amico_cvxpy` | 0.65 | 0.994 | 0.41 | 0.49 |
+| clean-room vs dmipy | 0.94 | 0.995 | 0.51 | 0.57 |
+
+White-matter medians of OD: AMICO 1.5.4 0.222, AMICO 2.1.1 0.229, clean-room 0.159, dmipy 0.358.
+
+Findings:
+
+- Only a port of AMICO 1.5.4 can reproduce AMICO. The clean-room prototype and dmipy agree on ISOVF but are different methods for ICVF and OD.
+- The paper does not specify what makes the difference: the OD grid (0.03, 0.06, then ten steps from 0.09 to 0.99), the 12 ICVF values from 0.1 to 0.99, the normalisation of each tissue atom before the LASSO, the merge of the b0 rows, the LASSO on the diffusion-weighted rows only (SPAMS mode 2, λ1 = 0.5, λ2 = 0.001), and the debias NNLS with the isotropic atom.
+- dmipy's example uses a linear 12-point grid on OD and λ = 1e-4, so its OD is much higher.
+- AMICO 1.5.4 keeps only the zonal (m = 0) spherical-harmonic coefficients of each atom (lmax 12) and rotates them with a 32761-direction table. By the addition theorem, a port can compute each voxel's atoms from those coefficients and Legendre polynomials of g·n. That needs no table (about 1.9 GB for this data) and differs from 1.5.4 only by its direction quantisation.
+- The OD difference between AMICO 1.5.4 and 2.1.1 does not come from the table size. AMICO 2.x is a comparison for information only.
+
+Decision proposed: port AMICO 1.5.4 and hold it to AMICO 1.5.4 output.
+
 ## Data
 
 The primary dataset is OpenNeuro ds003138 (CC0), one subject.
