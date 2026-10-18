@@ -49,6 +49,21 @@ test('SYNcro fetches its locked template from the catalogue address its manifest
   assert.equal(asset.bytes, entry.bytes);
 });
 
+test('BrowserQC\'s air template, the Deface package and both manifests use the catalogue entry', async () => {
+  const { AIR_TEMPLATE } = await import('../packages/browserqc/src/pipeline.js');
+  for (const app of ['browserqc', 'deface']) {
+    const [entry] = templatesFor(catalogue, app);
+    const manifest = await readJson(`models/${app}.manifest.json`);
+    const asset = manifest.assets.find(item => item.filename === entry.filename);
+    assert.deepEqual([asset.url, asset.sha256, asset.bytes], [entry.url, entry.sha256, entry.bytes], `${app} manifest`);
+    if (app === 'browserqc') assert.deepEqual([AIR_TEMPLATE.url, AIR_TEMPLATE.sha256, AIR_TEMPLATE.name], [entry.url, entry.sha256, entry.filename]);
+  }
+  const { TEMPLATE_ASSETS } = await import('../packages/deface/src/templates.js');
+  const [entry] = templatesFor(catalogue, 'deface');
+  const asset = TEMPLATE_ASSETS.find(item => item.filename === entry.filename);
+  assert.deepEqual([asset.url, asset.sha256, asset.bytes], [entry.url, entry.sha256, entry.bytes], '@neurodesk/deface template');
+});
+
 test('every offered template is locked for its app with the catalogue checksum', async () => {
   const sources = await readJson('registry/offline-assets.sources.json');
   const lock = await readJson('registry/offline-assets.lock.json');

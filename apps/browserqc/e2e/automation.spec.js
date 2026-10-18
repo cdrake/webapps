@@ -60,7 +60,7 @@ test('CPU segmentation can be cancelled and retried to produce native-grid label
 });
 
 test('QC failure after real segmentation fails the operation instead of publishing a partial report', async ({ page }) => {
-  await page.context().route('**/browserqc/avg152T1.nii.gz', route => route.fulfill({ status: 503, body: 'Unavailable' }));
+  await page.context().route('**/reg/templates/avg152T1.nii.gz', route => route.fulfill({ status: 503, body: 'Unavailable' }));
   await page.goto('./');
   await expect(page.locator('#neurodesk-input-transfer')).toHaveCount(1);
   await adopt(page, 'image', fixture);
@@ -72,7 +72,7 @@ test('QC failure after real segmentation fails the operation instead of publishi
   await dispatch(page, 'start', { parameters: { backend: 'cpu', model: '16chan18cls' } });
   await expect.poll(async () => (await dispatch(page, 'snapshot')).state, { timeout: 840000, intervals: [1000, 2000, 5000] }).toBe('failed');
   const snapshot = await dispatch(page, 'snapshot');
-  expect(snapshot.error.message).toContain('fetch avg152T1.nii.gz failed: 503');
+  expect(snapshot.error.message).toContain('Could not download the avg152 T1 2 mm head (ICBM152) template.');
   expect(snapshot.report).toBeUndefined();
   const regions = await dispatch(page, 'viewers.regions', { viewerId: 'main' });
   expect(regions.find(region => region.name === 'Hippocampus').voxels).toBeGreaterThan(0);
@@ -82,14 +82,14 @@ test('QC failure after real segmentation fails the operation instead of publishi
 });
 
 test('an air template with other bytes fails QC instead of publishing metrics', async ({ page }) => {
-  await page.context().route('**/browserqc/avg152T1.nii.gz', route => route.fulfill({ status: 200, contentType: 'application/gzip', body: Buffer.from('not the template') }));
+  await page.context().route('**/reg/templates/avg152T1.nii.gz', route => route.fulfill({ status: 200, contentType: 'application/gzip', body: Buffer.from('not the template') }));
   await page.goto('./');
   await expect(page.locator('#neurodesk-input-transfer')).toHaveCount(1);
   await adopt(page, 'image', fixture);
   await dispatch(page, 'start', { parameters: { backend: 'cpu', model: '16chan18cls' } });
   await expect.poll(async () => (await dispatch(page, 'snapshot')).state, { timeout: 840000, intervals: [1000, 2000, 5000] }).toBe('failed');
   const snapshot = await dispatch(page, 'snapshot');
-  expect(snapshot.error.message).toMatch(/avg152T1\.nii\.gz has SHA-256 [0-9a-f]{64}, not the pinned/);
+  expect(snapshot.error.message).toBe('The avg152 T1 2 mm head (ICBM152) template does not match its pinned size and SHA-256.');
   expect(snapshot.report).toBeUndefined();
   await expect(page.locator('#saveBtn')).toBeDisabled();
 });

@@ -1887,13 +1887,6 @@
     ],
     "deface": [
       {
-        "url": "https://huggingface.co/datasets/sbollmann/neurodesk-webapps-assets/resolve/49b12b87f4e5def9672cf582b93ecd4a54273608/deface/avg152T1.nii.gz",
-        "sha256": "e8f5440f0dcec1a4d44384acbdf19c8e6cf94c032c3356ef91c4441fee3aaea8",
-        "bytes": 567546,
-        "kind": "example-or-support-data",
-        "license": "NOASSERTION"
-      },
-      {
         "url": "https://huggingface.co/datasets/sbollmann/neurodesk-webapps-assets/resolve/49b12b87f4e5def9672cf582b93ecd4a54273608/deface/avg152T1mask.nii.gz",
         "sha256": "adc275e26e5217189d70acfd43311bc3f66f316321ac61defc88505d2f91a0aa",
         "bytes": 7149,
@@ -1912,6 +1905,13 @@
         "sha256": "58220b40d179b7a93dd3ce231dd7afaa39989c75658b2b8e4c2f34abf8f16416",
         "bytes": 5176902,
         "kind": "example"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/67c378c8f8ac5313e5dbeee4c8d95ebe2a2f79c9/reg/templates/avg152T1.nii.gz",
+        "sha256": "e8f5440f0dcec1a4d44384acbdf19c8e6cf94c032c3356ef91c4441fee3aaea8",
+        "bytes": 567546,
+        "kind": "template",
+        "license": "ICBM152 copyright notice of the Montreal Neurological Institute"
       }
     ],
     "easy-mp2rage": [
@@ -2020,13 +2020,6 @@
     ],
     "browserqc": [
       {
-        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/12eb1069c34097b7c0881b22e1f7e4ed953aa5cc/browserqc/avg152T1.nii.gz",
-        "sha256": "e8f5440f0dcec1a4d44384acbdf19c8e6cf94c032c3356ef91c4441fee3aaea8",
-        "bytes": 567546,
-        "kind": "example-or-support-data",
-        "license": "NOASSERTION"
-      },
-      {
         "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/12eb1069c34097b7c0881b22e1f7e4ed953aa5cc/browserqc/t1_crop.json",
         "sha256": "5201efd81abd53a7adc5b698517894ed8b9ca1cb5ed57b30a075ba1010bb4da8",
         "bytes": 474,
@@ -2039,6 +2032,13 @@
         "bytes": 8788862,
         "kind": "example-or-support-data",
         "license": "NOASSERTION"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/67c378c8f8ac5313e5dbeee4c8d95ebe2a2f79c9/reg/templates/avg152T1.nii.gz",
+        "sha256": "e8f5440f0dcec1a4d44384acbdf19c8e6cf94c032c3356ef91c4441fee3aaea8",
+        "bytes": 567546,
+        "kind": "template",
+        "license": "ICBM152 copyright notice of the Montreal Neurological Institute"
       }
     ],
     "surfannotate": [

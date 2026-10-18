@@ -5,14 +5,14 @@ import NiiVueGPU, {
   SLICE_TYPE,
 } from '@niivue/niivue'
 import { mountImagingWorkspace } from '@neurodesk/webapp-components/core/mount-imaging-workspace'
-import { bindFileDrop, createInfoDialog, createConsole, createExampleSelector, createResultList, createViewerToolbar, ProgressManager } from '@neurodesk/webapp-components/ui'
+import { bindFileDrop, createInfoDialog, createConsole, createExampleSelector, createResultList, createViewerToolbar, fetchTemplateFile, ProgressManager, templatesFor, type TemplateCatalogue } from '@neurodesk/webapp-components/ui'
 import '@neurodesk/webapp-components/styles/imaging-workspace.css'
 import { registerAppAutomation, registerViewer, createNiivueAdapter, runAbortable, summarizeLabels, type OperationContext } from '@neurodesk/webapp-components/automation'
 import { downloadBlob, downloadFile, readNifti } from '@neurodesk/webapp-components/file-io'
 import { runSegmentation, type SegmentationBackend } from './segmentation'
 import { readImageFiles, runDcm2niix, traverseDataTransferItems } from '@neurodesk/runtime-support/dcm2niix-client'
 import { Niimath } from '@niivue/niimath'
-import { AIR_TEMPLATE, checkAirTemplate, finishReport, qcTissues, type QcTissues } from '@neurodesk/browserqc'
+import { AIR_TEMPLATE, finishReport, qcTissues, type QcTissues } from '@neurodesk/browserqc'
 import { MODELS as BRAINCHOP } from '@brainchop/mindgrab'
 import { MODELS, parseModel, type Model } from './models'
 import { version as mindgrabVersion } from '@brainchop/mindgrab/package.json'
@@ -21,6 +21,7 @@ import type { QcMetrics, QcReport } from './qc'
 import { resetRating, readRating } from './rate'
 import { describeSeries } from './series'
 import examples from '../examples.json'
+import templateCatalogue from '../../../registry/templates.json'
 
 const TISSUE_TINTS = [
   ['gm', [255, 64, 64]],
@@ -242,18 +243,15 @@ function resetNiimathWorker(): void {
   niimathReady = null
 }
 
-async function fetchFile(url: string, name: string, signal?: AbortSignal): Promise<File> {
-  const res = await fetch(url, { signal })
-  if (!res.ok) throw new Error(`fetch ${name} failed: ${res.status}`)
-  return new File([await res.blob()], name)
-}
+// The air template is the catalogue's ICBM152 avg152 entry, checksummed and cached
+// by fetchTemplateFile; AIR_TEMPLATE in @neurodesk/browserqc pins the same bytes.
+const airTemplate = templatesFor(templateCatalogue as TemplateCatalogue, 'browserqc')[0]
 
 
 
 async function computeQc(t1: Uint8Array, tissues: QcTissues, model: Model, signal: AbortSignal): Promise<QcReport> {
   await runAbortable(signal, ensureNiimath, resetNiimathWorker)
-  const air = await fetchFile(AIR_TEMPLATE.url, AIR_TEMPLATE.name, signal)
-  await checkAirTemplate(await air.arrayBuffer())
+  const air = await fetchTemplateFile(airTemplate, { signal })
   const output = await runAbortable(signal, () => withTimeout(
     niimath.image(new Uint8Array(t1).buffer).qc(tissues, air), WORKER_TIMEOUT_MS, 'niimath QC'), resetNiimathWorker)
   const report = await readQcReport(new Blob([JSON.stringify(output)]))
