@@ -1394,6 +1394,8 @@ importers:
         specifier: 1.29.0
         version: 1.29.0
 
+  packages/n4: {}
+
   packages/nesvor:
     dependencies:
       '@neurodesk/synthsr':
