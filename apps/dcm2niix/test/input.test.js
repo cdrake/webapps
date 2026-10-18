@@ -36,3 +36,13 @@ test('unsafe archives, empty selections, invalid archives and aborted reads fail
   controller.abort();
   await assert.rejects(expandInputs(files(), { signal: controller.signal }), { name: 'AbortError' });
 });
+
+test('folder paths and repeated imports are stable without mutating the source Files', async () => {
+  const source = files()[0];
+  Object.defineProperty(source, 'webkitRelativePath', { value: 'scanner/anat/IM0001' });
+  const [first] = await expandInputs([source]);
+  const [retry] = await expandInputs([source]);
+  assert.equal(first._webkitRelativePath, 'input0/scanner/anat/IM0001');
+  assert.equal(retry._webkitRelativePath, first._webkitRelativePath);
+  assert.equal(source._webkitRelativePath, undefined);
+});

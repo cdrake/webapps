@@ -51,8 +51,11 @@ export async function expandInputs(inputs, { signal, onProgress = () => {} } = {
   const append = (file, path) => {
     total += file.size;
     if (total > MAX_BYTES) throw new Error('Input exceeds the 2 GiB browser limit. Use a smaller examination.');
-    Object.defineProperty(file, '_webkitRelativePath', { value: safePath(path), configurable: true });
-    files.push(file);
+    // Do not stamp the user's File itself: retrying must not repeatedly prepend
+    // our staging directory to the original scanner path.
+    const staged = new File([file], file.name, { type: file.type, lastModified: file.lastModified });
+    Object.defineProperty(staged, '_webkitRelativePath', { value: safePath(path) });
+    files.push(staged);
   };
   for (const [index, file] of Array.from(inputs).entries()) {
     signal?.throwIfAborted();
