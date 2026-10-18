@@ -96,12 +96,19 @@ test("cancellation keeps controls locked until registration exits", async ({ pag
   await expect(page.locator("#runButton")).toBeEnabled();
 });
 
-test("a failed replacement cannot register the previous moving image", async ({ page }) => {
+// The shared image pair keeps the previous image when a replacement fails, and
+// its summary keeps naming that image so Run cannot be mistaken for the new file.
+test("a failed replacement keeps the previous moving image and names it", async ({ page }) => {
   await page.goto("/");
   await configureExampleFixtures(page);
   await page.locator("[data-neurodesk-example]").selectOption("t1-mni");
   await expect(page.locator("#runButton")).toBeEnabled({ timeout: 120_000 });
   await page.locator("#movingInput").setInputFiles({ name: "broken.nii", mimeType: "application/octet-stream", buffer: Buffer.from("not a NIfTI image") });
+  await expect(page.locator("#statusText")).toHaveClass(/error/);
+  await expect(page.locator("#movingInfo")).toContainText("t1_crop.nii.gz");
+  await expect(page.locator("#movingInfo")).not.toContainText("broken.nii");
+  await expect(page.locator("#runButton")).toBeEnabled();
+  await page.locator("#movingClear").click();
   await expect(page.locator("#movingInfo")).toBeHidden();
   await expect(page.locator("#runButton")).toBeDisabled();
 });

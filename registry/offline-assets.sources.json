@@ -2223,13 +2223,6 @@
     ],
     "syncro": [
       {
-        "url": "https://huggingface.co/datasets/sbollmann/neurodesk-webapps-assets/resolve/e0a056b3d6b2b075bab5b780281af17fc9d6421d/syncro/MNI152_T1_1mm_brain.nii.gz",
-        "sha256": "32d5be33460f995a5d305507053c8862c823d9ca6bfb543381308df14590f212",
-        "bytes": 3219212,
-        "kind": "atlas-template",
-        "license": "FSL non-commercial terms; see FSL-LICENSE.txt"
-      },
-      {
         "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/88c3dd6b9aac13429f760d9b0b48249040d3ee5f/synthsr/models/synthsr-v2.onnx",
         "sha256": "276151128c666f81eba80a6afb7f307aa3c7d58825748029ba67cf170f1460a3",
         "bytes": 52980984,

@@ -40,6 +40,15 @@ test('templatesFor applies the per-app filter', () => {
   assert.deepEqual(templatesFor(sample, 'other'), []);
 });
 
+test('SYNcro fetches its locked template from the catalogue address its manifest records', async () => {
+  const [entry] = templatesFor(catalogue, 'syncro');
+  const manifest = await readJson('models/syncro.manifest.json');
+  const asset = manifest.assets.find(item => item.filename === entry.filename);
+  assert.equal(asset.url, entry.url);
+  assert.equal(asset.sha256, entry.sha256);
+  assert.equal(asset.bytes, entry.bytes);
+});
+
 test('every offered template is locked for its app with the catalogue checksum', async () => {
   const sources = await readJson('registry/offline-assets.sources.json');
   const lock = await readJson('registry/offline-assets.lock.json');

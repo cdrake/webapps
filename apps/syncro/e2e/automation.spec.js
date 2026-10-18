@@ -46,7 +46,7 @@ test('automation rejects an explicitly paired lesion on the wrong grid before in
   expect(result.error.message).toContain('must match');
   expect(result.report).toBeUndefined();
   expect(models).toEqual([]);
-  await expect(page.locator('#input')).toBeEnabled();
+  await expect(page.locator('#movingInput')).toBeEnabled();
 });
 
 // The fixture ships with the repository and runs entirely on the CPU, so every browser job runs it.
