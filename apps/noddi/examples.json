@@ -1,0 +1,25 @@
+[
+  {
+    "id": "single-shell",
+    "label": "Single-shell DWI (tensor only)",
+    "description": "A 20-direction b = 2500 s/mm² DWI with its bval and bvec. One shell supports the tensor fit, not NODDI.",
+    "expectedResult": "FA, MD, AD, RD, S0 and direction maps; NODDI is refused because the data has one shell.",
+    "files": [
+      {
+        "role": "image",
+        "name": "dwi.nii.gz",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/4247dd46949521cf9cc21399c6015b41c0ca176f/dwi2trx/fixtures/dwi.nii.gz"
+      },
+      {
+        "role": "bval",
+        "name": "dwi.bval",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/4247dd46949521cf9cc21399c6015b41c0ca176f/dwi2trx/fixtures/dwi.bval"
+      },
+      {
+        "role": "bvec",
+        "name": "dwi.bvec",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/4247dd46949521cf9cc21399c6015b41c0ca176f/dwi2trx/fixtures/dwi.bvec"
+      }
+    ]
+  }
+]
