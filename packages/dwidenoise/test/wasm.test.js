@@ -72,6 +72,13 @@ test("values that are not finite are refused", () => {
   assert.throws(() => p2s.denoiseArray(data, nvoxOf(c), c.bvals), /not finite numbers/);
 });
 
+test("a single unchanged b0 must also contain only finite values", () => {
+  for (const invalid of [NaN, Infinity, -Infinity]) {
+    const data = Float32Array.from([invalid, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    assert.throws(() => p2s.denoiseArray(data, 4, [0, 1000, 1000]), /not finite numbers/);
+  }
+});
+
 test("partial Gram sums of voxel ranges add up to one pass, and chunked runs equal one run", () => {
   const c = fixture.cases.find((x) => x.name === "two_b0");
   const nvox = nvoxOf(c);

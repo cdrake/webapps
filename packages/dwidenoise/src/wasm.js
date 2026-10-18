@@ -93,6 +93,18 @@ export async function loadDwidenoise(source) {
    */
   function accumulate(buffer, nvox, group, gram, first = 0, count = nvox) {
     const volumes = volumesOf(buffer, nvox);
+    if (!Number.isSafeInteger(first) || !Number.isSafeInteger(count) || first < 0 || count < 0 || first + count > nvox) {
+      throw new Error("Invalid voxel range or volume group.");
+    }
+    // Check the complete input range, including a single b0 that is copied without fitting.
+    const data = buffer.view();
+    for (let t = 0; t < volumes; t++) {
+      for (let v = first; v < first + count; v++) {
+        if (!Number.isFinite(data[t * nvox + v])) {
+          throw new Error("The data holds values that are not finite numbers (NaN or infinity).");
+        }
+      }
+    }
     const n = group.length;
     if (gram.length !== gramLength(n)) throw new Error(`The Gram matrix needs ${gramLength(n)} values.`);
     const status = withGroup(group, (g) =>

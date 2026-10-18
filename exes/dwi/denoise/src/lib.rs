@@ -404,6 +404,9 @@ pub fn denoise<T: Sample>(data: &mut [T], nvox: usize, bvals: &[f64]) -> Result<
             data.len()
         ));
     }
+    if data.iter().any(|value| !value.to_f64().is_finite()) {
+        return Err(SolveError::NotFinite.to_string());
+    }
     let groups = split_groups(bvals)?;
     for group in groups.fitted() {
         let mut gram = vec![0.0f64; gram_len(group.len())];
