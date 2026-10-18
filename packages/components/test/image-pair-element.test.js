@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { gzipSync } from 'node:zlib';
 import { JSDOM } from 'jsdom';
 import { createImagePair } from '../src/elements/image-pair.js';
 import { describeNiftiFile } from '../src/file-io/NiftiUtils.js';
@@ -251,6 +252,53 @@ for (const cancelledBy of ['example', 'app']) {
   });
 }
 
+test('loads started together run in turn, as a two-scan drop does', async () => {
+  let busy = false;
+  const perform = async (message, task) => {
+    if (busy) throw new Error('Wait for the current operation to finish.');
+    busy = true;
+    try { return await task(undefined); } finally { busy = false; }
+  };
+  const { pair, file } = setup({ perform });
+  await Promise.all([pair.load('fixed', [file('a.nii.gz')]), pair.load('moving', [file('b.nii.gz')])]);
+  assert.equal(pair.fixed.candidate.name, 'a.nii.gz');
+  assert.equal(pair.moving.candidate.name, 'b.nii.gz');
+});
+
+test('each change reports the files every slot holds for the page drop', async () => {
+  const { pair, $, file } = setup();
+  const reports = [];
+  for (const slot of ['fixed', 'moving']) {
+    $(`${slot}Input`).addEventListener('nd-files', event => reports.push([slot, event.detail.files.map(item => item.name)]));
+  }
+  await pair.load('fixed', [file('a.nii.gz')]);
+  assert.deepEqual(reports.slice(-2), [['fixed', ['a.nii.gz']], ['moving', []]]);
+  await pair.load('moving', [file('broken.nii.gz')]);
+  assert.deepEqual(reports.slice(-2), [['fixed', ['a.nii.gz']], ['moving', []]], 'a failed load reports the slot as still empty');
+  pair.reset('fixed');
+  assert.deepEqual(reports.slice(-2), [['fixed', []], ['moving', []]]);
+  assert.equal($('fixedSlot').hasAttribute('data-drop-target'), true, 'the card owns its drops');
+});
+
+test('a failed template or series load puts its select back on the image the slot holds', async () => {
+  const { pair, $, window } = setup({
+    templates: [brainTemplate],
+    fetchTemplate: async () => { throw new Error('offline'); },
+    read: () => [{ name: 'one.nii.gz' }, { name: 'broken.nii.gz' }],
+  });
+  const select = $('fixedTemplate');
+  select.value = 'brain';
+  select.dispatchEvent(new window.Event('change'));
+  await settle();
+  assert.equal(select.value, '', 'the template choice is withdrawn so the user can retry it');
+  await pair.load('moving', [new window.File(['x'], 'dicom')]);
+  $('movingSeries').value = '1';
+  $('movingSeries').dispatchEvent(new window.Event('change'));
+  await settle();
+  assert.equal($('movingSeries').value, '0');
+  assert.equal(pair.moving.candidate.name, 'one.nii.gz');
+});
+
 test('a replacement waits for a cancelled example rollback before opening its image', async () => {
   let releaseExample;
   let enterExample;
@@ -301,53 +349,6 @@ test('a replacement waits for a cancelled example rollback before opening its im
   }
 });
 
-test('loads started together run in turn, as a two-scan drop does', async () => {
-  let busy = false;
-  const perform = async (message, task) => {
-    if (busy) throw new Error('Wait for the current operation to finish.');
-    busy = true;
-    try { return await task(undefined); } finally { busy = false; }
-  };
-  const { pair, file } = setup({ perform });
-  await Promise.all([pair.load('fixed', [file('a.nii.gz')]), pair.load('moving', [file('b.nii.gz')])]);
-  assert.equal(pair.fixed.candidate.name, 'a.nii.gz');
-  assert.equal(pair.moving.candidate.name, 'b.nii.gz');
-});
-
-test('each change reports the files every slot holds for the page drop', async () => {
-  const { pair, $, file } = setup();
-  const reports = [];
-  for (const slot of ['fixed', 'moving']) {
-    $(`${slot}Input`).addEventListener('nd-files', event => reports.push([slot, event.detail.files.map(item => item.name)]));
-  }
-  await pair.load('fixed', [file('a.nii.gz')]);
-  assert.deepEqual(reports.slice(-2), [['fixed', ['a.nii.gz']], ['moving', []]]);
-  await pair.load('moving', [file('broken.nii.gz')]);
-  assert.deepEqual(reports.slice(-2), [['fixed', ['a.nii.gz']], ['moving', []]], 'a failed load reports the slot as still empty');
-  pair.reset('fixed');
-  assert.deepEqual(reports.slice(-2), [['fixed', []], ['moving', []]]);
-  assert.equal($('fixedSlot').hasAttribute('data-drop-target'), true, 'the card owns its drops');
-});
-
-test('a failed template or series load puts its select back on the image the slot holds', async () => {
-  const { pair, $, window } = setup({
-    templates: [brainTemplate],
-    fetchTemplate: async () => { throw new Error('offline'); },
-    read: () => [{ name: 'one.nii.gz' }, { name: 'broken.nii.gz' }],
-  });
-  const select = $('fixedTemplate');
-  select.value = 'brain';
-  select.dispatchEvent(new window.Event('change'));
-  await settle();
-  assert.equal(select.value, '', 'the template choice is withdrawn so the user can retry it');
-  await pair.load('moving', [new window.File(['x'], 'dicom')]);
-  $('movingSeries').value = '1';
-  $('movingSeries').dispatchEvent(new window.Event('change'));
-  await settle();
-  assert.equal($('movingSeries').value, '0');
-  assert.equal(pair.moving.candidate.name, 'one.nii.gz');
-});
-
 test('the pair\'s example menu lists only examples and hides no picker', async () => {
   const { window } = new JSDOM('<!doctype html><body></body>');
   const pair = createImagePair({
@@ -394,6 +395,21 @@ for (const [units, scale] of [[0, 1], [1, 1000], [2, 1], [3, 0.001]]) {
     summary.spacingMm.forEach((spacing, axis) => assert.ok(Math.abs(spacing - [2, 2, 3][axis]) < 1e-6));
   });
 }
+test('describeNiftiFile reads a gzipped header without reading the whole file', async () => {
+  const image = new ArrayBuffer(352 + 4 * 4 * 4);
+  const view = new DataView(image);
+  view.setInt32(0, 348, true);
+  [3, 4, 4, 4, 1, 1, 1, 1].forEach((value, index) => view.setInt16(40 + index * 2, value, true));
+  [1, 1, 1, 1.5, 0, 0, 0, 0].forEach((value, index) => view.setFloat32(76 + index * 4, value, true));
+  view.setFloat32(108, 352, true);
+  const file = new File([gzipSync(new Uint8Array(image))], 't1.nii.gz');
+  let wholeReads = 0;
+  const arrayBuffer = file.arrayBuffer.bind(file);
+  file.arrayBuffer = () => { wholeReads += 1; return arrayBuffer(); };
+  const summary = await describeNiftiFile(file);
+  assert.deepEqual(summary, { name: 't1.nii.gz', dims: [4, 4, 4], spacingMm: [1, 1, 1.5], dimensionality: 3, frames: 1 });
+  assert.equal(wholeReads, 0, 'the gzipped file is streamed, not read whole');
+});
 
 async function compressedSummaryFile() {
   const { gzipSync } = await import('node:zlib');
@@ -405,13 +421,6 @@ async function compressedSummaryFile() {
   view.setFloat32(108, 352, true);
   return new File([gzipSync(new Uint8Array(header))], 'scan.nii.gz');
 }
-
-test('describeNiftiFile streams a gzip header without buffering the complete compressed file', async () => {
-  const file = await compressedSummaryFile();
-  file.arrayBuffer = () => { throw new Error('The complete compressed file must not be buffered for a summary.'); };
-  const summary = await describeNiftiFile(file);
-  assert.deepEqual(summary, { name: 'scan.nii.gz', dims: [10, 12, 8], spacingMm: [2, 2, 3], dimensionality: 3, frames: 1 });
-});
 
 for (const unavailable of ['file stream', 'DecompressionStream']) {
   test(`describeNiftiFile reads gzip headers without ${unavailable}`, async () => {

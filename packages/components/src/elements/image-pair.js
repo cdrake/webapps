@@ -225,14 +225,14 @@ export function defineImagePair(view = globalThis.window) {
       return slot === 'fixed' && Boolean(this.lockedFixed);
     }
 
+    // Loads run one at a time, so a drop of two scans fills both slots in turn.
+    // After any outcome the controls show the image the slot really holds.
     #enqueue(task) {
       const run = this.#queue.then(task);
       this.#queue = run.catch(() => {});
       return run;
     }
 
-    // Loads run one at a time, so a drop of two scans fills both slots in turn.
-    // After any outcome the controls show the image the slot really holds.
     #operation(message, task) {
       if (this.disabled) return Promise.resolve();
       this.#example?.reset();
@@ -284,22 +284,23 @@ export function defineImagePair(view = globalThis.window) {
       const byRole = Object.fromEntries(example.files.map((asset, index) => [asset.role, { asset, file: files[index] }]));
       const slots = IMAGE_SLOTS.filter(slot => byRole[slot] && !this.#isLocked(slot));
       if (!slots.length) throw new Error(`${example.label} has no fixed or moving image.`);
-      await this.#enqueue(async () => {
-        assertCurrent();
-        await this.#perform(`Loading ${example.label}…`, async taskSignal => {
-          const loadSignal = taskSignal ? AbortSignal.any([taskSignal, signal]) : signal;
-          for (const slot of slots) {
-            const { asset, file } = byRole[slot];
-            const read = this.read ?? (list => list.map(item => ({ name: item.name, file: item })));
-            const candidates = await read([file], { slot, signal: loadSignal });
-            assertCurrent();
-            if (!candidates?.length) throw new Error(`The example ${slot} image could not be read.`);
-            if (asset.brainExtracted !== undefined) candidates[0].brainExtracted = asset.brainExtracted;
-            await this.#commit(slot, candidates, 0, loadSignal);
-            assertCurrent();
-          }
-        });
-      });
+      // The selector reports a failure itself, so this task rethrows instead of reporting.
+      await this.#enqueue(() => this.#perform(`Loading ${example.label}…`, async taskSignal => {
+        const loadSignal = taskSignal ? AbortSignal.any([taskSignal, signal]) : signal;
+        for (const slot of slots) {
+          const { asset, file } = byRole[slot];
+          const read = this.read ?? (list => list.map(item => ({ name: item.name, file: item })));
+          const candidates = await read([file], { slot, signal: loadSignal });
+          assertCurrent();
+          if (!candidates?.length) throw new Error(`The example ${slot} image could not be read.`);
+          if (asset.brainExtracted !== undefined) candidates[0].brainExtracted = asset.brainExtracted;
+          await this.#commit(slot, candidates, 0, loadSignal);
+          assertCurrent();
+        }
+      }).finally(() => {
+        this.#refresh();
+        this.#report();
+      }));
     }
 
     async #commit(slot, series, index, signal) {
