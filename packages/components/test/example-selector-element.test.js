@@ -576,3 +576,16 @@ test('pinned examples share verified cached files across controls and keep loadi
   assert.deepEqual(imported, [['brain.nii', 3], ['brain.nii', 3]]);
   assert.deepEqual(states, ['loading', 'ready', 'loading', 'ready']);
 });
+
+test('turning file actions off shows a merged field again and keeps only the examples', () => {
+  const { window } = new JSDOM('<!doctype html><body><label class="nd-file"><input type="file" data-neurodesk-input="image"></label></body>');
+  const control = createExampleSelector({ examples, onLoad: async () => {} }, window.document);
+  window.document.body.prepend(control);
+  control.select.dispatchEvent(new window.Event('focus'));
+  const field = window.document.querySelector('.nd-file');
+  assert.equal(field.classList.contains('nd-file-merged'), true);
+  control.fileActions = false;
+  assert.equal(field.classList.contains('nd-file-merged'), false);
+  assert.deepEqual([...control.select.options].map(option => option.textContent), ['Choose an example…', 'Brain MRI']);
+  control.destroy();
+});

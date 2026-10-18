@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { gzipSync } from 'node:zlib';
 import { JSDOM } from 'jsdom';
 import { createImagePair, fetchTemplateFile } from '../src/elements/image-pair.js';
 import { describeNiftiFile } from '../src/file-io/NiftiUtils.js';
@@ -298,6 +299,41 @@ test('a failed template or series load puts its select back on the image the slo
   assert.equal(pair.moving.candidate.name, 'one.nii.gz');
 });
 
+test('a file load started during an example waits for the example to finish', async () => {
+  const { window } = new JSDOM('<!doctype html><body></body>');
+  const order = [];
+  let releaseExample;
+  const exampleGate = new Promise(resolve => { releaseExample = resolve; });
+  const previousFetch = globalThis.fetch;
+  globalThis.fetch = async url => new Response(new TextEncoder().encode(url));
+  try {
+    const examples = [{ id: 'pair', label: 'Pair', files: [{ role: 'moving', name: 'example.nii.gz', url: 'https://example.test/example.nii.gz' }] }];
+    const pair = createImagePair({
+      examples,
+      open: async (slot, candidate) => {
+        order.push(`start ${candidate.name}`);
+        if (candidate.name === 'example.nii.gz') await exampleGate;
+        order.push(`end ${candidate.name}`);
+        return { name: candidate.name };
+      },
+    }, window.document);
+    window.document.body.append(pair);
+    const select = pair.querySelector('select[data-neurodesk-example]');
+    select.value = 'pair';
+    select.dispatchEvent(new window.Event('change'));
+    await settle();
+    const load = pair.load('moving', [new window.File(['x'], 'mine.nii.gz')]);
+    await settle();
+    releaseExample();
+    await load;
+    await settle();
+    assert.deepEqual(order, ['start example.nii.gz', 'end example.nii.gz', 'start mine.nii.gz', 'end mine.nii.gz']);
+    assert.equal(pair.moving.candidate.name, 'mine.nii.gz');
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
 test('the pair\'s example menu lists only examples and hides no picker', async () => {
   const { window } = new JSDOM('<!doctype html><body></body>');
   const pair = createImagePair({
@@ -359,3 +395,18 @@ for (const [units, scale] of [[0, 1], [1, 1000], [2, 1], [3, 0.001]]) {
     summary.spacingMm.forEach((spacing, axis) => assert.ok(Math.abs(spacing - [2, 2, 3][axis]) < 1e-6));
   });
 }
+test('describeNiftiFile reads a gzipped header without reading the whole file', async () => {
+  const image = new ArrayBuffer(352 + 4 * 4 * 4);
+  const view = new DataView(image);
+  view.setInt32(0, 348, true);
+  [3, 4, 4, 4, 1, 1, 1, 1].forEach((value, index) => view.setInt16(40 + index * 2, value, true));
+  [1, 1, 1, 1.5, 0, 0, 0, 0].forEach((value, index) => view.setFloat32(76 + index * 4, value, true));
+  view.setFloat32(108, 352, true);
+  const file = new File([gzipSync(new Uint8Array(image))], 't1.nii.gz');
+  let wholeReads = 0;
+  const arrayBuffer = file.arrayBuffer.bind(file);
+  file.arrayBuffer = () => { wholeReads += 1; return arrayBuffer(); };
+  const summary = await describeNiftiFile(file);
+  assert.deepEqual(summary, { name: 't1.nii.gz', dims: [4, 4, 4], spacingMm: [1, 1, 1.5], dimensionality: 3, frames: 1 });
+  assert.equal(wholeReads, 0, 'the gzipped file is streamed, not read whole');
+});
