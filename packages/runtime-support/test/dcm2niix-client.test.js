@@ -162,6 +162,21 @@ test('readDiffusionSeries takes FSL bvals and bvecs files, with or without a ste
   }
 });
 
+test('readDiffusionSeries pairs a single optional gradient file independently', async () => {
+  for (const name of ['bvals', 'bvecs', 'grad.bval', 'grad.bvec']) {
+    const gradient = file(name, '0 1000');
+    const { result, calls } = await withFakeWorker([], () => readDiffusionSeries([
+      file('data.nii.gz'),
+      gradient,
+    ]));
+    const [series] = result;
+    const isBval = /bval/.test(name);
+    assert.equal(series.bval, isBval ? gradient : null);
+    assert.equal(series.bvec, isBval ? null : gradient);
+    assert.equal(calls.length, 0);
+  }
+});
+
 test('readDiffusionSeries leaves gradients unpaired when several volumes make the match ambiguous', async () => {
   const { result } = await withFakeWorker([], () => readDiffusionSeries([
     file('a.nii'),
