@@ -1,8 +1,8 @@
 # Catalog metadata audit
 
 Audit of the landing-page metadata in `registry/apps.yml` (title, description,
-categories, keywords) against what each app does, 2026-10-18, rebased onto the
-33-app catalog. Facts come from each app's `automation.json`, `examples.json`,
+categories, keywords) against what each app does, 2026-10-18, updated for the
+37-app catalog. Facts come from each app's `automation.json`, `examples.json`,
 README, `registry/app-information.yml` and `registry/standalone.json`.
 
 ## How the catalog used the metadata
@@ -65,15 +65,14 @@ projects write them.
 
 ### Source discrepancies found during the audit
 
-These are findings for the maintainers; this pass does not fix them.
+These findings record the audit and subsequent integration fixes.
 
 1. **WebGPU gates that NiiVue does not need.** Deface, BrowserQC, EdgeReg,
    Greedy, ANTs and Brain2Print refuse to start without `navigator.gpu`, but
    every pinned NiiVue 1.0 rc falls back to WebGL2 and MindGrab's `auto` falls
-   back to WebGL2 or the CPU. PR #384 removes the gates; until it merges the
-   catalog marks these apps "Needs WebGPU", and after it they change to
-   "WebGPU optional" (Deface, BrowserQC, Brain2Print, Greedy, ANTs) and
-   "No GPU needed" (EdgeReg).
+   back to WebGL2 or the CPU. Resolved by #384 and the coordinated integration:
+   the catalog now shows "WebGPU optional" for Deface, BrowserQC, Brain2Print,
+   Greedy and ANTs, and "No GPU needed" for EdgeReg.
 2. **CALMaR "Reporting".** The title promises reporting; the app downloads CSV
    and NIfTI only, with no report document.
 3. **SynthSR input formats.** The README says NIfTI only; `automation.json` and

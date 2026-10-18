@@ -224,7 +224,7 @@ apps:
     anatomy: [brain]
     modalities: [mri]
     inputs: [dicom, nifti]
-    hardware: webgpu-required
+    hardware: webgpu-optional
     legacy_domain: niivue.github.io/deface
     runtime: vite-webgpu
     app_scoped_runtime_families: [mindgrab-20260925]
@@ -322,7 +322,7 @@ apps:
     anatomy: [brain]
     modalities: [mri]
     inputs: [dicom, nifti]
-    hardware: webgpu-required
+    hardware: webgpu-optional
     legacy_domain: neurolabusc.github.io/BrowserQC
     runtime: vite-webgpu
     app_scoped_runtime_families: [mindgrab-20260925]
@@ -500,7 +500,7 @@ apps:
     anatomy: [brain]
     modalities: [mri]
     inputs: [dicom, nifti]
-    hardware: webgpu-required
+    hardware: cpu
     legacy_domain: null
     runtime: vite-webgpu
     model_manifest: null
@@ -548,7 +548,7 @@ apps:
     anatomy: [brain]
     modalities: [mri]
     inputs: [dicom, nifti]
-    hardware: webgpu-required
+    hardware: webgpu-optional
     legacy_domain: null
     runtime: vite-webgpu
     model_manifest: null
@@ -573,7 +573,7 @@ apps:
     anatomy: [brain]
     modalities: [mri]
     inputs: [dicom, nifti]
-    hardware: webgpu-required
+    hardware: webgpu-optional
     legacy_domain: null
     runtime: vite-webgpu
     model_manifest: null
@@ -598,7 +598,7 @@ apps:
     anatomy: [brain]
     modalities: [mri]
     inputs: [dicom, nifti]
-    hardware: webgpu-required
+    hardware: webgpu-optional
     legacy_domain: null
     runtime: vite-webgpu
     model_manifest: null

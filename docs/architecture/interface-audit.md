@@ -344,7 +344,7 @@ its scan is the moving image.
 The landing-page audit in [catalog-metadata-audit.md](catalog-metadata-audit.md)
 leaves these per-app changes open:
 
-- Deface, BrowserQC, EdgeReg, Greedy, ANTs and Brain2Print refuse to start
-  without `navigator.gpu`, although every pinned NiiVue rc falls back to WebGL2.
-  Their catalog cards say "Needs WebGPU" until the checks are removed (#384).
+- Resolved: Deface, BrowserQC, EdgeReg, Greedy, ANTs and Brain2Print now open
+  without WebGPU. The catalog marks EdgeReg "No GPU needed" and the other five
+  "WebGPU optional". Their browser suites exercise startup without WebGPU.
 - SeedSeg has no built-in example.
