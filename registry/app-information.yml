@@ -638,6 +638,10 @@ apps:
         title: NiiVue
         reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
         url: https://github.com/niivue/niivue
+      - group: Templates
+        title: ICBM152 linear average template
+        reference: "Mazziotta J, Toga A, Evans A, et al. A probabilistic atlas and reference system for the human brain: International Consortium for Brain Mapping (ICBM). Philosophical Transactions of the Royal Society B. 2001;356(1412):1293–1322."
+        doi: 10.1098/rstb.2001.0915
 
   surfannotate:
     about:

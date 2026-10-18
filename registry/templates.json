@@ -2,6 +2,8 @@
   "schema_version": 1,
   "consumers": {
     "ants": {},
+    "browserqc": { "ids": ["icbm152-avg152-t1-2mm"] },
+    "deface": { "ids": ["icbm152-avg152-t1-2mm"] },
     "edgereg": {},
     "elastix": { "dimensionality": 3 },
     "fireants": {},

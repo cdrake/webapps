@@ -457,12 +457,22 @@ function element(doc, tag, properties = {}, text) {
 }
 
 /** A catalogue template as a File, checksummed and cached by fetchModel. */
-export async function fetchTemplateFile(entry, { signal, window = globalThis } = {}) {
-  const bytes = await fetchModel(templateAsset(entry), {
-    signal,
-    cache: TEMPLATE_CACHE,
-    requestFailureMessage: `Could not download the ${entry.label} template.`,
-  });
+export async function fetchTemplateFile(entry, { signal, window = globalThis, fetch, cache = TEMPLATE_CACHE } = {}) {
+  let bytes;
+  try {
+    bytes = await fetchModel(templateAsset(entry), {
+      signal,
+      fetch,
+      cache,
+      requestFailureMessage: `Could not download the ${entry.label} template.`,
+    });
+  } catch (error) {
+    // fetchModel words integrity failures for models; name the template instead.
+    if (/^Model (size mismatch|is truncated|SHA-256 mismatch)/.test(error?.message)) {
+      throw new Error(`The ${entry.label} template does not match its pinned size and SHA-256.`, { cause: error });
+    }
+    throw error;
+  }
   return new window.File([bytes], entry.filename);
 }
 

@@ -20,18 +20,21 @@ import { bindFileDrop, createInfoDialog, createConsole, createExampleSelector } 
 import '@neurodesk/webapp-components/styles/imaging-workspace.css'
 import { registerAppAutomation, registerViewer, createNiivueAdapter, runAbortable, type OperationContext } from '@neurodesk/webapp-components/automation'
 import { readImageFiles, runDcm2niix, traverseDataTransferItems } from '@neurodesk/runtime-support/dcm2niix-client'
+import { fetchModel } from '@neurodesk/webapp-components/worker'
 import { deface, TEMPLATE_NAMES } from '@neurodesk/deface'
 import { createNiimathCommand, mindgrab } from '@neurodesk/deface/browser'
 import { TEMPLATE_ASSETS } from '@neurodesk/deface/templates'
 import examples from '../examples.json'
 
-const templateUrl = (name: string): string => {
+// The template is the avg152 entry of registry/templates.json (test/templates.test.mjs
+// keeps them equal); the face mask drawn on it is deface's own asset.
+const templateAsset = (name: string) => {
   const asset = TEMPLATE_ASSETS.find((item) => item.filename === name)
   if (!asset) throw new Error(`${name} is not pinned in @neurodesk/deface`)
-  return asset.url
+  return asset
 }
-const MNI_URL = templateUrl(TEMPLATE_NAMES.template)
-const MASK_URL = templateUrl(TEMPLATE_NAMES.mask)
+const MNI_URL = templateAsset(TEMPLATE_NAMES.template).url
+const MASK_URL = templateAsset(TEMPLATE_NAMES.mask).url
 
 mountImagingWorkspace({
   controls: '#controls',
@@ -159,10 +162,12 @@ function enqueue(fn: () => Promise<unknown>): void {
     })
 }
 
-async function fetchBytes(url: string, name: string): Promise<Uint8Array> {
-  const res = await fetch(url)
-  if (!res.ok) throw new Error(`fetch ${name} failed: ${res.status}`)
-  return new Uint8Array(await res.arrayBuffer())
+async function fetchBytes(name: string): Promise<Uint8Array> {
+  const { url, sha256, bytes } = templateAsset(name)
+  return new Uint8Array(await fetchModel({ url, integrity: { sha256, bytes } }, {
+    cache: 'neurodesk-templates',
+    requestFailureMessage: `Could not download ${name}.`,
+  }))
 }
 
 // --- Load ---
@@ -352,8 +357,8 @@ async function init(): Promise<void> {
   setStatus('Loading MNI template…')
   // Fetch the bundled template/mask once; load the default subject.
   const [mni, mask] = await Promise.all([
-    fetchBytes(MNI_URL, TEMPLATE_NAMES.template),
-    fetchBytes(MASK_URL, TEMPLATE_NAMES.mask),
+    fetchBytes(TEMPLATE_NAMES.template),
+    fetchBytes(TEMPLATE_NAMES.mask),
   ])
   refFiles = { template: mni, mask }
   setStatus('Drag and drop files')

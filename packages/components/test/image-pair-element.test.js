@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { JSDOM } from 'jsdom';
-import { createImagePair } from '../src/elements/image-pair.js';
+import { createImagePair, fetchTemplateFile } from '../src/elements/image-pair.js';
 import { describeNiftiFile } from '../src/file-io/NiftiUtils.js';
 
 const tick = () => new Promise(resolve => setImmediate(resolve));
@@ -278,6 +278,21 @@ test('disabling the pair disables every control', async () => {
   for (const id of ['fixedInput', 'fixedFolderInput', 'movingInput', 'fixedTemplate', 'swapButton', 'fixedClear']) {
     assert.equal($(id).disabled, true, `${id} is disabled`);
   }
+});
+
+test('fetchTemplateFile verifies the pinned bytes and names the template on failure', async () => {
+  const bytes = new TextEncoder().encode('template bytes');
+  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+  const sha256 = Array.from(digest, byte => byte.toString(16).padStart(2, '0')).join('');
+  const entry = { ...brainTemplate, sha256, bytes: bytes.length };
+  const serve = body => async () => new Response(body, { headers: { 'content-type': 'application/gzip' } });
+  const file = await fetchTemplateFile(entry, { fetch: serve(bytes), cache: null });
+  assert.equal(file.name, 'brain.nii.gz');
+  assert.equal(file.size, bytes.length);
+  await assert.rejects(fetchTemplateFile(entry, { fetch: serve(new TextEncoder().encode('other bytes!!!')), cache: null }),
+    /The Brain template template does not match its pinned size and SHA-256\./);
+  await assert.rejects(fetchTemplateFile(entry, { fetch: async () => new Response('no', { status: 503 }), cache: null }),
+    /Could not download the Brain template template\./);
 });
 
 test('describeNiftiFile reads spatial size, spacing and volumes from the header', async () => {

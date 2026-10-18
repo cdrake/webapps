@@ -19,7 +19,7 @@ test('the command line pins the web app\'s MindGrab and niimath builds', async (
 test('the air template pin is the BrowserQC asset manifest\'s', async () => {
   const manifest = await json('../../../models/browserqc.manifest.json');
   const asset = manifest.assets.find((entry) => entry.filename === AIR_TEMPLATE.name);
-  assert.equal(AIR_TEMPLATE.url, `${manifest.base_url}${asset.filename}`);
+  assert.equal(AIR_TEMPLATE.url, asset.url ?? `${manifest.base_url}${asset.filename}`);
   assert.equal(AIR_TEMPLATE.sha256, asset.sha256);
   await assert.rejects(checkAirTemplate(new TextEncoder().encode('other bytes')), /has SHA-256 [0-9a-f]{64}, not the pinned/);
 });
