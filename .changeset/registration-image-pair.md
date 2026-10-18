@@ -22,3 +22,7 @@ elastix offers them for 3D images only. SYNcro shows its MNI152 template as a
 locked fixed image, its scan is the moving image, and it fetches the template from
 the catalogue address. Brain extraction in ANTs, Greedy and FireANTs has its own
 Fixed and Moving buttons below the pair.
+
+Cancelling an example preserves the previous image even when the app supplies
+its own cancellation signal. Image summaries convert NIfTI spatial units to
+millimetres before showing voxel spacing.

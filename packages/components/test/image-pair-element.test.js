@@ -211,6 +211,46 @@ test('examples fill the slots by role through the same path as files', async () 
   }
 });
 
+for (const cancelledBy of ['example', 'app']) {
+  test(`cancelling the ${cancelledBy} during an example load preserves the previous image`, async () => {
+    let release;
+    let started;
+    const entered = new Promise(resolve => { started = resolve; });
+    const pending = new Promise(resolve => { release = resolve; });
+    const controller = new AbortController();
+    const previousFetch = globalThis.fetch;
+    globalThis.fetch = async () => new Response('example');
+    try {
+      const { pair, window } = setup({
+        examples: [{ id: 'pair', label: 'Pair', files: [{ role: 'fixed', name: 'new.nii.gz', url: 'https://example.test/new.nii.gz' }] }],
+        perform: (_message, task) => task(controller.signal),
+        open: async (_slot, candidate) => {
+          if (candidate.name === 'new.nii.gz') {
+            started();
+            await pending;
+          }
+          return { name: candidate.name, dimensionality: 3 };
+        },
+      });
+      await pair.use('fixed', { name: 'old.nii.gz' });
+      const select = pair.exampleControl.select;
+      select.value = 'pair';
+      select.dispatchEvent(new window.Event('change'));
+      await entered;
+      if (cancelledBy === 'example') pair.exampleControl.cancel();
+      else controller.abort();
+      release();
+      await settle();
+      assert.equal(pair.fixed.image.name, 'old.nii.gz');
+      assert.equal(pair.querySelector('#fixedInfo').textContent, 'old.nii.gz');
+      assert.notEqual(pair.exampleControl.dataset.exampleState, 'ready');
+    } finally {
+      release?.();
+      globalThis.fetch = previousFetch;
+    }
+  });
+}
+
 test('loads started together run in turn, as a two-scan drop does', async () => {
   let busy = false;
   const perform = async (message, task) => {
@@ -290,3 +330,17 @@ test('describeNiftiFile reads spatial size, spacing and volumes from the header'
   const summary = await describeNiftiFile(new File([header], 'bold.nii'));
   assert.deepEqual(summary, { name: 'bold.nii', dims: [10, 12, 8, 5], spacingMm: [2, 2, 3], dimensionality: 3, frames: 5 });
 });
+
+for (const [units, scale] of [[0, 1], [1, 1000], [2, 1], [3, 0.001]]) {
+  test(`describeNiftiFile converts spatial unit ${units} to millimetres`, async () => {
+    const header = new ArrayBuffer(352);
+    const view = new DataView(header);
+    view.setInt32(0, 348, true);
+    [3, 10, 12, 8, 1, 1, 1, 1].forEach((value, index) => view.setInt16(40 + index * 2, value, true));
+    [1, 2 / scale, 2 / scale, 3 / scale, 1, 0, 0, 0].forEach((value, index) => view.setFloat32(76 + index * 4, value, true));
+    view.setFloat32(108, 352, true);
+    view.setUint8(123, units | 8);
+    const summary = await describeNiftiFile(new File([header], 'scan.nii'));
+    summary.spacingMm.forEach((spacing, axis) => assert.ok(Math.abs(spacing - [2, 2, 3][axis]) < 1e-6));
+  });
+}
