@@ -163,8 +163,8 @@ export function defineImagePair(view = globalThis.window) {
         return parts;
       }
       const actions = element(doc, 'div', { className: 'nd-row nd-image-slot-actions' });
-      parts.input = this.#picker(actions, `${slot}Input`, `Load ${slot} image…`, `Load the ${slot} image files`, slot, false);
-      parts.folder = this.#picker(actions, `${slot}FolderInput`, 'Folder…', `Load a ${slot} image folder`, slot, true);
+      parts.input = this.#picker(actions, `${slot}Input`, `Load ${slot} image…`, `Load ${slot} image`, slot, false);
+      parts.folder = this.#picker(actions, `${slot}FolderInput`, 'Folder…', `Load ${slot} image folder`, slot, true);
       section.append(header, info, actions);
       if (slot === 'fixed' && this.templates?.length) {
         const field = element(doc, 'div', { id: 'fixedTemplateField', className: 'nd-field' });
@@ -287,7 +287,12 @@ export function defineImagePair(view = globalThis.window) {
         candidate,
         series,
         index,
-        image: { ...image, brainExtracted: image?.brainExtracted ?? candidate.brainExtracted },
+        image: {
+          ...image,
+          // A template is summarised by its catalogue label, as a locked template is.
+          name: candidate.template?.label ?? image?.name,
+          brainExtracted: image?.brainExtracted ?? candidate.brainExtracted,
+        },
       };
       this.#changed(slot);
     }
@@ -341,8 +346,8 @@ export function defineImagePair(view = globalThis.window) {
       if (typeof fixed?.brainExtracted !== 'boolean' || typeof moving?.brainExtracted !== 'boolean') return '';
       if (fixed.brainExtracted === moving.brainExtracted) return '';
       return fixed.brainExtracted
-        ? 'The fixed image is brain only and the moving image has scalp.'
-        : 'The moving image is brain only and the fixed image has scalp.';
+        ? 'The fixed image is brain only; the moving image is not brain extracted.'
+        : 'The moving image is brain only; the fixed image is not brain extracted.';
     }
 
     #refresh() {

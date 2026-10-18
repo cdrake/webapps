@@ -57,6 +57,7 @@ test('the pair renders fixed then moving with explicit file and folder pickers',
     assert.equal(input.dataset.neurodeskInput, 'image');
     assert.equal(folder.hasAttribute('webkitdirectory'), true);
     assert.equal(input.closest('label').textContent, `Load ${slot} image…`);
+    assert.ok(`${input.closest('label').textContent}`.startsWith(input.getAttribute('aria-label')), 'the accessible name contains the visible text');
     assert.equal($(`${slot}SlotTitle`).textContent, slot === 'fixed' ? 'Fixed image' : 'Moving image');
   }
   assert.ok($('fixedTemplate'), 'the fixed slot offers templates');
@@ -117,6 +118,7 @@ test('a template loads through the same slot path and carries its brain extracti
   await settle();
   assert.deepEqual(calls.open, [['fixed', 'brain.nii.gz']]);
   assert.equal(pair.fixed.image.brainExtracted, true);
+  assert.match($('fixedInfo').textContent, /^Brain template · /, 'a template is named by its catalogue label');
   assert.equal(select.value, 'brain');
   await pick('fixedInput', ['own.nii.gz']);
   assert.equal(select.value, '', 'a user file replaces the template choice');

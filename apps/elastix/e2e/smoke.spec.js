@@ -134,7 +134,7 @@ test("a built-in template as the fixed image registers a user's moving image", a
   await page.goto("/");
   await expect(page.locator("#fixedTemplate")).toBeEnabled({ timeout: 60_000 });
   await page.locator("#fixedTemplate").selectOption(template.id);
-  await expect(page.locator("#fixedInfo")).toContainText(`${template.filename} · 182×218×182 · 1×1×1 mm`);
+  await expect(page.locator("#fixedInfo")).toContainText(`${template.label} · 182×218×182 · 1×1×1 mm`);
   await expect(page.locator("#fixedTemplate")).toHaveValue(template.id);
   await page.locator("#movingInput").setInputFiles({ name: movingName, mimeType: "application/gzip", buffer: files[movingName] });
   await expect(page.locator("#movingInfo")).toContainText(movingName);
