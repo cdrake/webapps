@@ -19,7 +19,7 @@ export function syntheticDwi({ size = 8, shells = [1000, 2000], directions = 30 
   }
   const voxels = size * size * size;
   const [l1, l2, l3] = [1.7e-3, 0.3e-3, 0.3e-3];
-  // Signal inside a one-voxel border of background, so the Otsu mask has something to separate.
+  // Signal inside a one-voxel border of background, so the empty-mask test has background voxels.
   const inside = [];
   for (let z = 1; z < size - 1; z++) {
     for (let y = 1; y < size - 1; y++) {

@@ -150,10 +150,9 @@ CI uses cropped data. Native reference outputs go to the Hugging Face dataset at
 1. `exes/dwi` workspace, `gradients` and `tensor` crates, BIDS folder reader.
 2. `noddi` with DTI and AMICO.
 
-Status, 18 October 2026: the crates, the AMICO port and the `noddi` app are done. The first app slice reads NIfTI with bval and bvec, or DICOM (`readDiffusionSeries`), masks with an Otsu threshold of the mean b0 or a supplied mask, and fits in Web Workers. These parts of steps 1 and 2 remain open:
+Status, 18 October 2026: the crates, the AMICO port and the `noddi` app are done. The first app slice reads NIfTI with bval and bvec, or DICOM (`readDiffusionSeries`), masks with MindGrab on the mean b0 or a supplied mask, and fits in Web Workers. These parts of steps 1 and 2 remain open:
 
 - the BIDS folder reader;
-- MindGrab masking, after dwi2trx's `tensor-worker.ts`;
 - the niimath dtifit option (Q14 "allow both");
 - the `noddi` command line;
 - a CI workflow that runs the `exes/dwi` tests, `check:wasm` and `tests/oracle.rs` with a pinned oracle file (without it the oracle test skips, which the data-gated test rule forbids);

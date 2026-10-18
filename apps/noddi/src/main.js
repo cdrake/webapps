@@ -21,11 +21,12 @@ import {
 } from "@neurodesk/webapp-components/file-io";
 import { registerAppAutomation } from "@neurodesk/webapp-components/automation";
 import { readDiffusionSeries, runDcm2niix } from "@neurodesk/runtime-support/dcm2niix-client";
+import { brainMask, mindgrab } from "@neurodesk/runtime-support/mindgrab";
 import { parseBvalBvec } from "@neurodesk/dwi2trx/gradients";
 import { loadNoddi } from "@neurodesk/noddi";
 import wasmUrl from "@neurodesk/noddi/wasm?url";
 import { APP } from "./config.js";
-import { MAPS, bidsStem, mapName, maskIndices, maskName, meanVolumes, stackFrames, thresholdMask } from "./pipeline.js";
+import { MAPS, bidsStem, mapName, maskIndices, maskName, meanVolumes, stackFrames } from "./pipeline.js";
 import { fitVolume } from "./fit-pool.js";
 import examples from "../examples.json";
 
@@ -225,13 +226,25 @@ async function fitModels(signal) {
   clearOutputs();
   const withNoddi = $("fitNoddi").checked && !input.table.noddiError;
   const weighted = $("tensorFit").value === "wls";
-  const brain = mask ?? thresholdMask(input.meanB0);
-  const indices = maskIndices(brain);
-  progress.begin(`Fitting ${indices.length} voxels…`);
   progress.setCancellable(true);
-  status(`Fitting ${withNoddi ? "tensor and NODDI" : "tensor"} to ${indices.length} voxels`);
   try {
+    let brain = mask;
+    let maskSource = "supplied";
+    if (!brain) {
+      progress.begin("Extracting the brain from the mean b0 with MindGrab…");
+      progress.setCancellable(true);
+      status("Extracting the brain from the mean b0 with MindGrab");
+      const meanB0 = createNiftiFromData(input.meanB0, input.buffer, { dims: input.dims });
+      const extracted = await brainMask(new Uint8Array(meanB0), { assetPath: `${import.meta.env.BASE_URL}mindgrab/`, signal: controller.signal });
+      brain = Uint8Array.from(readNiftiFrames(extracted.mask).data, (value) => (value > 0 ? 1 : 0));
+      maskSource = `mindgrab-${mindgrab.version}-${extracted.backend}`;
+      log.log(`MindGrab ${mindgrab.version} brain mask on ${extracted.backend}`, "info");
+    }
+    const indices = maskIndices(brain);
     if (!indices.length) throw new Error("The brain mask has no voxels. Supply a mask, or check the b0 volumes.");
+    progress.begin(`Fitting ${indices.length} voxels…`);
+    progress.setCancellable(true);
+    status(`Fitting ${withNoddi ? "tensor and NODDI" : "tensor"} to ${indices.length} voxels`);
     const fit = await fitVolume({
       data: input.data,
       voxels: input.voxels,
@@ -274,7 +287,7 @@ async function fitModels(signal) {
     status(`Fitted ${indices.length} voxels · ${Object.keys(rows).length} maps`);
     return {
       artifacts,
-      provenance: { method: withNoddi ? "dti+noddi-amico" : "dti", tensorFit: weighted ? "wls" : "ols", maskVoxels: indices.length, mask: mask ? "supplied" : "otsu-mean-b0" },
+      provenance: { method: withNoddi ? "dti+noddi-amico" : "dti", tensorFit: weighted ? "wls" : "ols", maskVoxels: indices.length, mask: maskSource },
     };
   } catch (error) {
     progress.reset();

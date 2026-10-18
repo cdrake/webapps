@@ -1,6 +1,5 @@
-// DOM-free steps of the noddi workflow, shared by the page and its tests: the threshold mask,
-// voxel chunks for the workers, and BIDS derivative names for the maps (BEP016 dwimap).
-import { computeOtsuThreshold } from "@neurodesk/webapp-components/volume";
+// DOM-free steps of the noddi workflow, shared by the page and its tests: the mean b0, voxel
+// chunks for the workers, and BIDS derivative names for the maps (BEP016 dwimap).
 
 /** The maps each model writes: BEP016 parameter label, worker output key, row label. */
 export const MAPS = Object.freeze({
@@ -44,14 +43,6 @@ export function meanVolumes(data, voxels, volumes) {
   }
   for (let i = 0; i < voxels; i++) mean[i] /= volumes.length;
   return mean;
-}
-
-/** A brain mask from an Otsu threshold of the mean b0. */
-export function thresholdMask(meanB0) {
-  const { thresholdValue } = computeOtsuThreshold(meanB0);
-  const mask = new Uint8Array(meanB0.length);
-  for (let i = 0; i < mask.length; i++) mask[i] = meanB0[i] > thresholdValue ? 1 : 0;
-  return mask;
 }
 
 /** Indices of the non-zero voxels of a mask. */
