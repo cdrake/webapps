@@ -25,6 +25,8 @@ export interface ExampleSelectorOptions<T extends AppExample = AppExample> {
   onLoad(example: T, context: ExampleLoadContext): Promise<void>;
   onStatus?(message: string, error: boolean): void;
   scope?: HTMLElement;
+  /** False lists only the examples, for an owner with its own picker for every slot. */
+  fileActions?: boolean;
 }
 
 export interface ExampleSelectorElement<T extends AppExample = AppExample> extends HTMLElement {
@@ -32,6 +34,7 @@ export interface ExampleSelectorElement<T extends AppExample = AppExample> exten
   onLoad: ExampleSelectorOptions<T>['onLoad'];
   onStatus: NonNullable<ExampleSelectorOptions<T>['onStatus']>;
   scope: HTMLElement | undefined;
+  fileActions: boolean;
   readonly uploadScope: HTMLElement | undefined;
   disabled: boolean;
   readonly select: HTMLSelectElement;

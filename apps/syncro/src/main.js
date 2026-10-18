@@ -427,6 +427,8 @@ for (const [slot, field] of Object.entries(fileFields)) {
 
 const exampleControl = createExampleSelector({
   examples,
+  // The image pair has its own moving-image picker; the menu lists only the tutorials.
+  fileActions: false,
   onLoad: async (example, { fetchFiles, assertCurrent }) => {
     const files = await fetchFiles();
     assertCurrent();

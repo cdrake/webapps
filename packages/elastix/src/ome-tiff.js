@@ -2,7 +2,7 @@ import { toOmeTiff } from "@fideus-labs/fiff";
 import { createNgffImage, toMultiscales } from "@fideus-labs/ngff-zarr";
 import { omeTiffIssue } from "./outputs.js";
 
-/** Scalar result at the selected registration pyramid level, with stationary calibration. */
+/** Scalar result at the selected registration pyramid level, with fixed-image calibration. */
 export async function writeOmeTiff(image, spatialUnits, { signal, tiffMetadata } = {}) {
   signal?.throwIfAborted();
   const issue = omeTiffIssue(image, spatialUnits, tiffMetadata);
