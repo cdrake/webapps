@@ -224,6 +224,7 @@ for (const example of examples) {
     await expect(page.locator("#noddiNote")).toBeVisible();
     await page.locator("#runButton").click();
     await expect(page.locator("#statusText")).toContainText("Fitted", { timeout: 120000 });
+    await expect(page.locator("#technicalLog")).toContainText(/MindGrab .+ brain mask on (cpu|webgpu|webgl2)/);
     await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(7);
     const event = page.waitForEvent("download");
     await page.locator("#resultList .nd-volume-toggle").first().getByRole("button", { name: "Download" }).click();
@@ -241,6 +242,27 @@ for (const example of examples) {
     expect(sorted.filter((value) => value > 1).length / sorted.length).toBeLessThan(0.01);
   });
 }
+
+test("cancelling default MindGrab extraction permits a complete retry", async ({ page }) => {
+  test.setTimeout(180000);
+  await page.goto("/");
+  await page.locator("select[data-neurodesk-example]").selectOption(examples[0].id);
+  await expect(page.locator("#runButton")).toBeEnabled({ timeout: 120000 });
+  const started = page.waitForEvent("worker");
+  await page.locator("#runButton").click();
+  const worker = await started;
+  const stopped = new Promise((resolve) => worker.once("close", resolve));
+  await expect(page.locator("#statusText")).toHaveText("Extracting the brain from the mean b0 with MindGrab");
+  await page.locator("#cancelButton").click();
+  await stopped;
+  await expect(page.locator("#statusText")).toHaveText("Cancelled");
+  await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(0);
+  await expect(page.locator("#runButton")).toBeEnabled();
+  await page.locator("#runButton").click();
+  await expect(page.locator("#statusText")).toContainText("Fitted", { timeout: 120000 });
+  await expect(page.locator("#technicalLog")).toContainText(/MindGrab .+ brain mask on (cpu|webgpu|webgl2)/);
+  await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(7);
+});
 
 for (const failure of ["download", "empty image"]) {
   test(`a failed ${failure} can retry the same example`, async ({ page }) => {
