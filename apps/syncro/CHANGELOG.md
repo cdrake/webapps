@@ -24,6 +24,8 @@
 
 ### Patch Changes
 
+- @neurodesk/greedy@0.6.20261018
+- @neurodesk/syncro@0.7.20261018
 - Updated dependencies
 - Updated dependencies [46935f7]
   - @neurodesk/runtime-support@0.9.0

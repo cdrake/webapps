@@ -1,6 +1,6 @@
 {
   "name": "dwidenoise",
-  "version": "0.0.20261018",
+  "version": "0.2.20261018",
   "private": true,
   "type": "module",
   "scripts": {

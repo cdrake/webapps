@@ -1,5 +1,12 @@
 # @neurodesk/desktop
 
+## 0.33.20261018
+
+### Patch Changes
+
+- 803cb7e: Complete anatomy, modality, input and hardware metadata for NODDI, Degibbs, N4, DICOM to BIDS and Dwidenoise. Align six existing cards with their supported startup without WebGPU.
+- f2cfdd3: Share the checksum-verified ONNX Runtime asyncify binary in composite sites while keeping pthread modules inside each app's service-worker scope. This keeps the expanded catalog within its existing hosting budget.
+
 ## 0.32.20261018
 
 ### Patch Changes
