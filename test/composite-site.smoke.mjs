@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 import { createReadStream } from 'node:fs';
-import { stat } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { extname, join, normalize } from 'node:path';
 import { chromium } from '@playwright/test';
 import { loadAppsRegistry, repoRoot } from '../scripts/lib/apps-registry.mjs';
 import { verifyMuscleMapFullPipeline } from './musclemap-full-pipeline-smoke.mjs';
+import { verifyDicompareRoutes } from '../test-utils/dicompare-routes.mjs';
 import { verifyMuscleMapThreads } from './multithreaded-ort-smoke.mjs';
 
 const dist = join(repoRoot, 'dist');
@@ -61,7 +62,8 @@ const server = createServer(async (request, response) => {
     try {
       metadata = await stat(path);
     } catch {
-      response.writeHead(404).end('Not found');
+      response.writeHead(404, { 'content-type': 'text/html; charset=utf-8' })
+        .end(await readFile(join(dist, '404.html')));
       return;
     }
 
@@ -77,8 +79,11 @@ const server = createServer(async (request, response) => {
     response.writeHead(200, {
       'content-length': metadata.size,
       'content-type': mimeTypes.get(extname(path)) ?? 'application/octet-stream',
-      'cross-origin-embedder-policy': 'credentialless',
-      'cross-origin-opener-policy': 'same-origin',
+      // Dicompare's Pages route checks must acquire isolation from its worker.
+      ...(url.pathname.startsWith('/dicompare/') ? {} : {
+        'cross-origin-embedder-policy': 'credentialless',
+        'cross-origin-opener-policy': 'same-origin',
+      }),
       'x-content-type-options': 'nosniff',
     });
     if (request.method === 'HEAD') response.end();
@@ -96,6 +101,10 @@ const browser = await chromium.launch({ headless: true, args: ['--disable-blink-
 const failures = [];
 
 try {
+  if (appsUnderTest.some(app => app.id === 'dicompare')) {
+    await verifyDicompareRoutes(browser, origin);
+    console.log('PASS Dicompare static catalog/detail routes, reload and history');
+  }
   const privacyContext = await browser.newContext();
   await privacyContext.addInitScript(() => {
     Object.defineProperty(navigator, 'doNotTrack', { configurable: true, value: '1' });
