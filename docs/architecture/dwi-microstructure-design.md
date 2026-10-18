@@ -65,7 +65,7 @@ These rules are in the `gradients` crate with tests:
 - Each stage has its own WebAssembly build. Each app loads only its module.
 - `packages/<stage>` holds the JavaScript wrapper, the committed `.wasm` and the command line, as `packages/easy-mp2rage` does.
 - The committed `.wasm` is built with the pinned Rust, wasm-pack and binaryen `version_117` versions. CI rebuilds it and fails when the bytes differ.
-- For now the WebAssembly crate includes `exes/synthseg/src/nifti.rs` with `#[path]`, as `packages/synthseg/wasm` does. One shared NIfTI crate for synthseg, synthsr and dwi is a separate change.
+- The WebAssembly modules take and return Float32 voxel arrays, volume after volume. NIfTI reading and writing stay in the shared JavaScript (`readNiftiFrames`, `createNiftiFromData` in `@neurodesk/webapp-components/file-io/nifti`), so the browser and the command line use one reader and the Rust crates need no NIfTI code.
 - The generic BIDS folder reader goes in `@neurodesk/webapp-components/file-io`. It finds `dwi/*_dwi.nii.gz` with its bval, bvec and JSON, the `fmap/*_epi` files whose `IntendedFor` names that DWI, and `anat/*_T1w`.
 
 ## Port sources and licences

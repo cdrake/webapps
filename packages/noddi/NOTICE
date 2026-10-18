@@ -1,0 +1,8 @@
+NODDI browser fitting library
+Copyright 2026 Neurodesk contributors
+
+The WebAssembly module src/noddi.wasm is built from the Rust crates in
+exes/dwi (gradients, tensor, noddi-wasm) by scripts/build-wasm.sh.
+
+Basser PJ, Mattiello J, LeBihan D (1994). Estimation of the effective
+self-diffusion tensor from the NMR spin echo. J Magn Reson B 103(3):247-254.
