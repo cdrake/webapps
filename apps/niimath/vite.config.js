@@ -7,9 +7,6 @@ export default neurodeskViteConfig({
   appId: 'niimath',
   base: './',
   root: '.',
-  server: {
-    open: 'index.html'
-  },
   build: {
     rollupOptions: {
       output: {
