@@ -38,10 +38,10 @@
           <option value="allineate_robustfov">allineate (fast, robustfov)</option>
           <option value="allineate_hel">allineate (Hellinger)</option>
           <option value="allineate_hel_robustfov">allineate (Hellinger, robustfov)</option>
-          <option value="mindgrab">mindgrab (WebGPU)</option>
-          <option value="mindgrab_robust">mindgrab robustfov (WebGPU)</option>
-          <option value="mindgrab8">mindgrab 8 mm border (WebGPU)</option>
-          <option value="mindgrab_robust8">mindgrab robustfov + 8 mm (WebGPU)</option>
+          <option value="mindgrab">mindgrab</option>
+          <option value="mindgrab_robust">mindgrab robustfov</option>
+          <option value="mindgrab8">mindgrab 8 mm border</option>
+          <option value="mindgrab_robust8">mindgrab robustfov + 8 mm</option>
         </select>
         <p id="methodDescription" class="nd-hint">Fast affine registration to remove facial voxels.</p>
         </div>
@@ -75,7 +75,7 @@
   </footer>
 
   <template id="aboutContent"><p>Remove facial features from brain MRI for anonymization entirely in your browser. No imaging data is sent to a server.</p>
-      <p>The allineate methods use niimath to register an MNI template and remove facial voxels. MindGrab uses local WebGPU brain extraction. Visualization uses NiiVue and DICOM import uses dcm2niix.</p>
+      <p>The allineate methods use niimath to register an MNI template and remove facial voxels. MindGrab extracts the brain locally on WebGPU, WebGL2 or the CPU. Visualization uses NiiVue and DICOM import uses dcm2niix.</p>
       <p>This BSD-2-Clause app fails closed if processing cannot complete. Always review the result before sharing it.</p></template>
 
 

@@ -67,10 +67,10 @@ const technicalLog = createConsole({ id: 'technicalLog', outputId: 'consoleOutpu
 $('viewer').appendChild(technicalLog)
 
 // --- NiiVue setup ---
-// The NiiVue constructor is GPU-free; attachTo() acquires the WebGPU device and
-// throws on a browser without it. So construct here but defer attachTo to init(),
-// AFTER the navigator.gpu guard, or a no-WebGPU browser gets an unhandled
-// top-level rejection instead of the friendly "needs WebGPU" message.
+// The NiiVue constructor is GPU-free; attachTo() takes WebGPU and falls back to
+// WebGL2, and throws only when neither works. So construct here but defer
+// attachTo to init(), which turns that failure into a status message instead of
+// an unhandled top-level rejection.
 const nv = new NiiVueGPU({ isDragDropEnabled: false, backgroundColor: [0, 0, 0, 1] })
 type ExtCtx = ReturnType<typeof nv.createExtensionContext>
 let ctx: ExtCtx | null = null
@@ -322,31 +322,21 @@ async function handleDrop(filesPromise: Promise<File[]>): Promise<void> {
 
 // --- Init ---
 async function init(): Promise<void> {
-  // NiiVue's attachTo() acquires a WebGPU device and throws without one. But
-  // navigator.gpu can exist while requestAdapter() returns null, device creation
-  // fails, or the GPU is blocklisted — so guard the fast case AND catch attachTo()
-  // failures, giving a friendly message instead of an unhandled console.error in
-  // every WebGPU-unavailable path.
-  const noWebGpu =
-    'This browser can’t initialize WebGPU. Use a recent desktop Chrome, Edge or Safari.'
-  if (!navigator.gpu) {
-    initializationFailure = new Error(noWebGpu)
-    document.querySelector('.nd-viewer-canvas-wrapper > [role="alert"]')?.remove()
-    $('emptyState').hidden = false
-    setStatus(noWebGpu)
-    return
-  }
+  // attachTo() falls back from WebGPU to WebGL2, so it fails only when the
+  // browser offers neither, or its GPU is blocklisted for both.
+  const noGraphics =
+    'This browser can’t start the image viewer. It needs WebGL2 or WebGPU; use a recent Chrome, Edge, Firefox or Safari.'
   try {
     await attachNiiVue()
   } catch (err) {
-    // Almost always genuine WebGPU unavailability; warn (not error, so the smoke's
-    // console.error gate stays meaningful) so a non-WebGPU init bug isn't silently
+    // Almost always missing graphics support; warn (not error, so the smoke's
+    // console.error gate stays meaningful) so another init bug isn't silently
     // mislabeled. Either way return fail-closed: sourceFile/refFiles stay unset.
-    initializationFailure = new Error(noWebGpu, { cause: err })
-    console.warn('deface: WebGPU init failed', err)
+    initializationFailure = new Error(noGraphics, { cause: err })
+    console.warn('deface: viewer init failed', err)
     document.querySelector('.nd-viewer-canvas-wrapper > [role="alert"]')?.remove()
     $('emptyState').hidden = false
-    setStatus(noWebGpu)
+    setStatus(noGraphics)
     return
   }
   setStatus('Loading MNI template…')
@@ -423,10 +413,10 @@ const methodDescriptions: Record<string, string> = {
   allineate_robustfov: 'Crops the neck, then fast affine registration. Use when the fit includes too much neck.',
   allineate_hel: 'Slower, exhaustive Hellinger registration for scans where the fast fit is not accurate.',
   allineate_hel_robustfov: 'Neck crop plus exhaustive Hellinger registration. The slowest affine option.',
-  mindgrab: 'WebGPU neural network keeps the brain and removes everything outside it.',
-  mindgrab_robust: 'Crops neck and lower slices before WebGPU brain extraction.',
-  mindgrab8: 'WebGPU brain extraction with an 8 mm border around the brain.',
-  mindgrab_robust8: 'Neck crop, WebGPU brain extraction, and an 8 mm brain border.',
+  mindgrab: 'A neural network keeps the brain and removes everything outside it.',
+  mindgrab_robust: 'Crops neck and lower slices before neural-network brain extraction.',
+  mindgrab8: 'Neural-network brain extraction with an 8 mm border around the brain.',
+  mindgrab_robust8: 'Neck crop, neural-network brain extraction, and an 8 mm brain border.',
 }
 methodSelect.addEventListener('change', () => {
   methodDescription.textContent = methodDescriptions[methodSelect.value] ?? ''
@@ -459,7 +449,7 @@ async function cleanup(): Promise<void> {
   // belongs to the run and ends with it.
   release(() => niimath.dispose())
   try {
-    ctx?.dispose() // null if WebGPU was unavailable (attachNiiVue never ran)
+    ctx?.dispose() // null if the viewer could not start (attachNiiVue failed)
   } catch {
     // best-effort — must not skip nv.destroy() below
   }

@@ -87,10 +87,10 @@ const technicalLog = createConsole({ id: 'technicalLog', outputId: 'consoleOutpu
 $('canvas-container').appendChild(technicalLog)
 
 // --- NiiVue setup ---
-// The NiiVue constructor is GPU-free; attachTo() acquires the WebGPU device and
-// throws on a browser without it. So construct here but defer attachTo to init(),
-// AFTER the navigator.gpu guard, or a no-WebGPU browser gets an unhandled
-// top-level rejection instead of the friendly "needs WebGPU" message.
+// The NiiVue constructor is GPU-free; attachTo() takes WebGPU and falls back to
+// WebGL2, and throws only when neither works. So construct here but defer
+// attachTo to init(), which turns that failure into a status message instead of
+// an unhandled top-level rejection.
 const nv = new NiiVueGPU({ isDragDropEnabled: false, backgroundColor: [0, 0, 0, 1], volumeIsNearestInterpolation: true })
 type ExtCtx = ReturnType<typeof nv.createExtensionContext>
 let ctx: ExtCtx | null = null
@@ -473,31 +473,21 @@ async function handleDrop(filesPromise: Promise<File[]>, signal?: AbortSignal): 
 
 // --- Init ---
 async function init(): Promise<void> {
-  // NiiVue's attachTo() acquires a WebGPU device and throws without one. But
-  // navigator.gpu can exist while requestAdapter() returns null, device creation
-  // fails, or the GPU is blocklisted — so guard the fast case AND catch attachTo()
-  // failures, giving a friendly message instead of an unhandled console.error in
-  // every WebGPU-unavailable path.
-  const noWebGpu =
-    'This browser/GPU can’t initialize WebGPU — BrowserQC needs a recent desktop Chrome, Edge, or Safari.'
-  if (!navigator.gpu) {
-    initializationFailure = new Error(noWebGpu)
-    document.querySelector('.nd-viewer-canvas-wrapper > [role="alert"]')?.remove()
-    $('emptyState').hidden = false
-    setStatus(noWebGpu)
-    return
-  }
+  // attachTo() falls back from WebGPU to WebGL2, so it fails only when the
+  // browser offers neither, or its GPU is blocklisted for both.
+  const noGraphics =
+    'This browser can’t start the image viewer. It needs WebGL2 or WebGPU; use a recent Chrome, Edge, Firefox or Safari.'
   try {
     await attachNiiVue()
   } catch (err) {
-    // Almost always genuine WebGPU unavailability; warn (not error, so the smoke's
-    // console.error gate stays meaningful) so a non-WebGPU init bug isn't silently
+    // Almost always missing graphics support; warn (not error, so the smoke's
+    // console.error gate stays meaningful) so another init bug isn't silently
     // mislabeled.
-    initializationFailure = new Error(noWebGpu, { cause: err })
-    console.warn('BrowserQC: WebGPU init failed', err)
+    initializationFailure = new Error(noGraphics, { cause: err })
+    console.warn('BrowserQC: viewer init failed', err)
     document.querySelector('.nd-viewer-canvas-wrapper > [role="alert"]')?.remove()
     $('emptyState').hidden = false
-    setStatus(noWebGpu)
+    setStatus(noGraphics)
     return
   }
   viewerReady = true

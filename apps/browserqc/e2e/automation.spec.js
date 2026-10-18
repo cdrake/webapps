@@ -134,6 +134,15 @@ test('default PVE analysis publishes native-grid fractions and an independent ma
   expect(regions).toEqual([]);
 });
 
+test('the viewer starts on WebGL2 and loads an image without WebGPU', async ({ page }) => {
+  await page.addInitScript(() => Object.defineProperty(Navigator.prototype, 'gpu', { value: undefined }));
+  await page.goto('./');
+  await expect(page.locator('#statusMsg')).toHaveText('Drag and drop files', { timeout: 60_000 });
+  await page.locator('#niftiInput').setInputFiles(fixture);
+  await expect(page.locator('#statusMsg')).toHaveText('Image loaded. Run quality control when ready.');
+  await expect(page.locator('#runButton')).toBeEnabled();
+});
+
 test('manual worker failures and cancellation stay visible and allow retry', async ({ page }) => {
   const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(error.message));

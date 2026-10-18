@@ -11,7 +11,7 @@ the tissue maps, brain mask and pinned MNI air template. These measurements are
 an MRIQC-style approximation and are not MRIQC normative values.
 
 NiiVue renders the scan. DICOM import uses the shared dcm2niix converter.
-The viewer requires a WebGPU-capable desktop browser. Segmentation can use
+The viewer uses WebGPU or, without it, WebGL2. Segmentation can use
 WebGPU, WebGL2 or a threaded CPU on a cross-origin isolated page.
 
 ## Develop
