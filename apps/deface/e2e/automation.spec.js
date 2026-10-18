@@ -92,17 +92,30 @@ test('MindGrab with an 8 mm border zeroes the face and keeps the brain unchanged
   expect((await dispatch(page, 'snapshot')).report.provenance).toMatchObject({ method: 'mindgrab8', engine: 'mindgrab-niimath' });
 });
 
-test('without WebGPU the viewer uses WebGL2 and defacing completes', async ({ page }) => {
-  await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));
-  await page.goto('./');
-  await expect(page.locator('#statusMsg')).toHaveText('Drag and drop files', { timeout: 60_000 });
-  await page.locator('#neurodesk-input-transfer').setInputFiles(fixture);
-  await dispatch(page, 'adopt', { role: 'image' });
-  await dispatch(page, 'start', { operation: 'deface', parameters: { method: 'allineate' } });
-  await finish(page, 120000);
-  expectMaskedCopy(await download(page), readVolume(source(await readFile(fixture))));
-  expect((await dispatch(page, 'viewers.list')).length).toBeGreaterThan(0);
-});
+for (const capability of ['API unavailable', 'adapter unavailable', 'adapter rejected']) {
+  test(`WebGL2 handles WebGPU ${capability} and defacing completes`, async ({ page }) => {
+    await page.addInitScript(capability => {
+      if (capability === 'API unavailable') {
+        Object.defineProperty(navigator, 'gpu', { value: undefined });
+      } else {
+        navigator.gpu.requestAdapter = async () => {
+          if (capability === 'adapter rejected') throw new Error('Adapter access denied');
+          return null;
+        };
+      }
+    }, capability);
+    await page.goto('./');
+    expect(await page.evaluate(() => Boolean(navigator.gpu))).toBe(capability !== 'API unavailable');
+    await expect(page.locator('[data-neurodesk-example]')).toBeEnabled();
+    await expect(page.locator('#statusMsg')).toHaveText('Drag and drop files', { timeout: 60_000 });
+    await page.locator('#neurodesk-input-transfer').setInputFiles(fixture);
+    await dispatch(page, 'adopt', { role: 'image' });
+    await dispatch(page, 'start', { operation: 'deface', parameters: { method: 'allineate' } });
+    await finish(page, 120000);
+    expectMaskedCopy(await download(page), readVolume(source(await readFile(fixture))));
+    expect((await dispatch(page, 'viewers.list')).length).toBeGreaterThan(0);
+  });
+}
 
 test('a browser without WebGPU or WebGL2 fails the operation with the app initialization error', async ({ page }) => {
   await page.addInitScript(() => {
