@@ -93,8 +93,9 @@ const pair = createImagePair({
     if (images.length !== 1) throw new Error('Choose one NIfTI image or one complete DICOM series for the moving image.');
     return images.map((file) => ({ name: file.name, file }));
   },
-  open: async (_slot, candidate) => {
+  open: async (_slot, candidate, { signal }) => {
     const inspected = await inspectInput(candidate.file);
+    signal?.throwIfAborted();
     commitInput('primary', inspected);
     return { name: inspected.file.name, dims: inspected.volume.dims, dimensionality: 3 };
   },

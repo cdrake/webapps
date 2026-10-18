@@ -32,6 +32,7 @@ export function defineImagePair(view = globalThis.window) {
     #initialized = false;
     #drops = [];
     #example;
+    #queue = Promise.resolve();
 
     static get observedAttributes() {
       return ['disabled'];
@@ -118,6 +119,8 @@ export function defineImagePair(view = globalThis.window) {
         this.#example = createExampleSelector({
           examples: this.examples,
           scope: this,
+          // Each card has its own pickers, so the menu lists only the examples.
+          fileActions: false,
           onStatus: (message, error) => this.onStatus?.(message, error),
           onLoad: (example, context) => this.#loadExample(example, context),
         }, doc);
@@ -144,6 +147,8 @@ export function defineImagePair(view = globalThis.window) {
       const locked = this.#isLocked(slot);
       const section = element(doc, 'section', { id: `${slot}Slot`, className: 'nd-image-slot', 'aria-labelledby': `${slot}SlotTitle` });
       section.dataset.slot = slot;
+      // The card takes its own drops; the page drop leaves it alone.
+      if (!locked) section.dataset.dropTarget = '';
       const header = element(doc, 'div', { className: 'nd-image-slot-header' });
       const title = element(doc, 'span', { id: `${slot}SlotTitle`, className: 'nd-image-slot-title' }, TITLES[slot]);
       header.append(title);
@@ -220,14 +225,32 @@ export function defineImagePair(view = globalThis.window) {
       return slot === 'fixed' && Boolean(this.lockedFixed);
     }
 
-    async #operation(message, task) {
-      if (this.disabled) return;
+    // Loads run one at a time, so a drop of two scans fills both slots in turn.
+    // After any outcome the controls show the image the slot really holds.
+    #operation(message, task) {
+      if (this.disabled) return Promise.resolve();
       this.#example?.reset();
-      try {
-        await this.#perform(message, task);
-      } catch (error) {
-        if (error?.name === 'AbortError') return;
-        this.onStatus?.(error?.message || String(error), true);
+      const run = this.#queue.then(async () => {
+        try {
+          await this.#perform(message, task);
+        } catch (error) {
+          if (error?.name !== 'AbortError') this.onStatus?.(error?.message || String(error), true);
+        } finally {
+          this.#refresh();
+          this.#report();
+        }
+      });
+      this.#queue = run;
+      return run;
+    }
+
+    // Tell the page drop which slots hold an image, so a dropped scan goes to an empty one.
+    #report() {
+      for (const slot of IMAGE_SLOTS) {
+        const input = this.#parts[slot]?.input;
+        if (!input) continue;
+        const file = this.#state[slot]?.candidate?.file;
+        input.dispatchEvent(new window.CustomEvent('nd-files', { bubbles: true, detail: { files: file ? [file] : [] } }));
       }
     }
 
@@ -325,6 +348,7 @@ export function defineImagePair(view = globalThis.window) {
     #changed(slot) {
       this.#error = this.#validate();
       this.#refresh();
+      this.#report();
       const detail = { slot, fixed: this.#state.fixed, moving: this.#state.moving, ready: this.ready, error: this.#error };
       this.onChange?.(detail);
       this.dispatchEvent(new window.CustomEvent('nd-image-pair-change', { bubbles: true, composed: true, detail }));

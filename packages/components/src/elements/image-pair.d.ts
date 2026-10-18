@@ -93,9 +93,7 @@ export interface ImagePairElement extends HTMLElement, Omit<ImagePairConfig, 'id
 export const IMAGE_SLOTS: readonly ImageSlot[];
 export function defineImagePair(view?: Window): CustomElementConstructor;
 export function createImagePair(config: ImagePairConfig, doc?: Document): ImagePairElement;
-export function fetchTemplateFile(entry: TemplateEntry, options?: { signal?: AbortSignal }): Promise<File>;
-export function templatesFor(catalogue: TemplateCatalogue, appId: string): TemplateEntry[];
-export function templateAsset(entry: TemplateEntry): { url: string; cacheKey: string; integrity: { sha256: string; bytes: number } };
+export function fetchTemplateFile(entry: TemplateEntry, options?: { signal?: AbortSignal; window?: Window }): Promise<File>;
 
 declare global {
   interface HTMLElementTagNameMap {

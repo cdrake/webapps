@@ -20,7 +20,7 @@ const lockedAsset = {
   dependencies: [],
 };
 
-async function fixture(t, { model = false, template = false, conflict = false, locked = false } = {}) {
+async function fixture(t, { model = false, template = false, templateExample = false, conflict = false, locked = false } = {}) {
   const root = await mkdtemp(join(tmpdir(), 'lock-example-assets-'));
   t.after(() => rm(root, { recursive: true, force: true }));
   for (const path of ['scripts/lib', 'registry', 'models', 'apps/alpha', 'apps/beta', 'storage', 'packages/components/src/ui']) {
@@ -59,7 +59,7 @@ async function fixture(t, { model = false, template = false, conflict = false, l
       id: 'first',
       files: [{ name: 'alpha.nii.gz', url, sha256: conflict ? '0'.repeat(64) : sha256, license: 'MIT' }],
     }],
-    'apps/beta/examples.json': model || template ? [] : [{
+    'apps/beta/examples.json': model || (template && !templateExample) ? [] : [{
       id: 'second',
       files: [{ name: 'beta.nii.gz', url, sha256, license: 'CC0-1.0' }],
     }],
@@ -128,6 +128,14 @@ test('registers a catalogue template for each app that offers it', async t => {
   const sources = await f.read('registry/offline-assets.sources.json');
   const lock = await f.read('registry/offline-assets.lock.json');
   assert.deepEqual(lock.apps, { alpha: [url], beta: [url] });
+  assert.deepEqual(sources.apps.beta, [{ url, sha256, bytes: bytes.length, kind: 'template', license: 'CC-BY-4.0' }]);
+});
+
+test('a template that is also an example records the template licence', async t => {
+  const f = await fixture(t, { template: true, templateExample: true });
+  const result = await f.run();
+  assert.equal(result.status, 0, result.stderr);
+  const sources = await f.read('registry/offline-assets.sources.json');
   assert.deepEqual(sources.apps.beta, [{ url, sha256, bytes: bytes.length, kind: 'template', license: 'CC-BY-4.0' }]);
 });
 

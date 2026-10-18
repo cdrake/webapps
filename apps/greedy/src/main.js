@@ -1,5 +1,6 @@
 import examples from '../examples.json';
 import templateCatalogue from '../../../registry/templates.json';
+import { bindInfoTooltips } from '@neurodesk/webapp-components/ui';
 import NiiVueGPU, { MULTIPLANAR_TYPE, SHOW_RENDER, SLICE_TYPE } from "@niivue/niivue";
 import "@neurodesk/webapp-components/styles/imaging-workspace.css";
 import { mountImagingWorkspace } from "@neurodesk/webapp-components/core/mount-imaging-workspace";
@@ -70,6 +71,7 @@ const toolbar = createViewerToolbar({
 });
 $("viewer").prepend(toolbar);
 const log = createConsole({ id: "technicalLog" });
+bindInfoTooltips(document);
 $("viewer").append(log);
 const info = createInfoDialog({ id: "infoDialog" });
 $("aboutBtn").onclick = () => info.open("About Greedy", $("aboutContent"));

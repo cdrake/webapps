@@ -211,6 +211,66 @@ test('examples fill the slots by role through the same path as files', async () 
   }
 });
 
+test('loads started together run in turn, as a two-scan drop does', async () => {
+  let busy = false;
+  const perform = async (message, task) => {
+    if (busy) throw new Error('Wait for the current operation to finish.');
+    busy = true;
+    try { return await task(undefined); } finally { busy = false; }
+  };
+  const { pair, file } = setup({ perform });
+  await Promise.all([pair.load('fixed', [file('a.nii.gz')]), pair.load('moving', [file('b.nii.gz')])]);
+  assert.equal(pair.fixed.candidate.name, 'a.nii.gz');
+  assert.equal(pair.moving.candidate.name, 'b.nii.gz');
+});
+
+test('each change reports the files every slot holds for the page drop', async () => {
+  const { pair, $, file } = setup();
+  const reports = [];
+  for (const slot of ['fixed', 'moving']) {
+    $(`${slot}Input`).addEventListener('nd-files', event => reports.push([slot, event.detail.files.map(item => item.name)]));
+  }
+  await pair.load('fixed', [file('a.nii.gz')]);
+  assert.deepEqual(reports.slice(-2), [['fixed', ['a.nii.gz']], ['moving', []]]);
+  await pair.load('moving', [file('broken.nii.gz')]);
+  assert.deepEqual(reports.slice(-2), [['fixed', ['a.nii.gz']], ['moving', []]], 'a failed load reports the slot as still empty');
+  pair.reset('fixed');
+  assert.deepEqual(reports.slice(-2), [['fixed', []], ['moving', []]]);
+  assert.equal($('fixedSlot').hasAttribute('data-drop-target'), true, 'the card owns its drops');
+});
+
+test('a failed template or series load puts its select back on the image the slot holds', async () => {
+  const { pair, $, window } = setup({
+    templates: [brainTemplate],
+    fetchTemplate: async () => { throw new Error('offline'); },
+    read: () => [{ name: 'one.nii.gz' }, { name: 'broken.nii.gz' }],
+  });
+  const select = $('fixedTemplate');
+  select.value = 'brain';
+  select.dispatchEvent(new window.Event('change'));
+  await settle();
+  assert.equal(select.value, '', 'the template choice is withdrawn so the user can retry it');
+  await pair.load('moving', [new window.File(['x'], 'dicom')]);
+  $('movingSeries').value = '1';
+  $('movingSeries').dispatchEvent(new window.Event('change'));
+  await settle();
+  assert.equal($('movingSeries').value, '0');
+  assert.equal(pair.moving.candidate.name, 'one.nii.gz');
+});
+
+test('the pair\'s example menu lists only examples and hides no picker', async () => {
+  const { window } = new JSDOM('<!doctype html><body></body>');
+  const pair = createImagePair({
+    examples: [{ id: 'pair', label: 'Pair', files: [] }],
+    open: async (_slot, candidate) => ({ name: candidate.name }),
+  }, window.document);
+  window.document.body.append(pair);
+  const select = pair.querySelector('select[data-neurodesk-example]');
+  select.dispatchEvent(new window.Event('focus'));
+  assert.deepEqual([...select.options].map(option => option.textContent), ['Choose an example…', 'Pair']);
+  assert.equal(pair.querySelector('.nd-file-merged'), null);
+});
+
 test('disabling the pair disables every control', async () => {
   const { pair, pick, $ } = setup({ templates: [brainTemplate] });
   await pick('fixedInput', ['a.nii.gz']);

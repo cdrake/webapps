@@ -215,7 +215,9 @@ export function parseNiftiVolume(bufferLike, options = {}) {
  * and the number of volumes.
  */
 export async function describeNiftiFile(file) {
-  const header = parseNiftiHeader(await decodeNiftiBuffer(await file.arrayBuffer(), { maxBytes: 352 }));
+  const head = await file.slice(0, 352).arrayBuffer();
+  const source = isGzipped(head) ? await file.arrayBuffer() : head;
+  const header = parseNiftiHeader(await decodeNiftiBuffer(source, { maxBytes: 352 }));
   const rank = Math.max(1, Math.min(7, header.dims[0]));
   const spatial = header.dims.slice(1, Math.min(rank, 3) + 1);
   const dimensionality = spatial.length === 3 && spatial[2] === 1 ? 2 : spatial.length;

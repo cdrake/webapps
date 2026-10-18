@@ -2368,9 +2368,10 @@
       },
       {
         "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/67c378c8f8ac5313e5dbeee4c8d95ebe2a2f79c9/reg/templates/MNI152_T1_1mm.nii.gz",
-        "kind": "example-template",
+        "kind": "template",
         "sha256": "d1f03e160c2548592a01d98d44d7e0ffa8a8ef58bc9b07d26369e214ba170edb",
-        "bytes": 10963667
+        "bytes": 10963667,
+        "license": "FSL non-commercial licence"
       },
       {
         "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/67c378c8f8ac5313e5dbeee4c8d95ebe2a2f79c9/reg/templates/MNI152_T1_ext.nii.gz",
@@ -2378,9 +2379,10 @@
       },
       {
         "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/67c378c8f8ac5313e5dbeee4c8d95ebe2a2f79c9/reg/templates/avg152T1.nii.gz",
-        "kind": "example-template",
+        "kind": "template",
         "sha256": "e8f5440f0dcec1a4d44384acbdf19c8e6cf94c032c3356ef91c4441fee3aaea8",
-        "bytes": 567546
+        "bytes": 567546,
+        "license": "ICBM152 copyright notice of the Montreal Neurological Institute"
       },
       {
         "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/544f1362f367355e61a85e0694f5075aba2792b6/reg/templates/MNI152_T1_1mm_brain.nii.gz",
@@ -2399,9 +2401,10 @@
       },
       {
         "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/544f1362f367355e61a85e0694f5075aba2792b6/reg/templates/MNI152_T1_1mm_brain.nii.gz",
-        "kind": "example-template",
+        "kind": "template",
         "sha256": "32d5be33460f995a5d305507053c8862c823d9ca6bfb543381308df14590f212",
-        "bytes": 3219212
+        "bytes": 3219212,
+        "license": "FSL non-commercial licence"
       },
       {
         "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/67c378c8f8ac5313e5dbeee4c8d95ebe2a2f79c9/reg/templates/MNI152_T1_1mm.nii.gz",
@@ -2427,9 +2430,10 @@
       },
       {
         "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/544f1362f367355e61a85e0694f5075aba2792b6/reg/templates/MNI152_T1_1mm_brain.nii.gz",
-        "kind": "example-template",
+        "kind": "template",
         "sha256": "32d5be33460f995a5d305507053c8862c823d9ca6bfb543381308df14590f212",
-        "bytes": 3219212
+        "bytes": 3219212,
+        "license": "FSL non-commercial licence"
       },
       {
         "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/67c378c8f8ac5313e5dbeee4c8d95ebe2a2f79c9/reg/templates/MNI152_T1_1mm.nii.gz",
@@ -2694,9 +2698,10 @@
       },
       {
         "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/544f1362f367355e61a85e0694f5075aba2792b6/reg/templates/MNI152_T1_1mm_brain.nii.gz",
-        "kind": "example-template",
+        "kind": "template",
         "sha256": "32d5be33460f995a5d305507053c8862c823d9ca6bfb543381308df14590f212",
-        "bytes": 3219212
+        "bytes": 3219212,
+        "license": "FSL non-commercial licence"
       },
       {
         "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/67c378c8f8ac5313e5dbeee4c8d95ebe2a2f79c9/reg/templates/MNI152_T1_1mm.nii.gz",
@@ -3299,7 +3304,8 @@
         "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/544f1362f367355e61a85e0694f5075aba2792b6/reg/templates/MNI152_T1_1mm_brain.nii.gz",
         "sha256": "32d5be33460f995a5d305507053c8862c823d9ca6bfb543381308df14590f212",
         "bytes": 3219212,
-        "kind": "example-template"
+        "kind": "template",
+        "license": "FSL non-commercial licence"
       },
       {
         "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/67c378c8f8ac5313e5dbeee4c8d95ebe2a2f79c9/reg/templates/MNI152_T1_1mm.nii.gz",
