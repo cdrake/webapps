@@ -6,7 +6,7 @@ Live demo: deploys as a GitHub Project Page at `https://<org>.github.io/deface/`
 
 ## How it works
 
-All processing runs in WebAssembly + WebGPU on your machine so your images are not shared with the cloud:
+All processing runs in WebAssembly (and WebGPU or WebGL2 for MindGrab, when available) on your machine so your images are not shared with the cloud:
 
 - **[niimath](https://github.com/rordenlab/niimath)** does the registration-based defacing. It fits a bundled MNI template ([3dAllineate](https://afni.nimh.nih.gov/)-style affine registration, RW Cox / AFNI) to your scan and zeros the voxels over the face. Four variants combine two knobs — the registration engine and an optional **robustfov** crop of the neck/inferior slices for a tighter face mask:
   - **allineate (fast)** — the fast registration engine (Hellinger mutual information with a robust fallback), the default, ~5 s
@@ -49,4 +49,4 @@ npm run build    # typecheck + production build to dist/
 npm run preview  # serve the production build
 ```
 
-Requires a browser with WebGPU (recent desktop Chrome, Edge, or Safari).
+Needs a browser with WebGL2 or WebGPU. Without WebGPU the viewer uses WebGL2 and MindGrab runs on WebGL2 or the CPU.

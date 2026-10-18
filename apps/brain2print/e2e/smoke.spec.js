@@ -166,6 +166,14 @@ test("the Segment button runs on the CPU when the only GPU is a software rendere
   await expect(page.locator("#statusText")).toHaveText(/^Segmentation complete on cpu \(/, { timeout: 180_000 });
 });
 
+test("the viewer starts on WebGL2 and loads an image without WebGPU", async ({ page }) => {
+  await page.addInitScript(() => Object.defineProperty(Navigator.prototype, "gpu", { value: undefined }));
+  await page.goto("/");
+  await expect(page.locator("#statusText")).toHaveText("Drag and drop files", { timeout: 60_000 });
+  await page.setInputFiles("#imageInput", fixture);
+  await expect(page.locator("#segmentButton")).toBeEnabled({ timeout: 30_000 });
+});
+
 test("a delayed example never replaces a selected image", async ({ page }) => {
   let releaseExample;
   const held = new Promise(resolve => { releaseExample = resolve; });
