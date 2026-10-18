@@ -28,6 +28,10 @@ The NODDI fit's first NNLS has more atoms than measurements, so its solution is 
 Only the same pivot order gives AMICO's answer, so `nnls.rs` keeps the Fortran's statements and labels.
 The LASSO is strictly convex, so `lasso.rs` uses any exact method: coordinate descent, then an exact solve on the support and an optimality check.
 
+The b0 cutoff follows the shared gradient rule, `b < 50 s/mm²`. AMICO 1.5.4 includes
+`b = 50` among its b0 volumes. This port treats it as diffusion weighted, so the
+tensor fit, mask and NODDI normalisation use the same b0 volumes.
+
 ## Parity
 
 `tests/oracle.rs` compares the port with AMICO 1.5.4 voxel by voxel.
