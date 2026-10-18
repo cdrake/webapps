@@ -281,14 +281,15 @@ export function defineImagePair(view = globalThis.window) {
       const slots = IMAGE_SLOTS.filter(slot => byRole[slot] && !this.#isLocked(slot));
       if (!slots.length) throw new Error(`${example.label} has no fixed or moving image.`);
       await this.#perform(`Loading ${example.label}…`, async taskSignal => {
+        const loadSignal = taskSignal ? AbortSignal.any([taskSignal, signal]) : signal;
         for (const slot of slots) {
           const { asset, file } = byRole[slot];
           const read = this.read ?? (list => list.map(item => ({ name: item.name, file: item })));
-          const candidates = await read([file], { slot, signal: taskSignal ?? signal });
+          const candidates = await read([file], { slot, signal: loadSignal });
           assertCurrent();
           if (!candidates?.length) throw new Error(`The example ${slot} image could not be read.`);
           if (asset.brainExtracted !== undefined) candidates[0].brainExtracted = asset.brainExtracted;
-          await this.#commit(slot, candidates, 0, taskSignal ?? signal);
+          await this.#commit(slot, candidates, 0, loadSignal);
           assertCurrent();
         }
       });

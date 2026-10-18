@@ -12,8 +12,9 @@ export function standalonePackage() {
     try {
       const cwd=fileURLToPath(new URL('../../../packages/synthsr/',import.meta.url));
       const {stdout}=await promisify(execFile)('npm',['pack','--ignore-scripts','--json','--pack-destination',folder],{cwd});
-      // npm 10 prints an array of packages, npm 12 an object keyed by package name.
-      const [{filename}]=Object.values(JSON.parse(stdout));
+      // npm 11 prints an array of packs; npm 12 an object keyed by package name.
+      const packs=JSON.parse(stdout);
+      const [{filename}]=Array.isArray(packs)?packs:Object.values(packs);
       this.emitFile({type:'asset',fileName:'downloads/'+filename,source:await readFile(join(folder,filename))});
     } finally {await rm(folder,{recursive:true,force:true});}
   }};

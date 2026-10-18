@@ -222,10 +222,11 @@ export async function describeNiftiFile(file) {
   const spatial = header.dims.slice(1, Math.min(rank, 3) + 1);
   const dimensionality = spatial.length === 3 && spatial[2] === 1 ? 2 : spatial.length;
   const frames = header.dims.slice(4, rank + 1).reduce((product, size) => product * Math.max(1, size), 1);
+  const spacingScale = SPATIAL_UNIT_MM[header.xyztUnits & 7] || 1;
   return {
     name: file.name,
     dims: frames > 1 ? [...spatial, frames] : spatial.slice(0, dimensionality),
-    spacingMm: header.voxelSize.slice(0, dimensionality).map(value => Math.abs(value) || 1),
+    spacingMm: header.voxelSize.slice(0, dimensionality).map(value => (Math.abs(value) || 1) * spacingScale),
     dimensionality,
     frames,
   };
