@@ -430,8 +430,9 @@ nd-imaging-brand {
 .nd-image-slot.locked { border-style: solid; }
 .nd-image-slot-header { display: flex; align-items: center; gap: var(--nd-space-xs); min-height: 28px; }
 .nd-image-slot-title { color: var(--nd-color-text); font-size: 0.8rem; font-weight: 600; }
-.nd-image-slot-clear { margin-left: auto; }
-.nd-image-slot-actions { grid-auto-columns: minmax(0, 1fr); }
+.nd-image-slot-header .nd-image-slot-clear { min-height: 28px; margin: 0 0 0 auto; padding: 0; border: 0; background: transparent; font-size: 1rem; }
+.nd-image-slot-header .nd-image-slot-clear[hidden] { display: none; }
+.nd-image-slot-actions { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); grid-auto-flow: row; }
 
 /* --------------------------------------------------------------------------
    4. Buttons (QSMbly .btn family)

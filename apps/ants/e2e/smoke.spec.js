@@ -36,8 +36,10 @@ async function registerSelectedExample(page, timeout, files) {
   if (files) await configureExampleFixtures(page, files);
   await page.locator("[data-neurodesk-example]").selectOption("t1-mni");
   await expect(page.locator("[data-neurodesk-examples]")).toHaveAttribute("data-example-state", "ready", { timeout: 120_000 });
-  await expect(page.locator("#movingInfo")).toContainText("t1_brain.nii.gz · brain extracted");
-  await expect(page.locator("#stationaryInfo")).toContainText("MNI152_T1_1mm_brain.nii.gz · brain extracted");
+  await expect(page.locator("#movingInfo")).toContainText("t1_brain.nii.gz");
+  await expect(page.locator("#movingInfo")).toContainText("brain extracted");
+  await expect(page.locator("#fixedInfo")).toContainText("MNI152_T1_1mm_brain.nii.gz");
+  await expect(page.locator("#fixedInfo")).toContainText("brain extracted");
   await expect(page.locator(".nd-viewer-panel")).toHaveCount(3);
   await expect(page.locator("#resultList")).toBeEmpty();
   await page.locator("#runButton").click();
@@ -67,7 +69,7 @@ function expectAligned(warped, moving, fixed) {
   expect(before).toBeLessThan(0.7);
   expect(after).toBeGreaterThan(0.9);
   // A different subject cannot match the template exactly (measured 0.88-0.96), while returning
-  // the stationary image itself would score 1 and pass every check above.
+  // the fixed image itself would score 1 and pass every check above.
   expect(after).toBeLessThan(0.99);
 }
 
@@ -113,11 +115,34 @@ test("custom images are flagged and can be brain extracted per image", async ({ 
   await page.locator("#movingInput").setInputFiles({ name: "custom.nii.gz", mimeType: "application/gzip", buffer: fixture });
   await expect(page.locator("#movingInfo")).toContainText("not brain extracted");
   await expect(page.locator("#movingExtractButton")).toBeEnabled();
-  await expect(page.locator("#stationaryExtractButton")).toBeDisabled();
-  await page.locator("#stationaryInput").setInputFiles({ name: "template.nii.gz", mimeType: "application/gzip", buffer: fixture });
-  await expect(page.locator("#stationaryInfo")).toContainText("not brain extracted");
-  await expect(page.locator("#stationaryExtractButton")).toBeEnabled();
+  await expect(page.locator("#fixedExtractButton")).toBeDisabled();
+  await page.locator("#fixedInput").setInputFiles({ name: "template.nii.gz", mimeType: "application/gzip", buffer: fixture });
+  await expect(page.locator("#fixedInfo")).toContainText("not brain extracted");
+  await expect(page.locator("#fixedExtractButton")).toBeEnabled();
   await expect(page.locator("#runButton")).toBeEnabled();
+});
+
+test("the image pair offers fixed then moving pickers, templates, swap and clear", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("#fixedInput")).toBeEnabled({ timeout: 120_000 });
+  const titles = await page.locator(".nd-image-slot-title").allTextContents();
+  expect(titles).toEqual(["Fixed image", "Moving image"]);
+  await expect(page.getByText("Load fixed image…")).toBeVisible();
+  await expect(page.getByText("Load moving image…")).toBeVisible();
+  await expect(page.locator("#fixedFolderInput")).toHaveAttribute("webkitdirectory", "");
+  const templates = await page.locator("#fixedTemplate option").allTextContents();
+  expect(templates.slice(1)).toEqual(["MNI152 T1 1 mm brain (FSL)", "MNI152 T1 1 mm head (FSL)", "avg152 T1 2 mm head (ICBM152)"]);
+  await page.locator("#fixedInput").setInputFiles({ name: "a.nii.gz", mimeType: "application/gzip", buffer: fixture });
+  await expect(page.locator("#fixedInfo")).toContainText("a.nii.gz");
+  await page.locator("#movingInput").setInputFiles({ name: "b.nii.gz", mimeType: "application/gzip", buffer: fixture });
+  await expect(page.locator("#movingInfo")).toContainText("b.nii.gz");
+  await expect(page.locator("#runButton")).toBeEnabled();
+  await page.locator("#swapButton").click();
+  await expect(page.locator("#fixedInfo")).toContainText("b.nii.gz");
+  await expect(page.locator("#movingInfo")).toContainText("a.nii.gz");
+  await page.locator("#movingClear").click();
+  await expect(page.locator("#movingInfo")).toBeHidden();
+  await expect(page.locator("#runButton")).toBeDisabled();
 });
 
 test("shared app bar owns information actions and theme", async ({ page }) => {
