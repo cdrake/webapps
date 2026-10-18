@@ -322,3 +322,15 @@ screenshots were reviewed. The shared workflow check retains edited settings acr
 disclosures and preserves the previous input after a rejected detached-header load.
 The shared upload check covers extensionless DICOM and multiple-series selection.
 Registration, output downloads and cancellation are exercised by the app browser suite.
+
+## Catalog metadata, 18 October 2026
+
+The landing-page audit in [catalog-metadata-audit.md](catalog-metadata-audit.md)
+leaves these per-app changes open:
+
+- Deface, BrowserQC, EdgeReg, Greedy, ANTs and Brain2Print refuse to start
+  without `navigator.gpu`, although every pinned NiiVue rc falls back to WebGL2.
+  Their catalog cards say "Needs WebGPU" until the checks are removed.
+- MuscleMap, VesselBoost, SeedSeg, CALMaR and NiiMath ship a command line that
+  `registry/standalone.json` does not list as a `cli` download.
+- SeedSeg has no built-in example.
