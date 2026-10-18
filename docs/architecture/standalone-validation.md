@@ -63,6 +63,10 @@ Source `ad6f89e` passed 26 focused catalog, design-system and version tests, a f
 
 Brain extraction and suite 0.4.20260915 landed while this change was in progress. The merge preserves that newer 25-app suite in the download catalog and adds the six OpenRecon mappings. Suite 0.4 predates the scanner-link UI; its installed copy receives the links on a subsequent suite release.
 
+## fastprep hardware evidence, 18 October 2026
+
+[Standalone run 39148546224](https://github.com/neurodesk/webapps/actions/runs/39148546224), source `ad4c57cd`, ran fastprep's complete offline workflow in the installed macOS ARM64 desktop on its Metal WebGPU adapter: the pinned motor-task example through brain extraction, registration, tissue segmentation, SynthSR distortion correction and the GLM, 40 files in the results archive, in 5.5 minutes. The Linux runner and the model-pack job failed the same workflow at tissue segmentation ("the mindmap module exited with status 1"), and Windows ran out of its 30 minutes. Electron 40 under Xvfb with the desktop's SwiftShader switches on a Linux host without a GPU reproduced the Linux failure at the same step and timing, and MindGrab's own log named the cause: it selects its WebGL2 backend, brain extraction returns a blank brain ("the network found no brain; the output will be blank") and tissue segmentation exits with status 1 after 49 seconds. fastprep is therefore listed with the hardware-GPU workflows in `scripts/desktop/ci-apps.mjs`, and `test/standalone.test.mjs` requires that listing for every app whose browser tests declare `ci.hardware_gpu` and compute in the browser.
+
 ## Release gates
 
 GitHub Actions builds one locked asset bundle, then starts every installed app on macOS ARM64, Linux x64 and Windows x64. Eight CPU-compatible workflows also run on each platform. Packaging is followed by another all-app startup test using the extracted executable. Linux additionally builds a Docker image, tests it with `--network=none`, and executes a batch job from the Apptainer SIF. Publication requires those jobs to pass and checks every archive part and the reassembled archive SHA-256.

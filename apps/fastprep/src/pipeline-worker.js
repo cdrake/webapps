@@ -55,7 +55,7 @@ self.onmessage = async ({ data }) => {
       runtimes: {
         niimath,
         mindgrab: { segment, segmentTissues },
-        mindgrabOptions: { backend: "auto", worker: false, timeoutMs: 900_000 },
+        mindgrabOptions: { backend: "auto", worker: false, timeoutMs: 900_000, onLog: (line) => post({ log: line }) },
         greedy,
         synthsr,
       },
