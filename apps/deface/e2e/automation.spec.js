@@ -92,8 +92,39 @@ test('MindGrab with an 8 mm border zeroes the face and keeps the brain unchanged
   expect((await dispatch(page, 'snapshot')).report.provenance).toMatchObject({ method: 'mindgrab8', engine: 'mindgrab-niimath' });
 });
 
-test('an unsupported WebGPU adapter fails the operation with the app initialization error', async ({ page }) => {
-  await page.addInitScript(() => Object.defineProperty(navigator, 'gpu', { value: undefined }));
+for (const capability of ['API unavailable', 'adapter unavailable', 'adapter rejected']) {
+  test(`WebGL2 handles WebGPU ${capability} and defacing completes`, async ({ page }) => {
+    await page.addInitScript(capability => {
+      if (capability === 'API unavailable') {
+        Object.defineProperty(navigator, 'gpu', { value: undefined });
+      } else {
+        navigator.gpu.requestAdapter = async () => {
+          if (capability === 'adapter rejected') throw new Error('Adapter access denied');
+          return null;
+        };
+      }
+    }, capability);
+    await page.goto('./');
+    expect(await page.evaluate(() => Boolean(navigator.gpu))).toBe(capability !== 'API unavailable');
+    await expect(page.locator('[data-neurodesk-example]')).toBeEnabled();
+    await expect(page.locator('#statusMsg')).toHaveText('Drag and drop files', { timeout: 60_000 });
+    await page.locator('#neurodesk-input-transfer').setInputFiles(fixture);
+    await dispatch(page, 'adopt', { role: 'image' });
+    await dispatch(page, 'start', { operation: 'deface', parameters: { method: 'allineate' } });
+    await finish(page, 120000);
+    expectMaskedCopy(await download(page), readVolume(source(await readFile(fixture))));
+    expect((await dispatch(page, 'viewers.list')).length).toBeGreaterThan(0);
+  });
+}
+
+test('a browser without WebGPU or WebGL2 fails the operation with the app initialization error', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'gpu', { value: undefined });
+    const getContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (type, ...rest) {
+      return type === 'webgl2' ? null : getContext.call(this, type, ...rest);
+    };
+  });
   await page.goto('./');
   await expect(page.locator('#neurodesk-input-transfer')).toHaveCount(1);
   await page.locator('#neurodesk-input-transfer').setInputFiles(fixture);
@@ -101,7 +132,7 @@ test('an unsupported WebGPU adapter fails the operation with the app initializat
   await dispatch(page, 'start', { operation: 'deface' });
   await expect.poll(async () => (await dispatch(page, 'snapshot')).state).toBe('failed');
   const snapshot = await dispatch(page, 'snapshot');
-  expect(snapshot.error.message).toContain('initialize WebGPU');
+  expect(snapshot.error.message).toContain('start the image viewer');
   expect(snapshot.report).toBeUndefined();
   expect(await dispatch(page, 'viewers.list')).toEqual([]);
   await expect(page.locator('#applyBtn')).toBeDisabled();
@@ -113,7 +144,7 @@ test('a teardown failure reaches the status bar instead of an unhandled rejectio
   page.on('pageerror', error => pageErrors.push(error.message));
   await page.goto('./');
   // Initialization has settled, so no later status update can replace the failure.
-  await expect(page.locator('#statusMsg')).toHaveText(/Drag and drop files|WebGPU/);
+  await expect(page.locator('#statusMsg')).toHaveText(/Drag and drop files|start the image viewer/);
   await page.evaluate(() => {
     const selector = document.querySelector('#exampleControl nd-example-selector');
     selector.destroy = () => { throw new Error('teardown canary'); };

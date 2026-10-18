@@ -138,11 +138,12 @@ test("a failed example download keeps the loaded pair and can retry", async ({ p
   await expect(page.locator("#runButton")).toBeEnabled();
 });
 
-test("image controls stay disabled without WebGPU", async ({ page }) => {
+test("the viewers start on WebGL2 without WebGPU", async ({ page }) => {
   await page.addInitScript(() => Object.defineProperty(Navigator.prototype, "gpu", { value: undefined }));
   await page.goto("/");
-  await expect(page.locator("[data-neurodesk-example]")).toBeDisabled();
-  await expect(page.locator("#statusText")).toContainText("WebGPU is unavailable");
+  await expect(page.locator("#statusText")).toHaveText("Drag and drop files", { timeout: 60_000 });
+  await expect(page.locator("[data-neurodesk-example]")).toBeEnabled();
+  await expect(page.locator("#viewerError")).toBeHidden();
 });
 
 test("shared app bar owns information actions and theme", async ({ page }) => {

@@ -6,9 +6,9 @@
 // asserting the full path that node smoke can't reach: WebGPU/NiiVue attach,
 // Vite worker URLs, the default image load, Apply (allineate fast, and
 // allineate Hellinger with SMOKE_FULL=1), Save→download, and that nothing
-// throws to the page / logs to console.error. GitHub's GPU-less Linux runner
-// cannot initialize WebGPU at all, so that environment instead asserts deface's
-// explicit unsupported-WebGPU experience (status message, fail-closed buttons).
+// throws to the page / logs to console.error. On GitHub's GPU-less Linux runner
+// the harness turns graphics off entirely, so that environment instead asserts
+// deface's explicit no-graphics experience (status message, fail-closed buttons).
 //
 // Usage:  npm run build && npm run test:e2e        (allineate fast only, ~fast)
 //         SMOKE_FULL=1 npm run test:e2e            (also the slow Hellinger path)
@@ -67,22 +67,24 @@ await runVitePreviewSmoke({
     }
     await page.setViewportSize({ width: 1280, height: 960 })
 
-    // GitHub's Linux runners do not expose a usable WebGPU adapter. Verify that
-    // init() reaches its intended fallback instead of hanging or crashing: the
-    // status shows the unsupported-WebGPU message, and because init returns
-    // before loading anything, Apply never enables (sourceFile/refFiles stay
-    // unset — fail-closed) and Save stays disabled (the M2 privacy guard). Any
-    // handled NiiVue adapter error is allowlisted; everything else stays fatal.
+    // In fallback mode the harness turns off the GPU and the software rasterizer,
+    // so the browser offers neither WebGPU nor WebGL2. Verify that init() reaches
+    // its intended fallback instead of hanging or crashing: the status says the
+    // viewer cannot start, and because init returns before loading anything,
+    // Apply never enables (sourceFile/refFiles stay unset — fail-closed) and Save
+    // stays disabled (the M2 privacy guard). Any handled NiiVue adapter error is
+    // allowlisted; everything else stays fatal.
     if (expectWebGpuFallback) {
       await page.waitForFunction(
-        () => /can.t initialize WebGPU/.test(document.getElementById('statusMsg')?.textContent || ''),
+        () => /can.t start the image viewer/.test(document.getElementById('statusMsg')?.textContent || ''),
         undefined,
         { timeout: 30000 },
-      ).catch(() => fail('unsupported-WebGPU message did not appear', page))
-      if (!(await page.isDisabled('#applyBtn'))) await fail('Apply enabled without WebGPU (init must fail closed)', page)
-      if (!(await page.isDisabled('#saveBtn'))) await fail('Save enabled without WebGPU (M2 privacy footgun)', page)
+      ).catch(() => fail('no-graphics message did not appear', page))
+      if (!(await page.isDisabled('#applyBtn'))) await fail('Apply enabled without a viewer (init must fail closed)', page)
+      if (!(await page.isDisabled('#saveBtn'))) await fail('Save enabled without a viewer (M2 privacy footgun)', page)
       allowConsoleError('Failed to get WebGPU adapter')
-      console.log('✓ unsupported-WebGPU guidance shown and Apply/Save stay disabled')
+      allowConsoleError('Unable to initialize WebGL2')
+      console.log('✓ no-graphics guidance shown and Apply/Save stay disabled')
       return
     }
 

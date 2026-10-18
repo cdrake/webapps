@@ -162,9 +162,10 @@ test("page is cross-origin isolated", async ({ page }) => {
   expect(await page.evaluate(() => self.crossOriginIsolated)).toBe(true);
 });
 
-test("image controls stay disabled without WebGPU", async ({ page }) => {
+test("the viewers start on WebGL2 without WebGPU", async ({ page }) => {
   await page.addInitScript(() => Object.defineProperty(Navigator.prototype, "gpu", { value: undefined }));
   await page.goto("/");
-  await expect(page.locator("[data-neurodesk-example]")).toBeDisabled();
-  await expect(page.locator("#statusText")).toContainText("WebGPU is unavailable");
+  await expect(page.locator("#statusText")).toHaveText("Drag and drop files", { timeout: 60_000 });
+  await expect(page.locator("[data-neurodesk-example]")).toBeEnabled();
+  await expect(page.locator("#viewerError")).toBeHidden();
 });

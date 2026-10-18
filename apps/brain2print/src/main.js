@@ -260,7 +260,7 @@ bindFileDrop($('dropZone'), (files) => files.then(chooseFiles).catch((error) => 
 const exampleControl = createExampleSelector({
   examples,
   onLoad: async (_example, { fetchFiles, assertCurrent, signal }) => {
-    if (!viewerReady) throw new Error('The WebGPU viewer is not ready.');
+    if (!viewerReady) throw new Error('The image viewer is not ready.');
     const files = await fetchFiles();
     assertCurrent();
     if (!await loadImage(files[0], signal)) throw new Error('The example image could not be loaded.');
@@ -271,11 +271,11 @@ const exampleControl = createExampleSelector({
 $('controls').querySelector('.nd-section-content').prepend(exampleControl);
 
 async function init() {
-  if (!navigator.gpu) return status('Brain2Print requires a recent WebGPU-capable desktop browser.', true)
+  // attachTo() takes WebGPU and falls back to WebGL2; it throws only when neither works.
   try {
     await nv.attachTo('gl1')
   } catch {
-    return status('This browser or GPU cannot initialize WebGPU.', true)
+    return status('This browser cannot start the image viewer. It needs WebGL2 or WebGPU.', true)
   }
   viewerReady = true
   buttons()
@@ -304,7 +304,7 @@ registerAppAutomation({
     'create-mesh': async ({ inputs, parameters, signal, progress }) => {
       await initialization
       signal.throwIfAborted()
-      if (!viewerReady) throw new Error('The WebGPU viewer is unavailable.')
+      if (!viewerReady) throw new Error('The image viewer is unavailable.')
       if (busy) throw new Error('Wait for the current step to finish.')
       exampleControl.cancel()
       if (!await loadImage(inputs.image[0], signal)) throw new Error('The image could not be loaded.')
