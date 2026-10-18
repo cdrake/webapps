@@ -10,27 +10,13 @@
       <details class="nd-sidebar-section" id="inputSection" open>
         <summary class="nd-section-title">Images</summary>
         <div class="nd-section-content">
-          <label class="nd-file" id="movingDropZone">
-            <input id="movingInput" type="file" data-neurodesk-input="image" multiple aria-label="Choose moving NIfTI or DICOM files" />
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <span>Drop moving NIfTI or DICOM files or folder</span>
-          </label>
-          <p id="movingInfo" class="nd-file-info" hidden></p>
-          <button id="movingExtractButton" class="nd-btn nd-btn-secondary nd-btn-sm" type="button" disabled>Brain extract moving image</button>
-          <div id="movingSeriesField" class="nd-field" hidden>
-            <label for="movingSeries">Moving series</label>
-            <select id="movingSeries"></select>
-          </div>
-          <label class="nd-file" id="stationaryDropZone">
-            <input id="stationaryInput" type="file" data-neurodesk-input="image" multiple aria-label="Choose stationary NIfTI or DICOM files" />
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <span>Drop stationary NIfTI or DICOM files or folder</span>
-          </label>
-          <p id="stationaryInfo" class="nd-file-info" hidden></p>
-          <button id="stationaryExtractButton" class="nd-btn nd-btn-secondary nd-btn-sm" type="button" disabled>Brain extract stationary image</button>
-          <div id="stationarySeriesField" class="nd-field" hidden>
-            <label for="stationarySeries">Stationary series</label>
-            <select id="stationarySeries"></select>
+          <div id="imagePair"></div>
+          <div class="nd-field" id="extractField">
+            <label id="extractLabel">Brain extraction <span class="nd-info-icon" tabindex="0" aria-label="About brain extraction">i<span class="nd-info-tooltip">Registration expects brain-only images: scalp produces artifacts. MindGrab removes the scalp locally. The examples and the brain template are already brain-only.</span></span></label>
+            <div class="nd-row" role="group" aria-labelledby="extractLabel">
+              <button id="fixedExtractButton" class="nd-btn nd-btn-secondary nd-btn-sm" type="button" aria-label="Brain extract the fixed image" disabled>Fixed</button>
+              <button id="movingExtractButton" class="nd-btn nd-btn-secondary nd-btn-sm" type="button" aria-label="Brain extract the moving image" disabled>Moving</button>
+            </div>
           </div>
         </div>
       </details>
@@ -54,23 +40,23 @@
     <main id="viewer">
       <div class="nd-viewer-canvas-wrapper">
         <div class="nd-viewer-panel-grid">
+          <section class="nd-viewer-panel" aria-label="Fixed image panel">
+            <span class="nd-viewer-panel-title">Fixed</span>
+            <canvas id="glFixed" aria-label="Fixed image viewer"></canvas>
+          </section>
           <section class="nd-viewer-panel" aria-label="Moving image panel">
             <span class="nd-viewer-panel-title">Moving</span>
             <canvas id="glMoving" aria-label="Moving image viewer"></canvas>
-          </section>
-          <section class="nd-viewer-panel" aria-label="Stationary image panel">
-            <span class="nd-viewer-panel-title">Stationary</span>
-            <canvas id="glStationary" aria-label="Stationary image viewer"></canvas>
           </section>
           <section class="nd-viewer-panel" aria-label="Resliced image panel">
             <span class="nd-viewer-panel-title">Resliced</span>
             <canvas id="glResliced" aria-label="Resliced registration viewer"></canvas>
           </section>
         </div>
-        <p id="emptyState" class="nd-viewer-empty">Choose an example or drop moving and stationary images to begin.</p>
+        <p id="emptyState" class="nd-viewer-empty">Choose an example or load the fixed and moving images to begin.</p>
         <p id="viewerError" class="nd-viewer-notice" hidden></p>
       </div>
-      <div class="nd-viewer-info"><span class="nd-viewer-info-primary">Stationary and resliced crosshairs are linked</span><span id="location"></span></div>
+      <div class="nd-viewer-info"><span class="nd-viewer-info-primary">Fixed and resliced crosshairs are linked</span><span id="location"></span></div>
     </main>
     <footer id="status">
       <span class="nd-status-label">Status</span>
@@ -79,7 +65,7 @@
       <progress id="progress" max="1" value="0" aria-label="Registration progress"></progress>
       <button id="cancelButton" class="nd-btn-cancel" type="button" title="Cancel registration" aria-label="Cancel registration" hidden>×</button>
     </footer>
-    <template id="aboutContent"><p>ANTs registers a moving image to a stationary image with an affine stage followed by SyN symmetric diffeomorphic registration, using ANTs 2.6.2 compiled to WebAssembly. Registration expects brain-only images: scalp produces artifacts. Brain extract custom images locally with MindGrab using the button under each image; the examples are already brain-only.</p></template>
+    <template id="aboutContent"><p>ANTs registers a moving image to a fixed image with an affine stage followed by SyN symmetric diffeomorphic registration, using ANTs 2.6.2 compiled to WebAssembly. Registration expects brain-only images: scalp produces artifacts. Brain extract custom images locally with MindGrab under Brain extraction; the examples and the brain template are already brain-only. Built-in templates can stand in for the fixed image.</p></template>
     <template id="privacyContent"><p>Images are processed locally in this browser and are never uploaded.</p></template>
     <template id="standaloneContent">
       <p>The browser runs ANTs 2.6.2 compiled to WebAssembly with the ANTsPy <code>SyN</code> schedule. The same registration on your computer or an HPC system uses <code>antsRegistration</code> from an ANTs install (for example the Neurodesk <code>ants</code> container) with these arguments, then <code>antsApplyTransforms</code> to reslice.</p>

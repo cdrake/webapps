@@ -85,3 +85,4 @@ export class ProgressManager {
 }
 
 export * from './elements/index.js';
+export * from './ui/templates.js';

@@ -87,14 +87,14 @@ test("local OME-Zarr archives register and the result reopens as OME-Zarr", asyn
   await page.goto("/");
   await expect(page.locator("#movingInput")).toBeEnabled();
   await page.locator("#movingInput").setInputFiles({ name: "moving.ome.zarr.ozx", mimeType: "application/zip", buffer: pair.moving.ozx });
-  await expect(page.locator("#movingInfo")).toContainText("moving.ome.zarr.ozx · 128×128 uint16 · pyramid level 1 of 1");
-  await page.locator("#stationaryInput").setInputFiles({ name: "fixed.ome.zarr.ozx", mimeType: "application/zip", buffer: pair.fixed.ozx });
-  await expect(page.locator("#stationaryInfo")).toContainText("fixed.ome.zarr.ozx");
+  await expect(page.locator("#movingInfo")).toContainText("moving.ome.zarr.ozx · 128×128 · 0.5×0.5 mm · uint16 · pyramid level 1 of 1");
+  await page.locator("#fixedInput").setInputFiles({ name: "fixed.ome.zarr.ozx", mimeType: "application/zip", buffer: pair.fixed.ozx });
+  await expect(page.locator("#fixedInfo")).toContainText("fixed.ome.zarr.ozx");
   await expect(page.locator(".nd-view-tab[aria-pressed='true']")).toHaveText("Axial");
   await registerRigidAndCheck(page);
   const zarr = await download(page, "Registered OME-Zarr");
   await page.locator("#movingInput").setInputFiles({ name: "moving_registered.ome.zarr.ozx", mimeType: "application/zip", buffer: zarr });
-  await expect(page.locator("#movingInfo")).toContainText("moving_registered.ome.zarr.ozx · 128×128 float32");
+  await expect(page.locator("#movingInfo")).toContainText("moving_registered.ome.zarr.ozx · 128×128 · 0.5×0.5 mm · float32");
 });
 
 test("local OME-TIFF files register and export calibrated float32 OME-TIFF", async ({ page }) => {
@@ -102,9 +102,9 @@ test("local OME-TIFF files register and export calibrated float32 OME-TIFF", asy
   await page.goto("/");
   await expect(page.locator("#movingInput")).toBeEnabled();
   await page.locator("#movingInput").setInputFiles({ name: "moving.ome.tif", mimeType: "image/tiff", buffer: pair.moving.tiff });
-  await expect(page.locator("#movingInfo")).toContainText("moving.ome.tif · 128×128 uint16");
-  await page.locator("#stationaryInput").setInputFiles({ name: "fixed.ome.tif", mimeType: "image/tiff", buffer: pair.fixed.tiff });
-  await expect(page.locator("#stationaryInfo")).toContainText("fixed.ome.tif");
+  await expect(page.locator("#movingInfo")).toContainText("moving.ome.tif · 128×128 · 0.5×0.5 mm · uint16");
+  await page.locator("#fixedInput").setInputFiles({ name: "fixed.ome.tif", mimeType: "image/tiff", buffer: pair.fixed.tiff });
+  await expect(page.locator("#fixedInfo")).toContainText("fixed.ome.tif");
   await registerRigidAndCheck(page);
   await expect(page.locator("#omeTiffNote")).toBeHidden();
   const tiff = await download(page, "Registered OME-TIFF");
@@ -122,7 +122,7 @@ test("local OME-TIFF files register and export calibrated float32 OME-TIFF", asy
   expect(output.direction).toEqual(new Float64Array([1, 0, 0, 1]));
   expect(Array.from(output.data)).toEqual(Array.from(registered.data));
   await page.locator("#movingInput").setInputFiles({ name: "moving_registered.ome.tif", mimeType: "image/tiff", buffer: tiff });
-  await expect(page.locator("#movingInfo")).toContainText("moving_registered.ome.tif · 128×128 float32");
+  await expect(page.locator("#movingInfo")).toContainText(/moving_registered\.ome\.tif · 128×128 · \S+ mm · float32/);
 });
 
 for (const [name, metadata, reason] of [
@@ -135,9 +135,9 @@ for (const [name, metadata, reason] of [
     await page.goto("/");
     await expect(page.locator("#movingInput")).toBeEnabled();
     await page.locator("#movingInput").setInputFiles({ name: "moving.ome.tif", mimeType: "image/tiff", buffer });
-    await expect(page.locator("#movingInfo")).toContainText("128×128 float32");
-    await page.locator("#stationaryInput").setInputFiles({ name: `${name}.ome.tif`, mimeType: "image/tiff", buffer });
-    await expect(page.locator("#stationaryInfo")).toContainText("128×128 float32");
+    await expect(page.locator("#movingInfo")).toContainText(/128×128 · \S+ mm · float32/);
+    await page.locator("#fixedInput").setInputFiles({ name: `${name}.ome.tif`, mimeType: "image/tiff", buffer });
+    await expect(page.locator("#fixedInfo")).toContainText(/128×128 · \S+ mm · float32/);
     await page.locator("#method").selectOption("rigid");
     await page.locator("#runButton").click();
     await expect(page.locator("#statusText")).toContainText("Registration complete", { timeout: 240_000 });
@@ -154,9 +154,9 @@ for (const [name, metadata, reason] of [
 // fiff before 0.8.2 could not read SubIFD levels with geotiff 3.
 test("a pyramidal OME-TIFF opens with its SubIFD levels", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator("#stationaryInput")).toBeEnabled();
-  await page.locator("#stationaryInput").setInputFiles({ name: "pyramid.ome.tif", mimeType: "image/tiff", buffer: await pyramidalTiff() });
-  await expect(page.locator("#stationaryInfo")).toHaveText("pyramid.ome.tif · 128×128 uint16 · pyramid level 1 of 2");
+  await expect(page.locator("#fixedInput")).toBeEnabled();
+  await page.locator("#fixedInput").setInputFiles({ name: "pyramid.ome.tif", mimeType: "image/tiff", buffer: await pyramidalTiff() });
+  await expect(page.locator("#fixedInfo")).toContainText("pyramid.ome.tif · 128×128 · 0.5×0.5 mm · uint16 · pyramid level 1 of 2");
 });
 
 test("a remote OME-Zarr folder and a remote TIFF read by range request register", async ({ page }) => {
@@ -168,11 +168,11 @@ test("a remote OME-Zarr folder and a remote TIFF read by range request register"
   await expect(page.locator("#urlButton")).toBeEnabled();
   await page.locator("#urlSection > summary").click();
   await page.locator("#movingUrl").fill(movingUrl);
-  await page.locator("#stationaryUrl").fill(fixedUrl);
+  await page.locator("#fixedUrl").fill(fixedUrl);
   await page.locator("#urlButton").click();
-  await expect(page.locator("#statusText")).toHaveText("Opened moving and stationary image URLs.");
-  await expect(page.locator("#movingInfo")).toContainText("moving.ome.zarr · 128×128 uint16");
-  await expect(page.locator("#stationaryInfo")).toContainText("fixed.ome.tif · 128×128 uint16");
+  await expect(page.locator("#statusText")).toHaveText("Opened fixed and moving image URLs.");
+  await expect(page.locator("#movingInfo")).toContainText("moving.ome.zarr · 128×128 · 0.5×0.5 mm · uint16");
+  await expect(page.locator("#fixedInfo")).toContainText("fixed.ome.tif · 128×128 · 0.5×0.5 mm · uint16");
   expect(ranges.length).toBeGreaterThan(0);
   await registerRigidAndCheck(page);
 });
@@ -182,10 +182,12 @@ test("a 2D image and a 3D image are refused before registration", async ({ page 
   await expect(page.locator("#movingInput")).toBeEnabled();
   await page.locator("#movingInput").setInputFiles({ name: "moving.ome.zarr.ozx", mimeType: "application/zip", buffer: pair.moving.ozx });
   await expect(page.locator("#movingInfo")).toBeVisible();
-  await page.locator("#stationaryInput").setInputFiles({ name: "volume.nii.gz", mimeType: "application/gzip", buffer: fixture });
-  await expect(page.locator("#stationaryInfo")).toBeVisible();
-  await page.locator("#runButton").click();
-  await expect(page.locator("#statusText")).toHaveText("The moving image is 2D and the stationary image is 3D; choose two 2D or two 3D images.");
+  await page.locator("#fixedInput").setInputFiles({ name: "volume.nii.gz", mimeType: "application/gzip", buffer: fixture });
+  await expect(page.locator("#fixedInfo")).toBeVisible();
+  await expect(page.locator("#pairMessage")).toHaveText("The fixed image is 3D and the moving image is 2D; choose two 2D images.");
+  await expect(page.locator("#runButton")).toBeDisabled();
+  await expect(page.locator("#fixedTemplate")).toBeDisabled();
+  await expect(page.locator("#fixedHint")).toHaveText("Templates are 3D; the moving image is 2D.");
   await expect(page.locator("#resultList")).toBeEmpty();
 });
 
@@ -252,7 +254,7 @@ test("cancelling a remote TIFF read retains the selected image and permits a fre
   await page.locator("#movingUrl").fill(retry);
   await page.locator("#urlButton").click();
   await expect(page.locator("#statusText")).toHaveText("Opened moving image URL.");
-  await expect(page.locator("#movingInfo")).toContainText("moving.ome.zarr · 128×128 uint16");
+  await expect(page.locator("#movingInfo")).toContainText("moving.ome.zarr · 128×128 · 0.5×0.5 mm · uint16");
 });
 
 
@@ -266,7 +268,7 @@ test("an identity transform exports on a tiny OME-Zarr grid far from the origin"
   store.set("zarr.json", new TextEncoder().encode(JSON.stringify(root)));
   const bytes = Buffer.from(memoryStoreToZip(store));
   await page.goto("/");
-  for (const role of ["moving", "stationary"]) {
+  for (const role of ["fixed", "moving"]) {
     await page.locator(`#${role}Input`).setInputFiles({ name: `${role}.ozx`, mimeType: "application/zip", buffer: bytes });
     await expect(page.locator(`#${role}Info`)).toContainText(`${role}.ozx`);
   }

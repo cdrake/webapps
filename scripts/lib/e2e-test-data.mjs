@@ -86,14 +86,14 @@ export const provisioners = {
   syncro: {
     env: ['SYNCRO_SCIENTIFIC_TESTS', 'SYNCRO_AUTOMATION_IMAGE', 'SYNTHSR_MODEL'],
     provision: async (cache) => {
-      const [image] = await exampleFiles(cache, 'syncro', 'trace-t1', ['primary']);
+      const [image] = await exampleFiles(cache, 'syncro', 'trace-t1', ['moving']);
       return { SYNCRO_SCIENTIFIC_TESTS: '1', SYNCRO_AUTOMATION_IMAGE: image, SYNTHSR_MODEL: join(synthsrModels(), 'synthsr-v2.onnx') };
     },
     // The pinned T1 through WASM SynthSR, SynthStrip and Greedy needs no GPU (issue #211).
     cpu: {
       env: ['SYNCRO_AUTOMATION_IMAGE'],
       provision: async (cache) => {
-        const [image] = await exampleFiles(cache, 'syncro', 'trace-t1', ['primary']);
+        const [image] = await exampleFiles(cache, 'syncro', 'trace-t1', ['moving']);
         return { SYNCRO_AUTOMATION_IMAGE: image };
       },
     },

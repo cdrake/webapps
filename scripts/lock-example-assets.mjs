@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { loadAppsRegistry, repoRoot } from './lib/apps-registry.mjs';
 import { modelManifestAssets } from './lib/model-assets.mjs';
+import { loadTemplateCatalogue, templateAssets } from './lib/templates.mjs';
 
 const directory = process.env.TMPDIR;
 if (!directory) throw new Error('Set TMPDIR to the storage volume for example downloads.');
@@ -27,6 +28,7 @@ for (const app of (await loadAppsRegistry()).apps) {
   }
 }
 for (const asset of await modelManifestAssets()) assets.push({ ...asset, kind: 'model' });
+for (const asset of templateAssets(await loadTemplateCatalogue())) assets.push(asset);
 const pending = [...new Map(assets.map(file => [file.url, file])).values()];
 await Promise.all(Array.from({ length: 4 }, async () => {
   while (pending.length) {
@@ -59,7 +61,7 @@ for (const file of assets) {
 for (const file of assets) {
   const asset = lock.assets[file.url];
   const entry = sources.apps[file.app].find(item => item.url === file.url);
-  if (entry) Object.assign(entry, { sha256: asset.sha256, bytes: asset.bytes });
+  if (entry) Object.assign(entry, { sha256: asset.sha256, bytes: asset.bytes }, file.kind === 'template' ? { kind: file.kind, license: file.license } : {});
   else sources.apps[file.app].push({ url: file.url, sha256: asset.sha256, bytes: asset.bytes, kind: file.kind, ...(file.license ? { license: file.license } : {}) });
   if (!lock.apps[file.app].includes(file.url)) lock.apps[file.app].push(file.url);
 }

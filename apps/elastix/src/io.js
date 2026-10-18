@@ -150,9 +150,9 @@ function frameImage(image) {
 const transformixOnIoWorker = (image, options) => onIoWorker((webWorker) => transformix(image, { ...options, webWorker }));
 
 /**
- * The stationary-to-moving transform as an RFC-5 OME-Zarr archive: one
+ * The fixed-to-moving transform as an RFC-5 OME-Zarr archive: one
  * affine when every stage is linear, else a displacement field sampled on
- * the stationary grid. Coordinates are the images' intrinsic systems.
+ * the fixed grid. Coordinates are the images' intrinsic systems.
  */
 export async function writeTransformOmeZarrFile({ transform, transformParameterObject, fixed, moving }, name) {
   const dims = spatialDims(fixed.imageType.dimension);

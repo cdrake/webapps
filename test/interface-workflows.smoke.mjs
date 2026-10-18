@@ -210,7 +210,7 @@ try {
     await expect(page.locator('#method')).toHaveValue('rigid');
     await page.locator('#movingInput').setInputFiles(nifti('moving.nii'));
     await expect(page.locator('#movingInfo')).toContainText('moving.nii');
-    await page.locator('#stationaryInput').setInputFiles(nifti('stationary.nii'));
+    await page.locator('#fixedInput').setInputFiles(nifti('fixed.nii'));
     await expect(page.locator('#runButton')).toBeEnabled();
     await page.locator('#movingInput').setInputFiles({
       name: 'detached.mhd', mimeType: 'text/plain', buffer: Buffer.from('ElementDataFile = image.raw'),
@@ -230,7 +230,7 @@ try {
     await processing.tap();
     await expect(page.locator('#synthsrBackend')).toHaveValue('wasm');
     await processing.tap();
-    await page.locator('#input').setInputFiles(nifti('anatomical.nii'));
+    await page.locator('#movingInput').setInputFiles(nifti('anatomical.nii'));
     await expect(page.locator('#runButton')).toBeEnabled();
     await page.locator('#lesion').setInputFiles(nifti('lesion.nii',0));
     await page.locator('#pathological').setInputFiles(nifti('pathological.nii',30));

@@ -19,7 +19,7 @@ test("web app registrations of the pinned example match the browser reference", 
   const example = await pinnedExample();
   await page.goto("/");
   await expect(page.locator("#movingInput")).toBeEnabled({ timeout: 2 * minutes });
-  for (const [slot, file] of [["moving", example.moving], ["stationary", example.fixed]]) {
+  for (const [slot, file] of [["fixed", example.fixed], ["moving", example.moving]]) {
     await page.locator(`#${slot}Input`).setInputFiles({ name: file.name, mimeType: "application/gzip", buffer: await readFile(file.path) });
     await expect(page.locator(`#${slot}Info`)).toContainText(file.name, { timeout: 2 * minutes });
   }

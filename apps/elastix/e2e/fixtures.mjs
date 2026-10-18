@@ -11,7 +11,7 @@ import { tomlValue } from "../../../packages/elastix/validation/parameter-matrix
 export const SIZE = 128;
 export const SPACING = 0.5;
 // The moving image shows the fixed content moved by this many pixels (x, y),
-// so the stationary-to-moving transform translates by SHIFT_PX × SPACING.
+// so the fixed-to-moving transform translates by SHIFT_PX × SPACING.
 export const SHIFT_PX = [5, -3];
 
 const BLOBS = [

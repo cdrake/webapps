@@ -4,6 +4,8 @@ import { loadAppsRegistry } from '../scripts/lib/apps-registry.mjs';
 import { appInformationPayload, loadAppInformation } from '../scripts/lib/app-information.mjs';
 import { injectCompositeTheme } from '../scripts/lib/composite-theme.mjs';
 import { mountAppShell } from '../test-utils/mount-app-shell.mjs';
+import { loadTemplateCatalogue } from '../scripts/lib/templates.mjs';
+import { templatesFor } from '../packages/components/src/ui/templates.js';
 
 // Every hosted app's About and Cite dialogs are fed from
 // registry/app-information.yml through the shared shell. These tests keep the
@@ -38,7 +40,7 @@ const REQUIRED_METHODS = {
   zarro: ['10.1038/s41592-021-01326-w', 'zarr.dev', 'dandiarchive.org'],
   synthseg: ['10.1016/j.media.2023.102789', '10.52294/001c.94384', 'brain-development.org/ixi-dataset', '10.1016/j.neuroimage.2020.117200', '10.1016/j.jneumeth.2016.03.001', 'github.com/niivue/niivue'],
   synthsr: ['10.1016/j.neuroimage.2021.118206', 'github.com/neurolabusc/py_synthsr'],
-  syncro: ['10.1016/j.neuroimage.2021.118206', 'arxiv.org/abs/2506.11860', '10.1016/j.neuroimage.2022.119474', 'sites.google.com/view/greedyreg/about', '10.1016/j.media.2007.06.004', '10.1016/j.neuroimage.2010.07.033', '10.52294/001c.94384'],
+  syncro: ['10.1016/j.neuroimage.2021.118206', 'arxiv.org/abs/2506.11860', '10.1016/j.neuroimage.2022.119474', 'sites.google.com/view/greedyreg/about', '10.1016/j.media.2007.06.004', '10.1007/11866763_8', '10.52294/001c.94384'],
   'white-matter-lesions': ['10.1101/2025.05.19.25327707', '10.1038/s41592-020-01008-z', '10.1016/j.neuroimage.2022.119474', '10.1016/j.jneumeth.2016.03.001', 'github.com/niivue/niivue'],
   edgereg: ['afni.nimh.nih.gov', '10.1016/j.jneumeth.2016.03.001', 'github.com/niivue/niivue'],
   ants: ['10.1038/s41598-021-87564-6', '10.1016/j.neuroimage.2010.09.025', '10.1016/j.neuroimage.2026.122074', '10.1016/j.jneumeth.2016.03.001'],
@@ -63,6 +65,17 @@ test('every registered app has app information with packages and cited methods',
       assert.ok(cited.includes(method), `${app.id} must cite ${method}`);
     }
     assert.ok(REQUIRED_METHODS[app.id], `${app.id} has a required-methods list in this test`);
+  }
+});
+
+// A built-in fixed image is part of the method: every app that offers one cites its paper.
+test('every app cites the templates it offers', async () => {
+  const catalogue = await loadTemplateCatalogue();
+  for (const app of Object.keys(catalogue.consumers)) {
+    const cited = information.apps[app].citations.map((item) => item.doi ?? '');
+    for (const entry of templatesFor(catalogue, app)) {
+      assert.ok(cited.includes(entry.citation.doi), `${app} must cite ${entry.label} (${entry.citation.doi})`);
+    }
   }
 });
 

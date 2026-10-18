@@ -37,7 +37,7 @@ test('geometry error keeps the explicit lesion input available before inference'
  const modelRequests=[];page.context().on('request',r=>{if(r.url().includes('.onnx'))modelRequests.push(r.url());});
  await page.goto('./');
  expect(await page.evaluate(()=>crossOriginIsolated)).toBe(true);
- await page.locator('#input').setInputFiles(scan('anatomical.nii'));
+ await page.locator('#movingInput').setInputFiles(scan('anatomical.nii'));
  await expect(page.locator('#runButton')).toBeEnabled({timeout:30000});
  await page.locator('#lesion').setInputFiles(scan('misaligned-lesion.nii',5,1));
  await page.locator('#runButton').click();
@@ -47,7 +47,7 @@ test('geometry error keeps the explicit lesion input available before inference'
  await expect(page.locator('#download')).toBeDisabled();
  expect(modelRequests).toEqual([]);
 });
-test('cancellation restores input controls and invalid input cannot reuse an old scan',async({page})=>{
+test('cancellation restores input controls and an unreadable file keeps the previous scan',async({page})=>{
  await page.addInitScript(()=>{
   const OriginalWorker=window.Worker;
   window.Worker=class extends OriginalWorker {
@@ -55,7 +55,7 @@ test('cancellation restores input controls and invalid input cannot reuse an old
   };
  });
  await page.goto('./');
- await page.locator('#input').setInputFiles(scan('anatomical.nii'));
+ await page.locator('#movingInput').setInputFiles(scan('anatomical.nii'));
  await expect(page.locator('#runButton')).toBeEnabled({timeout:30000});
  await page.getByText('Processing settings',{exact:true}).click();
  await expect(page.locator('#synthsrBackend')).toHaveValue('webgpu');
@@ -70,7 +70,7 @@ test('cancellation restores input controls and invalid input cannot reuse an old
  expect(await page.evaluate(()=>window.sentNormalization)).toBe('greedy');
  await page.locator('#cancel').click();
  await expect(page.locator('#statusText')).toContainText('cancelled');
- await expect(page.locator('#input')).toBeEnabled();
+ await expect(page.locator('#movingInput')).toBeEnabled();
  await expect(page.locator('#synthsrBackend')).toBeEnabled();
  await expect(page.locator('#brainExtractor')).toBeEnabled();
  await expect(page.locator('#normalization')).toBeEnabled();
@@ -78,7 +78,12 @@ test('cancellation restores input controls and invalid input cannot reuse an old
  await expect(page.locator('#brainExtractor')).toHaveValue('mindgrab');
  await expect(page.locator('#normalization')).toHaveValue('greedy');
  await expect(page.locator('#download')).toBeDisabled();
- await page.locator('#input').setInputFiles({name:'broken.nii',mimeType:'application/octet-stream',buffer:Buffer.from('not a NIfTI')});
+ // A file that cannot be read leaves the previous scan in place.
+ await page.locator('#movingInput').setInputFiles({name:'broken.nii',mimeType:'application/octet-stream',buffer:Buffer.from('not a NIfTI')});
+ await expect(page.locator('#statusText')).toHaveClass(/error/);
+ await expect(page.locator('#movingInfo')).toContainText('anatomical.nii');
+ await expect(page.locator('#runButton')).toBeEnabled();
+ await page.locator('#movingClear').click();
  await expect(page.locator('#runButton')).toBeDisabled();
  await expect(page.locator('#empty')).toBeVisible();
  await expect(page.locator('#viewLabel')).toBeEmpty();
@@ -130,7 +135,7 @@ test('compact help, standalone commands and result switching remain reachable',a
   await page.locator('#info').getByRole('button',{name:'Close'}).click();
  }
 
- await page.locator('#input').setInputFiles(scan('anatomical.nii'));
+ await page.locator('#movingInput').setInputFiles(scan('anatomical.nii'));
  await expect(page.locator('#runButton')).toBeEnabled();
  await page.locator('#lesion').setInputFiles(scan('lesion.nii',0,1));
  await expect(page.locator('#lesionInfo')).toBeVisible();
@@ -199,7 +204,7 @@ test('the normalized lesion can be edited, cancelled and downloaded',async({page
   };
  });
  await page.goto('./');
- await page.locator('#input').setInputFiles(scan('anatomical.nii'));
+ await page.locator('#movingInput').setInputFiles(scan('anatomical.nii'));
  await expect(page.locator('#runButton')).toBeEnabled({timeout:30000});
  await expect(page.locator('#editLesion')).toBeDisabled();
  await page.locator('#lesion').setInputFiles(scan('lesion.nii',0,0));

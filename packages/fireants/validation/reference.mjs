@@ -46,7 +46,8 @@ export async function writeReference(reference) {
 export async function pinnedExample() {
   const examples = JSON.parse(await readFile(new URL('../../../apps/fireants/examples.json', import.meta.url), 'utf8'));
   const [example] = examples;
-  const [moving, fixed] = await Promise.all(example.files.map(pinnedFile));
+  const file = (role) => example.files.find((entry) => entry.role === role);
+  const [moving, fixed] = await Promise.all([pinnedFile(file('moving')), pinnedFile(file('fixed'))]);
   return { id: example.id, moving, fixed };
 }
 

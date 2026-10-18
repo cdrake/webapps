@@ -25,14 +25,14 @@ const checks = [
   ['elastix', '#movingInput', async page => {
     await expect(page.locator('#movingInfo')).toContainText('.nii');
     await expect(page.locator('#runButton')).toBeDisabled();
-    await page.locator('#stationaryInput').setInputFiles([
+    await page.locator('#fixedInput').setInputFiles([
       ...dicomSeries({ extension: '' }), ...dicomSeries({ series: 2, extension: '' }),
     ]);
-    await expect(page.locator('#stationarySeries option')).toHaveCount(2);
+    await expect(page.locator('#fixedSeries option')).toHaveCount(2);
     await expect(page.locator('#runButton')).toBeEnabled();
-    await page.locator('#stationarySeries').selectOption('1');
-    await expect(page.locator('#stationarySeries')).toHaveValue('1');
-    await expect(page.locator('#stationaryInfo')).toContainText('.nii');
+    await page.locator('#fixedSeries').selectOption('1');
+    await expect(page.locator('#fixedSeries')).toHaveValue('1');
+    await expect(page.locator('#fixedInfo')).toContainText('.nii');
   }],
   ['carotid-flow', '#imageInput', async page => {
     // The fixture is a converted four-slice volume, which proves DICOM reaches the reader.
@@ -49,16 +49,17 @@ const checks = [
     await expect(page.locator('#fileInfo')).toContainText('16 × 16 × 4');
     await expect(page.locator('#runButton')).toBeEnabled();
   }],
-  ['syncro', '#input', async page => {
-    await expect(page.locator('#primaryInfo')).toContainText('16 × 16 × 4');
+  ['syncro', '#movingInput', async page => {
+    await expect(page.locator('#movingInfo')).toContainText('16×16×4');
     await expect(page.locator('#runButton')).toBeEnabled();
     await page.locator('#lesion').setInputFiles(dicomSeries({ extension: '' }));
     await expect(page.locator('#lesionInfo')).toContainText('16 × 16 × 4');
     await page.locator('#pathological').setInputFiles(dicomSeries({ extension: '' }));
     await expect(page.locator('#pathologicalInfo')).toContainText('16 × 16 × 4');
-    await page.locator('#input').setInputFiles([...dicomSeries(), ...dicomSeries({series:2})]);
-    await expect(page.locator('#statusText')).toContainText('one complete DICOM series for this slot');
-    await expect(page.locator('#runButton')).toBeDisabled();
+    await page.locator('#movingInput').setInputFiles([...dicomSeries(), ...dicomSeries({series:2})]);
+    await expect(page.locator('#statusText')).toContainText('one complete DICOM series for the moving image');
+    await expect(page.locator('#movingInfo')).toContainText('16×16×4');
+    await expect(page.locator('#runButton')).toBeEnabled();
   }],
   ['nesvor', '#imageInput', async page => {
     await expect(page.locator('#fileInfo')).toContainText('1 stack loaded');

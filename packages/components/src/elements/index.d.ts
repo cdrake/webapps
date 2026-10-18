@@ -5,3 +5,4 @@ export * from './viewer-toolbar.js';
 export * from './example-selector.js';
 export * from './compute-connection.js';
 export * from './mask-editor.js';
+export * from './image-pair.js';
