@@ -13,6 +13,30 @@ async function readDownload(download) {
   return readNiftiFrames(gunzipSync(readFileSync(await download.path())));
 }
 
+async function holdCompression(page) {
+  await page.evaluate(() => {
+    const NativeCompressionStream = window.CompressionStream;
+    window.CompressionStream = class {
+      constructor(format) {
+        const compressor = new NativeCompressionStream(format);
+        const held = new Promise((resolve) => {
+          window.finishOutputCompression = () => {
+            window.CompressionStream = NativeCompressionStream;
+            resolve();
+          };
+        });
+        this.writable = compressor.writable;
+        this.readable = compressor.readable.pipeThrough(new TransformStream({
+          async transform(chunk, controller) {
+            await held;
+            controller.enqueue(chunk);
+          },
+        }));
+      }
+    };
+  });
+}
+
 test("app boots", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("#viewer")).toBeVisible();
@@ -91,6 +115,95 @@ test("cancelling a fit stops the workers and permits another fit", async ({ page
   await expect(page.locator("#statusText")).toHaveText("Cancelled");
   await expect(page.locator("#runButton")).toBeEnabled();
   await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(0);
+});
+
+test("cancelling while output maps are compressed publishes no maps and permits retry", async ({ page }) => {
+  const dwi = syntheticDwi({ shells: [1000] });
+  await page.goto("/");
+  await page.locator("#imageInput").setInputFiles(dwi.files);
+  await expect(page.locator("#runButton")).toBeEnabled();
+  await holdCompression(page);
+  await page.locator("#runButton").click();
+  await page.waitForFunction(() => typeof window.finishOutputCompression === "function");
+  await page.locator("#cancelButton").click();
+  await page.evaluate(() => window.finishOutputCompression());
+  await expect(page.locator("#statusText")).toHaveText("Cancelled");
+  await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(0);
+  await expect(page.locator("#runButton")).toBeEnabled();
+  await page.locator("#runButton").click();
+  await expect(page.locator("#statusText")).toContainText("Fitted");
+  await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(7);
+});
+
+test("model choices survive replacement imports, including a single-shell DWI", async ({ page }) => {
+  const multi = syntheticDwi();
+  const single = syntheticDwi({ shells: [1000] });
+  const upload = async (files) => {
+    await page.locator("#imageInput").setInputFiles(files);
+    await expect(page.locator("#runButton")).toBeEnabled();
+  };
+  await page.goto("/");
+  await upload(multi.files);
+  const noddi = page.locator("#fitNoddi");
+  await expect(noddi).toBeEnabled();
+  await noddi.uncheck();
+  await page.locator("#advancedSettings").evaluate((section) => { section.open = true; });
+  await page.locator("#tensorFit").selectOption("ols");
+  await upload(single.files);
+  await expect(noddi).toBeDisabled();
+  await upload(multi.files);
+  await expect(noddi).toBeEnabled();
+  await expect(noddi).not.toBeChecked();
+  await expect(page.locator("#tensorFit")).toHaveValue("ols");
+  await noddi.check();
+  await upload(single.files);
+  await expect(noddi).toBeDisabled();
+  await upload(multi.files);
+  await expect(noddi).toBeEnabled();
+  await expect(noddi).toBeChecked();
+});
+
+test("cancelling input preview preparation prevents a late input commit", async ({ page }) => {
+  await page.goto("/");
+  await holdCompression(page);
+  await page.locator("#imageInput").setInputFiles(syntheticDwi().files);
+  await page.waitForFunction(() => typeof window.finishOutputCompression === "function");
+  await page.locator("#cancelButton").click();
+  await page.evaluate(() => window.finishOutputCompression());
+  await expect(page.locator("#statusText")).toHaveText("Cancelled");
+  await expect(page.locator("#fileInfo")).toBeHidden();
+  await expect(page.locator("#runButton")).toBeDisabled();
+});
+
+test("mask reading blocks fitting, cancels without a late mask and permits retry", async ({ page }) => {
+  await page.goto("/");
+  await page.locator("#imageInput").setInputFiles(syntheticDwi().files);
+  await expect(page.locator("#runButton")).toBeEnabled();
+  await page.locator("#advancedSettings").evaluate((section) => { section.open = true; });
+  await page.evaluate(() => {
+    const read = File.prototype.arrayBuffer;
+    File.prototype.arrayBuffer = function () {
+      if (this.name !== "mask.nii.gz") return read.call(this);
+      const file = this;
+      return new Promise((resolve, reject) => {
+        window.finishMaskRead = () => {
+          File.prototype.arrayBuffer = read;
+          read.call(file).then(resolve, reject);
+        };
+      });
+    };
+  });
+  const mask = syntheticMask({ value: 1 });
+  await page.locator("#maskInput").setInputFiles(mask);
+  await page.waitForFunction(() => typeof window.finishMaskRead === "function");
+  await expect(page.locator("#runButton")).toBeDisabled();
+  await page.locator("#cancelButton").click();
+  await page.evaluate(() => window.finishMaskRead());
+  await expect(page.locator("#statusText")).toHaveText("Cancelled");
+  await expect(page.locator("#maskInfo")).toBeHidden();
+  await expect(page.locator("#runButton")).toBeEnabled();
+  await page.locator("#maskInput").setInputFiles(mask);
+  await expect(page.locator("#maskInfo")).toContainText("512 voxels");
 });
 
 for (const example of examples) {
