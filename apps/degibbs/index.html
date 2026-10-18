@@ -33,7 +33,7 @@
               <option value="1,2">Axes 2 and 3 (sagittal slices)</option>
             </select>
           </div>
-          <p class="nd-hint">Run this first, on data that was not interpolated or partial-Fourier filled.</p>
+          <p class="nd-hint">Use after denoising, before interpolation; avoid partial-Fourier filled data.</p>
           <button id="runButton" class="nd-btn nd-btn-primary" type="button" disabled>Remove ringing</button>
         </div>
       </details>
@@ -66,7 +66,7 @@
     </footer>
 
     <template id="aboutContent">
-      <p>Degibbs removes Gibbs ringing, the ripples beside sharp edges in MRI, in this browser. It shifts each 2D slice by subvoxel amounts and, at every sample, keeps the shift with the least local variation (Kellner et al. 2016). It is a port of MRtrix3 3.0.8 mrdegibbs and gives its results to within 1e-13. Use it first in a diffusion pipeline, before denoising changes the noise or registration interpolates the data; partial-Fourier acquisitions have a different ringing, which this method removes only in part. A bval and bvec chosen with the image are passed through under the output's name.</p>
+      <p>Degibbs removes Gibbs ringing, the ripples beside sharp edges in MRI, in this browser. It shifts each 2D slice by subvoxel amounts and, at every sample, keeps the shift with the least local variation (Kellner et al. 2016). It is a port of MRtrix3 3.0.8 mrdegibbs and gives its results to within 1e-13. Use it after denoising and before registration interpolates the data; partial-Fourier acquisitions have a different ringing, which this method removes only in part. A bval and bvec chosen with the image are passed through under the output's name.</p>
     </template>
     <template id="privacyContent"><p>Images are processed locally in this browser and are never uploaded.</p></template>
 

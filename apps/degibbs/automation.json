@@ -73,6 +73,12 @@
           "mediaType": "text/plain",
           "minimum": 0,
           "maximum": 1
+        },
+        "sidecar": {
+          "type": "neuro:metadata",
+          "mediaType": "application/json",
+          "minimum": 1,
+          "maximum": 1
         }
       },
       "engines": [
