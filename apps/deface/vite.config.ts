@@ -15,7 +15,6 @@ export default neurodeskViteConfig({
   // The MindGrab worker always passes assetPath, so its modules load from the mindgrab/ copies.
   worker: { plugins: () => [mindgrabFromAssetPath()] },
   server: {
-    open: '/index.html',
     port: 8091,
   },
   build: {
