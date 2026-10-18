@@ -111,11 +111,31 @@ Findings:
 - AMICO 1.5.4 keeps only the zonal (m = 0) spherical-harmonic coefficients of each atom (lmax 12) and rotates them with a 32761-direction table. By the addition theorem, a port can compute each voxel's atoms from those coefficients and Legendre polynomials of g·n. That needs no table (about 1.9 GB for this data) and differs from 1.5.4 only by its direction quantisation.
 - The OD difference between AMICO 1.5.4 and 2.1.1 does not come from the table size. AMICO 2.x is a comparison for information only.
 
-Decision proposed: port AMICO 1.5.4 and hold it to AMICO 1.5.4 output.
+Decision (18 October 2026): port AMICO 1.5.4 and hold it to AMICO 1.5.4 output. The clean-room and dmipy candidates are not continued.
+
+### AMICO port result
+
+`exes/dwi/amico` is the port; its README lists what each part ports.
+The WebAssembly module fitted all 111755 mask voxels of ds001226 sub-CON01 in 401 s on one thread (3.6 ms per voxel).
+Absolute differences from AMICO 1.5.4 with its default 32761-direction table:
+
+| Map | WM median | WM p95 | WM p99 | Brain maximum |
+| --- | --- | --- | --- | --- |
+| ICVF | 2.6e-5 | 4.1e-4 | 3.1e-3 | 0.099 |
+| ISOVF | 1.2e-5 | 2.9e-4 | 2.9e-3 | 0.052 |
+| OD | 7.7e-5 | 2.0e-3 | 7.3e-3 | 0.648 |
+
+The port uses the exact fibre direction; AMICO uses the nearest table direction, about 1° away.
+With AMICO's table direction the port agrees to a median of 2e-7 (`tests/oracle.rs`), so the remaining difference is that rounding, not the fit.
+
+## Primary dataset
+
+ds001226 sub-CON01 replaces ds003138 as the primary dataset: ds003138 acquires each shell as a separate run with its own TE and one b0.
+ds001226 has one run (b = 0 ×6, 700 ×16, 1200 ×30, 2800 ×50, 2.5 mm), one PA b0, a T1w and complete sidecars (CC0).
 
 ## Data
 
-The primary dataset is OpenNeuro ds003138 (CC0), one subject.
+The primary dataset was first OpenNeuro ds003138 (CC0); see "Primary dataset" below for its replacement.
 It has b = 1000/2000/3000 at 20/30/64 directions, a reverse-PE b0 for each shell, a 0.8 mm T1w, and `TotalReadoutTime` and `SliceTiming` in its sidecars.
 CI uses a cropped field of view.
 ds004146 (full AP and PA DWI) is for later work.
