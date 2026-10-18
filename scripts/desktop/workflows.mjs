@@ -317,10 +317,10 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
   if (id === 'syncro') {
     const manifest = JSON.parse(await readFile(join(resources, 'manifest.json')));
     const examples = JSON.parse(await readFile(join(root, 'apps/syncro/examples.json')));
-    const primary = examples[0].files.find(file => file.role === 'primary');
+    const primary = examples[0].files.find(file => file.role === 'moving');
     const asset = manifest.assets[primary.url];
     assert.ok(asset, 'The pinned SYNcro T1 example must be packaged');
-    await page.locator('#input').setInputFiles({ name: primary.name, mimeType: 'application/gzip', buffer: await readFile(join(resources, asset.path)) });
+    await page.locator('#movingInput').setInputFiles({ name: primary.name, mimeType: 'application/gzip', buffer: await readFile(join(resources, asset.path)) });
     await page.locator('#settingsSection').evaluate(section => { section.open = true; });
     await page.locator('#synthsrBackend').selectOption('wasm');
     await page.locator('#brainExtractor').selectOption('synthstrip');
