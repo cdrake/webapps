@@ -1523,3 +1523,37 @@ apps:
         title: NiiVue
         reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
         url: https://github.com/niivue/niivue
+
+  degibbs:
+    packages:
+      - name: MRtrix3 mrdegibbs 3.0.8 (Rust and WebAssembly port)
+        url: https://github.com/MRtrix3/mrtrix3
+        role: Gibbs-ringing removal, ported under the MPL-2.0
+      - name: NiiVue
+        url: https://github.com/niivue/niivue
+        role: image viewer
+      - name: dcm2niix (WebAssembly)
+        url: https://github.com/rordenlab/dcm2niix
+        role: DICOM to NIfTI conversion
+    citations:
+      - group: Gibbs-ringing removal
+        title: Local subvoxel shifts
+        reference: "Kellner E, Dhital B, Kiselev VG, Reisert M. Gibbs-ringing artifact removal based on
+          local subvoxel-shifts. Magnetic Resonance in Medicine. 2016;76(5):1574–1581."
+        doi: 10.1002/mrm.26054
+      - group: Gibbs-ringing removal
+        title: MRtrix3
+        reference: "Tournier JD, Smith R, Raffelt D, et al. MRtrix3: A fast, flexible and open software
+          framework for medical image processing and visualisation. NeuroImage. 2019;202:116137."
+        doi: 10.1016/j.neuroimage.2019.116137
+        code: https://github.com/MRtrix3/mrtrix3
+      - group: DICOM conversion
+        title: dcm2niix
+        reference: "Li X, Morgan PS, Ashburner J, Smith J, Rorden C. The first step for
+          neuroimaging data analysis: DICOM to NIfTI conversion. Journal of
+          Neuroscience Methods. 2016;264:47–56."
+        doi: 10.1016/j.jneumeth.2016.03.001
+      - group: Visualization
+        title: NiiVue
+        reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
+        url: https://github.com/niivue/niivue

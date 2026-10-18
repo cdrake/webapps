@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 2,
+  "app": "degibbs",
+  "title": "Degibbs",
+  "description": "Gibbs-ringing removal by local subvoxel shifts (MRtrix mrdegibbs 3.0.8 port).",
+  "defaultOperation": "degibbs",
+  "operations": {
+    "degibbs": {
+      "title": "Remove ringing",
+      "description": "Remove Gibbs ringing from every 2D slice of every volume.",
+      "mode": "batch",
+      "inputs": {
+        "image": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "description": "A 3D or 4D image, as NIfTI or DICOM",
+          "minimum": 1
+        },
+        "bval": {
+          "source": "files",
+          "type": "neuro:gradients",
+          "formats": [
+            "bval",
+            "bvals"
+          ],
+          "description": "Optional b-values, passed through under the output's name",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "bvec": {
+          "source": "files",
+          "type": "neuro:gradients",
+          "formats": [
+            "bvec",
+            "bvecs"
+          ],
+          "description": "Optional gradient directions, passed through under the output's name",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "parameters": {
+        "sliceAxes": {
+          "type": "string",
+          "enum": [
+            "0,1",
+            "0,2",
+            "1,2"
+          ],
+          "description": "The two in-plane axes; the sidecar's SliceEncodingDirection sets them when present"
+        }
+      },
+      "artifacts": {
+        "image": {
+          "type": "neuro:volume",
+          "mediaType": "application/gzip",
+          "space": "input",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "bval": {
+          "type": "neuro:gradients",
+          "mediaType": "text/plain",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "bvec": {
+          "type": "neuro:gradients",
+          "mediaType": "text/plain",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "sidecar": {
+          "type": "neuro:metadata",
+          "mediaType": "application/json",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    }
+  }
+}

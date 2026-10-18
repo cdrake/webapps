@@ -1,0 +1,10 @@
+[package]
+name = "dwi-degibbs"
+version.workspace = true
+edition.workspace = true
+license = "MPL-2.0"
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+rustfft = "6"

@@ -7,6 +7,7 @@ on:
       - '.github/actions/setup-wasm-opt/**'
       - 'exes/dwi/**'
       - 'packages/noddi/**'
+      - 'packages/degibbs/**'
   push:
     branches: [main]
     paths:
@@ -14,6 +15,7 @@ on:
       - '.github/actions/setup-wasm-opt/**'
       - 'exes/dwi/**'
       - 'packages/noddi/**'
+      - 'packages/degibbs/**'
   workflow_dispatch:
 
 concurrency:
@@ -44,7 +46,7 @@ jobs:
         run: cargo +1.98.0 fmt --all --check
 
   wasm-source:
-    name: committed noddi WASM equals a rebuild from source
+    name: committed WASM modules equal a rebuild from source
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -54,11 +56,16 @@ jobs:
         run: rustup toolchain install 1.98.0 --profile minimal --target wasm32-unknown-unknown
       - name: Set up wasm-opt
         uses: ./.github/actions/setup-wasm-opt
-      - name: Rebuild and compare
+      - name: Rebuild and compare noddi
         run: bash packages/noddi/scripts/build-wasm.sh --check
+      - name: Rebuild and compare degibbs
+        run: bash packages/degibbs/scripts/build-wasm.sh --check
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 22
-      - name: Package tests on the committed module
+      - name: noddi package tests on the committed module
         working-directory: packages/noddi
+        run: node --test test/*.test.js
+      - name: degibbs package tests on the committed module
+        working-directory: packages/degibbs
         run: node --test test/*.test.js

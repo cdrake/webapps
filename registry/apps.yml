@@ -749,3 +749,23 @@ apps:
       shared_runtime: false
       browser_test: true
       release: false
+  - id: degibbs
+    path: degibbs
+    title: Degibbs
+    description: Gibbs-ringing removal for MRI in the browser.
+    categories: [image-processing, diffusion-imaging]
+    keywords: [Gibbs ringing, mrdegibbs, MRtrix, diffusion MRI, preprocessing, WebAssembly]
+    legacy_domain: null
+    runtime: vite-wasm
+    model_manifest: null
+    asset_manifest_schema: null
+    source: neurodesk/webapps@local
+    license: MPL-2.0
+    maintainers: [neurodesk]
+    support_status: experimental
+    shell: imaging-workspace
+    ci:
+      toolchains: [node]
+      shared_runtime: false
+      browser_test: true
+      release: false
