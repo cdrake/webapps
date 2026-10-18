@@ -81,8 +81,62 @@ export async function loadNoddi(source) {
     }
   }
 
-  return { describe, dtiFit };
+  /**
+   * Prepares an AMICO NODDI fit for one gradient table. Throws when NODDI cannot run on it
+   * (fewer than two shells, no b0).
+   * @returns {{ fit: (data: Float32Array, voxels: number, mask?: Uint8Array|null) => Record<string, Float32Array>, free: () => void }}
+   */
+  function noddiModel(bvals, bvecs) {
+    const g = gradientArrays(bvals, bvecs);
+    const b = copyIn(g.bvals);
+    const v = copyIn(g.bvecs);
+    let dict;
+    try {
+      dict = wasm.noddi_new(b.ptr, v.ptr, g.n);
+    } finally {
+      b.free();
+      v.free();
+    }
+    if (!dict) throw new Error(text());
+
+    /**
+     * Fits a chunk of voxels. `data` is volume-major for these voxels only.
+     * @returns one map per name in NODDI_MAPS
+     */
+    function fit(data, voxels, mask = null) {
+      if (data.length !== voxels * g.n) {
+        throw new Error(`The image has ${data.length / voxels} volumes but the gradient table has ${g.n}.`);
+      }
+      if (mask && mask.length !== voxels) throw new Error('The mask is not on the image grid.');
+      const d = copyIn(data);
+      const m = mask ? copyIn(mask) : { ptr: 0, free: () => {} };
+      const outBytes = NODDI_MAPS.length * voxels * 4;
+      const out = wasm.alloc(outBytes);
+      try {
+        if (wasm.noddi_fit(dict, d.ptr, voxels, m.ptr, out) !== 0) throw new Error(text());
+        const all = new Float32Array(wasm.memory.buffer, out, NODDI_MAPS.length * voxels);
+        return Object.fromEntries(NODDI_MAPS.map((name, i) => [name, all.slice(i * voxels, (i + 1) * voxels)]));
+      } finally {
+        wasm.dealloc(out, outBytes);
+        m.free();
+        d.free();
+      }
+    }
+
+    const free = () => {
+      if (dict) {
+        wasm.noddi_free(dict);
+        dict = 0;
+      }
+    };
+    return { fit, free };
+  }
+
+  return { describe, dtiFit, noddiModel };
 }
+
+/** Maps that a NODDI model's `fit` returns, in the order the module writes them. */
+export const NODDI_MAPS = ['ICVF', 'ISOVF', 'OD', 'dirx', 'diry', 'dirz'];
 
 async function instantiate(source) {
   if (source instanceof WebAssembly.Module) return (await WebAssembly.instantiate(source, {})).exports;

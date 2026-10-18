@@ -155,6 +155,87 @@ pub unsafe extern "C" fn dti_fit(
     0
 }
 
+/// Number of Float32 values `noddi_fit` writes per voxel: ICVF, ISOVF, OD, then the fibre
+/// direction x, y, z.
+pub const NODDI_OUTPUTS: usize = 6;
+
+/// Builds the AMICO dictionary for a gradient table. Returns null, with a message, when NODDI
+/// cannot run on it. Free it with `noddi_free`.
+///
+/// # Safety
+/// See `gradients`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn noddi_new(
+    bvals: *const f64,
+    bvecs: *const f64,
+    n: usize,
+) -> *mut dwi_amico::Dictionary {
+    let made = unsafe { gradients(bvals, bvecs, n) }
+        .and_then(|g| g.check_noddi().map(|_| g))
+        .and_then(|_| {
+            let b = unsafe { std::slice::from_raw_parts(bvals, n) };
+            let v: Vec<[f64; 3]> = unsafe { std::slice::from_raw_parts(bvecs, 3 * n) }
+                .chunks_exact(3)
+                .map(|g| [g[0], g[1], g[2]])
+                .collect();
+            dwi_amico::Dictionary::new(b, &v)
+        });
+    match made {
+        Ok(d) => Box::into_raw(Box::new(d)),
+        Err(e) => {
+            set_text(e);
+            std::ptr::null_mut()
+        }
+    }
+}
+
+/// # Safety
+/// `dict` must come from `noddi_new` and not be freed already.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn noddi_free(dict: *mut dwi_amico::Dictionary) {
+    if !dict.is_null() {
+        drop(unsafe { Box::from_raw(dict) });
+    }
+}
+
+/// Fits NODDI to `voxels` voxels. `data` is volume-major (`data[volume * voxels + voxel]`) with
+/// the dictionary's volume count; `mask` is null or one byte per voxel; `out` receives
+/// `NODDI_OUTPUTS` maps of `voxels` values each. JavaScript calls this on chunks of the image.
+///
+/// # Safety
+/// Every pointer must address the number of elements stated above.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn noddi_fit(
+    dict: *const dwi_amico::Dictionary,
+    data: *const f32,
+    voxels: usize,
+    mask: *const u8,
+    out: *mut f32,
+) -> u32 {
+    let dict = unsafe { &*dict };
+    let volumes = dict.volumes();
+    let data = unsafe { std::slice::from_raw_parts(data, voxels * volumes) };
+    let mask = (!mask.is_null()).then(|| unsafe { std::slice::from_raw_parts(mask, voxels) });
+    let out = unsafe { std::slice::from_raw_parts_mut(out, NODDI_OUTPUTS * voxels) };
+    out.fill(0.0);
+    let mut signal = vec![0.0f64; volumes];
+    for voxel in 0..voxels {
+        if mask.is_some_and(|m| m[voxel] == 0) {
+            continue;
+        }
+        for (v, s) in signal.iter_mut().enumerate() {
+            *s = data[v * voxels + voxel] as f64;
+        }
+        let (fit, n) = dict.fit_voxel(&signal);
+        let values = [fit.icvf, fit.isovf, fit.od, n[0], n[1], n[2]];
+        for (k, value) in values.iter().enumerate() {
+            out[k * voxels + voxel] = *value as f32;
+        }
+    }
+    set_text(String::new());
+    0
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

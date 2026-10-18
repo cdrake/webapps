@@ -100,17 +100,41 @@ impl Design {
             vec![1.0; samples.len()]
         };
         let beta = self.solve(&logs, &weights)?;
+        Some(Self::decompose(beta))
+    }
+
+    /// Fits one voxel as dipy 1.7 `TensorModel(fit_method="WLS")` does, which AMICO uses for the
+    /// fibre direction: samples below 1e-4 are raised to 1e-4, an OLS fit of the log signal gives
+    /// the prediction p, and a second fit weights each row by exp(p)², i.e. the predicted signal
+    /// squared (dipy `wls_fit_tensor`).
+    pub fn fit_dipy_wls(&self, signal: &[f64]) -> Option<TensorFit> {
+        assert_eq!(signal.len(), self.rows.len());
+        let logs: Vec<f64> = signal.iter().map(|&s| s.max(1e-4).ln()).collect();
+        let ols = self.solve(&logs, &vec![1.0; logs.len()])?;
+        let weights: Vec<f64> = self
+            .rows
+            .iter()
+            .map(|row| {
+                let predicted: f64 = row.iter().zip(&ols).map(|(a, b)| a * b).sum();
+                (2.0 * predicted).exp()
+            })
+            .collect();
+        let beta = self.solve(&logs, &weights)?;
+        Some(Self::decompose(beta))
+    }
+
+    fn decompose(beta: [f64; 7]) -> TensorFit {
         let tensor = [
             [beta[1], beta[4], beta[5]],
             [beta[4], beta[2], beta[6]],
             [beta[5], beta[6], beta[3]],
         ];
         let (evals, evecs) = eigen_symmetric(tensor);
-        Some(TensorFit {
+        TensorFit {
             s0: beta[0].exp(),
             evals,
             evecs,
-        })
+        }
     }
 
     /// Solves the weighted normal equations (Bᵀ W B) β = Bᵀ W y by Cholesky factorisation.

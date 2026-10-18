@@ -4,7 +4,7 @@
   "description": "Diffusion tensor and NODDI fitting for browsers and the command line",
   "type": "module",
   "private": true,
-  "license": "Apache-2.0",
+  "license": "Apache-2.0 AND BSD-3-Clause",
   "engines": {
     "node": ">=22"
   },

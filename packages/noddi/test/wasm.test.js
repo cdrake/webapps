@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { DTI_MAPS, loadNoddi } from '../src/wasm.js';
+import { DTI_MAPS, NODDI_MAPS, loadNoddi } from '../src/wasm.js';
 
 const noddi = await loadNoddi(readFileSync(new URL('../src/noddi.wasm', import.meta.url)));
 
@@ -73,6 +73,32 @@ test('dtiFit uses the lowest shell only', () => {
   const values = signal(lowest, 500, [1.2e-3, 0.6e-3, 0.4e-3]).map((s, i) => (g.bvals[i] === 2800 ? 1 : s));
   const maps = noddi.dtiFit(Float32Array.from(values), 1, g.bvals, g.bvecs);
   assert.ok(Math.abs(maps.MD[0] - 0.733333e-3) < 1e-8, `MD ${maps.MD[0]}`);
+});
+
+test('noddiModel refuses a single shell', () => {
+  const g = scheme([995, 1000, 1005]);
+  assert.throws(() => noddi.noddiModel(g.bvals, g.bvecs), /two or more non-zero b-value shells/);
+});
+
+test('noddiModel fits a multi-shell voxel and skips masked voxels', () => {
+  const g = scheme([700, 2800]);
+  const values = signal(g, 1000, [1.7e-3, 0.3e-3, 0.3e-3]);
+  const data = new Float32Array(values.length * 2);
+  values.forEach((s, v) => data.fill(s, v * 2, v * 2 + 2));
+  const model = noddi.noddiModel(g.bvals, g.bvecs);
+  try {
+    const maps = model.fit(data, 2, Uint8Array.from([1, 0]));
+    assert.deepEqual(Object.keys(maps), NODDI_MAPS);
+    for (const name of ['ICVF', 'ISOVF', 'OD']) {
+      assert.ok(maps[name][0] >= 0 && maps[name][0] <= 1, `${name} ${maps[name][0]}`);
+      assert.equal(maps[name][1], 0);
+    }
+    // A single tensor along x: the fibre direction is x and dispersion is low.
+    assert.ok(Math.abs(Math.abs(maps.dirx[0]) - 1) < 1e-6);
+    assert.ok(maps.OD[0] < 0.2, `OD ${maps.OD[0]}`);
+  } finally {
+    model.free();
+  }
 });
 
 test('dtiFit checks the image against the gradient table', () => {
