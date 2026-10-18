@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { gzipSync } from 'node:zlib';
 import { JSDOM } from 'jsdom';
 import { createImagePair, fetchTemplateFile } from '../src/elements/image-pair.js';
 import { describeNiftiFile } from '../src/file-io/NiftiUtils.js';
@@ -298,6 +299,56 @@ test('a failed template or series load puts its select back on the image the slo
   assert.equal(pair.moving.candidate.name, 'one.nii.gz');
 });
 
+test('a replacement waits for a cancelled example rollback before opening its image', async () => {
+  let releaseExample;
+  let enterExample;
+  let releaseRollback;
+  let enterRollback;
+  const exampleStarted = new Promise(resolve => { enterExample = resolve; });
+  const examplePending = new Promise(resolve => { releaseExample = resolve; });
+  const rollbackStarted = new Promise(resolve => { enterRollback = resolve; });
+  const rollbackPending = new Promise(resolve => { releaseRollback = resolve; });
+  const previousFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response('example');
+  let displayed;
+  let exampleOpened = false;
+  let replacement;
+  try {
+    const { pair, window, file } = setup({
+      examples: [{ id: 'pair', label: 'Pair', files: [{ role: 'fixed', name: 'example.nii.gz', url: 'https://example.test/example.nii.gz' }] }],
+      open: async (_slot, candidate) => {
+        if (candidate.name === 'example.nii.gz') {
+          exampleOpened = true;
+          enterExample();
+          await examplePending;
+        } else if (candidate.name === 'old.nii.gz' && exampleOpened) {
+          enterRollback();
+          await rollbackPending;
+        }
+        displayed = candidate.name;
+        return { name: candidate.name, dimensionality: 3 };
+      },
+    });
+    await pair.use('fixed', { name: 'old.nii.gz' });
+    pair.exampleControl.select.value = 'pair';
+    pair.exampleControl.select.dispatchEvent(new window.Event('change'));
+    await exampleStarted;
+    replacement = pair.load('fixed', [file('replacement.nii.gz')]);
+    releaseExample();
+    await rollbackStarted;
+    releaseRollback();
+    await replacement;
+    await settle();
+    assert.equal(pair.fixed.image.name, 'replacement.nii.gz');
+    assert.equal(displayed, 'replacement.nii.gz');
+  } finally {
+    releaseExample?.();
+    releaseRollback?.();
+    await replacement;
+    globalThis.fetch = previousFetch;
+  }
+});
+
 test('the pair\'s example menu lists only examples and hides no picker', async () => {
   const { window } = new JSDOM('<!doctype html><body></body>');
   const pair = createImagePair({
@@ -357,5 +408,47 @@ for (const [units, scale] of [[0, 1], [1, 1000], [2, 1], [3, 0.001]]) {
     view.setUint8(123, units | 8);
     const summary = await describeNiftiFile(new File([header], 'scan.nii'));
     summary.spacingMm.forEach((spacing, axis) => assert.ok(Math.abs(spacing - [2, 2, 3][axis]) < 1e-6));
+  });
+}
+test('describeNiftiFile reads a gzipped header without reading the whole file', async () => {
+  const image = new ArrayBuffer(352 + 4 * 4 * 4);
+  const view = new DataView(image);
+  view.setInt32(0, 348, true);
+  [3, 4, 4, 4, 1, 1, 1, 1].forEach((value, index) => view.setInt16(40 + index * 2, value, true));
+  [1, 1, 1, 1.5, 0, 0, 0, 0].forEach((value, index) => view.setFloat32(76 + index * 4, value, true));
+  view.setFloat32(108, 352, true);
+  const file = new File([gzipSync(new Uint8Array(image))], 't1.nii.gz');
+  let wholeReads = 0;
+  const arrayBuffer = file.arrayBuffer.bind(file);
+  file.arrayBuffer = () => { wholeReads += 1; return arrayBuffer(); };
+  const summary = await describeNiftiFile(file);
+  assert.deepEqual(summary, { name: 't1.nii.gz', dims: [4, 4, 4], spacingMm: [1, 1, 1.5], dimensionality: 3, frames: 1 });
+  assert.equal(wholeReads, 0, 'the gzipped file is streamed, not read whole');
+});
+
+async function compressedSummaryFile() {
+  const { gzipSync } = await import('node:zlib');
+  const header = new ArrayBuffer(352);
+  const view = new DataView(header);
+  view.setInt32(0, 348, true);
+  [3, 10, 12, 8, 1, 1, 1, 1].forEach((value, index) => view.setInt16(40 + index * 2, value, true));
+  [1, 2, 2, 3, 1, 0, 0, 0].forEach((value, index) => view.setFloat32(76 + index * 4, value, true));
+  view.setFloat32(108, 352, true);
+  return new File([gzipSync(new Uint8Array(header))], 'scan.nii.gz');
+}
+
+for (const unavailable of ['file stream', 'DecompressionStream']) {
+  test(`describeNiftiFile reads gzip headers without ${unavailable}`, async () => {
+    const file = await compressedSummaryFile();
+    const decompressor = globalThis.DecompressionStream;
+    if (unavailable === 'file stream') file.stream = undefined;
+    else globalThis.DecompressionStream = undefined;
+    try {
+      const summary = await describeNiftiFile(file);
+      assert.deepEqual(summary.spacingMm, [2, 2, 3]);
+      assert.deepEqual(summary.dims, [10, 12, 8]);
+    } finally {
+      globalThis.DecompressionStream = decompressor;
+    }
   });
 }
