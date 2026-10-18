@@ -329,7 +329,7 @@ ANTs, Greedy, FireANTs, EdgeReg, elastix and SYNcro load their images through th
 shared `nd-image-pair`. Every app now says fixed and moving, in the interface, the
 element IDs (`#fixedInput`, `#fixedInfo`, `#fixedSeries`, `#fixedTemplate`) and the
 viewer panels; no app says stationary. The fixed card comes first with explicit
-"Load fixed image…" and "Load folder…" pickers. Swap, clear and a summary of size
+"Load fixed image…" and "Folder…" pickers. Swap, clear and a summary of size
 and spacing are new in every app. Examples fill the slots by role through the same
 path as a user's file. A failed load keeps the previous image in all six apps (before,
 only elastix did). Brain extraction in ANTs, Greedy and FireANTs moved to its own

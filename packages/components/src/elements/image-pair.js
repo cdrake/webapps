@@ -164,7 +164,7 @@ export function defineImagePair(view = globalThis.window) {
       }
       const actions = element(doc, 'div', { className: 'nd-row nd-image-slot-actions' });
       parts.input = this.#picker(actions, `${slot}Input`, `Load ${slot} image…`, `Load the ${slot} image files`, slot, false);
-      parts.folder = this.#picker(actions, `${slot}FolderInput`, 'Load folder…', `Load a ${slot} image folder`, slot, true);
+      parts.folder = this.#picker(actions, `${slot}FolderInput`, 'Folder…', `Load a ${slot} image folder`, slot, true);
       section.append(header, info, actions);
       if (slot === 'fixed' && this.templates?.length) {
         const field = element(doc, 'div', { id: 'fixedTemplateField', className: 'nd-field' });
