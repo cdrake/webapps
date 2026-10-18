@@ -10,7 +10,7 @@ import { expect } from '@playwright/test';
 import { verifyMuscleMapFullPipeline, createSyntheticMuscleMapNifti } from '../../test/musclemap-full-pipeline-smoke.mjs';
 import { startReferenceServer } from '../../test-utils/compute-reference-server.mjs';
 
-export const workflowApps = ['nesvor', 'musclemap', 'vesselboost', 'spinalcordtoolbox', 'calmar', 'qsmbly', 'seedseg', 'dicompare', 'deface', 'easy-mp2rage', 'niimath', 'dicom2vid', 'browserqc', 'surfannotate', 'zarro', 'synthsr', 'synthseg', 'syncro', 'dwi2trx', 'edgereg', 'greedy', 'ants', 'brain2print', 'topofit', 'fireants', 'brain-extraction', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel', 'elastix', 'dicomview', 'fastprep', 'noddi'];
+export const workflowApps = ['nesvor', 'musclemap', 'vesselboost', 'spinalcordtoolbox', 'calmar', 'qsmbly', 'seedseg', 'dicompare', 'deface', 'easy-mp2rage', 'niimath', 'dicom2vid', 'browserqc', 'surfannotate', 'zarro', 'synthsr', 'synthseg', 'syncro', 'dwi2trx', 'edgereg', 'greedy', 'ants', 'brain2print', 'topofit', 'fireants', 'brain-extraction', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel', 'elastix', 'dicomview', 'fastprep', 'noddi', 'degibbs'];
 
 /**
  * Anything a workflow needs before the desktop app starts. NeSVoR computes on a
@@ -49,7 +49,7 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     assert.ok(bytes.length > 352, 'Output must contain image data');
     return { filename: data.filename, bytes: data.bytes.length };
   };
-  if (['deface', 'brain2print', 'dwi2trx', 'ants', 'greedy', 'edgereg', 'fireants', 'elastix', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel', 'dicomview', 'fastprep', 'noddi'].includes(id)) {
+  if (['deface', 'brain2print', 'dwi2trx', 'ants', 'greedy', 'edgereg', 'fireants', 'elastix', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel', 'dicomview', 'fastprep', 'noddi', 'degibbs'].includes(id)) {
     const examples = JSON.parse(await readFile(join(root, 'apps', id, 'examples.json')));
     const selector = page.getByRole('combobox', { name: 'Input', exact: true });
     await expect(selector).toBeEnabled({ timeout: 120000 });
@@ -360,6 +360,14 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     await page.locator('#protocolButton').click();
     await expect(page.locator('#statusText')).toHaveText('1 acquisition summarised', { timeout: 600000 });
     await expect(page.locator('#protocolSummary')).toContainText('RepetitionTime');
+    return image;
+  }
+  if (id === 'degibbs') {
+    await expect(page.locator('#runButton')).toBeEnabled({ timeout: 60000 });
+    await page.locator('#runButton').click();
+    await expect(page.locator('#statusText')).toContainText('Ringing removed', { timeout: 600000 });
+    const image = nifti(await download('#resultList .nd-volume-toggle:nth-child(1) .nd-download-btn'));
+    assert.equal(image.filename, 'dwi_desc-degibbs.nii.gz');
     return image;
   }
   if (id === 'noddi') {
