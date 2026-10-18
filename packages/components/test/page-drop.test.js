@@ -25,6 +25,9 @@ test('auxiliary files go to their own input and a scan fills each empty image sl
   assert.deepEqual(plan.map(([input, files]) => [input, files.map(f => f.name)]), [[scan, ['a.nii']], [mask, ['b.nii']], [gradients, ['dwi.bval', 'dwi.bvec']]]);
   const noGradientInput = routeFiles([file('a.nii'), file('dwi.bval')], [scan, mask], scan);
   assert.deepEqual(noGradientInput.map(([input, files]) => [input, files.length]), [[scan, 2]]);
+  // FSL names its gradient files bvals and bvecs, with no stem.
+  const fsl = routeFiles([file('data.nii.gz'), file('bvals'), file('bvecs')], [scan, mask, gradients], scan);
+  assert.deepEqual(fsl.map(([input, files]) => [input, files.map(f => f.name)]), [[scan, ['data.nii.gz']], [gradients, ['bvals', 'bvecs']]]);
 });
 
 // jsdom has no DataTransfer; a drop carries file items and the input keeps whatever files it is given.

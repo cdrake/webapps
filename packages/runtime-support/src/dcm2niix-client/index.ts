@@ -199,12 +199,12 @@ export async function readDiffusionSeries(
 ): Promise<DiffusionSeries[]> {
   const list = Array.from(files)
   const { series, outputs } = await readSeriesAndOutputs(list, options)
-  const gradients = [...list, ...outputs].filter((file) => /\.(bval|bvec)$/i.test(file.name))
-  const byStem = (ext: string) => new Map(
-    gradients.filter((file) => file.name.toLowerCase().endsWith(ext)).map((file) => [stem(file.name), file]),
+  const gradients = [...list, ...outputs].filter((file) => GRADIENT_FILE.test(file.name))
+  const byStem = (pattern: RegExp) => new Map(
+    gradients.filter((file) => pattern.test(file.name)).map((file) => [stem(file.name), file]),
   )
-  const bvals = byStem('.bval')
-  const bvecs = byStem('.bvec')
+  const bvals = byStem(BVAL_FILE)
+  const bvecs = byStem(BVEC_FILE)
   const single = series.length === 1 && bvals.size === 1 && bvecs.size === 1
   return series.map((entry) => ({
     ...entry,
@@ -213,6 +213,11 @@ export async function readDiffusionSeries(
   }))
 }
 
+// FSL gradient files: dwi.bval and dwi.bvec as dcm2niix writes them, or FSL's bvals and bvecs.
+const BVAL_FILE = /(^|\.)bvals?$/i
+const BVEC_FILE = /(^|\.)bvecs?$/i
+const GRADIENT_FILE = /(^|\.)(bvals?|bvecs?)$/i
+
 function splitInputs(files: FileList | File[], directVolume = /\.nii(\.gz)?$/i) {
   const direct: File[] = []
   const sidecars: File[] = []
@@ -220,7 +225,7 @@ function splitInputs(files: FileList | File[], directVolume = /\.nii(\.gz)?$/i) 
   for (const file of Array.from(files)) {
     if (directVolume.test(file.name)) direct.push(file)
     else if (/\.json$/i.test(file.name)) sidecars.push(file)
-    else if (!/\.(bval|bvec)$/i.test(file.name)) dicom.push(file)
+    else if (!GRADIENT_FILE.test(file.name)) dicom.push(file)
   }
   return { direct, sidecars, dicom }
 }

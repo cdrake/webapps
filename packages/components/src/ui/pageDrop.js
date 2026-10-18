@@ -3,7 +3,7 @@ import { filesFromDataTransferItems } from '../file-io/detectFiles.js';
 // Kinds that go to an input of their own when the page has one; anything else
 // is the session's main input. Recognised by extension only.
 const AUXILIARY_KINDS = [
-  ['gradients', /\.(bvals?|bvecs?)$/i],
+  ['gradients', /(^|\.)(bvals?|bvecs?)$/i],
   ['model', /\.(onnx|basis)$/i],
   ['protocol', /\.(toml|txt)$/i],
 ];
