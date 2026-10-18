@@ -72,7 +72,7 @@ function status(message, error = false) {
 function invalidate() {
   results.render();
   $('outputSection').open = false;
-  $('runButton').disabled = Boolean(active) || !series.length;
+  $('runButton').disabled = Boolean(active) || review.hasPendingEdits() || !series.length;
 }
 
 function busy(value) {
@@ -83,7 +83,7 @@ function busy(value) {
   for (const input of document.querySelectorAll('#taskSection input, #taskSection select, #seriesReport input, #seriesReport select, #seriesReport textarea, #seriesReport button')) {
     input.disabled = value;
   }
-  $('runButton').disabled = value || !series.length;
+  $('runButton').disabled = value || review.hasPendingEdits() || !series.length;
 }
 
 async function job(message, signal, run) {
@@ -168,6 +168,7 @@ function options() {
 }
 
 async function exportDataset(signal) {
+  if (review.hasPendingEdits()) throw new Error('Wait for gradient files to finish loading.');
   const settings = options();
   const errors = validateDataset(series, settings);
   if (errors.length) {

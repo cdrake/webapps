@@ -72,6 +72,15 @@ test('missing, mismatched and invalid gradients require correction', async () =>
   }
 });
 
+test('vectors allow rounding error, with zero vectors reserved for low-b volumes', async () => {
+  const item = await acquisition('dwi', { volumes: 2, bval: '0 1000', bvec: '0 0.707107\n0 0.707107\n0 0' });
+  assert.deepEqual(validateDataset([item], settings), []);
+  for (const bvec of ['0 0.91\n0 0\n0 0', '0 1.09\n0 0\n0 0', '0.5 1\n0 0\n0 0', '2 1\n0 0\n0 0']) {
+    assert.ok(validateDataset([{ ...item, bvec }], settings).some(error => error.field === 'gradients'), bvec);
+  }
+  assert.deepEqual(validateDataset([{ ...item, bvec: '1 1\n0 0\n0 0' }], settings), []);
+});
+
 test('reverse fieldmaps name actual DWI targets and identify both forward and reverse B0 sources', async () => {
   const dwi = { ...await acquisition('dwi', { volumes: 2, bval: '0 1000', bvec: '0 1\n0 0\n0 0', metadata: { PhaseEncodingDirection: 'j', TotalReadoutTime: 0.05 } }), id: 'dwi' };
   const reverse = { ...await acquisition('epi', { metadata: { PhaseEncodingDirection: 'j-', TotalReadoutTime: 0.05 } }), id: 'reverse', targets: ['dwi'] };
