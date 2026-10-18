@@ -67,15 +67,17 @@ const technicalLog = createConsole({ id: 'technicalLog', outputId: 'consoleOutpu
 $('viewer').appendChild(technicalLog)
 
 // --- NiiVue setup ---
-// The NiiVue constructor is GPU-free; attachTo() takes WebGPU and falls back to
-// WebGL2, and throws only when neither works. So construct here but defer
-// attachTo to init(), which turns that failure into a status message instead of
-// an unhandled top-level rejection.
+// Construct without allocating graphics resources; init() selects a usable
+// backend and reports viewer failures in the status bar.
 const nv = new NiiVueGPU({ isDragDropEnabled: false, backgroundColor: [0, 0, 0, 1] })
 type ExtCtx = ReturnType<typeof nv.createExtensionContext>
 let ctx: ExtCtx | null = null
 
 async function attachNiiVue(): Promise<void> {
+  // This NiiVue version falls back only when the WebGPU API is absent, although
+  // browsers can expose the API without offering a usable adapter.
+  const adapter = navigator.gpu ? await navigator.gpu.requestAdapter().catch(() => null) : null
+  if (!adapter) nv.opts.backend = 'webgl2'
   await nv.attachTo('gl1')
   registerViewer('main', createNiivueAdapter(nv))
   nv.multiplanarType = MULTIPLANAR_TYPE.GRID
@@ -322,8 +324,7 @@ async function handleDrop(filesPromise: Promise<File[]>): Promise<void> {
 
 // --- Init ---
 async function init(): Promise<void> {
-  // attachTo() falls back from WebGPU to WebGL2, so it fails only when the
-  // browser offers neither, or its GPU is blocklisted for both.
+  // attachNiiVue() selects WebGL2 when no WebGPU adapter is available.
   const noGraphics =
     'This browser can’t start the image viewer. It needs WebGL2 or WebGPU; use a recent Chrome, Edge, Firefox or Safari.'
   try {
