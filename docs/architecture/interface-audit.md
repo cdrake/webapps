@@ -330,7 +330,5 @@ leaves these per-app changes open:
 
 - Deface, BrowserQC, EdgeReg, Greedy, ANTs and Brain2Print refuse to start
   without `navigator.gpu`, although every pinned NiiVue rc falls back to WebGL2.
-  Their catalog cards say "Needs WebGPU" until the checks are removed.
-- MuscleMap, VesselBoost, SeedSeg, CALMaR and NiiMath ship a command line that
-  `registry/standalone.json` does not list as a `cli` download.
+  Their catalog cards say "Needs WebGPU" until the checks are removed (#384).
 - SeedSeg has no built-in example.
