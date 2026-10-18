@@ -1,0 +1,17 @@
+# The noddi app's WebAssembly module: a plain C ABI over the dwi crates, no wasm-bindgen.
+# packages/noddi/src/wasm.js drives it; packages/noddi/scripts/build-wasm.sh builds it.
+[package]
+name = "noddi-wasm"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+dwi-gradients = { path = "../gradients" }
+dwi-tensor = { path = "../tensor" }
+dwi-amico = { path = "../amico" }

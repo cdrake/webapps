@@ -1,0 +1,15 @@
+[package]
+name = "dwi-amico"
+version.workspace = true
+edition.workspace = true
+license = "BSD-3-Clause"
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+dwi-gradients = { path = "../gradients" }
+dwi-tensor = { path = "../tensor" }
+libm = "0.2"
+
+[dev-dependencies]
+serde_json = "1"

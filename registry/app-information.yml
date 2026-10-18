@@ -1482,3 +1482,56 @@ apps:
         title: Prais-Winsten AR(1) prewhitening
         reference: "Prais SJ, Winsten CB. Trend Estimators and Serial Correlation. Cowles Commission Discussion Paper, Statistics No. 383. 1954."
         url: https://cowles.yale.edu/sites/default/files/2023-05/s-0383.pdf
+
+  noddi:
+    packages:
+      - name: AMICO 1.5.4 (Rust and WebAssembly port)
+        url: https://github.com/daducci/AMICO
+        role: NODDI fit, ported from the last BSD-licensed release
+      - name: MindGrab (brainchop)
+        url: https://github.com/neuroneural/brainchop
+        role: default brain extraction from the mean b0 on the GPU or CPU
+      - name: NiiVue
+        url: https://github.com/niivue/niivue
+        role: image viewer
+      - name: dcm2niix (WebAssembly)
+        url: https://github.com/rordenlab/dcm2niix
+        role: DICOM to NIfTI conversion
+    citations:
+      - group: Brain extraction
+        title: MindGrab
+        reference: "Fani A, Nassar M, Ghosh S, et al. MindGrab for BrainChop: fast and accurate skull stripping for command line and browser. arXiv. 2025."
+        url: https://arxiv.org/abs/2506.11860
+      - group: Brain extraction
+        title: Brainchop
+        reference: "Masoud M, Hu F, Plis S. Brainchop: in-browser MRI volumetric segmentation and rendering. Journal of Open Source Software. 2023;8(83):5098."
+        doi: 10.21105/joss.05098
+        code: https://github.com/neuroneural/brainchop
+      - group: Diffusion tensor fitting
+        title: Diffusion tensor imaging
+        reference: Basser PJ, Mattiello J, LeBihan D. MR diffusion tensor spectroscopy
+          and imaging. Biophysical Journal. 1994;66(1):259–267.
+        doi: 10.1016/S0006-3495(94)80775-1
+      - group: NODDI
+        title: NODDI
+        reference: "Zhang H, Schneider T, Wheeler-Kingshott CA, Alexander DC. NODDI:
+          practical in vivo neurite orientation dispersion and density imaging of the
+          human brain. NeuroImage. 2012;61(4):1000–1016."
+        doi: 10.1016/j.neuroimage.2012.03.072
+      - group: NODDI
+        title: AMICO
+        reference: "Daducci A, Canales-Rodríguez EJ, Zhang H, Dyrby TB, Alexander DC,
+          Thiran JP. Accelerated Microstructure Imaging via Convex Optimization (AMICO)
+          from diffusion MRI data. NeuroImage. 2015;105:32–44."
+        doi: 10.1016/j.neuroimage.2014.10.026
+        code: https://github.com/daducci/AMICO
+      - group: DICOM conversion
+        title: dcm2niix
+        reference: "Li X, Morgan PS, Ashburner J, Smith J, Rorden C. The first step for
+          neuroimaging data analysis: DICOM to NIfTI conversion. Journal of
+          Neuroscience Methods. 2016;264:47–56."
+        doi: 10.1016/j.jneumeth.2016.03.001
+      - group: Visualization
+        title: NiiVue
+        reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
+        url: https://github.com/niivue/niivue

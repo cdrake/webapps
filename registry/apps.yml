@@ -729,3 +729,23 @@ apps:
       browser_test: true
       hardware_gpu: true
       release: false
+  - id: noddi
+    path: noddi
+    title: NODDI
+    description: Diffusion tensor and NODDI maps from DWI in the browser.
+    categories: [diffusion-imaging]
+    keywords: [diffusion MRI, DTI, NODDI, AMICO, FA, ICVF, ODI, WebAssembly]
+    legacy_domain: null
+    runtime: vite-wasm
+    model_manifest: null
+    asset_manifest_schema: null
+    source: neurodesk/webapps@local
+    license: Apache-2.0 AND BSD-3-Clause
+    maintainers: [neurodesk]
+    support_status: experimental
+    shell: imaging-workspace
+    ci:
+      toolchains: [node]
+      shared_runtime: false
+      browser_test: true
+      release: false

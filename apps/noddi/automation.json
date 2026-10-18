@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 2,
+  "app": "noddi",
+  "title": "NODDI",
+  "description": "Diffusion tensor and NODDI (AMICO) maps from a DWI series.",
+  "defaultOperation": "fit",
+  "operations": {
+    "fit": {
+      "title": "Fit models",
+      "description": "Fit the diffusion tensor and, with two or more shells, NODDI inside a brain mask.",
+      "mode": "batch",
+      "inputs": {
+        "image": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "description": "The DWI series, as NIfTI or DICOM",
+          "minimum": 1
+        },
+        "bval": {
+          "source": "files",
+          "type": "neuro:gradients",
+          "formats": [
+            "bval",
+            "bvals"
+          ],
+          "description": "FSL b-values; required for NIfTI input",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "bvec": {
+          "source": "files",
+          "type": "neuro:gradients",
+          "formats": [
+            "bvec",
+            "bvecs"
+          ],
+          "description": "FSL gradient directions; required for NIfTI input",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "mask": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti"
+          ],
+          "description": "Optional brain mask on the DWI grid; replaces the MindGrab mask of the mean b0",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "parameters": {
+        "noddi": {
+          "type": "boolean",
+          "default": true,
+          "description": "Fit NODDI when the data has two or more shells"
+        },
+        "tensorFit": {
+          "type": "string",
+          "enum": [
+            "wls",
+            "ols"
+          ],
+          "default": "wls",
+          "description": "Tensor fit: weighted or ordinary least squares"
+        }
+      },
+      "artifacts": {
+        "tensor-fa": { "type": "neuro:volume", "mediaType": "application/gzip", "space": "input", "minimum": 1, "maximum": 1 },
+        "tensor-md": { "type": "neuro:volume", "mediaType": "application/gzip", "space": "input", "minimum": 1, "maximum": 1 },
+        "tensor-ad": { "type": "neuro:volume", "mediaType": "application/gzip", "space": "input", "minimum": 1, "maximum": 1 },
+        "tensor-rd": { "type": "neuro:volume", "mediaType": "application/gzip", "space": "input", "minimum": 1, "maximum": 1 },
+        "tensor-s0": { "type": "neuro:volume", "mediaType": "application/gzip", "space": "input", "minimum": 1, "maximum": 1 },
+        "tensor-direction": { "type": "neuro:volume", "mediaType": "application/gzip", "space": "input", "minimum": 1, "maximum": 1 },
+        "noddi-icvf": { "type": "neuro:volume", "mediaType": "application/gzip", "space": "input", "minimum": 0, "maximum": 1 },
+        "noddi-isovf": { "type": "neuro:volume", "mediaType": "application/gzip", "space": "input", "minimum": 0, "maximum": 1 },
+        "noddi-odi": { "type": "neuro:volume", "mediaType": "application/gzip", "space": "input", "minimum": 0, "maximum": 1 },
+        "noddi-direction": { "type": "neuro:volume", "mediaType": "application/gzip", "space": "input", "minimum": 0, "maximum": 1 },
+        "mask": { "type": "neuro:volume", "mediaType": "application/gzip", "space": "input", "minimum": 1, "maximum": 1 }
+      },
+      "engines": [
+        "browser"
+      ]
+    }
+  }
+}
