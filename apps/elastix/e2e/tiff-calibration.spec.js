@@ -20,7 +20,7 @@ for (const fixture of calibrationCases) {
     const buffer = omeTiffFixture(fixture);
     await page.goto("/");
     await expect(page.locator("#movingInput")).toBeEnabled();
-    for (const role of ["moving", "stationary"]) {
+    for (const role of ["fixed", "moving"]) {
       await page.locator(`#${role}Input`).setInputFiles({ name: "input.ome.tif", mimeType: "image/tiff", buffer });
       await expect(page.locator(`#${role}Info`)).toContainText("input.ome.tif", { timeout: 30000 });
     }

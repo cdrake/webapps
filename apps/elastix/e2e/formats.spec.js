@@ -122,7 +122,7 @@ test("local OME-TIFF files register and export calibrated float32 OME-TIFF", asy
   expect(output.direction).toEqual(new Float64Array([1, 0, 0, 1]));
   expect(Array.from(output.data)).toEqual(Array.from(registered.data));
   await page.locator("#movingInput").setInputFiles({ name: "moving_registered.ome.tif", mimeType: "image/tiff", buffer: tiff });
-  await expect(page.locator("#movingInfo")).toContainText("moving_registered.ome.tif · 128×128 float32");
+  await expect(page.locator("#movingInfo")).toContainText(/moving_registered\.ome\.tif · 128×128 · \S+ mm · float32/);
 });
 
 for (const [name, metadata, reason] of [
@@ -135,9 +135,9 @@ for (const [name, metadata, reason] of [
     await page.goto("/");
     await expect(page.locator("#movingInput")).toBeEnabled();
     await page.locator("#movingInput").setInputFiles({ name: "moving.ome.tif", mimeType: "image/tiff", buffer });
-    await expect(page.locator("#movingInfo")).toContainText("128×128 float32");
-    await page.locator("#stationaryInput").setInputFiles({ name: `${name}.ome.tif`, mimeType: "image/tiff", buffer });
-    await expect(page.locator("#stationaryInfo")).toContainText("128×128 float32");
+    await expect(page.locator("#movingInfo")).toContainText(/128×128 · \S+ mm · float32/);
+    await page.locator("#fixedInput").setInputFiles({ name: `${name}.ome.tif`, mimeType: "image/tiff", buffer });
+    await expect(page.locator("#fixedInfo")).toContainText(/128×128 · \S+ mm · float32/);
     await page.locator("#method").selectOption("rigid");
     await page.locator("#runButton").click();
     await expect(page.locator("#statusText")).toContainText("Registration complete", { timeout: 240_000 });
