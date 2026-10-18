@@ -1,3 +1,4 @@
+import { asyncCallback } from '../../utils/asyncCallback';
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { AlertTriangle, FileText, Image, GripVertical, List, Check, X } from 'lucide-react';
 import {
@@ -105,6 +106,7 @@ const UnifiedWorkspace: React.FC = () => {
   const [activeDragData, setActiveDragData] = useState<any>(null);
   const [activeDragWidth, setActiveDragWidth] = useState<number | null>(null);
   const [isOverDropZone, setIsOverDropZone] = useState(false);
+  const [dropError, setDropError] = useState<string | null>(null);
 
   // Track previous selection to exit edit mode when navigating away
   const previousSelectedId = useRef<string | null>(null);
@@ -250,6 +252,7 @@ const UnifiedWorkspace: React.FC = () => {
 
   // DnD handlers
   const handleDndDragStart = (event: DragStartEvent) => {
+    setDropError(null);
     setActiveDragId(event.active.id as string);
     setActiveDragData(event.active.data.current);
     // Capture the width of the dragged element for the overlay
@@ -290,22 +293,27 @@ const UnifiedWorkspace: React.FC = () => {
 
     // Handle drop from schema browser
     if (isFromSchemaBrowser && isValidTarget) {
-      if (dragData?.type === 'acquisition') {
-        const selection: AcquisitionSelection = dragData.selection;
-        await addFromSchema([selection], getSchemaContent, getUnifiedSchema);
-      } else if (dragData?.type === 'schema') {
-        // Add all acquisitions from schema
-        const content = await getSchemaContent(dragData.schemaId);
-        if (content) {
-          const schemaData = JSON.parse(content);
-          const selections: AcquisitionSelection[] = Object.keys(schemaData.acquisitions || {}).map((name, index) => ({
-            schemaId: dragData.schemaId,
-            acquisitionIndex: index,
-            schemaName: dragData.schemaName,
-            acquisitionName: name
-          }));
-          await addFromSchema(selections, getSchemaContent, getUnifiedSchema);
+      try {
+        if (dragData?.type === 'acquisition') {
+          const selection: AcquisitionSelection = dragData.selection;
+          await addFromSchema([selection], getSchemaContent, getUnifiedSchema);
+        } else if (dragData?.type === 'schema') {
+          // Add all acquisitions from schema
+          const content = await getSchemaContent(dragData.schemaId);
+          if (content) {
+            const schemaData = JSON.parse(content);
+            const selections: AcquisitionSelection[] = Object.keys(schemaData.acquisitions || {}).map((name, index) => ({
+              schemaId: dragData.schemaId,
+              acquisitionIndex: index,
+              schemaName: dragData.schemaName,
+              acquisitionName: name
+            }));
+            await addFromSchema(selections, getSchemaContent, getUnifiedSchema);
+          }
         }
+      } catch (err) {
+        console.error('Failed to add schema from drop:', err);
+        setDropError(`Failed to add schema: ${err instanceof Error ? err.message : String(err)}`);
       }
       return;
     }
@@ -391,12 +399,12 @@ const UnifiedWorkspace: React.FC = () => {
     <div className="max-w-7xl mx-auto">
       <ExampleInput />
       {/* Processing error */}
-      {processingError && (
+      {(processingError || dropError) && (
         <div className="mb-4 p-3 bg-status-error-bg border border-status-error/30 text-status-error rounded flex items-start">
           <AlertTriangle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
           <div>
             <p className="font-medium">Error</p>
-            <p className="text-sm mt-1">{processingError}</p>
+            <p className="text-sm mt-1">{processingError || dropError}</p>
           </div>
         </div>
       )}
@@ -407,7 +415,7 @@ const UnifiedWorkspace: React.FC = () => {
         collisionDetection={pointerWithin}
         onDragStart={handleDndDragStart}
         onDragOver={handleDndDragOver}
-        onDragEnd={handleDndDragEnd}
+        onDragEnd={asyncCallback('Drop failed', handleDndDragEnd)}
       >
         <div className="grid grid-cols-12 gap-6">
           {/* Left Sidebar */}
@@ -424,7 +432,7 @@ const UnifiedWorkspace: React.FC = () => {
                 setSchemaInfoTab(tab);
               }}
               onRemove={removeItem}
-              onReset={handleReset}
+              onReset={asyncCallback('Reset failed', handleReset)}
             />
           </div>
 
@@ -447,20 +455,20 @@ const UnifiedWorkspace: React.FC = () => {
               getSchemaContent={getSchemaContent}
               getUnifiedSchema={getUnifiedSchema}
               onSchemaToggle={handleSchemaFirstToggle}
-              onConfirmSchemas={confirmSchemaSelections}
-              onFileUpload={handleFileUpload}
-              onLargeFolderBrowse={handleLargeFolderBrowse}
+              onConfirmSchemas={asyncCallback('Confirm schema selections failed', confirmSchemaSelections)}
+              onFileUpload={asyncCallback('File upload failed', handleFileUpload)}
+              onLargeFolderBrowse={asyncCallback('Large folder browse failed', handleLargeFolderBrowse)}
               isLargeFolderSupported={isDirectoryPickerSupported}
               onCreateSchema={handleCreateSchema}
               onDetachCreatedSchema={handleDetachCreatedSchema}
               onToggleEditing={() => selectedId && toggleEditing(selectedId)}
-              onAttachData={handleAttachData}
-              onUploadSchemaForItem={handleUploadSchemaForItem}
+              onAttachData={asyncCallback('Attach data failed', handleAttachData)}
+              onUploadSchemaForItem={asyncCallback('Upload schema for item failed', handleUploadSchemaForItem)}
               onDetachData={handleDetachData}
               onDetachValidationData={handleDetachValidationData}
               onAttachSchema={() => setShowAttachSchemaModal(true)}
               onDetachSchema={handleDetachSchema}
-              onGenerateTestData={handleGenerateTestData}
+              onGenerateTestData={asyncCallback('Generate test data failed', handleGenerateTestData)}
               onRemove={() => selectedId && removeItem(selectedId)}
               onUpdateAcquisition={(updates) => selectedId && updateAcquisition(selectedId, updates)}
               onUpdateSchemaMetadata={(updates) => setSchemaMetadata({
@@ -470,8 +478,8 @@ const UnifiedWorkspace: React.FC = () => {
                 authors: updates.authors ?? schemaMetadata?.authors ?? [],
                 version: updates.version ?? schemaMetadata?.version ?? '1.0',
               })}
-              onSchemaReadmeClick={handleSchemaReadmeClick}
-              onAcquisitionReadmeClick={handleAcquisitionReadmeClick}
+              onSchemaReadmeClick={asyncCallback('Schema readme click failed', handleSchemaReadmeClick)}
+              onAcquisitionReadmeClick={asyncCallback('Acquisition readme click failed', handleAcquisitionReadmeClick)}
               onStagedCreateBlank={handleStagedCreateBlank}
               onStagedAttachSchema={handleStagedAttachSchema}
               matchingData={matchingData}
@@ -614,8 +622,8 @@ const UnifiedWorkspace: React.FC = () => {
               ? selectedItem.attachedData
               : undefined
         }
-        onSchemaReadmeClick={handleSchemaReadmeClick}
-        onAcquisitionReadmeClick={handleAcquisitionReadmeClick}
+        onSchemaReadmeClick={asyncCallback('Schema readme click failed', handleSchemaReadmeClick)}
+        onAcquisitionReadmeClick={asyncCallback('Acquisition readme click failed', handleAcquisitionReadmeClick)}
       />
 
       {/* README Modal */}

@@ -1,3 +1,4 @@
+import { asyncCallback } from '../utils/asyncCallback';
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import {
@@ -22,6 +23,9 @@ import { generateSchemaViewerPrintHtml, openPrintWindow, exportToPdf, isElectron
 import PrintOptionsModal from '../components/common/PrintOptionsModal';
 import { isVolumeUrl, isFlatImageUrl } from '../utils/imageHelpers';
 import { getSchemaDoi, doiUrl, SchemaDoiEntry } from '../utils/schemaDoi';
+import { copyText } from '../utils/clipboard';
+import { ActivityStatusFooter } from '../components/common/StatusFooter';
+import TechnicalLog from '../components/common/TechnicalLog';
 import ImageManagerModal from '../components/schema/ImageManagerModal';
 import VolumeThumbnail from '../components/common/VolumeThumbnail';
 import { log, logError } from '../utils/technicalLog';
@@ -187,7 +191,7 @@ const SchemaViewerPage: React.FC = () => {
       }
     };
 
-    loadSchema();
+    loadSchema().catch(error => logError('Load schema failed', error));
     return () => { cancelled = true; };
   }, [id, externalUrl, isCatalogMode, getUniversalSchemaContent]);
 
@@ -198,7 +202,7 @@ const SchemaViewerPage: React.FC = () => {
     if (id) {
       getSchemaDoi(id).then((entry) => {
         if (!cancelled) setDoi(entry);
-      });
+      }).catch(error => logError('Get schema DOI failed', error));
     }
     return () => { cancelled = true; };
   }, [id]);
@@ -254,7 +258,7 @@ const SchemaViewerPage: React.FC = () => {
       acquisitionNames,
     };
     sessionStorage.setItem('pendingSchemaImport', JSON.stringify(payload));
-    navigate('/');
+    Promise.resolve(navigate('/')).catch(error => logError('Navigate failed', error));
   };
 
   const handleDownload = () => {
@@ -269,10 +273,10 @@ const SchemaViewerPage: React.FC = () => {
     log(`Exported schema ${a.download}.`, 'success');
   };
 
-  const handleCopyDoi = () => {
+  const handleCopyDoi = async () => {
     const url = doiUrl(doi?.concept_doi);
     if (!url) return;
-    navigator.clipboard.writeText(url);
+    await copyText(url);
     setCopiedDoi(true);
     setTimeout(() => setCopiedDoi(false), 2000);
   };
@@ -307,6 +311,9 @@ const SchemaViewerPage: React.FC = () => {
           alert('Please allow popups to print the schema.');
         }
       }
+    } catch (err) {
+      console.error('Failed to print schema:', err);
+      alert(`Failed to generate report: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setPdfExporting(false);
       setShowPrintOptions(false);
@@ -314,9 +321,9 @@ const SchemaViewerPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-surface">
+    <div className="h-dvh flex flex-col overflow-hidden bg-surface">
       {/* Header */}
-      <header className="bg-surface-primary shadow-sm">
+      <header className="shrink-0 bg-surface-primary shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between">
           <div className="flex items-center">
             <Link to="/" className="flex items-center hover:opacity-80 transition-opacity">
@@ -402,10 +409,10 @@ const SchemaViewerPage: React.FC = () => {
       />
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="flex-1 min-h-0 overflow-y-auto w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Catalog mode — browse all schemas */}
         {isCatalogMode && (
-          <div className="h-[calc(100vh-130px)]">
+          <div className="h-full">
             {schemaService.isLoading ? (
               <div className="flex flex-col items-center justify-center py-24">
                 <Loader className="h-8 w-8 text-brand-600 animate-spin mb-4" />
@@ -417,11 +424,11 @@ const SchemaViewerPage: React.FC = () => {
                 uploadedSchemas={schemaService.uploadedSchemas}
                 selectionMode="acquisition"
                 expandable={true}
-                onAcquisitionSelect={(selectedId, acqIndex) => navigate(`/schema/${selectedId}?acq=${acqIndex}`)}
-                onOpenSchema={(selectedId) => navigate(`/schema/${selectedId}`)}
+                onAcquisitionSelect={asyncCallback('Acquisition select failed', (selectedId, acqIndex) => navigate(`/schema/${selectedId}?acq=${acqIndex}`))}
+                onOpenSchema={asyncCallback('Open schema failed', (selectedId) => navigate(`/schema/${selectedId}`))}
                 onSchemaUpload={async (file) => (await uploadSchema(file)).id}
                 getSchemaContent={schemaService.getSchemaContent}
-                maxHeight="calc(100vh - 150px)"
+                maxHeight="100%"
               />
             )}
           </div>
@@ -462,7 +469,7 @@ const SchemaViewerPage: React.FC = () => {
 
         {/* Detail mode — sidebar + detail pane layout */}
         {!isCatalogMode && !isLoading && !error && schemaData && (
-          <div className="grid grid-cols-12 gap-6 h-auto md:h-[calc(100vh-130px)]">
+          <div className="grid grid-cols-12 gap-6 h-auto md:h-full">
             {/* Left sidebar — navigation */}
             <div className="col-span-12 md:col-span-3 flex flex-col min-h-0 max-h-[50vh] md:max-h-none">
               <div className="bg-surface-primary rounded-lg border border-border shadow-sm flex flex-col h-full">
@@ -508,7 +515,7 @@ const SchemaViewerPage: React.FC = () => {
                   <div className="flex flex-wrap gap-2">
                     {doi && doi.concept_doi && (
                       <button
-                        onClick={handleCopyDoi}
+                        onClick={asyncCallback('Copy DOI failed', handleCopyDoi)}
                         className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs border border-border text-content-secondary hover:text-content-primary hover:bg-surface-secondary transition-colors"
                         title="Copy the schema's DOI (https://doi.org/…)"
                       >
@@ -777,11 +784,15 @@ const SchemaViewerPage: React.FC = () => {
           </div>
         )}
       </div>
+      <div className="shrink-0">
+        <TechnicalLog />
+        <ActivityStatusFooter />
+      </div>
       {/* Print Options Modal */}
       <PrintOptionsModal
         isOpen={showPrintOptions}
         onClose={() => setShowPrintOptions(false)}
-        onPrint={handlePrint}
+        onPrint={asyncCallback('Print failed', handlePrint)}
         isPrinting={pdfExporting}
         printLabel={isElectron() ? 'Export PDF' : 'Print'}
         availableSections={(() => {

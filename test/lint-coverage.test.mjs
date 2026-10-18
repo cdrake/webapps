@@ -32,12 +32,13 @@ test('every owned tracked source receives nonempty correctness rules', async () 
     'test/agentic/catalog.e2e.ts',
     'test-utils/agentic-browser.ts',
     'e2e.config.ts',
+    'apps/dicompare/src/App.tsx',
   ]) {
     assert.ok(files.includes(path), `${path} must be inventoried`);
   }
   assert.ok(files.length > 1500);
   // Rolled-out projects stay typed; see the inventory in docs/development/correctness-lint.md.
-  for (const name of ['zarro', 'deface', 'dwi2trx', 'browserqc', 'agentic']) assert.ok(typedPromiseProjects.some((project) => project.name === name), name);
+  for (const name of ['zarro', 'deface', 'dwi2trx', 'browserqc', 'agentic', 'dicompare']) assert.ok(typedPromiseProjects.some((project) => project.name === name), name);
   await assertCoverage(eslint, files);
 });
 

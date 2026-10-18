@@ -1,3 +1,4 @@
+import { logError } from '../../utils/technicalLog';
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, Plus, Search, ChevronDown, SlidersHorizontal } from 'lucide-react';
 import Modal from '../common/Modal';
@@ -17,11 +18,6 @@ export interface TestCase {
 }
 
 export type FieldDataType = 'string' | 'number' | 'list_string' | 'list_number';
-
-export interface FieldDefinition {
-  name: string;
-  dataType: FieldDataType;
-}
 
 export interface ValidationFunction {
   id: string;
@@ -112,7 +108,7 @@ const ValidationFunctionLibraryModal: React.FC<ValidationFunctionLibraryModalPro
           setFunctionsLoading(false);
         }
       };
-      loadFunctions();
+      loadFunctions().catch(error => logError('Load functions failed', error));
     }
   }, [isOpen, validationFunctions.length]);
 

@@ -1,3 +1,4 @@
+import { asyncCallback } from '../../utils/asyncCallback';
 import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { FileText, Edit2, Save, Database, X, Book, Printer, ImageIcon } from 'lucide-react';
 import { WorkspaceItem, ProcessingProgress, SchemaMetadata } from '../../contexts/WorkspaceContext';
@@ -181,7 +182,7 @@ const WorkspaceDetailPanel: React.FC<WorkspaceDetailPanelProps> = ({
         );
         setLoadedSchemaAcquisition(schemaAcq);
       };
-      loadSchemaAcquisition();
+      loadSchemaAcquisition().catch(error => logError('Load schema acquisition failed', error));
     } else {
       setLoadedSchemaAcquisition(null);
     }
@@ -239,14 +240,10 @@ const WorkspaceDetailPanel: React.FC<WorkspaceDetailPanelProps> = ({
 
   // Handle schema upload from the schema selector.
   // Returns the new schema's id so the selector can highlight/surface it.
+  // Errors propagate so the selector can show them to the user.
   const handleSchemaUpload = useCallback(async (file: File): Promise<string | null> => {
-    try {
-      const metadata = await uploadSchema(file);
-      return metadata.id;
-    } catch (error) {
-      console.error('Failed to upload schema:', error);
-      return null;
-    }
+    const metadata = await uploadSchema(file);
+    return metadata.id;
   }, [uploadSchema]);
 
   // State for PDF export status
@@ -344,7 +341,7 @@ const WorkspaceDetailPanel: React.FC<WorkspaceDetailPanelProps> = ({
         onConfirmSchemas={onConfirmSchemas}
         onSchemaReadmeClick={onSchemaReadmeClick}
         onAcquisitionReadmeClick={onAcquisitionReadmeClick}
-        onSchemaEdit={handleSchemaEdit}
+        onSchemaEdit={asyncCallback('Schema edit failed', handleSchemaEdit)}
         onSchemaUpload={handleSchemaUpload}
       />
     );
@@ -832,7 +829,7 @@ const WorkspaceDetailPanel: React.FC<WorkspaceDetailPanelProps> = ({
             onFieldUpdate={(fieldTag, updates) => workspace.updateField(selectedItem.id, fieldTag, updates)}
             onFieldConvert={(fieldTag, toLevel, mode) => workspace.convertFieldLevel(selectedItem.id, fieldTag, toLevel, mode)}
             onFieldDelete={(fieldTag) => workspace.deleteField(selectedItem.id, fieldTag)}
-            onFieldAdd={(fieldTags) => workspace.addFields(selectedItem.id, fieldTags)}
+            onFieldAdd={asyncCallback('Field add failed', (fieldTags) => workspace.addFields(selectedItem.id, fieldTags))}
             onSeriesUpdate={(seriesIndex, fieldTag, updates) => workspace.updateSeries(selectedItem.id, seriesIndex, fieldTag, updates)}
             onSeriesAdd={() => workspace.addSeries(selectedItem.id)}
             onSeriesDelete={(seriesIndex) => workspace.deleteSeries(selectedItem.id, seriesIndex)}
@@ -964,7 +961,7 @@ const WorkspaceDetailPanel: React.FC<WorkspaceDetailPanelProps> = ({
       <PrintOptionsModal
         isOpen={showPrintOptions}
         onClose={() => setShowPrintOptions(false)}
-        onPrint={handlePrintAcquisition}
+        onPrint={asyncCallback('Print acquisition failed', handlePrintAcquisition)}
         isPrinting={pdfExporting}
         printLabel={isElectron() ? 'Export PDF' : 'Print'}
         availableSections={(() => {
