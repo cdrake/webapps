@@ -1,0 +1,64 @@
+name: dwi-native
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/dwi-native.yml'
+      - '.github/actions/setup-wasm-opt/**'
+      - 'exes/dwi/**'
+      - 'packages/noddi/**'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/dwi-native.yml'
+      - '.github/actions/setup-wasm-opt/**'
+      - 'exes/dwi/**'
+      - 'packages/noddi/**'
+  workflow_dispatch:
+
+concurrency:
+  group: dwi-native-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  rust:
+    name: exes/dwi tests, clippy and format
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install 1.98.0 --profile minimal --component clippy,rustfmt
+      - name: Test
+        working-directory: exes/dwi
+        run: cargo +1.98.0 test --workspace --locked
+      - name: Clippy
+        working-directory: exes/dwi
+        run: cargo +1.98.0 clippy --workspace --all-targets --locked -- -D warnings
+      - name: Format
+        working-directory: exes/dwi
+        run: cargo +1.98.0 fmt --all --check
+
+  wasm-source:
+    name: committed noddi WASM equals a rebuild from source
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install 1.98.0 --profile minimal --target wasm32-unknown-unknown
+      - name: Set up wasm-opt
+        uses: ./.github/actions/setup-wasm-opt
+      - name: Rebuild and compare
+        run: bash packages/noddi/scripts/build-wasm.sh --check
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+      - name: Package tests on the committed module
+        working-directory: packages/noddi
+        run: node --test test/*.test.js

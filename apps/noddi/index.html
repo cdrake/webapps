@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NODDI — NeuroDesk</title>
+  </head>
+  <body>
+    <header id="controls">
+      <details class="nd-sidebar-section" id="inputSection" open>
+        <summary class="nd-section-title">Diffusion data</summary>
+        <div class="nd-section-content">
+          <div id="exampleControl"></div>
+          <label class="nd-file" id="dropZone">
+            <input id="imageInput" type="file" data-neurodesk-input="image" multiple aria-label="Choose DWI NIfTI with bval and bvec, or DICOM files" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span>Drop DWI NIfTI with bval and bvec, or DICOM</span>
+          </label>
+          <p id="fileInfo" class="nd-file-info" hidden></p>
+        </div>
+      </details>
+
+      <details class="nd-sidebar-section" id="taskSection" open>
+        <summary class="nd-section-title">Models</summary>
+        <div class="nd-section-content">
+          <label class="nd-check"><input id="fitNoddi" type="checkbox" checked disabled /> NODDI (AMICO)
+            <span class="nd-info-icon" tabindex="0" aria-label="About NODDI">i<span class="nd-info-tooltip">NODDI needs two or more non-zero b-value shells. The tensor maps are always made.</span></span>
+          </label>
+          <p id="noddiNote" class="nd-hint" hidden></p>
+          <details class="nd-sidebar-section" id="advancedSettings">
+            <summary class="nd-section-title">Advanced settings</summary>
+            <div class="nd-section-content">
+              <div class="nd-field">
+                <label for="tensorFit">Tensor fit
+                  <span class="nd-info-icon" tabindex="0" aria-label="About the tensor fit">i<span class="nd-info-tooltip">Weighted least squares weights each sample by its squared signal, as FSL dtifit -w does.</span></span>
+                </label>
+                <select id="tensorFit">
+                  <option value="wls" selected>Weighted least squares</option>
+                  <option value="ols">Ordinary least squares</option>
+                </select>
+              </div>
+              <div class="nd-field">
+                <label for="maskInput">Brain mask <small>optional</small>
+                  <span class="nd-info-icon" tabindex="0" aria-label="About the brain mask">i<span class="nd-info-tooltip">Without a mask, an Otsu threshold of the mean b0 selects the voxels to fit.</span></span>
+                </label>
+                <label class="nd-file" id="maskDrop">
+                  <input id="maskInput" type="file" data-neurodesk-input="image" multiple aria-label="Choose a brain mask" />
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  <span>Drop a mask on the DWI grid</span>
+                </label>
+                <p id="maskInfo" class="nd-file-info" hidden></p>
+              </div>
+            </div>
+          </details>
+          <button id="runButton" class="nd-btn nd-btn-primary" type="button" disabled>Fit models</button>
+        </div>
+      </details>
+
+      <details class="nd-sidebar-section" id="outputSection">
+        <summary class="nd-section-title">Output</summary>
+        <div class="nd-section-content">
+          <div id="resultList"></div>
+        </div>
+      </details>
+
+      <button id="aboutBtn" type="button" hidden>About</button>
+      <button id="privacyBtn" type="button" hidden>Privacy</button>
+    </header>
+
+    <main id="viewer">
+      <div class="nd-viewer-canvas-wrapper">
+        <canvas id="gl1" aria-label="Image viewer"></canvas>
+        <p id="emptyState" class="nd-viewer-empty">Drop a DWI with its bval and bvec anywhere, or choose an example.</p>
+      </div>
+      <div class="nd-viewer-info"><span id="location" class="nd-viewer-info-primary"></span></div>
+    </main>
+
+    <footer id="status">
+      <span class="nd-status-label">Status</span>
+      <span id="statusText" class="nd-status-text" role="status" aria-live="polite">Drag and drop files</span>
+      <span id="elapsed" class="nd-status-elapsed"></span>
+      <progress id="progress" max="1" value="0" aria-label="Fitting progress"></progress>
+      <button id="cancelButton" class="nd-btn-cancel" type="button" title="Cancel fitting" aria-label="Cancel fitting" hidden>×</button>
+    </footer>
+
+    <template id="aboutContent">
+      <p>NODDI fits diffusion tensor and NODDI maps to diffusion MRI in this browser. The tensor fit gives FA, MD, AD, RD, S0 and the principal direction from the b0 volumes and the shells up to b = 1200 s/mm² (the lowest shell when none is that low). NODDI, fitted with AMICO, gives the intra-cellular volume fraction (ICVF), the isotropic volume fraction (ISOVF) and the orientation dispersion index (ODI). It needs two or more shells. The NODDI fit is a port of AMICO 1.5.4 and agrees with it to a median of 1e-4 in white matter; AMICO 1.5.4 rounds each fibre direction to its 1° lookup table and this port does not. Outputs use the BIDS diffusion derivative names. Fit corrected data: this app does not denoise or correct motion, eddy currents or distortion.</p>
+    </template>
+    <template id="privacyContent"><p>Images are processed locally in this browser and are never uploaded.</p></template>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

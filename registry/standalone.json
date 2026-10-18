@@ -1537,6 +1537,13 @@
       "assets": [],
       "downloads": [],
       "containers": []
+    },
+    "noddi": {
+      "desktop": true,
+      "profile": "interactive",
+      "assets": [],
+      "downloads": [],
+      "containers": []
     }
   }
 }

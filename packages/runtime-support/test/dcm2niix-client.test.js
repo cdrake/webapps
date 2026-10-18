@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readImageFiles, readImageSeries, runDcm2niix } from '../src/dcm2niix-client/index.ts';
+import { readDiffusionSeries, readImageFiles, readImageSeries, runDcm2niix } from '../src/dcm2niix-client/index.ts';
 
 function file(name, text = '') {
   return new File([text], name);
@@ -117,4 +117,57 @@ test('readImageSeries honours an aborted signal before starting dcm2niix', async
     await assert.rejects(readImageSeries([file('IM0001')], { signal: controller.signal }), /stopped/);
   });
   assert.equal(calls.length, 0);
+});
+
+test('readDiffusionSeries pairs converted DWI with its bval, bvec and sidecar by stem', async () => {
+  const outputs = [
+    file('t1_2.nii'),
+    file('dwi_4.nii'),
+    file('dwi_4.json', JSON.stringify({ PhaseEncodingDirection: 'j-' })),
+    file('dwi_4.bval', '0 1000'),
+    file('dwi_4.bvec', '0 1\n0 0\n0 0'),
+  ];
+  const { result } = await withFakeWorker(outputs, () => readDiffusionSeries([file('IM0001')]));
+  assert.deepEqual(
+    result.map(({ image, bval, bvec, sidecar }) => [image.name, bval?.name ?? null, bvec?.name ?? null, sidecar]),
+    [
+      ['t1_2.nii', null, null, null],
+      ['dwi_4.nii', 'dwi_4.bval', 'dwi_4.bvec', { PhaseEncodingDirection: 'j-' }],
+    ],
+  );
+});
+
+test('readDiffusionSeries pairs one direct volume with differently named gradients', async () => {
+  const { result, calls } = await withFakeWorker([], () => readDiffusionSeries([
+    file('data.nii.gz'),
+    file('bvals.bval'),
+    file('bvecs.bvec'),
+  ]));
+  assert.deepEqual(
+    result.map(({ image, bval, bvec }) => [image.name, bval?.name, bvec?.name]),
+    [['data.nii.gz', 'bvals.bval', 'bvecs.bvec']],
+  );
+  assert.equal(calls.length, 0);
+});
+
+test('readDiffusionSeries takes FSL bvals and bvecs files, with or without a stem', async () => {
+  for (const [bval, bvec] of [['bvals', 'bvecs'], ['dwi.bvals', 'dwi.bvecs']]) {
+    const { result, calls } = await withFakeWorker([], () => readDiffusionSeries([
+      file('data.nii.gz'),
+      file(bval),
+      file(bvec),
+    ]));
+    assert.deepEqual(result.map(({ bval: b, bvec: v }) => [b?.name, v?.name]), [[bval, bvec]]);
+    assert.equal(calls.length, 0, `${bval} must not go to dcm2niix`);
+  }
+});
+
+test('readDiffusionSeries leaves gradients unpaired when several volumes make the match ambiguous', async () => {
+  const { result } = await withFakeWorker([], () => readDiffusionSeries([
+    file('a.nii'),
+    file('b.nii'),
+    file('grad.bval'),
+    file('grad.bvec'),
+  ]));
+  assert.deepEqual(result.map(({ bval, bvec }) => [bval, bvec]), [[null, null], [null, null]]);
 });
