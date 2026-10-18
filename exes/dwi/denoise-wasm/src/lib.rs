@@ -89,8 +89,8 @@ pub unsafe extern "C" fn gram_accumulate(
 }
 
 /// Writes the coefficients of a group of `n` volumes from its Gram matrix. Returns 0 on success,
-/// -1 when the Gram matrix holds no voxel or `n < 2`, and `k + 1` when the other volumes of
-/// group position `k` are linearly dependent.
+/// -1 when the Gram matrix holds no voxel or `n < 2`, -2 when the data holds NaN or infinity,
+/// and `k + 1` when the other volumes of group position `k` are linearly dependent.
 ///
 /// # Safety
 /// `gram` must address `gram_length(n)` and `coefficients` `coefficients_length(n)` f64 values.
@@ -111,6 +111,7 @@ pub unsafe extern "C" fn solve_coefficients(
             0
         }
         Err(SolveError::Empty) => -1,
+        Err(SolveError::NotFinite) => -2,
         Err(SolveError::Dependent { target }) => target as i32 + 1,
     }
 }

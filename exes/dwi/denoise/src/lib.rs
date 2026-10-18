@@ -189,6 +189,8 @@ fn dot(a: &[f64], b: &[f64]) -> f64 {
 pub enum SolveError {
     /// The Gram matrix holds no voxel.
     Empty,
+    /// The data holds a value that is not a finite number (NaN or infinity).
+    NotFinite,
     /// The other volumes of group position `target` are linearly dependent (for example, two
     /// identical volumes), so their least-squares weights are not defined.
     Dependent { target: usize },
@@ -198,6 +200,10 @@ impl std::fmt::Display for SolveError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             SolveError::Empty => write!(f, "The data has no voxels."),
+            SolveError::NotFinite => write!(
+                f,
+                "The data holds values that are not finite numbers (NaN or infinity)."
+            ),
             SolveError::Dependent { target } => write!(
                 f,
                 "Patch2Self cannot predict group volume {target}: the other volumes of its group \
@@ -223,6 +229,9 @@ pub fn solve(gram: &[f64], n: usize) -> Result<Vec<f64>, SolveError> {
             gram[k * m + i]
         }
     };
+    if gram.iter().any(|v| !v.is_finite()) {
+        return Err(SolveError::NotFinite);
+    }
     let count = upper(n, n);
     if count <= 0.0 {
         return Err(SolveError::Empty);

@@ -37,6 +37,7 @@ Storage is f32 or f64 (`Sample`); the computation is always f64.
 - **Post-processing.** DIPY's default `shift_intensity=True` adds `min - min`, which is zero, so it does nothing. `clip_negative_vals` is false by default. The port does neither, so negative predictions stay.
 - **b0 rule.** The groups use the shared `dwi_gradients::B0_THRESHOLD` rule: b < 50 s/mm² is b0. DIPY takes b <= 50 as b0, so the two differ only for a volume at exactly b = 50.
 - **Singular regressions.** When the other volumes of a group are linearly dependent (for example, two identical volumes), a Cholesky pivot is below 1e-10 of its diagonal entry and `solve` returns an error that names the volume. scikit-learn then changes to its SVD solver. Measured noise never makes volumes dependent, so this applies only to synthetic or damaged data.
+- **Values that are not finite.** A NaN or an infinity in a group's volumes makes `solve` return an error, as scikit-learn's input check does in DIPY.
 
 ## Tests
 

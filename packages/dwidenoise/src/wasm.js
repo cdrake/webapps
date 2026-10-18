@@ -114,6 +114,7 @@ export async function loadDwidenoise(source) {
       withF64(length, null, (ptr) => {
         const status = wasm.solve_coefficients(g, n, ptr);
         if (status === -1) throw new Error("The data has no voxels.");
+        if (status === -2) throw new Error("The data holds values that are not finite numbers (NaN or infinity).");
         if (status > 0) {
           throw new Error(
             `Patch2Self cannot predict volume ${group[status - 1]}: the other volumes of its group are linearly dependent (for example, two identical volumes).`,

@@ -65,6 +65,13 @@ test("linearly dependent volumes are refused with the volume named", () => {
   assert.throws(() => p2s.denoiseArray(data, nvox, [0, 1000, 1000, 1000]), /predict volume 3: .*linearly dependent/);
 });
 
+test("values that are not finite are refused", () => {
+  const c = fixture.cases[0];
+  const data = Float32Array.from(c.input);
+  data[nvoxOf(c) + 3] = NaN;
+  assert.throws(() => p2s.denoiseArray(data, nvoxOf(c), c.bvals), /not finite numbers/);
+});
+
 test("partial Gram sums of voxel ranges add up to one pass, and chunked runs equal one run", () => {
   const c = fixture.cases.find((x) => x.name === "two_b0");
   const nvox = nvoxOf(c);

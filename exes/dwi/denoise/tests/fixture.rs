@@ -143,6 +143,15 @@ fn linearly_dependent_volumes_are_refused() {
     assert!(err.contains("linearly dependent"), "{err}");
 }
 
+#[test]
+fn values_that_are_not_finite_are_refused() {
+    let case = cases().into_iter().next().unwrap();
+    let mut data = case.input.clone();
+    data[case.nvox + 3] = f64::NAN;
+    let err = denoise(&mut data, case.nvox, &case.bvals).unwrap_err();
+    assert!(err.contains("not finite"), "{err}");
+}
+
 /// The Gram sums of separate voxel ranges add up to one pass, whether the ranges are views of
 /// the whole array or independent volume-major buffers, and applying in chunks gives the same
 /// output. The partial sums round in a different order, so the comparison has a tolerance.
