@@ -4,6 +4,9 @@ import { computeOtsuThreshold } from "@neurodesk/webapp-components/volume";
 /** The b0 volumes of a series (b < 50 s/mm²), or every volume of a series without b-values. */
 export function b0Volumes(bvals, frames) {
   if (!bvals) return Array.from({ length: frames }, (_, i) => i);
+  if (!bvals.every((value) => Number.isFinite(value) && value >= 0)) {
+    throw new Error("The bval file must contain finite non-negative b-values.");
+  }
   const b0 = bvals.map((b, i) => (b < 50 ? i : -1)).filter((i) => i >= 0);
   if (!b0.length) throw new Error("The bval file lists no b0 volume (b < 50 s/mm²) to estimate the bias field from.");
   return b0;
@@ -35,7 +38,8 @@ export function splitName(fileName) {
 
 /** Derivative names for the corrected image, the bias field, the mask and passed-through files. */
 export function outputNames(fileName) {
-  const [stem, suffix] = splitName(fileName);
+  const [originalStem, suffix] = splitName(fileName);
+  const stem = originalStem.split("_").filter((entity) => !entity.startsWith("desc-")).join("_");
   const base = suffix ? `${stem}_desc-n4_${suffix}` : `${stem}_desc-n4`;
   return {
     image: `${base}.nii.gz`,

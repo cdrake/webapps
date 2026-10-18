@@ -91,9 +91,12 @@ async function showVolume(file) {
   $("emptyState").hidden = true;
 }
 
-async function gzipFile(buffer, name) {
+async function gzipFile(buffer, name, signal) {
+  signal?.throwIfAborted();
   const stream = new Blob([buffer]).stream().pipeThrough(new CompressionStream("gzip"));
-  return new File([await new Response(stream).arrayBuffer()], name, { type: "application/gzip" });
+  const bytes = await new Response(stream).arrayBuffer();
+  signal?.throwIfAborted();
+  return new File([bytes], name, { type: "application/gzip" });
 }
 
 function clearOutputs() {
@@ -118,9 +121,11 @@ async function loadFiles(filesPromise, signal) {
   loading = controller;
   setBusy(true);
   progress.begin("Reading image…");
+  progress.setCancellable(true);
   status("Reading image…");
   try {
-    const series = await readDiffusionSeries(await filesPromise, { signal: controller.signal });
+    const files = await filesPromise;
+    const series = await readDiffusionSeries(files, { signal: controller.signal, anonymizeSidecar: true });
     controller.signal.throwIfAborted();
     if (series.length !== 1) throw new Error(`Choose one image; this selection has ${series.length}.`);
     const [{ image, bval, bvec, sidecar }] = series;
@@ -132,13 +137,18 @@ async function loadFiles(filesPromise, signal) {
       throw new Error(`${image.name} has ${frames.frames} volumes but the bval file lists ${bvals.length}.`);
     }
     const reference = b0Volumes(bvals, frames.frames);
+    controller.signal.throwIfAborted();
+    await showVolume(new File([buffer], image.name.replace(/\.gz$/i, "")));
+    controller.signal.throwIfAborted();
     input = { name: image.name, buffer, ...frames, bval, bvec, sidecar, bvals, reference };
     mask = null;
+    $("imageInput").dispatchEvent(new CustomEvent("nd-files", { bubbles: true, detail: { files } }));
+    $("maskInput").dispatchEvent(new CustomEvent("nd-files", { bubbles: true, detail: { files: [] } }));
     $("maskInfo").hidden = true;
     $("maskDrop").classList.remove("has-files");
     clearOutputs();
     $("fileInfo").hidden = false;
-    $("fileInfo").textContent = `${image.name} · ${frames.dims.join("×")}${frames.frames > 1 ? `×${frames.frames}` : ""}${bval ? " · bval, bvec" : ""}`;
+    $("fileInfo").textContent = `${image.name} · ${frames.dims.join("×")}${frames.frames > 1 ? `×${frames.frames}` : ""}${bval || bvec ? ` · ${[bval && "bval", bvec && "bvec"].filter(Boolean).join(", ")}` : ""}`;
     $("dropZone").classList.add("has-files");
     $("modeNote").hidden = false;
     $("modeNote").textContent = bvals
@@ -148,7 +158,6 @@ async function loadFiles(filesPromise, signal) {
       : frames.frames > 1
         ? `No bval: the field is fitted to the mean of all ${frames.frames} volumes.`
         : "3D image: N4 corrects it directly.";
-    await showVolume(new File([buffer], image.name.replace(/\.gz$/i, "")));
     progress.setProgress(0);
     status(`${image.name} loaded`);
   } finally {
@@ -160,20 +169,43 @@ async function loadFiles(filesPromise, signal) {
   }
 }
 
-async function loadMask(file) {
+async function loadMask(file, signal) {
+  signal?.throwIfAborted();
   if (!input) throw new Error("Load the image before its mask.");
-  const buffer = await decodeNiftiBuffer(await file.arrayBuffer());
-  if (!sameNiftiGrid(buffer, input.buffer)) throw new Error(`${file.name} is not on the image grid.`);
-  mask = Uint8Array.from(readNiftiImageData(buffer).data, (value) => (value > 0 ? 1 : 0));
-  clearOutputs();
-  $("maskInfo").hidden = false;
-  $("maskInfo").textContent = `${file.name} · ${mask.reduce((sum, v) => sum + v, 0)} voxels`;
-  $("maskDrop").classList.add("has-files");
-  status(`${file.name} will weight the fit`);
+  if (loading || running) throw new Error("Wait for the current operation to finish, or cancel it.");
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  signal?.addEventListener("abort", abort, { once: true });
+  loading = controller;
+  setBusy(true);
+  progress.begin("Reading mask…");
+  progress.setCancellable(true);
+  status("Reading mask…");
+  try {
+    const buffer = await decodeNiftiBuffer(await file.arrayBuffer());
+    controller.signal.throwIfAborted();
+    if (!sameNiftiGrid(buffer, input.buffer)) throw new Error(`${file.name} is not on the image grid.`);
+    const volume = readNiftiFrames(buffer);
+    if (volume.frames !== 1) throw new Error("The brain mask must be a single 3D image.");
+    mask = Uint8Array.from(volume.data, (value) => (value > 0 ? 1 : 0));
+    $("maskInput").dispatchEvent(new CustomEvent("nd-files", { bubbles: true, detail: { files: [file] } }));
+    clearOutputs();
+    $("maskInfo").hidden = false;
+    $("maskInfo").textContent = `${file.name} · ${mask.reduce((sum, v) => sum + v, 0)} voxels`;
+    $("maskDrop").classList.add("has-files");
+    status(`${file.name} will weight the fit`);
+  } finally {
+    signal?.removeEventListener("abort", abort);
+    loading = null;
+    setBusy(false);
+    progress.stopTimer();
+    progress.setCancellable(false);
+  }
 }
 
 /** Runs N4 in a worker; aborting terminates it. */
 function runN4(image, weight, signal) {
+  signal?.throwIfAborted();
   return new Promise((resolve, reject) => {
     const worker = new Worker(new URL("./worker.js", import.meta.url), { type: "module" });
     const stop = (error) => {
@@ -195,6 +227,7 @@ function runN4(image, weight, signal) {
 }
 
 async function correct(signal) {
+  signal?.throwIfAborted();
   if (!input || loading || running) throw new Error("Load an image before correcting it.");
   const controller = new AbortController();
   const abort = () => controller.abort();
@@ -215,6 +248,7 @@ async function correct(signal) {
       createNiftiFromData(brain, input.buffer, { dims: input.dims }),
       controller.signal,
     );
+    controller.signal.throwIfAborted();
     const correctedReference = readNiftiImageData(corrected).data;
     let field = readNiftiImageData(bias).data;
     let image;
@@ -230,22 +264,21 @@ async function correct(signal) {
     const names = outputNames(input.name);
     const dims = input.frames > 1 ? [...input.dims, input.frames] : input.dims;
     const rows = {
-      image: { description: "Corrected image", file: await gzipFile(createNiftiFromData(Float32Array.from(image), input.buffer, { dims }), names.image) },
-      bias: { description: "Bias field", file: await gzipFile(createNiftiFromData(Float32Array.from(field), input.buffer, { dims: input.dims }), names.bias) },
-      mask: { description: "Brain mask", file: await gzipFile(createNiftiFromData(brain, input.buffer, { dims: input.dims }), names.mask) },
+      image: { description: "Corrected image", file: await gzipFile(createNiftiFromData(Float32Array.from(image), input.buffer, { dims }), names.image, controller.signal) },
+      bias: { description: "Bias field", file: await gzipFile(createNiftiFromData(Float32Array.from(field), input.buffer, { dims: input.dims }), names.bias, controller.signal) },
+      mask: { description: "Brain mask", file: await gzipFile(createNiftiFromData(brain, input.buffer, { dims: input.dims }), names.mask, controller.signal) },
     };
-    if (input.bval && input.bvec) {
-      rows.bval = { description: "b-values (unchanged)", file: new File([input.bval], names.bval), viewable: false };
-      rows.bvec = { description: "b-vectors (unchanged)", file: new File([input.bvec], names.bvec), viewable: false };
-    }
+    if (input.bval) rows.bval = { description: "b-values (unchanged)", file: new File([input.bval], names.bval), viewable: false };
+    if (input.bvec) rows.bvec = { description: "b-vectors (unchanged)", file: new File([input.bvec], names.bvec), viewable: false };
     if (input.sidecar) {
       const sidecar = { ...input.sidecar, Description: "Bias-field correction with ANTs N4 (MRtrix dwibiascorrect ants procedure)" };
       rows.sidecar = { description: "Sidecar", file: new File([`${JSON.stringify(sidecar, null, 2)}\n`], names.sidecar, { type: "application/json" }), viewable: false };
     }
+    await showVolume(rows.image.file);
+    controller.signal.throwIfAborted();
     outputs = rows;
     results.render(rows);
     $("outputSection").open = true;
-    await showVolume(rows.image.file);
     progress.end("Bias field corrected");
     status("Bias field corrected");
     return {
@@ -313,7 +346,7 @@ registerAppAutomation({
     correct: async ({ inputs, inputDetails, signal }) => {
       const sidecars = inputDetails.image?.sidecars ?? [];
       await loadFiles(Promise.resolve([...inputs.image, ...sidecars, ...(inputs.bval ?? []), ...(inputs.bvec ?? [])]), signal);
-      if (inputs.mask?.length) await loadMask(inputs.mask[0]);
+      if (inputs.mask?.length) await loadMask(inputs.mask[0], signal);
       return correct(signal);
     },
   },

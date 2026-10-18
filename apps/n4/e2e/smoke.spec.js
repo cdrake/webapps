@@ -6,6 +6,7 @@ import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
 import { readNiftiFrames } from "@neurodesk/webapp-components/file-io";
 import { biasedSeries, tissueVariation } from "./fixtures.mjs";
+import { dicomSeries } from "../../../test-utils/dicom-fixture.mjs";
 
 const examples = JSON.parse(readFileSync(new URL("../examples.json", import.meta.url), "utf8"));
 const imageUrl = examples[0].files.find((file) => file.role === "image").url;
@@ -162,4 +163,90 @@ test("the automation operation returns the corrected image, field and mask", asy
   const report = await page.evaluate(async () => (await globalThis.neurodeskAutomation.dispatch("snapshot")).report);
   expect(report.provenance.procedure).toBe("mrtrix-dwibiascorrect-ants");
   expect(Object.keys(report.artifacts).sort()).toEqual(["bias", "bval", "bvec", "image", "mask"]);
+});
+
+test("cancelling while results are compressed does not publish downloads", async ({ page }) => {
+  test.setTimeout(120000);
+  await page.goto("/");
+  await page.locator("#imageInput").setInputFiles(biasedSeries().files);
+  await expect(page.locator("#runButton")).toBeEnabled();
+  await page.evaluate(() => {
+    const NativeCompressionStream = CompressionStream;
+    const gate = new Promise((resolve) => { window.finishPacking = resolve; });
+    window.CompressionStream = class {
+      constructor(format) {
+        const stream = new NativeCompressionStream(format);
+        return {
+          writable: stream.writable,
+          readable: stream.readable.pipeThrough(new TransformStream({
+            async transform(chunk, controller) {
+              window.packingStarted = true;
+              await gate;
+              controller.enqueue(chunk);
+            },
+          })),
+        };
+      }
+    };
+  });
+  await page.locator("#runButton").click();
+  await page.waitForFunction(() => window.packingStarted === true, null, { timeout: 90000 });
+  await page.locator("#cancelButton").click();
+  await page.evaluate(() => window.finishPacking());
+  await expect(page.locator("#statusText")).toHaveText("Cancelled");
+  await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(0);
+  await expect(page.locator("#runButton")).toBeEnabled();
+});
+
+test("a cancelled mask import keeps correction from racing the mask read", async ({ page }) => {
+  await page.goto("/");
+  await page.locator("#imageInput").setInputFiles(biasedSeries().files);
+  await expect(page.locator("#runButton")).toBeEnabled();
+  await page.locator("#advancedSettings summary").click();
+  await page.evaluate(() => {
+    const read = File.prototype.arrayBuffer;
+    File.prototype.arrayBuffer = function () {
+      if (this.name !== "brain_mask.nii.gz") return read.call(this);
+      return new Promise((resolve, reject) => {
+        window.finishMaskRead = () => read.call(this).then(resolve, reject);
+      });
+    };
+  });
+  const mask = { ...biasedSeries({ frames: 1, bvals: [0] }).files[0], name: "brain_mask.nii.gz" };
+  await page.locator("#maskInput").setInputFiles(mask);
+  await page.waitForFunction(() => typeof window.finishMaskRead === "function");
+  await expect(page.locator("#runButton")).toBeDisabled();
+  await page.locator("#cancelButton").click();
+  await page.evaluate(() => window.finishMaskRead());
+  await expect(page.locator("#statusText")).toHaveText("Cancelled");
+  await expect(page.locator("#maskInfo")).toBeHidden();
+  await expect(page.locator("#runButton")).toBeEnabled();
+});
+
+
+test("b-values are preserved when gradient directions are absent", async ({ page }) => {
+  await page.goto("/");
+  const files = biasedSeries().files.filter((file) => !file.name.endsWith(".bvec"));
+  await page.locator("#imageInput").setInputFiles(files);
+  await expect(page.locator("#modeNote")).toHaveText("DWI: the field is fitted to the mean of 2 b0 volumes.");
+  await page.locator("#runButton").click();
+  await expect(page.locator("#statusText")).toHaveText("Bias field corrected", { timeout: 90000 });
+  const bval = await download(page, "b-values");
+  expect(readFileSync(await bval.path(), "utf8")).toBe("0 1000 0");
+  await expect(page.locator("#resultList .nd-volume-toggle").filter({ hasText: "b-vectors" })).toHaveCount(0);
+});
+
+
+test("DICOM correction downloads an anonymized sidecar", async ({ page }) => {
+  test.setTimeout(120000);
+  await page.goto("/");
+  await page.locator("#imageInput").setInputFiles(dicomSeries({ slices: 16, patient: { birthDate: "19800102" } }));
+  await expect(page.locator("#fileInfo")).toContainText(".nii", { timeout: 60000 });
+  await page.locator("#runButton").click();
+  await expect(page.locator("#statusText")).toHaveText("Bias field corrected", { timeout: 60000 });
+  const event = await download(page, "Sidecar");
+  const sidecar = JSON.parse(readFileSync(await event.path(), "utf8"));
+  expect(sidecar.EchoTime).toBe(0.02);
+  expect(sidecar).not.toHaveProperty("PatientName");
+  expect(sidecar).not.toHaveProperty("PatientBirthDate");
 });

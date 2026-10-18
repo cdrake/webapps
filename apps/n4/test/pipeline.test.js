@@ -6,6 +6,9 @@ test("the bias field comes from the b0 volumes, or every volume without b-values
   assert.deepEqual(b0Volumes([0, 1000, 5, 2000], 4), [0, 2]);
   assert.deepEqual(b0Volumes(null, 3), [0, 1, 2]);
   assert.throws(() => b0Volumes([1000, 2000], 2), /no b0 volume/);
+  for (const value of [-1, NaN, Infinity]) {
+    assert.throws(() => b0Volumes([0, value], 2), /finite non-negative/);
+  }
 });
 
 test("the mean and Otsu mask separate tissue from background", () => {
@@ -24,4 +27,16 @@ test("derivative names keep the BIDS suffix", () => {
     sidecar: "sub-01_dir-AP_desc-n4_dwi.json",
   });
   assert.equal(outputNames("t1.nii").image, "t1_desc-n4.nii.gz");
+});
+
+
+test("derivative names replace a previous description entity", () => {
+  assert.deepEqual(outputNames("sub-01_desc-denoise_dwi.nii.gz"), {
+    image: "sub-01_desc-n4_dwi.nii.gz",
+    bias: "sub-01_desc-n4_biasfield.nii.gz",
+    mask: "sub-01_desc-brain_mask.nii.gz",
+    bval: "sub-01_desc-n4_dwi.bval",
+    bvec: "sub-01_desc-n4_dwi.bvec",
+    sidecar: "sub-01_desc-n4_dwi.json",
+  });
 });
