@@ -118,6 +118,8 @@ for (const example of examples) {
 
 for (const failure of ["download", "empty image"]) {
   test(`a failed ${failure} can retry the same example`, async ({ page }) => {
+    // The retry downloads the real example, which can take longer than the 30 s default.
+    test.setTimeout(150000);
     const example = examples[0];
     let attempts = 0;
     await page.context().route(dwiUrl, (route) => {
@@ -139,6 +141,7 @@ for (const failure of ["download", "empty image"]) {
 }
 
 test("cancelling during image reading prevents a late commit and permits retry", async ({ page }) => {
+  test.setTimeout(150000);
   const example = examples[0];
   await page.goto("/");
   await page.evaluate(() => {
