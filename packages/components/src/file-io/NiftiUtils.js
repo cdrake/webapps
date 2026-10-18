@@ -341,6 +341,11 @@ function createTypedNifti(data, sourceHeader, options) {
     view.setInt16(42, options.dims[0], littleEndian);
     view.setInt16(44, options.dims[1], littleEndian);
     view.setInt16(46, options.dims[2], littleEndian);
+    // A fourth entry is a frame count: a vector or multi-volume map, frames after one another.
+    if (options.dims.length > 3 && options.dims[3] > 1) {
+      view.setInt16(40, 4, littleEndian);
+      view.setInt16(48, options.dims[3], littleEndian);
+    }
   }
 
   writeTypedData(view, headerSize, data, options.datatype, littleEndian);

@@ -113,6 +113,18 @@ test('reads every frame of a 4D NIfTI with its scaling', () => {
   assert.deepEqual(Array.from(readNiftiImageData(output, Float64Array).data), [1, 3]);
 });
 
+test('writes a 4D map when dims name a frame count, and a 3D one from a 4D source otherwise', () => {
+  const source = createNiftiHeaderFromVolume({ hdr: { dims: [4, 2, 1, 1, 5, 1, 1, 1] } });
+  const vectors = createNiftiFromData(new Float32Array([1, 0, 0, 1, 0, 0]), source, { dims: [2, 1, 1, 3] });
+  const parsed = parseNiftiHeader(vectors);
+  assert.deepEqual(parsed.dims.slice(0, 5), [4, 2, 1, 1, 3]);
+  const { data, frames } = readNiftiFrames(vectors);
+  assert.equal(frames, 3);
+  assert.deepEqual(Array.from(data), [1, 0, 0, 1, 0, 0]);
+  const scalar = parseNiftiHeader(createNiftiFromData(new Float32Array([1, 2]), source));
+  assert.deepEqual(scalar.dims.slice(0, 5), [3, 2, 1, 1, 1]);
+});
+
 test('resets source scaling when writing newly derived voxel data', () => {
   const sourceHeader = createNiftiHeaderFromVolume({
     hdr: { dims: [3, 1, 1, 1], scl_slope: 2, scl_inter: 10 },
