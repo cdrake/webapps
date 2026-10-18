@@ -1,5 +1,21 @@
 # noddi
 
+## 0.3.20261018
+
+### Minor Changes
+
+- NODDI now extracts a MindGrab brain mask from the mean b0 before fitting when no mask is supplied. The shared MindGrab runtime exposes brain-mask extraction with its existing backend selection and cancellation support. The app stages the pinned model runtimes locally for offline use; a supplied mask still bypasses extraction.
+
+### Patch Changes
+
+- 870c729: NODDI's About and Cite dialogs now credit MindGrab and Brainchop for the default brain mask. Browser checks verify worker cleanup when MindGrab extraction is cancelled and a complete retry with the real example.
+- Updated dependencies
+- Updated dependencies [46935f7]
+  - @neurodesk/runtime-support@0.9.0
+  - @neurodesk/webapp-components@0.16.1
+  - @neurodesk/dwi2trx@0.5.20261018
+  - @neurodesk/noddi@0.3.20261018
+
 ## 0.2.20261018
 
 ### Minor Changes

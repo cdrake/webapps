@@ -24,6 +24,12 @@
 
 ### Patch Changes
 
+- 46935f7: Serialize example imports and file replacements so a cancelled image rollback finishes before the next load. Restore the primary picker when file actions are disabled and stream compressed NIfTI headers for image summaries. Tighten the ANTs example checks so "not brain extracted" cannot pass as "brain extracted".
+- Updated dependencies
+- Updated dependencies [46935f7]
+  - @neurodesk/runtime-support@0.9.0
+  - @neurodesk/webapp-components@0.16.1
+  - @neurodesk/ants@0.5.20261018
 - Updated dependencies [ea2a6d2]
 - Updated dependencies [0511cd7]
 - Updated dependencies [a07f659]

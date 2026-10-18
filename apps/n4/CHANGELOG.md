@@ -10,6 +10,12 @@
 
 ### Patch Changes
 
+- Updated dependencies
+- Updated dependencies [46935f7]
+  - @neurodesk/runtime-support@0.9.0
+  - @neurodesk/webapp-components@0.16.1
+  - @neurodesk/dwi2trx@0.5.20261018
+  - @neurodesk/n4@0.2.20261018
 - 4e3015f: Keep cancellation effective during mask import and output compression, and publish downloads only after processing and viewing finish. Preserve independently supplied gradient files, reject invalid b-values and multi-volume masks, replace existing BIDS description entities, report loaded files to the shared input controls, and anonymize converted DICOM sidecars.
 
   Register NODDI, Degibbs and N4 with the release tool so their apps, scientific packages and embedded version strings receive matching date versions. Their shared Rust diffusion workspace retains its own internal version.

@@ -2,5 +2,5 @@
 // without a browser (see test/config.test.js).
 export const APP = Object.freeze({
   id: "noddi",
-  version: "0.2.20261018",
+  version: "0.3.20261018",
 });
