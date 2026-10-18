@@ -48,7 +48,7 @@
           "formats": [
             "nifti"
           ],
-          "description": "Optional brain mask on the DWI grid; replaces the mean-b0 Otsu mask",
+          "description": "Optional brain mask on the DWI grid; replaces the MindGrab mask of the mean b0",
           "minimum": 0,
           "maximum": 1
         }

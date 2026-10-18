@@ -31,3 +31,15 @@ export const mindgrab = Object.freeze({
   segment: (input, options) => runInWorker(input, false, options),
   segmentTissues: (input, options) => runInWorker(input, true, options),
 });
+
+/**
+ * A brain mask of one 3D NIfTI image (e.g. a mean b0) on the image's own grid, from MindGrab's
+ * `mindgrab` model. Returns `{ mask, backend }` with `mask` as uncompressed NIfTI bytes.
+ * `options` takes `assetPath` (required), `backend` (default `auto`) and `signal`.
+ */
+export async function brainMask(input, { assetPath, backend = 'auto', signal } = {}) {
+  if (!assetPath) throw new Error('brainMask needs the assetPath of the staged MindGrab modules.');
+  const result = await mindgrab.segment(input, { model: 'mindgrab', mask: true, gzipOutput: false, backend, assetPath, signal });
+  if (!result?.mask) throw new Error('MindGrab did not return a brain mask.');
+  return { mask: new Uint8Array(result.mask), backend: result.backend };
+}

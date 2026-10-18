@@ -12,7 +12,6 @@ import {
   meanVolumes,
   scatterChunk,
   stackFrames,
-  thresholdMask,
 } from "../src/pipeline.js";
 
 test("names follow BIDS BEP016 dwimap", () => {
@@ -29,12 +28,11 @@ test("every map has a unique parameter label within its model", () => {
   }
 });
 
-test("mean b0 and the Otsu mask separate tissue from background", () => {
+test("the mean b0 averages the given volumes voxel by voxel", () => {
   // Two volumes of four voxels: background 0-2, tissue 100.
   const data = Float32Array.from([0, 2, 100, 100, 2, 0, 100, 102]);
   const mean = meanVolumes(data, 4, [0, 1]);
   assert.deepEqual(Array.from(mean), [1, 1, 100, 101]);
-  assert.deepEqual(Array.from(thresholdMask(mean)), [0, 0, 1, 1]);
 });
 
 test("gather and scatter round-trip a chunk of masked voxels", () => {

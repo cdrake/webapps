@@ -9,6 +9,15 @@ import { syntheticDwi, syntheticMask } from "./fixtures.mjs";
 const examples = JSON.parse(readFileSync(new URL("../examples.json", import.meta.url), "utf8"));
 const dwiUrl = examples[0].files.find((file) => file.role === "image").url;
 
+/** Loads the series and a mask of every voxel: the synthetic cube is too small for MindGrab. */
+async function loadWithMask(page, dwi, size = 8) {
+  await page.locator("#imageInput").setInputFiles(dwi.files);
+  await expect(page.locator("#runButton")).toBeEnabled({ timeout: 60000 });
+  await page.locator("#advancedSettings").evaluate((section) => { section.open = true; });
+  await page.locator("#maskInput").setInputFiles(syntheticMask({ size, value: 1 }));
+  await expect(page.locator("#maskInfo")).toContainText(`${size ** 3} voxels`);
+}
+
 async function readDownload(download) {
   return readNiftiFrames(gunzipSync(readFileSync(await download.path())));
 }
@@ -62,12 +71,12 @@ test("page is cross-origin isolated (COOP/COEP active)", async ({ page }) => {
 test("a two-shell DWI gives tensor and NODDI maps with the known fibre direction", async ({ page }) => {
   const dwi = syntheticDwi();
   await page.goto("/");
-  await page.locator("#imageInput").setInputFiles(dwi.files);
+  await loadWithMask(page, dwi);
   await expect(page.locator("#fileInfo")).toContainText("2×b0, 30×b1000, 30×b2000");
   await expect(page.locator("#fitNoddi")).toBeEnabled();
   await expect(page.locator("#fitNoddi")).toBeChecked();
   await page.locator("#runButton").click();
-  await expect(page.locator("#statusText")).toContainText(`Fitted ${dwi.tissue} voxels`, { timeout: 120000 });
+  await expect(page.locator("#statusText")).toContainText(`Fitted ${dwi.voxels} voxels`, { timeout: 120000 });
   const rows = page.locator("#resultList .nd-volume-toggle");
   await expect(rows).toHaveCount(11);
   const download = async (label) => {
@@ -107,8 +116,7 @@ test("an empty mask is refused instead of writing empty maps", async ({ page }) 
 test("cancelling a fit stops the workers and permits another fit", async ({ page }) => {
   const dwi = syntheticDwi({ size: 24 });
   await page.goto("/");
-  await page.locator("#imageInput").setInputFiles(dwi.files);
-  await expect(page.locator("#runButton")).toBeEnabled();
+  await loadWithMask(page, dwi, 24);
   await page.locator("#runButton").click();
   await expect(page.locator("#cancelButton")).toBeVisible();
   await page.locator("#cancelButton").click();
@@ -120,8 +128,7 @@ test("cancelling a fit stops the workers and permits another fit", async ({ page
 test("cancelling while output maps are compressed publishes no maps and permits retry", async ({ page }) => {
   const dwi = syntheticDwi({ shells: [1000] });
   await page.goto("/");
-  await page.locator("#imageInput").setInputFiles(dwi.files);
-  await expect(page.locator("#runButton")).toBeEnabled();
+  await loadWithMask(page, dwi);
   await holdCompression(page);
   await page.locator("#runButton").click();
   await page.waitForFunction(() => typeof window.finishOutputCompression === "function");
@@ -225,7 +232,13 @@ for (const example of examples) {
     const fa = await readDownload(download);
     const inMask = Array.from(fa.data).filter((value) => value > 0);
     expect(inMask.length).toBeGreaterThan(1000);
-    expect(Math.max(...inMask)).toBeLessThanOrEqual(1.0001);
+    // As FSL dtifit, FA is not clipped: a voxel with a negative eigenvalue (at the mask edge) can
+    // exceed 1. A brain's FA is mostly between 0.1 and 0.6.
+    const sorted = inMask.sort((a, b) => a - b);
+    const median = sorted[sorted.length >> 1];
+    expect(median).toBeGreaterThan(0.1);
+    expect(median).toBeLessThan(0.6);
+    expect(sorted.filter((value) => value > 1).length / sorted.length).toBeLessThan(0.01);
   });
 }
 
@@ -286,8 +299,10 @@ test("the automation operation fits the tensor and returns its maps", async ({ p
   const dwi = syntheticDwi({ shells: [1000] });
   await page.goto("/");
   await page.locator("#neurodesk-input-transfer").setInputFiles(dwi.files);
+  await page.evaluate(() => globalThis.neurodeskAutomation.dispatch("adopt", { role: "image" }));
+  await page.locator("#neurodesk-input-transfer").setInputFiles(syntheticMask({ value: 1 }));
   await page.evaluate(async () => {
-    await globalThis.neurodeskAutomation.dispatch("adopt", { role: "image" });
+    await globalThis.neurodeskAutomation.dispatch("adopt", { role: "mask" });
     await globalThis.neurodeskAutomation.dispatch("start", {});
   });
   await expect.poll(() => page.evaluate(async () => (await globalThis.neurodeskAutomation.dispatch("snapshot")).state), { timeout: 60000 }).toBe("succeeded");
