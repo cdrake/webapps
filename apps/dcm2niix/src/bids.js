@@ -40,7 +40,7 @@ export async function seriesFromOutputs(files, { signal } = {}) {
       id: `series${series.length + 1}`,
       image,
       metadata,
-      description: metadata.SeriesDescription || metadata.ProtocolName || base,
+      description: `Series ${metadata.SeriesNumber ?? series.length + 1} · ${metadata.SeriesDescription || metadata.ProtocolName || base}`,
       volumes: header.dims[0] === 4 ? header.dims[4] : 1,
       bval: bval ? await bval.text() : '',
       bvec: bvec ? await bvec.text() : '',

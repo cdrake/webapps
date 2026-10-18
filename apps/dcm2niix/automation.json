@@ -2,37 +2,33 @@
   "schemaVersion": 2,
   "app": "dcm2niix",
   "title": "dcm2niix",
-  "description": "Pass-through demonstration. No scientific processing is applied.",
-  "defaultOperation": "copy-input",
+  "description": "Convert one DICOM MRI examination to a reviewed BIDS dataset.",
+  "defaultOperation": "convert-bids",
   "operations": {
-    "copy-input": {
-      "title": "Copy input",
-      "description": "Return the unchanged input image for testing the app integration.",
+    "convert-bids": {
+      "title": "Convert to BIDS",
+      "description": "Convert DICOM files and apply explicit per-acquisition BIDS assignments.",
       "mode": "batch",
       "inputs": {
-        "image": {
+        "dicom": {
           "source": "files",
-          "type": "neuro:volume",
-          "formats": [
-            "nifti"
-          ],
-          "description": "One NIfTI image.",
-          "minimum": 1,
-          "maximum": 1
+          "type": "neuro:dicom-series",
+          "formats": ["dicom", "zip"],
+          "description": "One examination as DICOM files or ZIP archives.",
+          "minimum": 1
         }
       },
-      "parameters": {},
+      "parameters": {
+        "name": { "type": "string", "description": "Dataset name.", "default": "MRI examination" },
+        "subject": { "type": "string", "description": "Alphanumeric subject label without sub-." },
+        "session": { "type": "string", "description": "Alphanumeric session label without ses-." },
+        "privacy": { "type": "string", "enum": ["omit", "retain"], "description": "Explicit identifying metadata export policy." },
+        "assignments": { "type": "string", "description": "JSON array in converted acquisition order: type (T1w, T2w, FLAIR, dwi, epi or exclude), optional acquisition/direction/metadata, and fieldmap targets as series IDs (series1, series2, ...)." }
+      },
       "artifacts": {
-        "output": {
-          "type": "neuro:volume",
-          "mediaType": "application/octet-stream",
-          "minimum": 1,
-          "maximum": 1
-        }
+        "bids": { "type": "neuro:archive", "mediaType": "application/zip", "minimum": 1, "maximum": 1 }
       },
-      "engines": [
-        "browser"
-      ]
+      "engines": ["browser"]
     }
   }
 }
