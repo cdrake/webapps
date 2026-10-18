@@ -2,22 +2,24 @@
   {
     "id": "t1-mni",
     "label": "T1 brain to MNI152 template",
-    "description": "Matched moving T1 brain and stationary MNI152 T1 template with brain extraction already applied.",
+    "description": "Matched moving T1 brain and fixed MNI152 T1 template with brain extraction already applied.",
     "expectedResult": "A registered T1 image resampled into the MNI152 template space.",
     "files": [
+      {
+        "role": "fixed",
+        "name": "MNI152_T1_1mm_brain.nii.gz",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/544f1362f367355e61a85e0694f5075aba2792b6/reg/templates/MNI152_T1_1mm_brain.nii.gz",
+        "sha256": "32d5be33460f995a5d305507053c8862c823d9ca6bfb543381308df14590f212",
+        "bytes": 3219212,
+        "brainExtracted": true
+      },
       {
         "role": "moving",
         "name": "t1_brain.nii.gz",
         "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/544f1362f367355e61a85e0694f5075aba2792b6/reg/moving/t1_brain.nii.gz",
         "sha256": "553e242f330381aa7a5bdac5db27e971d9ee8001e63375d3b01fb00ec0e31bff",
-        "bytes": 1706016
-      },
-      {
-        "role": "stationary",
-        "name": "MNI152_T1_1mm_brain.nii.gz",
-        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/544f1362f367355e61a85e0694f5075aba2792b6/reg/templates/MNI152_T1_1mm_brain.nii.gz",
-        "sha256": "32d5be33460f995a5d305507053c8862c823d9ca6bfb543381308df14590f212",
-        "bytes": 3219212
+        "bytes": 1706016,
+        "brainExtracted": true
       }
     ]
   }

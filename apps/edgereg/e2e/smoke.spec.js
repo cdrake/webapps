@@ -54,8 +54,8 @@ test("affine registration aligns the example T1 with the MNI template on the tem
   await configureExampleFixtures(page, files);
   await page.locator("[data-neurodesk-example]").selectOption("t1-mni");
   await expect(page.locator("[data-neurodesk-examples]")).toHaveAttribute("data-example-state", "ready", { timeout: 120_000 });
-  await expect(page.locator("#movingInfo")).toHaveText("t1_crop.nii.gz");
-  await expect(page.locator("#stationaryInfo")).toHaveText("MNI152_T1_1mm.nii.gz");
+  await expect(page.locator("#movingInfo")).toContainText("t1_crop.nii.gz");
+  await expect(page.locator("#fixedInfo")).toContainText("MNI152_T1_1mm.nii.gz");
   await expect(page.locator("#resultList")).toBeEmpty();
   await page.locator("#runButton").click();
   await expect(page.locator("#statusText")).toHaveText("Registration complete", { timeout: 240_000 });
@@ -74,7 +74,7 @@ test("affine registration aligns the example T1 with the MNI template on the tem
   expect(before).toBeLessThan(0.8);
   expect(after).toBeGreaterThan(0.85);
   // A different subject cannot match the template exactly (measured 0.88-0.96), while returning
-  // the stationary image itself would score 1 and pass every check above.
+  // the fixed image itself would score 1 and pass every check above.
   expect(after).toBeLessThan(0.99);
 });
 
@@ -123,7 +123,7 @@ test("a failed example download keeps the loaded pair and can retry", async ({ p
   await expect(page.locator("[data-neurodesk-examples]")).toHaveAttribute("data-example-state", "error");
   await expect(select).toHaveValue("");
   await expect(select).toBeEnabled();
-  await expect(page.locator("#movingInfo")).toHaveText("t1_crop.nii.gz");
+  await expect(page.locator("#movingInfo")).toContainText("t1_crop.nii.gz");
   expect(failedRequests).toBeGreaterThan(0);
   await page.context().unroute("**/t1_crop.nii.gz", failDownload);
   await select.selectOption("t1-mni");

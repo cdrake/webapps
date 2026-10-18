@@ -3,7 +3,7 @@
   "consumers": {
     "ants": {},
     "edgereg": {},
-    "elastix": {},
+    "elastix": { "dimensionality": 3 },
     "fireants": {},
     "greedy": {},
     "syncro": { "ids": ["mni152-fsl-t1-1mm-brain"] }
