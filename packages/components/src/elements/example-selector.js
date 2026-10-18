@@ -75,7 +75,9 @@ export function defineExampleSelector(view = globalThis.window) {
     get fileActions() { return this.#fileActions; }
     set fileActions(value) {
       this.#fileActions = value !== false;
-      if (this.#select) this.#renderOptions();
+      if (!this.#select) return;
+      if (!this.#fileActions) this.#actionsFor?.closest('.nd-file')?.classList.remove('nd-file-merged');
+      this.#renderOptions();
     }
 
     get disabled() { return this.hasAttribute('disabled'); }
