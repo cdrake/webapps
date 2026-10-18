@@ -66,6 +66,8 @@ let input = null;
 let loading = null;
 let running = null;
 let outputs = {};
+let displayedFile = null;
+let viewerQueue = Promise.resolve();
 
 function status(message, error = false) {
   $("statusText").textContent = message;
@@ -81,10 +83,29 @@ const results = createResultList({
   onDownload: (_stage, result) => downloadFile(result.file),
 });
 
-async function showVolume(file) {
+async function renderVolume(file) {
   await viewerReady;
-  await viewer.loadVolumes([{ url: file, name: file.name, colormap: "gray" }]);
-  $("emptyState").hidden = true;
+  if (file) await viewer.loadVolumes([{ url: file, name: file.name, colormap: "gray" }]);
+  else await viewer.removeAllVolumes();
+  $("emptyState").hidden = Boolean(file);
+}
+
+function showVolume(file, { signal, sourceFile = file } = {}) {
+  const pending = viewerQueue.then(async () => {
+    signal?.throwIfAborted();
+    const previous = displayedFile;
+    try {
+      await renderVolume(file);
+      signal?.throwIfAborted();
+      displayedFile = sourceFile;
+    } catch (error) {
+      // Finish restoring before the input/run lock can release or another view starts.
+      await renderVolume(previous);
+      throw error;
+    }
+  });
+  viewerQueue = pending.catch(() => {});
+  return pending;
 }
 
 async function gzipFile(buffer, name) {
@@ -102,6 +123,7 @@ function setBusy(busy) {
   $("imageInput").disabled = busy;
   exampleControl?.setDisabled(busy);
   $("runButton").disabled = busy || !input;
+  results.inert = busy;
 }
 
 async function loadFiles(filesPromise, signal) {
@@ -127,7 +149,11 @@ async function loadFiles(filesPromise, signal) {
     const bvals = parseBvals(await bval.text(), frames.frames);
     const p2s = await patch2self;
     const groups = p2s.groups(bvals);
-    await showVolume(new File([buffer], image.name.replace(/\.gz$/i, "")));
+    await showVolume(new File([buffer], image.name.replace(/\.gz$/i, "")), {
+      signal: controller.signal,
+      // Keep the source File for rollback, rather than retaining the decoded preview bytes.
+      sourceFile: image,
+    });
     controller.signal.throwIfAborted();
     // Keep only the header (and extensions) of the decoded file: the volumes are in frames.data.
     input = { name: image.name, ...frames, headerBytes: extractNiftiHeader(buffer), bvals, bval, bvec, sidecar };
@@ -193,7 +219,7 @@ async function denoise(signal) {
     const sidecar = new File([`${JSON.stringify(derivativeSidecar(input.sidecar), null, 2)}\n`], names.sidecar, { type: "application/json" });
     rows.sidecar = { description: "Sidecar", file: sidecar, viewable: false };
     artifacts.push({ role: "sidecar", file: sidecar });
-    await showVolume(image);
+    await showVolume(image, { signal: controller.signal });
     controller.signal.throwIfAborted();
     outputs = rows;
     results.render(rows);

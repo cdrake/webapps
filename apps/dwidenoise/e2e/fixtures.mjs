@@ -23,7 +23,11 @@ export function dwiSeries({ nx = 24, ny = 20, nz = 4, weighted = 4 } = {}) {
       }
     }
   }
-  const header = createNiftiHeaderFromVolume({ hdr: { dims: [4, nx, ny, nz, frames, 1, 1, 1], pixDims: [1, 2, 2, 2, 1, 1, 1, 1] } });
+  const header = createNiftiHeaderFromVolume({ hdr: {
+    dims: [4, nx, ny, nz, frames, 1, 1, 1],
+    pixDims: [1, 2, 2, 2, 1, 1, 1, 1],
+    affine: [[2, 0, 0, 0], [0, 2, 0, 0], [0, 0, 2, 0], [0, 0, 0, 1]],
+  } });
   const nifti = createNiftiFromData(data, header, { dims: [nx, ny, nz, frames] });
   const bvals = ["0", ...Array.from({ length: weighted }, () => "1000")].join(" ");
   const axis = (row) => Array.from({ length: frames }, (_, t) => (t > 0 && (t - 1) % 3 === row ? 1 : 0)).join(" ");
