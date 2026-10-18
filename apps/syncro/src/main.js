@@ -1,14 +1,14 @@
 import examples from '../examples.json';
+import templateCatalogue from '../../../registry/templates.json';
 import { createExampleSelector } from '@neurodesk/webapp-components/ui';
 import NiiVue, { MULTIPLANAR_TYPE, SHOW_RENDER, SLICE_TYPE } from '@niivue/niivue';
 import { createElement } from '@neurodesk/webapp-components/core';
 import { mountImagingWorkspace } from '@neurodesk/webapp-components/core/mount-imaging-workspace';
-import { bindInfoTooltips, createInfoDialog, createConsole, createFileField, createMaskEditor, createViewerToolbar } from '@neurodesk/webapp-components/ui';
+import { bindInfoTooltips, createImagePair, createInfoDialog, createConsole, createFileField, createMaskEditor, createViewerToolbar, templatesFor } from '@neurodesk/webapp-components/ui';
 import { readImageFiles, runDcm2niix } from '@neurodesk/runtime-support/dcm2niix-client';
 import { registerAppAutomation, registerViewer, createNiivueAdapter } from '@neurodesk/webapp-components/automation';
 import { readVolume } from '@neurodesk/synthsr';
 import { zip } from 'fflate';
-import { templateAsset } from '../../../packages/syncro/src/assets.js';
 import './styles.css';
 
 mountImagingWorkspace({
@@ -83,12 +83,40 @@ const info = createInfoDialog({ id: 'info', titleId: 'infoTitle', bodyId: 'infoB
 $('aboutBtn').onclick = () => info.open('About SYNcro', $('aboutContent'));
 $('privacyBtn').onclick = () => info.open('Privacy', $('privacyContent'));
 
+// The scan is the moving image; the fixed image is always the MNI152 template.
+const template = templatesFor(templateCatalogue, 'syncro')[0];
+const pair = createImagePair({
+  lockedFixed: template,
+  slotHelp: { moving: 'Your scan; normalized to the template' },
+  read: async (files, { signal }) => {
+    const images = await readImageFiles(files, { signal });
+    if (images.length !== 1) throw new Error('Choose one NIfTI image or one complete DICOM series for the moving image.');
+    return images.map((file) => ({ name: file.name, file }));
+  },
+  open: async (_slot, candidate, { signal }) => {
+    const inspected = await inspectInput(candidate.file);
+    signal?.throwIfAborted();
+    commitInput('primary', inspected);
+    return { name: inspected.file.name, dims: inspected.volume.dims, dimensionality: 3 };
+  },
+  clear: () => {
+    inputs.primary = null;
+    clearResults();
+    rebuildViewItems();
+    $('runButton').disabled = busy || !inputs.primary;
+  },
+  perform: performImport,
+  onStatus: setStatus,
+  onChange: ({ moving }) => {
+    if (moving) setStatus(`Moving image loaded · ${moving.image.name}`);
+  },
+});
+$('imagePair').replaceWith(pair);
+
 const fileFields = {
-  primary: createFileField({ id: 'input', rootId: 'dropZone', text: 'Drop primary NIfTI or DICOM files', label: 'Choose the required primary scan' }),
   lesion: createFileField({ id: 'lesion', rootId: 'lesionDropZone', text: 'Drop a binary lesion map', label: 'Choose an optional binary lesion map' }),
   pathological: createFileField({ id: 'pathological', rootId: 'pathologicalDropZone', text: 'Drop pathological modality files', label: 'Choose an optional pathological modality scan' }),
 };
-$('primaryField').append(fileFields.primary);
 $('lesionField').append(fileFields.lesion);
 $('pathologicalField').append(fileFields.pathological);
 
@@ -116,6 +144,7 @@ function setStatus(message, error = false) {
 function setBusy(value) {
   busy = value;
   exampleControl.setDisabled(value);
+  pair.disabled = value;
   for (const field of Object.values(fileFields)) field.disabled = value;
   for (const id of ['ct', 'keepSynth', 'synthsrBackend', 'brainExtractor', 'normalization']) $(id).disabled = value;
   $('clearLesion').disabled = value;
@@ -326,16 +355,36 @@ async function inspectInput(file) {
 
 function commitInput(slot, { file, volume }) {
   inputs[slot] = file;
-  fileFields[slot].setHasFiles(true);
-  fileFields[slot].setText(file.name);
-  const information = $(`${slot}Info`);
-  information.hidden = false;
-  information.textContent = `${volume.dims.join(' × ')} voxels`;
-  const clear = slot === 'lesion' ? $('clearLesion') : slot === 'pathological' ? $('clearPathological') : null;
-  if (clear) clear.hidden = false;
+  if (slot !== 'primary') {
+    fileFields[slot].setHasFiles(true);
+    fileFields[slot].setText(file.name);
+    const information = $(`${slot}Info`);
+    information.hidden = false;
+    information.textContent = `${volume.dims.join(' × ')} voxels`;
+    $(slot === 'lesion' ? 'clearLesion' : 'clearPathological').hidden = false;
+  }
   clearResults();
   rebuildViewItems(`input:${slot}`);
   $('runButton').disabled = busy || !inputs.primary;
+}
+
+// The image pair runs each moving-image load here: busy, cancellable, and
+// the previous scan stays when a load fails.
+async function performImport(message, task) {
+  exampleControl.cancel();
+  if (busy) throw new Error('Wait for the current operation to finish.');
+  const controller = new AbortController();
+  importAbort = controller;
+  setBusy(true);
+  setStatus(message);
+  try {
+    return await task(controller.signal);
+  } finally {
+    if (importAbort === controller) {
+      importAbort = null;
+      setBusy(false);
+    }
+  }
 }
 
 async function importScans(slot, filesPromise) {
@@ -345,7 +394,7 @@ async function importScans(slot, filesPromise) {
   importAbort = controller;
   inputs[slot] = null;
   fileFields[slot].setHasFiles(false);
-  fileFields[slot].setText(slot === 'primary' ? 'Drop primary NIfTI or DICOM files' : slot === 'lesion' ? 'Drop a binary lesion map' : 'Drop pathological modality files');
+  fileFields[slot].setText(slot === 'lesion' ? 'Drop a binary lesion map' : 'Drop pathological modality files');
   $(`${slot}Info`).hidden = true;
   if (slot === 'lesion') $('clearLesion').hidden = true;
   if (slot === 'pathological') $('clearPathological').hidden = true;
@@ -361,7 +410,7 @@ async function importScans(slot, filesPromise) {
     const inspected = await inspectInput(images[0]);
     controller.signal.throwIfAborted();
     commitInput(slot, inspected);
-    setStatus(`${slot === 'primary' ? 'Primary scan' : slot === 'lesion' ? 'Lesion map' : 'Pathological modality'} loaded · ${images[0].name}`);
+    setStatus(`${slot === 'lesion' ? 'Lesion map' : 'Pathological modality'} loaded · ${images[0].name}`);
   } catch (error) {
     if (!controller.signal.aborted) setStatus(error.message, true);
   } finally {
@@ -378,6 +427,8 @@ for (const [slot, field] of Object.entries(fileFields)) {
 
 const exampleControl = createExampleSelector({
   examples,
+  // The image pair has its own moving-image picker; the menu lists only the tutorials.
+  fileActions: false,
   onLoad: async (example, { fetchFiles, assertCurrent }) => {
     const files = await fetchFiles();
     assertCurrent();
@@ -385,18 +436,20 @@ const exampleControl = createExampleSelector({
     try {
       const inspected = {};
       for (const [index, file] of files.entries()) {
-        inspected[example.files[index].role] = await inspectInput(file);
+        const role = example.files[index].role;
+        inspected[role === 'moving' ? 'primary' : role] = await inspectInput(file);
         assertCurrent();
       }
       inputs = { primary: null, lesion: null, pathological: null };
       for (const [slot, field] of Object.entries(fileFields)) {
         field.setHasFiles(false);
-        field.setText(slot === 'primary' ? 'Drop primary NIfTI or DICOM files' : slot === 'lesion' ? 'Drop a binary lesion map' : 'Drop pathological modality files');
+        field.setText(slot === 'lesion' ? 'Drop a binary lesion map' : 'Drop pathological modality files');
         $(`${slot}Info`).hidden = true;
       }
       $('clearLesion').hidden = true;
       $('clearPathological').hidden = true;
-      for (const slot of ['primary', 'lesion', 'pathological']) {
+      await pair.useWithin('moving', { name: inspected.primary.file.name, file: inspected.primary.file });
+      for (const slot of ['lesion', 'pathological']) {
         if (inspected[slot]) commitInput(slot, inspected[slot]);
       }
       $('ct').checked = example.id === 'ct-only';
@@ -511,7 +564,7 @@ async function normalize({
         ...settings,
         modelBase: import.meta.env.VITE_SYNCRO_MODEL_BASE,
         mindgrabAssetPath: new URL('mindgrab/', base).href,
-        templateURL: templateAsset.url,
+        templateURL: template.url,
         greedyURL: new URL('greedy-wasm/greedy_rs_wasm.js', base).href,
         registrationURL: new URL('registration/syncro-registration.mjs', base).href,
       });
@@ -642,12 +695,14 @@ registerAppAutomation({
       setBusy(true);
       try {
         inputs = { primary: null, lesion: null, pathological: null };
-        for (const slot of ['primary', 'lesion', 'pathological']) {
+        if (supplied.primary[0]) await pair.useWithin('moving', { name: supplied.primary[0].name, file: supplied.primary[0] }, signal);
+        else pair.reset('moving');
+        for (const slot of ['lesion', 'pathological']) {
           if (supplied[slot][0]) commitInput(slot, await inspectInput(supplied[slot][0]));
           else {
             fileFields[slot].setHasFiles(false);
             $(`${slot}Info`).hidden = true;
-            if (slot !== 'primary') $(slot === 'lesion' ? 'clearLesion' : 'clearPathological').hidden = true;
+            $(slot === 'lesion' ? 'clearLesion' : 'clearPathological').hidden = true;
           }
           signal.throwIfAborted();
         }

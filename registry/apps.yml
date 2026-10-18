@@ -863,3 +863,51 @@ apps:
       browser_test: true
       hardware_gpu: true
       release: false
+  - id: noddi
+    path: noddi
+    title: NODDI
+    description: Fit diffusion tensor and NODDI maps from diffusion MRI.
+    categories: [diffusion-imaging]
+    keywords: [diffusion MRI, DTI, NODDI, AMICO, FA, ICVF, ODI, WebAssembly]
+    anatomy: [brain]
+    modalities: [mri]
+    inputs: [dicom, nifti]
+    hardware: webgpu-optional
+    legacy_domain: null
+    runtime: vite-wasm
+    model_manifest: null
+    asset_manifest_schema: null
+    source: neurodesk/webapps@local
+    license: Apache-2.0 AND BSD-3-Clause
+    maintainers: [neurodesk]
+    support_status: experimental
+    shell: imaging-workspace
+    ci:
+      toolchains: [node]
+      shared_runtime: false
+      browser_test: true
+      release: false
+  - id: degibbs
+    path: degibbs
+    title: Degibbs
+    description: Remove Gibbs ringing from MRI scans.
+    categories: [image-processing, diffusion-imaging]
+    keywords: [Gibbs ringing, mrdegibbs, MRtrix, diffusion MRI, preprocessing, WebAssembly]
+    anatomy: [any]
+    modalities: [mri]
+    inputs: [dicom, nifti]
+    hardware: cpu
+    legacy_domain: null
+    runtime: vite-wasm
+    model_manifest: null
+    asset_manifest_schema: null
+    source: neurodesk/webapps@local
+    license: MPL-2.0
+    maintainers: [neurodesk]
+    support_status: experimental
+    shell: imaging-workspace
+    ci:
+      toolchains: [node]
+      shared_runtime: false
+      browser_test: true
+      release: false

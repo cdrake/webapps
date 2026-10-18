@@ -301,6 +301,28 @@ importers:
         specifier: ^6.3.2
         version: 6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.14)(yaml@2.9.0)
 
+  apps/degibbs:
+    dependencies:
+      '@neurodesk/degibbs':
+        specifier: workspace:*
+        version: link:../../packages/degibbs
+      '@neurodesk/runtime-support':
+        specifier: workspace:*
+        version: link:../../packages/runtime-support
+      '@neurodesk/webapp-components':
+        specifier: workspace:*
+        version: link:../../packages/components
+      '@niivue/niivue':
+        specifier: 1.0.0-rc.14
+        version: 1.0.0-rc.14
+    devDependencies:
+      '@playwright/test':
+        specifier: 1.64.0
+        version: 1.64.0
+      vite:
+        specifier: ^5.0.0
+        version: 5.4.21(@types/node@24.13.3)(lightningcss@1.32.0)
+
   apps/dicom2vid:
     dependencies:
       '@neurodesk/dicom2vid':
@@ -793,6 +815,31 @@ importers:
         specifier: ^5.4.6
         version: 5.4.21(@types/node@24.13.3)(lightningcss@1.32.0)
 
+  apps/noddi:
+    dependencies:
+      '@neurodesk/dwi2trx':
+        specifier: workspace:*
+        version: link:../../packages/dwi2trx
+      '@neurodesk/noddi':
+        specifier: workspace:*
+        version: link:../../packages/noddi
+      '@neurodesk/runtime-support':
+        specifier: workspace:*
+        version: link:../../packages/runtime-support
+      '@neurodesk/webapp-components':
+        specifier: workspace:*
+        version: link:../../packages/components
+      '@niivue/niivue':
+        specifier: 1.0.0-rc.14
+        version: 1.0.0-rc.14
+    devDependencies:
+      '@playwright/test':
+        specifier: 1.64.0
+        version: 1.64.0
+      vite:
+        specifier: ^5.0.0
+        version: 5.4.21(@types/node@24.13.3)(lightningcss@1.32.0)
+
   apps/qsmbly:
     dependencies:
       '@neurodesk/webapp-components':
@@ -1194,6 +1241,8 @@ importers:
         specifier: ^6.3.2
         version: 6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.14)(yaml@2.9.1)
 
+  packages/degibbs: {}
+
   packages/dependency-quality:
     dependencies:
       '@swc/core':
@@ -1398,6 +1447,8 @@ importers:
       '@niivue/niimath':
         specifier: 1.3.2
         version: 1.3.2
+
+  packages/noddi: {}
 
   packages/node-drivers:
     devDependencies:

@@ -38,7 +38,9 @@ test('BrowserQC scientific assets are pinned to Hugging Face and not embedded', 
 
   assert.match(manifest.revision, /^[0-9a-f]{40}$/);
   assert.ok(manifest.base_url.includes(`/resolve/${manifest.revision}/browserqc/`));
-  assert.ok(source.includes(manifest.base_url));
+  // The air template is the shared catalogue's avg152 entry, so its asset names its own URL.
+  const air = manifest.assets.find(asset => asset.filename === 'avg152T1.nii.gz');
+  assert.ok(source.includes(air.url ?? manifest.base_url + air.filename));
 
   for (const asset of manifest.assets) {
     await assert.rejects(

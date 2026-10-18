@@ -179,7 +179,7 @@ test('the shared stylesheet defines the whole vocabulary the template and docs r
   const css = await readFile(join(repoRoot, 'packages', 'components', 'src', 'styles', 'imaging-workspace.css'), 'utf8');
   for (const selector of [
     '.nd-sidebar-section', '.nd-section-title', '.nd-section-content', '.nd-field', '.nd-hint', '.nd-check', '.nd-row',
-    '.nd-file', '.nd-file-info', '.nd-btn', '.nd-btn-primary', '.nd-btn-secondary', '.nd-btn-sm', '.nd-btn-icon',
+    '.nd-file', '.nd-file-button', '.nd-file-info', '.nd-image-pair', '.nd-image-slot', '.nd-image-slot-header', '.nd-image-slot-title', '.nd-btn', '.nd-btn-primary', '.nd-btn-secondary', '.nd-btn-sm', '.nd-btn-icon',
     '.nd-message', '.nd-info-icon', '.nd-info-tooltip', '.nd-viewer-toolbar', '.nd-view-tabs', '.nd-view-tab', '.nd-viewer-actions',
     '.nd-viewer-canvas-wrapper', '.nd-viewer-empty', '.nd-viewer-info', '.nd-console-container', '.nd-console-title', '.nd-console-output',
     '.nd-status-label', '.nd-status-text', 'dialog.nd-dialog', '.nd-dialog-header', '.nd-dialog-body', '.nd-command', '.nd-volume-toggle', '.nd-result-visibility',

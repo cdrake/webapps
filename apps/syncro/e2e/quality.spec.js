@@ -72,7 +72,7 @@ test('cropped head fixture cannot publish nearly empty normalized outputs', asyn
     path: fileURLToPath(new URL('../../../packages/syncro/data/MNI152_T1_1mm_brain.nii.gz', import.meta.url)),
   }));
   await page.goto('./');
-  await page.locator('#input').setInputFiles(fileURLToPath(new URL('../../../exes/synthseg/test/fixtures/small.nii.gz', import.meta.url)));
+  await page.locator('#movingInput').setInputFiles(fileURLToPath(new URL('../../../exes/synthseg/test/fixtures/small.nii.gz', import.meta.url)));
   await expect(page.locator('#runButton')).toBeEnabled();
   await expect(page.locator('#synthsrBackend')).toHaveValue('webgpu');
   await expect(page.locator('#brainExtractor')).toHaveValue('mindgrab');

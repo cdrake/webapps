@@ -1537,6 +1537,20 @@
       "assets": [],
       "downloads": [],
       "containers": []
+    },
+    "noddi": {
+      "desktop": true,
+      "profile": "interactive",
+      "assets": [],
+      "downloads": [],
+      "containers": []
+    },
+    "degibbs": {
+      "desktop": true,
+      "profile": "interactive",
+      "assets": [],
+      "downloads": [],
+      "containers": []
     }
   }
 }

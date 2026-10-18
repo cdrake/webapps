@@ -36,8 +36,8 @@ async function loadExample(page, files) {
   if (files) await configureExampleFixtures(page, files);
   await page.locator("[data-neurodesk-example]").selectOption("t1-mni");
   await expect(page.locator("[data-neurodesk-examples]")).toHaveAttribute("data-example-state", "ready", { timeout: 120_000 });
-  await expect(page.locator("#movingInfo")).toContainText("t1_brain.nii.gz · brain extracted");
-  await expect(page.locator("#stationaryInfo")).toContainText("MNI152_T1_1mm_brain.nii.gz · brain extracted");
+  await expect(page.locator("#movingInfo")).toContainText(/t1_brain\.nii\.gz · .* · brain extracted/);
+  await expect(page.locator("#fixedInfo")).toContainText(/MNI152_T1_1mm_brain\.nii\.gz · .* · brain extracted/);
   await expect(page.locator(".nd-viewer-panel")).toHaveCount(3);
 }
 
@@ -129,10 +129,10 @@ test("custom images are flagged and can be brain extracted per image", async ({ 
   await page.locator("#movingInput").setInputFiles({ name: "custom.nii.gz", mimeType: "application/gzip", buffer: fixture });
   await expect(page.locator("#movingInfo")).toContainText("not brain extracted");
   await expect(page.locator("#movingExtractButton")).toBeEnabled();
-  await expect(page.locator("#stationaryExtractButton")).toBeDisabled();
-  await page.locator("#stationaryInput").setInputFiles({ name: "template.nii.gz", mimeType: "application/gzip", buffer: fixture });
-  await expect(page.locator("#stationaryInfo")).toContainText("not brain extracted");
-  await expect(page.locator("#stationaryExtractButton")).toBeEnabled();
+  await expect(page.locator("#fixedExtractButton")).toBeDisabled();
+  await page.locator("#fixedInput").setInputFiles({ name: "template.nii.gz", mimeType: "application/gzip", buffer: fixture });
+  await expect(page.locator("#fixedInfo")).toContainText("not brain extracted");
+  await expect(page.locator("#fixedExtractButton")).toBeEnabled();
   await expect(page.locator("#runButton")).toBeEnabled();
 });
 

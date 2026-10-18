@@ -43,8 +43,8 @@ test("automation registers a known displacement on explicit input roles and expo
   const image = await readFile(await download.path());
   expect(download.suggestedFilename()).toBe("subject_registered.nii");
   expect(artifact).toMatchObject({ space: "fixed", bytes: image.length, sha256: sha256(image) });
-  await expect(page.locator("#movingInfo")).toHaveText("subject.nii.gz");
-  await expect(page.locator("#stationaryInfo")).toHaveText("reference.nii.gz");
+  await expect(page.locator("#movingInfo")).toContainText("subject.nii.gz");
+  await expect(page.locator("#fixedInfo")).toContainText("reference.nii.gz");
   const warped = await readVolume(image);
   const before = ncc(moving.data, fixed.data);
   const after = ncc(warped.data, fixed.data);

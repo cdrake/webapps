@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# Rebuild the committed degibbs WebAssembly module (src/degibbs.wasm) from exes/dwi/degibbs-wasm.
+# The web app stages this file and the command line loads it, so both run the same binary.
+#
+#   build-wasm.sh          rebuild src/degibbs.wasm from the Rust source
+#   build-wasm.sh --check  rebuild into a scratch directory and fail unless it equals src/degibbs.wasm
+#
+# The bytes depend on rustc and on binaryen's wasm-opt, so both are pinned. Panic locations embed
+# source paths, so the repository and the Cargo home are remapped to fixed prefixes: a checkout in
+# another directory produces the same binary.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+RUST_TOOLCHAIN=1.98.0
+WASM_OPT_VERSION=version_117
+
+mode=build
+if [[ $# -gt 0 ]]; then
+  if [[ "$1" != --check || $# -gt 1 ]]; then
+    echo "usage: $0 [--check]" >&2
+    exit 2
+  fi
+  mode=check
+fi
+
+WASM_OPT="${WASM_OPT:-$(command -v wasm-opt || echo "$HOME/.cache/binaryen/bin/wasm-opt")}"
+optimizer=$("$WASM_OPT" --version 2>/dev/null || true)
+if [[ "$optimizer" != *"($WASM_OPT_VERSION)"* ]]; then
+  echo "binaryen $WASM_OPT_VERSION wasm-opt is required (found '${optimizer:-none}'), as .github/actions/setup-wasm-opt installs it" >&2
+  exit 1
+fi
+
+repo="$(cd ../.. && pwd)"
+cargo_home="${CARGO_HOME:-$HOME/.cargo}"
+export RUSTUP_TOOLCHAIN="$RUST_TOOLCHAIN"
+# --max-memory: the app passes one volume at a time, a few MB.
+export RUSTFLAGS="--remap-path-prefix=$repo=/webapps --remap-path-prefix=$cargo_home=/cargo -C link-arg=--max-memory=4294967296"
+
+scratch="$(mktemp -d -t degibbs-wasm.XXXXXX)"
+trap 'rm -rf "$scratch"' EXIT
+cargo build --manifest-path ../../exes/dwi/Cargo.toml --locked --release \
+  --target wasm32-unknown-unknown -p degibbs-wasm --target-dir "$scratch/target"
+"$WASM_OPT" -O3 "$scratch/target/wasm32-unknown-unknown/release/degibbs_wasm.wasm" -o "$scratch/degibbs.wasm"
+
+if [[ "$mode" == check ]]; then
+  if cmp -s "$scratch/degibbs.wasm" src/degibbs.wasm; then
+    echo "PASS src/degibbs.wasm equals a rebuild from source ($(sha256sum < src/degibbs.wasm | cut -c1-16))"
+    exit 0
+  fi
+  echo "FAIL src/degibbs.wasm differs from a rebuild from source: committed $(sha256sum < src/degibbs.wasm | cut -c1-16), rebuilt $(sha256sum < "$scratch/degibbs.wasm" | cut -c1-16)" >&2
+  echo "Run 'pnpm --filter @neurodesk/degibbs build:wasm' and commit src/degibbs.wasm." >&2
+  exit 1
+fi
+
+cp "$scratch/degibbs.wasm" src/degibbs.wasm
+echo "built src/degibbs.wasm ($(wc -c < src/degibbs.wasm) bytes)"

@@ -61,8 +61,10 @@ test('installation holds the MNI template and face mask the registry pins', asyn
   const registry = JSON.parse(await readFile(new URL('../../../models/deface.manifest.json', import.meta.url), 'utf8'));
   assert.deepEqual(MODEL_ASSETS.map(({ filename }) => filename), ['avg152T1.nii.gz', 'avg152T1mask.nii.gz']);
   for (const asset of MODEL_ASSETS) {
-    assert.deepEqual(registry.assets.find(({ filename }) => filename === asset.filename), { filename: asset.filename, bytes: asset.bytes, sha256: asset.sha256 });
-    assert.equal(asset.url, registry.base_url + asset.filename);
+    const pinned = registry.assets.find(({ filename }) => filename === asset.filename);
+    assert.deepEqual({ ...pinned, url: undefined }, { filename: asset.filename, bytes: asset.bytes, sha256: asset.sha256, url: undefined });
+    // The template names the shared catalogue's address; the mask keeps deface's base_url.
+    assert.equal(asset.url, pinned.url ?? registry.base_url + asset.filename);
   }
 });
 

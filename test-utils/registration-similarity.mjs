@@ -224,17 +224,17 @@ export function encodeNifti({ data, dims, affine }) {
 }
 
 /**
- * An app's declared moving and stationary example, each block-mean downsampled
+ * An app's declared fixed and moving example, each block-mean downsampled
  * so a CI runner can register the real pair. `files` maps each declared file
  * name to the gzipped NIfTI a test serves in place of the hosted download.
  */
 export async function downsampledExamplePair(example, factor) {
   const declared = Object.fromEntries(example.files.map((file) => [file.role, file]));
   const moving = downsampleVolume(await readVolume(await fetchPinnedExample(declared.moving.url)), factor);
-  const fixed = downsampleVolume(await readVolume(await fetchPinnedExample(declared.stationary.url)), factor);
+  const fixed = downsampleVolume(await readVolume(await fetchPinnedExample(declared.fixed.url)), factor);
   const files = {
     [declared.moving.name]: gzipSync(encodeNifti(moving)),
-    [declared.stationary.name]: gzipSync(encodeNifti(fixed)),
+    [declared.fixed.name]: gzipSync(encodeNifti(fixed)),
   };
   return { moving, fixed, files };
 }

@@ -638,6 +638,10 @@ apps:
         title: NiiVue
         reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
         url: https://github.com/niivue/niivue
+      - group: Templates
+        title: ICBM152 linear average template
+        reference: "Mazziotta J, Toga A, Evans A, et al. A probabilistic atlas and reference system for the human brain: International Consortium for Brain Mapping (ICBM). Philosophical Transactions of the Royal Society B. 2001;356(1412):1293–1322."
+        doi: 10.1098/rstb.2001.0915
 
   surfannotate:
     about:
@@ -755,10 +759,10 @@ apps:
         title: ANTs evaluation
         reference: "Avants BB, Tustison NJ, Song G, Cook PA, Klein A, Gee JC. A reproducible evaluation of ANTs similarity metric performance in brain image registration. NeuroImage. 2011;54(3):2033–2044."
         doi: 10.1016/j.neuroimage.2010.09.025
-      - group: Template
-        title: MNI152 template
-        reference: "Fonov V, Evans AC, Botteron K, Almli CR, McKinstry RC, Collins DL. Unbiased average age-appropriate atlases for pediatric studies. NeuroImage. 2011;54(1):313–327."
-        doi: 10.1016/j.neuroimage.2010.07.033
+      - group: Templates
+        title: MNI152 nonlinear 6th generation template
+        reference: "Grabner G, Janke AL, Budge MM, Smith D, Pruessner J, Collins DL. Symmetric atlasing and model based segmentation: an application to the hippocampus in older adults. Medical Image Computing and Computer-Assisted Intervention. 2006;9(Pt 2):58–66."
+        doi: 10.1007/11866763_8
       - group: Image processing
         title: niimath
         reference: "Rorden C, Webster M, Drake C, et al. niimath and fslmaths: replication as a method to enhance testing and improve tool quality. Aperture Neuro. 2024;4."
@@ -896,6 +900,14 @@ apps:
         title: NiiVue
         reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
         url: https://github.com/niivue/niivue
+      - group: Templates
+        title: MNI152 nonlinear 6th generation template
+        reference: "Grabner G, Janke AL, Budge MM, Smith D, Pruessner J, Collins DL. Symmetric atlasing and model based segmentation: an application to the hippocampus in older adults. Medical Image Computing and Computer-Assisted Intervention. 2006;9(Pt 2):58–66."
+        doi: 10.1007/11866763_8
+      - group: Templates
+        title: ICBM152 linear average template
+        reference: "Mazziotta J, Toga A, Evans A, et al. A probabilistic atlas and reference system for the human brain: International Consortium for Brain Mapping (ICBM). Philosophical Transactions of the Royal Society B. 2001;356(1412):1293–1322."
+        doi: 10.1098/rstb.2001.0915
 
   greedy:
     about:
@@ -928,6 +940,14 @@ apps:
         title: NiiVue
         reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
         url: https://github.com/niivue/niivue
+      - group: Templates
+        title: MNI152 nonlinear 6th generation template
+        reference: "Grabner G, Janke AL, Budge MM, Smith D, Pruessner J, Collins DL. Symmetric atlasing and model based segmentation: an application to the hippocampus in older adults. Medical Image Computing and Computer-Assisted Intervention. 2006;9(Pt 2):58–66."
+        doi: 10.1007/11866763_8
+      - group: Templates
+        title: ICBM152 linear average template
+        reference: "Mazziotta J, Toga A, Evans A, et al. A probabilistic atlas and reference system for the human brain: International Consortium for Brain Mapping (ICBM). Philosophical Transactions of the Royal Society B. 2001;356(1412):1293–1322."
+        doi: 10.1098/rstb.2001.0915
 
   brain2print:
     packages:
@@ -1032,6 +1052,14 @@ apps:
         title: NiiVue
         reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
         url: https://github.com/niivue/niivue
+      - group: Templates
+        title: MNI152 nonlinear 6th generation template
+        reference: "Grabner G, Janke AL, Budge MM, Smith D, Pruessner J, Collins DL. Symmetric atlasing and model based segmentation: an application to the hippocampus in older adults. Medical Image Computing and Computer-Assisted Intervention. 2006;9(Pt 2):58–66."
+        doi: 10.1007/11866763_8
+      - group: Templates
+        title: ICBM152 linear average template
+        reference: "Mazziotta J, Toga A, Evans A, et al. A probabilistic atlas and reference system for the human brain: International Consortium for Brain Mapping (ICBM). Philosophical Transactions of the Royal Society B. 2001;356(1412):1293–1322."
+        doi: 10.1098/rstb.2001.0915
 
   fireants:
     about:
@@ -1064,6 +1092,14 @@ apps:
         title: NiiVue
         reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
         url: https://github.com/niivue/niivue
+      - group: Templates
+        title: MNI152 nonlinear 6th generation template
+        reference: "Grabner G, Janke AL, Budge MM, Smith D, Pruessner J, Collins DL. Symmetric atlasing and model based segmentation: an application to the hippocampus in older adults. Medical Image Computing and Computer-Assisted Intervention. 2006;9(Pt 2):58–66."
+        doi: 10.1007/11866763_8
+      - group: Templates
+        title: ICBM152 linear average template
+        reference: "Mazziotta J, Toga A, Evans A, et al. A probabilistic atlas and reference system for the human brain: International Consortium for Brain Mapping (ICBM). Philosophical Transactions of the Royal Society B. 2001;356(1412):1293–1322."
+        doi: 10.1098/rstb.2001.0915
   brain-extraction:
     packages:
     - name: QSMbly Rust BET
@@ -1363,6 +1399,14 @@ apps:
         title: NiiVue
         reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
         url: https://github.com/niivue/niivue
+      - group: Templates
+        title: MNI152 nonlinear 6th generation template
+        reference: "Grabner G, Janke AL, Budge MM, Smith D, Pruessner J, Collins DL. Symmetric atlasing and model based segmentation: an application to the hippocampus in older adults. Medical Image Computing and Computer-Assisted Intervention. 2006;9(Pt 2):58–66."
+        doi: 10.1007/11866763_8
+      - group: Templates
+        title: ICBM152 linear average template
+        reference: "Mazziotta J, Toga A, Evans A, et al. A probabilistic atlas and reference system for the human brain: International Consortium for Brain Mapping (ICBM). Philosophical Transactions of the Royal Society B. 2001;356(1412):1293–1322."
+        doi: 10.1098/rstb.2001.0915
 
   dicomview:
     privacy: Your DICOM files and their headers stay on your computer. Converted images are saved in the browser's own storage on this device until you choose Clear saved or clear the site's data. On the website, a protocol summary downloads the Pyodide runtime from cdn.jsdelivr.net and Python packages from PyPI the first time it runs; these requests contain no data from your files. The offline Standalone version bundles Pyodide and its packages and makes none of these requests. Open in White matter lesions keeps the converted image in this browser’s storage so that app can open it within 2 minutes; it is deleted once that app opens it. It is the NIfTI image dcm2niix made, named after the series number and description; its header keeps acquisition details such as echo and acquisition time, not the patient’s name or birth date. If the browser closes first, the image can no longer be opened, but its bytes stay in browser storage until an app on this site is next opened after those 2 minutes. A browser that restores its previous session may still open it within the 2 minutes.
@@ -1438,3 +1482,90 @@ apps:
         title: Prais-Winsten AR(1) prewhitening
         reference: "Prais SJ, Winsten CB. Trend Estimators and Serial Correlation. Cowles Commission Discussion Paper, Statistics No. 383. 1954."
         url: https://cowles.yale.edu/sites/default/files/2023-05/s-0383.pdf
+
+  noddi:
+    packages:
+      - name: AMICO 1.5.4 (Rust and WebAssembly port)
+        url: https://github.com/daducci/AMICO
+        role: NODDI fit, ported from the last BSD-licensed release
+      - name: MindGrab (brainchop)
+        url: https://github.com/neuroneural/brainchop
+        role: default brain extraction from the mean b0 on the GPU or CPU
+      - name: NiiVue
+        url: https://github.com/niivue/niivue
+        role: image viewer
+      - name: dcm2niix (WebAssembly)
+        url: https://github.com/rordenlab/dcm2niix
+        role: DICOM to NIfTI conversion
+    citations:
+      - group: Brain extraction
+        title: MindGrab
+        reference: "Fani A, Nassar M, Ghosh S, et al. MindGrab for BrainChop: fast and accurate skull stripping for command line and browser. arXiv. 2025."
+        url: https://arxiv.org/abs/2506.11860
+      - group: Brain extraction
+        title: Brainchop
+        reference: "Masoud M, Hu F, Plis S. Brainchop: in-browser MRI volumetric segmentation and rendering. Journal of Open Source Software. 2023;8(83):5098."
+        doi: 10.21105/joss.05098
+        code: https://github.com/neuroneural/brainchop
+      - group: Diffusion tensor fitting
+        title: Diffusion tensor imaging
+        reference: Basser PJ, Mattiello J, LeBihan D. MR diffusion tensor spectroscopy
+          and imaging. Biophysical Journal. 1994;66(1):259–267.
+        doi: 10.1016/S0006-3495(94)80775-1
+      - group: NODDI
+        title: NODDI
+        reference: "Zhang H, Schneider T, Wheeler-Kingshott CA, Alexander DC. NODDI:
+          practical in vivo neurite orientation dispersion and density imaging of the
+          human brain. NeuroImage. 2012;61(4):1000–1016."
+        doi: 10.1016/j.neuroimage.2012.03.072
+      - group: NODDI
+        title: AMICO
+        reference: "Daducci A, Canales-Rodríguez EJ, Zhang H, Dyrby TB, Alexander DC,
+          Thiran JP. Accelerated Microstructure Imaging via Convex Optimization (AMICO)
+          from diffusion MRI data. NeuroImage. 2015;105:32–44."
+        doi: 10.1016/j.neuroimage.2014.10.026
+        code: https://github.com/daducci/AMICO
+      - group: DICOM conversion
+        title: dcm2niix
+        reference: "Li X, Morgan PS, Ashburner J, Smith J, Rorden C. The first step for
+          neuroimaging data analysis: DICOM to NIfTI conversion. Journal of
+          Neuroscience Methods. 2016;264:47–56."
+        doi: 10.1016/j.jneumeth.2016.03.001
+      - group: Visualization
+        title: NiiVue
+        reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
+        url: https://github.com/niivue/niivue
+
+  degibbs:
+    packages:
+      - name: MRtrix3 mrdegibbs 3.0.8 (Rust and WebAssembly port)
+        url: https://github.com/MRtrix3/mrtrix3
+        role: Gibbs-ringing removal, ported under the MPL-2.0
+      - name: NiiVue
+        url: https://github.com/niivue/niivue
+        role: image viewer
+      - name: dcm2niix (WebAssembly)
+        url: https://github.com/rordenlab/dcm2niix
+        role: DICOM to NIfTI conversion
+    citations:
+      - group: Gibbs-ringing removal
+        title: Local subvoxel shifts
+        reference: "Kellner E, Dhital B, Kiselev VG, Reisert M. Gibbs-ringing artifact removal based on
+          local subvoxel-shifts. Magnetic Resonance in Medicine. 2016;76(5):1574–1581."
+        doi: 10.1002/mrm.26054
+      - group: Gibbs-ringing removal
+        title: MRtrix3
+        reference: "Tournier JD, Smith R, Raffelt D, et al. MRtrix3: A fast, flexible and open software
+          framework for medical image processing and visualisation. NeuroImage. 2019;202:116137."
+        doi: 10.1016/j.neuroimage.2019.116137
+        code: https://github.com/MRtrix3/mrtrix3
+      - group: DICOM conversion
+        title: dcm2niix
+        reference: "Li X, Morgan PS, Ashburner J, Smith J, Rorden C. The first step for
+          neuroimaging data analysis: DICOM to NIfTI conversion. Journal of
+          Neuroscience Methods. 2016;264:47–56."
+        doi: 10.1016/j.jneumeth.2016.03.001
+      - group: Visualization
+        title: NiiVue
+        reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
+        url: https://github.com/niivue/niivue

@@ -1,5 +1,5 @@
 import { mockExampleIntegrity } from "../../../test-utils/example-fixture-catalog.mjs";
-import { affineDifference, downsampledExamplePair, ncc, readVolume, resampleToGrid } from "../../../test-utils/registration-similarity.mjs";
+import { affineDifference, downsampledExamplePair, fetchPinnedExample, ncc, readVolume, resampleToGrid } from "../../../test-utils/registration-similarity.mjs";
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -39,7 +39,7 @@ async function selectExample(page, files) {
   await page.locator("[data-neurodesk-example]").selectOption("t1-mni");
   await expect(page.locator("[data-neurodesk-examples]")).toHaveAttribute("data-example-state", "ready", { timeout: 120_000 });
   await expect(page.locator("#movingInfo")).toContainText("t1_brain.nii.gz");
-  await expect(page.locator("#stationaryInfo")).toContainText("MNI152_T1_1mm_brain.nii.gz");
+  await expect(page.locator("#fixedInfo")).toContainText("MNI152_T1_1mm_brain.nii.gz");
   await expect(page.locator("#resultList")).toBeEmpty();
 }
 
@@ -116,6 +116,37 @@ async function expectTransformArchiveReproduces(bytes, type, registered, moving,
   expect(agreement).toBeGreaterThan(0.99);
   return archive;
 }
+
+// The full template path: the fixed image is a built-in template, fetched and
+// checksummed by the app, and the user's own file is the moving image.
+test("a built-in template as the fixed image registers a user's moving image", async ({ page }) => {
+  test.setTimeout(600_000);
+  const templates = JSON.parse(await readFile(new URL("../../../registry/templates.json", import.meta.url), "utf8")).templates;
+  const template = templates.find(({ id }) => id === "mni152-fsl-t1-1mm-brain");
+  const templateBytes = await fetchPinnedExample(template.url);
+  const { files } = await downsampledExamplePair(examples[0], 2);
+  const movingName = examples[0].files.find(({ role }) => role === "moving").name;
+  await page.route(template.url, (route) => route.fulfill({
+    body: templateBytes,
+    contentType: "application/gzip",
+    headers: { "access-control-allow-origin": "*", "cross-origin-resource-policy": "cross-origin" },
+  }));
+  await page.goto("/");
+  await expect(page.locator("#fixedTemplate")).toBeEnabled({ timeout: 60_000 });
+  await page.locator("#fixedTemplate").selectOption(template.id);
+  await expect(page.locator("#fixedInfo")).toContainText(`${template.label} · 182×218×182 · 1×1×1 mm`);
+  await expect(page.locator("#fixedTemplate")).toHaveValue(template.id);
+  await page.locator("#movingInput").setInputFiles({ name: movingName, mimeType: "application/gzip", buffer: files[movingName] });
+  await expect(page.locator("#movingInfo")).toContainText(movingName);
+  await page.locator("#runButton").click();
+  await expect(page.locator("#statusText")).toContainText("Registration complete", { timeout: 480_000 });
+  const nifti = await downloadResult(page, "Registered NIfTI");
+  const registered = await readVolume(await readFile(await nifti.path()));
+  const fixed = await readVolume(templateBytes);
+  expect(registered.dims).toEqual(fixed.dims);
+  expect(affineDifference(registered.affine, fixed.affine)).toBeLessThan(1e-3);
+  expect(ncc(registered.data, fixed.data)).toBeGreaterThan(0.9);
+});
 
 test("affine + B-spline registration adds a deformable stage that keeps the alignment", async ({ page }) => {
   test.setTimeout(600_000);

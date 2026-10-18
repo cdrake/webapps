@@ -3,8 +3,8 @@
 // resamples a "coordinate image" whose voxels hold their own physical
 // coordinate along one axis. Linear interpolation recovers that coordinate of
 // T(point) to the sampler's precision. A linear transform is then fitted
-// exactly from the stationary image's corners; any other is sampled at every
-// stationary voxel as a displacement field. transformix is injected, so there
+// exactly from the fixed image's corners; any other is sampled at every
+// fixed voxel as a displacement field. transformix is injected, so there
 // are no DOM or ITK-Wasm imports and Node tests exercise it directly.
 
 // ITK parameterizations that are affine maps. Anything else (B-spline,
@@ -231,7 +231,7 @@ export function displacementFieldImage(vectors, image) {
   };
 }
 
-/** The transformation as the store's only one: from the stationary (fixed) image to the moving one. */
+/** The transformation as the store's only one: from the fixed image to the moving one. */
 export function namedTransformation(transformation) {
   return { ...transformation, name: "fixed_to_moving", input: { name: "fixed" }, output: { name: "moving" } };
 }
@@ -250,9 +250,9 @@ async function mappedCoordinates(transformix, transformParameterObject, dimensio
 }
 
 /**
- * The stationary-to-moving transform, evaluated by transformix: one affine
+ * The fixed-to-moving transform, evaluated by transformix: one affine
  * (`matrix`, `offset`) when every stage is linear, else a displacement field
- * image sampled on the stationary grid. Each runtime serializes the estimate
+ * image sampled on the fixed grid. Each runtime serializes the estimate
  * as RFC-5 OME-Zarr itself.
  */
 export async function estimateTransform({ transform, transformParameterObject, fixed, moving }, { transformix }) {

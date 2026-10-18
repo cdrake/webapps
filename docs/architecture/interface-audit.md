@@ -332,3 +332,19 @@ leaves these per-app changes open:
   without `navigator.gpu`, although every pinned NiiVue rc falls back to WebGL2.
   Their catalog cards say "Needs WebGPU" until the checks are removed (#384).
 - SeedSeg has no built-in example.
+
+## Registration image pair, 18 October 2026
+
+ANTs, Greedy, FireANTs, EdgeReg, elastix and SYNcro load their images through the
+shared `nd-image-pair`. Every app now says fixed and moving, in the interface, the
+element IDs (`#fixedInput`, `#fixedInfo`, `#fixedSeries`, `#fixedTemplate`) and the
+viewer panels; no app says stationary. The fixed card comes first with explicit
+"Load fixed image…" and "Folder…" pickers. Swap, clear and a summary of size
+and spacing are new in every app. Examples fill the slots by role through the same
+path as a user's file. A failed load keeps the previous image in all six apps (before,
+only elastix did). Brain extraction in ANTs, Greedy and FireANTs moved to its own
+row of Fixed and Moving buttons below the pair. The fixed card offers the built-in
+templates of `registry/templates.json`: FSL MNI152 1 mm brain and head, and the
+ICBM152 avg152 2 mm head. elastix offers them for 3D images only and disables the
+select for a 2D moving image. SYNcro's fixed card is the locked MNI152 template, and
+its scan is the moving image.

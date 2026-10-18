@@ -20,13 +20,13 @@ const lockedAsset = {
   dependencies: [],
 };
 
-async function fixture(t, { model = false, conflict = false, locked = false } = {}) {
+async function fixture(t, { model = false, template = false, templateExample = false, conflict = false, locked = false } = {}) {
   const root = await mkdtemp(join(tmpdir(), 'lock-example-assets-'));
   t.after(() => rm(root, { recursive: true, force: true }));
-  for (const path of ['scripts/lib', 'registry', 'models', 'apps/alpha', 'apps/beta', 'storage']) {
+  for (const path of ['scripts/lib', 'registry', 'models', 'apps/alpha', 'apps/beta', 'storage', 'packages/components/src/ui']) {
     await mkdir(join(root, path), { recursive: true });
   }
-  for (const path of ['scripts/lock-example-assets.mjs', 'scripts/lib/apps-registry.mjs', 'scripts/lib/model-assets.mjs']) {
+  for (const path of ['scripts/lock-example-assets.mjs', 'scripts/lib/apps-registry.mjs', 'scripts/lib/model-assets.mjs', 'scripts/lib/templates.mjs', 'packages/components/src/ui/templates.js']) {
     await copyFile(join(repoRoot, path), join(root, path));
   }
   await symlink(join(repoRoot, 'node_modules'), join(root, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
@@ -63,10 +63,15 @@ async function fixture(t, { model = false, conflict = false, locked = false } = 
       id: 'first',
       files: [{ name: 'alpha.nii.gz', url, sha256: conflict ? '0'.repeat(64) : sha256, license: 'MIT' }],
     }],
-    'apps/beta/examples.json': model ? [] : [{
+    'apps/beta/examples.json': model || (template && !templateExample) ? [] : [{
       id: 'second',
       files: [{ name: 'beta.nii.gz', url, sha256, license: 'CC0-1.0' }],
     }],
+    'registry/templates.json': {
+      schema_version: 1,
+      consumers: template ? { beta: {} } : {},
+      templates: template ? [{ id: 'shared', filename: 'shared.nii.gz', url, sha256, bytes: bytes.length, license: 'CC-BY-4.0' }] : [],
+    },
     'registry/offline-assets.sources.json': { apps: { alpha: [], beta: [] } },
     'registry/offline-assets.lock.json': { assets: locked ? { [url]: lockedAsset } : {}, apps: { alpha: [], beta: [] } },
   };
@@ -119,6 +124,24 @@ globalThis.fetch = async (url) => {
     },
   };
 }
+
+test('registers a catalogue template for each app that offers it', async t => {
+  const f = await fixture(t, { template: true });
+  const result = await f.run();
+  assert.equal(result.status, 0, result.stderr);
+  const sources = await f.read('registry/offline-assets.sources.json');
+  const lock = await f.read('registry/offline-assets.lock.json');
+  assert.deepEqual(lock.apps, { alpha: [url], beta: [url] });
+  assert.deepEqual(sources.apps.beta, [{ url, sha256, bytes: bytes.length, kind: 'template', license: 'CC-BY-4.0' }]);
+});
+
+test('a template that is also an example records the template licence', async t => {
+  const f = await fixture(t, { template: true, templateExample: true });
+  const result = await f.run();
+  assert.equal(result.status, 0, result.stderr);
+  const sources = await f.read('registry/offline-assets.sources.json');
+  assert.deepEqual(sources.apps.beta, [{ url, sha256, bytes: bytes.length, kind: 'template', license: 'CC-BY-4.0' }]);
+});
 
 for (const model of [false, true]) {
   test(`registers every owner of a shared ${model ? 'example and model' : 'example'} URL`, async t => {

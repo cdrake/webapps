@@ -31,7 +31,8 @@ and `/ui`; individual `/elements/<name>` entries support selective imports.
 | `nd-file-field` | `createFileField` | `text`, `label`, `kind`, `disabled`, `directory`, `input-id` attributes; `input`, `text` properties; `onFiles`, `setText`, `setHasFiles` methods | `nd-files`: `{ files: Promise<File[]> }` |
 | `nd-result-list` | `createResultList` | `stageLabels` property; `render(results, stageOrder)` method | `nd-view`, `nd-download`: `{ stage, result }`; `nd-visibility-change`: `{ stage, result, visible, input }` |
 | `nd-viewer-toolbar` | `createViewerToolbar` | `options` property before initialization; `setActive`, `control` methods | `nd-view-change`, `nd-overlay-change`, `nd-colormap-change`: `{ value }`; `nd-window-change`: `{ control, value }`; `nd-window-reset`, `nd-download`, `nd-screenshot` |
-| `nd-example-selector` | `createExampleSelector` | `examples`, `onLoad`, `onStatus`, `scope` properties; `disabled` attribute; `cancel`, `setDisabled`, `destroy` methods | `nd-example-status`: `{ state, message, error }` |
+| `nd-example-selector` | `createExampleSelector` | `examples`, `onLoad`, `onStatus`, `scope` properties; `disabled` attribute; `cancel`, `reset`, `setDisabled`, `destroy` methods | `nd-example-status`: `{ state, message, error }` |
+| `nd-image-pair` | `createImagePair` | `examples`, `templates`, `lockedFixed`, `slotHelp` properties and the `read`, `open`, `clear`, `validatePair`, `perform`, `onChange`, `onStatus` hooks; `disabled` attribute; `fixed`, `moving`, `ready`, `error`, `exampleControl` getters; `load`, `use`, `loadWithin`, `useWithin`, `reset`, `swap` methods | `nd-image-pair-change`: `{ slot, fixed, moving, ready, error }` |
 
 The file field accepts multiple files by default. `multiple="false"` selects a
 single file. `accept` is available for specialized inputs; scan inputs keep it

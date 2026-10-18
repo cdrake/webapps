@@ -26,7 +26,8 @@
       "filename": "MNI152_T1_1mm_brain.nii.gz",
       "bytes": 3219212,
       "sha256": "32d5be33460f995a5d305507053c8862c823d9ca6bfb543381308df14590f212",
-      "license": "FSL non-commercial terms; see FSL-LICENSE.txt"
+      "license": "FSL non-commercial terms; see FSL-LICENSE.txt",
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/544f1362f367355e61a85e0694f5075aba2792b6/reg/templates/MNI152_T1_1mm_brain.nii.gz"
     }
   ]
 }

@@ -41,8 +41,8 @@ for (const backend of ['wasm','webgpu']) test(`shared SynthSR stage: ${backend} 
   await test.info().attach('webgpu-adapter', { body: JSON.stringify(info), contentType: 'application/json' });
  }
  const fixture=new URL('../../synthsr/test/fixtures/validation.nii.gz',import.meta.url);
- await page.locator('#input').setInputFiles(fileURLToPath(fixture));
- await expect(page.locator('#statusText')).toContainText('Primary scan loaded · validation.nii.gz',{timeout:30000});
+ await page.locator('#movingInput').setInputFiles(fileURLToPath(fixture));
+ await expect(page.locator('#statusText')).toContainText('Moving image loaded · validation.nii.gz',{timeout:30000});
  await expect(page.locator('#runButton')).toBeEnabled();
  const name=(await readdir(new URL('../dist/assets/',import.meta.url))).find(n=>/^inference-worker-.*\.js$/.test(n));
  expect(name).toBeTruthy();
