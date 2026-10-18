@@ -769,3 +769,23 @@ apps:
       shared_runtime: false
       browser_test: true
       release: false
+  - id: dwidenoise
+    path: dwidenoise
+    title: Dwidenoise
+    description: Patch2Self denoising of diffusion MRI in the browser.
+    categories: [image-processing, diffusion-imaging]
+    keywords: [denoising, Patch2Self, DIPY, diffusion MRI, preprocessing, WebAssembly]
+    legacy_domain: null
+    runtime: vite-wasm
+    model_manifest: null
+    asset_manifest_schema: null
+    source: neurodesk/webapps@local
+    license: BSD-3-Clause
+    maintainers: [neurodesk]
+    support_status: experimental
+    shell: imaging-workspace
+    ci:
+      toolchains: [node]
+      shared_runtime: false
+      browser_test: true
+      release: false

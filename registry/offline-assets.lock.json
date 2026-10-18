@@ -4114,6 +4114,11 @@
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/4247dd46949521cf9cc21399c6015b41c0ca176f/dwi2trx/fixtures/dwi.nii.gz",
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/4247dd46949521cf9cc21399c6015b41c0ca176f/dwi2trx/fixtures/dwi.bval",
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/4247dd46949521cf9cc21399c6015b41c0ca176f/dwi2trx/fixtures/dwi.bvec"
+    ],
+    "dwidenoise": [
+      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/4247dd46949521cf9cc21399c6015b41c0ca176f/dwi2trx/fixtures/dwi.nii.gz",
+      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/4247dd46949521cf9cc21399c6015b41c0ca176f/dwi2trx/fixtures/dwi.bval",
+      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/4247dd46949521cf9cc21399c6015b41c0ca176f/dwi2trx/fixtures/dwi.bvec"
     ]
   }
 }
