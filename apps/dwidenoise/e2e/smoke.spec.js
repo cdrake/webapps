@@ -4,8 +4,8 @@
 // automation operation.
 import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
-import { gunzipSync } from "node:zlib";
-import { readNiftiFrames } from "@neurodesk/webapp-components/file-io";
+import { gunzipSync, gzipSync } from "node:zlib";
+import { createNiftiFromData, readNiftiFrames } from "@neurodesk/webapp-components/file-io";
 import { loadDwidenoise } from "@neurodesk/dwidenoise";
 import { dwiSeries } from "./fixtures.mjs";
 import { dicomSeries } from "../../../test-utils/dicom-fixture.mjs";
@@ -107,6 +107,23 @@ test("an image without a bval is refused", async ({ page }) => {
   await expect(page.locator("#statusText")).toHaveText("Choose the .bval file with sub-01_dwi.nii.gz: Patch2Self groups volumes by b-value.");
   await expect(page.locator("#runButton")).toBeDisabled();
 });
+
+for (const invalid of [NaN, Infinity, -Infinity]) {
+  test(`a single b0 containing ${invalid} is refused without downloads`, async ({ page }) => {
+    const series = dwiSeries();
+    series.data[0] = invalid;
+    const header = gunzipSync(series.files[0].buffer);
+    const { dims, frames } = readNiftiFrames(header);
+    series.files[0].buffer = gzipSync(createNiftiFromData(series.data, header, { dims: [...dims, frames] }));
+    await page.goto("/");
+    await page.locator("#imageInput").setInputFiles(series.files);
+    await expect(page.locator("#runButton")).toBeEnabled();
+    await page.locator("#runButton").click();
+    await expect(page.locator("#statusText")).toHaveText("The data holds values that are not finite numbers (NaN or infinity).");
+    await expect(page.locator("#runButton")).toBeEnabled();
+    await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(0);
+  });
+}
 
 test("cancelling stops the workers and permits another run", async ({ page }) => {
   await page.goto("/");

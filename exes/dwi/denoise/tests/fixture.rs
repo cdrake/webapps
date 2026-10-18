@@ -185,6 +185,17 @@ fn values_that_are_not_finite_are_refused() {
     assert!(err.contains("not finite"), "{err}");
 }
 
+#[test]
+fn a_single_unchanged_b0_must_also_contain_only_finite_values() {
+    for invalid in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        let mut data = vec![
+            invalid, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0,
+        ];
+        let err = denoise(&mut data, 4, &[0.0, 1000.0, 1000.0]).unwrap_err();
+        assert!(err.contains("not finite"), "{err}");
+    }
+}
+
 /// The Gram sums of separate voxel ranges add up to one pass, whether the ranges are views of
 /// the whole array or independent volume-major buffers, and applying in chunks gives the same
 /// output. The partial sums round in a different order, so the comparison has a tolerance.

@@ -12,7 +12,7 @@ import {
   bindInfoTooltips,
   ProgressManager,
 } from "@neurodesk/webapp-components/ui";
-import { createNiftiFromData, decodeNiftiBuffer, downloadFile, readNiftiFrames } from "@neurodesk/webapp-components/file-io";
+import { createNiftiFromData, decodeNiftiBuffer, downloadFile, extractNiftiHeader, readNiftiFrames } from "@neurodesk/webapp-components/file-io";
 import { registerAppAutomation } from "@neurodesk/webapp-components/automation";
 import { readDiffusionSeries, runDcm2niix } from "@neurodesk/runtime-support/dcm2niix-client";
 import { loadDwidenoise } from "@neurodesk/dwidenoise";
@@ -87,13 +87,6 @@ async function showVolume(file) {
   $("emptyState").hidden = true;
 }
 
-/** The header and extensions of a decoded NIfTI-1 file: the bytes before vox_offset. */
-function niftiHeader(buffer) {
-  const view = new DataView(buffer);
-  const littleEndian = view.getInt32(0, true) === 348;
-  return buffer.slice(0, Math.ceil(view.getFloat32(108, littleEndian)));
-}
-
 async function gzipFile(buffer, name) {
   const stream = new Blob([buffer]).stream().pipeThrough(new CompressionStream("gzip"));
   return new File([await new Response(stream).arrayBuffer()], name, { type: "application/gzip" });
@@ -137,7 +130,7 @@ async function loadFiles(filesPromise, signal) {
     await showVolume(new File([buffer], image.name.replace(/\.gz$/i, "")));
     controller.signal.throwIfAborted();
     // Keep only the header (and extensions) of the decoded file: the volumes are in frames.data.
-    input = { name: image.name, ...frames, headerBytes: niftiHeader(buffer), bvals, bval, bvec, sidecar };
+    input = { name: image.name, ...frames, headerBytes: extractNiftiHeader(buffer), bvals, bval, bvec, sidecar };
     clearOutputs();
     $("fileInfo").hidden = false;
     const gradients = ["bval", bvec && "bvec"].filter(Boolean).join(", ");
