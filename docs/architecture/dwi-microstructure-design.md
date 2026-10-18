@@ -57,7 +57,7 @@ These rules are in the `gradients` crate with tests:
 - A volume is b0 when b < 50 s/mm², as in dwi2trx.
 - Shells are the non-zero b-values after rounding to the nearest 100 s/mm². Then 995, 1000 and 1005 are one shell.
 - NODDI needs two or more non-zero shells. With one shell, `noddi` refuses NODDI and still makes the DTI maps.
-- The DTI subset is the b0 volumes plus the lowest non-zero shell. It is not a fixed b ≤ 1000 limit, so b = 700/1200 data also works.
+- The DTI subset is the b0 volumes plus every shell up to b = 1200 s/mm² (Q48); data with no shell that low uses its lowest shell. ds005134 (500/1000/2000) fits 60 directions at b = 500 and 1000.
 
 ## Code layout
 

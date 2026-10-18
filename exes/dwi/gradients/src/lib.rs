@@ -9,6 +9,10 @@ pub const B0_THRESHOLD: f64 = 50.0;
 /// one shell.
 pub const SHELL_STEP: f64 = 100.0;
 
+/// The tensor fit uses every shell up to this b-value (s/mm²), where the signal is close to
+/// Gaussian; data with no shell this low uses its lowest shell instead.
+pub const DTI_MAX_B: f64 = 1200.0;
+
 /// A gradient table: one b-value and one direction per volume.
 #[derive(Clone, Debug)]
 pub struct Gradients {
@@ -120,8 +124,9 @@ impl Gradients {
         Ok(())
     }
 
-    /// The volumes for the tensor fit: every b0 and the lowest non-zero shell. It is not a fixed
-    /// b ≤ 1000 limit, so a 700/1200/2800 acquisition fits its b = 700 shell.
+    /// The volumes for the tensor fit: every b0 and every shell up to `DTI_MAX_B`, or the lowest
+    /// shell when none is that low. A 500/1000/2000 acquisition fits its b = 500 and 1000 shells;
+    /// a 1500/3000 one fits b = 1500.
     pub fn dti_volumes(&self) -> Result<Vec<usize>, String> {
         let b0 = self.b0_volumes();
         if b0.is_empty() {
@@ -129,16 +134,27 @@ impl Gradients {
                 "The tensor fit needs a b0 volume (b < {B0_THRESHOLD} s/mm²). This data has none."
             ));
         }
-        let lowest = *self
-            .shells()
+        let shells = self.shells();
+        let lowest = *shells
             .first()
             .ok_or("The tensor fit needs diffusion-weighted volumes. This data has only b0.")?;
+        let max_b = if lowest <= DTI_MAX_B {
+            DTI_MAX_B
+        } else {
+            lowest
+        };
         let volumes: Vec<usize> = (0..self.len())
-            .filter(|&i| self.is_b0(i) || self.shell_of(i) == lowest)
+            .filter(|&i| self.is_b0(i) || self.shell_of(i) <= max_b)
             .collect();
         if volumes.len() - b0.len() < 6 {
+            let used: Vec<String> = shells
+                .iter()
+                .filter(|&&s| s <= max_b)
+                .map(|s| s.to_string())
+                .collect();
             return Err(format!(
-                "The tensor fit needs six or more directions in the b = {lowest} s/mm² shell. This data has {}.",
+                "The tensor fit needs six or more directions with b ≤ {max_b} s/mm² (shells {}). This data has {}.",
+                used.join(", "),
                 volumes.len() - b0.len()
             ));
         }
@@ -194,19 +210,35 @@ mod tests {
     }
 
     #[test]
-    fn dti_uses_b0_and_lowest_shell() {
+    fn dti_uses_b0_and_every_shell_up_to_1200() {
         let mut bvals = vec![0.0];
-        bvals.extend([700.0; 6]);
-        bvals.extend([1200.0; 6]);
+        bvals.extend([500.0; 3]);
+        bvals.extend([1000.0; 3]);
+        bvals.extend([2000.0; 3]);
+        bvals.extend([1205.0; 1]);
         bvals.push(0.0);
         let g = table(&bvals);
-        assert_eq!(g.dti_volumes().unwrap(), vec![0, 1, 2, 3, 4, 5, 6, 13]);
+        // 1205 rounds to the 1200 shell, which is included; 2000 is not.
+        assert_eq!(g.dti_volumes().unwrap(), vec![0, 1, 2, 3, 4, 5, 6, 10, 11]);
+    }
+
+    #[test]
+    fn dti_uses_the_lowest_shell_when_none_is_1200_or_less() {
+        let mut bvals = vec![0.0];
+        bvals.extend([1500.0; 6]);
+        bvals.extend([3000.0; 6]);
+        let g = table(&bvals);
+        assert_eq!(g.dti_volumes().unwrap(), vec![0, 1, 2, 3, 4, 5, 6]);
     }
 
     #[test]
     fn dti_needs_six_directions() {
         let g = table(&[0.0, 1000.0, 1000.0, 1000.0, 1000.0, 1000.0, 2000.0]);
-        assert!(g.dti_volumes().unwrap_err().contains("six or more"));
+        let err = g.dti_volumes().unwrap_err();
+        assert!(
+            err.contains("six or more") && err.contains("b ≤ 1200"),
+            "{err}"
+        );
     }
 
     #[test]

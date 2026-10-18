@@ -84,7 +84,7 @@
     </footer>
 
     <template id="aboutContent">
-      <p>NODDI fits diffusion tensor and NODDI maps to diffusion MRI in this browser. The tensor fit gives FA, MD, AD, RD, S0 and the principal direction from the b0 volumes and the lowest shell. NODDI, fitted with AMICO, gives the intra-cellular volume fraction (ICVF), the isotropic volume fraction (ISOVF) and the orientation dispersion index (ODI). It needs two or more shells. The NODDI fit is a port of AMICO 1.5.4 and agrees with it to a median of 1e-4 in white matter; AMICO 1.5.4 rounds each fibre direction to its 1° lookup table and this port does not. Outputs use the BIDS diffusion derivative names. Fit corrected data: this app does not denoise or correct motion, eddy currents or distortion.</p>
+      <p>NODDI fits diffusion tensor and NODDI maps to diffusion MRI in this browser. The tensor fit gives FA, MD, AD, RD, S0 and the principal direction from the b0 volumes and the shells up to b = 1200 s/mm² (the lowest shell when none is that low). NODDI, fitted with AMICO, gives the intra-cellular volume fraction (ICVF), the isotropic volume fraction (ISOVF) and the orientation dispersion index (ODI). It needs two or more shells. The NODDI fit is a port of AMICO 1.5.4 and agrees with it to a median of 1e-4 in white matter; AMICO 1.5.4 rounds each fibre direction to its 1° lookup table and this port does not. Outputs use the BIDS diffusion derivative names. Fit corrected data: this app does not denoise or correct motion, eddy currents or distortion.</p>
     </template>
     <template id="privacyContent"><p>Images are processed locally in this browser and are never uploaded.</p></template>
 
