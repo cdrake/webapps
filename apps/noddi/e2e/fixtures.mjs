@@ -45,3 +45,12 @@ export function syntheticDwi({ size = 8, shells = [1000, 2000], directions = 30 
     tissue: inside.length,
   };
 }
+
+/** A mask on the syntheticDwi grid with every voxel set to `value`. */
+export function syntheticMask({ size = 8, value = 0 } = {}) {
+  const header = createNiftiHeaderFromVolume({
+    hdr: { dims: [3, size, size, size, 1, 1, 1, 1], pixDims: [1, 2, 2, 2, 1, 1, 1, 1] },
+  });
+  const nifti = createNiftiFromData(new Uint8Array(size ** 3).fill(value), header, { dims: [size, size, size] });
+  return { name: "mask.nii.gz", mimeType: "application/gzip", buffer: gzipSync(Buffer.from(nifti)) };
+}

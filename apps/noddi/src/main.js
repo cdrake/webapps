@@ -203,6 +203,7 @@ async function fitModels(signal) {
   progress.setCancellable(true);
   status(`Fitting ${withNoddi ? "tensor and NODDI" : "tensor"} to ${indices.length} voxels`);
   try {
+    if (!indices.length) throw new Error("The brain mask has no voxels. Supply a mask, or check the b0 volumes.");
     const fit = await fitVolume({
       data: input.data,
       voxels: input.voxels,
