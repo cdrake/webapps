@@ -18,8 +18,8 @@ use dwi_tensor::Design;
 use special::{erf, erfi, legendre};
 use tables::{FIT_M0, GRAD_Z, N_HR, N_L};
 
-/// AMICO's b0 threshold as the noddi app calls it (`load_data(b0_thr=50)`), in s/mm².
-pub const B0_THRESHOLD: f64 = 50.0;
+/// The shared strict b0 threshold, in s/mm².
+pub use dwi_gradients::B0_THRESHOLD;
 
 /// models.NODDI defaults: parallel and isotropic diffusivity (mm²/s), and the atom grids.
 pub const D_PAR: f64 = 1.7e-3;
@@ -101,7 +101,7 @@ pub struct NoddiFit {
 
 impl Dictionary {
     /// `bvals` in s/mm², `bvecs` one direction per volume. Shells are the distinct b-values
-    /// above `B0_THRESHOLD`, as amico.scheme.Scheme groups them (no rounding).
+    /// at or above `B0_THRESHOLD`, without shell rounding.
     pub fn new(bvals: &[f64], bvecs: &[[f64; 3]]) -> Result<Self, String> {
         if bvals.len() != bvecs.len() {
             return Err("The bval and bvec files list different numbers of volumes.".into());
@@ -109,10 +109,10 @@ impl Dictionary {
         let bvals: Vec<f64> = bvals.iter().map(|&b| six_decimals(b)).collect();
         let raw: Vec<[f64; 3]> = bvecs.iter().map(|g| g.map(six_decimals)).collect();
         let b0: Vec<usize> = (0..bvals.len())
-            .filter(|&i| bvals[i] <= B0_THRESHOLD)
+            .filter(|&i| bvals[i] < B0_THRESHOLD)
             .collect();
         let dwi: Vec<usize> = (0..bvals.len())
-            .filter(|&i| bvals[i] > B0_THRESHOLD)
+            .filter(|&i| bvals[i] >= B0_THRESHOLD)
             .collect();
         if b0.is_empty() {
             return Err("AMICO needs a b0 volume to normalise the signal.".into());

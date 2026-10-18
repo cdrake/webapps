@@ -17,7 +17,6 @@ import {
   decodeNiftiBuffer,
   downloadFile,
   readNiftiFrames,
-  readNiftiImageData,
   sameNiftiGrid,
 } from "@neurodesk/webapp-components/file-io";
 import { registerAppAutomation } from "@neurodesk/webapp-components/automation";
@@ -73,6 +72,7 @@ let mask = null;
 let outputs = {};
 let loading = null;
 let fitting = null;
+let noddiRequested = $("fitNoddi").checked;
 
 function status(message, error = false) {
   $("statusText").textContent = message;
@@ -136,12 +136,20 @@ async function loadFiles(filesPromise, signal) {
   loading = controller;
   setBusy(true);
   progress.begin("Reading diffusion data…");
+  progress.setCancellable(true);
   status("Reading diffusion data…");
   try {
-    const dwi = await readDwi(await filesPromise, controller.signal);
+    const files = await filesPromise;
+    const dwi = await readDwi(files, controller.signal);
+    controller.signal.throwIfAborted();
+    const b0 = await niftiFile(createNiftiFromData(dwi.meanB0, dwi.buffer, { dims: dwi.dims }), `${bidsStem(dwi.name)}_desc-meanb0.nii.gz`);
+    controller.signal.throwIfAborted();
+    await showVolume(b0);
     controller.signal.throwIfAborted();
     input = dwi;
     mask = null;
+    $("imageInput").dispatchEvent(new CustomEvent("nd-files", { bubbles: true, detail: { files } }));
+    $("maskInput").dispatchEvent(new CustomEvent("nd-files", { bubbles: true, detail: { files: [] } }));
     $("maskInfo").hidden = true;
     $("maskDrop").classList.remove("has-files");
     clearOutputs();
@@ -150,12 +158,10 @@ async function loadFiles(filesPromise, signal) {
     $("fileInfo").textContent = `${dwi.name} · ${dwi.table.b0.length}×b0, ${shells}`;
     $("dropZone").classList.add("has-files");
     $("fitNoddi").disabled = Boolean(dwi.table.noddiError);
-    $("fitNoddi").checked = !dwi.table.noddiError;
+    $("fitNoddi").checked = noddiRequested && !dwi.table.noddiError;
     $("noddiNote").hidden = !dwi.table.noddiError;
     $("noddiNote").textContent = dwi.table.noddiError ? "One shell: only the tensor maps can be fitted." : "";
     log.log(dwi.table.noddiError ?? `NODDI can run on shells ${shells}.`, "info");
-    const b0 = await niftiFile(createNiftiFromData(dwi.meanB0, dwi.buffer, { dims: dwi.dims }), `${bidsStem(dwi.name)}_desc-meanb0.nii.gz`);
-    await showVolume(b0);
     progress.setProgress(0);
     status(`${dwi.name} loaded`);
   } finally {
@@ -167,17 +173,38 @@ async function loadFiles(filesPromise, signal) {
   }
 }
 
-async function loadMask(file) {
+async function loadMask(file, signal) {
+  signal?.throwIfAborted();
   if (!input) throw new Error("Load the diffusion data before its mask.");
-  const buffer = await decodeNiftiBuffer(await file.arrayBuffer());
-  if (!sameNiftiGrid(buffer, input.buffer)) throw new Error(`${file.name} is not on the DWI grid.`);
-  const values = readNiftiImageData(buffer).data;
-  mask = Uint8Array.from(values, (value) => (value > 0 ? 1 : 0));
-  clearOutputs();
-  $("maskInfo").hidden = false;
-  $("maskInfo").textContent = `${file.name} · ${maskIndices(mask).length} voxels`;
-  $("maskDrop").classList.add("has-files");
-  status(`${file.name} will limit the fit`);
+  if (loading || fitting) throw new Error("Wait for the current operation to finish, or cancel it.");
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  signal?.addEventListener("abort", abort, { once: true });
+  loading = controller;
+  setBusy(true);
+  progress.begin("Reading mask…");
+  progress.setCancellable(true);
+  status("Reading mask…");
+  try {
+    const buffer = await decodeNiftiBuffer(await file.arrayBuffer());
+    controller.signal.throwIfAborted();
+    if (!sameNiftiGrid(buffer, input.buffer)) throw new Error(`${file.name} is not on the DWI grid.`);
+    const volume = readNiftiFrames(buffer);
+    if (volume.frames !== 1) throw new Error("The brain mask must be a single 3D image.");
+    mask = Uint8Array.from(volume.data, (value) => (value > 0 ? 1 : 0));
+    $("maskInput").dispatchEvent(new CustomEvent("nd-files", { bubbles: true, detail: { files: [file] } }));
+    clearOutputs();
+    $("maskInfo").hidden = false;
+    $("maskInfo").textContent = `${file.name} · ${maskIndices(mask).length} voxels`;
+    $("maskDrop").classList.add("has-files");
+    status(`${file.name} will limit the fit`);
+  } finally {
+    signal?.removeEventListener("abort", abort);
+    loading = null;
+    setBusy(false);
+    progress.stopTimer();
+    progress.setCancellable(false);
+  }
 }
 
 function setBusy(busy) {
@@ -189,6 +216,7 @@ function setBusy(busy) {
 
 async function fitModels(signal) {
   if (!input || loading || fitting) throw new Error("Load diffusion data before fitting.");
+  signal?.throwIfAborted();
   const controller = new AbortController();
   const abort = () => controller.abort();
   signal?.addEventListener("abort", abort, { once: true });
@@ -222,6 +250,7 @@ async function fitModels(signal) {
     const artifacts = [];
     const add = async (stage, description, data, name, range, frames = 1) => {
       const file = await niftiFile(createNiftiFromData(data, input.buffer, { dims: [...dims, frames] }), name);
+      controller.signal.throwIfAborted();
       rows[stage] = { description, file, range, viewable: frames === 1 };
       artifacts.push({ role: stage, file });
     };
@@ -235,11 +264,12 @@ async function fitModels(signal) {
       }
     }
     await add("mask", "Brain mask", brain, maskName(stem), [0, 1]);
+    const first = rows["noddi-icvf"] ?? rows["tensor-fa"];
+    await showVolume(first.file, first.range);
+    controller.signal.throwIfAborted();
     outputs = rows;
     results.render(rows);
     $("outputSection").open = true;
-    const first = rows["noddi-icvf"] ?? rows["tensor-fa"];
-    await showVolume(first.file, first.range);
     progress.end(`Fitted ${indices.length} voxels`);
     status(`Fitted ${indices.length} voxels · ${Object.keys(rows).length} maps`);
     return {
@@ -276,6 +306,9 @@ $("cancelButton").onclick = () => {
   loading?.abort();
   fitting?.abort();
 };
+$("fitNoddi").addEventListener("change", () => {
+  noddiRequested = $("fitNoddi").checked;
+});
 $("imageInput").addEventListener("change", (event) => {
   const files = Array.from(event.target.files);
   event.target.value = "";
@@ -315,9 +348,10 @@ registerAppAutomation({
       // DICOM is converted before this call; its bval and bvec arrive as sidecars of the image.
       const gradients = (inputDetails.image?.sidecars ?? []).filter((file) => /\.(bval|bvec)$/i.test(file.name));
       await loadFiles(Promise.resolve([...inputs.image, ...gradients, ...(inputs.bval ?? []), ...(inputs.bvec ?? [])]), signal);
-      if (inputs.mask?.length) await loadMask(inputs.mask[0]);
+      if (inputs.mask?.length) await loadMask(inputs.mask[0], signal);
       $("tensorFit").value = parameters.tensorFit;
-      $("fitNoddi").checked = parameters.noddi && !input.table.noddiError;
+      noddiRequested = parameters.noddi;
+      $("fitNoddi").checked = noddiRequested && !input.table.noddiError;
       return fitModels(signal);
     },
   },
