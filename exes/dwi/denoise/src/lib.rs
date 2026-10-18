@@ -191,9 +191,9 @@ pub enum SolveError {
     Empty,
     /// The data holds a value that is not a finite number (NaN or infinity).
     NotFinite,
-    /// The other volumes of group position `target` are linearly dependent (for example, two
-    /// identical volumes), so their least-squares weights are not defined.
-    Dependent { target: usize },
+    /// The volume at group position `volume` is a linear combination of other volumes of its
+    /// group (for example, a copy of one), so the least-squares weights are not defined.
+    Dependent { volume: usize },
 }
 
 impl std::fmt::Display for SolveError {
@@ -204,10 +204,10 @@ impl std::fmt::Display for SolveError {
                 f,
                 "The data holds values that are not finite numbers (NaN or infinity)."
             ),
-            SolveError::Dependent { target } => write!(
+            SolveError::Dependent { volume } => write!(
                 f,
-                "Patch2Self cannot predict group volume {target}: the other volumes of its group \
-                 are linearly dependent (for example, two identical volumes)."
+                "Group volume {volume} (counting from 0) is a linear combination of other volumes \
+                 of its group (for example, a copy of one), so Patch2Self cannot fit it."
             ),
         }
     }
@@ -243,6 +243,17 @@ pub fn solve(gram: &[f64], n: usize) -> Result<Vec<f64>, SolveError> {
             cov[i * n + k] = upper(i, k) - count * (mean[i] * mean[k]);
         }
     }
+    // A constant volume centres to zero, so scikit-learn gives it zero weight. Its centred
+    // variance here is only the rounding of `S_ii - N m²`, which can be negative, so set it to
+    // the exact zero that explicit centring gives.
+    for i in 0..n {
+        if cov[i * n + i] <= CONSTANT_VARIANCE * upper(i, i) {
+            for k in 0..n {
+                cov[i * n + k] = 0.0;
+                cov[k * n + i] = 0.0;
+            }
+        }
+    }
 
     let mut coefficients = vec![0.0f64; coefficients_len(n)];
     let p = n - 1;
@@ -259,8 +270,8 @@ pub fn solve(gram: &[f64], n: usize) -> Result<Vec<f64>, SolveError> {
             a[r * p + r] += ALPHA;
             rhs[r] = cov[i * n + j];
         }
-        if !cholesky(&mut a, p) {
-            return Err(SolveError::Dependent { target: j });
+        if let Err(r) = cholesky(&mut a, p) {
+            return Err(SolveError::Dependent { volume: others[r] });
         }
         // Forward substitution with L, then back substitution with L'.
         for i in 0..p {
@@ -271,8 +282,8 @@ pub fn solve(gram: &[f64], n: usize) -> Result<Vec<f64>, SolveError> {
             let s: f64 = (i + 1..p).map(|k| a[k * p + i] * w[k]).sum();
             w[i] = (y[i] - s) / a[i * p + i];
         }
-        if w.iter().any(|v| !v.is_finite()) {
-            return Err(SolveError::Dependent { target: j });
+        if let Some(r) = w.iter().position(|v| !v.is_finite()) {
+            return Err(SolveError::Dependent { volume: others[r] });
         }
         let row = &mut coefficients[j * m..(j + 1) * m];
         let mut intercept = mean[j];
@@ -292,9 +303,15 @@ pub fn solve(gram: &[f64], n: usize) -> Result<Vec<f64>, SolveError> {
 /// dependent; rounding alone leaves about `p * 1e-16`.
 const MIN_RELATIVE_PIVOT: f64 = 1e-10;
 
+/// The largest centred variance, relative to the uncentred second moment, that [`solve`] treats
+/// as a constant volume. Rounding of `S_ii - N m²` in f64 stays near `1e-16` of `S_ii`; a volume
+/// that varies at all across a brain image is many orders of magnitude above this.
+const CONSTANT_VARIANCE: f64 = 1e-11;
+
 /// In-place Cholesky factorisation of the symmetric `p × p` matrix `a` (lower triangle written).
-/// Returns false when `a` is not positive definite or is singular to rounding.
-fn cholesky(a: &mut [f64], p: usize) -> bool {
+/// Returns the first row whose pivot fails when `a` is not positive definite or is singular to
+/// rounding: that variable is a linear combination of the variables before it.
+fn cholesky(a: &mut [f64], p: usize) -> Result<(), usize> {
     for j in 0..p {
         let diagonal = a[j * p + j];
         let mut d = diagonal;
@@ -302,7 +319,7 @@ fn cholesky(a: &mut [f64], p: usize) -> bool {
             d -= a[j * p + k] * a[j * p + k];
         }
         if d.is_nan() || d <= MIN_RELATIVE_PIVOT * diagonal || d.is_infinite() {
-            return false;
+            return Err(j);
         }
         let d = d.sqrt();
         a[j * p + j] = d;
@@ -314,7 +331,7 @@ fn cholesky(a: &mut [f64], p: usize) -> bool {
             a[i * p + j] = s / d;
         }
     }
-    true
+    Ok(())
 }
 
 /// Replaces the voxels in `voxels` of each volume of `group` with its prediction from the other
@@ -392,10 +409,10 @@ pub fn denoise<T: Sample>(data: &mut [T], nvox: usize, bvals: &[f64]) -> Result<
         let mut gram = vec![0.0f64; gram_len(group.len())];
         accumulate_gram(data, nvox, 0..nvox, group, &mut gram);
         let coefficients = solve(&gram, group.len()).map_err(|e| match e {
-            SolveError::Dependent { target } => format!(
-                "Patch2Self cannot predict volume {}: the other volumes of its group are \
-                 linearly dependent (for example, two identical volumes).",
-                group[target]
+            SolveError::Dependent { volume } => format!(
+                "Volume {} (counting from 0) is a linear combination of other volumes of its \
+                 group (for example, a copy of one), so Patch2Self cannot fit it.",
+                group[volume]
             ),
             other => other.to_string(),
         })?;

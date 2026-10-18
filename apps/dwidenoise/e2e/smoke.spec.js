@@ -113,9 +113,13 @@ test("cancelling stops the workers and permits another run", async ({ page }) =>
   await page.locator("#imageInput").setInputFiles(dwiSeries().files);
   await expect(page.locator("#runButton")).toBeEnabled();
   await holdWorkers(page);
+  const started = page.waitForEvent("worker");
   await page.locator("#runButton").click();
+  const worker = await started;
+  const stopped = new Promise((resolve) => worker.once("close", resolve));
   await expect(page.locator("#cancelButton")).toBeVisible();
   await page.locator("#cancelButton").click();
+  await stopped;
   await page.evaluate(() => window.releaseWorkers());
   await expect(page.locator("#statusText")).toHaveText("Cancelled");
   await expect(page.locator("#runButton")).toBeEnabled();

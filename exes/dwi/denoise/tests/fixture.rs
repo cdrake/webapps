@@ -140,7 +140,40 @@ fn linearly_dependent_volumes_are_refused() {
         }
     }
     let err = denoise(&mut data, nvox, &[0.0, 1000.0, 1000.0, 1000.0]).unwrap_err();
-    assert!(err.contains("linearly dependent"), "{err}");
+    assert!(
+        err.starts_with("Volume 2 (counting from 0) is a linear combination"),
+        "{err}"
+    );
+}
+
+#[test]
+fn a_constant_volume_gets_zero_weight() {
+    // The centred variance of a constant volume is rounding noise in `S_ii - N m²`, and it can
+    // be negative. scikit-learn centres explicitly and gives the volume zero weight; so must we,
+    // at every image size, and the constant volume itself is predicted as its mean.
+    for nvox in [1_000usize, 100_000, 1_000_000] {
+        let volumes = 6;
+        let mut data = vec![0.0f64; nvox * volumes];
+        for t in 0..volumes {
+            for v in 0..nvox {
+                let x = v as f64;
+                data[t * nvox + v] = if t == 3 {
+                    1234.567
+                } else {
+                    300.0 + 40.0 * (x * (0.013 + 0.007 * t as f64)).sin() + 9.0 * (x * 0.29).cos()
+                };
+            }
+        }
+        let bvals = [1000.0; 6];
+        denoise(&mut data, nvox, &bvals).unwrap();
+        for v in 0..nvox {
+            assert!(
+                (data[3 * nvox + v] - 1234.567).abs() < 1e-6,
+                "nvox {nvox} voxel {v}"
+            );
+        }
+        assert!(data.iter().all(|value| value.is_finite()));
+    }
 }
 
 #[test]

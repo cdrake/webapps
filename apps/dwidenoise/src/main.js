@@ -87,6 +87,13 @@ async function showVolume(file) {
   $("emptyState").hidden = true;
 }
 
+/** The header and extensions of a decoded NIfTI-1 file: the bytes before vox_offset. */
+function niftiHeader(buffer) {
+  const view = new DataView(buffer);
+  const littleEndian = view.getInt32(0, true) === 348;
+  return buffer.slice(0, Math.ceil(view.getFloat32(108, littleEndian)));
+}
+
 async function gzipFile(buffer, name) {
   const stream = new Blob([buffer]).stream().pipeThrough(new CompressionStream("gzip"));
   return new File([await new Response(stream).arrayBuffer()], name, { type: "application/gzip" });
@@ -129,7 +136,8 @@ async function loadFiles(filesPromise, signal) {
     const groups = p2s.groups(bvals);
     await showVolume(new File([buffer], image.name.replace(/\.gz$/i, "")));
     controller.signal.throwIfAborted();
-    input = { name: image.name, buffer, ...frames, bvals, bval, bvec, sidecar };
+    // Keep only the header (and extensions) of the decoded file: the volumes are in frames.data.
+    input = { name: image.name, ...frames, headerBytes: niftiHeader(buffer), bvals, bval, bvec, sidecar };
     clearOutputs();
     $("fileInfo").hidden = false;
     const gradients = ["bval", bvec && "bvec"].filter(Boolean).join(", ");
@@ -165,7 +173,7 @@ async function denoise(signal) {
     const nvox = input.dims[0] * input.dims[1] * input.dims[2];
     const sizes = groups.map((group) => group.length).join(" and ");
     status(`Denoising ${input.frames} volumes in ${groups.length} group${groups.length === 1 ? "" : "s"} of ${sizes}`);
-    const denoised = await denoiseSeries({
+    let denoised = await denoiseSeries({
       data: input.data,
       nvox,
       frames: input.frames,
@@ -176,7 +184,10 @@ async function denoise(signal) {
     });
     controller.signal.throwIfAborted();
     const names = outputNames(input.name);
-    const image = await gzipFile(createNiftiFromData(denoised, input.buffer, { dims: [...input.dims, input.frames] }), names.image);
+    const bytes = createNiftiFromData(denoised, input.headerBytes, { dims: [...input.dims, input.frames] });
+    // Release the float32 result before compression, so the peak holds one fewer full copy.
+    denoised = null;
+    const image = await gzipFile(bytes, names.image);
     controller.signal.throwIfAborted();
     const rows = { image: { description: "Denoised image", file: image } };
     const artifacts = [{ role: "image", file: image }];

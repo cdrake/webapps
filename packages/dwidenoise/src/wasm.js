@@ -117,7 +117,7 @@ export async function loadDwidenoise(source) {
         if (status === -2) throw new Error("The data holds values that are not finite numbers (NaN or infinity).");
         if (status > 0) {
           throw new Error(
-            `Patch2Self cannot predict volume ${group[status - 1]}: the other volumes of its group are linearly dependent (for example, two identical volumes).`,
+            `Volume ${group[status - 1]} (counting from 0) is a linear combination of other volumes of its group (for example, a copy of one), so Patch2Self cannot fit it.`,
           );
         }
         return new Float64Array(wasm.memory.buffer, ptr, length).slice();

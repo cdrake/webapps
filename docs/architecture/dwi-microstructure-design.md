@@ -133,7 +133,7 @@ With AMICO's table direction the port agrees to a median of 2e-7 (`tests/oracle.
 
 `dwidenoise` uses Patch2Self (Fadnavis et al. 2020), not MP-PCA.
 
-- MP-PCA is rejected. US10698065B2 (NYU and the University of Antwerp, in force to 2036) covers noise estimation from the PCA eigenvalue spectrum, and the MRtrix `dwidenoise` code is under a non-commercial licence. The port does not read or use either.
+- MP-PCA is rejected. US10698065B2 (NYU and the University of Antwerp, in force to 2036) covers noise estimation from the PCA eigenvalue spectrum, and the source file of MRtrix `dwidenoise` carries an NYU notice that limits its use to non-commercial research, separate from MRtrix's MPL-2.0. The port does not read or use either.
 - The patent search (Q49) found no patent on Patch2Self. DIPY is BSD-3-Clause.
 - The port is DIPY 1.12.1 `patch2self` version 1, patch radius 0, ordinary least squares: each volume is predicted from the other volumes of its group (b0 or diffusion-weighted) by one regression over all voxels. Version 1 is a linear method with one exact answer, so the port can be held to DIPY bit for bit. DIPY's default version 3 uses random subsets and does not repeat from run to run (NRMSE 0.016 between two runs on the simulation).
 - DIPY 1.12.1 `model="ols"` centres the regressors in place (`copy_X=False`) and then predicts from the centred values, which adds a constant error to each volume (RMSE / raw 5.4 on the simulation). The port applies the fit to the original values, as `copy_X=True` does.

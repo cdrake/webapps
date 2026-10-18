@@ -62,7 +62,7 @@ test("linearly dependent volumes are refused with the volume named", () => {
     data[nvox + v] = data[2 * nvox + v] = 50 + Math.cos(v * 1.3) * 7 + v;
     data[3 * nvox + v] = 20 + Math.sin(v * 0.11) * 3 + 0.5 * v;
   }
-  assert.throws(() => p2s.denoiseArray(data, nvox, [0, 1000, 1000, 1000]), /predict volume 3: .*linearly dependent/);
+  assert.throws(() => p2s.denoiseArray(data, nvox, [0, 1000, 1000, 1000]), /Volume 2 \(counting from 0\) is a linear combination/);
 });
 
 test("values that are not finite are refused", () => {
