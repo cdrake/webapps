@@ -1315,6 +1315,8 @@ importers:
         specifier: file:../../apps/dwi2trx/vendor/niimath
         version: file:apps/dwi2trx/vendor/niimath
 
+  packages/dwidenoise: {}
+
   packages/easy-mp2rage:
     dependencies:
       '@neurodesk/webapp-components':
