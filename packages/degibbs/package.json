@@ -1,0 +1,32 @@
+{
+  "name": "@neurodesk/degibbs",
+  "version": "0.1.20261018",
+  "description": "Gibbs-ringing removal (MRtrix mrdegibbs port) for browsers and the command line",
+  "type": "module",
+  "private": true,
+  "license": "MPL-2.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": "./src/wasm.js",
+    "./wasm": "./src/degibbs.wasm"
+  },
+  "files": [
+    "src",
+    "LICENSE",
+    "NOTICE",
+    "README.md"
+  ],
+  "scripts": {
+    "build:wasm": "bash scripts/build-wasm.sh",
+    "check:wasm": "bash scripts/build-wasm.sh --check",
+    "test": "node --test test/*.test.js",
+    "lint": "node --check src/wasm.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neurodesk/webapps.git",
+    "directory": "packages/degibbs"
+  }
+}
