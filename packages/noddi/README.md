@@ -16,7 +16,16 @@ const maps = noddi.dtiFit(data, voxels, bvals, bvecs, { mask });
 // maps.FA, maps.MD, maps.AD, maps.RD, maps.S0, maps.V1x, maps.V1y, maps.V1z
 ```
 
+```js
+const model = noddi.noddiModel(bvals, bvecs); // throws when NODDI cannot run
+const out = model.fit(chunk, chunkVoxels, chunkMask);
+// out.ICVF, out.ISOVF, out.OD, out.dirx, out.diry, out.dirz
+model.free();
+```
+
 `data` is a Float32Array with the volumes one after the other, as `readNiftiFrames` returns them.
+`model.fit` takes the same layout for a chunk of voxels, so a caller can report progress or spread chunks over workers.
+NODDI is a port of AMICO 1.5.4; [exes/dwi/amico](../../exes/dwi/amico/README.md) describes it and its parity with AMICO.
 `bvecs` is three rows (x, y, z) with one value per volume, as in an FSL `.bvec` file.
 
 ## Rules
