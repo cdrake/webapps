@@ -88,9 +88,11 @@ const results = createResultList({
   onDownload: (_stage, result) => downloadFile(result.file),
 });
 
-async function showVolume(file, [calMin, calMax] = []) {
+async function showVolume(file, range) {
   await viewerReady;
-  await viewer.loadVolumes([{ url: file, name: file.name, colormap: "gray", calMin, calMax }]);
+  // Without a range NiiVue windows the image from its own intensities.
+  const window = range ? { calMin: range[0], calMax: range[1] } : {};
+  await viewer.loadVolumes([{ url: file, name: file.name, colormap: "gray", ...window }]);
   $("emptyState").hidden = true;
 }
 
