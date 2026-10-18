@@ -53,7 +53,8 @@ export async function loadNoddi(source) {
   }
 
   /**
-   * Fits the diffusion tensor to the b0 volumes and the lowest shell.
+   * Fits the diffusion tensor to the b0 volumes and the shells up to b = 1200 s/mm² (else the
+   * lowest shell).
    * @param data Float32Array, volume-major: data[volume * voxels + voxel]
    * @param options.mask Uint8Array with one value per voxel, or null to fit every voxel
    * @param options.weighted false for ordinary least squares only

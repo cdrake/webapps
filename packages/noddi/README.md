@@ -32,7 +32,7 @@ NODDI is a port of AMICO 1.5.4; [exes/dwi/amico](../../exes/dwi/amico/README.md)
 
 - A volume with b < 50 s/mm² is a b0.
 - Shells are the non-zero b-values rounded to the nearest 100 s/mm².
-- The tensor fit uses the b0 volumes and the lowest shell.
+- The tensor fit uses the b0 volumes and every shell up to b = 1200 s/mm²; data with no shell that low uses its lowest shell.
 - NODDI needs two or more shells.
 
 ## Tensor fit

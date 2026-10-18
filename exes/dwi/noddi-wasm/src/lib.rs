@@ -104,7 +104,7 @@ pub unsafe extern "C" fn describe(bvals: *const f64, bvecs: *const f64, n: usize
 /// Number of Float32 values `dti_fit` writes per voxel: FA, MD, AD, RD, S0, then V1 x, y, z.
 pub const DTI_OUTPUTS: usize = 8;
 
-/// Fits the tensor to the b0 volumes and the lowest shell. `data` is volume-major
+/// Fits the tensor to the b0 volumes and the shells up to b = 1200 s/mm² (else the lowest shell). `data` is volume-major
 /// (`data[volume * voxels + voxel]`, `volumes` volumes); `mask` is null or one byte per voxel;
 /// `out` receives `DTI_OUTPUTS` maps of `voxels` values each, one map after the other.
 ///

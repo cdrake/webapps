@@ -39,7 +39,9 @@ test('describe applies the shell and NODDI rules', () => {
   assert.deepEqual(three.shells, [700, 1200, 2800]);
   assert.deepEqual(three.shellCounts, [10, 10, 10]);
   assert.equal(three.noddiError, null);
-  assert.deepEqual(three.dtiVolumes, [0, 1, ...Array.from({ length: 10 }, (_, k) => 2 + 3 * k)]);
+  // b = 700 and 1200 are at or below 1200; b = 2800 is left out of the tensor fit.
+  const tensorVolumes = [0, 1, ...Array.from({ length: 30 }, (_, k) => 2 + k).filter((v) => (v - 2) % 3 !== 2)];
+  assert.deepEqual(three.dtiVolumes, tensorVolumes);
 });
 
 test('describe rejects a table it cannot use', () => {
@@ -66,10 +68,10 @@ test('dtiFit recovers a tensor and leaves masked voxels at zero', () => {
   assert.equal(maps.V1x[2], 0);
 });
 
-test('dtiFit uses the lowest shell only', () => {
+test('dtiFit leaves out shells above b = 1200', () => {
   const g = scheme([700, 2800]);
   const lowest = { bvals: g.bvals.map((b) => (b === 2800 ? 700 : b)), bvecs: g.bvecs };
-  // The b = 2800 volumes carry a different tensor; a fit that used them would not give this one.
+  // The b = 2800 volumes carry a different signal; a fit that used them would not give this tensor.
   const values = signal(lowest, 500, [1.2e-3, 0.6e-3, 0.4e-3]).map((s, i) => (g.bvals[i] === 2800 ? 1 : s));
   const maps = noddi.dtiFit(Float32Array.from(values), 1, g.bvals, g.bvecs);
   assert.ok(Math.abs(maps.MD[0] - 0.733333e-3) < 1e-8, `MD ${maps.MD[0]}`);
