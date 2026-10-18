@@ -1439,7 +1439,7 @@ apps:
         reference: "Prais SJ, Winsten CB. Trend Estimators and Serial Correlation. Cowles Commission Discussion Paper, Statistics No. 383. 1954."
         url: https://cowles.yale.edu/sites/default/files/2023-05/s-0383.pdf
 
-  dcm2niix:
+  dicom2bids:
     about:
       - Convert one MRI scanner examination into a reviewed BIDS dataset, entirely in the browser. Supported acquisitions are T1w, T2w, FLAIR, diffusion MRI and reverse phase encoding EPI fieldmaps.
     packages:
@@ -1456,3 +1456,11 @@ apps:
         title: Brain Imaging Data Structure
         reference: "Gorgolewski KJ, Auer T, Calhoun VD, et al. The brain imaging data structure, a format for organizing and describing outputs of neuroimaging experiments. Scientific Data. 2016;3:160044."
         doi: 10.1038/sdata.2016.44
+      - group: Example data
+        title: Vestibular-Schwannoma-SEG
+        reference: "Shapey J, Kujawa A, Dorent R, et al. Segmentation of vestibular schwannoma from MRI, an open annotated dataset and baseline algorithm. Scientific Data. 2021;8:286."
+        doi: 10.1038/s41597-021-01064-w
+      - group: Example data
+        title: Vestibular-Schwannoma-SEG (The Cancer Imaging Archive, CC BY 4.0)
+        reference: "Shapey J, Kujawa A, Dorent R, et al. Segmentation of Vestibular Schwannoma from Magnetic Resonance Imaging: An Open Annotated Dataset and Baseline Algorithm (Version 2) [Data set]. The Cancer Imaging Archive. 2021."
+        doi: 10.7937/TCIA.9YTJ-5Q73

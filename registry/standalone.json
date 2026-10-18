@@ -1538,7 +1538,7 @@
       "downloads": [],
       "containers": []
     },
-    "dcm2niix": {
+    "dicom2bids": {
       "desktop": true,
       "profile": "interactive",
       "assets": [],

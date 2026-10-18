@@ -63,6 +63,7 @@ Paths in this table are relative to the repository root. Existing implementation
 | `surfannotate` | No default batch equivalent | Manual surface ROI drawing and vertex selection. Excluded from this rollout. |
 | `zarro` | No default batch equivalent | Interactive OME-Zarr exploration. Conversion or extraction would be a separately scoped command. |
 | `dicomview` | No default batch equivalent | Interactive DICOM browsing. Its batch steps already ship as command lines: dcm2niix for conversion and dicompare for protocol summaries and checks. |
+| `dicom2bids` | No default batch equivalent | Interactive BIDS curation: scan types, fieldmap targets and metadata are user decisions. Upstream dcm2niix already ships the converter command line. |
 
 ## Greedy release gates
 

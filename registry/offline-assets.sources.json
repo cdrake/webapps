@@ -4222,7 +4222,7 @@
         "kind": "model"
       }
     ],
-    "dcm2niix": [
+    "dicom2bids": [
       {
         "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/560955bf9a1a669bbf2a89709b64f3e64eefe008/examples/dicompare/t1-dicom-protocol/1-001.dcm",
         "kind": "example"

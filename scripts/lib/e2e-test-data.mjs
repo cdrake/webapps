@@ -42,15 +42,15 @@ const flag = (name) => ({ env: [name], provision: async () => ({ [name]: '1' }) 
 export const provisioners = {
   // Public enhanced Philips DWI and native dcm2niix references, pinned by commit
   // and checksum. No image data is committed to the source repository.
-  dcm2niix: {
-    env: ['DCM2NIIX_DWI_DIR'],
+  dicom2bids: {
+    env: ['DICOM2BIDS_DWI_DIR'],
     provision: async (cache) => {
-      const directory = join(cache, 'dcm2niix-dwi');
+      const directory = join(cache, 'dicom2bids-dwi');
       await mkdir(directory, { recursive: true });
-      const manifest = JSON.parse(await readFile(join(root, 'apps/dcm2niix/validation/dwi.manifest.json'), 'utf8'));
+      const manifest = JSON.parse(await readFile(join(root, 'apps/dicom2bids/validation/dwi.manifest.json'), 'utf8'));
       for (const file of manifest.files) await fetchChecked(file.url, join(directory, file.name), file);
       await writeFile(join(directory, 'IM_0001.dcm'), gunzipSync(await readFile(join(directory, 'IM_0001.gz'))));
-      return { DCM2NIIX_DWI_DIR: directory };
+      return { DICOM2BIDS_DWI_DIR: directory };
     },
   },
   // The browser reference registers the 1 mm example once, about 3 min on a 4-core runner.

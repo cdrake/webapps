@@ -4105,7 +4105,7 @@
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/3390ec024ac302bde8f365a4f6169b4a1580538f/fastprep/templates/tpl-MNI152NLin2009cAsym/tpl-MNI152NLin2009cAsym_res-01_desc-brain_mask.nii.gz",
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/88c3dd6b9aac13429f760d9b0b48249040d3ee5f/synthsr/models/synthsr-v2.onnx"
     ],
-    "dcm2niix": [
+    "dicom2bids": [
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/560955bf9a1a669bbf2a89709b64f3e64eefe008/examples/dicompare/t1-dicom-protocol/1-001.dcm",
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/560955bf9a1a669bbf2a89709b64f3e64eefe008/examples/dicompare/t1-dicom-protocol/1-002.dcm",
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/560955bf9a1a669bbf2a89709b64f3e64eefe008/examples/dicompare/t1-dicom-protocol/1-003.dcm",

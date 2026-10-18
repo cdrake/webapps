@@ -210,7 +210,7 @@ export async function buildDataset(series, options, { signal, onProgress = () =>
   const entries = {};
   const json = (path, value) => { entries[path] = strToU8(`${JSON.stringify(value, null, 2)}\n`); };
   json('dataset_description.json', { Name: options.name.trim(), BIDSVersion: BIDS_VERSION, DatasetType: 'raw' });
-  entries.README = strToU8('MRI DICOM conversion curated with Neurodesk dcm2niix.\n'
+  entries.README = strToU8('MRI DICOM conversion curated with Neurodesk DICOM to BIDS.\n'
     + 'Series types, subject/session labels and fieldmap associations were confirmed by the user.\n'
     + `Identifying metadata: ${options.privacy === 'omit' ? 'omitted using the app technical-field allowlist' : 'retained at user request'}.\n`
     + 'Images have not been defaced. No preprocessing, distortion correction or acquisition merging was applied.\n');

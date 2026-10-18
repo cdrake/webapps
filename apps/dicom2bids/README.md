@@ -1,4 +1,4 @@
-# dcm2niix
+# DICOM to BIDS
 
 Convert one scanner MRI examination to a reviewed BIDS 1.11.2 dataset locally
 in the browser. Select DICOM files, a folder or ZIP archives. The app uses the
@@ -38,10 +38,10 @@ replace validation with the official BIDS validator.
 Development follows the app template:
 
 ```sh
-pnpm --filter dcm2niix dev
-pnpm --filter dcm2niix test
-pnpm --filter dcm2niix build
-pnpm --filter dcm2niix test:e2e
+pnpm --filter dicom2bids dev
+pnpm --filter dicom2bids test
+pnpm --filter dicom2bids build
+pnpm --filter dicom2bids test:e2e
 ```
 
 `src/input.js` adapts files/archives and checks examination identity using the

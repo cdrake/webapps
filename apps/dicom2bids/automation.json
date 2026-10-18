@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
-  "app": "dcm2niix",
-  "title": "dcm2niix",
+  "app": "dicom2bids",
+  "title": "DICOM to BIDS",
   "description": "Convert one DICOM MRI examination to a reviewed BIDS dataset.",
   "defaultOperation": "convert-bids",
   "operations": {

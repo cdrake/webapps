@@ -270,7 +270,7 @@ importers:
         specifier: ^5.0.0
         version: 5.4.21(@types/node@24.13.3)(lightningcss@1.32.0)
 
-  apps/dcm2niix:
+  apps/dicom2bids:
     dependencies:
       '@neurodesk/dicom2vid':
         specifier: workspace:*

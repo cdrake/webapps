@@ -37,7 +37,7 @@ async function check(id, workflow) {
   finally { await page.close(); }
 }
 try {
-  await check('dcm2niix', async page => {
+  await check('dicom2bids', async page => {
     await page.locator('#subject').fill('subject01');
     await page.locator('#session').fill('baseline');
     await page.locator('#taskSection > summary').tap();

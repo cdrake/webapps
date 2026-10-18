@@ -17,7 +17,7 @@ const information = await loadAppInformation(registry);
 // Methods each app implements, by DOI or URL. Add a line when an app gains a
 // method; the entry must then be cited in registry/app-information.yml.
 const REQUIRED_METHODS = {
-  dcm2niix: ['10.1016/j.jneumeth.2016.03.001', '10.1038/sdata.2016.44'],
+  dicom2bids: ['10.1016/j.jneumeth.2016.03.001', '10.1038/sdata.2016.44', '10.1038/s41597-021-01064-w', '10.7937/TCIA.9YTJ-5Q73'],
   'brain-extraction': ['10.1002/hbm.10062', 'arxiv.org/abs/2506.11860', '10.1016/j.neuroimage.2022.119474', 'github.com/niivue/niivue'],
   dwi2trx: ['10.1016/S0006-3495(94)80775-1', 'github.com/dipy/GPUStreamlines', 'PMC5381389', 'brainder.org/2025/05/05/15656/'],
   musclemap: ['10.3390/jimaging10110262', 'arxiv.org/abs/2211.02701', '10.1016/j.jneumeth.2016.03.001'],

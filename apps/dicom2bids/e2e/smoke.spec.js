@@ -156,9 +156,9 @@ test('automation requires explicit assignments and returns a downloadable BIDS a
 });
 
 test('public Philips enhanced DWI preserves native voxel and gradient ordering', async ({ page }) => {
-  test.skip(!process.env.DCM2NIIX_DWI_DIR, 'Provision pinned data with node scripts/e2e-test-data.mjs dcm2niix.');
+  test.skip(!process.env.DICOM2BIDS_DWI_DIR, 'Provision pinned data with node scripts/e2e-test-data.mjs dicom2bids.');
   test.setTimeout(180000);
-  const directory = process.env.DCM2NIIX_DWI_DIR;
+  const directory = process.env.DICOM2BIDS_DWI_DIR;
   await page.goto('./');
   await page.locator('#imageInput').setInputFiles(join(directory, 'IM_0001.dcm'));
   await reviewAnatomical(page, 'dwi');
