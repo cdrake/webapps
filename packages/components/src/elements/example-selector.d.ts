@@ -36,6 +36,7 @@ export interface ExampleSelectorElement<T extends AppExample = AppExample> exten
   disabled: boolean;
   readonly select: HTMLSelectElement;
   cancel(): void;
+  reset(): void;
   setDisabled(value: boolean): void;
   destroy(): void;
 }

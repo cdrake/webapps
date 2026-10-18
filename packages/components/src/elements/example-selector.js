@@ -22,13 +22,14 @@ export function defineExampleSelector(view = globalThis.window) {
     #actionsFor = null;
     #active = null;
     #picks = 0;
+    #fileActions = true;
 
     static get observedAttributes() {
       return ['disabled'];
     }
 
     connectedCallback() {
-      upgradeProperties(this, ['examples', 'onLoad', 'onStatus', 'scope', 'disabled']);
+      upgradeProperties(this, ['examples', 'onLoad', 'onStatus', 'scope', 'fileActions', 'disabled']);
       this.#initialize();
       this.#bindScope();
       bindPageDrop(this.ownerDocument);
@@ -67,6 +68,14 @@ export function defineExampleSelector(view = globalThis.window) {
     set scope(value) {
       this.#scope = value;
       if (this.isConnected) this.#bindScope();
+    }
+
+    // False keeps the menu to examples: an owner with its own pickers for every
+    // slot (nd-image-pair) needs no merged Load files… action and no hidden field.
+    get fileActions() { return this.#fileActions; }
+    set fileActions(value) {
+      this.#fileActions = value !== false;
+      if (this.#select) this.#renderOptions();
     }
 
     get disabled() { return this.hasAttribute('disabled'); }
@@ -142,7 +151,7 @@ export function defineExampleSelector(view = globalThis.window) {
     }
 
     #renderOptions() {
-      this.#select.replaceChildren(this.#option('Load data or example…'));
+      this.#select.replaceChildren(this.#option(this.#fileActions ? 'Load data or example…' : 'Choose an example…'));
       for (const example of this.#examples) this.#select.append(this.#option(example.label, example.id));
       this.#actionsFor = null;
       this.#renderActions();
@@ -152,7 +161,7 @@ export function defineExampleSelector(view = globalThis.window) {
     // examples. Apps may add or replace their file field after the selector, so
     // this reruns when the select is focused or pressed.
     #renderActions = () => {
-      const input = primaryInput(this.#boundScope ?? this.#scope);
+      const input = this.#fileActions ? primaryInput(this.#boundScope ?? this.#scope) : null;
       if (!input) this.#actionsFor = null;
       if (!input || input === this.#actionsFor) return;
       this.#actionsFor?.closest('.nd-file')?.classList.remove('nd-file-merged');
@@ -223,14 +232,7 @@ export function defineExampleSelector(view = globalThis.window) {
 
     #replaced = event => {
       if (event.type !== 'drop' && !event.target?.matches('input[type="file"]')) return;
-      this.#picks += 1;
-      if (this.#active) this.cancel();
-      else {
-        delete this.dataset.exampleId;
-        this.dataset.exampleState = 'idle';
-        this.#message.textContent = '';
-        this.#describe(null);
-      }
+      this.reset();
     };
 
     #describe(example) {
@@ -256,6 +258,20 @@ export function defineExampleSelector(view = globalThis.window) {
       this.#select.disabled = this.disabled || this.#active !== null;
       this.#cancelButton.hidden = this.#active === null;
       this.setAttribute('aria-busy', String(this.#active !== null));
+    }
+
+    /** Forget the loaded example because the user replaced its images another way. */
+    reset() {
+      this.#picks += 1;
+      if (this.#active) {
+        this.cancel();
+        return;
+      }
+      if (!this.#select) return;
+      delete this.dataset.exampleId;
+      this.dataset.exampleState = 'idle';
+      this.#message.textContent = '';
+      this.#describe(null);
     }
 
     cancel() {
@@ -338,12 +354,13 @@ export function defineExampleSelector(view = globalThis.window) {
   }, view);
 }
 
-export function createExampleSelector({ examples, onLoad, onStatus = () => {}, scope }, doc = globalThis.document) {
+export function createExampleSelector({ examples, onLoad, onStatus = () => {}, scope, fileActions = true }, doc = globalThis.document) {
   defineExampleSelector(doc.defaultView);
   const element = doc.createElement('nd-example-selector');
   element.examples = examples;
   element.onLoad = onLoad;
   element.onStatus = onStatus;
   element.scope = scope;
+  element.fileActions = fileActions;
   return element;
 }

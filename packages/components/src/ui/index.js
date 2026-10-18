@@ -16,3 +16,4 @@ export * from './bindFileDrop.js';
 export * from './bindInfoTooltips.js';
 export * from '../elements/index.js';
 export * from './pageDrop.js';
+export * from './templates.js';

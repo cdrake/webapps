@@ -9,7 +9,8 @@
 
      Shell      .nd-imaging-workspace / -app-header / -controls / -viewer / -status
      Sections   details.nd-sidebar-section > summary.nd-section-title + .nd-section-content
-     Fields     .nd-field, .nd-hint, .nd-check, .nd-row, .nd-file, .nd-file-info
+     Fields     .nd-field, .nd-hint, .nd-check, .nd-row, .nd-file, .nd-file-button, .nd-file-info
+     Images     nd-image-pair > .nd-image-slot (-header / -title / -clear / -actions)
      Buttons    .nd-btn, .nd-btn-primary, .nd-btn-secondary, .nd-btn-danger,
                 .nd-btn-sm, .nd-btn-icon
      Messages   .nd-message.(error|warning|success|info), .nd-info-icon
@@ -396,6 +397,41 @@ nd-imaging-brand {
 .nd-file:has(> input:disabled) { opacity: 0.5; cursor: not-allowed; }
 .nd-file-info { margin: 0; color: var(--nd-color-text-muted); font-size: 0.75rem; overflow-wrap: anywhere; }
 .nd-file-info strong { color: var(--nd-color-text); font-weight: 500; }
+
+/* File picker as a button: the same label.nd-file around the native input,
+   drawn as a secondary button, for slots that are drop zones themselves. */
+.nd-file.nd-file-button {
+  justify-content: center;
+  min-height: 34px;
+  color: var(--nd-color-text);
+  background: var(--nd-color-surface-elevated);
+  border-style: solid;
+  border-radius: var(--nd-radius-md);
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-align: center;
+}
+.nd-file.nd-file-button:hover { border-color: var(--nd-color-border-light); background: var(--nd-color-border); }
+
+/* Registration inputs (nd-image-pair): a fixed and a moving card, each a drop
+   zone with its own load buttons, summary and clear action. */
+.nd-image-pair { display: grid; gap: var(--nd-space-sm); min-width: 0; }
+.nd-image-slot {
+  display: grid;
+  gap: var(--nd-space-xs);
+  min-width: 0;
+  padding: var(--nd-space-sm);
+  border: 1px dashed var(--nd-color-border);
+  border-radius: var(--nd-radius-md);
+  transition: border-color var(--nd-transition-fast), background var(--nd-transition-fast);
+}
+.nd-image-slot.dragover { border-style: solid; border-color: var(--nd-color-primary); background: var(--nd-color-primary-glow); }
+.nd-image-slot.has-files { border-style: solid; border-color: var(--nd-color-success); }
+.nd-image-slot.locked { border-style: solid; }
+.nd-image-slot-header { display: flex; align-items: center; gap: var(--nd-space-xs); min-height: 28px; }
+.nd-image-slot-title { color: var(--nd-color-text); font-size: 0.8rem; font-weight: 600; }
+.nd-image-slot-clear { margin-left: auto; }
+.nd-image-slot-actions { grid-auto-columns: minmax(0, 1fr); }
 
 /* --------------------------------------------------------------------------
    4. Buttons (QSMbly .btn family)

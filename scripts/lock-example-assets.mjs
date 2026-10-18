@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { loadAppsRegistry, repoRoot } from './lib/apps-registry.mjs';
 import { modelManifestAssets } from './lib/model-assets.mjs';
+import { loadTemplateCatalogue, templateAssets } from './lib/templates.mjs';
 
 const directory = process.env.TMPDIR;
 if (!directory) throw new Error('Set TMPDIR to the storage volume for example downloads.');
@@ -27,6 +28,7 @@ for (const app of (await loadAppsRegistry()).apps) {
   }
 }
 for (const asset of await modelManifestAssets()) assets.push({ ...asset, kind: 'model' });
+for (const asset of templateAssets(await loadTemplateCatalogue())) assets.push(asset);
 const pending = [...new Map(assets.map(file => [file.url, file])).values()];
 await Promise.all(Array.from({ length: 4 }, async () => {
   while (pending.length) {

@@ -78,6 +78,10 @@
       "types": "./src/elements/example-selector.d.ts",
       "default": "./src/elements/example-selector.js"
     },
+    "./elements/image-pair": {
+      "types": "./src/elements/image-pair.d.ts",
+      "default": "./src/elements/image-pair.js"
+    },
     "./compute": {
       "types": "./src/compute/index.d.ts",
       "default": "./src/compute/index.js"

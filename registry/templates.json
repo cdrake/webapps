@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "consumers": {
+    "ants": {},
+    "edgereg": {},
+    "elastix": {},
+    "fireants": {},
+    "greedy": {},
+    "syncro": { "ids": ["mni152-fsl-t1-1mm-brain"] }
+  },
+  "templates": [
+    {
+      "id": "mni152-fsl-t1-1mm-brain",
+      "label": "MNI152 T1 1 mm brain (FSL)",
+      "space": "MNI152NLin6Asym",
+      "modality": "T1w",
+      "brainExtracted": true,
+      "dimensionality": 3,
+      "dims": [182, 218, 182],
+      "spacingMm": [1, 1, 1],
+      "filename": "MNI152_T1_1mm_brain.nii.gz",
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/544f1362f367355e61a85e0694f5075aba2792b6/reg/templates/MNI152_T1_1mm_brain.nii.gz",
+      "bytes": 3219212,
+      "sha256": "32d5be33460f995a5d305507053c8862c823d9ca6bfb543381308df14590f212",
+      "license": "FSL non-commercial licence",
+      "licenseUrl": "https://fsl.fmrib.ox.ac.uk/fsl/docs/license.html",
+      "citation": {
+        "title": "MNI152 nonlinear 6th generation template",
+        "reference": "Grabner G, Janke AL, Budge MM, Smith D, Pruessner J, Collins DL. Symmetric atlasing and model based segmentation: an application to the hippocampus in older adults. Medical Image Computing and Computer-Assisted Intervention. 2006;9(Pt 2):58–66.",
+        "doi": "10.1007/11866763_8"
+      }
+    },
+    {
+      "id": "mni152-fsl-t1-1mm",
+      "label": "MNI152 T1 1 mm head (FSL)",
+      "space": "MNI152NLin6Asym",
+      "modality": "T1w",
+      "brainExtracted": false,
+      "dimensionality": 3,
+      "dims": [182, 218, 182],
+      "spacingMm": [1, 1, 1],
+      "filename": "MNI152_T1_1mm.nii.gz",
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/67c378c8f8ac5313e5dbeee4c8d95ebe2a2f79c9/reg/templates/MNI152_T1_1mm.nii.gz",
+      "bytes": 10963667,
+      "sha256": "d1f03e160c2548592a01d98d44d7e0ffa8a8ef58bc9b07d26369e214ba170edb",
+      "license": "FSL non-commercial licence",
+      "licenseUrl": "https://fsl.fmrib.ox.ac.uk/fsl/docs/license.html",
+      "citation": {
+        "title": "MNI152 nonlinear 6th generation template",
+        "reference": "Grabner G, Janke AL, Budge MM, Smith D, Pruessner J, Collins DL. Symmetric atlasing and model based segmentation: an application to the hippocampus in older adults. Medical Image Computing and Computer-Assisted Intervention. 2006;9(Pt 2):58–66.",
+        "doi": "10.1007/11866763_8"
+      }
+    },
+    {
+      "id": "icbm152-avg152-t1-2mm",
+      "label": "avg152 T1 2 mm head (ICBM152)",
+      "space": "MNI152Lin",
+      "modality": "T1w",
+      "brainExtracted": false,
+      "dimensionality": 3,
+      "dims": [91, 109, 91],
+      "spacingMm": [2, 2, 2],
+      "filename": "avg152T1.nii.gz",
+      "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/67c378c8f8ac5313e5dbeee4c8d95ebe2a2f79c9/reg/templates/avg152T1.nii.gz",
+      "bytes": 567546,
+      "sha256": "e8f5440f0dcec1a4d44384acbdf19c8e6cf94c032c3356ef91c4441fee3aaea8",
+      "license": "ICBM152 copyright notice of the Montreal Neurological Institute",
+      "licenseUrl": "https://www.bic.mni.mcgill.ca/ServicesAtlases/ICBM152Lin",
+      "citation": {
+        "title": "ICBM152 linear average template",
+        "reference": "Mazziotta J, Toga A, Evans A, et al. A probabilistic atlas and reference system for the human brain: International Consortium for Brain Mapping (ICBM). Philosophical Transactions of the Royal Society B. 2001;356(1412):1293–1322.",
+        "doi": "10.1098/rstb.2001.0915"
+      }
+    }
+  ]
+}

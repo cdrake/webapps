@@ -1,0 +1,230 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { JSDOM } from 'jsdom';
+import { createImagePair } from '../src/elements/image-pair.js';
+import { describeNiftiFile } from '../src/file-io/NiftiUtils.js';
+
+const tick = () => new Promise(resolve => setImmediate(resolve));
+const settle = async () => { for (let i = 0; i < 6; i++) await tick(); };
+
+const brainTemplate = {
+  id: 'brain', label: 'Brain template', filename: 'brain.nii.gz', license: 'Open', brainExtracted: true,
+  dimensionality: 3, dims: [4, 4, 4], spacingMm: [1, 1, 1], url: 'https://example.test/brain.nii.gz', sha256: '0'.repeat(64), bytes: 1,
+};
+
+function sizeOf(name) {
+  if (name.includes('flat')) return { dims: [8, 8], spacingMm: [0.5, 0.5], dimensionality: 2 };
+  return { dims: [4, 4, 4], spacingMm: [1, 1, 1.5], dimensionality: 3 };
+}
+
+function setup(config = {}) {
+  const { window } = new JSDOM('<!doctype html><body></body>');
+  const calls = { open: [], clear: [], changes: [], status: [] };
+  const pair = createImagePair({
+    read: files => files.map(file => ({ name: file.name, file })),
+    open: async (slot, candidate) => {
+      calls.open.push([slot, candidate.name]);
+      if (candidate.name.includes('broken')) throw new Error(`Cannot read ${candidate.name}`);
+      return { name: candidate.name, ...sizeOf(candidate.name) };
+    },
+    clear: slot => { calls.clear.push(slot); },
+    onChange: change => calls.changes.push(change),
+    onStatus: (message, error) => calls.status.push([message, Boolean(error)]),
+    fetchTemplate: async entry => new window.File(['x'], entry.filename),
+    ...config,
+  }, window.document);
+  window.document.body.append(pair);
+  const file = name => new window.File(['x'], name);
+  const pick = async (id, names) => {
+    const input = window.document.getElementById(id);
+    Object.defineProperty(input, 'files', { value: names.map(file), configurable: true });
+    input.dispatchEvent(new window.Event('change'));
+    await settle();
+  };
+  return { window, pair, calls, pick, file, $: id => window.document.getElementById(id) };
+}
+
+test('the pair renders fixed then moving with explicit file and folder pickers', () => {
+  const { pair, $ } = setup({ templates: [brainTemplate] });
+  const slots = [...pair.querySelectorAll('.nd-image-slot')].map(slot => slot.dataset.slot);
+  assert.deepEqual(slots, ['fixed', 'moving']);
+  for (const slot of ['fixed', 'moving']) {
+    const input = $(`${slot}Input`);
+    const folder = $(`${slot}FolderInput`);
+    assert.ok(input.closest('label.nd-file.nd-file-button'), 'the picker is a label.nd-file');
+    assert.equal(input.multiple, true);
+    assert.equal(input.hasAttribute('accept'), false);
+    assert.equal(input.dataset.neurodeskInput, 'image');
+    assert.equal(folder.hasAttribute('webkitdirectory'), true);
+    assert.equal(input.closest('label').textContent, `Load ${slot} image…`);
+    assert.equal($(`${slot}SlotTitle`).textContent, slot === 'fixed' ? 'Fixed image' : 'Moving image');
+  }
+  assert.ok($('fixedTemplate'), 'the fixed slot offers templates');
+  assert.equal(pair.querySelector('#movingSlot #fixedTemplate, #movingTemplate'), null, 'the moving slot has no template select');
+  assert.equal($('swapButton').disabled, true, 'nothing to swap yet');
+  assert.equal(pair.querySelectorAll('.nd-btn-primary').length, 0, 'the run button stays the only primary');
+});
+
+test('picked files are read, opened and summarised; both slots make the pair ready', async () => {
+  const { pair, calls, pick, $ } = setup();
+  await pick('movingInput', ['t1.nii.gz']);
+  assert.deepEqual(calls.open, [['moving', 't1.nii.gz']]);
+  assert.equal($('movingInfo').hidden, false);
+  assert.equal($('movingInfo').textContent, 't1.nii.gz · 4×4×4 · 1×1×1.5 mm');
+  assert.ok($('movingSlot').classList.contains('has-files'));
+  assert.equal(pair.ready, false);
+  await pick('fixedInput', ['mni.nii.gz']);
+  assert.equal(pair.ready, true);
+  assert.equal(calls.changes.at(-1).ready, true);
+  assert.equal($('fixedClear').hidden, false);
+});
+
+test('a failed load reopens the previous image and reports the error', async () => {
+  const { pair, calls, pick, $ } = setup();
+  await pick('fixedInput', ['good.nii.gz']);
+  await pick('fixedInput', ['broken.nii.gz']);
+  assert.deepEqual(calls.open, [['fixed', 'good.nii.gz'], ['fixed', 'broken.nii.gz'], ['fixed', 'good.nii.gz']]);
+  assert.equal(pair.fixed.candidate.name, 'good.nii.gz');
+  assert.match($('fixedInfo').textContent, /^good\.nii\.gz/);
+  assert.deepEqual(calls.status.at(-1), ['Cannot read broken.nii.gz', true]);
+  await pick('movingInput', ['broken.nii.gz']);
+  assert.deepEqual(calls.clear, ['moving'], 'a failed first load empties its viewer');
+  assert.equal(pair.moving, null);
+});
+
+test('clear empties one slot and swap exchanges both', async () => {
+  const { pair, calls, pick, $ } = setup();
+  await pick('fixedInput', ['a.nii.gz']);
+  await pick('movingInput', ['b.nii.gz']);
+  calls.open.length = 0;
+  $('swapButton').click();
+  await settle();
+  assert.deepEqual(calls.open, [['fixed', 'b.nii.gz'], ['moving', 'a.nii.gz']]);
+  assert.equal(pair.fixed.candidate.name, 'b.nii.gz');
+  assert.equal(pair.moving.candidate.name, 'a.nii.gz');
+  $('movingClear').click();
+  assert.deepEqual(calls.clear, ['moving']);
+  assert.equal(pair.moving, null);
+  assert.equal($('movingInfo').hidden, true);
+  assert.equal(pair.ready, false);
+});
+
+test('a template loads through the same slot path and carries its brain extraction', async () => {
+  const { pair, calls, pick, $, window } = setup({ templates: [brainTemplate] });
+  const select = $('fixedTemplate');
+  select.value = 'brain';
+  select.dispatchEvent(new window.Event('change'));
+  await settle();
+  assert.deepEqual(calls.open, [['fixed', 'brain.nii.gz']]);
+  assert.equal(pair.fixed.image.brainExtracted, true);
+  assert.equal(select.value, 'brain');
+  await pick('fixedInput', ['own.nii.gz']);
+  assert.equal(select.value, '', 'a user file replaces the template choice');
+});
+
+test('a dimensionality mismatch blocks the pair and disables 3D templates for a 2D moving image', async () => {
+  const { pair, pick, $ } = setup({ templates: [brainTemplate] });
+  await pick('fixedInput', ['volume.nii.gz']);
+  await pick('movingInput', ['flat.tif']);
+  assert.equal(pair.ready, false);
+  assert.match(pair.error, /fixed image is 3D and the moving image is 2D/);
+  assert.equal($('pairMessage').hidden, false);
+  assert.ok($('pairMessage').classList.contains('error'));
+  assert.equal($('fixedTemplate').disabled, true);
+  assert.equal($('fixedHint').textContent, 'Templates are 3D; the moving image is 2D.');
+  assert.ok($('fixedHint').textContent.length <= 90);
+});
+
+test('an app check adds to the default validation', async () => {
+  const { pair, pick } = setup({ validatePair: (fixed, moving) => moving.candidate.name === 'odd.nii.gz' ? 'Odd image.' : '' });
+  await pick('fixedInput', ['a.nii.gz']);
+  await pick('movingInput', ['odd.nii.gz']);
+  assert.equal(pair.error, 'Odd image.');
+  assert.equal(pair.ready, false);
+});
+
+test('a brain-only image paired with a head image shows a short hint without blocking', async () => {
+  const { pair, $, window } = setup({ templates: [brainTemplate] });
+  const select = $('fixedTemplate');
+  select.value = 'brain';
+  select.dispatchEvent(new window.Event('change'));
+  await settle();
+  await pair.use('moving', { name: 'head.nii.gz', file: new window.File(['x'], 'head.nii.gz'), brainExtracted: false });
+  assert.equal(pair.ready, true);
+  assert.equal($('pairMessage').hidden, false);
+  assert.ok($('pairMessage').classList.contains('warning'));
+  assert.ok($('pairMessage').textContent.length <= 90);
+});
+
+test('several series offer a series select that reopens the chosen one', async () => {
+  const { pair, calls, $, window, file } = setup({ read: () => [{ name: 'one.nii.gz' }, { name: 'two.nii.gz' }] });
+  await pair.load('moving', [file('dicom')]);
+  assert.equal($('movingSeriesField').hidden, false);
+  assert.deepEqual([...$('movingSeries').options].map(option => option.textContent), ['one.nii.gz', 'two.nii.gz']);
+  $('movingSeries').value = '1';
+  $('movingSeries').dispatchEvent(new window.Event('change'));
+  await settle();
+  assert.deepEqual(calls.open.at(-1), ['moving', 'two.nii.gz']);
+  assert.equal(pair.moving.index, 1);
+});
+
+test('a locked fixed template has no pickers, no swap and counts as loaded', async () => {
+  const { pair, $ } = setup({ lockedFixed: brainTemplate, slotHelp: { moving: 'Your scan; normalized to the template' } });
+  assert.equal($('fixedInput'), null);
+  assert.equal($('swapButton'), null);
+  assert.equal($('fixedInfo').textContent, 'Brain template · 4×4×4 · 1×1×1 mm');
+  assert.ok($('movingSlot').querySelector('.nd-info-icon'));
+  await pair.use('moving', { name: 'scan.nii.gz' });
+  assert.equal(pair.ready, true);
+  pair.reset('fixed');
+  assert.ok(pair.fixed, 'the locked template cannot be cleared');
+});
+
+test('examples fill the slots by role through the same path as files', async () => {
+  const { window } = new JSDOM('<!doctype html><body></body>');
+  const opened = [];
+  const previousFetch = globalThis.fetch;
+  globalThis.fetch = async url => new Response(new TextEncoder().encode(url));
+  try {
+    const examples = [{
+      id: 'pair', label: 'Pair', files: [
+        { role: 'moving', name: 'moving.nii.gz', url: 'https://example.test/moving.nii.gz', brainExtracted: true },
+        { role: 'fixed', name: 'fixed.nii.gz', url: 'https://example.test/fixed.nii.gz' },
+      ],
+    }];
+    const pair = createImagePair({ examples, open: async (slot, candidate) => { opened.push([slot, candidate.name]); return { name: candidate.name, dimensionality: 3 }; } }, window.document);
+    window.document.body.append(pair);
+    const select = pair.querySelector('select[data-neurodesk-example]');
+    assert.ok(select.compareDocumentPosition(pair.querySelector('#fixedInput')) & window.Node.DOCUMENT_POSITION_FOLLOWING, 'the example comes before the pickers');
+    select.value = 'pair';
+    select.dispatchEvent(new window.Event('change'));
+    await settle();
+    assert.deepEqual(opened, [['fixed', 'fixed.nii.gz'], ['moving', 'moving.nii.gz']]);
+    assert.equal(pair.moving.image.brainExtracted, true);
+    assert.equal(pair.exampleControl.dataset.exampleState, 'ready');
+    pair.reset('moving');
+    assert.equal(pair.exampleControl.dataset.exampleState, 'idle', 'clearing an image forgets the example');
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test('disabling the pair disables every control', async () => {
+  const { pair, pick, $ } = setup({ templates: [brainTemplate] });
+  await pick('fixedInput', ['a.nii.gz']);
+  pair.disabled = true;
+  for (const id of ['fixedInput', 'fixedFolderInput', 'movingInput', 'fixedTemplate', 'swapButton', 'fixedClear']) {
+    assert.equal($(id).disabled, true, `${id} is disabled`);
+  }
+});
+
+test('describeNiftiFile reads spatial size, spacing and volumes from the header', async () => {
+  const header = new ArrayBuffer(352);
+  const view = new DataView(header);
+  view.setInt32(0, 348, true);
+  [4, 10, 12, 8, 5, 1, 1, 1].forEach((value, index) => view.setInt16(40 + index * 2, value, true));
+  [1, 2, 2, 3, 1, 0, 0, 0].forEach((value, index) => view.setFloat32(76 + index * 4, value, true));
+  view.setFloat32(108, 352, true);
+  const summary = await describeNiftiFile(new File([header], 'bold.nii'));
+  assert.deepEqual(summary, { name: 'bold.nii', dims: [10, 12, 8, 5], spacingMm: [2, 2, 3], dimensionality: 3, frames: 5 });
+});
