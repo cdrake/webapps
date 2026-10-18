@@ -35,6 +35,35 @@ async function holdWorkers(page) {
   });
 }
 
+/** Hold one real NiiVue image-reader reply while cancellation is requested. */
+async function holdViewerRead(page, name) {
+  await page.addInitScript((name) => {
+    Object.defineProperty(Navigator.prototype, "gpu", { value: undefined });
+    const NativeWorker = Worker;
+    window.Worker = class extends NativeWorker {
+      constructor(...args) {
+        super(...args);
+        this.addEventListener("message", (event) => {
+          if (event.data?.volume?.name?.includes(name) && !window.viewerReadReleased) {
+            event.stopImmediatePropagation();
+            window.finishViewerRead = () => {
+              window.viewerReadReleased = true;
+              this.dispatchEvent(new MessageEvent("message", { data: event.data }));
+            };
+          }
+        });
+      }
+    };
+  }, name);
+}
+
+async function cancelViewerRead(page) {
+  await page.waitForFunction(() => typeof window.finishViewerRead === "function");
+  await page.locator("#cancelButton").click();
+  await page.evaluate(() => window.finishViewerRead());
+  await expect(page.locator("#statusText")).toHaveText("Cancelled");
+}
+
 test("app boots", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("#viewer")).toBeVisible();
@@ -167,6 +196,54 @@ test("cancelling while packing the image prevents completed outputs", async ({ p
   await expect(page.locator("#statusText")).toHaveText("Cancelled");
   await expect(page.locator("#runButton")).toBeEnabled();
   await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(0);
+});
+
+test("cancelling the initial viewer read restores the empty workspace", async ({ page }) => {
+  await holdViewerRead(page, "sub-01");
+  await page.goto("/");
+  const empty = await page.locator("#gl1").screenshot();
+  await page.locator("#imageInput").setInputFiles(dwiSeries().files);
+  await cancelViewerRead(page);
+  await expect(page.locator("#runButton")).toBeDisabled();
+  await expect(page.locator("#fileInfo")).toBeHidden();
+  await expect(page.locator("#emptyState")).toBeVisible();
+  await expect.poll(async () => (await page.locator("#gl1").screenshot()).equals(empty)).toBe(true);
+});
+
+test("cancelling a replacement viewer read restores the committed image", async ({ page }) => {
+  await holdViewerRead(page, "replacement");
+  await page.goto("/");
+  await page.locator("#imageInput").setInputFiles(dwiSeries().files);
+  await expect(page.locator("#runButton")).toBeEnabled();
+  const original = await page.locator("#gl1").screenshot();
+  const replacement = dwiSeries({ nx: 32, ny: 16, nz: 6 });
+  replacement.files.forEach((file) => { file.name = file.name.replace("sub-01", "replacement"); });
+  await page.locator("#imageInput").setInputFiles(replacement.files);
+  await cancelViewerRead(page);
+  await expect(page.locator("#fileInfo")).toContainText("sub-01_dwi.nii.gz");
+  await expect(page.locator("#runButton")).toBeEnabled();
+  await expect.poll(async () => (await page.locator("#gl1").screenshot()).equals(original)).toBe(true);
+  await page.locator("#imageInput").setInputFiles(replacement.files);
+  await expect(page.locator("#fileInfo")).toContainText("replacement_dwi.nii.gz");
+  expect((await page.locator("#gl1").screenshot()).equals(original)).toBe(false);
+});
+
+test("cancelling the denoised viewer read restores the previous display", async ({ page }) => {
+  await holdViewerRead(page, "desc-denoised");
+  const series = dwiSeries();
+  series.files[1].buffer = Buffer.from("1000 1000 1000 1000 1000");
+  await page.goto("/");
+  await page.locator("#imageInput").setInputFiles(series.files);
+  await expect(page.locator("#runButton")).toBeEnabled();
+  const original = await page.locator("#gl1").screenshot();
+  await page.locator("#runButton").click();
+  await cancelViewerRead(page);
+  await expect(page.locator("#runButton")).toBeEnabled();
+  await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(0);
+  await expect.poll(async () => (await page.locator("#gl1").screenshot()).equals(original)).toBe(true);
+  await page.locator("#runButton").click();
+  await expect(page.locator("#statusText")).toHaveText("Denoised 5 volumes");
+  expect((await page.locator("#gl1").screenshot()).equals(original)).toBe(false);
 });
 
 for (const example of examples) {
