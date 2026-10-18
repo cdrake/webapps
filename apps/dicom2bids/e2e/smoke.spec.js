@@ -86,6 +86,71 @@ test('missing metadata prompts for correction and changes invalidate confirmatio
   expect(strFromU8(entries['sub-01/ses-01/dwi/sub-01_ses-01_dwi.bval'])).toBe('0\n');
 });
 
+test('non-unit gradients require correction and rounded unit vectors export unchanged', async ({ page }) => {
+  await page.goto('./');
+  await page.locator('#imageInput').setInputFiles(dicomSeries());
+  await reviewAnatomical(page, 'dwi');
+  await page.locator('#series1-gradients > summary').click();
+  await page.locator('#series1-bval').fill('1000');
+  await page.locator('#series1-bvec').fill('0.91\n0\n0');
+  await page.locator('[data-review]').check();
+  await page.locator('#runButton').click();
+  await expect(page.locator('#statusText')).toContainText('unit length');
+  await expect(page.locator('#outputSection')).not.toHaveAttribute('open', '');
+  await page.locator('#series1-bvec').fill('0.707107\n0.707107\n0');
+  await page.locator('[data-review]').check();
+  const entries = await downloadDataset(page);
+  expect(strFromU8(entries['sub-01/ses-01/dwi/sub-01_ses-01_dwi.bvec'])).toBe('0.707107\n0.707107\n0\n');
+});
+
+test('pending replacement gradients block export and only the latest selection is committed', async ({ page }, testInfo) => {
+  await page.goto('./');
+  await page.locator('#imageInput').setInputFiles(dicomSeries());
+  await reviewAnatomical(page, 'dwi');
+  await page.locator('#series1-gradients > summary').click();
+  await page.locator('#series1-bval').fill('1000');
+  await page.locator('#series1-bvec').fill('1\n0\n0');
+  await page.locator('[data-review]').check();
+  await downloadDataset(page);
+  await page.evaluate(() => {
+    const original = File.prototype.text;
+    window.gradientReads = {};
+    File.prototype.text = function () {
+      if (['earlier.bval', 'latest.bval'].includes(this.name)) {
+        return new Promise(resolve => { window.gradientReads[this.name] = resolve; });
+      }
+      return original.call(this);
+    };
+  });
+  const gradients = page.locator('[data-neurodesk-input="gradients"]');
+  await gradients.setInputFiles({ name: 'earlier.bval', mimeType: 'text/plain', buffer: Buffer.from('3000') });
+  await page.waitForFunction(() => typeof window.gradientReads['earlier.bval'] === 'function');
+  await expect(page.locator('[data-review]')).not.toBeChecked();
+  await expect(page.locator('[data-review]')).toBeDisabled();
+  await expect(page.locator('#runButton')).toBeDisabled();
+  await expect(page.locator('#outputSection')).not.toHaveAttribute('open', '');
+  const viewport = page.viewportSize();
+  await page.screenshot({ path: testInfo.outputPath('pending-gradients-desktop.png'), fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: testInfo.outputPath('pending-gradients-phone.png'), fullPage: true });
+  await page.setViewportSize(viewport);
+  await gradients.setInputFiles({ name: 'latest.bval', mimeType: 'text/plain', buffer: Buffer.from('2000') });
+  await page.waitForFunction(() => typeof window.gradientReads['latest.bval'] === 'function');
+  await page.evaluate(() => window.gradientReads['latest.bval']('2000'));
+  await expect(page.locator('#series1-bval')).toHaveValue('2000');
+  await expect(page.locator('[data-review]')).toBeEnabled();
+  await expect(page.locator('[data-review]')).not.toBeChecked();
+  await page.evaluate(async () => {
+    window.gradientReads['earlier.bval']('3000');
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+  await expect(page.locator('#series1-bval')).toHaveValue('2000');
+  await page.locator('[data-review]').check();
+  const entries = await downloadDataset(page);
+  expect(strFromU8(entries['sub-01/ses-01/dwi/sub-01_ses-01_dwi.bval'])).toBe('2000\n');
+});
+
 test('an example download failure allows retry and the real example converts through download', async ({ page }) => {
   test.setTimeout(180000);
   const example = examples[0];

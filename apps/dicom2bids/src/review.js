@@ -15,15 +15,19 @@ export function createSeriesReview({ rows, editor, onChange }) {
   let series = [];
   let selected = null;
   const controls = new Map();
+  const gradientReads = new Map();
 
   function changed(item) {
     item.reviewed = false;
     const check = rows.querySelector(`[data-review="${item.id}"]`);
-    if (check) check.checked = false;
+    if (check) {
+      check.checked = false;
+      check.disabled = gradientReads.has(item);
+    }
     onChange();
   }
 
-  function field(parent, item, key, label, { options, type = 'text', value, update } = {}) {
+  function field(parent, item, key, label, { options, type = 'text', value, update, event = 'change' } = {}) {
     const group = element('div', 'nd-field nd-report-form');
     const id = `${item.id}-${key}`;
     const title = element('label', '', label);
@@ -43,7 +47,7 @@ export function createSeriesReview({ rows, editor, onChange }) {
       }
     }
     input.value = value ?? '';
-    input.addEventListener('change', () => {
+    input.addEventListener(event, () => {
       update(input.value);
       input.removeAttribute('aria-invalid');
       changed(item);
@@ -131,24 +135,51 @@ export function createSeriesReview({ rows, editor, onChange }) {
       files.accept = '.bval,.bvec';
       files.setAttribute('data-neurodesk-input', 'gradients');
       files.addEventListener('change', async () => {
-        for (const file of files.files) {
-          const extension = file.name.split('.').at(-1).toLowerCase();
-          if (extension === 'bval' || extension === 'bvec') {
-            const text = await file.text();
-            if (!series.includes(item)) return;
-            item[extension] = text;
+        const selection = Array.from(files.files).filter(file => /\.(bval|bvec)$/i.test(file.name));
+        if (!selection.length) return;
+        const read = Symbol();
+        gradientReads.set(item, read);
+        files.setCustomValidity('');
+        changed(item);
+        let applied = false;
+        try {
+          const gradients = {};
+          for (const file of selection) {
+            gradients[file.name.split('.').at(-1).toLowerCase()] = await file.text();
+            if (gradientReads.get(item) !== read || !series.includes(item)) return;
+          }
+          Object.assign(item, gradients);
+          applied = true;
+        } catch {
+          if (gradientReads.get(item) === read && series.includes(item)) {
+            files.setCustomValidity('Could not read gradient files. Select them again.');
+            files.reportValidity();
+          }
+        } finally {
+          if (gradientReads.get(item) === read && series.includes(item)) {
+            gradientReads.delete(item);
+            changed(item);
+            if (applied && selected === item.id) {
+              for (const key of ['bval', 'bvec']) {
+                const control = controls.get(`${item.id}:${key}`);
+                if (control) control.value = item[key];
+              }
+              files.value = '';
+            }
           }
         }
-        changed(item);
-        show(item);
       });
       label.prepend(files);
       content.append(label);
       for (const key of ['bval', 'bvec']) {
         field(content, item, key, key === 'bval' ? 'b-values' : 'b-vectors (three rows)', {
           type: 'textarea',
+          event: 'input',
           value: item[key],
-          update: (value) => { item[key] = value; },
+          update: (value) => {
+            gradientReads.delete(item);
+            item[key] = value;
+          },
         });
       }
       body.append(gradients);
@@ -183,6 +214,7 @@ export function createSeriesReview({ rows, editor, onChange }) {
   }
 
   function render(items) {
+    gradientReads.clear();
     series = items;
     rows.replaceChildren();
     editor.replaceChildren();
@@ -208,6 +240,10 @@ export function createSeriesReview({ rows, editor, onChange }) {
       check.checked = item.reviewed;
       check.setAttribute('aria-label', `Confirm ${item.description}`);
       check.addEventListener('change', () => {
+        if (gradientReads.has(item)) {
+          check.checked = false;
+          return;
+        }
         item.reviewed = check.checked;
         row.removeAttribute('data-flag');
         onChange();
@@ -246,5 +282,5 @@ export function createSeriesReview({ rows, editor, onChange }) {
     }
   }
 
-  return { render, revealErrors };
+  return { render, revealErrors, hasPendingEdits: () => gradientReads.size > 0 };
 }

@@ -94,7 +94,9 @@ function gradientError(item) {
   }
   for (let n = 0; n < b.length; n++) {
     const length = Math.hypot(...rows.map((row) => row[n]));
-    if (b[n] > 50 && Math.abs(length - 1) > 0.1) return 'Nonzero diffusion directions must be unit vectors.';
+    const unit = Math.abs(length - 1) <= 0.001;
+    const lowBZero = b[n] <= 50 && length <= 0.000001;
+    if (!unit && !lowBZero) return 'Vectors must be unit length, or zero for b=0/low-b volumes.';
   }
   return null;
 }
