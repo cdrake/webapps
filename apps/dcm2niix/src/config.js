@@ -2,5 +2,4 @@
 // without a browser (see test/config.test.js).
 export const APP = Object.freeze({
   id: "dcm2niix",
-  version: "0.0.0",
 });

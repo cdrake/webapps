@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Updated dependencies [b67e4e9]
+  - @neurodesk/webapp-components@0.15.1
 - Updated dependencies [b68209b]
   - @neurodesk/webapp-components@0.15.0
 - 6e46e80: Restore schema catalog and detail URLs on direct entry and reload on the composite GitHub Pages site, including browser-local schema IDs and external schema query URLs.

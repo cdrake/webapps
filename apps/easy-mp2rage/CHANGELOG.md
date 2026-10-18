@@ -4,6 +4,9 @@
 
 ### Patch Changes
 
+- Updated dependencies [b67e4e9]
+  - @neurodesk/webapp-components@0.15.1
+  - @neurodesk/easy-mp2rage@0.8.20261018
 - Updated dependencies [b68209b]
   - @neurodesk/webapp-components@0.15.0
   - @neurodesk/easy-mp2rage@0.8.20261018
