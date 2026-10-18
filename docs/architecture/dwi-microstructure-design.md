@@ -28,7 +28,7 @@ The repository has no denoising, Gibbs unringing, motion correction, susceptibil
 
 ## Apps
 
-| App | Methods | Reference | Gate on cropped ds003138 |
+| App | Methods | Reference | Gate on the app's validation data (see Data) |
 | --- | --- | --- | --- |
 | `dwidenoise` | MP-PCA | MRtrix `dwidenoise` | noise map median relative difference < 2 %, denoised NRMSE < 1 % |
 | `degibbs` | subvoxel shift | MRtrix `mrdegibbs` | NRMSE < 1 % |
@@ -128,18 +128,22 @@ Absolute differences from AMICO 1.5.4 with its default 32761-direction table:
 The port uses the exact fibre direction; AMICO uses the nearest table direction, about 1° away.
 With AMICO's table direction the port agrees to a median of 2e-7 (`tests/oracle.rs`), so the remaining difference is that rounding, not the fit.
 
-## Primary dataset
-
-ds001226 sub-CON01 replaces ds003138 as the primary dataset: ds003138 acquires each shell as a separate run with its own TE and one b0.
-ds001226 has one run (b = 0 ×6, 700 ×16, 1200 ×30, 2800 ×50, 2.5 mm), one PA b0, a T1w and complete sidecars (CC0).
-
 ## Data
 
-The primary dataset was first OpenNeuro ds003138 (CC0); see "Primary dataset" below for its replacement.
-It has b = 1000/2000/3000 at 20/30/64 directions, a reverse-PE b0 for each shell, a 0.8 mm T1w, and `TotalReadoutTime` and `SliceTiming` in its sidecars.
-CI uses a cropped field of view.
-ds004146 (full AP and PA DWI) is for later work.
-Native reference outputs are on the Hugging Face dataset at a pinned revision.
+All datasets are OpenNeuro, CC0, one subject each. Decided 18 October 2026 after a search of about 120 OpenNeuro diffusion datasets.
+
+| Use | Dataset | Why |
+| --- | --- | --- |
+| Primary: NODDI, HMC, SDC, N4 and the `noddi` example | ds005134 sub-01 | One run (Siemens Skyra, 2 mm, TE 91 ms): 13 b0, b = 500 ×12, 1000 ×48, 2000 ×64; 8 PA b0 volumes; T1w; `PhaseEncodingDirection`, `TotalReadoutTime` and `SliceTiming` in the sidecars |
+| `degibbs` gate | ds005577 sub-107 | Full Fourier (ds005134 uses partial Fourier 0.75, which weakens Gibbs unringing); b = 1000 ×30, 3000 ×60, 11 b0 |
+| Vendor check, no gate | ds007522 sub-HML0001 (Philips), ds006837 sub-15464 (GE) | The apps must run on other vendors' files and sidecars |
+| AMICO parity, recorded above | ds001226 sub-CON01 | One run, b = 0 ×6, 700 ×16, 1200 ×30, 2800 ×50, 2.5 mm |
+| Later: full blip-up/down | ds004146 | Full AP and PA DWI |
+
+Rejected: ds003138, because each shell is a separate run with its own TE and one b0; the NODDI toolbox example, because its data licence is not stated and it has no reverse PE or T1w.
+
+The `noddi` example is an axial slab of ds005134 sub-01 (slices 28-37, 67 × 92 × 10 × 137, 8.4 MB) with its 8 PA b0 volumes cut to the same box, for the later `sdc` app. Its sidecars omit the site and acquisition-time fields. It waits for an upload to the Hugging Face dataset; until then the app's example is dwi2trx's pinned single-shell DWI, which exercises the tensor fit and the NODDI refusal.
+CI uses cropped data. Native reference outputs go to the Hugging Face dataset at a pinned revision.
 
 ## Build order
 
@@ -153,7 +157,8 @@ Status, 18 October 2026: the crates, the AMICO port and the `noddi` app are done
 - the niimath dtifit option (Q14 "allow both");
 - the `noddi` command line;
 - a CI workflow that runs the `exes/dwi` tests, `check:wasm` and `tests/oracle.rs` with a pinned oracle file (without it the oracle test skips, which the data-gated test rule forbids);
-- the ds005134 example, after its upload to Hugging Face.
+- the ds005134 example, after its upload to Hugging Face;
+- a size limit for the input: `readNiftiFrames` holds the whole series as Float32, about 500 MB for a full-brain ds005134 DWI plus its decompressed data (dwi2trx's `input-limits.ts` is the pattern; the limit belongs in the shared package).
 3. `dwidenoise`.
 4. `degibbs`.
 5. `n4`, with an N4 entry point in the ANTs WebAssembly build.
