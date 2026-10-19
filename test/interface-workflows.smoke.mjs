@@ -204,7 +204,7 @@ try {
     await expect(status).toHaveText('Drag and drop files', { timeout: 60000 });
     await expect(page.locator('#runButton')).toBeDisabled();
     await page.locator('#imageInput').setInputFiles(nifti('interface-flair.nii'));
-    await expect(status).toContainText('ready to segment');
+    await expect(status).toHaveText(/^FLAIR loaded\W+ready to segment lesions$/);
     await expect(page.locator('#fileInfo')).toContainText('interface-flair.nii');
     await expect(page.locator('#fileInfo')).toContainText('16 × 16 × 16');
     await expect(page.getByRole('button',{name:'Segment lesions',exact:true})).toBeEnabled();
