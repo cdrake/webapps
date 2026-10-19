@@ -1,6 +1,6 @@
 # SDC port and validation plan
 
-Plan, 19 October 2026, for step 7 of the [diffusion design](dwi-microstructure-design.md): susceptibility distortion correction (`sdc`) with SyN-SDC, the fieldmap-less method of sdcflows. It follows the form of the HMC plan (PR [#486](https://github.com/neurodesk/webapps/pull/486)). Nothing here is implemented yet.
+Plan, 19 October 2026, for step 7 of the [diffusion design](dwi-microstructure-design.md): susceptibility distortion correction (`sdc`) with SyN-SDC, the fieldmap-less method of sdcflows. It follows the form of the HMC plan (PR [#486](https://github.com/neurodesk/webapps/pull/486)). PR #486 is not merged yet, so this plan links the PR. After #486 merges, a follow-up changes the link to `dwi-hmc-plan.md`. Nothing here is implemented yet.
 
 Sources that this plan read, with the commit of each:
 
@@ -15,13 +15,16 @@ Sources that this plan read, with the commit of each:
 
 A citation `file:line` refers to sdcflows 2.17.1 unless it names another source. `syn.py` is `sdcflows/workflows/fit/syn.py`. A path that starts with a repository folder (`packages/`, `exes/`) refers to this repository.
 
-Section 9 records the decisions (Q57-Q70). Decisions 1-11 of [#460](https://github.com/neurodesk/webapps/issues/460) are Q57-Q67, in that order. Q68-Q70 are new questions that the source reading found. The fixed decisions Q51 (keep the b0 volumes), Q52 (MindGrab mask of the mean b0, or an uploaded mask) and Q53 (`antsRegistration --float 1`, no double build) apply.
+Section 9 records the decisions (Q57-Q71). Decisions 1-11 of [#460](https://github.com/neurodesk/webapps/issues/460) are Q57-Q67, in that order. Q68-Q71 are new questions that the source reading and the review found. The fixed decisions Q51 (keep the b0 volumes), Q52 (MindGrab mask of the mean b0, or an uploaded mask) and Q53 (`antsRegistration --float 1`, no double build) apply.
 
 ## 1. Corrections to the issue's facts
 
 Most facts in #460 agree with the source. These do not:
 
-- **The EPI is not regridded before SyN.** `find_zooms` and `zooms_epi` exist (`syn.py:225-226,668-677`) and receive inputs (`syn.py:304,307`), but no node reads the output of `zooms_epi`. It is dead code. The SyN fixed grid is `sampling_ref` (`syn.py:504,562,591`): `GenerateSamplingReference` with `keep_native=True` keeps the EPI field of view at the voxel size of the anatomical image (niworkflows `interfaces/nibabel.py:381-387,598-607`). On ds005134 sub-01 that is 0.8 mm, a 289 × 289 × 171 grid (14.3 M voxels). Section 7 shows why this is the main memory risk.
+- **The EPI is not regridded before SyN.** `find_zooms` and `zooms_epi` exist (`syn.py:225-226,668-677`). `find_zooms` gets its inputs at `syn.py:295-296`, and `zooms_epi` gets its inputs at `syn.py:304,307`. No node reads the output of `zooms_epi`, so it is dead code.
+  - The SyN fixed grid is `sampling_ref` (`syn.py:504,562,591`).
+  - `GenerateSamplingReference` with `keep_native=True` keeps the EPI field of view. It uses the voxel size of the anatomical image (niworkflows `interfaces/nibabel.py:381-387,598-607`).
+  - On ds005134 sub-01 that is 0.8 mm, a 289 × 289 × 171 grid (14.3 M voxels). Section 7 shows why this is the main memory risk.
 - **The deformation is not restricted to the PE axis only.** `_warp_dir` gives weight 1.0 to the PE axis and 0.1 to the two other axes (`syn.py:620-623`). The rendered argv is `--restrict-deformation 0.1x1.0x0.1` for `j-` on a RAS fixed grid. QSIPrep's SyN uses `[0, 1, 0]` (QSIPrep `workflows/fieldmap/syn.py:214`).
 - **The third SyN parameter is in voxels, not mm.** `_mm2vox` divides the total-field variance by the PE voxel size of the fixed grid (`syn.py:626-642`). At 0.8 mm the stages are `SyN[0.8, 6.0, 12.5]` and `SyN[0.8, 2.0, 0.625]`, not `10.0` and `0.5`.
 - **`ImageMath Laplacian` reads one number, not two.** ANTs reads sigma and the normalize flag from the same argument (`ImageMath_Templates.hxx:9188-9206`, `argct` is not incremented between them). With `op2 '1.5 1'` sigma is 1.5 and normalize is `stoi("1.5") = 1`. The trailing `1` has no effect.
@@ -35,8 +38,8 @@ sdcflows has two workflows: `init_syn_preprocessing_wf` (`syn.py:342-597`) and `
 
 | Step | sdcflows | Port |
 | --- | --- | --- |
-| EPI reference | niworkflows `init_epi_reference_wf` (`syn.py:470-473,552`): `RobustAverage`, `IntensityClip` 35/99.98, `N4BiasFieldCorrection -d 3 --convergence [ 50x50x50x50x50, 1e-07 ] --shrink-factor 4`, `IntensityClip` 2/100, `StructuralReference` (niworkflows `workflows/epi/refmap.py:145-181`) | Mean of the b0 volumes (the `gradients` b0 rule), then the same clip, N4 and clip. `RobustAverage` motion-corrects a 4D input with AFNI `3dvolreg` (`mc_method` default `'AFNI'`, niworkflows `interfaces/images.py:214-219,318`). A 3D input passes unchanged (`images.py:250-254`), and `StructuralReference` skips `mri_robust_template` for one image (`interfaces/freesurfer.py:81-84`). Thus the reference run gets the port's 3D mean b0, and neither AFNI nor FreeSurfer runs. |
-| Deoblique | `Deoblique` when obliquity ≥ 0.5° (`interfaces/utils.py:48,459-490`) | Port `_deoblique` as is. Its new origin subtracts half the shape in voxel units (`utils.py:480`); copy it. ds005134 is not oblique (obliquity 0). |
+| EPI reference | niworkflows `init_epi_reference_wf` (`syn.py:470-473,552`): `RobustAverage`, `IntensityClip` 35/99.98, `N4BiasFieldCorrection -d 3 --convergence [ 50x50x50x50x50, 1e-07 ] --shrink-factor 4`, `IntensityClip` 2/100, `StructuralReference` (niworkflows `workflows/epi/refmap.py:145-181`) | Mean of the b0 volumes (the `gradients` b0 rule), then the same clip, N4 and clip. `RobustAverage` motion-corrects a 4D input with AFNI `3dvolreg` (`mc_method` default `'AFNI'`, niworkflows `interfaces/images.py:214-219,318`). A 3D input passes unchanged (`images.py:250-254`), so AFNI does not run. The reference run gets the port's 3D mean b0. FreeSurfer is still necessary: for one image, `StructuralReference` replaces the `mri_robust_template` command with `echo` (`interfaces/freesurfer.py:81-84`), but nipype first checks that `mri_robust_template` is on `PATH` (nipype `interfaces/base/core.py:750-758`). Also, `epi_merge` sets `transform_outputs=True` (niworkflows `workflows/epi/refmap.py:178`), so `_list_outputs` runs FreeSurfer `lta_convert` (`freesurfer.py:91-98`). Section 6.1 gives the environment. |
+| Deoblique | `Deoblique` when obliquity ≥ 0.5° (`interfaces/utils.py:48,459-490`) | Port `_deoblique` as is. Its new origin subtracts `(shape − 1) × 0.5` in voxel units (`utils.py:480`); copy it. ds005134 is not oblique (obliquity 0). |
 | EPI brain mask | `BrainExtraction` (`syn.py:474,555`; `utils/tools.py:153-215`, random walker) | MindGrab of the mean b0 (Q52, Q61) |
 | Anatomical mask | input `mask_anat` (fMRIPrep gives the smriprep T1w mask) | MindGrab of the T1w (Q61) |
 | Anatomical image | `ApplyMask`, `IntensityClip` 0/99.8, `DenoiseImage -n Gaussian -s 1` (`syn.py:480-482,548-554`) | The same. `DenoiseImage` is an ANTs entry point (section 3). |
@@ -55,7 +58,7 @@ sdcflows has two workflows: `init_syn_preprocessing_wf` (`syn.py:342-597`) and `
   - fixed: stage 1 the anat mask, stage 2 the prior mask (`syn.py:217-222,288-289`);
   - moving: stage 1 `NULL`, stage 2 the union of the EPI mask and the dilated anat mask resampled to the EPI grid with MultiLabel (`syn.py:181-185,208-216,298,301,308-309`; `brainmask.py:134-149`).
 - Schedule (`data/sd_syn.json:1-23`): two SyN stages, each with two Mattes metrics of 48 bins (image pair, Laplacian pair). Weights `[0.9, 0.1]` then `[0.8, 0.2]`; iterations `200x100` then `10`; convergence `1e-06`/window 5 then `1e-08`/window 2; shrink `1x1` then `1`; smoothing `2x0` then `0` vox; Random 0.8 in stage 1 and no sampling in stage 2; histogram matching on; winsorize `[0.001, 0.998]`; Linear interpolation; collapsed output. There is no `float` key, so native ANTs runs in double. The `laplacian_weight` option (`syn.py:242-250`, capped at 0.5 by `syn.py:43`) is not used by fMRIPrep.
-- `sd_syn_sloppy.json` differs only in iterations (`20x10` then `2`, line 9) and `"verbose": true` (line 20). `sloppy=True` also sets `zooms_min=4.0` for the B-spline fit (`syn.py:228,278-279`).
+- `sd_syn_sloppy.json` differs only in iterations (`20x10` then `2`, line 9: 10 times fewer in stage 1, 5 times fewer in stage 2) and `"verbose": true` (line 20). `sloppy=True` also sets `zooms_min=4.0` for the B-spline fit (`syn.py:228,278-279`).
 - The rendered native argv for ds005134 sub-01 (`j-`, fixed grid 0.8 mm RAS; nipype 1.12.0):
 
 ```text
@@ -82,9 +85,9 @@ antsRegistration --collapse-output-transforms 1 --dimensionality 3 --initialize-
   - `recenter=False`, `extrapolate=True`, `zooms_min=1.0` (no resize at 2 mm) (`bspline.py:65-84,149-160`);
   - no mask: the `in_mask` connection is commented out (`syn.py:327-329`), so every voxel is a sample (`bspline.py:168-172`);
   - cubic tensor-product weights from `scipy.interpolate.BSpline` on knots `-3 … n+2`, support `|d| < 2` (`transform.py:677-766`);
-  - `sklearn.linear_model.Ridge(alpha=1e-4, fit_intercept=False)` on a sparse float32 matrix, up to three fits while `max|coef| ≥ 1e4` (`bspline.py:203-216`). For sparse input without intercept, scikit-learn 1.9.1 selects `sparse_cg` (`linear_model/_ridge.py:867-878`): scipy conjugate gradient on `XᵀX + αI` with `rtol=1e-4` (`_ridge.py:86-136`).
+  - `sklearn.linear_model.Ridge(alpha=1e-4, fit_intercept=False)` on a sparse float32 matrix, up to three fits while `max|coef| ≥ 1e4` (`bspline.py:203-216`). For sparse input without intercept, scikit-learn 1.9.1 selects `sparse_cg` (`linear_model/_ridge.py:867-878`): scipy conjugate gradient on `XᵀX + αI` with `rtol=1e-4` (`_ridge.py:86-156`). The fit has 0.93 M samples and 4624 features, so it runs the linear branch (`_ridge.py:138-145`), not the kernel branch.
 - `ApplyCoeffsField(jacobian=False)` evaluates the coefficients on the EPI reference grid and unwarps the reference (`syn.py:258,330-336`; `bspline.py:388-438`). The workflow output `fmap` is this evaluated field in Hz (`transform.py:335-353`). It is the field that the gate compares (Q66).
-- Unwarp (`transform.py:71-117,369-549`): the voxel shift is `field × TotalReadoutTime`, with the sign from the image orientation after `ensure_positive_cosines` and the `-` of the PE direction (`transform.py:494-499`). Resampling is `scipy.ndimage.map_coordinates`, order 3, prefilter on, mode `constant`, value 0 (`transform.py:99-107,378-382`); negative values become 0 (`transform.py:544-545`). Head-motion transforms are ignored (`transform.py:509-524`), which agrees with "each app resamples once". The Jacobian factor `1 + ∂vsm/∂pe` uses `numpy.gradient` (`transform.py:114-115`).
+- Unwarp (`transform.py:71-117,369-549`): the voxel shift is `field × TotalReadoutTime`. The data are reoriented by `ensure_positive_cosines`, but the sign comes from the axis codes of the **original** image, which `ensure_positive_cosines` returns (`utils/tools.py:144-150`): `flip = (axcodes[pe_axis] in 'LPI') XOR (PE direction ends with '-')` (`transform.py:494-499`). A port that uses the RAS codes after the reorientation never applies the orientation flip. Resampling is `scipy.ndimage.map_coordinates`, order 3, prefilter on, mode `constant`, value 0 (`transform.py:99-107,378-382`); negative values become 0 (`transform.py:544-545`). Head-motion transforms are ignored (`transform.py:509-524`), which agrees with "each app resamples once". The Jacobian factor `1 + ∂vsm/∂pe` uses `numpy.gradient` (`transform.py:114-115`).
 
 ## 3. Registration engine and ANTs entry points (Q58)
 
@@ -93,7 +96,7 @@ Use the ANTs 52bc0ab kernel. Do not change `packages/registration`: its `--apply
 | Entry point | Need | Where |
 | --- | --- | --- |
 | `antsRegistration` with full argv, `--float 1`, `--random-seed` | SyN (two metrics per stage, `--restrict-deformation`, `--masks` per stage) and the EPI-to-anat affine | `packages/hmc-registration` `run(argv)` (#444). All options are in ANTs already (`antsRegistration.cxx:252,480`); no ANTs change. |
-| `antsApplyTransforms` | Linear, MultiLabel, BSpline; inverse flags; a chain of three transforms with an `.h5` composite | Add the real ANTs CLI (`antsApplyTransforms.cxx:1101-1103`) to `packages/hmc-registration`. The HMC plan's custom `--apply` extension does not cover MultiLabel or transform chains. |
+| `antsApplyTransforms` | Linear, MultiLabel, BSpline; inverse flags; a chain of three transforms with an `.h5` composite | Add the real ANTs CLI (`antsApplyTransforms.cxx:1101-1103`) to `packages/hmc-registration`. [#445](https://github.com/neurodesk/webapps/issues/445) adds BSpline and sinc interpolators to the custom `--apply`, but `--apply` does not cover MultiLabel or transform chains. Proposal: #462 adds the full `antsApplyTransforms` entry, and `--apply` stays for HMC as #445 defines it. The two share the ITK interpolators, so the wasm holds one copy of that code. If #445 is not merged first, #462 adds the full CLI and #445 can use it in place of a new `--apply` interpolator (Q58). |
 | `ImageMath ... Laplacian` | sigma 1.5, normalize to [0, 1] | A small entry that copies `LaplacianImage` (`ImageMath_Templates.hxx:9183-9230`, `LaplacianRecursiveGaussianImageFilter` and `RescaleIntensityImageFilter`). The full `ImageMath` (15 000 lines of templates) would make the wasm much larger. Its argv parsing is copied (section 1). |
 | `DenoiseImage` | `-n Gaussian -s 1` | ANTs `DenoiseImage.cxx` in `packages/hmc-registration` |
 | `N4BiasFieldCorrection` | EPI reference: `--convergence [ 50x50x50x50x50, 1e-07 ] --shrink-factor 4` | `packages/n4` (PR [#380](https://github.com/neurodesk/webapps/pull/380)): its `main.cxx` passes argv to ANTs unchanged, so only a JavaScript argv builder is new. The wasm bytes do not change. |
@@ -127,7 +130,7 @@ Crate `exes/dwi/sdc` and `sdc-wasm` (#463). The WebAssembly takes and returns Fl
 | --- | --- | --- |
 | `disp_to_fmap` | `transform.py:624-674` | The input is ANTs' displacement in LPS; the inverse affine handles axis order and flips. Test all six PE directions on LAS and RAS grids. |
 | B-spline grid and weights | `bspline.py:540-565`, `transform.py:677-766` | `//` on float extent; the knot window `[1:-1]` of the scipy basis; the `|d| < 2` support. |
-| Ridge solve | `bspline.py:203-216`, sklearn `_ridge.py:86-136,867-878` | `sparse_cg` stops at `rtol=1e-4`, in float32. An exact solve differs from it. To meet #463's 1e-4 Hz median, port scipy's `cg` (x₀ = 0, the same residual test, f32 operators). Also compute the exact solve in tests to know the CG error. |
+| Ridge solve | `bspline.py:203-216`, sklearn `_ridge.py:86-156,867-878` (linear branch `138-145`) | `sparse_cg` stops at `rtol=1e-4`, in float32. An exact solve differs from it. To meet #463's 1e-4 Hz median, port scipy's `cg` (x₀ = 0, the same residual test, f32 operators). Also compute the exact solve in tests to know the CG error. |
 | Field evaluation | `transform.py:335-353` | Coefficients are written as float32 before the evaluation (`bspline.py:227`); copy that rounding. |
 | Unwarp of the DWI series | `transform.py:71-117,369-549` | Port scipy `spline_filter` and `map_coordinates` (order 3) with mode `constant`. Read scipy 1.18.1 for the prefilter boundary mode that `constant` uses before the port. `numpy.gradient` uses central differences inside and first-order differences at the edges (`edge_order=1`). |
 | `_advanced_clip` | niworkflows `nibabel.py:667-726` | The same algorithm as NiFreeze's `advanced_clip` in the HMC plan (median filter with `ball(3)`, percentiles of positive values, `round(255x)`). Share one implementation with the `hmc` crate. |
@@ -141,12 +144,14 @@ The repository rule for NIfTI I/O applies (design, Code layout). The JavaScript 
 
 Inputs: the DWI series (NIfTI + bval + bvec + JSON, DICOM, or a BIDS folder through the shared reader), one T1w, and optional masks (EPI and T1w).
 
+Pinned assets (Q60): `fmap_atlas.nii.gz`, `fmap_atlas_2_MNI152NLin2009cAsym_affine.mat` and the MNI152NLin2009cAsym 1 mm T1w and brain mask for the affine of Q59. They come from `sdc/prior/` on the Hugging Face dataset, through `models/sdc.manifest.json` and the offline asset inventory. The "no prior" option needs none of them.
+
 Outputs (BIDS derivatives; the names go through the shared module of [#413](https://github.com/neurodesk/webapps/issues/413)):
 
 | File | Content |
 | --- | --- |
 | `*_desc-sdc_dwi.nii.gz` | the corrected DWI series, all volumes, b0 kept (Q51); one cubic resampling with the Jacobian factor (Q63) |
-| `*_desc-sdc_dwi.bval`, `.bvec` | unchanged copies: SyN-SDC moves voxels along the PE axis only, and sdcflows does not rotate b-vectors |
+| `*_desc-sdc_dwi.bval`, `.bvec` | unchanged copies. SyN deforms all three axes, but `disp_to_fmap` keeps only the PE component (section 2.3), so the unwarp moves voxels along the PE axis only. sdcflows does not rotate b-vectors. |
 | `*_desc-sdc_dwi.json` | the input sidecar plus a provenance block (tool versions, seed, PE direction, `TotalReadoutTime`, mask source) |
 | `*_desc-preproc_fieldmap.nii.gz` + `.json` | the field in Hz on the EPI grid, `Units: "Hz"`, as sdcflows names it (`workflows/outputs.py:186-198`) |
 | `*_desc-coeff_fieldmap.nii.gz` | the B-spline coefficients (`outputs.py:244-256,273-289`), for the later joint resampling |
@@ -159,10 +164,22 @@ Outputs (BIDS derivatives; the names go through the shared module of [#413](http
 
 Use native sdcflows 2.17.1. Do not use QSIPrep 26.1.1:
 
-- QSIPrep removed `--use-syn-sdc`. The replacement, `--sdc-fieldmapless-method syn --sdc-anat-reference invt1w` (QSIPrep `docs/upgrading.rst:58-60`), runs QSIPrep's own SyN workflow (QSIPrep `workflows/fieldmap/base.py:476-514`, `workflows/fieldmap/syn.py:76-260`). That workflow differs from sdcflows 2.17.1 in every important point: an inverted T1w target (`syn.py:185`), `susceptibility_syn.json` with Mattes 56 bins then CC radius 5, `"float": true`, no Laplacian channel, `SyN[0.8, 2, 2]` (QSIPrep `data/susceptibility_syn.json:1-23`), restriction `[0, 1, 0]` in voxel axes (`syn.py:214`), atlas threshold 2 (`syn.py:76`), a different atlas file (`mni_lps_fmap_atlas.nii.gz`, LPS 193 × 229 × 193, SHA-256 `7fb31f35…`, against sdcflows' `72b8d2cc…`), no B-spline field fit, and a default PE of `j` when the metadata has none (`syn.py:145-149`). QSIPrep does not depend on sdcflows (`pyproject.toml:34` pins niworkflows only).
-- No container has sdcflows 2.17.1: Docker Hub `nipreps/sdcflows` stops at 2.10.0 (checked 19 October 2026), and fMRIPrep 25.2.7 pins `sdcflows ~= 2.15.2` (fMRIPrep `pyproject.toml:37`).
+- QSIPrep removed `--use-syn-sdc`. The replacement is `--sdc-fieldmapless-method syn --sdc-anat-reference invt1w` (QSIPrep `docs/upgrading.rst:58-60`). It runs QSIPrep's own SyN workflow (QSIPrep `workflows/fieldmap/base.py:476-514`, `workflows/fieldmap/syn.py:76-260`). QSIPrep does not depend on sdcflows (`pyproject.toml:34` pins niworkflows only).
+- That workflow differs from sdcflows 2.17.1 in every important point (QSIPrep paths):
+  - the target is an inverted T1w (`syn.py:185`);
+  - `data/susceptibility_syn.json:1-23` has Mattes 56 bins, then CC radius 5, `"float": true` and `SyN[0.8, 2, 2]`, with no Laplacian channel;
+  - the restriction is `[0, 1, 0]` in voxel axes (`syn.py:214`);
+  - the atlas threshold is 2 (`syn.py:76`);
+  - the atlas is a different file: `mni_lps_fmap_atlas.nii.gz`, LPS 193 × 229 × 193, SHA-256 `7fb31f35…` (sdcflows has `72b8d2cc…`);
+  - there is no B-spline field fit;
+  - the PE is `j` when the metadata has none (`syn.py:145-149`).
+- Docker Hub `nipreps/sdcflows` stops at 2.10.0 (checked 19 October 2026). fMRIPrep 25.2.7 pins `sdcflows ~= 2.15.2` (fMRIPrep `pyproject.toml:37`). fMRIPrep `master` requires `sdcflows >= 2.17.1` (`pyproject.toml:40`), and `ghcr.io/nipreps/fmriprep` publishes a `master` tag. This plan did not pull that image, so its sdcflows version is not known. It is a moving tag, but a digest of it can pin the environment (Q57).
 
-The reference is therefore a Python 3.12 environment with sdcflows 2.17.1 from PyPI (wheel SHA-256 above), recorded with `uv pip freeze`, and native ANTs 52bc0ab on `PATH`, as the HMC M0 runs were. There is no container digest; the freeze file, the wheel hash and the ANTs commit pin it. A driver script connects `init_syn_preprocessing_wf` and `init_syn_sdc_wf` as fMRIPrep does (fMRIPrep `workflows/base.py:792-817`) and makes these changes, which the README lists:
+The proposed reference is a Python 3.12 environment with sdcflows 2.17.1 from PyPI (wheel SHA-256 above), recorded with `uv pip freeze`. Native ANTs 52bc0ab is on `PATH`, as for the HMC M0 runs. The freeze file, the wheel hash and the ANTs commit pin it.
+
+FreeSurfer is also necessary (section 2.1). `mri_robust_template` must be on `PATH`, but it does not run, so a stub script is sufficient. `lta_convert` runs once and must work. #461 pins the FreeSurfer version that supplies it. The alternative is a driver that replaces `epi_merge` with an identity node; the README then lists that change.
+
+A driver script connects `init_syn_preprocessing_wf` and `init_syn_sdc_wf` as fMRIPrep does (fMRIPrep `workflows/base.py:792-817`) and makes these changes, which the README lists:
 
 - `in_epis` is the port's 3D mean b0 (section 2.1);
 - the output of node `epi_brain` is replaced with the MindGrab mask of the mean b0 (Q52); `mask_anat` is the MindGrab mask of the T1w (Q61);
@@ -170,18 +187,27 @@ The reference is therefore a Python 3.12 environment with sdcflows 2.17.1 from P
 - `ANTS_RANDOM_SEED` is set, and `ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1`, `OMP_NUM_THREADS=1`;
 - the work directory is kept.
 
-Runs on ds005134 sub-01 (full brain, Q67):
+Runs on ds005134 sub-01. The full brain is the gate input (Q67). The slab is the example input (Q64).
 
-| Run | Purpose |
-| --- | --- |
-| double, seed 1234 | the reference |
-| double, seeds 1235 and 1236 | the seed spread (three pairs) |
-| `--float 1`, seed 1234 (driver sets `syn.inputs.float = True` and the same for `epi2anat`) | the native analogue of the WASM, as Q53 measured for HMC |
-| double, seed 1234, 2 mm anat grid (`init_syn_preprocessing_wf(debug=True)`) | Q68 |
-| double, seed 1234, each prior variant of Q59 | Q59 |
-| double, seed 1234, `sloppy=True` | Q69 |
+| Input | Run | Purpose |
+| --- | --- | --- |
+| full brain, 0.8 mm grid | double, seed 1234 | the reference |
+| full brain, 0.8 mm grid | double, seeds 1235 and 1236 | the seed spread (three pairs) |
+| full brain, 0.8 mm grid | `--float 1`, seed 1234 (driver sets `syn.inputs.float = True` and the same for `epi2anat`) | the native analogue of the WASM, as Q53 measured for HMC |
+| full brain, 2 mm grid (`init_syn_preprocessing_wf(debug=True)`) | double, seeds 1234, 1235 and 1236; `--float 1`, seed 1234 | Q68: the reference and the gate of options (b) and (c) |
+| full brain, 0.8 mm grid | double, seed 1234, each prior variant of Q59 | Q59 |
+| full brain, 0.8 mm grid | double, seed 1234, `sloppy=True` | Q69 |
+| slab with the T1w of Q64, the grid of Q68 | double, seeds 1234, 1235 and 1236; `--float 1`, seed 1234 | the slab test of section 6.2 (M5, #465) |
 
-Keep for each run: the argv of every ANTs call, the mean b0, both masks, the clipped and denoised anat, `sampling_ref`, the anat and mask in EPI space, both Laplacian maps after `_norm_lap`, the warped prior and its mask, the moving-mask union, the displacement field, the field in Hz before and after `BSplineApprox`, the coefficients, the corrected EPI reference, wall time and peak memory. #461 also unwarps the DWI series with `ApplyCoeffsField(jacobian=True)` from the kept coefficients, so the port's resampling has a reference.
+Keep for each run:
+
+- the argv of every ANTs call;
+- the mean b0, both masks, the clipped and denoised anat, `sampling_ref`, and the anat and mask in EPI space;
+- both Laplacian maps after `_norm_lap`, the warped prior and its mask, and the moving-mask union;
+- the displacement field, the field in Hz before and after `BSplineApprox`, the coefficients and the corrected EPI reference;
+- the wall time and the peak memory.
+
+#461 also unwarps the DWI series with `ApplyCoeffsField(jacobian=True)` from the kept coefficients, so the port's resampling has a reference.
 
 Folder: `sdc/reference/` on the Hugging Face dataset, with `README.md`, `index.json` and `SHA256SUMS` in the form of `hmc/reference/`, uploaded in one commit ([#374](https://github.com/neurodesk/webapps/issues/374)).
 
@@ -197,14 +223,28 @@ Deterministic parts (fixed tolerances; these stay):
 Registration (WASM, `--float 1`). First replay the kept inputs of the double seed-1234 run, then run end to end. The field `f` is the workflow output `fmap` (section 2.3), in Hz, on the EPI grid. `M` is the MindGrab mask of the mean b0. Q66 proposes this rule; it awaits the maintainer's confirmation:
 
 - `spread = max over the pairs (a, b) of {1234, 1235, 1236} of median_M |f_native(a) − f_native(b)|`.
-- The WASM run passes when `median_M |f_wasm(1234) − f_native(1234)| ≤ spread`.
-- The design start value, `median_M |f_wasm − f_native| < 0.5 Hz`, is also reported, and it is the gate when `spread < 0.05 Hz` (a floor: only stage 1 samples at random, and convergence can stop a stage early, so the measured spread can be almost zero).
+- `d = median_M |f_wasm(1234) − f_native(1234)|`.
+- The WASM run passes when `d ≤ max(spread, 0.05 Hz)` **and** `d < 0.5 Hz`.
+  - The floor of 0.05 Hz is necessary because only stage 1 samples at random, and convergence can stop a stage early. Thus the measured spread can be almost zero.
+  - The design's start value, 0.5 Hz, stays as a cap. A large native spread cannot make the gate looser than the design.
+  - The limit increases with the spread and never decreases. A smaller spread never gives a looser gate.
+  - This agrees with #462, which asks for "< 0.5 Hz and the seed-spread rule".
 - Also report the 95th percentile of the same differences, the native `--float 1` against double, and the difference of the pre-B-spline Hz field (more sensitive to the registration).
 - Report-only: the field against ds005134's GRE field map (`fmap/sub-01_run-001_phasediff`, magnitude 1 and 2), resampled to the EPI grid. This is an independent measure, not the reference of the port.
 
-This is the form of Q53 and of the SHORELine repeat rule in the HMC plan: the WASM result must be within the native repeat spread. It uses the median over the brain because a field map is one image, not 6 numbers per volume. A per-voxel spread rule would fail where the field is near zero.
+The idea is the same as Q53: the WASM result must be within the native repeat spread. The rule is different in two ways:
 
-CI: the full-brain gate is a data-gated test, tagged `@slow` (it runs nightly). The slab test (Q64) is untagged and runs the same method on every pull request. AGENTS.md allows `@slow` only when an untagged test completes a run with the same kind of geometry; the maintainer decides if a 20 mm slab satisfies that rule for a whole-brain test.
+- Q53 uses one seed pair and compares per volume and per axis. Q66 takes the maximum over three pairs. That is closer to the shell-maximum alternative of the HMC plan, which is not accepted.
+- The SHORELine repeat rule of the HMC plan (PR #486) is a pending decision, not an accepted rule. This plan does not use it as a precedent.
+
+Q66 uses the median over the brain because a field map is one image, not 6 numbers per volume. A per-voxel spread rule would fail where the field is near zero.
+
+CI:
+
+- The gate tests of #462 and #464 are Node tests, not Playwright tests. The `@slow` tag of AGENTS.md does not apply to them.
+- The full-brain gate runs in a native workflow job, as the `fida-reference` job in `lcmodel-native.yml` does. The job provisions the pinned `sdc/reference/` data and sets a require variable, so a missing input fails the test and does not skip it (#462). Proposal: the job runs on pull requests that change `packages/sdc`, `packages/hmc-registration` or `exes/dwi/sdc`, nightly and on manual dispatch.
+- The slab e2e test of #465 is a Playwright test. It is untagged and runs on every pull request. It compares the app with the native slab runs of section 6.1, with report-only numbers.
+- If a full-brain Playwright test is added later, AGENTS.md allows `@slow` only when an untagged test completes a run with the same model, method, option and kind of geometry. The maintainer decides if the slab test satisfies that rule (Q66).
 
 ## 7. Runtime and memory (Q65)
 
@@ -220,37 +260,54 @@ Estimates; #461 replaces them with measurements.
 - Time: the stock schedule runs 300 + 10 iterations at full resolution with no shrink. Estimate 20-90 min native double on one thread, and 1-3 times that in WASM. On the 2 mm grid, estimate 1-5 min.
 - The B-spline fit: 0.93 M × 4624 sparse matrix with 64 entries for each row, about 0.5 GB in CSR float32 with indices. It runs in the Rust crate.
 - MindGrab: 2.6 GB peak for each call in Node (AGENTS.md, node drivers); the app runs it twice (mean b0, T1w).
+- The affine to MNI (Q59): the 1 mm template is 193 × 229 × 193 (8.5 M voxels). The affine schedule shrinks by 4 and 2 before the full-resolution level. Estimate well under 1 GB and under 1 min; #461 measures it. #461 also records the download size of the template.
 
 ## 8. Milestones
 
 | Milestone | Issue | Content | Depends on |
 | --- | --- | --- | --- |
 | M0 | [#460](https://github.com/neurodesk/webapps/issues/460) | this plan | - |
-| M1 | [#461](https://github.com/neurodesk/webapps/issues/461) | native ANTs targets; the driver; the runs of section 6.1; seed spread; time and memory; the T1w for the example; upload to `sdc/reference/` | #374 for the upload |
+| M1 | [#461](https://github.com/neurodesk/webapps/issues/461) | native ANTs targets; the driver; the runs of section 6.1, the slab runs included; seed spread; time and memory; the T1w for the example; upload to `sdc/reference/`; upload of the Q60 assets with their notices to `sdc/prior/` | #374 for the upload |
 | M2 | [#463](https://github.com/neurodesk/webapps/issues/463) | `exes/dwi/sdc` and `sdc-wasm`: section 4 (the synthetic tests start after M0; the reference checks need M1). Its scope grows by the small numpy steps of section 4 (clip, Laplacian normalization, dilation, union, binarize, deoblique); the clip is shared with the `hmc` crate. | M0, M1 |
-| M3 | [#462](https://github.com/neurodesk/webapps/issues/462) | the entry points of section 3 in `packages/hmc-registration`; the N4 argv builder; the replay gate of section 6.2 | [#444](https://github.com/neurodesk/webapps/issues/444), M1 |
-| M4 | [#464](https://github.com/neurodesk/webapps/issues/464) | `packages/sdc`: the pipeline in Node and in browser workers; refusals; outputs; `AbortSignal` | M2, M3, [#410](https://github.com/neurodesk/webapps/issues/410), #413 |
-| M5 | [#465](https://github.com/neurodesk/webapps/issues/465) | `apps/sdc` from the template; example; e2e (headless CI uses an uploaded mask or MindGrab's CPU backend, [#394](https://github.com/neurodesk/webapps/issues/394)) | M4 |
+| M3 | [#462](https://github.com/neurodesk/webapps/issues/462) | the entry points of section 3 in `packages/hmc-registration`; the N4 argv builder; the replay gate of section 6.2 | [#444](https://github.com/neurodesk/webapps/issues/444), M1; [#445](https://github.com/neurodesk/webapps/issues/445) if it merges first (section 3) |
+| M4 | [#464](https://github.com/neurodesk/webapps/issues/464) | `packages/sdc`: the pipeline in Node and in browser workers; refusals; outputs; `AbortSignal`; the `sdc/prior/` entries in `models/sdc.manifest.json` | M2, M3, [#410](https://github.com/neurodesk/webapps/issues/410), #413 |
+| M5 | [#465](https://github.com/neurodesk/webapps/issues/465) | SyN-SDC in `apps/sdc`; example; offline assets for the prior and the example; e2e (headless CI uses an uploaded mask or MindGrab's CPU backend, [#394](https://github.com/neurodesk/webapps/issues/394)) | M4 |
 | M6 | [#466](https://github.com/neurodesk/webapps/issues/466) | the `sdc` command line with `exes/node-cli` | M5 |
-| Later | [#471](https://github.com/neurodesk/webapps/issues/471) | a reverse-PE method, as a second method of the same `apps/sdc` (a method selector, not a second app). It writes the same field format (Hz on the EPI grid, B-spline coefficients). | M4 |
+| Parallel | [#473](https://github.com/neurodesk/webapps/issues/473) | the reverse-PE app (PyHySCO, FD-Net), chosen by the decision document [#471](https://github.com/neurodesk/webapps/issues/471) | #471 |
 
-#464's acceptance names the slab for the gate. With Q67 the gate moves to the full brain (`@slow`), and the slab test checks the pipeline against its own native slab run (report-only numbers, Q64). The maintainer confirms this change of #464.
+`apps/sdc` is one app with a method selector. #465 and #473 both say "start from `pnpm new-app sdc`", and #473 says that SyN-SDC joins later. Proposal (Q71): the first of #465 and #473 to start creates `apps/sdc` and `models/sdc.manifest.json`; the other adds its method to them. The two methods differ, and the app states it:
+
+- **Licence.** #473 makes the app GPL-3.0 because of the PyHySCO solver. The SyN-SDC code (`packages/sdc`, `exes/dwi/sdc`) stays Apache-2.0, as #473 says.
+- **Outputs.** Both write the field in Hz as a BIDS `fieldmap`. SyN-SDC also writes the corrected DWI series (section 5). #473 does not resample the DWI series. That is the joint hmc+sdc resampling of the design.
+- **Inputs.** SyN-SDC needs a T1w and no reverse-PE data. The reverse-PE method needs AP and PA b0 volumes and no T1w.
+
+This plan changes these acceptance criteria of the issues. The maintainer confirms each change:
+
+- **#462:** "`--restrict-deformation` moves voxels only along the PE axis" becomes "the weights are `0.1x1.0x0.1` as sdcflows renders them" (section 1). The replay gate is the rule of section 6.2, which keeps "< 0.5 Hz" as a cap.
+- **#461:** there is no sdcflows 2.17.1 container digest unless the fMRIPrep `master` image is used (Q57). The README states the freeze file, the wheel hash, the ANTs commit and the FreeSurfer version. "Add the T1w crop" becomes "add the T1w of Q64" (full T1w proposed).
+- **#464:** the acceptance names the slab for the gate. With Q67 the gate moves to the full brain, in a native workflow job (section 6.2). The slab test checks the pipeline against the native slab runs, with report-only numbers.
+- **#465:** "the ds005134 slab with its T1w crop" becomes "the slab with the T1w of Q64".
 
 [#495](https://github.com/neurodesk/webapps/issues/495) (registry niimath) does not affect `sdc`: no step uses niimath.
 
 ## 9. Questions and decisions
 
 1. **Q57. Which reference tool?**
-   **Proposed:** native sdcflows 2.17.1 from PyPI with native ANTs 52bc0ab, driven by a script (section 6.1). QSIPrep 26.1.1 cannot be the reference: it has no `--use-syn-sdc`, and its replacement is a different SyN method. There is no sdcflows 2.17.1 container; the freeze file, the wheel hash and the ANTs commit pin the environment. Seeds 1234, 1235 and 1236 in double; one `--float 1` run.
+   **Proposed:** native sdcflows 2.17.1 from PyPI with native ANTs 52bc0ab, driven by a script (section 6.1). QSIPrep 26.1.1 cannot be the reference: it has no `--use-syn-sdc`, and its replacement is a different SyN method. The freeze file, the wheel hash and the ANTs commit pin the environment. FreeSurfer supplies `lta_convert` (section 6.1). Seeds 1234, 1235 and 1236 in double; one `--float 1` run.
+   **Question:** Docker Hub has no sdcflows 2.17.1 image. The fMRIPrep `master` image on ghcr.io probably has sdcflows ≥ 2.17.1 (not checked). Do you prefer a digest of that image (with FreeSurfer and ANTs in it, but an ANTs build that is not 52bc0ab) to the PyPI environment?
 2. **Q58. ANTs entry points and package.**
    **Proposed:** `sdc` shares `packages/hmc-registration` (#444). Add `antsApplyTransforms` (full CLI), a Laplacian entry copied from `LaplacianImage`, and `DenoiseImage`. Use `packages/n4` for N4 with a new argv builder. `--float 1` only (Q53); no change to `packages/registration`.
-   **Question:** is a shared package acceptable, or does `sdc` get its own module (a second build of the same kernel)? Is a copied `LaplacianImage` acceptable instead of the full `ImageMath`?
+   **Question:** is a shared package acceptable, or does `sdc` get its own module (a second build of the same kernel)? Is a copied `LaplacianImage` acceptable instead of the full `ImageMath`? Does the full `antsApplyTransforms` entry sit next to the `--apply` of #445, as section 3 proposes?
 3. **Q59. The anat-to-MNI152NLin2009cAsym transform for the prior.**
    SYNcro registers to a different template (FSL MNI152 1 mm, `packages/syncro/README.md:3,90`), so its transform cannot be used.
    **Proposed:** an affine-only registration of the MindGrab-masked T1w to the TemplateFlow `tpl-MNI152NLin2009cAsym_res-01_T1w` brain, with sdcflows' `affine.json` schedule, in WASM; the reference run gets the same transform from native ANTs. The prior is a coarse mask (`> 3` mm of average distortion), so an affine error of a few mm is likely small against the seed spread. Add an option "no prior" (`sd_prior=False`, the anat mask takes its place, `syn.py:540-542`).
    #461 measures three variants natively: a full SyN `std2anat_xfm` (as smriprep would give), the affine, and no prior. It reports the Dice of the prior masks and the field difference in brain. If the affine field differs from the SyN field by more than the seed spread, this decision is reopened.
 4. **Q60. Licences and redistribution.**
-   - `fmap_atlas.nii.gz` (sdcflows `data/`, SHA-256 `72b8d2cc7ff3324f3bfaf52712bc191256e795bcff5ee168563b89e584aa40bb`) is the S2 File of Treiber et al. 2016 (PLoS ONE 11(3): e0152472, [doi:10.1371/journal.pone.0152472.s002](https://doi.org/10.1371/journal.pone.0152472.s002); downloaded file SHA-256 `695bfdb19418309c9bdc4482e6e363067aa786322feb69751942985c7a707813`) with NaN set to 0. Same affine; the voxel data are equal after that change (checked 19 October 2026). The article's copyright line puts it under the Creative Commons Attribution License (CC BY 4.0 at PLOS ONE), and PLOS applies the article licence to its supporting information. sdcflows cites it (`docs/methods.rst:158,280-283`). **It can be mirrored** to the Hugging Face dataset with the attribution (authors, article, DOI, licence, "NaN set to 0") in the README.
+   - `fmap_atlas.nii.gz` is in sdcflows `data/` (SHA-256 `72b8d2cc7ff3324f3bfaf52712bc191256e795bcff5ee168563b89e584aa40bb`).
+     - It is the S2 File of Treiber et al. 2016, PLoS ONE 11(3): e0152472, [doi:10.1371/journal.pone.0152472.s002](https://doi.org/10.1371/journal.pone.0152472.s002). The downloaded file has SHA-256 `695bfdb19418309c9bdc4482e6e363067aa786322feb69751942985c7a707813`.
+     - sdcflows set NaN to 0. The affine is the same, and the voxel data are equal after that change (checked 19 October 2026).
+     - The article is under the Creative Commons Attribution License (CC BY 4.0 at PLOS ONE). PLOS applies the article licence to its supporting information. sdcflows cites the article (`docs/methods.rst:158,280-283`).
+     - **It can be mirrored** to the Hugging Face dataset. The README gives the authors, the article, the DOI, the licence and "NaN set to 0".
    - `fmap_atlas_2_MNI152NLin2009cAsym_affine.mat` is part of sdcflows (Apache-2.0). It can be mirrored with the sdcflows licence notice.
    - MNI152NLin2009cAsym: TemplateFlow's `template_description.json` says "See LICENSE file"; the LICENSE (commit `15d7c02`) is the McConnell Brain Imaging Centre permission notice: use, copy, modify and distribute for any purpose without fee, with the copyright notice in all copies. **It can be mirrored** with that LICENSE file next to it. It is not the FSL MNI152 template, whose FSL terms are non-commercial.
    - ds005134 is CC0 (`dataset_description.json`).
@@ -271,9 +328,10 @@ Estimates; #461 replaces them with measurements.
    **Question:** full T1w or crop with no prior? Add the chosen file to the pending uploads (#374).
 9. **Q65. Runtime and memory.** Section 7. Replace after #461.
 10. **Q66. The gate statistic.**
-    **Proposed:** section 6.2: the WASM field passes when its median absolute difference in brain from native double at the same seed is not larger than the largest median absolute native seed-to-seed difference of three seeds; the design's 0.5 Hz is reported and is the gate when the spread is below 0.05 Hz. The deterministic parts keep fixed tolerances. **Awaits the maintainer's confirmation**, as the HMC plan's SHORELine rule does.
+    **Proposed:** section 6.2. `d` is the median absolute difference in brain between the WASM field and the native double field at the same seed. `spread` is the largest median absolute difference between native seeds (three seeds, three pairs). The WASM field passes when `d ≤ max(spread, 0.05 Hz)` and `d < 0.5 Hz`. The deterministic parts keep fixed tolerances.
+    **Question:** confirm the rule, the 0.05 Hz floor and the 0.5 Hz cap. Confirm that the full-brain Node gate runs in a native workflow job (pull requests that touch the SDC code, nightly, manual), and that the slab Playwright test is untagged.
 11. **Q67. The reference input.**
-    **Proposed:** the gate uses the full-brain ds005134 sub-01 (DWI, T1w). The slab is the example only. SyN-SDC on a 20 mm slab is a weak test: the epi-to-anat affine and the prior have little data, and the field's B-spline grid is 11 × 14 × 4. The slab runs in CI against its own native run, with report-only numbers.
+    **Proposed:** the gate uses the full-brain ds005134 sub-01 (DWI, T1w). The slab is the example only. SyN-SDC on a 20 mm slab is a weak test: the epi-to-anat affine and the prior have little data, and the field's B-spline grid is 11 × 14 × 4. The slab runs in CI against the native slab runs of section 6.1, with report-only numbers. Section 8 lists the issue criteria that this changes.
 12. **Q68. The SyN grid (new).**
     sdcflows registers on the EPI field of view at the anat voxel size (0.8 mm here, 14.3 M voxels), which will probably not fit in 4 GiB of WASM memory (section 7). sdcflows' own debug path regrids the anat to 2 mm first (`syn.py:575-585`), and fMRIPrep uses that path with `--sloppy`. Options:
     - (a) stock 0.8 mm grid, if #461 shows that native `--float 1` peaks under about 3.5 GB;
@@ -281,8 +339,12 @@ Estimates; #461 replaces them with measurements.
     - (c) (a) on the command line and (b) in the browser, each with its own reference.
     **Question:** which option? #461 measures (a) and (b) and reports the field difference between them.
 13. **Q69. `sd_syn_sloppy.json` (new; the issue asks if the app offers it).**
-    **Proposed:** no, not in the first version. It has 10 times fewer iterations, and it changes the B-spline fit (`zooms_min` 4.0). It would need its own reference and gate. Revisit after #461 if the full schedule is too slow.
+    **Proposed:** no, not in the first version. It has 10 times fewer iterations in stage 1 and 5 times fewer in stage 2, and it changes the B-spline fit (`zooms_min` 4.0). It would need its own reference and gate. Revisit after #461 if the full schedule is too slow.
 14. **Q70. N4 of the T1w (new).**
     fMRIPrep gives sdcflows a bias-corrected T1w (smriprep). sdcflows does not correct the T1w itself.
     **Proposed:** the app uses the T1w as the user gives it, and the reference does the same, so the gate compares like with like. The About text says that a bias-corrected T1w is better.
     **Question:** confirm, or add an N4 step with `packages/n4` before the clip.
+15. **Q71. Who creates `apps/sdc` (new).**
+    #465 and #473 both start from `pnpm new-app sdc`.
+    **Proposed:** the first of the two to start creates `apps/sdc` and `models/sdc.manifest.json`. The other adds its method with the method selector. The app is GPL-3.0 when PyHySCO ships (#473); the SyN-SDC code stays Apache-2.0. The About text states that only SyN-SDC writes a corrected DWI series (section 8).
+    **Question:** confirm one app for both methods, and the output difference between them.
