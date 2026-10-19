@@ -11,7 +11,7 @@ One Electron application contains all 24 webapps and their complete runtime asse
 | Apptainer SIF | The same Linux suite with its system libraries, Xvfb and an init process; graphical HPC use and JSON automation jobs |
 | Existing native executables | Separate Greedy, SynthSR, SynthSeg and SYNcro releases on the platforms listed in the catalog |
 
-The suite runs the browser's compiled WebAssembly, WebGPU and Python pipelines. It does not depend on the separately published native executables. `assemble.mjs --app ID --out DIRECTORY` can generate a subset from the same registry and asset lock; the published release is the complete suite.
+The suite runs the browser's compiled WebAssembly, WebGPU and Python pipelines. It does not depend on the separately published native executables. `assemble.mjs --app ID[,ID...] --out DIRECTORY` can generate a subset from the same registry and asset lock; the published release is the complete suite.
 
 ## Cold-start offline operation
 

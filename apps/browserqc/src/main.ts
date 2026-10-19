@@ -5,14 +5,14 @@ import NiiVueGPU, {
   SLICE_TYPE,
 } from '@niivue/niivue'
 import { mountImagingWorkspace } from '@neurodesk/webapp-components/core/mount-imaging-workspace'
-import { bindFileDrop, createInfoDialog, createConsole, createExampleSelector, createResultList, createViewerToolbar, ProgressManager } from '@neurodesk/webapp-components/ui'
+import { bindFileDrop, createInfoDialog, createConsole, createExampleSelector, createResultList, createViewerToolbar, fetchTemplateFile, ProgressManager, templatesFor, type TemplateCatalogue } from '@neurodesk/webapp-components/ui'
 import '@neurodesk/webapp-components/styles/imaging-workspace.css'
 import { registerAppAutomation, registerViewer, createNiivueAdapter, runAbortable, summarizeLabels, type OperationContext } from '@neurodesk/webapp-components/automation'
 import { downloadBlob, downloadFile, readNifti } from '@neurodesk/webapp-components/file-io'
 import { runSegmentation, type SegmentationBackend } from './segmentation'
 import { readImageFiles, runDcm2niix, traverseDataTransferItems } from '@neurodesk/runtime-support/dcm2niix-client'
 import { Niimath } from '@niivue/niimath'
-import { AIR_TEMPLATE, checkAirTemplate, finishReport, qcTissues, type QcTissues } from '@neurodesk/browserqc'
+import { AIR_TEMPLATE, finishReport, qcTissues, type QcTissues } from '@neurodesk/browserqc'
 import { MODELS as BRAINCHOP } from '@brainchop/mindgrab'
 import { MODELS, parseModel, type Model } from './models'
 import { version as mindgrabVersion } from '@brainchop/mindgrab/package.json'
@@ -21,6 +21,7 @@ import type { QcMetrics, QcReport } from './qc'
 import { resetRating, readRating } from './rate'
 import { describeSeries } from './series'
 import examples from '../examples.json'
+import templateCatalogue from '../../../registry/templates.json'
 
 const TISSUE_TINTS = [
   ['gm', [255, 64, 64]],
@@ -87,10 +88,10 @@ const technicalLog = createConsole({ id: 'technicalLog', outputId: 'consoleOutpu
 $('canvas-container').appendChild(technicalLog)
 
 // --- NiiVue setup ---
-// The NiiVue constructor is GPU-free; attachTo() acquires the WebGPU device and
-// throws on a browser without it. So construct here but defer attachTo to init(),
-// AFTER the navigator.gpu guard, or a no-WebGPU browser gets an unhandled
-// top-level rejection instead of the friendly "needs WebGPU" message.
+// The NiiVue constructor is GPU-free; attachTo() takes WebGPU and falls back to
+// WebGL2, and throws only when neither works. So construct here but defer
+// attachTo to init(), which turns that failure into a status message instead of
+// an unhandled top-level rejection.
 const nv = new NiiVueGPU({ isDragDropEnabled: false, backgroundColor: [0, 0, 0, 1], volumeIsNearestInterpolation: true })
 type ExtCtx = ReturnType<typeof nv.createExtensionContext>
 let ctx: ExtCtx | null = null
@@ -242,18 +243,15 @@ function resetNiimathWorker(): void {
   niimathReady = null
 }
 
-async function fetchFile(url: string, name: string, signal?: AbortSignal): Promise<File> {
-  const res = await fetch(url, { signal })
-  if (!res.ok) throw new Error(`fetch ${name} failed: ${res.status}`)
-  return new File([await res.blob()], name)
-}
+// The air template is the catalogue's ICBM152 avg152 entry, checksummed and cached
+// by fetchTemplateFile; AIR_TEMPLATE in @neurodesk/browserqc pins the same bytes.
+const airTemplate = templatesFor(templateCatalogue as TemplateCatalogue, 'browserqc')[0]
 
 
 
 async function computeQc(t1: Uint8Array, tissues: QcTissues, model: Model, signal: AbortSignal): Promise<QcReport> {
   await runAbortable(signal, ensureNiimath, resetNiimathWorker)
-  const air = await fetchFile(AIR_TEMPLATE.url, AIR_TEMPLATE.name, signal)
-  await checkAirTemplate(await air.arrayBuffer())
+  const air = await fetchTemplateFile(airTemplate, { signal })
   const output = await runAbortable(signal, () => withTimeout(
     niimath.image(new Uint8Array(t1).buffer).qc(tissues, air), WORKER_TIMEOUT_MS, 'niimath QC'), resetNiimathWorker)
   const report = await readQcReport(new Blob([JSON.stringify(output)]))
@@ -473,31 +471,21 @@ async function handleDrop(filesPromise: Promise<File[]>, signal?: AbortSignal): 
 
 // --- Init ---
 async function init(): Promise<void> {
-  // NiiVue's attachTo() acquires a WebGPU device and throws without one. But
-  // navigator.gpu can exist while requestAdapter() returns null, device creation
-  // fails, or the GPU is blocklisted — so guard the fast case AND catch attachTo()
-  // failures, giving a friendly message instead of an unhandled console.error in
-  // every WebGPU-unavailable path.
-  const noWebGpu =
-    'This browser/GPU can’t initialize WebGPU — BrowserQC needs a recent desktop Chrome, Edge, or Safari.'
-  if (!navigator.gpu) {
-    initializationFailure = new Error(noWebGpu)
-    document.querySelector('.nd-viewer-canvas-wrapper > [role="alert"]')?.remove()
-    $('emptyState').hidden = false
-    setStatus(noWebGpu)
-    return
-  }
+  // attachTo() falls back from WebGPU to WebGL2, so it fails only when the
+  // browser offers neither, or its GPU is blocklisted for both.
+  const noGraphics =
+    'This browser can’t start the image viewer. It needs WebGL2 or WebGPU; use a recent Chrome, Edge, Firefox or Safari.'
   try {
     await attachNiiVue()
   } catch (err) {
-    // Almost always genuine WebGPU unavailability; warn (not error, so the smoke's
-    // console.error gate stays meaningful) so a non-WebGPU init bug isn't silently
+    // Almost always missing graphics support; warn (not error, so the smoke's
+    // console.error gate stays meaningful) so another init bug isn't silently
     // mislabeled.
-    initializationFailure = new Error(noWebGpu, { cause: err })
-    console.warn('BrowserQC: WebGPU init failed', err)
+    initializationFailure = new Error(noGraphics, { cause: err })
+    console.warn('BrowserQC: viewer init failed', err)
     document.querySelector('.nd-viewer-canvas-wrapper > [role="alert"]')?.remove()
     $('emptyState').hidden = false
-    setStatus(noWebGpu)
+    setStatus(noGraphics)
     return
   }
   viewerReady = true

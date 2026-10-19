@@ -1,23 +1,21 @@
 import examples from '../examples.json';
-import { createExampleSelector } from '@neurodesk/webapp-components/ui';
+import templateCatalogue from '../../../registry/templates.json';
+import { bindInfoTooltips } from '@neurodesk/webapp-components/ui';
 import NiiVueGPU, { MULTIPLANAR_TYPE, SHOW_RENDER, SLICE_TYPE } from "@niivue/niivue";
 import "@neurodesk/webapp-components/styles/imaging-workspace.css";
 import { mountImagingWorkspace } from "@neurodesk/webapp-components/core/mount-imaging-workspace";
-import { createResultList, bindFileDrop, createInfoDialog, renderCommand, createConsole, createViewerToolbar } from "@neurodesk/webapp-components/ui";
-import { downloadFile } from "@neurodesk/webapp-components/file-io";
+import { createImagePair, templatesFor, createResultList, createInfoDialog, renderCommand, createConsole, createViewerToolbar } from "@neurodesk/webapp-components/ui";
+import { describeNiftiFile, downloadFile } from "@neurodesk/webapp-components/file-io";
 import { readImageFiles, runDcm2niix } from "@neurodesk/runtime-support/dcm2niix-client";
 import { registerAppAutomation, registerViewer, createNiivueAdapter } from "@neurodesk/webapp-components/automation";
 import { extractBrain } from "./brain-extraction.js";
 import { createRegistrationRunner } from "./registration-runner.js";
 
 const $ = (id) => document.getElementById(id);
-const slots = {
-  moving: { file: null, files: [], brainExtracted: false, input: $("movingInput"), info: $("movingInfo"), drop: $("movingDropZone"), series: $("movingSeries"), seriesField: $("movingSeriesField"), extract: $("movingExtractButton") },
-  stationary: { file: null, files: [], brainExtracted: false, input: $("stationaryInput"), info: $("stationaryInfo"), drop: $("stationaryDropZone"), series: $("stationarySeries"), seriesField: $("stationarySeriesField"), extract: $("stationaryExtractButton") },
-};
+const extractButtons = { fixed: $("fixedExtractButton"), moving: $("movingExtractButton") };
 const viewers = {
+  fixed: new NiiVueGPU({ isDragDropEnabled: false, backgroundColor: [0, 0, 0, 1] }),
   moving: new NiiVueGPU({ isDragDropEnabled: false, backgroundColor: [0, 0, 0, 1] }),
-  stationary: new NiiVueGPU({ isDragDropEnabled: false, backgroundColor: [0, 0, 0, 1] }),
   resliced: new NiiVueGPU({ isDragDropEnabled: false, backgroundColor: [0, 0, 0, 1] }),
 };
 const contexts = [];
@@ -73,6 +71,7 @@ const toolbar = createViewerToolbar({
 });
 $("viewer").prepend(toolbar);
 const log = createConsole({ id: "technicalLog" });
+bindInfoTooltips(document);
 $("viewer").append(log);
 const info = createInfoDialog({ id: "infoDialog" });
 $("aboutBtn").onclick = () => info.open("About Greedy", $("aboutContent"));
@@ -104,14 +103,12 @@ function status(message, error = false) {
 function setBusy(value) {
   busy = value;
   const disabled = value || !viewersReady;
-  exampleControl.setDisabled(disabled);
-  for (const slot of Object.values(slots)) {
-    slot.input.disabled = disabled;
-    slot.series.disabled = disabled;
-    slot.extract.disabled = disabled || !slot.file || slot.brainExtracted;
+  pair.disabled = disabled;
+  for (const [slot, button] of Object.entries(extractButtons)) {
+    button.disabled = disabled || !pair[slot] || pair[slot].image.brainExtracted;
   }
   $("method").disabled = disabled;
-  $("runButton").disabled = disabled || !slots.moving.file || !slots.stationary.file;
+  $("runButton").disabled = disabled || !pair.ready;
   if (!value) {
     clearInterval(timer);
     $("elapsed").textContent = "";
@@ -128,12 +125,12 @@ function fmtMm(mm = []) {
   return mm.map((value) => Math.round(value)).join("×");
 }
 
-let stationaryValue = null;
+let fixedValue = null;
 let reslicedValue = null;
 let yokedMm = [];
 
 function renderYokedLocation() {
-  $("location").textContent = `${fmtMm(yokedMm)} mm  Stationary ${fmtIntensity(stationaryValue)} · Resliced ${fmtIntensity(reslicedValue)}`;
+  $("location").textContent = `${fmtMm(yokedMm)} mm  Fixed ${fmtIntensity(fixedValue)} · Resliced ${fmtIntensity(reslicedValue)}`;
 }
 
 async function configureViewer(name, canvasId, onLocation) {
@@ -152,21 +149,21 @@ async function configureViewer(name, canvasId, onLocation) {
 }
 
 async function attachViewers() {
-  await configureViewer("moving", "glMoving", (detail) => {
-    $("location").textContent = `${fmtMm(detail.mm)} mm  Moving ${fmtIntensity(detail.values[0]?.value)}`;
-  });
-  await configureViewer("stationary", "glStationary", (detail) => {
-    stationaryValue = detail.values[0]?.value ?? null;
+  await configureViewer("fixed", "glFixed", (detail) => {
+    fixedValue = detail.values[0]?.value ?? null;
     yokedMm = detail.mm;
     renderYokedLocation();
+  });
+  await configureViewer("moving", "glMoving", (detail) => {
+    $("location").textContent = `${fmtMm(detail.mm)} mm  Moving ${fmtIntensity(detail.values[0]?.value)}`;
   });
   await configureViewer("resliced", "glResliced", (detail) => {
     reslicedValue = detail.values[0]?.value ?? null;
     yokedMm = detail.mm;
     renderYokedLocation();
   });
-  viewers.stationary.broadcastTo([viewers.resliced]);
-  viewers.resliced.broadcastTo([viewers.stationary]);
+  viewers.fixed.broadcastTo([viewers.resliced]);
+  viewers.resliced.broadcastTo([viewers.fixed]);
   viewersReady = true;
 }
 
@@ -191,102 +188,56 @@ async function clearOutput() {
   await viewers.resliced.removeAllVolumes();
 }
 
-async function loadSlot(name, file, brainExtracted = false, signal) {
-  if (!file) return;
-  await clearOutput();
-  const slot = slots[name];
-  slot.file = null;
-  slot.brainExtracted = false;
-  slot.info.hidden = true;
-  slot.info.textContent = "";
-  slot.drop.classList.remove("has-files");
-  try {
-    await viewers[name].loadVolumes([{ url: file, name: file.name }]);
-  } catch (error) {
-    await viewers[name].removeAllVolumes();
-    throw error;
-  }
-  signal?.throwIfAborted();
-  $("emptyState").hidden = true;
-  slot.file = file;
-  slot.brainExtracted = brainExtracted;
-  slot.info.hidden = false;
-  slot.info.textContent = `${file.name}${brainExtracted ? " · brain extracted" : " · not brain extracted"}`;
-  slot.drop.classList.add("has-files");
-  slot.input.dispatchEvent(new CustomEvent('nd-files', { bubbles: true, detail: { files: [file] } }));
-  status(`${file.name} loaded as ${name}`);
-}
-
-async function runTask(message, task) {
-  if (busy) return;
+async function perform(message, task) {
+  if (busy) throw new Error("Wait for the current operation to finish.");
   setBusy(true);
   status(message);
   try {
-    await task();
-  } catch (error) {
-    status(errorMessage(error), true);
+    return await task();
   } finally {
     setBusy(false);
   }
 }
 
-let importQueue = Promise.resolve();
-
-function importSlot(name, filesPromise) {
-  exampleControl.cancel();
-  importQueue = importQueue.then(() => runTask(`Reading ${name} image · converting DICOM if needed…`, async () => {
-    const slot = slots[name];
-    try {
-      const images = await readImageFiles(await filesPromise);
-      if (!images.length) throw new Error("Choose NIfTI files or a complete DICOM series.");
-      slot.files = images;
-      slot.series.replaceChildren(...images.map((file, index) => new Option(file.name, String(index))));
-      slot.seriesField.hidden = images.length < 2;
-      await loadSlot(name, images[0]);
-      status(`${images[0].name} loaded.`);
-    } finally {
-      slot.input.dispatchEvent(new CustomEvent('nd-files', { bubbles: true, detail: { files: slot.file ? [slot.file] : [] } }));
-    }
-  }));
-  return importQueue;
+async function runTask(message, task) {
+  try {
+    await perform(message, task);
+  } catch (error) {
+    status(errorMessage(error), true);
+  }
 }
 
-for (const [name, slot] of Object.entries(slots)) {
-  slot.input.onchange = () => {
-    const files = Array.from(slot.input.files);
-    slot.input.value = "";
-    if (files.length) void importSlot(name, Promise.resolve(files));
-  };
-  bindFileDrop(slot.drop, (files) => void importSlot(name, files));
-  slot.series.onchange = () => void runTask(`Loading ${name} series…`, () => loadSlot(name, slot.files[Number(slot.series.value)]));
-  slot.extract.onclick = () => void runTask(`Brain extracting ${name} image…`, () => brainExtract(name));
-}
-
-const exampleControl = createExampleSelector({
+const pair = createImagePair({
   examples,
-  onLoad: async (_example, { fetchFiles, assertCurrent, signal }) => {
-    const [moving, stationary] = await fetchFiles();
-    assertCurrent();
-    if (!viewersReady) throw new Error('The image viewers are not ready. Try again after initialization.');
-    setBusy(true);
-    try {
-      await loadSlot('moving', moving, true, signal);
-      assertCurrent();
-      await loadSlot('stationary', stationary, true, signal);
-      assertCurrent();
-    } finally {
-      setBusy(false);
-    }
+  templates: templatesFor(templateCatalogue, "greedy"),
+  read: async (files) => (await readImageFiles(files)).map((file) => ({ name: file.name, file })),
+  open: async (slot, candidate, { signal }) => {
+    if (!viewersReady) throw new Error("The image viewers are not ready. Try again after initialization.");
+    await viewers[slot].loadVolumes([{ url: candidate.file, name: candidate.file.name }]);
+    signal?.throwIfAborted();
+    $("emptyState").hidden = true;
+    const brainExtracted = candidate.brainExtracted ?? false;
+    return { ...await describeNiftiFile(candidate.file), brainExtracted, note: brainExtracted ? "brain extracted" : "not brain extracted" };
   },
+  clear: (slot) => viewers[slot].removeAllVolumes(),
+  perform,
   onStatus: status,
+  onChange: ({ slot, [slot]: state }) => {
+    void clearOutput();
+    setBusy(busy);
+    if (state) status(`${state.image.name} loaded as the ${slot} image.`);
+  },
 });
-$('inputSection').querySelector('.nd-section-content').prepend(exampleControl);
-
+$("imagePair").replaceWith(pair);
+pair.disabled = true;
+for (const [slot, button] of Object.entries(extractButtons)) {
+  button.onclick = () => void runTask(`Brain extracting the ${slot} image…`, () => brainExtract(slot));
+}
 
 async function brainExtract(name) {
-  const slot = slots[name];
-  if (!slot.file || slot.brainExtracted) return;
-  const source = slot.file;
+  const state = pair[name];
+  if (!state || state.image.brainExtracted) return;
+  const source = state.candidate.file;
   status(`Brain extracting ${source.name} with MindGrab…`);
   $("progress").removeAttribute("value");
   const result = await extractBrain({
@@ -294,7 +245,7 @@ async function brainExtract(name) {
     assetPath: `${import.meta.env.BASE_URL}brainchop/`,
     onLog: (message) => log.log(message),
   });
-  await loadSlot(name, result.file, true);
+  await pair.useWithin(name, { name: result.file.name, file: result.file, brainExtracted: true });
   status(`${source.name} brain extracted in ${(result.elapsedMs / 1000).toFixed(1)} s (${result.backend}).`);
   $("progress").value = 0;
 }
@@ -311,8 +262,8 @@ const registration = createRegistrationRunner({
 });
 
 async function register({
-  moving = slots.moving.file,
-  fixed = slots.stationary.file,
+  moving = pair.moving?.candidate.file,
+  fixed = pair.fixed?.candidate.file,
   method = $("method").value,
   signal,
   progress = () => {},
@@ -320,8 +271,8 @@ async function register({
   if (!moving || !fixed) throw new Error("Choose both moving and fixed images.");
   signal?.throwIfAborted();
   // Extraction is the user's call; a scalp-bearing input is only flagged, not forced.
-  for (const name of ["moving", "stationary"]) {
-    if (!slots[name].brainExtracted) log.log(`The ${name} image is not brain extracted; scalp can distort the registration.`);
+  for (const name of ["fixed", "moving"]) {
+    if (!pair[name]?.image.brainExtracted) log.log(`The ${name} image is not brain extracted; scalp can distort the registration.`);
   }
   const started = performance.now();
   let phase = "Starting Greedy registration";
@@ -375,11 +326,6 @@ $("cancelButton").onclick = () => {
 };
 
 async function init() {
-  if (!navigator.gpu) {
-    setBusy(false);
-    status("WebGPU is unavailable. Greedy needs a recent desktop browser.", true);
-    return;
-  }
   await runTask("Initializing image viewers…", async () => {
     try {
       await attachViewers();
@@ -394,7 +340,7 @@ async function init() {
 }
 
 window.addEventListener("pagehide", () => {
-  exampleControl.destroy();
+  pair.exampleControl?.destroy();
   clearInterval(timer);
   registration.terminate();
   destroyViewers();
@@ -411,11 +357,11 @@ registerAppAutomation({
       signal.throwIfAborted();
       if (!viewersReady) throw new Error("The image viewers are unavailable.");
       if (busy) throw new Error("Wait for the current operation to finish.");
-      exampleControl.cancel();
+      pair.exampleControl?.reset();
       setBusy(true);
       try {
-        await loadSlot("moving", inputs.moving[0], false, signal);
-        await loadSlot("stationary", inputs.fixed[0], false, signal);
+        await pair.useWithin("fixed", { name: inputs.fixed[0].name, file: inputs.fixed[0] }, signal);
+        await pair.useWithin("moving", { name: inputs.moving[0].name, file: inputs.moving[0] }, signal);
         $("method").value = parameters.method;
         const result = await register({ moving: inputs.moving[0], fixed: inputs.fixed[0], method: parameters.method, signal, progress });
         signal.throwIfAborted();

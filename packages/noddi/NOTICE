@@ -1,0 +1,53 @@
+NODDI browser fitting library
+Copyright 2026 Neurodesk contributors
+
+The WebAssembly module src/noddi.wasm is built from the Rust crates in
+exes/dwi (gradients, tensor, amico, noddi-wasm) by scripts/build-wasm.sh.
+
+The NODDI fit (exes/dwi/amico) is a port of AMICO 1.5.4
+(https://github.com/daducci/AMICO, the BSD-licensed release before commit
+23490e8047), distributed under the BSD 3-Clause License:
+
+  Copyright (c) 2021, AMICO developers
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions are met:
+
+  1. Redistributions of source code must retain the above copyright notice,
+     this list of conditions and the following disclaimer.
+
+  2. Redistributions in binary form must reproduce the above copyright notice,
+     this list of conditions and the following disclaimer in the documentation
+     and/or other materials provided with the distribution.
+
+  3. Neither the name of the copyright holder nor the names of its
+     contributors may be used to endorse or promote products derived from
+     this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+  FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Its non-negative least squares is a port of Lawson and Hanson's NNLS as
+SciPy 1.11.4 distributes it (scipy/optimize/__nnls/nnls.f, BSD 3-Clause,
+the SciPy Developers). Its fibre direction follows the WLS tensor fit of
+DIPY 1.7 (BSD 3-Clause, the dipy developers).
+
+Basser PJ, Mattiello J, LeBihan D (1994). Estimation of the effective
+self-diffusion tensor from the NMR spin echo. J Magn Reson B 103(3):247-254.
+
+Zhang H, Schneider T, Wheeler-Kingshott CA, Alexander DC (2012). NODDI:
+practical in vivo neurite orientation dispersion and density imaging of the
+human brain. NeuroImage 61(4):1000-1016.
+
+Daducci A, Canales-Rodriguez EJ, Zhang H, Dyrby TB, Alexander DC, Thiran JP
+(2015). Accelerated Microstructure Imaging via Convex Optimization (AMICO)
+from diffusion MRI data. NeuroImage 105:32-44.

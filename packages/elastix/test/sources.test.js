@@ -112,5 +112,5 @@ test("color, 1D and 4D images are refused", () => {
 
 test("a 2D and a 3D image cannot be registered together", () => {
   assert.doesNotThrow(() => assertCompatiblePair(image({ size: [8, 8] }), image({ size: [4, 4] })));
-  assert.throws(() => assertCompatiblePair(image({ size: [8, 8, 8] }), image({ size: [8, 8] })), /moving image is 2D and the stationary image is 3D/);
+  assert.throws(() => assertCompatiblePair(image({ size: [8, 8, 8] }), image({ size: [8, 8] })), /fixed image is 3D and the moving image is 2D/);
 });

@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { repoRoot } from '../scripts/lib/apps-registry.mjs';
 import { modelManifestAssets } from '../scripts/lib/model-assets.mjs';
+import { loadTemplateCatalogue } from '../scripts/lib/templates.mjs';
 
 // The standalone build checks every offline asset against a sha256 in
 // registry/offline-assets.lock.json, so a URL whose bytes can change breaks the
@@ -89,6 +90,8 @@ test('offline sources and their locked dependencies come from immutable URLs', a
 test('model manifests and examples that apps fetch use immutable URLs', async () => {
   const models = (await modelManifestAssets()).map(asset => asset.url);
   assert.deepEqual(unpinned(models), [], 'models/*.manifest.json: pin these asset URLs');
+  const templates = (await loadTemplateCatalogue()).templates.map(entry => entry.url);
+  assert.deepEqual(unpinned(templates), [], 'registry/templates.json: pin these template URLs');
   const examples = [];
   for (const entry of await readdir(join(repoRoot, 'apps'), { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;

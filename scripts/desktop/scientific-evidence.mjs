@@ -110,7 +110,7 @@ export async function fetchPinnedExample(app, exampleId, roles, cache, fetchImpl
 
 export async function prepareCatalog(cache, evidence, fetchImpl = fetch) {
   const assets = [];
-  for (const [app, exampleId, roles] of [['dwi2trx','dwi-gradients',['image','bval','bvec']], ['syncro','trace-t1',['primary']], ['topofit','openneuro-t1',['image']]]) {
+  for (const [app, exampleId, roles] of [['dwi2trx','dwi-gradients',['image','bval','bvec']], ['syncro','trace-t1',['moving']], ['topofit','openneuro-t1',['image']]]) {
     assets.push(...await fetchPinnedExample(app, exampleId, roles, cache, fetchImpl));
   }
   const path = join(root, 'exes/synthseg/test/fixtures/small.nii.gz');

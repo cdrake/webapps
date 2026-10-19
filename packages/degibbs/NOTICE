@@ -1,0 +1,12 @@
+Gibbs-ringing removal library
+Copyright 2026 Neurodesk contributors
+
+The WebAssembly module src/degibbs.wasm is built from the Rust crates
+exes/dwi/degibbs and exes/dwi/degibbs-wasm by scripts/build-wasm.sh. They port
+cmd/mrdegibbs.cpp of MRtrix3 3.0.8 (https://github.com/MRtrix3/mrtrix3),
+Copyright (c) 2008-2025 the MRtrix3 contributors, under the Mozilla Public
+License, v. 2.0 (LICENSE). The source of every MPL-2.0 file is in the
+neurodesk/webapps repository.
+
+Kellner E, Dhital B, Kiselev VG, Reisert M (2016). Gibbs-ringing artifact
+removal based on local subvoxel-shifts. Magn Reson Med 76(5):1574-1581.

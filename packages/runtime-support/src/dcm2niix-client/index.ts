@@ -164,17 +164,63 @@ export async function readImageSeries(
   files: FileList | File[],
   options: Omit<ReadImageFilesOptions, 'niftiOnly'> & { anonymizeSidecar?: boolean } = {},
 ): Promise<ImageSeries[]> {
+  return (await readSeriesAndOutputs(files, options)).series
+}
+
+/** readImageSeries, also returning every dcm2niix output (empty without DICOM input). */
+async function readSeriesAndOutputs(
+  files: FileList | File[],
+  options: Omit<ReadImageFilesOptions, 'niftiOnly'> & { anonymizeSidecar?: boolean },
+): Promise<{ series: ImageSeries[], outputs: File[] }> {
   const { direct, sidecars, dicom } = splitInputs(files, options.directVolume)
   const directSeries = await pairSidecars(direct, sidecars)
-  if (!dicom.length) return directSeries
+  if (!dicom.length) return { series: directSeries, outputs: [] }
   const outputs = await convertDicom(
     dicom,
     { ...options, niftiOnly: false },
     (processor) => options.anonymizeSidecar ? processor : processor.bids('y').bidsAnonymize('n'),
   )
   const images = requireImages(outputs.filter(isNifti))
-  return [...directSeries, ...(await pairSidecars(images, outputs))]
+  return { series: [...directSeries, ...(await pairSidecars(images, outputs))], outputs }
 }
+
+/** One image with its FSL gradient files and parsed sidecar; each is `null` when absent. */
+export interface DiffusionSeries extends ImageSeries {
+  bval: File | null
+  bvec: File | null
+}
+
+/**
+ * Like {@link readImageSeries}, but also pairs each image with the `.bval` and `.bvec` of the
+ * same stem: those dcm2niix writes for a diffusion series, or those supplied with a direct
+ * volume. When the selection holds one image, each sole gradient file pairs whatever its
+ * name (FSL `data.nii.gz` with `bvals` or `bvecs`); with several images an unmatched
+ * gradient file stays unpaired rather than guessed.
+ */
+export async function readDiffusionSeries(
+  files: FileList | File[],
+  options: Omit<ReadImageFilesOptions, 'niftiOnly'> & { anonymizeSidecar?: boolean } = {},
+): Promise<DiffusionSeries[]> {
+  const list = Array.from(files)
+  const { series, outputs } = await readSeriesAndOutputs(list, options)
+  const gradients = [...list, ...outputs].filter((file) => GRADIENT_FILE.test(file.name))
+  const byStem = (pattern: RegExp) => new Map(
+    gradients.filter((file) => pattern.test(file.name)).map((file) => [stem(file.name), file]),
+  )
+  const bvals = byStem(BVAL_FILE)
+  const bvecs = byStem(BVEC_FILE)
+  const singleImage = series.length === 1
+  return series.map((entry) => ({
+    ...entry,
+    bval: bvals.get(stem(entry.image.name)) ?? (singleImage && bvals.size === 1 ? [...bvals.values()][0] : null),
+    bvec: bvecs.get(stem(entry.image.name)) ?? (singleImage && bvecs.size === 1 ? [...bvecs.values()][0] : null),
+  }))
+}
+
+// FSL gradient files: dwi.bval and dwi.bvec as dcm2niix writes them, or FSL's bvals and bvecs.
+const BVAL_FILE = /(^|\.)bvals?$/i
+const BVEC_FILE = /(^|\.)bvecs?$/i
+const GRADIENT_FILE = /(^|\.)(bvals?|bvecs?)$/i
 
 function splitInputs(files: FileList | File[], directVolume = /\.nii(\.gz)?$/i) {
   const direct: File[] = []
@@ -183,7 +229,7 @@ function splitInputs(files: FileList | File[], directVolume = /\.nii(\.gz)?$/i) 
   for (const file of Array.from(files)) {
     if (directVolume.test(file.name)) direct.push(file)
     else if (/\.json$/i.test(file.name)) sidecars.push(file)
-    else if (!/\.(bval|bvec)$/i.test(file.name)) dicom.push(file)
+    else if (!GRADIENT_FILE.test(file.name)) dicom.push(file)
   }
   return { direct, sidecars, dicom }
 }

@@ -4,9 +4,8 @@ Turns a brain scan into a 3D-printable mesh in the browser. Load a NIfTI or
 DICOM image, segment it with MindGrab, build a mesh from the segmentation
 with niimath, inspect it in NiiVue, and download STL or OBJ.
 
-WebGPU is required — the NiiVue viewer has no fallback, and the app says so
-at startup. MindGrab runs with `backend: 'auto'`, so segmentation can still fall back to
-WebGL2 or the threaded CPU module.
+WebGPU is optional. The NiiVue viewer falls back to WebGL2, and MindGrab runs with
+`backend: 'auto'`, so segmentation falls back to WebGL2 or the threaded CPU module.
 
 ## Controls
 

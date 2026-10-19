@@ -1,0 +1,16 @@
+[workspace]
+members = ["gradients", "tensor", "amico", "degibbs", "noddi-wasm", "degibbs-wasm"]
+resolver = "2"
+
+[workspace.package]
+edition = "2024"
+license = "Apache-2.0"
+version = "0.1.0"
+rust-version = "1.85"
+publish = false
+
+[profile.release]
+opt-level = 3
+lto = true
+panic = "abort"
+codegen-units = 1

@@ -129,6 +129,6 @@ export function assertCompatiblePair(fixed, moving) {
   const fixedDimension = fixed.imageType.dimension;
   const movingDimension = moving.imageType.dimension;
   if (fixedDimension !== movingDimension) {
-    throw new Error(`The moving image is ${movingDimension}D and the stationary image is ${fixedDimension}D; choose two 2D or two 3D images.`);
+    throw new Error(`The fixed image is ${fixedDimension}D and the moving image is ${movingDimension}D; choose two ${movingDimension}D images.`);
   }
 }

@@ -1,5 +1,6 @@
 import "./pipelines.js";
 import examples from "../examples.json";
+import templateCatalogue from "../../../registry/templates.json";
 import NiiVue, { MULTIPLANAR_TYPE, SHOW_RENDER, SLICE_TYPE } from "@niivue/niivue";
 import { createWebWorker } from "itk-wasm";
 import { defaultParameterMap, elastix } from "@itk-wasm/elastix";
@@ -9,11 +10,12 @@ import {
   bindFileDrop,
   bindInfoTooltips,
   createConsole,
-  createExampleSelector,
+  createImagePair,
   createInfoDialog,
   createResultList,
   createViewerToolbar,
   ProgressManager,
+  templatesFor,
 } from "@neurodesk/webapp-components/ui";
 import { downloadFile } from "@neurodesk/webapp-components/file-io";
 import { readImageFiles, runDcm2niix } from "@neurodesk/runtime-support/dcm2niix-client";
@@ -36,23 +38,12 @@ import { assertCompatiblePair, classifySource } from "@neurodesk/elastix/sources
 import { METHOD_LABELS, parameterFileNames, presetSettings, sortParameterFiles, stageNames } from "@neurodesk/elastix/parameter-maps";
 import { hdf5Writable, omeTiffIssue, outputNames } from "@neurodesk/elastix/outputs";
 import { createRegistrationRunner } from "./registration.js";
-import { loadSlotSource } from "./slot-loader.js";
 
 const $ = (id) => document.getElementById(id);
-const slotElements = (name) => ({
-  source: null,
-  series: [],
-  input: $(`${name}Input`),
-  info: $(`${name}Info`),
-  drop: $(`${name}DropZone`),
-  select: $(`${name}Series`),
-  seriesField: $(`${name}SeriesField`),
-  url: $(`${name}Url`),
-});
-const slots = { moving: slotElements("moving"), stationary: slotElements("stationary") };
+const urlInputs = { fixed: $("fixedUrl"), moving: $("movingUrl") };
 const viewers = {
+  fixed: new NiiVue({ backend: "webgl2", isDragDropEnabled: false, backgroundColor: [0, 0, 0, 1] }),
   moving: new NiiVue({ backend: "webgl2", isDragDropEnabled: false, backgroundColor: [0, 0, 0, 1] }),
-  stationary: new NiiVue({ backend: "webgl2", isDragDropEnabled: false, backgroundColor: [0, 0, 0, 1] }),
   registered: new NiiVue({ backend: "webgl2", isDragDropEnabled: false, backgroundColor: [0, 0, 0, 1] }),
 };
 const contexts = [];
@@ -135,17 +126,13 @@ function complete(message) {
 function setBusy(value) {
   busy = value;
   const disabled = value || !viewersReady;
-  exampleControl.setDisabled(disabled);
-  for (const slot of Object.values(slots)) {
-    slot.input.disabled = disabled;
-    slot.select.disabled = disabled;
-    slot.url.disabled = disabled;
-  }
+  pair.disabled = disabled;
+  for (const input of Object.values(urlInputs)) input.disabled = disabled;
   $("urlButton").disabled = disabled;
   $("parameterInput").disabled = disabled;
   $("parameterClear").disabled = disabled;
   for (const id of ["method", "resolutions", "gridSpacing"]) $(id).disabled = disabled || Boolean(customParameters);
-  $("runButton").disabled = disabled || !slots.moving.source || !slots.stationary.source;
+  $("runButton").disabled = disabled || !pair.ready;
 }
 
 // One step at a time: loading, registering or writing a download. The footer ×
@@ -182,7 +169,7 @@ function runTask(message, task, cancelMessage = "Cancelled.") {
 
 $("cancelButton").onclick = () => {
   status("Cancelling…");
-  exampleControl.cancel();
+  pair.exampleControl?.cancel();
   active?.abort();
 };
 
@@ -195,12 +182,12 @@ function fmtPosition(mm = []) {
   return mm.map((value) => Math.round(value)).join("×");
 }
 
-let stationaryValue = null;
+let fixedValue = null;
 let registeredValue = null;
 let linkedPosition = [];
 
 function renderLinkedLocation() {
-  $("location").textContent = `${fmtPosition(linkedPosition)}  Stationary ${fmtIntensity(stationaryValue)} · Registered ${fmtIntensity(registeredValue)}`;
+  $("location").textContent = `${fmtPosition(linkedPosition)}  Fixed ${fmtIntensity(fixedValue)} · Registered ${fmtIntensity(registeredValue)}`;
 }
 
 async function configureViewer(name, canvasId, onLocation) {
@@ -218,21 +205,21 @@ async function configureViewer(name, canvasId, onLocation) {
 }
 
 async function attachViewers() {
-  await configureViewer("moving", "glMoving", (detail) => {
-    $("location").textContent = `${fmtPosition(detail.mm)}  Moving ${fmtIntensity(detail.values[0]?.value)}`;
-  });
-  await configureViewer("stationary", "glStationary", (detail) => {
-    stationaryValue = detail.values[0]?.value ?? null;
+  await configureViewer("fixed", "glFixed", (detail) => {
+    fixedValue = detail.values[0]?.value ?? null;
     linkedPosition = detail.mm;
     renderLinkedLocation();
+  });
+  await configureViewer("moving", "glMoving", (detail) => {
+    $("location").textContent = `${fmtPosition(detail.mm)}  Moving ${fmtIntensity(detail.values[0]?.value)}`;
   });
   await configureViewer("registered", "glRegistered", (detail) => {
     registeredValue = detail.values[0]?.value ?? null;
     linkedPosition = detail.mm;
     renderLinkedLocation();
   });
-  viewers.stationary.broadcastTo([viewers.registered]);
-  viewers.registered.broadcastTo([viewers.stationary]);
+  viewers.fixed.broadcastTo([viewers.registered]);
+  viewers.registered.broadcastTo([viewers.fixed]);
   viewersReady = true;
 }
 
@@ -263,108 +250,68 @@ async function clearOutput() {
   if (viewersReady) await viewers.registered.removeAllVolumes();
 }
 
-async function setSlot(name, source, signal) {
-  const slot = slots[name];
-  try {
-    slot.source = await loadSlotSource({ viewer: viewers[name], source, previous: slot.source, signal });
-  } catch (error) {
-    const previousSeries = slot.series.indexOf(slot.source?.displayFile);
-    if (previousSeries >= 0) slot.select.value = String(previousSeries);
-    throw error;
-  }
-  await clearOutput();
-  slot.info.hidden = false;
-  slot.info.textContent = `${source.name} · ${source.note}`;
-  slot.drop.classList.add("has-files");
-  slot.input.dispatchEvent(new CustomEvent('nd-files', { bubbles: true, detail: { files: [source.displayFile] } }));
-  $("emptyState").hidden = true;
-  if (name === "stationary") applyLayout(source.image.imageType.dimension === 2 ? "axial" : "multiplanar");
-  log.log(`${name} image: ${source.name} · ${source.note}`);
-}
-
-function showSeries(slot, files) {
-  slot.series = files;
-  slot.select.replaceChildren(...files.map((file, index) => new Option(file.name, String(index))));
-  slot.seriesField.hidden = files.length < 2;
-}
-
-async function loadFiles(name, files, signal) {
-  const slot = slots[name];
+// A candidate is a NIfTI file (one per DICOM series), a template file or an
+// already-read source. Opening reads it once and keeps the source on it.
+async function readCandidates(files, { signal }) {
   if (["nifti", "dicom"].includes(classifySource(files))) {
-    progress.setText(`Reading ${name} image · converting DICOM if needed…`);
     const images = await abortable(readImageFiles(files), signal);
-    if (!images.length) throw new Error("Choose NIfTI files or a complete DICOM series.");
-    await setSlot(name, await abortable(readNiftiFile(images[0]), signal), signal);
-    showSeries(slot, images);
-  } else {
-    await setSlot(name, await abortable(readSource(files, { signal }), signal), signal);
-    showSeries(slot, []);
+    return images.map((file) => ({ name: file.name, file }));
   }
+  const source = await abortable(readSource(files, { signal }), signal);
+  return [{ name: source.name, source }];
 }
 
-let importQueue = Promise.resolve();
-
-function importSlot(name, filesPromise) {
-  exampleControl.cancel();
-  importQueue = importQueue.then(() => runTask(`Reading ${name} image…`, async (signal) => {
-    const slot = slots[name];
-    try {
-      const files = await filesPromise;
-      await loadFiles(name, files, signal);
-      complete(`${slot.source.name} loaded as the ${name} image.`);
-    } finally {
-      slot.input.dispatchEvent(new CustomEvent('nd-files', { bubbles: true, detail: { files: slot.source ? [slot.source.displayFile] : [] } }));
-    }
-  }));
-  return importQueue;
-}
-
-for (const [name, slot] of Object.entries(slots)) {
-  slot.input.onchange = () => {
-    const files = Array.from(slot.input.files);
-    slot.input.value = "";
-    if (files.length) void importSlot(name, Promise.resolve(files));
+async function openCandidate(slot, candidate, { signal }) {
+  if (!viewersReady) throw new Error("The image viewers are not ready. Try again after initialization.");
+  candidate.source ??= await abortable(readNiftiFile(candidate.file), signal);
+  const { source } = candidate;
+  await viewers[slot].loadVolumes([{ url: source.displayFile, name: source.displayFile.name }]);
+  signal?.throwIfAborted();
+  $("emptyState").hidden = true;
+  if (slot === "fixed") applyLayout(source.image.imageType.dimension === 2 ? "axial" : "multiplanar");
+  log.log(`${slot} image: ${source.name} · ${source.note}`);
+  const dims = Array.from(source.image.size);
+  return {
+    name: source.name,
+    dims,
+    spacingMm: Array.from(source.image.spacing),
+    dimensionality: source.image.imageType.dimension,
+    // The summary already shows the registered size; keep only what the note adds.
+    note: source.note.replace(`${dims.join("×")} `, ""),
   };
-  bindFileDrop(slot.drop, (files) => void importSlot(name, files));
-  slot.select.onchange = () => void runTask(`Loading ${name} series…`, async (signal) => {
-    await setSlot(name, await abortable(readNiftiFile(slot.series[Number(slot.select.value)]), signal), signal);
-    complete(`${slot.source.name} loaded as the ${name} image.`);
-  });
 }
+
+const pair = createImagePair({
+  examples,
+  templates: templatesFor(templateCatalogue, APP.id),
+  read: readCandidates,
+  open: openCandidate,
+  clear: (slot) => viewers[slot].removeAllVolumes(),
+  perform,
+  onStatus: status,
+  onChange: ({ slot, [slot]: state }) => {
+    void clearOutput();
+    setBusy(busy);
+    if (state) complete(`${state.image.name} loaded as the ${slot} image.`);
+  },
+});
+$("imagePair").replaceWith(pair);
 
 $("urlButton").onclick = () => {
-  exampleControl.cancel();
+  pair.exampleControl?.reset();
   void runTask("Opening image URLs…", async (signal) => {
-    const urls = Object.entries(slots).filter(([, slot]) => slot.url.value.trim());
-    if (!urls.length) throw new Error("Enter a moving or stationary image URL.");
-    for (const [name, slot] of urls) {
-      const url = slot.url.value.trim();
+    const urls = Object.entries(urlInputs).filter(([, input]) => input.value.trim());
+    if (!urls.length) throw new Error("Enter a fixed or moving image URL.");
+    for (const [name, input] of urls) {
+      const url = input.value.trim();
       if (!/^https?:\/\//i.test(url)) throw new Error(`The ${name} URL must start with https:// or http://.`);
       progress.setText(`Opening the ${name} image URL…`);
-      await setSlot(name, await abortable(readSource(url, { signal }), signal), signal);
-      showSeries(slot, []);
+      const source = await abortable(readSource(url, { signal }), signal);
+      await pair.useWithin(name, { name: source.name, source }, signal);
     }
     complete(`Opened ${urls.map(([name]) => name).join(" and ")} image URL${urls.length > 1 ? "s" : ""}.`);
   });
 };
-
-const exampleControl = createExampleSelector({
-  examples,
-  onStatus: status,
-  onLoad: async (_example, { fetchFiles, assertCurrent, signal }) => {
-    const [moving, stationary] = await fetchFiles();
-    assertCurrent();
-    if (!viewersReady) throw new Error("The image viewers are not ready. Try again after initialization.");
-    await perform("Loading example images…", async (stepSignal) => {
-      await loadFiles("moving", [moving], stepSignal);
-      assertCurrent();
-      await loadFiles("stationary", [stationary], stepSignal);
-      assertCurrent();
-      complete("Example loaded · choose a method, then register.");
-    }, { signal });
-  },
-});
-$("exampleControl").append(exampleControl);
 
 function showParameters() {
   const parameterInfo = $("parameterInfo");
@@ -455,9 +402,9 @@ async function register({
   signal,
   report = () => {},
 } = {}) {
-  const moving = slots.moving.source;
-  const fixed = slots.stationary.source;
-  if (!moving || !fixed) throw new Error("Choose both moving and stationary images.");
+  const moving = pair.moving?.candidate.source;
+  const fixed = pair.fixed?.candidate.source;
+  if (!moving || !fixed) throw new Error("Choose both fixed and moving images.");
   assertCompatiblePair(fixed.image, moving.image);
   const settings = customParameters ? null : presetSettings({ method, resolutions, gridSpacing });
   await clearOutput();
@@ -517,7 +464,7 @@ async function init() {
 }
 
 window.addEventListener("pagehide", () => {
-  exampleControl.destroy();
+  pair.exampleControl?.destroy();
   registration.cancel();
   resetIo();
   destroyViewers();
@@ -533,10 +480,10 @@ registerAppAutomation({
       await initialization;
       signal.throwIfAborted();
       if (!viewersReady) throw new Error("The image viewers are unavailable.");
-      exampleControl.cancel();
+      pair.exampleControl?.reset();
       return perform("Registering images…", async (stepSignal) => {
-        await loadFiles("moving", inputs.moving, stepSignal);
-        await loadFiles("stationary", inputs.fixed, stepSignal);
+        await pair.loadWithin("fixed", inputs.fixed, stepSignal);
+        await pair.loadWithin("moving", inputs.moving, stepSignal);
         $("method").value = parameters.method;
         $("resolutions").value = String(parameters.resolutions);
         $("gridSpacing").value = String(parameters.gridSpacing);

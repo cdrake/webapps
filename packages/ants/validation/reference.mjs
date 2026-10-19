@@ -45,7 +45,7 @@ export async function pinnedExample() {
   const examples = JSON.parse(await readFile(new URL('../../../apps/ants/examples.json', import.meta.url), 'utf8'));
   const [example] = examples;
   const file = (role) => example.files.find((entry) => entry.role === role);
-  const [moving, fixed] = await Promise.all([pinnedFile(file('moving')), pinnedFile(file('stationary'))]);
+  const [moving, fixed] = await Promise.all([pinnedFile(file('moving')), pinnedFile(file('fixed'))]);
   return { id: example.id, moving, fixed };
 }
 

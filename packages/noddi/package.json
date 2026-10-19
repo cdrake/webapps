@@ -1,0 +1,32 @@
+{
+  "name": "@neurodesk/noddi",
+  "version": "0.1.20261018",
+  "description": "Diffusion tensor and NODDI fitting for browsers and the command line",
+  "type": "module",
+  "private": true,
+  "license": "Apache-2.0 AND BSD-3-Clause",
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": "./src/wasm.js",
+    "./wasm": "./src/noddi.wasm"
+  },
+  "files": [
+    "src",
+    "LICENSE",
+    "NOTICE",
+    "README.md"
+  ],
+  "scripts": {
+    "build:wasm": "bash scripts/build-wasm.sh",
+    "check:wasm": "bash scripts/build-wasm.sh --check",
+    "test": "node --test test/*.test.js",
+    "lint": "node --check src/wasm.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neurodesk/webapps.git",
+    "directory": "packages/noddi"
+  }
+}

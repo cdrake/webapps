@@ -11,7 +11,7 @@ import { expect } from '@playwright/test';
 import { verifyMuscleMapFullPipeline, createSyntheticMuscleMapNifti } from '../../test/musclemap-full-pipeline-smoke.mjs';
 import { startReferenceServer } from '../../test-utils/compute-reference-server.mjs';
 
-export const workflowApps = ['dicom2bids', 'nesvor', 'musclemap', 'vesselboost', 'spinalcordtoolbox', 'calmar', 'qsmbly', 'seedseg', 'dicompare', 'deface', 'easy-mp2rage', 'niimath', 'dicom2vid', 'browserqc', 'surfannotate', 'zarro', 'synthsr', 'synthseg', 'syncro', 'dwi2trx', 'edgereg', 'greedy', 'ants', 'brain2print', 'topofit', 'fireants', 'brain-extraction', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel', 'elastix', 'dicomview', 'fastprep'];
+export const workflowApps = ['dicom2bids', 'nesvor', 'musclemap', 'vesselboost', 'spinalcordtoolbox', 'calmar', 'qsmbly', 'seedseg', 'dicompare', 'deface', 'easy-mp2rage', 'niimath', 'dicom2vid', 'browserqc', 'surfannotate', 'zarro', 'synthsr', 'synthseg', 'syncro', 'dwi2trx', 'edgereg', 'greedy', 'ants', 'brain2print', 'topofit', 'fireants', 'brain-extraction', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel', 'elastix', 'dicomview', 'fastprep', 'noddi', 'degibbs'];
 
 /**
  * Anything a workflow needs before the desktop app starts. NeSVoR computes on a
@@ -22,6 +22,55 @@ export async function prepareWorkflow(id) {
   if (id !== 'nesvor') return null;
   const compute = await startReferenceServer({ stageDelayMs: 50 });
   return { env: { NEURODESK_COMPUTE_ORIGINS: compute.origin }, context: { compute }, close: () => compute.close() };
+}
+
+// DICOM View sends its image to White matter lesions in the same window, across the
+// desktop's own origin, partition and isolation headers; the receiver loads it, uses the
+// handoff up and starts no segmentation.
+async function verifyLesionHandoff(page, filename) {
+  await page.context().addInitScript(() => {
+    if (!location.pathname.includes('/white-matter-lesions/')) return;
+    const Native = window.Worker;
+    window.startedWorkers = [];
+    window.Worker = class extends Native {
+      constructor(url, options) {
+        super(url, options);
+        window.startedWorkers.push(String(url));
+      }
+    };
+  });
+  const send = page.getByRole('button', { name: 'Open in White matter lesions', exact: true });
+  await expect(send).toBeEnabled({ timeout: 60000 });
+  await send.click();
+  await page.waitForURL(/\/white-matter-lesions\/$/, { timeout: 60000 });
+  const loaded = `Loaded ${filename} from DICOM View`;
+  await expect(page.locator('#statusText')).toHaveText(loaded, { timeout: 60000 });
+  await expect(page.locator('#runButton')).toBeEnabled();
+  await page.waitForTimeout(1500);
+  await expect(page.locator('#statusText'), 'nothing started after the load').toHaveText(loaded);
+  await expect(page.locator('#cancelButton')).toBeHidden();
+  const after = await page.evaluate(async () => {
+    const database = await new Promise((resolve, reject) => {
+      const request = indexedDB.open('neurodesk-handoff');
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    const keys = await new Promise(resolve => {
+      database.transaction('entries').objectStore('entries').getAllKeys().onsuccess = ({ target }) => resolve(target.result);
+    });
+    database.close();
+    return {
+      keys,
+      secrets: Object.keys(sessionStorage).filter(key => key.startsWith('neurodesk-handoff:')),
+      segmentation: window.startedWorkers.filter(url => /\/worker-[^/]*\.js/.test(url)),
+      isolated: window.crossOriginIsolated,
+    };
+  });
+  assert.deepEqual(after.keys, [], 'the handoff entry is deleted');
+  assert.deepEqual(after.secrets, [], 'the handoff secret is used up');
+  assert.deepEqual(after.segmentation, [], 'no segmentation worker started');
+  assert.equal(after.isolated, true);
+  return { url: page.url(), status: loaded };
 }
 
 export async function verifyWorkflow(id, page, { root, resources, desktop, compute }) {
@@ -50,7 +99,7 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     assert.ok(bytes.length > 352, 'Output must contain image data');
     return { filename: data.filename, bytes: data.bytes.length };
   };
-  if (['dicom2bids', 'deface', 'brain2print', 'dwi2trx', 'ants', 'greedy', 'edgereg', 'fireants', 'elastix', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel', 'dicomview', 'fastprep'].includes(id)) {
+  if (['dicom2bids', 'deface', 'brain2print', 'dwi2trx', 'ants', 'greedy', 'edgereg', 'fireants', 'elastix', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel', 'dicomview', 'fastprep', 'noddi', 'degibbs'].includes(id)) {
     const examples = JSON.parse(await readFile(join(root, 'apps', id, 'examples.json')));
     const selector = page.getByRole('combobox', { name: 'Input', exact: true });
     await expect(selector).toBeEnabled({ timeout: 120000 });
@@ -333,10 +382,10 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
   if (id === 'syncro') {
     const manifest = JSON.parse(await readFile(join(resources, 'manifest.json')));
     const examples = JSON.parse(await readFile(join(root, 'apps/syncro/examples.json')));
-    const primary = examples[0].files.find(file => file.role === 'primary');
+    const primary = examples[0].files.find(file => file.role === 'moving');
     const asset = manifest.assets[primary.url];
     assert.ok(asset, 'The pinned SYNcro T1 example must be packaged');
-    await page.locator('#input').setInputFiles({ name: primary.name, mimeType: 'application/gzip', buffer: await readFile(join(resources, asset.path)) });
+    await page.locator('#movingInput').setInputFiles({ name: primary.name, mimeType: 'application/gzip', buffer: await readFile(join(resources, asset.path)) });
     await page.locator('#settingsSection').evaluate(section => { section.open = true; });
     await page.locator('#synthsrBackend').selectOption('wasm');
     await page.locator('#brainExtractor').selectOption('synthstrip');
@@ -376,7 +425,24 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     await page.locator('#protocolButton').click();
     await expect(page.locator('#statusText')).toHaveText('1 acquisition summarised', { timeout: 600000 });
     await expect(page.locator('#protocolSummary')).toContainText('RepetitionTime');
+    return { image, handoff: await verifyLesionHandoff(page, image.filename) };
+  }
+  if (id === 'degibbs') {
+    await expect(page.locator('#runButton')).toBeEnabled({ timeout: 60000 });
+    await page.locator('#runButton').click();
+    await expect(page.locator('#statusText')).toContainText('Ringing removed', { timeout: 600000 });
+    const image = nifti(await download('#resultList .nd-volume-toggle:nth-child(1) .nd-download-btn'));
+    assert.equal(image.filename, 'dwi_desc-degibbs.nii.gz');
     return image;
+  }
+  if (id === 'noddi') {
+    // The single-shell example fits the tensor only; FA is the first result row.
+    await expect(page.locator('#runButton')).toBeEnabled({ timeout: 60000 });
+    await page.locator('#runButton').click();
+    await expect(page.locator('#statusText')).toContainText('Fitted', { timeout: 600000 });
+    const fa = nifti(await download('#resultList .nd-volume-toggle:nth-child(1) .nd-download-btn'));
+    assert.equal(fa.filename, 'dwi_model-tensor_param-fa_dwimap.nii.gz');
+    return fa;
   }
   if (id === 'carotid-flow') {
     await expect(page.locator('#runButton')).toBeEnabled({ timeout: 60000 });

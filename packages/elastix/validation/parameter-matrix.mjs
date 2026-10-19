@@ -11,7 +11,7 @@ export function tomlValue(text, key) {
 }
 
 // One elastix TransformParameters file as a 4×4 LPS matrix mapping a
-// stationary point to a moving point. ITK's Euler3DTransform without
+// fixed point to a moving point. ITK's Euler3DTransform without
 // ComputeZYX rotates by Rz·Rx·Ry about CenterOfRotationPoint.
 function stageMatrix(text) {
   const transform = tomlValue(text, 'Transform');

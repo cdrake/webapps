@@ -1,0 +1,15 @@
+# The degibbs app's WebAssembly module: a plain C ABI over dwi-degibbs, no wasm-bindgen.
+# packages/degibbs/src/wasm.js drives it; packages/degibbs/scripts/build-wasm.sh builds it.
+[package]
+name = "degibbs-wasm"
+version.workspace = true
+edition.workspace = true
+license = "MPL-2.0"
+rust-version.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+dwi-degibbs = { path = "../degibbs" }

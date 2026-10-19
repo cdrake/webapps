@@ -4,6 +4,8 @@ import { loadAppsRegistry } from '../scripts/lib/apps-registry.mjs';
 import { appInformationPayload, loadAppInformation } from '../scripts/lib/app-information.mjs';
 import { injectCompositeTheme } from '../scripts/lib/composite-theme.mjs';
 import { mountAppShell } from '../test-utils/mount-app-shell.mjs';
+import { loadTemplateCatalogue } from '../scripts/lib/templates.mjs';
+import { templatesFor } from '../packages/components/src/ui/templates.js';
 
 // Every hosted app's About and Cite dialogs are fed from
 // registry/app-information.yml through the shared shell. These tests keep the
@@ -20,6 +22,8 @@ const REQUIRED_METHODS = {
   dicom2bids: ['10.1016/j.jneumeth.2016.03.001', '10.1038/sdata.2016.44', '10.1038/s41597-021-01064-w', '10.7937/TCIA.9YTJ-5Q73'],
   'brain-extraction': ['10.1002/hbm.10062', 'arxiv.org/abs/2506.11860', '10.1016/j.neuroimage.2022.119474', 'github.com/niivue/niivue'],
   dwi2trx: ['10.1016/S0006-3495(94)80775-1', 'github.com/dipy/GPUStreamlines', 'PMC5381389', 'brainder.org/2025/05/05/15656/'],
+  degibbs: ['10.1002/mrm.26054', '10.1016/j.neuroimage.2019.116137', '10.1016/j.jneumeth.2016.03.001', 'github.com/niivue/niivue'],
+  noddi: ['10.1016/S0006-3495(94)80775-1', '10.1016/j.neuroimage.2012.03.072', '10.1016/j.neuroimage.2014.10.026', 'arxiv.org/abs/2506.11860', '10.21105/joss.05098', '10.1016/j.jneumeth.2016.03.001', 'github.com/niivue/niivue'],
   musclemap: ['10.3390/jimaging10110262', 'arxiv.org/abs/2211.02701', '10.1016/j.jneumeth.2016.03.001'],
   vesselboost: ['10.52294/001c.123217', '10.1109/TMI.2010.2046908', '10.1109/TMI.2007.906087', '10.1109/ICCV.1998.710815', '10.1002/hbm.10062', '10.1016/j.neuroimage.2022.119474'],
   spinalcordtoolbox: ['10.1016/j.neuroimage.2016.10.009', '10.1016/j.media.2025.103473', '10.1038/s41592-020-01008-z', 'arxiv.org/abs/2407.17265', '10.1177/13524585261427333', 'github.com/neuropoly/totalspineseg', '10.1002/ana.24932', '10.1038/s41393-020-00561-w'],
@@ -32,14 +36,14 @@ const REQUIRED_METHODS = {
   'easy-mp2rage': ['10.1016/j.neuroimage.2009.10.002', '10.1371/journal.pone.0069294', '10.1002/mrm.23145', '10.1371/journal.pone.0099676'],
   niimath: ['10.52294/001c.94384', '10.1016/j.jneumeth.2016.03.001'],
   dicom2vid: ['10.1007/s003300101100', 'github.com/Vanilagy/mp4-muxer'],
-  browserqc: ['10.1371/journal.pone.0184661', '10.21105/joss.05098', '10.52294/001c.94384', '10.1016/j.jneumeth.2016.03.001'],
+  browserqc: ['10.1371/journal.pone.0184661', '10.21105/joss.05098', '10.52294/001c.94384', '10.1016/j.jneumeth.2016.03.001', '10.1098/rstb.2001.0915'],
   brain2print: ['10.1038/s41598-025-00014-5', '10.1016/j.neuroimage.2026.122074', '10.52294/001c.94384', '10.1016/j.jneumeth.2016.03.001'],
   topofit: ['arxiv.org/abs/2505.14017', 'proceedings.mlr.press/v172/hoopes22a.html', '10.1016/j.jneumeth.2016.03.001', 'github.com/niivue/niivue', '10.1016/j.neuroimage.2012.11.065', '10.52294/001c.94384'],
   surfannotate: ['10.1016/j.neuroimage.2012.01.021', 'github.com/niivue/niivue'],
   zarro: ['10.1038/s41592-021-01326-w', 'zarr.dev', 'dandiarchive.org'],
   synthseg: ['10.1016/j.media.2023.102789', '10.52294/001c.94384', 'brain-development.org/ixi-dataset', '10.1016/j.neuroimage.2020.117200', '10.1016/j.jneumeth.2016.03.001', 'github.com/niivue/niivue'],
   synthsr: ['10.1016/j.neuroimage.2021.118206', 'github.com/neurolabusc/py_synthsr'],
-  syncro: ['10.1016/j.neuroimage.2021.118206', 'arxiv.org/abs/2506.11860', '10.1016/j.neuroimage.2022.119474', 'sites.google.com/view/greedyreg/about', '10.1016/j.media.2007.06.004', '10.1016/j.neuroimage.2010.07.033', '10.52294/001c.94384'],
+  syncro: ['10.1016/j.neuroimage.2021.118206', 'arxiv.org/abs/2506.11860', '10.1016/j.neuroimage.2022.119474', 'sites.google.com/view/greedyreg/about', '10.1016/j.media.2007.06.004', '10.1007/11866763_8', '10.52294/001c.94384'],
   'white-matter-lesions': ['10.1101/2025.05.19.25327707', '10.1038/s41592-020-01008-z', '10.1016/j.neuroimage.2022.119474', '10.1016/j.jneumeth.2016.03.001', 'github.com/niivue/niivue'],
   edgereg: ['afni.nimh.nih.gov', '10.1016/j.jneumeth.2016.03.001', 'github.com/niivue/niivue'],
   ants: ['10.1038/s41598-021-87564-6', '10.1016/j.neuroimage.2010.09.025', '10.1016/j.neuroimage.2026.122074', '10.1016/j.jneumeth.2016.03.001'],
@@ -64,6 +68,17 @@ test('every registered app has app information with packages and cited methods',
       assert.ok(cited.includes(method), `${app.id} must cite ${method}`);
     }
     assert.ok(REQUIRED_METHODS[app.id], `${app.id} has a required-methods list in this test`);
+  }
+});
+
+// A built-in fixed image is part of the method: every app that offers one cites its paper.
+test('every app cites the templates it offers', async () => {
+  const catalogue = await loadTemplateCatalogue();
+  for (const app of Object.keys(catalogue.consumers)) {
+    const cited = information.apps[app].citations.map((item) => item.doi ?? '');
+    for (const entry of templatesFor(catalogue, app)) {
+      assert.ok(cited.includes(entry.citation.doi), `${app} must cite ${entry.label} (${entry.citation.doi})`);
+    }
   }
 });
 

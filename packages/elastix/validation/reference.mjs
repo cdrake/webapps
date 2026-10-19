@@ -63,7 +63,7 @@ export async function pinnedExample() {
     await writeFile(path, bytes);
     return { name: entry.name, path, sha256: sha256(bytes) };
   };
-  return { id: example.id, moving: await file('moving'), fixed: await file('stationary') };
+  return { id: example.id, moving: await file('moving'), fixed: await file('fixed') };
 }
 
 /**

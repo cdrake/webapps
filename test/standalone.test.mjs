@@ -7,7 +7,7 @@ import { JSDOM } from 'jsdom';
 import { loadAppsRegistry } from '../scripts/lib/apps-registry.mjs';
 import { loadStandalone } from '../scripts/lib/standalone.mjs';
 import { ciWorkflowApps } from '../scripts/desktop/ci-apps.mjs';
-import { workflowApps } from '../scripts/desktop/workflows.mjs';
+import { prepareWorkflow, workflowApps } from '../scripts/desktop/workflows.mjs';
 import { openStandalone } from '../packages/components/src/ui/renderStandalone.js';
 import { portableCommand, releasePlatform } from '../scripts/lib/portable-command.mjs';
 import { nativeReleases, portableSpecs } from '../scripts/lib/native-releases.mjs';
@@ -79,6 +79,8 @@ const WITHOUT_COMMAND_LINE = {
   zarro: 'interactive OME-Zarr viewer: it has no batch output',
   nesvor: 'needs CUDA; its standalone form is the neurodesk-compute server',
   dicomview: 'interactive DICOM browser: dcm2niix and dicompare already ship as command lines',
+  degibbs: 'the degibbs command line follows its app, as noddi\'s does (docs/architecture/dwi-microstructure-design.md)',
+  noddi: 'the noddi command line is the next step of docs/architecture/dwi-microstructure-design.md; the app ships first',
   fastprep: 'exes/fastprep drives separately installed niimath, brainchop, greedy-rs, synthsr, topofit and glm; a bundled release waits on packaging those (TopoFit licence pending)',
 };
 
@@ -93,6 +95,17 @@ test('every app ships its own command line or states why it cannot', async () =>
 
 test('future apps automatically receive real offline workflow coverage on hosted CI', () => {
   assert.deepEqual(ciWorkflowApps({ apps: [{ id: 'future-app' }, { id: 'synthseg' }] }), ['future-app']);
+});
+
+test('an app whose browser tests need a hardware GPU keeps its desktop workflow off the hosted runners', async () => {
+  const registry = await loadAppsRegistry();
+  const hosted = new Set(ciWorkflowApps(registry));
+  for (const app of registry.apps.filter(app => app.ci?.hardware_gpu && hosted.has(app.id))) {
+    // Only a workflow that computes on a compute server (prepareWorkflow provisions one) runs without the runner's GPU.
+    const prepared = await prepareWorkflow(app.id);
+    await prepared?.close();
+    assert.ok(prepared, `${app.id} declares ci.hardware_gpu and computes in the browser: add it to hardwareWorkflowApps in scripts/desktop/ci-apps.mjs with its hardware evidence`);
+  }
 });
 
 test('compute server setup leads with download, startup and pairing for the current webapp origin', async () => {

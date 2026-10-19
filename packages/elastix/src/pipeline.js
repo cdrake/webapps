@@ -19,7 +19,7 @@ export function registrationError(error) {
 
 /**
  * The scalar 2D/3D image as read (`scalar`) and the float32 copy elastix
- * registers (`image`). elastix dispatches on the stationary image's pixel type
+ * registers (`image`). elastix dispatches on the fixed image's pixel type
  * and casts its result back to it, which would wrap B-spline overshoot in an
  * integer type; float32 inputs register any pair of pixel types.
  */

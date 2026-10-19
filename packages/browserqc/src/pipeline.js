@@ -16,7 +16,8 @@ export function parseModel(value) {
 // The MNI air template behind the background metrics, pinned by its bytes.
 export const AIR_TEMPLATE = Object.freeze({
   name: 'avg152T1.nii.gz',
-  url: 'https://huggingface.co/datasets/neurodeskorg/webapps/resolve/12eb1069c34097b7c0881b22e1f7e4ed953aa5cc/browserqc/avg152T1.nii.gz',
+  // The ICBM152 avg152 2 mm entry of registry/templates.json; test/templates.test.mjs keeps them equal.
+  url: 'https://huggingface.co/datasets/neurodeskorg/webapps/resolve/67c378c8f8ac5313e5dbeee4c8d95ebe2a2f79c9/reg/templates/avg152T1.nii.gz',
   sha256: 'e8f5440f0dcec1a4d44384acbdf19c8e6cf94c032c3356ef91c4441fee3aaea8',
 });
 
