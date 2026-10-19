@@ -37,7 +37,12 @@ fn matches_qsiprep_iteration() {
         .unwrap()
         .iter()
         .map(|g| {
-            let g: Vec<f64> = g.as_array().unwrap().iter().map(|c| c.as_f64().unwrap()).collect();
+            let g: Vec<f64> = g
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|c| c.as_f64().unwrap())
+                .collect();
             [g[0], g[1], g[2]]
         })
         .collect();
@@ -65,7 +70,10 @@ fn matches_qsiprep_iteration() {
             .zip(&theirs)
             .fold(0.0f64, |m, (&a, &b)| m.max((a - b as f64).abs()));
         let error = diff / scale;
-        eprintln!("volume {t:3} (b = {:6.0}): {error:.2e} of its maximum", bvals[t]);
+        eprintln!(
+            "volume {t:3} (b = {:6.0}): {error:.2e} of its maximum",
+            bvals[t]
+        );
         if error > worst.0 {
             worst = (error, t);
         }
@@ -79,5 +87,10 @@ fn matches_qsiprep_iteration() {
         worst.1,
         1e3 * seconds / n
     );
-    assert!(worst.0 <= 1e-5, "volume {} differs by {:.2e}", worst.1, worst.0);
+    assert!(
+        worst.0 <= 1e-5,
+        "volume {} differs by {:.2e}",
+        worst.1,
+        worst.0
+    );
 }
