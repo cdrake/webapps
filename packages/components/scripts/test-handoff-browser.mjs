@@ -76,7 +76,7 @@ const fixture = `<!doctype html>
     signal,
   }).then(() => window.assigned);
   // Takes the handoff, then loads its files as an app would; a failed load is the app's own.
-  window.receive = (fail = false) => handoff.takeHandoff().then(async (result) => {
+  window.receive = (fail = false, signal) => handoff.takeHandoff({ signal }).then(async (result) => {
     if (!result) return null;
     window.keysDuringLoad = await keys();
     window.files = result.files;
@@ -213,6 +213,43 @@ for (const engine of engines) {
       assert.equal(await page.evaluate(() => location.hash), '');
       await visit(page, url);
       assert.equal(await receiveError(page), 'The image sent from another app is no longer available. Send it again.');
+    });
+
+    test('a load cancelled while the files are copied out rejects with AbortError and leaves nothing behind', async () => {
+      const { page } = await sentInTab(await fresh());
+      const outcome = await page.evaluate(async () => {
+        // Holds the first read of a stored Blob, whichever way this engine copies, until released.
+        const held = Promise.withResolvers();
+        const reached = Promise.withResolvers();
+        const gate = (method, wrap) => {
+          const original = Blob.prototype[method];
+          Blob.prototype[method] = function (...args) {
+            Blob.prototype[method] = original;
+            reached.resolve();
+            return wrap(() => original.apply(this, args));
+          };
+        };
+        gate('arrayBuffer', (read) => held.promise.then(read));
+        gate('stream', (read) => read().pipeThrough(new TransformStream({
+          transform: (chunk, controller) => held.promise.then(() => controller.enqueue(chunk)),
+        })));
+        const controller = new AbortController();
+        const receiving = window.receive(false, controller.signal).then(() => 'received', (error) => error.name);
+        await reached.promise;
+        controller.abort();
+        held.resolve();
+        return receiving;
+      });
+      assert.equal(outcome, 'AbortError');
+      assert.equal(await page.evaluate(() => window.files), undefined, 'no files were handed out');
+      assert.deepEqual(await page.evaluate(() => window.keys()), []);
+      assert.deepEqual(await page.evaluate(() => window.secrets()), []);
+      assert.equal(await page.evaluate(() => location.hash), '');
+    });
+
+    test('the engine detection matches the user agent this engine reports', async () => {
+      const page = await open(await fresh(), `/${RECEIVER}/`);
+      assert.equal(await page.evaluate(() => window.handoff.copiesInPieces(navigator.userAgent)), engine === 'webkit');
     });
 
     test('of a tab and its duplicate, which share the secret, exactly one gets the files', async () => {
