@@ -1,0 +1,41 @@
+{
+  "repository": "neurodesk/webapps",
+  "tagPrefix": "degibbs-v",
+  "displayName": "Degibbs",
+  "app": "degibbs",
+  "run": "sub-01_dwi.nii.gz results",
+  "readme": {
+    "run": "Remove Gibbs ringing from every slice and write the derivatives",
+    "notes": [
+      "The .bval, .bvec and .json beside the image with the same name are passed",
+      "through under the output's name; --bval, --bvec and --json name others.",
+      "The sidecar's SliceEncodingDirection sets the in-plane axes; --axes overrides it.",
+      "Add --help for every setting.",
+      "",
+      "No network connection is required. Input is NIfTI only: convert DICOM with",
+      "dcm2niix first, or use the web app.",
+      "",
+      "Cite Kellner E, Dhital B, Kiselev VG, Reisert M. Gibbs-ringing artifact",
+      "removal based on local subvoxel-shifts. Magn Reson Med 2016;76:1574-1581,",
+      "and MRtrix3: Tournier JD et al. NeuroImage 2019;202:116137."
+    ]
+  },
+  "validation": "validation/cli-check.mjs",
+  "targets": {
+    "linux-x64": {
+      "label": "Linux x64",
+      "archive": "tar.gz",
+      "executable": "degibbs"
+    },
+    "windows-x64": {
+      "label": "Windows x64",
+      "archive": "zip",
+      "executable": "degibbs.exe"
+    },
+    "macos-arm64": {
+      "label": "macOS Apple silicon",
+      "archive": "pkg",
+      "executable": "degibbs"
+    }
+  }
+}

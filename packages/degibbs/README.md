@@ -23,3 +23,37 @@ On the first 10 volumes of OpenNeuro ds005577 sub-107 (120 × 120 × 75, full Fo
 
 The module is committed. After a change to `exes/dwi/degibbs` or `exes/dwi/degibbs-wasm`, run `pnpm --filter @neurodesk/degibbs build:wasm`.
 `check:wasm` fails when a rebuild does not give the committed bytes (Rust 1.98.0, binaryen `version_117`).
+
+## Command line
+
+`bin/degibbs.js` runs the web app's workflow on a NIfTI image with the committed module, and writes the app's downloads:
+
+```bash
+degibbs sub-01_dwi.nii.gz results
+degibbs sub-01_dwi.nii.gz results --axes 0,2 --nshifts 20 --min-w 1 --max-w 3
+degibbs self-check
+```
+
+The `.bval`, `.bvec` and `.json` beside the image with the same name are passed through under the output's name, as the app pairs a dropped selection; `--bval`, `--bvec` and `--json` name other files.
+The sidecar's `SliceEncodingDirection` sets the in-plane axes unless `--axes` is given.
+The output directory must be new or empty.
+Volumes are corrected one at a time, one module call each, as the app's workers do; the output names and sidecar come from `src/outputs.js`, which the app imports too.
+Input is NIfTI only: convert DICOM with dcm2niix first, or use the web app.
+`self-check` runs the module on a phantom: a flat image must come back unchanged and a square's edges must change.
+
+The portable archives are built by `exes/node-cli` (`release.json`) in `.github/workflows/degibbs-native.yml`.
+
+### Accuracy
+
+`validation/cli-check.mjs` is the release gate. It runs the command line on the pinned example in `apps/degibbs/examples.json`. The corrected image's decompressed bytes must equal the web app's download, and the `.bval`, `.bvec` and sidecar must equal it byte for byte.
+The image is compared decompressed because Chromium and Node compress with different zlib builds; on Linux the compressed bytes are identical too.
+`validation/browser-reference.json` holds the downloads, which `apps/degibbs/e2e/reference.spec.js` recorded through the built app's `degibbs` automation in Chromium.
+
+```bash
+node packages/degibbs/validation/cli-check.mjs
+node packages/degibbs/validation/cli-check.mjs --executable path/to/degibbs
+DEGIBBS_BROWSER_REFERENCE=write pnpm --filter degibbs exec playwright test e2e/reference.spec.js
+```
+
+Rerecord the reference after a change to the module, `src/outputs.js` or the app's NIfTI writing.
+Cite Kellner et al. (2016) and MRtrix3 (Tournier et al. 2019), as the app's Cite dialog does.

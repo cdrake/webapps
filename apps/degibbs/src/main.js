@@ -16,8 +16,8 @@ import { createNiftiFromData, decodeNiftiBuffer, downloadFile, readNiftiFrames }
 import { registerAppAutomation } from "@neurodesk/webapp-components/automation";
 import { readDiffusionSeries, runDcm2niix } from "@neurodesk/runtime-support/dcm2niix-client";
 import { sliceAxes } from "@neurodesk/degibbs";
+import { derivativeSidecar, outputNames } from "@neurodesk/degibbs/outputs";
 import { APP } from "./config.js";
-import { derivativeSidecar, outputNames } from "./pipeline.js";
 import { correctVolumes } from "./pool.js";
 import examples from "../examples.json";
 

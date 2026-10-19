@@ -17,6 +17,7 @@ export const LINKED_PACKAGES = Object.freeze({
   '@neurodesk/calmar': 'calmar',
   '@neurodesk/carotid-flow': 'carotid-flow',
   '@neurodesk/deface': 'deface',
+  '@neurodesk/degibbs': 'degibbs',
   '@neurodesk/dicompare': 'dicompare',
   '@neurodesk/nii2tvx': 'disconnectome',
   '@neurodesk/dicom2vid': 'dicom2vid',

@@ -66,6 +66,7 @@ jobs:
       - name: noddi package tests on the committed module
         working-directory: packages/noddi
         run: node --test test/*.test.js
+      # Only the tests without workspace dependencies: degibbs-native.yml runs the command line's.
       - name: degibbs package tests on the committed module
         working-directory: packages/degibbs
-        run: node --test test/*.test.js
+        run: node --test test/wasm.test.js test/outputs.test.js

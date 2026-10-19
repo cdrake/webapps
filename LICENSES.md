@@ -17,6 +17,8 @@ for each app are recorded in `registry/apps.yml`.
 - `apps/deface`: BSD-2-Clause (`apps/deface/LICENSE`)
 - `apps/easy-mp2rage`: GPL-3.0-or-later (`apps/easy-mp2rage/LICENSE`)
 - `apps/niimath`: BSD-2-Clause (`apps/niimath/LICENSE`)
+- `packages/degibbs`: MPL-2.0 (`packages/degibbs/LICENSE`), as the MRtrix3 `mrdegibbs` source it ports;
+  attribution in `packages/degibbs/NOTICE`. It holds the degibbs WebAssembly module and command line
 - `packages/niimath`: BSD-2-Clause (`packages/niimath/LICENSE`); niimath attribution in `packages/niimath/NOTICE`
 - `apps/dicom2vid`: BSD-3-Clause (`apps/dicom2vid/LICENSE`)
 - `packages/dicom2vid`: BSD-3-Clause (`packages/dicom2vid/LICENSE`); the shared
