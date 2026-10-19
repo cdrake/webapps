@@ -126,6 +126,9 @@ importers:
 
   apps/brain-extraction:
     dependencies:
+      '@brainchop/mindgrab':
+        specifier: 0.1.20260925
+        version: 0.1.20260925
       '@neurodesk/brain-extraction':
         specifier: workspace:*
         version: link:../../packages/brain-extraction
