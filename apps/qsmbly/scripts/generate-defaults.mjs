@@ -33,7 +33,7 @@ const wasmBinary = await readFile(wasmBinaryPath);
 await wasmModule.default(wasmBinary);
 
 // qsm-core stores the TGV alphas as f32; write the shortest decimal that is the same f32
-// (0.001, not 0.0010000000474974513), as qsmxt-config does for TgvConfig.
+// (0.001, not 0.0010000000474974513), as qsmxt-engine does for TgvConfig.
 function shortestF32(x) {
   for (let p = 1; p <= 9; p++) {
     const d = Number(x.toPrecision(p));
@@ -70,8 +70,6 @@ const defaults = {
   ROMEO_DEFAULTS: JSON.parse(wasmModule.get_romeo_defaults()),
   MCPC3DS_DEFAULTS: JSON.parse(wasmModule.get_mcpc3ds_defaults()),
   LINEAR_FIT_DEFAULTS: JSON.parse(wasmModule.get_linear_fit_defaults()),
-  HOMOGENEITY_DEFAULTS: JSON.parse(wasmModule.get_homogeneity_defaults()),
-  SIGNAL_ERODE_DEFAULTS: JSON.parse(wasmModule.get_signal_erode_defaults()),
   ILSQR_DEFAULTS: JSON.parse(wasmModule.get_ilsqr_defaults()),
   DL_TILING_DEFAULTS: JSON.parse(wasmModule.get_dl_tiling_defaults()),
   // TGV's alphas per UI regularization level (qsm-core's get_default_alpha), so the

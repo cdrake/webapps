@@ -134,7 +134,7 @@ apps:
     runtime: rust-wasm
     model_manifest: models/qsmbly.manifest.json
     asset_manifest_schema: scientific-assets-v1
-    source: astewartau/qsmbly@d2afebc1b590d5cb016d0ade8782e9f25a44e7ac
+    source: astewartau/qsmbly@cf88ee361e315c48d867156fd9b6de5599dc62cd
     license: MIT
     maintainers: [astewartau]
     support_status: active

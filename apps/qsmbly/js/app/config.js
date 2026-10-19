@@ -8,9 +8,6 @@
 // Application version. `pnpm release` writes the date version (scripts/lib/app-versions.mjs).
 export const VERSION = '0.31.20261018';
 
-// QSM.rs core library version (the pinned qsm-core dependency tag in rust-wasm/Cargo.toml)
-export const QSM_RS_VERSION = '0.38.0';
-
 // Where deep-learning model weights are fetched from in the browser. The qsm-core model
 // registry points at OSF, which does NOT send CORS headers, so a browser fetch from it
 // fails — this base overrides it with a CORS-enabled mirror. Files are fetched as
@@ -84,8 +81,6 @@ import {
   ROMEO_DEFAULTS as _ROMEO,
   MCPC3DS_DEFAULTS as _MCPC3DS,
   LINEAR_FIT_DEFAULTS as _LINEAR_FIT,
-  HOMOGENEITY_DEFAULTS as _HOMOGENEITY,
-  SIGNAL_ERODE_DEFAULTS as _SIGNAL_ERODE,
   ILSQR_DEFAULTS as _ILSQR,
   DL_TILING_DEFAULTS as _DL_TILING,
 } from './qsm-defaults.js';
@@ -93,9 +88,6 @@ import {
 // Deep-learning overlap tiling (lib.rs DL_TILING): the default tile core/halo, the model ids run
 // tiled by default, and the off-design and natively patch-based subsets.
 export const DL_TILING_DEFAULTS = { ..._DL_TILING };
-
-// Signal-gated erosion (QSM-CI): qsm-core's defaults, used by the mask "Signal Erode" refinement.
-export const SIGNAL_ERODE_DEFAULTS = { ..._SIGNAL_ERODE };
 
 // Re-export with JS-convention field names (camelCase, matching existing usage)
 export const RTS_DEFAULTS = {
@@ -208,7 +200,9 @@ export const QSMART_DEFAULTS = {
   frangi_scale_max: _QSMART.frangi_scale_max,
   frangi_scale_ratio: _QSMART.frangi_scale_ratio,
   frangi_c: _QSMART.frangi_c,
-  ilsqr_tol: _QSMART.ilsqr_tol,
+  // qsmxt-engine has no QSMART tolerance of its own: QSMART's inner iLSQR takes iLSQR's
+  // (`inversion.ilsqr.tol`), so the panel's default is iLSQR's.
+  ilsqr_tol: _ILSQR.tol,
   ilsqr_max_iter: _QSMART.ilsqr_max_iter,
   inversion_algorithm: _QSMART.inversion,
 };
@@ -232,12 +226,6 @@ export const LINEAR_FIT_DEFAULTS = {
   reliability_threshold_percentile: _LINEAR_FIT.reliability_threshold_percentile,
 };
 
-// Homogeneity correction defaults
-export const HOMOGENEITY_DEFAULTS = {
-  sigmaMm: _HOMOGENEITY.sigma_mm,
-  nbox: _HOMOGENEITY.nbox,
-};
-
 export const SHARP_DEFAULTS = {
   threshold: _SHARP.threshold,
   radius: _SHARP.radius,
@@ -256,13 +244,16 @@ export const HARPERELLA_DEFAULTS = {
   tol: _HARPERELLA.tol,
 };
 
-// TSVD (Truncated SVD) defaults. qsm-core has no TSVD params struct and qsmxt-config types
+// TSVD (Truncated SVD) defaults. qsm-core has no TSVD params struct and qsmxt-engine types
 // `inversion.tsvd` as TkdConfig, so TSVD's generated defaults are TKD's.
 export const TSVD_DEFAULTS = {
   threshold: _TKD.threshold,
 };
 
 // iLSQR as a standalone dipole inversion (QSMART's inner iLSQR uses QSMART_DEFAULTS.ilsqr_*)
+/** Zero padding (mm) of QSMART's inner iLSQR solves (qsm-core run_qsmart's `ilsqr_pad_mm`). */
+export const QSMART_ILSQR_PAD_MM = _QSMART.ilsqr_pad_mm;
+
 export const ILSQR_DEFAULTS = {
   tol: _ILSQR.tol,
   max_iter: _ILSQR.max_iter,
@@ -426,7 +417,8 @@ export const PIPELINE_DEFAULTS = {
   pdf: { ...PDF_DEFAULTS, maxit: null },
   lbv: { ...LBV_DEFAULTS },
   harperella: { ...HARPERELLA_DEFAULTS },
-  iharperella: { ...HARPERELLA_DEFAULTS },
+  // iHARPERELLA has no SMV kernel, so it takes HARPERELLA's settings without the radius.
+  iharperella: { max_iter: HARPERELLA_DEFAULTS.max_iter, tol: HARPERELLA_DEFAULTS.tol },
   dipole_inversion: 'rts',
   // Deep-learning overlap-tiling (browser only; keeps DL nets within the 32-bit wasm heap).
   // On by default with a browser-safe 64³ patch; the settings modal can change/disable it.

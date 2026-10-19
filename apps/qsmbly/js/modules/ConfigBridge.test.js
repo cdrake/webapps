@@ -3,7 +3,7 @@
  */
 
 import { maskSectionString, buildConfigJson, buildQsmartInnerConfigJson } from './ConfigBridge.js';
-import { DL_TILING_DEFAULTS, PIPELINE_DEFAULTS, TGV_ALPHA_PRESETS } from '../app/config.js';
+import { DL_TILING_DEFAULTS, PIPELINE_DEFAULTS, QSMART_ILSQR_PAD_MM, TGV_ALPHA_PRESETS } from '../app/config.js';
 
 describe('maskSectionString', () => {
   test('returns empty for no ops', () => {
@@ -43,7 +43,7 @@ describe('maskSectionString', () => {
 });
 
 /**
- * Background-removal parameter fields as declared by the pinned qsmxt-config
+ * Background-removal parameter fields as declared by the pinned qsmxt-engine
  * schema (crates/qsmxt-config/src/config.rs, v9.18.1):
  *
  *   param_config!(VsharpConfig  { threshold, max_radius, min_radius });
@@ -66,7 +66,7 @@ const BG_REMOVAL_SCHEMA = {
   sharp: ['threshold', 'radius'],
   resharp: ['radius', 'tik_reg', 'tol', 'max_iter'],
   harperella: ['radius', 'max_iter', 'tol'],
-  iharperella: ['radius', 'max_iter', 'tol'],
+  iharperella: ['max_iter', 'tol'],
 };
 
 /** A settings object shaped like PipelineSettingsController.save() output. */
@@ -82,13 +82,13 @@ function settingsFixture(overrides = {}) {
     lbv: { tol: 1e-6 },
     resharp: { radius: 6, tik_reg: 1e-4, tol: 1e-6, max_iter: 30 },
     harperella: { radius: 10, max_iter: 20, tol: 1e-6 },
-    iharperella: { radius: 10, max_iter: 20, tol: 1e-6 },
+    iharperella: { max_iter: 20, tol: 1e-6 },
     ...overrides,
   };
 }
 
 describe('buildConfigJson background-removal parameters', () => {
-  test('emits only fields the qsmxt-config schema declares', () => {
+  test('emits only fields the qsmxt-engine schema declares', () => {
     const bg = JSON.parse(buildConfigJson(settingsFixture())).bg_removal;
 
     for (const [algorithm, fields] of Object.entries(BG_REMOVAL_SCHEMA)) {
@@ -178,7 +178,7 @@ describe('buildConfigJson linear-fit parameters', () => {
     expect(fm.linear_fit).toEqual({ reliability_threshold_percentile: 0 });
   });
 
-  test('omits a blank percentile so qsmxt-config supplies its default', () => {
+  test('omits a blank percentile so qsmxt-engine supplies its default', () => {
     const fm = JSON.parse(buildConfigJson(
       settingsFixture({ linearFit: { reliability_threshold_percentile: NaN } }),
     )).field_mapping;
@@ -247,11 +247,17 @@ describe('QSMART inner inversion config', () => {
     expect(config.inversion.tkd).toEqual({ threshold: 0.12 });
   });
 
+  test('exports the QSMART panel\'s iLSQR tolerance as iLSQR\'s, which QSMART reads', () => {
+    const config = JSON.parse(buildConfigJson(settings));
+    expect(config.inversion.qsmart).not.toHaveProperty('ilsqr_tol');
+    expect(config.inversion.ilsqr.tol).toBe(0.02);
+  });
+
   test('runs the inner algorithm with iLSQR pinned to QSMART\'s own limits', () => {
     const config = JSON.parse(buildQsmartInnerConfigJson(settings));
     expect(config.inversion.algorithm).toBe('tkd');
     expect(config.inversion.tkd).toEqual({ threshold: 0.12 });
-    expect(config.inversion.ilsqr).toEqual({ tol: 0.02, max_iter: 40 });
+    expect(config.inversion.ilsqr).toEqual({ tol: 0.02, max_iter: 40, pad_mm: QSMART_ILSQR_PAD_MM });
   });
 
   test('defaults to iLSQR', () => {
@@ -261,7 +267,7 @@ describe('QSMART inner inversion config', () => {
 });
 
 describe('NLTV export', () => {
-  test('maps the UI\'s newton_max_iter to qsmxt-config\'s newton_iter', () => {
+  test('maps the UI\'s newton_max_iter to qsmxt-engine\'s newton_iter', () => {
     const nltv = { lambda: 0.001, mu: 1, max_iter: 250, tol: 0.001, newton_max_iter: 7 };
     const config = JSON.parse(buildConfigJson({ dipole_inversion: 'nltv', nltv }));
     expect(config.inversion.nltv.newton_iter).toBe(7);
