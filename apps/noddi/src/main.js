@@ -4,6 +4,7 @@ import NiiVueGPU, { SLICE_TYPE } from "@niivue/niivue";
 import { mountImagingWorkspace } from "@neurodesk/webapp-components/core/mount-imaging-workspace";
 import {
   createResultList,
+  createNiivueVolumePreview,
   bindFileDrop,
   createInfoDialog,
   createConsole,
@@ -84,18 +85,16 @@ function status(message, error = false) {
 const results = createResultList({
   element: $("resultList"),
   onView: (_stage, result) => {
-    void showVolume(result.file, result.range).catch((error) => status(error.message, true));
+    void showVolume({ file: result.file, range: result.range }).catch((error) => status(error.message, true));
   },
   onDownload: (_stage, result) => downloadFile(result.file),
 });
 
-async function showVolume(file, range) {
-  await viewerReady;
-  // Without a range NiiVue windows the image from its own intensities.
-  const window = range ? { calMin: range[0], calMax: range[1] } : {};
-  await viewer.loadVolumes([{ url: file, name: file.name, colormap: "gray", ...window }]);
-  $("emptyState").hidden = true;
-}
+const showVolume = createNiivueVolumePreview({
+  viewer,
+  ready: viewerReady,
+  emptyState: $("emptyState"),
+});
 
 async function niftiFile(buffer, name) {
   const stream = new Blob([buffer]).stream().pipeThrough(new CompressionStream("gzip"));
@@ -145,7 +144,7 @@ async function loadFiles(filesPromise, signal) {
     controller.signal.throwIfAborted();
     const b0 = await niftiFile(createNiftiFromData(dwi.meanB0, dwi.buffer, { dims: dwi.dims }), `${bidsStem(dwi.name)}_desc-meanb0.nii.gz`);
     controller.signal.throwIfAborted();
-    await showVolume(b0);
+    await showVolume({ file: b0 }, { signal: controller.signal });
     controller.signal.throwIfAborted();
     input = dwi;
     mask = null;
@@ -209,6 +208,7 @@ async function loadMask(file, signal) {
 }
 
 function setBusy(busy) {
+  results.inert = busy;
   $("imageInput").disabled = busy;
   $("maskInput").disabled = busy;
   exampleControl?.setDisabled(busy);
@@ -278,7 +278,7 @@ async function fitModels(signal) {
     }
     await add("mask", "Brain mask", brain, maskName(stem), [0, 1]);
     const first = rows["noddi-icvf"] ?? rows["tensor-fa"];
-    await showVolume(first.file, first.range);
+    await showVolume({ file: first.file, range: first.range }, { signal: controller.signal });
     controller.signal.throwIfAborted();
     outputs = rows;
     results.render(rows);

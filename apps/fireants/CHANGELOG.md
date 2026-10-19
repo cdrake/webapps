@@ -1,9 +1,54 @@
 # fireants
 
+## 0.4.20261018
+
+### Minor Changes
+
+- 3329c39: The registration apps load their images through one shared fixed/moving pair
+  (`nd-image-pair`, `createImagePair`). Each app now says fixed and moving, never
+  stationary. The fixed card comes first. Each card has explicit "Load fixed
+  image…" / "Load moving image…" and "Folder…" pickers, a drop zone, a summary
+  of size and spacing, a series select and a clear ×, and Swap exchanges the two.
+  Examples fill the slots by role through the same path as a user's file, and a
+  failed load keeps the previous image. The fixed card offers built-in templates from
+  the new `registry/templates.json`: FSL MNI152 1 mm brain and head and the ICBM152
+  avg152 2 mm head, downloaded and checked with `fetchModel`, and cited in each app.
+  elastix offers them for 3D images only. SYNcro shows its MNI152 template as a
+  locked fixed image, its scan is the moving image, and it fetches the template from
+  the catalogue address. Brain extraction in ANTs, Greedy and FireANTs has its own
+  Fixed and Moving buttons below the pair.
+
+  Cancelling an example preserves the previous image even when the app supplies
+  its own cancellation signal. Image summaries convert NIfTI spatial units to
+  millimetres before showing voxel spacing.
+
+### Patch Changes
+
+- Updated dependencies [7c0d201]
+  - @neurodesk/webapp-components@0.16.2
+  - @neurodesk/runtime-support@0.9.1
+  - @neurodesk/fireants@0.4.20261018
+- Updated dependencies
+- Updated dependencies [46935f7]
+  - @neurodesk/runtime-support@0.9.0
+  - @neurodesk/webapp-components@0.16.1
+  - @neurodesk/fireants@0.4.20261018
+- Updated dependencies [ea2a6d2]
+- Updated dependencies [0511cd7]
+- Updated dependencies [a07f659]
+- Updated dependencies [3329c39]
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/runtime-support@0.8.0
+  - @neurodesk/fireants@0.4.20261018
+
 ## 0.3.20261018
 
 ### Patch Changes
 
+- Updated dependencies [b67e4e9]
+  - @neurodesk/runtime-support@0.7.2
+  - @neurodesk/webapp-components@0.15.1
+  - @neurodesk/fireants@0.3.20261018
 - Updated dependencies [b68209b]
   - @neurodesk/webapp-components@0.15.0
   - @neurodesk/runtime-support@0.7.1
