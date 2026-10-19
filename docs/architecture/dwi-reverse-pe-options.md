@@ -114,22 +114,48 @@ Every method's output becomes a field in Hz with topup's sign on the AP b0 grid 
 `correct.py` then applies every field the same way: linear interpolation along the PE axis and Jacobian modulation.
 Thus the metrics compare fields, not each tool's resampler.
 
-### Gate and reported metrics
+### Gate, ranking and choice
 
-A method passes if it passes both checks on every subject:
+The target is a field as close as possible to topup's.
+
+**Image gate.**
+A method passes if its image metrics are close to topup's or better, on every subject:
 
 - **AP-PA agreement.**
   After correction, the mean absolute AP-PA difference in the brain, divided by the mean corrected b0 intensity, is at most 1.1 x topup's value.
 - **T1w alignment.**
-  The BBR cost of the corrected mean b0 against the T1w white matter (FSL `flirt -cost bbr`, one shared start) is not worse than topup's.
+  The BBR cost of the corrected mean b0 against the T1w white matter (FSL `flirt -cost bbr`, one shared start) is at most 1.02 x topup's value.
 
-Reported, not a gate:
+**Ranking.**
+The methods are ranked by the median absolute difference of their field from topup's in the brain, after the median offset is removed (the demeaned Δfield).
+A constant field is a translation along the PE axis.
+topup's movement model and the rigid PA-to-AP alignment each absorb a different part of it, so the raw offset is not a property of the field.
+On sub-01, topup's own offset from the GRE field map is -5.6 Hz.
+The raw Δfield is reported too.
+Twice the difference between topup and topup with one b0 per side is a reference line for topup's own spread, not a threshold.
 
-- the median absolute field difference from topup in the brain (0.5 Hz is a warning);
-- the median absolute field difference from the ds005134 GRE field map;
+**Choice.**
+The licence is a hard filter.
+Among the methods that pass the image gate, the cheapest port wins if its mean demeaned Δfield over the six subjects is at most 1.5 x that of the closest method.
+Otherwise the closest method wins.
+
+**Reported only:**
+
+- the AP-PA agreement without Jacobian modulation, which does not penalize methods without an intensity model (3dQwarp, ANTs);
+- the field difference from the ds005134 GRE field map, raw and demeaned;
 - wall time and peak memory with 8 threads.
 
 The brain mask is MindGrab on topup's corrected mean b0, the same for every method.
+
+The issue's original start value, a median absolute difference < 0.5 Hz, cannot be met: topup with one b0 per side already differs from full topup by 0.84 Hz on sub-01.
+
+### Conventions settled on sub-01
+
+Phase 1 found three errors in the first scripts, and each fix comes from the tool's own definition, not from the scores:
+
+- `antsRegistration --restrict-deformation` is a per-stage option. The first run gave it only to the second stage, and the warp had x and z components of up to 2.9 mm.
+- FD-Net's K-unit pushes undistorted voxel i to position i + f(i) (`out[j] = Σ_i im[i]·sinc(i + f(i) − j)`), so the correction samples the distorted image at x + f(x). The first conversion had the opposite sign, and its field correlated with topup's at r = −0.90.
+- The 3dQwarp `_MINUS` warp applies to the base (AP): resampling AP with it reproduces `qwarp_MINUS` at r = 0.998.
 
 ## Results
 
