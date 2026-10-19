@@ -70,6 +70,77 @@ test('ZIP input and explicit retained metadata export work without persisting pa
   await expect(page.locator('#subject')).toHaveValue('');
 });
 
+test('an anatomical type edit omits direction entities and preserves slice encoding metadata', async ({ page }, testInfo) => {
+  await page.goto('./');
+  await page.locator('#imageInput').setInputFiles(dicomSeries());
+  await reviewAnatomical(page);
+  await page.getByText('All acquisition metadata', { exact: true }).click();
+  const metadata = JSON.parse(await page.locator('#series1-metadata').inputValue());
+  Object.assign(metadata, {
+    PhaseEncodingDirection: 'j-', SliceEncodingDirection: 'k-', SliceTiming: [0.3, 0.2, 0.1, 0],
+    EchoTrainLength: 16, InPlanePhaseEncodingDirectionDICOM: 'COL', InstitutionName: 'PRIVATE',
+  });
+  await page.locator('#series1-metadata').fill(JSON.stringify(metadata));
+  await page.getByRole('button', { name: 'Apply metadata', exact: true }).click();
+  await page.locator('#seriesRows select').selectOption('dwi');
+  await expect(page.locator('#series1-direction')).toHaveValue('jminus');
+  await page.locator('#series1-direction').fill('customPE');
+  await page.locator('#series1-direction').blur();
+  await page.locator('#series1-gradients > summary').click();
+  await page.locator('#series1-bval').fill('0');
+  await page.locator('#series1-bvec').fill('0\n0\n0');
+  await page.locator('#seriesRows select').selectOption('T1w');
+  await expect(page.locator('#series1-direction')).toHaveCount(0);
+  await expect(page.locator('[data-review]')).not.toBeChecked();
+  await page.locator('[data-review]').check();
+  await page.locator('#runButton').click();
+  await expect(page.locator('#statusText')).toContainText('Switch back to DWI to keep or clear its gradients.');
+  await expect(page.locator('#outputSection')).not.toHaveAttribute('open', '');
+  await page.locator('#seriesRows select').selectOption('dwi');
+  await page.locator('#series1-gradients > summary').click();
+  await expect(page.locator('#series1-bval')).toHaveValue('0');
+  await expect(page.locator('#series1-bvec')).toHaveValue('0\n0\n0');
+  await page.locator('#series1-bval').fill('');
+  await page.locator('#series1-bvec').fill('');
+  await page.locator('#seriesRows select').selectOption('T1w');
+  await page.locator('[data-review]').check();
+  const entries = await downloadDataset(page);
+  const path = 'sub-01/ses-01/anat/sub-01_ses-01_T1w';
+  expect(Object.keys(entries).some(name => name.includes('_dir-'))).toBe(false);
+  expect(entries[`${path}.nii.gz`]).toBeDefined();
+  const output = JSON.parse(strFromU8(entries[`${path}.json`]));
+  expect(output.PhaseEncodingDirection).toBe('j-');
+  expect(output.SliceEncodingDirection).toBe('k-');
+  expect(output.SliceTiming).toEqual([0.3, 0.2, 0.1, 0]);
+  expect(output.EchoTrainLength).toBe(16);
+  expect(output.InPlanePhaseEncodingDirectionDICOM).toBe('COL');
+  expect(output.PatientName).toBeUndefined();
+  expect(output.InstitutionName).toBeUndefined();
+  await page.screenshot({ path: testInfo.outputPath('reviewed-anatomical-desktop.png'), fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: testInfo.outputPath('reviewed-anatomical-phone.png'), fullPage: true });
+});
+
+test('classic DICOM phase cannot be relabelled as a magnitude acquisition', async ({ page }) => {
+  const phase = dicomSeries().map(file => {
+    const buffer = Buffer.from(file.buffer);
+    const imageType = Buffer.from('ORIGINAL\\PRIMARY\\M');
+    const location = buffer.indexOf(imageType);
+    expect(location).toBeGreaterThan(0);
+    Buffer.from('ORIGINAL\\PRIMARY\\P').copy(buffer, location);
+    return { ...file, buffer };
+  });
+  await page.goto('./');
+  await page.locator('#imageInput').setInputFiles(phase);
+  await reviewAnatomical(page);
+  const metadata = JSON.parse(await page.locator('#series1-metadata').inputValue());
+  expect(metadata.ImageType).toContain('P');
+  expect(metadata.ComplexImageComponent).toBeUndefined();
+  await page.locator('#runButton').click();
+  await expect(page.locator('#statusText')).toContainText('Only magnitude images are supported');
+  await expect(page.locator('#outputSection')).not.toHaveAttribute('open', '');
+});
+
 test('missing metadata prompts for correction and changes invalidate confirmation', async ({ page }) => {
   await page.goto('./');
   await page.locator('#imageInput').setInputFiles(dicomSeries());
@@ -202,6 +273,22 @@ test('cancelling input conversion discards late outputs and permits retry', asyn
   await expect(page.locator('#seriesRows tr')).toHaveCount(0);
   await page.locator('#retryButton').click();
   await expect(page.locator('#seriesRows tr')).toHaveCount(1, { timeout: 120000 });
+});
+
+test('automation reports missing and malformed explicit assignments clearly', async ({ page }) => {
+  await page.goto('./');
+  for (const assignments of [undefined, 'not-json', 'null', '[null]', '[{}]', '[{"type":"unknown"}]', '[]']) {
+    await page.locator('#neurodesk-input-transfer').setInputFiles(dicomSeries());
+    await page.evaluate(() => globalThis.neurodeskAutomation.dispatch('adopt', { role: 'dicom' }));
+    await page.evaluate(assignments => globalThis.neurodeskAutomation.dispatch('start', {
+      parameters: { subject: '01', session: '01', privacy: 'omit', assignments },
+    }), assignments);
+    await expect.poll(() => page.evaluate(async () => (await globalThis.neurodeskAutomation.dispatch('snapshot')).state), { timeout: 120000 }).toBe('failed');
+    const snapshot = await page.evaluate(() => globalThis.neurodeskAutomation.dispatch('snapshot'));
+    expect(snapshot.error.message).toBe('Supply one explicit assignment per converted acquisition.');
+    expect(snapshot.report).toBeUndefined();
+    await expect(page.evaluate(() => globalThis.neurodeskAutomation.dispatch('download', { artifactId: 'bids' }))).rejects.toThrow('unavailable');
+  }
 });
 
 test('automation requires explicit assignments and returns a downloadable BIDS artifact', async ({ page }) => {

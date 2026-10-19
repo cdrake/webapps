@@ -14,7 +14,7 @@ import {
 import { downloadFile } from '@neurodesk/webapp-components/file-io';
 import { registerAppAutomation } from '@neurodesk/webapp-components/automation';
 import { runDcm2niix } from '@neurodesk/runtime-support/dcm2niix-client';
-import { seriesFromOutputs, validateDataset } from './bids.js';
+import { SCAN_TYPES, seriesFromOutputs, validateDataset } from './bids.js';
 import { exportBids } from './export.js';
 import { examinationFiles, expandInputs } from './input.js';
 import { createSeriesReview } from './review.js';
@@ -281,10 +281,20 @@ const automation = registerAppAutomation({
   app: APP.id,
   operations: {
     'convert-bids': async ({ inputs, parameters, signal }) => {
+      const assignmentError = 'Supply one explicit assignment per converted acquisition.';
+      let assignments;
+      try {
+        assignments = JSON.parse(parameters.assignments);
+      } catch {
+        throw new Error(assignmentError);
+      }
+      if (!Array.isArray(assignments) || assignments.some(item =>
+        !item || Array.isArray(item) || typeof item !== 'object' || !SCAN_TYPES.includes(item.type))) {
+        throw new Error(assignmentError);
+      }
       await loadFiles(inputs.dicom, signal);
-      const assignments = JSON.parse(parameters.assignments);
-      if (!Array.isArray(assignments) || assignments.length !== series.length) {
-        throw new Error('Supply one explicit assignment per converted acquisition.');
+      if (assignments.length !== series.length) {
+        throw new Error(assignmentError);
       }
       assignments.forEach((assignment, index) => {
         const item = series[index];
