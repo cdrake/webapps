@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- @neurodesk/synthsr@0.6.20261019
+- @neurodesk/synthstrip@0.1.5
 - Updated dependencies [da2584b]
   - @neurodesk/synthsr@0.6.20261019
   - @neurodesk/synthstrip@0.1.5

@@ -1,5 +1,14 @@
 # dicom2vid
 
+## 0.5.20261019
+
+### Patch Changes
+
+- Updated dependencies [af2e8db]
+- Updated dependencies [b3404ec]
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/dicom2vid@0.5.20261019
+
 ## 0.5.20261018
 
 ### Patch Changes

@@ -1,5 +1,16 @@
 # @neurodesk/webapp-components
 
+## 0.16.3
+
+### Patch Changes
+
+- af2e8db: `takeHandoff` takes a `signal`: an abort stops the copy out of storage instead of
+  letting it run on in the background, and rejects with the signal's reason. White
+  matter lesions passes its load job's signal, so the footer × ends the copy of an
+  image sent from another app. `copiesInPieces` is exported and pinned to the user
+  agents Playwright's engines report.
+- b3404ec: Read only the NIfTI header when loading a White matter lesions image, avoiding a full-image allocation just to display and check its dimensions.
+
 ## 0.16.2
 
 ### Patch Changes

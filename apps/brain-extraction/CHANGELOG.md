@@ -4,6 +4,13 @@
 
 ### Patch Changes
 
+- Updated dependencies [af2e8db]
+- Updated dependencies [b3404ec]
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/synthsr@0.6.20261019
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/brain-extraction@0.4.20261019
 - 5ad652c: Load the shared compact BET WebAssembly kernel in the browser instead of a second full QSM bundle. Align its core pin with QSMbly while preserving the existing BET mask references and original image geometry.
 - Updated dependencies [5ad652c]
   - @neurodesk/brain-extraction@0.4.20261019

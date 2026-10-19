@@ -4,6 +4,11 @@
 
 ### Patch Changes
 
+- Updated dependencies [af2e8db]
+- Updated dependencies [b3404ec]
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/dicom2vid@0.5.20261019
 - ac0b4e9: Keep anatomical filenames free of direction entities after review edits, preserve slice-timing orientation and technical encoding metadata in privacy-filtered exports, and reject classic DICOM phase/real/imaginary images. Refuse anatomical exports with attached diffusion gradients until the user reassigns the scan or clears them. Report missing or malformed automation assignments clearly and classify the app as Vite with WebAssembly.
 - Updated dependencies [da2584b]
   - @neurodesk/runtime-support@0.9.2

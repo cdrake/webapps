@@ -4,6 +4,11 @@
 
 ### Patch Changes
 
+- Updated dependencies [af2e8db]
+- Updated dependencies [b3404ec]
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/dicom2vid@0.5.20261019
 - 894b3a1: The Open in White matter lesions check reads a gzipped NIfTI's header through the shared streaming decoder instead of a fixed 64 KB prefix, so a valid `.nii.gz` whose header lies past the first 64 KB of compressed data is no longer refused as uncheckable.
 - Updated dependencies [da2584b]
   - @neurodesk/runtime-support@0.9.2

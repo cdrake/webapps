@@ -2,6 +2,12 @@
 
 ## 0.11.20261019
 
+### Patch Changes
+
+- Updated dependencies [af2e8db]
+- Updated dependencies [b3404ec]
+  - @neurodesk/webapp-components@0.16.3
+
 ## 0.11.20261018
 
 ### Patch Changes
