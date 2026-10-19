@@ -2154,9 +2154,11 @@ fn dcsrch(
     // and f64::min. The infinite-value path depends on this.
     *stp = stp.max(stpmin);
     *stp = stp.min(stpmax);
-    if (s.brackt && (*stp <= s.stmin || *stp >= s.stmax))
-        || (s.brackt && s.stmax - s.stmin <= xtol * s.stmax)
-    {
+    // The test keeps the C form of dcsrch; older clippy asks for a shorter form.
+    #[allow(clippy::nonminimal_bool)]
+    let unusual = (s.brackt && (*stp <= s.stmin || *stp >= s.stmax))
+        || (s.brackt && s.stmax - s.stmin <= xtol * s.stmax);
+    if unusual {
         *stp = s.stx;
     }
     *task = Status::Fg;

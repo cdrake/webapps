@@ -5,12 +5,14 @@ isolated mode:
 
     python -I tools/oracle.py BIDS_DWI_PREFIX SKLEARN_GPR_ORIG OUT_DIR
 
-BIDS_DWI_PREFIX is the path of sub-107_dir-AP_dwi of ds005577 without an
-extension (the script reads .bvec and .bval). SKLEARN_GPR_ORIG is the unpatched
-scikit-learn 1.9.1 sklearn/gaussian_process/_gpr.py. The installed _gpr.py of
-the M0 environment sums the gradient over the targets first (the M0 patch); the
-fits use it as installed, because that code made the M0 reference data. The
-lml_grid fixture records the gradient of both files.
+BIDS_DWI_PREFIX is the path of sub-107_dir-AP_dwi of OpenNeuro ds005577 v1.0.0
+(CC0) without an extension (the script reads .bvec and .bval). SKLEARN_GPR_ORIG
+is the unpatched sklearn/gaussian_process/_gpr.py of the scikit-learn 1.9.1
+wheel. The installed _gpr.py must have tools/sklearn-gpr-sum-targets.patch
+applied: it sums the gradient over the targets first (the M0 patch). The fits
+use it as installed, because that code made the M0 reference data. The
+lml_grid fixture records the gradient of both files. The script stops when an
+input file has a SHA-256 other than the one of the M0 environment.
 
 Every fixture is smaller than 1 MB. Floats are Python repr (shortest round
 trip); inf and nan are the strings "inf", "-inf" and "nan".
@@ -45,6 +47,22 @@ def sha256(path):
         return hashlib.sha256(fh.read()).hexdigest()
 
 
+INSTALLED_GPR = os.path.join(
+    os.path.dirname(sklearn.__file__), "gaussian_process", "_gpr.py"
+)
+EXPECTED_SHA256 = {
+    PREFIX
+    + ".bvec": "6f8270c6568dd1b6e781bfb746ec221a2e4e484be0950a4a7c4deaed35303794",
+    PREFIX
+    + ".bval": "da890b74d0a531fda05d164ad12600aec9507cf42854bc04303b0f29b62f70f1",
+    ORIG: "d135acc1e3b186f0b0829a6fe38ec1877d104f9b997edafb330a21626bdd5f4d",
+    INSTALLED_GPR: "1cc5c15e120b5b1ae5707389e92d93e8ad21c5bf4d4d280bf6ecfa3926dae9da",
+}
+for _path, _want in EXPECTED_SHA256.items():
+    _got = sha256(_path)
+    if _got != _want:
+        sys.exit(f"{_path}: SHA-256 {_got}, expected {_want}")
+
 META = {
     "numpy": np.__version__,
     "scipy": scipy.__version__,
@@ -53,9 +71,7 @@ META = {
     "nifreeze_commit": "3bcfb00df1e008b4dfeb59c0d63717c335ba0d1e",
     "oracle_sha256": sha256(__file__),
     "sklearn_gpr_orig_sha256": sha256(ORIG),
-    "sklearn_gpr_installed_sha256": sha256(
-        os.path.join(os.path.dirname(sklearn.__file__), "gaussian_process", "_gpr.py")
-    ),
+    "sklearn_gpr_installed_sha256": sha256(INSTALLED_GPR),
 }
 
 

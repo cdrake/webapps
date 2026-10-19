@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
+// Ports numpy code: Copyright (c) 2005-2025, NumPy Developers (LICENSE-NUMPY).
 //! numpy's summation order for a reduction along a contiguous axis
 //! (`pairwise_sum` in numpy/_core/src/umath/loops_utils.h.src, numpy 2.3.5).
 //!

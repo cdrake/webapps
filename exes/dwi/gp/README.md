@@ -9,9 +9,10 @@ It ports the parts of three projects that NiFreeze 3bcfb00 (`--models gp`) uses:
 | NiFreeze 3bcfb00 `model/_dipy.py`: `GaussianProcessModel` defaults, `GP_JITTER`; `model/gpr.py`: `DiffusionGPR._constrained_optimization` | Apache-2.0 | `src/gpr.rs` |
 | scikit-learn 1.9.1 `GaussianProcessRegressor` (`fit`, `log_marginal_likelihood`, `predict` mean), `WhiteKernel`, `Sum` | BSD-3-Clause ([LICENSE-SCIKIT-LEARN](LICENSE-SCIKIT-LEARN)) | `src/likelihood.rs`, `src/gpr.rs`, `src/kernel.rs` |
 | scipy 1.18.1 `optimize/src/lbfgsb.c` (L-BFGS-B 3.0) and the `_minimize_lbfgsb` driver | BSD-3-Clause ([LICENSE-SCIPY](LICENSE-SCIPY)) | `src/lbfgsb.rs` |
-| numpy 2.3.5 `pairwise_sum` (the order of `np.mean`, `np.std`, `.sum()`) | BSD-3-Clause | `src/numpy.rs` |
+| numpy 2.3.5 `pairwise_sum` (the order of `np.mean`, `np.std`, `.sum()`) | BSD-3-Clause ([LICENSE-NUMPY](LICENSE-NUMPY), numpy's own notice; the notices of the libraries that numpy bundles do not apply) | `src/numpy.rs` |
 
 Each source file has an SPDX line for the code that it ports.
+[LICENSE-NIFREEZE](LICENSE-NIFREEZE) starts with the NiPreps copyright notice of the NiFreeze source files.
 [LICENSE-SCIPY](LICENSE-SCIPY) also gives the L-BFGS-B 3.0 authors and the papers that they ask users to cite.
 
 ## The model
@@ -49,6 +50,11 @@ The working memory is O(n^2 + T); the normalised targets (n x T) are the only la
 `tests/memory.rs` runs one evaluation of each form, a full fit and a prediction at the M0 size (n = 89, T = 161668).
 The peak resident size is 257 MiB, of which the targets are 137 MiB.
 In a release build the test takes 1.7 s; one M0 `fit_predict` in Python took 5.5 s.
+In a debug build (`cargo test`) it takes about 40-70 s, the longest test of the workspace.
+The test reads `VmHWM` from `/proc/self/status`; on a system without it, the test does not check the peak.
+
+At the M0 size, `Form::PerTarget` is about 200 times slower than `Form::Gram`.
+In a review on the M0 data (held-out volume 7, release build), one fit took 0.3 s with `Form::Gram`, 61 s with `Form::PerTarget` and 8.2 s in scikit-learn.
 
 ## Agreement with scikit-learn and scipy
 
@@ -103,22 +109,29 @@ The port follows the operation order of the sources. These differences remain:
 - `exp`, `log`, `acos` and `pow` come from the `libm` crate, so the native and WebAssembly builds agree. On the fixtures, exp and log give numpy's bits for theta0 and the bounds (tested).
 - `cauchy` keeps the C test `nbreak == n`, which a 0-based `nbreak` never meets. The Fortran's 1-based test could be true. This is scipy's behaviour, so it is kept.
 - The driver calls the objective directly instead of the reverse-communication `task` protocol. The state transitions, the evaluation memo (a new evaluation only when x changes) and the counts are scipy's.
+- When x becomes NaN, scipy's `ScalarFunction` and `MemoizeJac` fail their `x == self.x` test and call the objective twice for each point. The memo here calls it once. The counts, iterations, x and message are the same; only an objective with side effects can see the difference. The GP objective never returns NaN.
+- `fit` refuses NaN and infinite values in X and y with `FitError::NonFinite`, where scikit-learn raises `ValueError`.
 - Not ported: restarts (`n_restarts_optimizer > 0`), `return_std` and `return_cov`, other kernels (exponential, multishell), `hess_inv`, and a fit where every variable is fixed by its bounds (an error here).
 - scikit-learn warns when the optimizer does not converge and when a hyperparameter is near a bound. The port does not warn. `Fit::result` holds the status and message, and `Fit::theta` and `Fit::bounds_log` show a bound.
 
 ## Regenerate the fixtures
 
-Use the NiFreeze environment of the M0 runs (NiFreeze 3bcfb00, scikit-learn 1.9.1 with the M0 gradient patch, scipy 1.18.1, numpy 2.3.5).
-The fits run the installed (patched) `_gpr.py`, because that code made the M0 reference data.
-`lml_grid` also loads the unpatched file for scikit-learn's original gradient.
+The inputs:
+
+- A Python environment with NiFreeze 3bcfb00, scikit-learn 1.9.1, scipy 1.18.1 and numpy 2.3.5 (the M0 environment).
+- `tools/sklearn-gpr-sum-targets.patch`, the M0 gradient patch, applied to the installed scikit-learn: `patch -d "$SITE_PACKAGES" -p1 < tools/sklearn-gpr-sum-targets.patch`. The fits run the installed (patched) `_gpr.py`, because that code made the M0 reference data.
+- `$SKLEARN_GPR_ORIG`: a copy of the unpatched `sklearn/gaussian_process/_gpr.py` from the scikit-learn 1.9.1 wheel. `lml_grid` loads it for scikit-learn's original gradient.
+- `$DS005577`: a directory with `sub-107_dir-AP_dwi.bvec` and `.bval` of OpenNeuro ds005577 v1.0.0 (CC0), `sub-107/dwi/`.
 
 ```bash
-TMPDIR=/var/tmp/dwi-tmp OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
-  /var/tmp/dwi-hmc/nifreeze-venv/bin/python -I tools/oracle.py \
-  /var/tmp/dwi-data/ds005577/sub-107_dir-AP_dwi \
-  /var/tmp/dwi-hmc/sklearn-_gpr.py.orig \
+OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
+  "$VENV/bin/python" -I tools/oracle.py \
+  "$DS005577/sub-107_dir-AP_dwi" \
+  "$SKLEARN_GPR_ORIG" \
   tests/fixtures
 ```
 
+The oracle stops when the bvec, the bval or one of the two `_gpr.py` files has a SHA-256 other than the M0 one.
 Each fixture records the versions and the SHA-256 of the oracle and of both `_gpr.py` files.
+After a change to the oracle, run it again: only `meta.oracle_sha256` must change.
 Rust reads them with `serde_json`'s `float_roundtrip` feature; without it, the parser can change the last bit.

@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause AND Apache-2.0
+// Ports scikit-learn code (LICENSE-SCIKIT-LEARN) and NiFreeze code:
+// Copyright The NiPreps Developers <nipreps@gmail.com> (LICENSE-NIFREEZE).
 //! `GaussianProcessRegressor.fit` and `predict` of scikit-learn 1.9.1
 //! (`_gpr.py:233-368,444-457`, BSD-3-Clause) with the settings of NiFreeze 3bcfb00's
 //! `GaussianProcessModel.fit` and `DiffusionGPR` (`nifreeze/model/_dipy.py:115-180,
@@ -57,6 +59,9 @@ pub struct Evaluation {
 pub enum FitError {
     /// X has no rows, or y does not hold a whole number of targets of n samples.
     Shape,
+    /// X or y holds NaN or an infinite value. scikit-learn's `validate_data` raises
+    /// `ValueError` before the fit (`_gpr.py:256-264`).
+    NonFinite,
     /// The optimizer refused its input.
     Optimizer(lbfgsb::Error),
     /// K + alpha I at the fitted theta is not positive definite; scikit-learn raises
@@ -68,6 +73,7 @@ impl std::fmt::Display for FitError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             FitError::Shape => f.write_str("X and y do not agree in shape"),
+            FitError::NonFinite => f.write_str("X or y contains NaN or infinity"),
             FitError::Optimizer(e) => write!(f, "optimizer: {e}"),
             FitError::NotPositiveDefinite => {
                 f.write_str("the kernel matrix at the fitted theta is not positive definite")
@@ -109,6 +115,11 @@ impl GaussianProcess {
         let n = x.len();
         if n == 0 || y.is_empty() || y.len() % n != 0 {
             return Err(FitError::Shape);
+        }
+        if x.iter().flatten().any(|v| !v.is_finite())
+            || y.iter().any(|&v| !Into::<f64>::into(v).is_finite())
+        {
+            return Err(FitError::NonFinite);
         }
         let targets = Targets::normalize(y, n);
         let angles = pairwise_angles(x, x);

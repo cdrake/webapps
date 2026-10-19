@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0 AND BSD-3-Clause
+// Ports NiFreeze code: Copyright The NiPreps Developers <nipreps@gmail.com>
+// (LICENSE-NIFREEZE), and scikit-learn code (LICENSE-SCIKIT-LEARN).
 //! NiFreeze 3bcfb00's GP kernel: `SphericalKriging(beta_a, beta_l) +
 //! WhiteKernel(noise_level)` (`nifreeze/model/_dipy.py:175-180`).
 //!

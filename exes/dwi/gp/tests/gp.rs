@@ -3,7 +3,8 @@
 //!
 //! Two kinds of test:
 //! * replay: the lml and gradient at every theta that scikit-learn's optimizer
-//!   visited, and on a grid of theta (lml_grid). Tolerance 1e-10 relative.
+//!   visited, and on a grid of theta (lml_grid). Tolerance 1e-10: relative for the
+//!   lml; for the gradient, relative where |g| >= 1 and absolute below (grad_err).
 //! * path: the full fit. Each evaluation must follow scikit-learn's theta sequence,
 //!   and the fitted hyperparameters must agree to 1e-6 relative.
 
@@ -11,7 +12,7 @@ mod common;
 
 use common::{load, num, nums, rel, rel_inf, rel_vec, rows3, targets, vec3};
 use dwi_gp::kernel::pairwise_angles;
-use dwi_gp::{Form, GaussianProcess, Likelihood, Targets};
+use dwi_gp::{FitError, Form, GaussianProcess, Likelihood, Targets};
 use serde_json::Value;
 
 const FORMS: [Form; 2] = [Form::Gram, Form::PerTarget];
@@ -255,6 +256,21 @@ fn normalize_edge() {
         assert_eq!(fit.targets.std[5], 1.0);
         let zeros = nums(&fx["y_train_column5"]);
         assert_eq!(fit.targets.target(5), zeros.as_slice());
+    }
+}
+
+#[test]
+fn non_finite_input_is_refused() {
+    // scikit-learn's validate_data raises ValueError for NaN or inf in X or y.
+    let x = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
+    let gp = GaussianProcess::default();
+    for bad in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        let y = [1.0, 2.0, bad, 4.0, 5.0, 6.0];
+        assert_eq!(gp.fit(&x, &y).unwrap_err(), FitError::NonFinite);
+        let mut xb = x;
+        xb[1][2] = bad;
+        let y = [1.0, 2.0, 3.0];
+        assert_eq!(gp.fit(&xb, &y).unwrap_err(), FitError::NonFinite);
     }
 }
 

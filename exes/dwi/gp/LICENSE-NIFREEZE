@@ -1,3 +1,13 @@
+NiFreeze (https://github.com/nipreps/nifreeze), commit 3bcfb00.
+src/kernel.rs and src/gpr.rs port nifreeze/model/gpr.py and
+nifreeze/model/_dipy.py, which carry this notice:
+
+    Copyright The NiPreps Developers <nipreps@gmail.com>
+
+    Licensed under the Apache License, Version 2.0 (the "License").
+
+The licence text follows.
+
                                  Apache License
                            Version 2.0, January 2004
                         http://www.apache.org/licenses/
