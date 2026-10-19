@@ -24,6 +24,55 @@ export async function prepareWorkflow(id) {
   return { env: { NEURODESK_COMPUTE_ORIGINS: compute.origin }, context: { compute }, close: () => compute.close() };
 }
 
+// DICOM View sends its image to White matter lesions in the same window, across the
+// desktop's own origin, partition and isolation headers; the receiver loads it, uses the
+// handoff up and starts no segmentation.
+async function verifyLesionHandoff(page, filename) {
+  await page.context().addInitScript(() => {
+    if (!location.pathname.includes('/white-matter-lesions/')) return;
+    const Native = window.Worker;
+    window.startedWorkers = [];
+    window.Worker = class extends Native {
+      constructor(url, options) {
+        super(url, options);
+        window.startedWorkers.push(String(url));
+      }
+    };
+  });
+  const send = page.getByRole('button', { name: 'Open in White matter lesions', exact: true });
+  await expect(send).toBeEnabled({ timeout: 60000 });
+  await send.click();
+  await page.waitForURL(/\/white-matter-lesions\/$/, { timeout: 60000 });
+  const loaded = `Loaded ${filename} from DICOM View`;
+  await expect(page.locator('#statusText')).toHaveText(loaded, { timeout: 60000 });
+  await expect(page.locator('#runButton')).toBeEnabled();
+  await page.waitForTimeout(1500);
+  await expect(page.locator('#statusText'), 'nothing started after the load').toHaveText(loaded);
+  await expect(page.locator('#cancelButton')).toBeHidden();
+  const after = await page.evaluate(async () => {
+    const database = await new Promise((resolve, reject) => {
+      const request = indexedDB.open('neurodesk-handoff');
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    const keys = await new Promise(resolve => {
+      database.transaction('entries').objectStore('entries').getAllKeys().onsuccess = ({ target }) => resolve(target.result);
+    });
+    database.close();
+    return {
+      keys,
+      secrets: Object.keys(sessionStorage).filter(key => key.startsWith('neurodesk-handoff:')),
+      segmentation: window.startedWorkers.filter(url => /\/worker-[^/]*\.js/.test(url)),
+      isolated: window.crossOriginIsolated,
+    };
+  });
+  assert.deepEqual(after.keys, [], 'the handoff entry is deleted');
+  assert.deepEqual(after.secrets, [], 'the handoff secret is used up');
+  assert.deepEqual(after.segmentation, [], 'no segmentation worker started');
+  assert.equal(after.isolated, true);
+  return { url: page.url(), status: loaded };
+}
+
 export async function verifyWorkflow(id, page, { root, resources, desktop, compute }) {
   const fixture = join(root, 'exes/synthseg/test/fixtures/small.nii.gz');
   const download = async selector => {
@@ -376,7 +425,7 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     await page.locator('#protocolButton').click();
     await expect(page.locator('#statusText')).toHaveText('1 acquisition summarised', { timeout: 600000 });
     await expect(page.locator('#protocolSummary')).toContainText('RepetitionTime');
-    return image;
+    return { image, handoff: await verifyLesionHandoff(page, image.filename) };
   }
   if (id === 'degibbs') {
     await expect(page.locator('#runButton')).toBeEnabled({ timeout: 60000 });

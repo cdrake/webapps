@@ -50,20 +50,21 @@ async function fixture(t) {
   return root;
 }
 
-for (const app of [null, 'dicom2vid']) {
+for (const app of [null, 'dicom2vid', 'zarro,dicom2vid']) {
   test(`offline ${app || 'suite'} assembly includes shared fonts and their licence`, async t => {
     const root = await fixture(t);
     const destination = join(root, 'offline');
     await run(process.execPath, [join(root, 'scripts/desktop/assemble.mjs'), '--out', destination, ...(app ? ['--app', app] : [])]);
     const manifest = JSON.parse(await readFile(join(destination, 'manifest.json')));
-    assert.deepEqual(manifest.apps.map(entry => entry.id).sort(), app ? [app] : ['dicom2vid', 'zarro']);
-    assert.equal(manifest.defaultApp, app);
+    const ids = app ? app.split(',') : ['dicom2vid', 'zarro'];
+    assert.deepEqual(manifest.apps.map(entry => entry.id).sort(), ids.sort());
+    assert.equal(manifest.defaultApp, app && ids.length === 1 ? app : null);
     for (const path of ['fonts/inter.woff2', 'fonts/OFL.txt', '_runtime/worker.js', 'shell-adapters/components/core/dom.js']) {
       const source = join(root, 'dist', path);
       assert.deepEqual(await readFile(join(destination, 'site', path)), await readFile(source));
       assert.equal(manifest.files[`site/${path}`].sha256, await fileHash(source));
     }
-    for (const excluded of ['unselected', ...(app ? ['zarro'] : [])]) {
+    for (const excluded of ['unselected', ...(ids.includes('zarro') ? [] : ['zarro'])]) {
       await assert.rejects(readFile(join(destination, 'site', excluded, 'index.html')), { code: 'ENOENT' });
     }
     await verifyBundle(destination);
