@@ -67,6 +67,8 @@ export interface NiftiFromDataOptions {
 export function sameVoxelGrid(left: Pick<NiftiHeader, 'dims' | 'affine'>, right: Pick<NiftiHeader, 'dims' | 'affine'>): boolean;
 export function sameNiftiGrid(first: NiftiBytes, second: NiftiBytes, toleranceMm?: number): boolean;
 export function parseNiftiHeader(headerBuffer: NiftiBytes): NiftiHeader;
+/** The header of a NIfTI file from its first 352 bytes, decompressing only those for .nii.gz. */
+export function readNiftiFileHeader(file: Blob): Promise<NiftiHeader>;
 export function extractAffine(view: NiftiBytes): NiftiAffine;
 export function isGzipped(data: NiftiBytes): boolean;
 export function isValidNifti1(data: NiftiBytes): boolean;

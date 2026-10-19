@@ -215,14 +215,7 @@ export function parseNiftiVolume(bufferLike, options = {}) {
  * and the number of volumes.
  */
 export async function describeNiftiFile(file) {
-  const head = await file.slice(0, 352).arrayBuffer();
-  let decoded = head;
-  if (isGzipped(head)) {
-    decoded = typeof DecompressionStream === 'function' && typeof file.stream === 'function'
-      ? await readStreamPrefix(file.stream().pipeThrough(new DecompressionStream('gzip')), 352)
-      : await decodeNiftiBuffer(await file.arrayBuffer(), { maxBytes: 352 });
-  }
-  const header = parseNiftiHeader(decoded);
+  const header = await readNiftiFileHeader(file);
   const rank = Math.max(1, Math.min(7, header.dims[0]));
   const spatial = header.dims.slice(1, Math.min(rank, 3) + 1);
   const dimensionality = spatial.length === 3 && spatial[2] === 1 ? 2 : spatial.length;
@@ -235,6 +228,16 @@ export async function describeNiftiFile(file) {
     dimensionality,
     frames,
   };
+}
+
+/** The header of a NIfTI file from its first 352 bytes, decompressing only those for .nii.gz. */
+export async function readNiftiFileHeader(file) {
+  const head = await file.slice(0, 352).arrayBuffer();
+  if (!isGzipped(head)) return parseNiftiHeader(head);
+  const decoded = typeof DecompressionStream === 'function' && typeof file.stream === 'function'
+    ? await readStreamPrefix(file.stream().pipeThrough(new DecompressionStream('gzip')), 352)
+    : await decodeNiftiBuffer(await file.arrayBuffer(), { maxBytes: 352 });
+  return parseNiftiHeader(decoded);
 }
 
 export function extractNiftiHeader(bufferLike) {
