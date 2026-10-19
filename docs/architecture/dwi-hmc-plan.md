@@ -1,6 +1,6 @@
 # HMC port and validation plan
 
-Plan, 18 October 2026, for step 6 of the [diffusion design](dwi-microstructure-design.md). Readers checked NiFreeze `main` 3bcfb00 and 0.1.0, QSIPrep 26.1.1 SHORELine, DIPY and the repository's ANTs WebAssembly build. A skeptic verified each report against the cited source lines. File:line citations refer to those sources unless a path starts with a repository folder. Nothing here is implemented yet. Section 8 records the decisions (Q50-Q55). Section 9 gives the M0 reference results, which replace the estimates of section 6.
+Plan, 18 October 2026, for step 6 of the [diffusion design](dwi-microstructure-design.md). Readers checked NiFreeze `main` 3bcfb00 and 0.1.0, QSIPrep 26.1.1 SHORELine, DIPY and the repository's ANTs WebAssembly build. A skeptic verified each report against the cited source lines. File:line citations refer to those sources unless a path starts with a repository folder. Nothing here is implemented yet. Section 8 records the decisions (Q50-Q55). Section 9 gives the M0 reference results, which replace the estimates of section 6. The work items are children of the tracking issue [#467](https://github.com/neurodesk/webapps/issues/467); [#468](https://github.com/neurodesk/webapps/issues/468) gives a suggested order.
 
 ## 1. Crate layout (`exes/dwi`)
 
@@ -152,7 +152,7 @@ Replace the WASM numbers with the milestone M3 benchmark.
 
 ## 7. Milestones
 
-1. M0: reference runs, kept intermediates and masks, pinned on Hugging Face. Status: NiFreeze runs done; QSIPrep r1 and the repeats e1-e3 done; the folder `hmc/reference/` is ready, the upload and its revision are pending (section 9).
+1. M0: reference runs, kept intermediates and masks, pinned on Hugging Face. Status: NiFreeze runs done; QSIPrep r1 and the repeats e1-e3 done; the folder `hmc/reference/` is ready; the upload and its revision are pending ([#409](https://github.com/neurodesk/webapps/issues/409), which waits for Hugging Face write access, [#374](https://github.com/neurodesk/webapps/issues/374); section 9).
 2. M1: `hmc` motion decomposition, bvec rotation and TSV, tested with the reference `.mat` files.
 3. M2: `hmc-registration` with generic argv, `--float 1` only (no 3DDouble, Q53). Replay the reference inputs and apply the spread rules of section 5 (GP: the seed spread; SHORELine: the e1-e3 repeat spread).
 4. M3: NiFreeze `trivial` end to end, Node CLI, benchmark.
@@ -171,7 +171,7 @@ Replace the WASM numbers with the milestone M3 benchmark.
 4. What is the browser mask source? SynthStrip is not ported.
    **Decided (Q52):** MindGrab (model `mindgrab`) of the mean b0 by default; the user can upload a mask. The reference runs use a MindGrab mask made with `@neurodesk/node-drivers/mindgrab`, so the port can use the same mask. QSIPrep cannot take it; it uses its own SynthStrip mask.
 5. Can NiFreeze use `--float 1` if a measurement shows it within the gate? Then 3DDouble is not necessary.
-   **Decided (Q53):** measure `--float 1` against double before anyone builds 3DDouble. Measured (section 9): within the fixed gate on b0→b0, not within it for GP (7/90 volumes), but smaller than NiFreeze's own seed noise.
+   **First step (Q53):** measure `--float 1` against double before anyone builds 3DDouble. Measured (section 9): within the fixed gate on b0→b0, not within it for GP (7/90 volumes), but smaller than NiFreeze's own seed noise.
    **Decided (Q53, 2026-10-19):** the WASM registration (`--float 1`) is not held to the fixed 0.2 mm / 0.2° gate. It is compared against the seed-to-seed spread of native double NiFreeze (gp against gp-seed1235): a WASM result passes when its difference from native double with the same seed is within that spread. Section 5 states the exact rule and the limits; native `--float 1` passes on 90/90 volumes. No 3DDouble build is needed. The fixed tolerances stay for the deterministic parts (motion decomposition, bvec rotation, SHORE and GP predictions).
 6. Is a QSIPrep run on the slab acceptable, and which flag skips the anatomical input?
    **Decided (Q54):** QSIPrep 26.1.1 SHORELine on ds005577 (whole brain, not the slab), three repeats. The flag is `--anat-modality none` (section 5).
@@ -181,12 +181,12 @@ Replace the WASM numbers with the milestone M3 benchmark.
 
 ## 9. M0 results
 
-Measured 18-19 October 2026. Data: Hugging Face dataset `neurodeskorg/webapps`, path `hmc/reference/` (local folder ready with NiFreeze, QSIPrep r1 and e1-e3; upload and revision pending). Its README gives the commands, versions, patches and the purpose of each file. Use that path in the M1-M5 manifests.
+Measured 18-19 October 2026. Data: Hugging Face dataset `neurodeskorg/webapps`, path `hmc/reference/` (local folder ready with NiFreeze, QSIPrep r1 and e1-e3; upload and revision pending, [#409](https://github.com/neurodesk/webapps/issues/409) and [#374](https://github.com/neurodesk/webapps/issues/374)). Its README gives the commands, versions, patches and the purpose of each file. Use that path in the M1-M5 manifests.
 
 ### Input and environment
 
 - OpenNeuro ds005577 v1.0.0 sub-107 AP DWI, CC0 (read from `dataset_description.json`). The NIfTI, bval and bvec are copied unchanged; NIfTI SHA-256 `06d5a733005a9e463f1ca6b581d0a8725378b60967c23dd63d49cc04362e83b9`. The JSON sidecar copy omits six site and time fields (AcquisitionTime, DeviceSerialNumber, InstitutionAddress, InstitutionName, InstitutionalDepartmentName, StationName), as `noddi/examples/` does. QSIPrep copies these fields into its output sidecar (`qsiprep-*/out/*_desc-preproc_dwi.json`, at the top level and in `SourceMetadata`); the four packed copies omit them too. All other bytes are unchanged; the README and `index.json` give the original SHA-256 of each edited sidecar. The runs read the original sidecar; none of the six fields affects HMC. The NIfTI header `descrip` of the input (and of the mean b0, which copies its header) keeps the acquisition time (`Time=` item): the input is the public CC0 original, copied unchanged.
-- Licences of the folder: input data CC0; QSIPrep outputs BSD-3-Clause; NiFreeze patch Apache-2.0; scikit-learn patch BSD-3-Clause; scripts Apache-2.0, as `exes/dwi` (the repository has no single licence, `LICENSES.md`).
+- Licences of the folder (the README puts each file in exactly one row): input data CC0; MindGrab mask MIT (the licence of MindGrab); QSIPrep outputs BSD-3-Clause; NiFreeze and ANTs outputs Apache-2.0; NiFreeze patch Apache-2.0; scikit-learn patch BSD-3-Clause; the scripts and the files that they wrote (analysis tables, facts files, mean b0, motion TSVs, README) Apache-2.0, as `exes/dwi` (the repository has no single licence, `LICENSES.md`).
 - 120 × 120 × 75 × 101, 2 mm, int16. `scl_slope` and `scl_inter` are NaN, so there is no scaling.
 - 11 b0 volumes (0, 10, …, 100) under both b0 rules, 30 × b1000 and 60 × b3000. The shells alternate in time, one volume every 3.2 s.
 - NiFreeze 3bcfb00, Python 3.12.13, nipype 1.12.0, nitransforms 25.1.0, numpy 2.3.5, scipy 1.18.1, scikit-learn 1.9.1.
