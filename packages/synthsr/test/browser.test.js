@@ -35,6 +35,7 @@ test('a software or undersized WebGPU adapter sends SynthSR to WASM', () => {
   assert.equal(chooseBrowserBackend(swiftshader), 'wasm');
   assert.equal(chooseBrowserBackend({ isFallbackAdapter: true, info: {}, limits: roomy }, shape), 'wasm');
   assert.equal(chooseBrowserBackend({ info: { isFallbackAdapter: false }, limits: { ...roomy, maxStorageBufferBindingSize: largest - 1 } }, shape), 'wasm');
+  assert.equal(chooseBrowserBackend({ info: { isFallbackAdapter: false }, limits: { ...roomy, maxBufferSize: largest - 1 } }, shape), 'wasm');
   assert.equal(chooseBrowserBackend({ info: { isFallbackAdapter: false }, limits: { ...roomy, maxBufferSize: largest } }, shape), 'webgpu');
   assert.equal(chooseBrowserBackend({ info: { isFallbackAdapter: false }, limits: roomy }), 'webgpu');
 });
