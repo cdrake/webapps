@@ -71,7 +71,7 @@ pub struct ClipReport {
 /// NiFreeze's `ClippingValueError` cases, plus NaN input.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum ClipError {
-    /// The data length is not the product of the shape.
+    /// The shape has a zero extent, its product overflows, or the data length differs from it.
     Shape { len: usize, shape: [usize; 3] },
     /// The volume holds a NaN. NiFreeze also fails on it (its minimum is NaN, so the range is
     /// degenerate), but only after writing a float input in place; this port refuses before
@@ -270,8 +270,14 @@ fn clip_real<F: Real>(
     shape: [usize; 3],
     input: InputKind,
 ) -> Result<ClipReport, ClipError> {
-    let len = shape.iter().product::<usize>();
-    if len != data.len() {
+    let len = shape.iter().try_fold(1usize, |len, &axis| {
+        if axis == 0 {
+            None
+        } else {
+            len.checked_mul(axis)
+        }
+    });
+    if len != Some(data.len()) {
         return Err(ClipError::Shape {
             len: data.len(),
             shape,

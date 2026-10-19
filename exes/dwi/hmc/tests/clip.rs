@@ -214,3 +214,30 @@ fn refuses_nan_and_bad_shapes_without_writing() {
         Err(ClipError::EmptySelection)
     );
 }
+
+#[test]
+fn refuses_empty_and_overflowing_shapes_without_writing() {
+    for shape in [
+        [0, 1, 1],
+        [1, 0, 1],
+        [1, 1, 0],
+        [usize::MAX, 2, 1],
+        [usize::MAX, 2, 0],
+        [1usize << (usize::BITS - 1), 2, 1],
+    ] {
+        let expected = ClipError::Shape { len: 0, shape };
+        assert_eq!(advanced_clip::<f32>(&[], shape), Err(expected));
+        let mut empty = [];
+        assert_eq!(
+            advanced_clip_in_place::<f64>(&mut empty, shape),
+            Err(expected)
+        );
+    }
+    let mut data = [1.0_f64, 2.0];
+    let shape = [usize::MAX, 2, 0];
+    assert_eq!(
+        advanced_clip_in_place(&mut data, shape),
+        Err(ClipError::Shape { len: 2, shape })
+    );
+    assert_eq!(data, [1.0, 2.0]);
+}
