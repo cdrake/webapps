@@ -58,7 +58,7 @@ fn no_buffer_of_n_by_n_by_targets() {
     assert!(((gram.0 - per.0) / per.0).abs() < 1e-10);
     // One full fit and prediction at this size, with the default (Gram) form.
     let fit = GaussianProcess::default().fit(&x, &y).unwrap();
-    let pred = fit.predict(&[x[7]]);
+    let pred = fit.predict(&[x[7]]).unwrap();
     assert_eq!(pred.len(), T);
     let after = peak_kib();
     if let (Some(b), Some(a)) = (before, after) {

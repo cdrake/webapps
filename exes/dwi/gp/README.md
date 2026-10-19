@@ -8,12 +8,12 @@ It ports the parts of three projects that NiFreeze 3bcfb00 (`--models gp`) uses:
 | NiFreeze 3bcfb00 `model/gpr.py`: `SphericalKriging`, `spherical_covariance`, `compute_pairwise_angles`, `BOUNDS_A`, `BOUNDS_LAMBDA`, `THETA_EPSILON` | Apache-2.0 ([LICENSE-NIFREEZE](LICENSE-NIFREEZE)) | `src/kernel.rs` |
 | NiFreeze 3bcfb00 `model/_dipy.py`: `GaussianProcessModel` defaults, `GP_JITTER`; `model/gpr.py`: `DiffusionGPR._constrained_optimization` | Apache-2.0 | `src/gpr.rs` |
 | scikit-learn 1.9.1 `GaussianProcessRegressor` (`fit`, `log_marginal_likelihood`, `predict` mean), `WhiteKernel`, `Sum` | BSD-3-Clause ([LICENSE-SCIKIT-LEARN](LICENSE-SCIKIT-LEARN)) | `src/likelihood.rs`, `src/gpr.rs`, `src/kernel.rs` |
-| scipy 1.18.1 `optimize/src/lbfgsb.c` (L-BFGS-B 3.0) and the `_minimize_lbfgsb` driver | BSD-3-Clause ([LICENSE-SCIPY](LICENSE-SCIPY)) | `src/lbfgsb.rs` |
+| scipy 1.18.1 `optimize/src/lbfgsb.c` (L-BFGS-B 3.0) and the `_minimize_lbfgsb` driver | BSD-3-Clause and MIT ([LICENSE-SCIPY](LICENSE-SCIPY)) | `src/lbfgsb.rs` |
 | numpy 2.3.5 `pairwise_sum` (the order of `np.mean`, `np.std`, `.sum()`) | BSD-3-Clause ([LICENSE-NUMPY](LICENSE-NUMPY), numpy's own notice; the notices of the libraries that numpy bundles do not apply) | `src/numpy.rs` |
 
 Each source file has an SPDX line for the code that it ports.
 [LICENSE-NIFREEZE](LICENSE-NIFREEZE) starts with the NiPreps copyright notice of the NiFreeze source files.
-[LICENSE-SCIPY](LICENSE-SCIPY) also gives the L-BFGS-B 3.0 authors and the papers that they ask users to cite.
+[LICENSE-SCIPY](LICENSE-SCIPY) also retains David M. Cooke's MIT notice for the Python wrapper and gives the L-BFGS-B 3.0 authors and the papers that they ask users to cite.
 
 ## The model
 
@@ -31,7 +31,7 @@ For each held-out volume, NiFreeze fits one GP to the other volumes and predicts
 use dwi_gp::GaussianProcess;
 // x: n b-vectors; y: target major (each voxel's n samples are contiguous), i16 or f64.
 let fit = GaussianProcess::default().fit(&x, &y)?;
-let mean = fit.predict(&[held_out_bvec]); // one value per target
+let mean = fit.predict(&[held_out_bvec])?; // one value per target
 ```
 
 ## Memory
@@ -110,7 +110,7 @@ The port follows the operation order of the sources. These differences remain:
 - `cauchy` keeps the C test `nbreak == n`, which a 0-based `nbreak` never meets. The Fortran's 1-based test could be true. This is scipy's behaviour, so it is kept.
 - The driver calls the objective directly instead of the reverse-communication `task` protocol. The state transitions, the evaluation memo (a new evaluation only when x changes) and the counts are scipy's.
 - When x becomes NaN, scipy's `ScalarFunction` and `MemoizeJac` fail their `x == self.x` test and call the objective twice for each point. The memo here calls it once. The counts, iterations, x and message are the same; only an objective with side effects can see the difference. The GP objective never returns NaN.
-- `fit` refuses NaN and infinite values in X and y with `FitError::NonFinite`, where scikit-learn raises `ValueError`.
+- `fit` refuses NaN and infinite values in X and y, and `predict` refuses them in query directions, with `FitError::NonFinite`, where scikit-learn raises `ValueError`.
 - Not ported: restarts (`n_restarts_optimizer > 0`), `return_std` and `return_cov`, other kernels (exponential, multishell), `hess_inv`, and a fit where every variable is fixed by its bounds (an error here).
 - scikit-learn warns when the optimizer does not converge and when a hyperparameter is near a bound. The port does not warn. `Fit::result` holds the status and message, and `Fit::theta` and `Fit::bounds_log` show a bound.
 

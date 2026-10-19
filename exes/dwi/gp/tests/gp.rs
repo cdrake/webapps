@@ -184,7 +184,7 @@ fn path(name: &str, form: Form) -> dwi_gp::Fit {
         &[fit.params().a, fit.params().lambda, fit.params().sigma2],
         &nums(&fx["fitted"]["params"]),
     );
-    let pred = fit.predict(&[vec3(&fx["X_new"])]);
+    let pred = fit.predict(&[vec3(&fx["X_new"])]).unwrap();
     let e_pred = rel_vec(&pred, &nums(&fx["predict"]["y_mean"]));
     let e_lml = rel(fit.lml, num(&fx["fitted"]["lml"]));
     eprintln!(
@@ -271,6 +271,21 @@ fn non_finite_input_is_refused() {
         xb[1][2] = bad;
         let y = [1.0, 2.0, 3.0];
         assert_eq!(gp.fit(&xb, &y).unwrap_err(), FitError::NonFinite);
+    }
+}
+
+#[test]
+fn prediction_refuses_non_finite_directions() {
+    let x = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
+    let fit = GaussianProcess::default()
+        .fit(&x, &[1.0, 2.0, 3.0])
+        .unwrap();
+    for bad in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        for axis in 0..3 {
+            let mut query = [0.0; 3];
+            query[axis] = bad;
+            assert_eq!(fit.predict(&[query]).unwrap_err(), FitError::NonFinite);
+        }
     }
 }
 

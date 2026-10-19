@@ -59,8 +59,8 @@ pub struct Evaluation {
 pub enum FitError {
     /// X has no rows, or y does not hold a whole number of targets of n samples.
     Shape,
-    /// X or y holds NaN or an infinite value. scikit-learn's `validate_data` raises
-    /// `ValueError` before the fit (`_gpr.py:256-264`).
+    /// Training or query directions, or targets, hold NaN or an infinite value.
+    /// scikit-learn's `validate_data` raises `ValueError` before fitting or prediction.
     NonFinite,
     /// The optimizer refused its input.
     Optimizer(lbfgsb::Error),
@@ -190,8 +190,12 @@ impl Fit {
     /// `predict(X_new, return_std=False)` (`_gpr.py:444-457`): the posterior mean,
     /// `std * (K(X_new, X) @ alpha_) + mean`, for each new row and target. Returns a
     /// rows x targets matrix, row major. `alpha_ = K^-1 y` is solved one target at a
-    /// time, so no n x targets array is stored.
-    pub fn predict(&self, x_new: &[[f64; 3]]) -> Vec<f64> {
+    /// time, so no n x targets array is stored. Non-finite query directions return
+    /// [`FitError::NonFinite`], as scikit-learn's prediction validation does.
+    pub fn predict(&self, x_new: &[[f64; 3]]) -> Result<Vec<f64>, FitError> {
+        if x_new.iter().flatten().any(|v| !v.is_finite()) {
+            return Err(FitError::NonFinite);
+        }
         let n = self.targets.n;
         let nt = self.targets.t;
         let rows = x_new.len();
@@ -210,6 +214,6 @@ impl Fit {
                 out[r * nt + t] = self.targets.std[t] * s + self.targets.mean[t];
             }
         }
-        out
+        Ok(out)
     }
 }

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: BSD-3-Clause
+// SPDX-License-Identifier: BSD-3-Clause AND MIT
 //! L-BFGS-B 3.0 as scipy 1.18.1 runs it for `minimize(method="L-BFGS-B", jac=True)`.
 //!
 //! This is a routine-by-routine port of `scipy/optimize/src/lbfgsb.c` (the C
