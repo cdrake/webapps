@@ -35,7 +35,8 @@ async function dwi2trxFit(dwi, mask) {
 
 test("FA and MD equal DWI2TRX's on a single-shell DWI, where the fit uses every volume", async () => {
   // Three distinct eigenvalues along x, y and z: with two equal ones, the pinned niimath build
-  // gives a V1 up to 14 degrees from the first eigenvector, although its eigenvalues are right.
+  // gives a V1 up to 14 degrees from the first eigenvector, although its eigenvalues are right
+  // (https://github.com/rordenlab/niimath/issues/83).
   const dwi = syntheticDwi({ shells: [1000], eigenvalues: [1.7e-3, 0.6e-3, 0.3e-3] });
   const input = appInput(dwi);
   assert.equal(input.volumes.length, input.bvals.length);
@@ -48,7 +49,9 @@ test("FA and MD equal DWI2TRX's on a single-shell DWI, where the fit uses every 
   assert.ok(Math.abs(maps.AD[centre] - 1.7e-3) < 1e-5, `AD ${maps.AD[centre]}`);
   assert.ok(Math.abs(maps.RD[centre] - 0.45e-3) < 1e-5, `RD ${maps.RD[centre]}`);
   assert.ok(Math.abs(maps.S0[centre] - 1000) < 1, `S0 ${maps.S0[centre]}`);
-  // With -xflip 0 and the WebAssembly fit's sign, V1 is (1, 0, 0).
+  // The tensor lies on the x axis, so an x mirror cannot change V1 here. niimath can give
+  // (-1, 0, 0) from its eigenvector sign convention; the app's sign rule makes it (1, 0, 0).
+  // The oblique test below checks the -xflip 0 setting.
   assert.ok(Math.abs(maps.V1x[centre] - 1) < 1e-4, `V1x ${maps.V1x[centre]}`);
   assert.ok(Math.abs(maps.V1y[centre]) < 1e-4 && Math.abs(maps.V1z[centre]) < 1e-4);
 });
