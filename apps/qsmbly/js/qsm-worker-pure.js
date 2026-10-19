@@ -14,7 +14,7 @@ import { requireFieldStrength, echoTimeDependentStep, fieldMapEchoTimes } from '
 import { buildConfigJson, buildQsmartInnerConfigJson } from './modules/ConfigBridge.js';
 import { scaleVoxelSize } from './modules/mask/RodentMask.js';
 import { createGridGuard, gridMismatch, requireVoxelCount } from './modules/file-io/GridAgreement.js';
-import { gunzipNifti, parseNiftiHeader, sameNiftiGrid } from './modules/file-io/NiftiUtils.js';
+import { decodeNiftiBuffer, parseNiftiHeader, sameNiftiGrid } from '../vendor/webapp-components/src/file-io/NiftiUtils.js';
 import {
   createVolumeStore, engineSidecars, engineConfigJson, outputStage, createPlanProgress, displayRange,
   ON_OWN_GRID,
@@ -264,7 +264,7 @@ async function runPipeline(data) {
 async function checkRunGrid(files) {
   let reference = null;
   for (const { buffer, label } of files) {
-    const header = (await gunzipNifti(new Uint8Array(buffer), 352)).slice(0, 352).buffer;
+    const header = await decodeNiftiBuffer(buffer, { maxBytes: 352 });
     const grid = { dims: parseNiftiHeader(header).dims.slice(1, 4), header, label };
     if (!reference) {
       reference = grid;
@@ -387,6 +387,40 @@ async function runEnginePipeline(data, outputs = { qsm: true }) {
   postLog(`Volumes held during the run: ${(volumes.bytes() / 1e6).toFixed(0)} MB`);
 
   postProgress(1.0, 'Pipeline complete!');
+  postComplete({ success: true });
+}
+
+// QSMxT's scan engine requires phase even for relaxometry. Preserve magnitude-only inputs
+// through its public ARLO and T2* conversion functions; no phase or field strength is invented.
+async function runMagnitudeRelaxometry(data) {
+  const { magnitudeBuffers, customMaskBuffer, preparedMagnitude, echoTimes, maskThreshold } = data;
+  const nEchoes = magnitudeBuffers.length;
+  if (nEchoes < 3 || echoTimes.length !== nEchoes) {
+    throw new Error('T2*/R2* mapping requires 3+ magnitudes with one echo time each');
+  }
+  postProgress(0.05, 'Loading magnitude data...');
+  const guard = runGridGuard();
+  const magnitudes = magnitudeBuffers.map((buffer, e) => guard.load(buffer, `magnitude echo ${e + 1}`));
+  const { dims, voxelSize, affine } = magnitudes[0];
+  const count = magnitudes[0].data.length;
+  guard.requireVoxelCount(preparedMagnitude, 'prepared magnitude');
+  const mask = customMaskBuffer
+    ? Uint8Array.from(guard.load(customMaskBuffer, 'the mask').data, value => value > 0.5 ? 1 : 0)
+    : createThresholdMask(preparedMagnitude ?? magnitudes[0].data, (maskThreshold ?? 15) / 100);
+  const interleaved = new Float64Array(count * nEchoes);
+  for (let e = 0; e < nEchoes; e++) {
+    for (let v = 0; v < count; v++) interleaved[v * nEchoes + e] = magnitudes[e].data[v];
+  }
+  postProgress(0.3, 'Computing T2*/R2* maps...');
+  const result = wasmModule.magnitude_relaxometry_wasm(
+    interleaved, mask, Float64Array.from(echoTimes, value => value / 1000),
+    ...dims, ...voxelSize
+  );
+  const r2star = result.slice(0, count);
+  const t2star = result.slice(count);
+  sendStageData('r2star', r2star, dims, voxelSize, affine, 'R2* Map (1/s)', true, displayRange('R2star', r2star, mask));
+  sendStageData('t2star', t2star, dims, voxelSize, affine, 'T2* Map (s)', true, displayRange('T2star', t2star, mask));
+  postProgress(1, 'T2*/R2* complete!');
   postComplete({ success: true });
 }
 
@@ -1341,11 +1375,7 @@ installWorkerRouter({
     switch (type) {
       case 'init':
         await initializeWasm();
-<<<<<<< monorepo
-        workerMessages.initialized();
-=======
-        self.postMessage({ type: 'initialized', versions: buildVersions() });
->>>>>>> upstream
+        workerMessages.initialized({ versions: buildVersions() });
         break;
 
       case 'run':
@@ -1371,7 +1401,11 @@ installWorkerRouter({
         break;
 
       case 'runT2starR2star':
-        await runEnginePipeline(data, { qsm: false, t2star: true, r2star: true });
+        if (data.phaseBuffers?.length) {
+          await runEnginePipeline(data, { qsm: false, t2star: true, r2star: true });
+        } else {
+          await runMagnitudeRelaxometry(data);
+        }
         break;
 
       case 'biasCorrection':

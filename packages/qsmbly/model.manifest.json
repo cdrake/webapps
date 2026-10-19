@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "app": "qsmbly",
-  "source": "qsm-core v0.38.0 src/models/registry.rs, as compiled into qsmxt 9.22.0",
+  "source": "qsm-core v0.39.0 src/models/registry.rs, as compiled into qsmxt 10.0.0",
   "assets": [
     {
       "model": "bfrnet",
@@ -135,6 +135,13 @@
       "bytes": 52998326,
       "sha256": "c2821a74e8a03d4073896b5c2e359b3ef86f9776bacd78e00da1c757aa97bbcc",
       "url": "https://huggingface.co/qsmxt/qsm-onnx-weights/resolve/7d01b11c2562bc8072674a8b8fa3d4b0f1d07701/synthseg.onnx"
+    },
+    {
+      "model": "rs2-net",
+      "filename": "rs2-net.onnx",
+      "bytes": 63456162,
+      "sha256": "a120ce43b06a9f3ddecf85bf18f281cbb54c354ef15b34a6bcaaffa4e3c4a570",
+      "url": "https://huggingface.co/qsmxt/qsm-onnx-weights/resolve/7d01b11c2562bc8072674a8b8fa3d4b0f1d07701/rs2-net.onnx"
     }
   ]
 }

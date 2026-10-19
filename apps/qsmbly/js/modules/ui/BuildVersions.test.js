@@ -1,6 +1,4 @@
-/**
- * @jest-environment jsdom
- */
+import { JSDOM } from 'jsdom';
 import { formatDependencyVersion, showDependencyVersion } from './BuildVersions.js';
 
 const QSMXT = {
@@ -34,6 +32,15 @@ describe('formatDependencyVersion', () => {
 });
 
 describe('showDependencyVersion', () => {
+  let previousDocument;
+  beforeEach(() => {
+    previousDocument = globalThis.document;
+    globalThis.document = new JSDOM('').window.document;
+  });
+  afterEach(() => {
+    globalThis.document.defaultView.close();
+    globalThis.document = previousDocument;
+  });
   test('renders a link to the commit', () => {
     const el = document.createElement('span');
     showDependencyVersion(el, QSMXT);

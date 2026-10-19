@@ -297,6 +297,20 @@ export class QsmInputSet {
     return this.getEchoTimesFromInputs().length > 0;
   }
 
+  /** Each phase echo's BIDS sidecar, in the same order as the phase buffers. */
+  async getPhaseSidecars() {
+    const byName = new Map(this.buckets.json.map(entry => [entry.file.name.replace(/\.json$/i, ''), entry.file]));
+    return Promise.all(this.buckets.phase.map(async entry => {
+      const file = byName.get(entry.name.replace(/\.nii(\.gz)?$/i, ''));
+      if (!file) return {};
+      try {
+        return JSON.parse(await file.text());
+      } catch {
+        return {};
+      }
+    }));
+  }
+
   getMultiEchoFiles() {
     return {
       magnitude: this.buckets.magnitude,

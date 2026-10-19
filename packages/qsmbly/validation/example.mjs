@@ -28,22 +28,14 @@ export async function pinnedExample(directory = join(tmpdir(), 'qsmbly-validatio
   return files;
 }
 
-/**
- * Copy the example into a new BIDS dataset at `root`; the file names are already BIDS names.
- * `phaseSidecar` adds fields to the phase image's JSON sidecar.
- */
-export async function stageBids(files, root, { phaseSidecar = {} } = {}) {
+/** Copy the unchanged pinned example into BIDS at `root`; its names are already BIDS names. */
+export async function stageBids(files, root) {
   const [subject, session] = files[0].name.split('_');
   const anat = join(root, subject, session, 'anat');
   await mkdir(anat, { recursive: true });
   for (const file of files) {
     const destination = join(anat, file.name);
-    if (file.name.endsWith('_part-phase_T2starw.json')) {
-      const sidecar = JSON.parse(await readFile(file.path, 'utf8'));
-      await writeFile(destination, `${JSON.stringify({ ...sidecar, ...phaseSidecar }, null, 2)}\n`);
-    } else {
-      await copyFile(file.path, destination);
-    }
+    await copyFile(file.path, destination);
   }
   await writeFile(join(root, 'dataset_description.json'), `${JSON.stringify({ Name: 'QSMbly example', BIDSVersion: '1.8.0' })}\n`);
   return { subject, session };

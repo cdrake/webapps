@@ -16,6 +16,30 @@ function controller() {
   return { io: new QsmInputSet(callbacks), callbacks };
 }
 
+describe('phase sidecars for the scientific engine', () => {
+  test('keeps acquisition metadata paired with phase buffers in their current order', async () => {
+    const { io } = controller();
+    const first = { EchoTime: 0.01, B0_dir: [0, 1, 0], Manufacturer: 'Siemens' };
+    const second = { EchoTime: 0.02, MagneticFieldStrength: 3 };
+    io.buckets.phase = [{ name: 'echo-2_phase.nii.gz' }, { name: 'echo-1_phase.nii' }];
+    io.buckets.json = [
+      { file: { name: 'echo-1_phase.json', text: async () => JSON.stringify(first) } },
+      { file: { name: 'echo-2_phase.JSON', text: async () => JSON.stringify(second) } },
+    ];
+    expect(await io.getPhaseSidecars()).toEqual([second, first]);
+  });
+
+  test('leaves missing or unreadable sidecars empty without shifting another echo', async () => {
+    const { io } = controller();
+    io.buckets.phase = [{ name: 'missing.nii' }, { name: 'broken.nii' }, { name: 'good.nii' }];
+    io.buckets.json = [
+      { file: { name: 'broken.json', text: async () => '{' } },
+      { file: { name: 'good.json', text: async () => '{"EchoTime":0.03}' } },
+    ];
+    expect(await io.getPhaseSidecars()).toEqual([{}, {}, { EchoTime: 0.03 }]);
+  });
+});
+
 describe('categorizeFile', () => {
   const { io } = controller();
   const cat = (name, metadata) => io.categorizeFile(file(name), metadata);

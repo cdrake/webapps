@@ -17,6 +17,20 @@ The weekly `upstream sync` workflow merges new upstream commits into a pull requ
 the adaptations to keep when resolving conflicts. To run it locally, use
 `node scripts/sync-upstream.mjs --app qsmbly`.
 
+## Scientific integration
+
+The canonical Neurodesk workspace runs magnitude/phase QSM, SWI and phase-backed
+relaxometry through the pinned QSMxT engine. The separate upstream Preact preview
+is excluded by `upstream.json`; its source history remains at the registry's
+upstream commit. Model downloads and worker cancellation use the shared owners.
+
+The engine currently requires phase and field strength even for its relaxometry
+plan. To preserve magnitude-only T2*/R2* inputs (including incomplete phase buckets
+or an absent field strength), that case calls the same public QSM.rs ARLO and
+T2* conversion functions through `qsmxt_engine::qsm_core`. It uses real magnitude
+echoes, confirmed echo times and the supplied mask or existing magnitude-threshold
+mask. It does not invent phase or B0. Phase-backed runs keep the normal engine path.
+
 ## Features
 
 - **Private**: All processing happens locally in your browser — your images are never uploaded (see [What leaves your browser](#what-leaves-your-browser))

@@ -1,17 +1,19 @@
 # QSMbly command line
 
-QSMbly's portable command line is QSMxT 9.22.0, the native build of the
-pipeline the web app runs. The app compiles qsm-core v0.38.0 and qsmxt-config
-v9.22.0 to WebAssembly (`apps/qsmbly/rust-wasm`); QSMxT 9.22.0 is the release
-built from that qsmxt-config tag, on the same qsm-core tag. Replace `qsmxt`
-with `qsmbly` in exported commands to use the native command syntax.
+QSMbly's portable command line is the published QSMxT 10.0.0 release. Replace
+`qsmxt` with `qsmbly` in the command exported by the browser. The browser uses
+QSMxT's shared engine at commit `9fe168be40f67056c198f0df64734c486f137cac`
+with QSM.rs `8a3afda3716a859d93f1d41f1c8993335cc80c57`; the published native
+release uses QSM.rs v0.39.0. Their real-brain RTS reconstruction is compared
+under the unchanged numerical tolerances in `validation/browser-reference.json`.
+The reference records both browser commits and the native version and measurements.
 
-The browser currently inverts with B0 along image +z. Native QSMxT derives B0
-from the image affine unless a phase sidecar supplies `B0_dir`, so an unchanged
-exported command can produce a different χ map for oblique acquisitions.
-To replay the browser's current assumption, set `"B0_dir": [0, 0, 1]` in each
-phase image's JSON sidecar, as the release validation does. Use the B0 direction
-appropriate to the acquisition for analysis.
+Both paths derive B0 from the image affine unless a phase sidecar supplies
+`B0_dir`, and use V-SHARP without deconvolution by default. This intentionally
+changes the previous browser's image-+z assumption and deconvolved V-SHARP map.
+QSMxT 9.22.0 fails the existing tolerances against the new browser (regional
+correlation 0.889199; RMS 0.006055 ppm). The exact exported command on QSMxT
+10.0.0 passes them (correlation 0.999293; RMS 0.000362 ppm), without a B0 override.
 
 The package does not compile QSMxT. `qsmxt.json` pins QSMxT's own release
 archive for each target by SHA-256, and `pnpm --filter @neurodesk/qsmbly build`
@@ -33,17 +35,17 @@ release archives are also built separately on each target:
 - `download-models [--model ID ...] [--cache-dir DIR]` fetches deep-learning
   weights for offline use.
 
-The weights (19 files, 1.7 GB) are not in the release (`bundleModels: false` in
-`release.json`). `model.manifest.json` lists every model in qsm-core v0.38.0's
+The weights (20 files, 1.8 GB) are not in the release (`bundleModels: false` in
+`release.json`). `model.manifest.json` lists every model in qsm-core v0.39.0's
 registry at a pinned commit of the Hugging Face repository
 `qsmxt/qsm-onnx-weights`, with the registry's SHA-256. The build checks all
 hosted cache filenames, sizes and checksums against the pinned Rust registry.
 
 Native QSMxT has no offline switch and its model downloader ignores proxy
 environment variables. Before any native processing command, including
-QSMART, the wrapper therefore verifies the complete 19-file registry in one local directory.
+QSMART, the wrapper therefore verifies the complete 20-file registry in one local directory.
 Missing weights download from pinned URLs into
-`~/.cache/neurodesk/qsmbly/models`. This first-use download is 1.7 GB,
+`~/.cache/neurodesk/qsmbly/models`. This first-use download is 1.8 GB,
 including for a classical reconstruction. Later runs verify the cached
 files and use no model network requests. Help, version, initialization,
 BIDS validation, DICOM conversion, example downloads and `run --dry` need
@@ -82,9 +84,7 @@ The wrapper refuses `qsmbly update`, which would replace the pinned binary.
 ## Validation
 
 `validation/cli-check.mjs --executable PATH` stages the app's example
-(`apps/qsmbly/examples.json`) as a BIDS dataset, replays its exported command
-with `B0_dir: [0, 0, 1]` in the phase sidecar to match the browser's assumption,
-and compares the χ map with the browser's. The browser
+(`apps/qsmbly/examples.json`) as a BIDS dataset, replays its exported command with the original phase sidecar and compares the χ map with the browser's. The browser
 reference is a fingerprint, not the map: mask and support voxel counts,
 percentiles, and mean χ in 10-voxel blocks (`validation/measure.mjs`).
 WebAssembly SIMD and native code sum in different orders, so the maps are not
@@ -100,8 +100,8 @@ pnpm --filter @neurodesk/qsmbly build
 node packages/qsmbly/validation/cli-check.mjs
 ```
 
-Recording keeps `tolerance` and `observed`; review them against the new
-comparison. The pinned QSMxT must stay on the app's qsm-core tag:
-`test/node.test.js` reads `apps/qsmbly/rust-wasm/Cargo.toml`. QSMbly patches
-qsm-core with RS2-Net for rodent masks; QSMxT has no RS2-Net op, which the
-app already notes in the exported command.
+Recording keeps `tolerance` and `observed`; review the evidence against the new
+comparison. `test/node.test.js` ties the browser reference to the exact engine
+and core commits in the WASM crate's Cargo files and the measured native release
+to `qsmxt.json`. A version label alone does not establish numerical compatibility;
+run the exported command and retain the measured agreement before changing a pin.

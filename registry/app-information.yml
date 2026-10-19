@@ -259,10 +259,21 @@ apps:
     packages:
       - { name: QSMbly (upstream), url: https://github.com/astewartau/qsmbly, role: upstream browser application by Ashley Stewart }
       - { name: QSM.rs (Rust → WebAssembly), url: https://github.com/astewartau/QSM.rs, role: all QSM algorithms }
+      - { name: QSMxT, url: https://github.com/QSMxT/QSMxT, role: pipeline execution, configuration and command generation }
       - { name: NiiVue, url: https://github.com/niivue/niivue, role: image viewer }
       - { name: dcm2niix (WebAssembly), url: https://github.com/rordenlab/dcm2niix, role: DICOM to NIfTI conversion }
       - { name: dicompare, url: https://github.com/astewartau/dicompare, role: acquisition protocol validation report }
     citations:
+      - group: Pipeline
+        title: QSMxT
+        reference: "Stewart AW, Robinson SD, O'Brien K, et al. QSMxT: Robust masking and artifact reduction for quantitative susceptibility mapping. Magnetic Resonance in Medicine. 2022;87(3):1289–1300."
+        doi: 10.1002/mrm.29048
+        code: https://github.com/QSMxT/QSMxT
+      - group: Susceptibility-weighted imaging
+        title: CLEAR-SWI
+        reference: "Eckstein K, et al. Improved susceptibility weighted imaging at ultra-high field using bipolar multi-echo acquisition and optimized image processing: CLEAR-SWI. NeuroImage. 2021;237:118175."
+        doi: 10.1016/j.neuroimage.2021.118175
+        code: https://github.com/korbinian90/CLEARSWI.jl
       - group: Dipole inversion
         title: xQSM
         reference: "Gao et al., NMR Biomed 2021; doi:10.1002/nbm.4461"

@@ -855,6 +855,9 @@ importers:
       jest:
         specifier: ^29.7.0
         version: 29.7.0(@types/node@24.13.3)
+      jsdom:
+        specifier: 26.1.0
+        version: 26.1.0
       smol-toml:
         specifier: ^1.9.0
         version: 1.9.0

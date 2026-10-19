@@ -1050,6 +1050,38 @@ mod tests {
         assert!(!version.is_empty());
     }
 
+    #[test]
+    fn magnitude_only_relaxometry_preserves_hertz_seconds_and_mask() {
+        let tes = [0.01, 0.02, 0.03];
+        let magnitudes: Vec<f64> = tes
+            .iter()
+            .map(|te| 100.0 * (-20.0_f64 * te).exp())
+            .chain([9.0, 8.0, 7.0])
+            .collect();
+        let result =
+            magnitude_relaxometry(&magnitudes, &[1, 0], &tes, [2, 1, 1], [1.0; 3]).unwrap();
+        assert!((result[0] - 20.0).abs() < 0.001, "{} Hz", result[0]);
+        assert!((result[2] - 0.05).abs() < 0.00001, "{} seconds", result[2]);
+        assert_eq!((result[1], result[3]), (0.0, 0.0));
+    }
+
+    #[test]
+    fn magnitude_only_relaxometry_refuses_malformed_inputs() {
+        let tes = [0.01, 0.02, 0.03];
+        assert!(
+            magnitude_relaxometry(&[3.0, 2.0], &[1], &tes, [1, 1, 1], [1.0; 3])
+                .unwrap_err()
+                .contains("magnitude has 2 elements, expected 3")
+        );
+        for bad in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            assert_eq!(
+                magnitude_relaxometry(&[3.0, bad, 1.0], &[0], &tes, [1, 1, 1], [1.0; 3])
+                    .unwrap_err(),
+                "magnitude contains non-finite values"
+            );
+        }
+    }
+
     // The versions come from Cargo.lock, so they follow the pins in Cargo.toml without anyone
     // editing a literal. qsmxt-engine is pinned by tag; qsm-core may be patched to a commit.
     #[test]
@@ -1523,8 +1555,56 @@ pub fn rads_to_ppm_wasm(field_rads: &[f64], field_strength: f64) -> Result<Vec<f
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Relaxometry — R2 (EPG from MESE) and R2' = R2* − R2
+// Magnitude-only relaxometry (the full scan engine requires phase)
 // ─────────────────────────────────────────────────────────────────────────────
+
+fn magnitude_relaxometry(
+    magnitudes: &[f64],
+    mask: &[u8],
+    echo_times: &[f64],
+    dims: [usize; 3],
+    voxel_size: [f64; 3],
+) -> Result<Vec<f64>, String> {
+    let count = checked_count(&dims)?;
+    len_mismatch("mask", mask.len(), count, false)?;
+    len_mismatch(
+        "magnitude",
+        magnitudes.len(),
+        checked_count(&[count, echo_times.len()])?,
+        false,
+    )?;
+    if count == 0 || voxel_size.iter().any(|v| !v.is_finite() || *v <= 0.0) {
+        return Err("relaxometry requires a nonempty grid with positive voxel sizes".into());
+    }
+    if magnitudes.iter().any(|v| !v.is_finite()) {
+        return Err("magnitude contains non-finite values".into());
+    }
+    let [nx, ny, nz] = dims;
+    let [vx, vy, vz] = voxel_size;
+    let grid = qsm_core::Grid::new(nx, ny, nz, vx, vy, vz);
+    let (mut r2star, _) = qsm_core::r2star::r2star_arlo(magnitudes, mask, echo_times, &grid)
+        .map_err(|e| e.to_string())?;
+    let t2star = qsm_core::r2star::t2star_from_r2star(&r2star);
+    r2star.extend(t2star);
+    Ok(r2star)
+}
+
+/// QSMxT's ARLO and T2* conversion on real magnitude-only inputs. Echo times are seconds,
+/// magnitudes are voxel-major; the result is `[R2* (1/s); T2* (s)]`, one volume each.
+#[wasm_bindgen]
+pub fn magnitude_relaxometry_wasm(
+    magnitudes: &[f64],
+    mask: &[u8],
+    echo_times: &[f64],
+    nx: usize,
+    ny: usize,
+    nz: usize,
+    vx: f64,
+    vy: f64,
+    vz: f64,
+) -> Result<Vec<f64>, JsValue> {
+    magnitude_relaxometry(magnitudes, mask, echo_times, [nx, ny, nz], [vx, vy, vz]).map_err(js_err)
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Deep-learning model registry (metadata for the JS weight fetcher/cache)

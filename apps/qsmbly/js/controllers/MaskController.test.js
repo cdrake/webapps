@@ -10,34 +10,34 @@ import zlib from 'node:zlib';
 import { MaskController } from './MaskController.js';
 
 /** Build a NIfTI-1 file (header + data) as a File-like object. */
-function makeNiftiFile(name, dims, datatype, values, pixDims = [1, 0.5, 0.5, 2]) {
+function makeNiftiFile(name, dims, datatype, values, pixDims = [1, 0.5, 0.5, 2], littleEndian = true) {
   const bytesPerVoxel = { 2: 1, 4: 2, 16: 4, 512: 2 }[datatype];
   const n = dims[0] * dims[1] * dims[2];
   const buffer = new ArrayBuffer(352 + n * bytesPerVoxel);
   const view = new DataView(buffer);
   const bytes = new Uint8Array(buffer);
 
-  view.setInt32(0, 348, true);          // sizeof_hdr
-  view.setInt16(40, 3, true);           // dim[0]
-  view.setInt16(42, dims[0], true);
-  view.setInt16(44, dims[1], true);
-  view.setInt16(46, dims[2], true);
-  view.setInt16(48, 1, true);           // dim[4]
-  view.setInt16(70, datatype, true);
-  view.setInt16(72, bytesPerVoxel * 8, true);
-  for (let i = 0; i < 4; i++) view.setFloat32(76 + i * 4, pixDims[i], true);
-  view.setFloat32(108, 352, true);      // vox_offset
-  view.setFloat32(112, 1, true);        // scl_slope
-  view.setFloat32(116, 0, true);        // scl_inter
+  view.setInt32(0, 348, littleEndian);          // sizeof_hdr
+  view.setInt16(40, 3, littleEndian);           // dim[0]
+  view.setInt16(42, dims[0], littleEndian);
+  view.setInt16(44, dims[1], littleEndian);
+  view.setInt16(46, dims[2], littleEndian);
+  view.setInt16(48, 1, littleEndian);           // dim[4]
+  view.setInt16(70, datatype, littleEndian);
+  view.setInt16(72, bytesPerVoxel * 8, littleEndian);
+  for (let i = 0; i < 4; i++) view.setFloat32(76 + i * 4, pixDims[i], littleEndian);
+  view.setFloat32(108, 352, littleEndian);      // vox_offset
+  view.setFloat32(112, 1, littleEndian);        // scl_slope
+  view.setFloat32(116, 0, littleEndian);        // scl_inter
   bytes[344] = 0x6E; bytes[345] = 0x2B; bytes[346] = 0x31; // "n+1"
 
   for (let i = 0; i < n; i++) {
     const v = values[i] ?? 0;
     const off = 352 + i * bytesPerVoxel;
     if (datatype === 2) bytes[off] = v;
-    else if (datatype === 4) view.setInt16(off, v, true);
-    else if (datatype === 512) view.setUint16(off, v, true);
-    else view.setFloat32(off, v, true);
+    else if (datatype === 4) view.setInt16(off, v, littleEndian);
+    else if (datatype === 512) view.setUint16(off, v, littleEndian);
+    else view.setFloat32(off, v, littleEndian);
   }
 
   return { name, arrayBuffer: async () => buffer };
@@ -513,6 +513,13 @@ describe('MaskController.combineMagnitudeRSS', () => {
     expect(messages.some(m => /^Warning: Echo 2 \(e2\.nii\) has the same matrix size as echo 1 \(e1\.nii\) but a different orientation, origin, or voxel spacing/.test(m))).toBe(true);
   });
 
+  it('combines equivalent little- and big-endian echoes on the same physical grid', async () => {
+    const little = makeNiftiFile('little.nii', DIMS, 16, new Float32Array(N).fill(3));
+    const big = makeNiftiFile('big.nii', DIMS, 16, new Float32Array(N).fill(4), [1, 0.5, 0.5, 2], false);
+    const result = await controller.combineMagnitudeRSS([{ file: little }, { file: big }]);
+    expect(Array.from(result)).toEqual(Array(N).fill(5));
+  });
+
   it('passes a single echo through untouched', async () => {
     const result = await controller.combineMagnitudeRSS([echo('e1.nii', 7)]);
     expect(result.length).toBe(N);
@@ -547,10 +554,9 @@ describe('MaskController.computeVoxelQualityMap', () => {
       nv: { volumes: [{}] },
       initializeWorker: async () => {},
       getWorker: () => ({
-        addEventListener: () => {},
-        removeEventListener: () => {},
+        subscribe: () => () => {},
         // Clone like a real postMessage, so a transfer list holding anything but buffers throws.
-        postMessage: (message, transfer) => posted.push(structuredClone(message, { transfer })),
+        send: (message, transfer) => posted.push(structuredClone(message, { transfer })),
       }),
       updateOutput: () => {},
       setProgress: () => {},

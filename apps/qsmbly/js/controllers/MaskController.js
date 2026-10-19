@@ -5,14 +5,9 @@
  * threshold detection, and BET integration.
  */
 
-<<<<<<< monorepo
 import { computeOtsuThreshold } from '@neurodesk/webapp-components/volume';
-import { createMaskNifti, createNiftiHeaderFromVolume, decodeNiftiBuffer, isValidNifti1, readNiftiImageData, sameNiftiGrid } from '@neurodesk/webapp-components/file-io';
-=======
-import { computeOtsuThreshold } from '../modules/mask/ThresholdUtils.js';
-import { createMaskNifti, createNiftiHeaderFromVolume, gunzipNifti, isValidNifti1, readNiftiImageData, sameNiftiGrid } from '../modules/file-io/NiftiUtils.js';
+import { createMaskNifti, createNiftiHeaderFromVolume, decodeNiftiBuffer, isValidNifti1, parseNiftiHeader, readNiftiImageData, sameNiftiGrid } from '@neurodesk/webapp-components/file-io';
 import { gridMismatch } from '../modules/file-io/GridAgreement.js';
->>>>>>> upstream
 
 export class MaskController {
   /**
@@ -293,13 +288,6 @@ export class MaskController {
    * @returns {Promise<Float64Array>} Image data as Float64Array, with scl_slope/scl_inter applied
    */
   async readNiftiData(file) {
-<<<<<<< monorepo
-    const data = await decodeNiftiBuffer(await file.arrayBuffer());
-    if (!isValidNifti1(data)) {
-      throw new Error('Not a valid NIfTI-1 file');
-    }
-    return readNiftiImageData(data, Float64Array).data;
-=======
     return (await this.readNiftiVolume(file)).data;
   }
 
@@ -315,30 +303,24 @@ export class MaskController {
    * @returns {Promise<{data: Float64Array, header: ArrayBuffer}>} First volume and its header
    */
   async readNiftiVolume(file) {
-    const data = await gunzipNifti(new Uint8Array(await file.arrayBuffer()));
+    const data = await decodeNiftiBuffer(await file.arrayBuffer());
     if (!isValidNifti1(data)) {
       throw new Error('Not a valid NIfTI-1 file');
     }
 
-    // A file shorter than its header describes would otherwise fail inside the decoder with a
-    // bare DataView offset error that names nothing. A longer file is normal: volumes past the
-    // first of a 4D file are simply not read.
-    const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
-    const dims = [42, 44, 46].map(offset => view.getInt16(offset, true));
-    const bytesPerVoxel = { 2: 1, 4: 2, 8: 4, 16: 4, 64: 8, 512: 2 }[view.getInt16(70, true)];
-    if (bytesPerVoxel) {
-      const bytesNeeded = Math.ceil(view.getFloat32(108, true)) + dims[0] * dims[1] * dims[2] * bytesPerVoxel;
-      if (data.byteLength < bytesNeeded) {
-        throw new Error(
-          `${file.name} is truncated: its header describes ${dims.join('x')} voxels ` +
-          `of ${bytesPerVoxel * 8}-bit data, which needs ${bytesNeeded} bytes, but the file has ` +
-          `${data.byteLength}`
-        );
-      }
+    const header = parseNiftiHeader(data);
+    const bytesNeeded = Math.ceil(header.voxOffset) + header.nx * header.ny * header.nz * header.bitpix / 8;
+    if (data.byteLength < bytesNeeded) {
+      throw new Error(
+        `${file.name} is truncated: its header describes ${header.nx}x${header.ny}x${header.nz} voxels `
+        + `of ${header.bitpix}-bit data, which needs ${bytesNeeded} bytes, but the file has ${data.byteLength}`
+      );
     }
-
-    return { data: readNiftiImageData(data), header: data.slice(0, 352).buffer };
->>>>>>> upstream
+    try {
+      return { data: readNiftiImageData(data, Float64Array).data, header: data.slice(0, 352) };
+    } catch (error) {
+      throw new Error(`${file.name}: ${error.message}`, { cause: error });
+    }
   }
 
   /**
@@ -479,11 +461,7 @@ export class MaskController {
     }
 
     // Get dimensions from the phase header the decode above already returned
-    const headerBytes = phase1.header;
-    const srcView = new DataView(headerBytes);
-    const nx = srcView.getInt16(42, true);
-    const ny = srcView.getInt16(44, true);
-    const nz = srcView.getInt16(46, true);
+    const { nx, ny, nz } = parseNiftiHeader(phase1.header);
     const nVoxels = nx * ny * nz;
 
     // Create all-ones mask (process entire volume)
@@ -646,21 +624,25 @@ export class MaskController {
   // ==================== Custom Mask Upload ====================
 
   /**
-   * Read dim[1..3] out of a NIfTI header buffer.
+   * Count volumes through dimension 7 using the shared NIfTI header reader.
    */
   _volumeCount(headerBuffer) {
-    const h = new DataView(headerBuffer);
-    const rank = Math.min(h.getInt16(40, true), 7);
+    const { dims } = parseNiftiHeader(headerBuffer);
+    const rank = Math.min(dims[0], 7);
     let volumes = 1;
-    for (let axis = 4; axis <= rank; axis++) volumes *= Math.max(h.getInt16(40 + 2 * axis, true), 1);
+    for (let axis = 4; axis <= rank; axis++) volumes *= Math.max(dims[axis], 1);
     return volumes;
   }
 
   _dimsFromHeader(headerBuffer) {
     if (!headerBuffer || headerBuffer.byteLength < 348) return null;
-    const h = new DataView(headerBuffer);
-    const dims = [h.getInt16(42, true), h.getInt16(44, true), h.getInt16(46, true)];
-    return dims.every(d => d > 0) ? dims : null;
+    try {
+      const { nx, ny, nz } = parseNiftiHeader(headerBuffer);
+      const dims = [nx, ny, nz];
+      return dims.every(d => d > 0) ? dims : null;
+    } catch {
+      return null;
+    }
   }
 
   /**
