@@ -1113,9 +1113,9 @@ apps:
         doi: 10.1098/rstb.2001.0915
   brain-extraction:
     packages:
-    - name: QSMbly Rust BET
-      url: https://github.com/neurodesk/webapps/tree/main/apps/qsmbly
-      role: brain extraction on the CPU
+    - name: QSM.rs BET
+      url: https://github.com/astewartau/QSM.rs/tree/8a3afda3716a859d93f1d41f1c8993335cc80c57
+      role: compact brain extraction kernel shared by browser and command line
     - name: MindGrab (brainchop)
       url: https://github.com/neuroneural/brainchop
       role: default brain extraction

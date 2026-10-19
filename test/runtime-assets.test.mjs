@@ -128,3 +128,15 @@ test('composite JPEG DICOM workers use one pinned WASM without moving the worker
   }
   assert.ok(consumers > 1, 'multiple app consumers must share the JPEG runtime');
 });
+
+
+test('brain extraction ships its compact shared BET kernel without a second QSM runtime', async () => {
+  const directory = join(dist, 'brain-extraction', 'bet');
+  assert.deepEqual((await readdir(directory, { recursive: true })).sort(), ['LICENSE', 'bet.wasm']);
+  const binary = await readFile(join(directory, 'bet.wasm'));
+  assert.deepEqual(binary, await readFile(join(repoRoot, 'packages/brain-extraction/wasm/bet.wasm')));
+  assert.ok(binary.length < 128 * 1024, 'BET must ship the compact kernel, not the full QSM pipeline');
+  await access(join(dist, 'qsmbly/wasm/qsm_wasm.js'));
+  await access(join(dist, 'qsmbly/wasm/qsm_wasm_bg.wasm'));
+  await access(join(dist, 'qsmbly/wasm/snippets/rayon-base/workerHelpers.js'));
+});

@@ -35,9 +35,8 @@ settings and the model's SHA-256.
 SynthStrip loads the browser graph the web app loads (`@neurodesk/synthstrip/model`)
 on ONNX Runtime Node, with the CPU memory arena off: the T1 example then peaks
 at 2.6 GB instead of 4.4 GB. BET runs `wasm/bet.wasm`, qsm-core's BET compiled
-for WebAssembly without threads or generated glue. The web app runs the same
-qsm-core BET from QSMbly's threaded bundle; BET has no parallel code paths, so
-both compute the same mask. MindGrab runs `@brainchop/mindgrab`'s threaded CPU
+for WebAssembly without threads or generated glue. The web app loads that same compact BET module through the shared runtime adapter;
+BET has no parallel code paths and needs no thread pool or QSM pipeline bundle. MindGrab runs `@brainchop/mindgrab`'s threaded CPU
 module, the one the web app runs on its CPU backend, through
 `@neurodesk/node-drivers/mindgrab`, with the app's options. Its weights
 are compiled into the module, so it downloads nothing. It uses every logical

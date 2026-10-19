@@ -9,11 +9,10 @@ self.onmessage = async ({ data: job }) => {
     let result;
     if (job.method === 'bet') {
       const { runBet } = await import('@neurodesk/brain-extraction/bet');
-      const runtime = await import(/* @vite-ignore */ new URL('bet/qsm_wasm.js', job.assetBase).href);
-      await runtime.default();
-      if (runtime.initThreadPool) {
-        await runtime.initThreadPool(Math.min(8, navigator.hardwareConcurrency || 4));
-      }
+      const { betRuntime } = await import('@neurodesk/brain-extraction/bet-runtime');
+      const response = await fetch(new URL('bet/bet.wasm', job.assetBase));
+      if (!response.ok) throw new Error(`BET runtime: HTTP ${response.status}`);
+      const runtime = betRuntime(await WebAssembly.compile(await response.arrayBuffer()));
       result = runBet({ volume, runtime, fractionalIntensity: job.fractionalIntensity, onProgress });
     } else if (job.method === 'mindgrab') {
       const { runMindgrab } = await import('@neurodesk/brain-extraction/mindgrab');
