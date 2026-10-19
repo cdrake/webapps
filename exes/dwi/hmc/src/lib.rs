@@ -112,8 +112,16 @@ struct Variable {
     values: Vec<f64>,
 }
 
+/// The next `len` bytes, or `Truncated`; `len` comes from the file, so no arithmetic may wrap.
+fn take<'a>(bytes: &'a [u8], at: &mut usize, len: usize) -> Result<&'a [u8], MatError> {
+    let end = at.checked_add(len).ok_or(MatError::Truncated)?;
+    let out = bytes.get(*at..end).ok_or(MatError::Truncated)?;
+    *at = end;
+    Ok(out)
+}
+
 fn read_variable(bytes: &[u8], at: &mut usize) -> Result<Variable, MatError> {
-    let header = bytes.get(*at..*at + 20).ok_or(MatError::Truncated)?;
+    let header = take(bytes, at, 20)?;
     let field = |i: usize, big: bool| {
         let b: [u8; 4] = header[4 * i..4 * i + 4].try_into().unwrap();
         if big {
@@ -136,14 +144,10 @@ fn read_variable(bytes: &[u8], at: &mut usize) -> Result<Variable, MatError> {
         return Err(MatError::UnsupportedType(kind));
     }
     let (rows, cols, imag, namlen) = (field(1, big), field(2, big), field(3, big), field(4, big));
-    *at += 20;
     if namlen < 1 {
         return Err(MatError::BadName);
     }
-    let raw = bytes
-        .get(*at..*at + namlen as usize)
-        .ok_or(MatError::Truncated)?;
-    *at += namlen as usize;
+    let raw = take(bytes, at, namlen as usize)?;
     let (nul, text) = raw.split_last().unwrap();
     if *nul != 0 || !text.iter().all(|c| c.is_ascii_graphic()) {
         return Err(MatError::BadName);
@@ -153,10 +157,10 @@ fn read_variable(bytes: &[u8], at: &mut usize) -> Result<Variable, MatError> {
         return Err(MatError::Shape { name, rows, cols });
     }
     let size = if single { 4 } else { 8 };
-    let data = bytes
-        .get(*at..*at + rows as usize * size)
+    let len = (rows as usize)
+        .checked_mul(size)
         .ok_or(MatError::Truncated)?;
-    *at += rows as usize * size;
+    let data = take(bytes, at, len)?;
     let values = data
         .chunks_exact(size)
         .map(|c| match (single, big) {

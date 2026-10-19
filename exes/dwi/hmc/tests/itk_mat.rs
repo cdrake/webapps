@@ -162,6 +162,12 @@ fn malformed_files_are_refused() {
         ItkAffine::from_mat(&bytes[..bytes.len() - 1]),
         Err(MatError::Truncated)
     );
+    let mut huge = bytes.clone();
+    huge[4..8].copy_from_slice(&i32::MAX.to_le_bytes());
+    assert!(matches!(
+        ItkAffine::from_mat(&huge),
+        Err(MatError::Truncated)
+    ));
     let mut trailing = bytes.clone();
     trailing.extend_from_slice(&bytes);
     assert_eq!(
