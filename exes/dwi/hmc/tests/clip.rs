@@ -61,7 +61,10 @@ fn as_ints<T: Copy + Into<f64>>(map: &[T]) -> Vec<i64> {
 #[test]
 fn fixture_records_the_pinned_tools() {
     let tools = &fixture()["tools"];
-    assert_eq!(tools["nifreeze"], "3bcfb00df1e008b4dfeb59c0d63717c335ba0d1e");
+    assert_eq!(
+        tools["nifreeze"],
+        "3bcfb00df1e008b4dfeb59c0d63717c335ba0d1e"
+    );
     assert_eq!(tools["numpy"], "2.3.5");
     assert_eq!(tools["scipy"], "1.18.1");
     assert_eq!(tools["skimage"], "0.26.0");
@@ -78,13 +81,19 @@ fn float64_is_clipped_in_place_and_again_on_the_next_visit() {
     let report = advanced_clip_in_place(&mut bzero, shape(c)).unwrap();
     assert_eq!(report.input, InputKind::Float);
     assert!(report.mutated);
-    assert_eq!([report.a_min, report.a_max], thresholds(c, "first_thresholds"));
+    assert_eq!(
+        [report.a_min, report.a_max],
+        thresholds(c, "first_thresholds")
+    );
     let first = as_ints(&bzero);
     assert_eq!(first, ints(c, "first"));
 
     let report = advanced_clip_in_place(&mut bzero, shape(c)).unwrap();
     assert!(report.mutated);
-    assert_eq!([report.a_min, report.a_max], thresholds(c, "second_thresholds"));
+    assert_eq!(
+        [report.a_min, report.a_max],
+        thresholds(c, "second_thresholds")
+    );
     let second = as_ints(&bzero);
     assert_eq!(second, ints(c, "second"));
     assert_ne!(first, second, "the second clip changes the map");
@@ -115,7 +124,10 @@ fn float32_is_clipped_in_place_in_float32() {
     let mut data: Vec<f32> = floats(c, "input").iter().map(|&v| v as f32).collect();
     let report = advanced_clip_in_place(&mut data, shape(c)).unwrap();
     assert!(report.mutated);
-    assert_eq!([report.a_min, report.a_max], thresholds(c, "first_thresholds"));
+    assert_eq!(
+        [report.a_min, report.a_max],
+        thresholds(c, "first_thresholds")
+    );
     assert_eq!(as_ints(&data), ints(c, "first"));
 }
 
@@ -131,7 +143,10 @@ fn integer_input_is_not_changed_in_place() {
     assert!(!report.mutated);
     assert_eq!(data, input);
     // The discarded computation is the one inplace=False returns.
-    assert_eq!([report.a_min, report.a_max], thresholds(c, "copy_thresholds"));
+    assert_eq!(
+        [report.a_min, report.a_max],
+        thresholds(c, "copy_thresholds")
+    );
     let out = advanced_clip(&input, shape(c)).unwrap();
     assert_eq!(
         out.iter().map(|&v| i64::from(v)).collect::<Vec<_>>(),
@@ -182,7 +197,11 @@ fn refuses_nan_and_bad_shapes_without_writing() {
         advanced_clip_in_place(&mut data, [3, 3, 3]),
         Err(ClipError::NaN)
     );
-    assert!(data.iter().zip(&before).all(|(a, b)| a.to_bits() == b.to_bits()));
+    assert!(
+        data.iter()
+            .zip(&before)
+            .all(|(a, b)| a.to_bits() == b.to_bits())
+    );
     assert_eq!(
         advanced_clip(&[0.0_f32; 8], [2, 2, 3]),
         Err(ClipError::Shape {

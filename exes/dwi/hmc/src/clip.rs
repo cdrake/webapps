@@ -109,7 +109,10 @@ impl fmt::Display for ClipError {
                 "invalid percentile thresholds (a_max <= a_min) (a_min={a_min}, a_max={a_max})"
             ),
             ClipError::DegenerateRange { den } => {
-                write!(f, "degenerate dynamic range after clipping/shift (den={den})")
+                write!(
+                    f,
+                    "degenerate dynamic range after clipping/shift (den={den})"
+                )
             }
         }
     }
