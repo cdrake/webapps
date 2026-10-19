@@ -1552,7 +1552,7 @@
     },
     "noddi": {
       "desktop": true,
-      "profile": "interactive",
+      "profile": "batch",
       "assets": [],
       "downloads": [],
       "containers": []
