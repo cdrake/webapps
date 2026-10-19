@@ -34,7 +34,7 @@ async function load(dims) {
     },
   });
   vm.runInContext(`let job = null, source, outputs, viewRevision = 0; ${source.slice(start, end)}`, context);
-  await context.loadFiles(Promise.resolve([file]));
+  await context.loadFiles(() => Promise.resolve([file]));
   return { elements, finished, shown };
 }
 

@@ -12,9 +12,10 @@ const argument = name => {
 };
 const registry = await loadAppsRegistry();
 await loadStandalone(registry);
-const id = argument('--app');
-const apps = id ? registry.apps.filter(app => app.id === id) : registry.apps;
-if (!apps.length) throw new Error(`Unknown app: ${id}`);
+const ids = argument('--app')?.split(',');
+const unknown = ids?.filter(id => !registry.apps.some(app => app.id === id));
+if (unknown?.length) throw new Error(`Unknown app: ${unknown.join(', ')}`);
+const apps = ids ? registry.apps.filter(app => ids.includes(app.id)) : registry.apps;
 const destination = resolve(argument('--out') || join(repoRoot, 'packages/desktop/resources'));
 const cache = process.env.NEURODESK_ASSET_CACHE || join(repoRoot, '.offline-cache');
 const lock = JSON.parse(await readFile(join(repoRoot, 'registry/offline-assets.lock.json')));
@@ -71,5 +72,5 @@ async function disableAnalytics(directory) {
 }
 await disableAnalytics(join(destination, 'site'));
 const files = await inventoryFiles(destination);
-await writeFile(join(destination, 'manifest.json'), `${JSON.stringify({ schemaVersion: 1, version, defaultApp: id || null, apps: apps.map(({ id, path, title }) => ({ id, path, title })), assets, files }, null, 2)}\n`);
+await writeFile(join(destination, 'manifest.json'), `${JSON.stringify({ schemaVersion: 1, version, defaultApp: ids?.length === 1 ? ids[0] : null, apps: apps.map(({ id, path, title }) => ({ id, path, title })), assets, files }, null, 2)}\n`);
 console.log(await verifyBundle(destination));

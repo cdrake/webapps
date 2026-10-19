@@ -315,7 +315,8 @@ function show(stage) {
   return viewQueue;
 }
 
-async function loadFiles(filesPromise, signal, loaded = () => "FLAIR loaded · ready to segment lesions") {
+// files is called with the job's signal, so the footer × reaches a copy still in progress.
+async function loadFiles(files, signal, loaded = () => "FLAIR loaded · ready to segment lesions") {
   if (job) throw new Error("Wait for the current step to finish or cancel it, then retry.");
   const current = begin("loading", "Reading image…");
   const abort = () => current.controller.abort();
@@ -333,9 +334,9 @@ async function loadFiles(filesPromise, signal, loaded = () => "FLAIR loaded · r
   try {
     await cancelled;
     current.controller.signal.throwIfAborted();
-    const files = await filesPromise;
+    const received = await files(current.controller.signal);
     current.controller.signal.throwIfAborted();
-    const images = await readImageFiles(files, { signal: current.controller.signal });
+    const images = await readImageFiles(received, { signal: current.controller.signal });
     current.controller.signal.throwIfAborted();
     if (images.length !== 1) throw new Error("Choose one FLAIR image: a NIfTI file or one DICOM series.");
     // Read only the header here; the viewer and worker load the voxels separately.
@@ -361,7 +362,7 @@ async function loadFiles(filesPromise, signal, loaded = () => "FLAIR loaded · r
 
 function importFiles(filesPromise) {
   exampleControl.cancel();
-  return loadFiles(filesPromise).catch((error) => status(error.message, true));
+  return loadFiles(() => filesPromise).catch((error) => status(error.message, true));
 }
 
 $("imageInput").addEventListener("change", (event) => {
@@ -377,7 +378,7 @@ const exampleControl = createExampleSelector({
   onLoad: async (_example, { fetchFiles, assertCurrent, signal }) => {
     const files = await fetchFiles();
     assertCurrent();
-    await loadFiles(Promise.resolve(files), signal);
+    await loadFiles(() => files, signal);
     assertCurrent();
   },
 });
@@ -455,7 +456,7 @@ registerAppAutomation({
   operations: {
     segment: async ({ inputs, parameters, signal, progress: reportProgress }) => {
       exampleControl.cancel();
-      await loadFiles(Promise.resolve(inputs.image), signal);
+      await loadFiles(() => inputs.image, signal);
       signal.throwIfAborted();
       $("backend").value = parameters.backend;
       $("folds").value = String(parameters.folds);
@@ -478,7 +479,7 @@ $("cancelButton").onclick = cancel;
 // first job, so drops and examples wait behind it as behind any load.
 if (handoffId(location.hash)) {
   let sender;
-  const files = takeHandoff().then((received) => {
+  const files = (signal) => takeHandoff({ signal }).then((received) => {
     if (!received) throw new DOMException("The page reloads before taking the image", "AbortError");
     sender = received.source;
     return received.files;

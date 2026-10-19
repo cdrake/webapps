@@ -26,6 +26,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.44.0",
+    "esbuild": "0.28.1",
     "vite": "^5.0.0"
   },
   "neurodeskWebapp": {
