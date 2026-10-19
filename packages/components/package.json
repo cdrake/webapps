@@ -33,6 +33,10 @@
       "types": "./src/file-io/NiftiUtils.d.ts",
       "default": "./src/file-io/NiftiUtils.js"
     },
+    "./file-io/bids": {
+      "types": "./src/file-io/bids.d.ts",
+      "default": "./src/file-io/bids.js"
+    },
     "./file-io/mesh": "./src/file-io/mesh.js",
     "./fetch": {
       "types": "./src/net/fetchWithRetry.d.ts",
