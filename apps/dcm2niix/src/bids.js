@@ -125,6 +125,8 @@ export function validateDataset(series, options) {
   const included = series.filter((item) => item.type !== 'exclude');
   if (!included.length) add(null, 'series', 'Include at least one supported acquisition.');
   const byId = new Map(included.map((item) => [item.id, item]));
+  const names = datasetNames(series, options);
+  const paths = [...names.values()].map(({ path }) => path);
   for (const item of included) {
     const directionAllowed = ['dwi', 'epi'].includes(item.type);
     if (!SCAN_TYPES.includes(item.type)) add(item.id, 'type', 'Choose a supported scan type.');
@@ -132,6 +134,13 @@ export function validateDataset(series, options) {
     if (item.acquisition && !LABEL.test(item.acquisition)) add(item.id, 'acquisition', 'Use letters and digits only.');
     if (directionAllowed && item.direction && !LABEL.test(item.direction)) add(item.id, 'direction', 'Use letters and digits only.');
     const meta = item.metadata;
+    const name = names.get(item.id);
+    if (paths.filter(path => path === name.path).length > 1) {
+      add(item.id, 'acquisition', 'Use distinct acquisition labels for images with the same echo number.');
+    }
+    if (name.echo && meta.EchoTime === undefined) {
+      add(item.id, 'EchoTime', 'Enter echo time in seconds for this multi-echo acquisition.');
+    }
     if (meta.Modality && meta.Modality !== 'MR') add(item.id, 'type', 'Only MR acquisitions are supported.');
     if (nonMagnitude(meta)) {
       add(item.id, 'type', 'Only magnitude images are supported; exclude phase, real and imaginary components.');
@@ -210,36 +219,65 @@ function echoNumber(item) {
   return suffix ? Number(suffix[1]) : 0;
 }
 
-/** Allocate names before writing associations, so every link names an actual output. */
-export function datasetPaths(series, { subject, session }) {
+function converterAcquisition(item) {
+  // Keep the converter's series identity and split qualifiers; remove only its echo suffix.
+  const name = stem(item.image.name).replace(/_e\d+(?=(?:_[a-z]+)?$)/i, '');
+  return JSON.stringify([item.metadata.SeriesInstanceUID || '', name]);
+}
+
+function datasetNames(series, { subject, session }) {
   const included = series.filter((item) => item.type !== 'exclude');
   const prefix = `sub-${subject}_ses-${session}`;
   const base = (item) => prefix
     + (item.acquisition ? `_acq-${item.acquisition}` : '')
     + (['dwi', 'epi'].includes(item.type) && item.direction ? `_dir-${item.direction}` : '');
-  const groups = included.map((item) => `${base(item)}_${item.type}`);
-  // Multi-echo anatomy (dcm2niix _e1, _e2) is one acquisition: label its echoes, not runs.
-  // Of this app's datatypes only anat/ allows echo-, so DWI and fieldmap echoes stay runs.
-  const echo = included.map((item, index) => {
+  const collections = new Map();
+  for (const item of series) {
+    const key = converterAcquisition(item);
+    if (!collections.has(key)) collections.set(key, new Set());
     const value = echoNumber(item);
-    if (!['T1w', 'T2w', 'FLAIR'].includes(item.type) || !value) return '';
-    const echoes = new Set(included
-      .filter((other, otherIndex) => groups[otherIndex] === groups[index])
-      .map(echoNumber)
-      .filter(Boolean));
-    return echoes.size > 1 ? `_echo-${value}` : '';
+    if (value) collections.get(key).add(value);
+  }
+  const planned = included.map(item => {
+    const key = converterAcquisition(item);
+    const collection = collections.get(key);
+    // Excluding one echo must not disconnect the remaining files from their acquisition.
+    const echo = ['T1w', 'T2w', 'FLAIR'].includes(item.type) && collection.size > 1 ? echoNumber(item) : 0;
+    return {
+      item,
+      group: `${base(item)}_${item.type}`,
+      acquisition: echo ? key : item.id,
+      order: {
+        series: Number.isInteger(item.metadata.SeriesNumber) && item.metadata.SeriesNumber >= 0 ? item.metadata.SeriesNumber : Infinity,
+        key: echo ? key : JSON.stringify([item.metadata.SeriesInstanceUID || '', stem(item.image.name), item.id]),
+      },
+      echo,
+    };
   });
-  const keys = groups.map((group, index) => `${group}${echo[index]}`);
-  const counts = new Map();
-  return new Map(included.map((item, index) => {
-    const key = keys[index];
-    const run = (counts.get(key) || 0) + 1;
-    counts.set(key, run);
-    const repeated = keys.filter((candidate) => candidate === key).length > 1;
-    const name = `${base(item)}${repeated ? `_run-${run}` : ''}${echo[index]}_${item.type}`;
+  const groups = new Map();
+  for (const entry of planned) {
+    if (!groups.has(entry.group)) groups.set(entry.group, new Map());
+    groups.get(entry.group).set(entry.acquisition, entry.order);
+  }
+  for (const [key, acquisitions] of groups) {
+    const ordered = [...acquisitions].sort((a, b) => {
+      const bySeries = a[1].series - b[1].series;
+      return bySeries || (a[1].key < b[1].key ? -1 : a[1].key > b[1].key ? 1 : 0);
+    });
+    groups.set(key, new Map(ordered.map(([id], index) => [id, index + 1])));
+  }
+  return new Map(planned.map(({ item, group, acquisition, echo }) => {
+    const runs = groups.get(group);
+    const run = runs.size > 1 ? `_run-${runs.get(acquisition)}` : '';
+    const name = `${base(item)}${run}${echo ? `_echo-${echo}` : ''}_${item.type}`;
     const datatype = item.type === 'epi' ? 'fmap' : item.type === 'dwi' ? 'dwi' : 'anat';
-    return [item.id, `sub-${subject}/ses-${session}/${datatype}/${name}`];
+    return [item.id, { path: `sub-${subject}/ses-${session}/${datatype}/${name}`, echo }];
   }));
+}
+
+/** Allocate names before writing associations, so every link names an actual output. */
+export function datasetPaths(series, options) {
+  return new Map([...datasetNames(series, options)].map(([id, { path }]) => [id, path]));
 }
 
 export async function buildDataset(series, options, { signal, onProgress = () => {} } = {}) {

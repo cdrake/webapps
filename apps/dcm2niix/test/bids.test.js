@@ -187,7 +187,9 @@ test('multi-echo anatomy receives echo entities, and repeated multi-echo runs ke
     'sub-01/ses-01/anat/sub-01_ses-01_echo-1_T1w',
     'sub-01/ses-01/anat/sub-01_ses-01_echo-2_T1w',
   ]);
-  const repeat = [first, second].map((item, index) => ({ ...item, id: `repeat${index}` }));
+  const repeat = [first, second].map((item, index) => ({
+    ...item, id: `repeat${index}`, image: image(`mprage-repeat_e${index + 1}.nii`),
+  }));
   assert.deepEqual([...datasetPaths([first, second, ...repeat], settings).values()], [
     'sub-01/ses-01/anat/sub-01_ses-01_run-1_echo-1_T1w',
     'sub-01/ses-01/anat/sub-01_ses-01_run-1_echo-2_T1w',
@@ -195,7 +197,7 @@ test('multi-echo anatomy receives echo entities, and repeated multi-echo runs ke
     'sub-01/ses-01/anat/sub-01_ses-01_run-2_echo-2_T1w',
   ]);
   const unflagged = await acquisition('T1w', { name: 'memprage_e1' });
-  const pair = [unflagged, { ...second, id: 'series3' }];
+  const pair = [unflagged, { ...second, id: 'series3', image: image('memprage_e2.nii') }];
   assert.deepEqual([...datasetPaths(pair, settings).values()], [
     'sub-01/ses-01/anat/sub-01_ses-01_echo-1_T1w',
     'sub-01/ses-01/anat/sub-01_ses-01_echo-2_T1w',
@@ -205,6 +207,128 @@ test('multi-echo anatomy receives echo entities, and repeated multi-echo runs ke
     'sub-01/ses-01/anat/sub-01_ses-01_run-1_T1w',
     'sub-01/ses-01/anat/sub-01_ses-01_run-2_T1w',
   ]);
+});
+
+test('multi-echo runs follow converter identity across interleaved outputs and excluded echoes', async () => {
+  const echo = async (run, number) => ({
+    ...await acquisition('T1w', {
+      name: `mprage${run}_e${number}`,
+      metadata: { SeriesInstanceUID: `1.2.${run}`, SeriesNumber: run, EchoNumber: number, EchoTime: number * 0.003 },
+    }),
+    id: `run${run}echo${number}`,
+  });
+  const [a1, a2, b1, b2] = await Promise.all([echo(1, 1), echo(1, 2), echo(2, 1), echo(2, 2)]);
+  const expected = (run, number) => `sub-01/ses-01/anat/sub-01_ses-01_run-${run}_echo-${number}_T1w`;
+  assert.deepEqual([...datasetPaths([a1, b2, b1, a2], settings).values()], [
+    expected(1, 1), expected(2, 2), expected(2, 1), expected(1, 2),
+  ]);
+  assert.deepEqual([...datasetPaths([b2, a2, b1, a1], settings).values()], [
+    expected(2, 2), expected(1, 2), expected(2, 1), expected(1, 1),
+  ]);
+  assert.deepEqual([...datasetPaths([{ ...a1, type: 'exclude' }, b2, b1, a2], settings).values()], [
+    expected(2, 2), expected(2, 1), expected(1, 2),
+  ]);
+  const localizer = { ...a1, id: 'localizer', image: image('localizer_e1.nii'), type: 'exclude' };
+  assert.deepEqual([...datasetPaths([localizer, a1, b2, b1, a2], settings).values()], [
+    expected(1, 1), expected(2, 2), expected(2, 1), expected(1, 2),
+  ]);
+  const { entries } = await buildDataset([a1, { ...a2, type: 'exclude' }, b1, b2], settings);
+  assert.deepEqual(Object.keys(entries).filter(name => name.endsWith('_T1w.json')), [
+    `${expected(1, 1)}.json`, `${expected(2, 1)}.json`, `${expected(2, 2)}.json`,
+  ]);
+  assert.equal(json(entries, `${expected(2, 2)}.json`).EchoTime, 0.006);
+  assert.equal(json(entries, `${expected(2, 2)}.json`).SeriesInstanceUID, undefined);
+});
+
+test('converter split stems keep separate echo runs even when their series UID is shared', async () => {
+  const series = [];
+  for (const coil of ['c1', 'c2']) {
+    for (const number of [1, 2]) {
+      series.push({
+        ...await acquisition('T1w', {
+          name: `mprage_${coil}_e${number}`,
+          metadata: { SeriesInstanceUID: '1.2.1', EchoNumber: number, EchoTime: number * 0.003 },
+        }),
+        id: `${coil}echo${number}`,
+      });
+    }
+  }
+  assert.deepEqual([...datasetPaths(series, settings).values()], [
+    'sub-01/ses-01/anat/sub-01_ses-01_run-1_echo-1_T1w',
+    'sub-01/ses-01/anat/sub-01_ses-01_run-1_echo-2_T1w',
+    'sub-01/ses-01/anat/sub-01_ses-01_run-2_echo-1_T1w',
+    'sub-01/ses-01/anat/sub-01_ses-01_run-2_echo-2_T1w',
+  ]);
+});
+
+test('different converter series UIDs never become an inferred echo collection', async () => {
+  const first = await acquisition('T1w', {
+    name: 'mprage_e1', metadata: { SeriesInstanceUID: '1.2.1', EchoNumber: 1, EchoTime: 0.003 },
+  });
+  const second = {
+    ...await acquisition('T1w', {
+      name: 'mprage_e2', metadata: { SeriesInstanceUID: '1.2.2', EchoNumber: 2, EchoTime: 0.006 },
+    }),
+    id: 'series2',
+  };
+  assert.deepEqual([...datasetPaths([first, second], settings).values()], [
+    'sub-01/ses-01/anat/sub-01_ses-01_run-1_T1w',
+    'sub-01/ses-01/anat/sub-01_ses-01_run-2_T1w',
+  ]);
+});
+
+test('run ordering uses the numeric converter series number before the opaque UID', async () => {
+  const series = [];
+  for (const [number, uid] of [[10, '1.2.1'], [2, '1.2.9']]) {
+    for (const echo of [1, 2]) {
+      series.push({
+        ...await acquisition('T1w', {
+          name: `mprage${number}_e${echo}`,
+          metadata: { SeriesInstanceUID: uid, SeriesNumber: number, EchoNumber: echo, EchoTime: echo * 0.003 },
+        }),
+        id: `series${number}echo${echo}`,
+      });
+    }
+  }
+  assert.deepEqual([...datasetPaths(series, settings).values()], [
+    'sub-01/ses-01/anat/sub-01_ses-01_run-2_echo-1_T1w',
+    'sub-01/ses-01/anat/sub-01_ses-01_run-2_echo-2_T1w',
+    'sub-01/ses-01/anat/sub-01_ses-01_run-1_echo-1_T1w',
+    'sub-01/ses-01/anat/sub-01_ses-01_run-1_echo-2_T1w',
+  ]);
+});
+
+test('ambiguous duplicate echoes require distinct acquisition labels instead of guessed runs', async () => {
+  const first = await acquisition('T1w', {
+    name: 'mprage_e1', metadata: { SeriesInstanceUID: '1.2.1', EchoNumber: 1, EchoTime: 0.003 },
+  });
+  const second = {
+    ...await acquisition('T1w', {
+      name: 'mprage_e2', metadata: { SeriesInstanceUID: '1.2.1', EchoNumber: 2, EchoTime: 0.006 },
+    }),
+    id: 'series2',
+  };
+  const duplicate = { ...first, id: 'duplicate', image: image('mprage_e1.nii.gz') };
+  const series = [first, duplicate, second];
+  assert.ok(validateDataset(series, settings).some(error => error.id === duplicate.id && error.field === 'acquisition'));
+  await assert.rejects(buildDataset(series, settings), /Review the highlighted fields/);
+});
+
+test('echo-named outputs require positive finite echo times and preserve the supplied seconds', async () => {
+  const first = await acquisition('T1w', { name: 'mprage_e1', metadata: { EchoNumber: 1, EchoTime: 0.003 } });
+  const second = {
+    ...await acquisition('T1w', { name: 'mprage_e2', metadata: { EchoNumber: 2, EchoTime: 0.006 } }),
+    id: 'series2',
+  };
+  for (const value of [undefined, 0, -0.003, NaN, Infinity, '0.003']) {
+    first.metadata.EchoTime = value;
+    assert.ok(validateDataset([first, second], settings).some(error => error.id === first.id && error.field === 'EchoTime'));
+    await assert.rejects(buildDataset([first, second], settings), /Review the highlighted fields/);
+  }
+  first.metadata.EchoTime = 0.003;
+  const { entries } = await buildDataset([first, second], settings);
+  assert.equal(json(entries, 'sub-01/ses-01/anat/sub-01_ses-01_echo-1_T1w.json').EchoTime, 0.003);
+  assert.equal(json(entries, 'sub-01/ses-01/anat/sub-01_ses-01_echo-2_T1w.json').EchoTime, 0.006);
 });
 
 test('privacy is explicit and omit filters unknown text and NIfTI text without changing the source', async () => {
