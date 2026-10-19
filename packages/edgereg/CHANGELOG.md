@@ -1,5 +1,7 @@
 # @neurodesk/edgereg
 
+## 0.5.20261019
+
 ## 0.5.20261018
 
 ### Patch Changes

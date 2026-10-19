@@ -1,5 +1,13 @@
 # synthseg
 
+## 0.11.20261019
+
+### Patch Changes
+
+- Updated dependencies [da2584b]
+  - @neurodesk/runtime-support@0.9.2
+  - @neurodesk/synthseg@0.11.20261019
+
 ## 0.11.20261018
 
 ### Patch Changes

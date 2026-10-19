@@ -1,5 +1,12 @@
 # @neurodesk/nesvor
 
+## 0.3.20261019
+
+### Patch Changes
+
+- Updated dependencies [da2584b]
+  - @neurodesk/synthsr@0.6.20261019
+
 ## 0.3.20261018
 
 ### Patch Changes

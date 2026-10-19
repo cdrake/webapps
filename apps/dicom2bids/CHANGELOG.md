@@ -1,5 +1,12 @@
 # dicom2bids
 
+## 0.1.20261019
+
+### Patch Changes
+
+- Updated dependencies [da2584b]
+  - @neurodesk/runtime-support@0.9.2
+
 ## 0.1.20261018
 
 ### Minor Changes

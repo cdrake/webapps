@@ -1,5 +1,13 @@
 # deface
 
+## 1.4.20261019
+
+### Patch Changes
+
+- Updated dependencies [da2584b]
+  - @neurodesk/runtime-support@0.9.2
+  - @neurodesk/deface@1.4.20261019
+
 ## 1.4.20261018
 
 ### Patch Changes

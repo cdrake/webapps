@@ -1,5 +1,7 @@
 # @neurodesk/syncro
 
+## 0.7.20261019
+
 ## 0.7.20261018
 
 ### Patch Changes
