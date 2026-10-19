@@ -3,18 +3,40 @@ import assert from 'node:assert/strict';
 import { gzipSync } from 'node:zlib';
 import { handoffImage, lesionHandoffBlocker } from '../src/handoff.js';
 
-function nifti(dims, { gzip = false } = {}) {
+function niftiBytes(dims) {
   const bytes = new Uint8Array(352 + 64);
   const view = new DataView(bytes.buffer);
   view.setInt32(0, 348, true);
   dims.forEach((size, axis) => view.setInt16(40 + 2 * axis, size, true));
   bytes.set([0x6e, 0x2b, 0x31, 0], 344);
+  return bytes;
+}
+
+function nifti(dims, { gzip = false } = {}) {
+  const bytes = niftiBytes(dims);
   return new File([gzip ? gzipSync(bytes) : bytes], gzip ? 'scan.nii.gz' : 'scan.nii');
+}
+
+// The same gzip member with a comment longer than 64 KB in its header: still valid, and its
+// first decoded byte lies past any fixed prefix of the compressed file.
+function withLongComment(member) {
+  const comment = new Uint8Array(70 * 1024).fill(0x61);
+  const padded = new Uint8Array(member.length + comment.length + 1);
+  padded.set(member.subarray(0, 10));
+  padded[3] |= 0x10;
+  padded.set(comment, 10);
+  padded.set(member.subarray(10), 11 + comment.length);
+  return padded;
 }
 
 test('a 3D image can be sent, gzipped or not', async () => {
   assert.equal(await lesionHandoffBlocker(nifti([3, 64, 64, 40, 1, 1, 1, 1])), null);
   assert.equal(await lesionHandoffBlocker(nifti([4, 64, 64, 40, 1, 1, 1, 1], { gzip: true })), null, 'a fourth axis of one is still 3D');
+});
+
+test('a gzipped image whose header lies past the first 64 KB of compressed data can be sent', async () => {
+  const image = new File([withLongComment(gzipSync(niftiBytes([3, 64, 64, 40, 1, 1, 1, 1])))], 'scan.nii.gz');
+  assert.equal(await lesionHandoffBlocker(image), null);
 });
 
 test('a time series or a single slice is refused with a reason short enough to show', async () => {
@@ -23,6 +45,12 @@ test('a time series or a single slice is refused with a reason short enough to s
   assert.equal(await lesionHandoffBlocker(nifti([5, 64, 64, 40, 1, 3, 1, 1])), 'White matter lesions takes one 3D image; this one has 3 volumes.');
   assert.equal(await lesionHandoffBlocker(nifti([3, 64, 64, 1, 1, 1, 1, 1])), 'White matter lesions takes a 3D image; this one is a single slice.');
   assert.ok(series.length <= 90);
+});
+
+test('a depth of zero or less is refused as a single slice', async () => {
+  const single = 'White matter lesions takes a 3D image; this one is a single slice.';
+  assert.equal(await lesionHandoffBlocker(nifti([3, 64, 64, 0, 1, 1, 1, 1])), single);
+  assert.equal(await lesionHandoffBlocker(nifti([3, 64, 64, -1, 1, 1, 1, 1], { gzip: true })), single);
 });
 
 test('the chosen image goes alone, under its download name', async () => {
