@@ -7,6 +7,9 @@ rust-version.workspace = true
 publish.workspace = true
 
 [dependencies]
+dwi-gp = { path = "../gp" }
+dwi-gradients = { path = "../gradients" }
 
 [dev-dependencies]
+flate2 = "1"
 serde_json = { version = "1", features = ["float_roundtrip"] }
