@@ -86,7 +86,7 @@ Translation: QSIPrep's `get_ras_motion_params` (`interfaces/gradients.py:905-944
 | NiFreeze `motion.tsv` (M0, from `motion_affines`) | raw DWI, LAS | (-119.0, 103.4, 94.6) | 184.4 mm |
 | QSIPrep `motion_params_*.csv` and confounds | conformed `b0_mean`, LPS, 120 × 120 × 75 | (-119.0, -130.6, 50.8) | 187.9 mm |
 
-- Both grids have the same world centre (0.89, 3.46, -3.53) mm. The difference from the world-centre translation is `(R - I)·(-origin)`. Thus it is about |θ| × 184.4 mm on the raw grid (trivial b1000: 3.0 mm against 1.5 mm).
+- Both grids have the same world centre (0.89, 3.46, -3.53) mm. The difference from the world-centre translation is `(A - I)·(-origin)`, where `A` is the full 3 × 3 linear part of the transform. For NiFreeze (rigid) `A = R`, so the difference is about |θ| × 184.4 mm on the raw grid (trivial b1000: 3.0 mm against 1.5 mm). For the SHORELine affine transforms, scale and shear also contribute.
 - The 1e-6 gate applies on the grid of the tool that made the reference: the port decomposes NiFreeze transforms on the raw DWI grid and SHORELine transforms on the conformed `b0_mean` grid.
 - The TSV uses QSIPrep's formula word for word. The M0 comparison files give both conventions.
 
@@ -106,7 +106,7 @@ First, record the dtype, `scl_slope` and b0 count of both datasets. On float dat
   - `--nthreads 10` lets nipype run independent nodes in parallel. Each node still computes on one thread (`--omp-nthreads 1`, and the OMP, OpenBLAS, MKL and ITK thread variables set to 1). The first run (r1, local host) used `--nthreads 1`.
   - Keep `work`. `config.toml` records the seeds that QSIPrep drew (master, ants, numpy).
   - Run it three times, because SHORELine has no seed option (`config.py:751-778`). M0 ran e1, e2 and e3 at the same time on the host epic, and r1 on the local host.
-  - QSIPrep takes no external mask for HMC. It makes a SynthStrip mask of its b0 template (Dice 0.947 against the MindGrab mask on ds005577).
+  - QSIPrep takes no external mask for HMC. Each run makes its own SynthStrip mask of its own b0 template (r1: Dice 0.947 against the MindGrab mask on ds005577). The masks of the four M0 runs differ: against r1, 25-30 voxels, Dice 0.9999.
 
 Gates:
 - Deterministic checks (fixed tolerances; these stay):
@@ -120,7 +120,10 @@ Gates:
   - The limits, from `hmc/reference/compare/q53-seed-rule.json`: b1000 0.117 / 0.248 / 0.219 mm, 0.291 / 0.228 / 0.195°; b3000 0.426 / 0.709 / 0.402 mm, 0.550 / 0.591 / 0.788°. Native `--float 1` passes on all 90 volumes (largest ratio to its limit 0.72).
   - M0 measured these limits on GP only, from one seed pair. The trivial model has no seed pair in M0.
   - The literal per-cell reading (`|float - double| <= d_seed[v, k]` of the same volume and axis) cannot be used: native `--float 1` fails it on 40 of 90 volumes (58 of 540 cells), because one seed pair gives some cells a spread near 0.
-- SHORELine registration: by the same construction, the limits come from the spread of the three QSIPrep repeats e1-e3 (per shell and axis, the largest pairwise difference). This follows from the Q53 decision, but the user has not confirmed it for SHORELine separately (section 8, question 6).
+- SHORELine registration (proposed, waiting for the maintainer): by the same construction, the limits come from the spread of the three QSIPrep repeats e1-e3 (per shell and axis, the largest pairwise difference). The Q53 decision names only GP (gp against gp-seed1235), so this rule is not decided (section 8, question 6).
+  - The SHORELine transform is affine (|scale − 1| up to 0.026, shear up to 0.013), so its rotation is not unique. The limits use the rotation of QSIPrep's `decompose44` (transforms3d), because the port must match QSIPrep's `motion_params_*.csv` to 1e-6. With the polar factor of the same affine, the b3000 maximum is 0.073 / 0.081 / 0.094° and 0/101 volumes are over 0.2°; with `decompose44` it is 0.208 / 0.096 / 0.183° and 1/101.
+  - The mask displacement does not depend on a convention: the largest b3000 displacement of the mask voxels between two runs is 0.48-0.50 mm (MindGrab mask 0.484 mm for e1-e3 and 0.488 mm with r1; e1 SynthStrip mask 0.497 and 0.500 mm). The six-axis limits ignore scale and shear.
+  - The e1-e3 spread is not only seed noise: each run also has its own b0 template and SynthStrip mask (the model-stage `--masks`), so the spread includes their variation.
 - The QSIPrep repeat spread is above the fixed gate for b3000 (section 9). The plan rule was to stop and report this; M0 reported it.
 - On the slab, report the through-plane axes separately. ds005577 is the main SHORELine gate.
 
@@ -168,7 +171,7 @@ Replace the WASM numbers with the milestone M3 benchmark.
    **Decided (Q53, 2026-10-19):** the WASM registration (`--float 1`) is not held to the fixed 0.2 mm / 0.2° gate. It is compared against the seed-to-seed spread of native double NiFreeze (gp against gp-seed1235): a WASM result passes when its difference from native double with the same seed is within that spread. Section 5 states the exact rule and the limits; native `--float 1` passes on 90/90 volumes. No 3DDouble build is needed. The fixed tolerances stay for the deterministic parts (motion decomposition, bvec rotation, SHORE and GP predictions).
 6. Is a QSIPrep run on the slab acceptable, and which flag skips the anatomical input?
    **Decided (Q54):** QSIPrep 26.1.1 SHORELine on ds005577 (whole brain, not the slab), three repeats. The flag is `--anat-modality none` (section 5).
-   **Open:** the spread of the three repeats is above the fixed gate for b3000 (1/101 volumes at the world centre, 32/101 by QSIPrep's formula; section 9). Section 5 applies the Q53 construction to SHORELine, with limits from the e1-e3 spread. The user must confirm that this rule, and not the fixed gate, applies to SHORELine registration.
+   **Open (proposed, waiting for the maintainer):** the spread of the three repeats is above the fixed gate for b3000 (1/101 volumes at the world centre with the `decompose44` rotation, 32/101 by QSIPrep's formula; section 9). Section 5 proposes the Q53 construction for SHORELine, with limits from the e1-e3 spread. Q53 named only GP. The maintainer must confirm that this rule, and not the fixed gate, applies to SHORELine registration.
 7. Must the port copy the in-place clip quirk on float data, or only run the integer path?
    **Decided (Q55):** copy the quirk, and record whether the input is float or integer. ds005577 is int16 (no scaling), so the DWI data is not clipped in place. But the trivial model's target (`bzero`) is float64, so the quirk is active there (section 3).
 
@@ -178,7 +181,8 @@ Measured 18-19 October 2026. Data: Hugging Face dataset `neurodeskorg/webapps`, 
 
 ### Input and environment
 
-- OpenNeuro ds005577 v1.0.0 sub-107 AP DWI, CC0 (read from `dataset_description.json`). The NIfTI, bval and bvec are copied unchanged; NIfTI SHA-256 `06d5a733005a9e463f1ca6b581d0a8725378b60967c23dd63d49cc04362e83b9`. The JSON sidecar copy omits six site and time fields (AcquisitionTime, DeviceSerialNumber, InstitutionAddress, InstitutionName, InstitutionalDepartmentName, StationName), as `noddi/examples/` does; the README gives the original SHA-256. The runs read the original sidecar; none of the six fields affects HMC.
+- OpenNeuro ds005577 v1.0.0 sub-107 AP DWI, CC0 (read from `dataset_description.json`). The NIfTI, bval and bvec are copied unchanged; NIfTI SHA-256 `06d5a733005a9e463f1ca6b581d0a8725378b60967c23dd63d49cc04362e83b9`. The JSON sidecar copy omits six site and time fields (AcquisitionTime, DeviceSerialNumber, InstitutionAddress, InstitutionName, InstitutionalDepartmentName, StationName), as `noddi/examples/` does. QSIPrep copies these fields into its output sidecar (`qsiprep-*/out/*_desc-preproc_dwi.json`, at the top level and in `SourceMetadata`); the four packed copies omit them too. All other bytes are unchanged; the README and `index.json` give the original SHA-256 of each edited sidecar. The runs read the original sidecar; none of the six fields affects HMC. The NIfTI header `descrip` of the input (and of the mean b0, which copies its header) keeps the acquisition time (`Time=` item): the input is the public CC0 original, copied unchanged.
+- Licences of the folder: input data CC0; QSIPrep outputs BSD-3-Clause; NiFreeze patch Apache-2.0; scikit-learn patch BSD-3-Clause; scripts Apache-2.0, as `exes/dwi` (the repository has no single licence, `LICENSES.md`).
 - 120 × 120 × 75 × 101, 2 mm, int16. `scl_slope` and `scl_inter` are NaN, so there is no scaling.
 - 11 b0 volumes (0, 10, …, 100) under both b0 rules, 30 × b1000 and 60 × b3000. The shells alternate in time, one volume every 3.2 s.
 - NiFreeze 3bcfb00, Python 3.12.13, nipype 1.12.0, nitransforms 25.1.0, numpy 2.3.5, scipy 1.18.1, scikit-learn 1.9.1.
@@ -195,7 +199,7 @@ Measured 18-19 October 2026. Data: Hugging Face dataset `neurodeskorg/webapps`, 
 - MindGrab `mindgrab` model, of the mean of the 11 raw b0 volumes, with `@brainchop/mindgrab` 0.1.20260925 through `loadMindgrabCpu`.
 - 161679 voxels (1293 mL), bounding box 126 × 168 × 136 mm. It does not touch the grid edge, and it has the DWI grid and affine.
 - The GP runs used 161668 voxels: NiFreeze removes the voxels where the b0 median is 0 (section 3).
-- QSIPrep's own SynthStrip mask: Dice 0.947 against the MindGrab mask.
+- QSIPrep's own SynthStrip mask (r1): Dice 0.947 against the MindGrab mask. Each QSIPrep run makes its own mask: e1, e2 and e3 differ from r1 in 30, 30 and 25 voxels (Dice 0.9999).
 
 ### Determinism
 
@@ -258,17 +262,20 @@ Seed-spread limits `L[s, k]` (largest |gp(1234) - gp(1235)| in the shell) and th
 - QSIPrep has no seed option. The ants seed reaches antsRegistration through `ANTS_RANDOM_SEED` (nipype `report.rst` of e1: 36413). Thus the repeats differ by seed, and no same-seed repeat exists.
 - In every run the final `.mat` files decompose to QSIPrep's `motion_params_*.csv` with a largest difference of 1.5e-14 mm and 1e-16 rad.
 - DWI motion (world centre): maximum |t| 0.55-0.60 mm, median |t| about 0.12 / 0.25 / 0.09 mm (x / y / z), maximum rotation 0.86-0.90°, |scale − 1| ≤ 0.026, |shear| ≤ 0.013.
-- The conformed volumes (`split_dwis`) of the four runs have equal voxel data and equal NIfTI header blocks. Only the AFNI extension (a random idcode) differs, so the files are not byte-identical.
+- The conformed volumes (`split_dwis`) of the four runs have equal voxel data and equal NIfTI header blocks. In the AFNI extension only the random `IDCODE_STRING` and its `IDCODE_DATE` differ, so the files are not byte-identical.
+- The folder names `NNN` under `collected/` are not volume numbers. In `b0/iterative_alignment_001/` they are `010`-`019` and `110`, from the nipype names `_reg_0010` … `_reg_00110`, not the b0 index. Take the volume from the moving image in `command.txt` (the README gives the map).
 
 **Repeat spread, e1-e3** (for each volume, the largest difference over the 3 pairs, for each axis):
 
-| Group | Max \|Δt\|, world centre (mm, x / y / z) | Max \|Δt\|, QSIPrep formula (mm) | Max \|Δrot\| (°) | Max mask displacement (mm) | Over fixed gate, world centre | Over fixed gate, QSIPrep formula |
+| Group | Max \|Δt\|, world centre (mm, x / y / z) | Max \|Δt\|, QSIPrep formula (mm) | Max \|Δrot\|, `decompose44` (°) | Max mask displacement, MindGrab mask (mm) | Over fixed gate, world centre | Over fixed gate, QSIPrep formula |
 | --- | --- | --- | --- | --- | --- | --- |
 | b0 (11) | 0.007 / 0.018 / 0.022 | 0.037 / 0.040 / 0.089 | 0.037 / 0.030 / 0.015 | 0.075 | 0 | 0 |
 | b1000 (30) | 0.026 / 0.031 / 0.029 | 0.170 / 0.152 / 0.188 | 0.051 / 0.043 / 0.061 | 0.128 | 0 | 0 |
 | b3000 (60) | 0.046 / 0.055 / 0.141 | 0.350 / 0.637 / 0.461 | 0.208 / 0.096 / 0.183 | 0.484 | 1 | 32 |
 
 - The spread is above the fixed gate for b3000: volume 53 at the world centre (Δrot x 0.208°), and 32 volumes by QSIPrep's formula, because of the 184-188 mm lever arm (section 4). b0 and b1000 are within the gate in both conventions. M0 stops here and reports it (section 8, question 6).
+- The rotation columns use `decompose44`. The affine's polar factor gives 0/101 volumes over 0.2° (b3000 maximum 0.073 / 0.081 / 0.094°). The convention-free mask displacement is 0.48-0.50 mm for b3000 (e1 SynthStrip mask: 0.497 mm, 0.500 mm with r1), above 0.2 mm in every convention (section 5).
+- The spread includes the seed, and also the per-run b0 template and SynthStrip mask.
 - With r1 added (a different host, `--nthreads 1`): 1/101 over the gate at the world centre and 39/101 by QSIPrep's formula. The maximum values change very little (world-centre b3000 x 0.046 → 0.083 mm, mask displacement 0.484 → 0.488 mm). Thus the effect of the host is within the seed spread on one host.
 - GP against QSIPrep (e1-e3 and r1 give almost the same numbers), median offset removed: correlation 0.46-0.67 (translation) and 0.29-0.70 (rotation), median |Δt| 0.03-0.09 mm (b1000) and 0.09-0.15 mm (b3000), maximum 0.66 mm. This is for information only: the methods differ (Rigid against Affine). Trivial against QSIPrep: correlation ≤ 0.35, b3000 residual up to 43 mm.
 - QSIPrep cannot use the MindGrab mask (Q52); it gives the registrations float32 volumes, where NiFreeze gives int16 (Q55).
