@@ -1,7 +1,8 @@
-DICOM to BIDS third-party components
+dcm2niix (Neurodesk app) third-party components
 
-DICOM to BIDS is a Neurodesk application. It is not dcm2niix and is not endorsed
-by the dcm2niix authors; it runs dcm2niix to convert images.
+The Neurodesk dcm2niix application runs dcm2niix to convert images and curates
+the result as BIDS. It uses the dcm2niix name with the permission of its author,
+Chris Rorden (https://github.com/neurodesk/webapps/pull/382).
 
 @niivue/dcm2niix 1.2.0 — BSD-2-Clause — https://github.com/niivue/niivue-dcm2niix
   WebAssembly build of dcm2niix v1.0.20241231 with OpenJPEG and CharLS.

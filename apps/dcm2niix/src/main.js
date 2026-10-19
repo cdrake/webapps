@@ -26,7 +26,7 @@ mountImagingWorkspace({
   controls: '#controls',
   viewer: '#viewer',
   status: '#status',
-  title: 'DICOM to BIDS',
+  title: 'dcm2niix',
   controlsContract: { about: '#aboutBtn', privacy: '#privacyBtn' },
 });
 const toolbar = createViewerToolbar({
@@ -42,7 +42,7 @@ const log = createConsole({ id: 'technicalLog', resizable: true });
 $('viewer').append(log);
 const progress = new ProgressManager();
 const info = createInfoDialog();
-$('aboutBtn').onclick = () => info.open('About DICOM to BIDS', $('aboutContent'));
+$('aboutBtn').onclick = () => info.open('About dcm2niix', $('aboutContent'));
 $('privacyBtn').onclick = () => info.open('Privacy', $('privacyContent'));
 const results = createResultList({
   element: $('resultList'),

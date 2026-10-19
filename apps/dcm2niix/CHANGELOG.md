@@ -1,9 +1,11 @@
-# dicom2bids
+# dcm2niix
 
 ## 0.1.20261019
 
 ### Patch Changes
 
+- Keep anatomical echo files attached to their converter acquisition when outputs are interleaved or an echo is excluded. Order runs by the converter's series number, preserve split acquisitions, and require echo time before exporting echo-labelled images. Refuse ambiguous duplicate echoes until acquisition labels distinguish them.
+- Name the echoes of a multi-echo anatomical acquisition (dcm2niix `_e1`, `_e2`) with the BIDS `echo-` entity instead of `run-`. Repeated multi-echo acquisitions keep both entities.
 - ac0b4e9: Keep anatomical filenames free of direction entities after review edits, preserve slice-timing orientation and technical encoding metadata in privacy-filtered exports, and reject classic DICOM phase/real/imaginary images. Refuse anatomical exports with attached diffusion gradients until the user reassigns the scan or clears them. Report missing or malformed automation assignments clearly and classify the app as Vite with WebAssembly.
 - Updated dependencies [da2584b]
   - @neurodesk/runtime-support@0.9.2
@@ -12,7 +14,7 @@
 
 ### Minor Changes
 
-- b67e4e9: Add DICOM to BIDS (`dicom2bids`), a browser-only catalog app that runs dcm2niix on one MRI examination at a time. Accept files, folders and ZIP archives; review anatomical, diffusion and reverse phase encoding acquisitions; enter missing metadata; and download an organized BIDS dataset with an explicit identifying-metadata policy. Preserve separate acquisitions and image/gradient ordering, and link reverse EPI fieldmaps to their DWI targets.
+- b67e4e9: Add dcm2niix (`dcm2niix`), a browser-only catalog app that runs dcm2niix on one MRI examination at a time. Accept files, folders and ZIP archives; review anatomical, diffusion and reverse phase encoding acquisitions; enter missing metadata; and download an organized BIDS dataset with an explicit identifying-metadata policy. Preserve separate acquisitions and image/gradient ordering, and link reverse EPI fieldmaps to their DWI targets.
 
   Share bounded conversion deadlines, NIfTI text removal, report-form styling and in-memory automation reset. Include a pinned DICOM example, Philips native-reference checks and offline/interface workflow coverage.
 
