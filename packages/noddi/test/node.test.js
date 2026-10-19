@@ -130,3 +130,12 @@ test('self-check fits the phantom in this runtime', async () => {
   assert.equal(report.phantomDirectionCosine > 0.95, true);
   assert.equal(report.phantomIcvfError < 0.15, true);
 });
+
+test('download-models installs nothing and takes the packager\'s --cache-dir', () => {
+  const run = spawnSync(process.execPath, [BIN, 'download-models', '--cache-dir', tmpdir()], { encoding: 'utf8' });
+  assert.equal(run.status, 0, run.stderr);
+  assert.match(run.stdout, /no model downloads/);
+  const misplaced = spawnSync(process.execPath, [BIN, 'self-check', '--cache-dir', tmpdir()], { encoding: 'utf8' });
+  assert.equal(misplaced.status, 1);
+  assert.match(misplaced.stderr, /only applies to download-models/);
+});

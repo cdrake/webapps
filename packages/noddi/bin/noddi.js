@@ -5,7 +5,7 @@ import { checkInstallation, fit } from '../src/node.js';
 
 const HELP = `Usage: noddi DWI.nii[.gz] BVAL BVEC OUTPUT_DIR [options]
        noddi self-check
-       noddi download-models
+       noddi download-models [--cache-dir DIR]
 
 Fits the diffusion tensor and, when the data has two or more b-value shells,
 NODDI (a port of AMICO 1.5.4), as the NODDI web app does: the same
@@ -47,9 +47,11 @@ try {
       'no-noddi': { type: 'boolean' },
       'tensor-fit': { type: 'string' },
       threads: { type: 'string' },
+      'cache-dir': { type: 'string' },
     },
   });
   const [command] = positionals;
+  if (values['cache-dir'] !== undefined && command !== 'download-models') throw new Error('--cache-dir only applies to download-models.');
   if (values.help || !command) {
     console.log(HELP);
   } else if (command === 'self-check') {
