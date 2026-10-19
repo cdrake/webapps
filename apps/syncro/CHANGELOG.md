@@ -4,6 +4,9 @@
 
 ### Patch Changes
 
+- Updated dependencies [5ad652c]
+  - @neurodesk/brain-extraction@0.4.20261019
+  - @neurodesk/syncro@0.7.20261019
 - Updated dependencies [da2584b]
   - @neurodesk/synthsr@0.6.20261019
   - @neurodesk/runtime-support@0.9.2
