@@ -256,11 +256,20 @@ pub struct FitSummary {
 }
 
 impl FitSummary {
-    /// Whether hyperparameter `k` (0 = a, 1 = lambda, 2 = sigma2) stopped on its lower bound,
-    /// which is when scikit-learn warns "close to the specified lower bound".
+    /// Whether hyperparameter `k` (0 = a, 1 = lambda, 2 = sigma2) is close to its lower bound,
+    /// which is when scikit-learn warns "close to the specified lower bound". The test is
+    /// scikit-learn's `_check_bounds_params`: `np.isclose(bounds, theta)` in log space, with
+    /// NumPy's default tolerances.
     pub fn at_lower_bound(&self, k: usize) -> bool {
-        self.theta[k] == self.bounds_log[k].0
+        is_close(self.bounds_log[k].0, self.theta[k])
     }
+}
+
+/// `np.isclose(a, b)` with NumPy's defaults: |a - b| <= atol + rtol * |b|.
+fn is_close(a: f64, b: f64) -> bool {
+    const RTOL: f64 = 1e-5;
+    const ATOL: f64 = 1e-8;
+    a == b || (a - b).abs() <= ATOL + RTOL * b.abs()
 }
 
 /// One leave-one-out prediction.
@@ -403,4 +412,21 @@ impl<'a, T: Copy + Into<f64>> GpModel<'a, T> {
 pub fn clip_prediction(volume: &mut [f64], shape: [usize; 3]) -> Result<ClipReport, ClipError> {
     let [nx, ny, nz] = shape;
     advanced_clip_in_place(volume, [nz, ny, nx])
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_close;
+
+    #[test]
+    fn is_close_follows_numpy_defaults() {
+        let lower = 0.1_f64.ln();
+        assert!(is_close(lower, lower));
+        // A few ulps above the bound: scikit-learn still warns.
+        assert!(is_close(lower, lower + 1e-12));
+        // Inside atol + rtol * |theta| (about 2.3e-5 here).
+        assert!(is_close(lower, lower + 2e-5));
+        assert!(!is_close(lower, lower + 3e-5));
+        assert!(!is_close(lower, lower + 0.1));
+    }
 }

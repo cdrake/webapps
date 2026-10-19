@@ -1,6 +1,7 @@
 //! The GP DWI model against NiFreeze 3bcfb00's GP run on ds005577 sub-107 (the M0 reference,
 //! `hmc/reference/` of the Hugging Face dataset). Data-gated: set `HMC_REFERENCE` to the
-//! folder; without it the test passes and does nothing. Run it in a release build, alone:
+//! folder; without it the test passes and does nothing, unless `HMC_REQUIRE_REFERENCE` is set
+//! (as in CI): then missing data is a failure. Run it in a release build, alone:
 //!
 //! ```sh
 //! HMC_REFERENCE=/path/to/hmc/reference \
@@ -118,6 +119,9 @@ fn g3(v: f64) -> String {
 #[test]
 fn gp_model_matches_nifreeze_on_ds005577() {
     let Ok(root) = std::env::var("HMC_REFERENCE") else {
+        if std::env::var_os("HMC_REQUIRE_REFERENCE").is_some() {
+            panic!("HMC_REFERENCE is not set, but HMC_REQUIRE_REFERENCE is set");
+        }
         eprintln!("HMC_REFERENCE is not set; the NiFreeze GP reference check does not run");
         return;
     };
