@@ -124,7 +124,7 @@ for (const app of ['brain-extraction', 'white-matter-lesions']) {
     vm.runInContext(`let source, editing, outputs = {}, viewRevision = 0;
       let state = { phase: 'idle' }, job;
       ${functions}`, context);
-    const loading = vm.runInContext(app === 'brain-extraction' ? 'importImages(files)' : 'loadFiles(files)', context);
+    const loading = vm.runInContext(app === 'brain-extraction' ? 'importImages(files)' : 'loadFiles(() => files)', context);
     await tick();
     assert.equal(loads.length, 0, 'replacement reached viewer before editor cleanup settled');
     pending.resolve();

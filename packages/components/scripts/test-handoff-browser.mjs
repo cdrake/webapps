@@ -76,7 +76,7 @@ const fixture = `<!doctype html>
     signal,
   }).then(() => window.assigned);
   // Takes the handoff, then loads its files as an app would; a failed load is the app's own.
-  window.receive = (fail = false) => handoff.takeHandoff().then(async (result) => {
+  window.receive = (fail = false, signal) => handoff.takeHandoff({ signal }).then(async (result) => {
     if (!result) return null;
     window.keysDuringLoad = await keys();
     window.files = result.files;
@@ -213,6 +213,69 @@ for (const engine of engines) {
       assert.equal(await page.evaluate(() => location.hash), '');
       await visit(page, url);
       assert.equal(await receiveError(page), 'The image sent from another app is no longer available. Send it again.');
+    });
+
+    // A load cancelled while the files are copied out rejects with AbortError, stops the copy, and
+    // leaves nothing behind. Each engine's copy path is held at its first read until released.
+    async function cancelledDuringCopy(page, hold) {
+      const outcome = await page.evaluate(async (hold) => {
+        window.held = Promise.withResolvers();
+        window.reached = Promise.withResolvers();
+        (0, eval)(hold);
+        const controller = new AbortController();
+        const receiving = window.receive(false, controller.signal).then(() => 'received', (error) => error.name);
+        await window.reached.promise;
+        controller.abort();
+        window.held.resolve();
+        return receiving;
+      }, hold);
+      assert.equal(outcome, 'AbortError');
+      assert.equal(await page.evaluate(() => window.files), undefined, 'no files were handed out');
+      assert.deepEqual(await page.evaluate(() => window.keys()), []);
+      assert.deepEqual(await page.evaluate(() => window.secrets()), []);
+      assert.equal(await page.evaluate(() => location.hash), '');
+    }
+
+    test('a load cancelled during the streamed copy cancels the source stream and releases it', { skip: engine === 'webkit' }, async () => {
+      const { page } = await sentInTab(await fresh());
+      // Each stored Blob's stream is wrapped to record its cancellation; its first chunk is held.
+      await cancelledDuringCopy(page, `
+        window.sources = [];
+        const original = Blob.prototype.stream;
+        Blob.prototype.stream = function () {
+          const reader = original.call(this).getReader();
+          const source = new ReadableStream({
+            pull: (controller) => reader.read().then(({ done, value }) => (done ? controller.close() : controller.enqueue(value))),
+            cancel: (reason) => { source.cancelledWith = reason?.name ?? String(reason); return reader.cancel(reason); },
+          });
+          window.sources.push(source);
+          return source.pipeThrough(new TransformStream({
+            transform: (chunk, controller) => { window.reached.resolve(); return window.held.promise.then(() => controller.enqueue(chunk)); },
+          }));
+        };
+      `);
+      const sources = await page.evaluate(() => window.sources.map((source) => ({ cancelledWith: source.cancelledWith, locked: source.locked })));
+      assert.deepEqual(sources, [{ cancelledWith: 'AbortError', locked: false }, { cancelledWith: 'AbortError', locked: false }]);
+    });
+
+    test('a load cancelled during the first piece of a pieced copy reads no second piece', { skip: engine !== 'webkit' }, async () => {
+      const { page } = await sentInTab(await fresh());
+      // Every Blob reports two pieces' worth of size, so each file is copied in two slices; every
+      // piece read is held until released, and the slices are recorded.
+      await cancelledDuringCopy(page, `
+        window.slices = [];
+        Object.defineProperty(Blob.prototype, 'size', { get: () => 2 * 64 * 1024 * 1024 });
+        const slice = Blob.prototype.slice;
+        Blob.prototype.slice = function (start, end) { window.slices.push(start); return slice.call(this, start, end); };
+        const read = Blob.prototype.arrayBuffer;
+        Blob.prototype.arrayBuffer = function () { window.reached.resolve(); return window.held.promise.then(() => read.call(this)); };
+      `);
+      assert.deepEqual(await page.evaluate(() => window.slices), [0, 0], 'one piece per file was read before the abort, none after');
+    });
+
+    test('the engine detection matches the user agent this engine reports', async () => {
+      const page = await open(await fresh(), `/${RECEIVER}/`);
+      assert.equal(await page.evaluate(() => window.handoff.copiesInPieces(navigator.userAgent)), engine === 'webkit');
     });
 
     test('of a tab and its duplicate, which share the secret, exactly one gets the files', async () => {
