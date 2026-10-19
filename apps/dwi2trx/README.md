@@ -36,7 +36,7 @@ WASM/WebGPU sandbox; see the size limit below.
 
 `vendor/niimath` ships a locally-built niimath WASM with the `--dtifit` CLI
 mode enabled (`@niivue/niimath/niimath.js`, driven directly for multi-file FS
-staging + `callMain` — see `src/dwi2trx/dtifit.ts`). This is not yet part of
+staging + `callMain` — see `runNiimath` in `@neurodesk/dwi2trx/runner`). This is not yet part of
 the published `@niivue/niimath` package on npm, so `package.json` pins
 `@niivue/niimath` to `file:./vendor/niimath` instead of the registry version.
 Do not replace it with the registry package until a dtifit-enabled build
@@ -73,7 +73,7 @@ network; no loaded image, mask, tensor map, or tractogram is uploaded.
   handling; the gradient-scheme viewer and generator support multi-shell
   acquisitions, but the fit itself does not model them.
 - **Unmasked by default**: the fit runs without a brain mask unless MindGrab
-  succeeds (`src/dwi2trx/dtifit.ts`) — the b0 is T2-weighted, so an intensity
+  succeeds (`src/dwi2trx/tensor-worker.ts`) — the b0 is T2-weighted, so an intensity
   mask can wrongly exclude white matter, and the unmasked fit is reported to
   match FSL in-brain.
 - **Gradient orientation conventions**: `src/dwi2trx/vectors.ts` and

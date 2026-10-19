@@ -14,12 +14,13 @@ without a build step:
 | --- | --- |
 | `src/gradients.js` | FSL bval/bvec parsing and validation, the b0 index |
 | `src/tensor.js` | The fit: b0 extraction, `niimath --dtifit` argv, map names, MindGrab options |
+| `src/runner.js` | The browser's niimath runner: one cached module, one call at a time |
 | `src/node.js` | The command line's file handling, MindGrab on the CPU |
 
 `src/tensor.js` takes a `run(args, { inputs, outputs })` function instead of a
-niimath module. The app passes one that drives its cached module
-(`apps/dwi2trx/src/dwi2trx/dtifit.ts`). The command line passes `runNiimath`
-from `@neurodesk/node-drivers/niimath`. Both load the same vendored
+niimath module. The DWI2TRX and NODDI tensor workers pass `runNiimath` from
+`@neurodesk/dwi2trx/runner`, which drives one cached module. The command line
+passes `runNiimath` from `@neurodesk/node-drivers/niimath`. Both load the same vendored
 dtifit-enabled build, `apps/dwi2trx/vendor/niimath`.
 
 ## Command line

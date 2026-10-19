@@ -88,6 +88,58 @@ export function scatterChunk(maps, outputs, indices) {
   }
 }
 
+/** The values of the tensor-fit select control, as the automation schema and provenance name them. */
+export const TENSOR_FITS = Object.freeze(["wls", "ols", "niimath-dtifit"]);
+
+/** The niimath dtifit maps that the tensor maps come from (see dtifitMaps). */
+export const DTIFIT_INPUTS = Object.freeze(["FA", "MD", "L1", "L2", "L3", "S0", "V1"]);
+
+/** True when `volumes` is every volume of an `n`-volume series, in order. */
+export function isEveryVolume(volumes, n) {
+  return volumes.length === n && volumes.every((volume, i) => volume === i);
+}
+
+/** The given volumes of a volume-major series, in their order, as one volume-major array. */
+export function selectVolumes(data, voxels, volumes) {
+  const out = new Float32Array(voxels * volumes.length);
+  volumes.forEach((volume, i) => out.set(data.subarray(volume * voxels, (volume + 1) * voxels), i * voxels));
+  return out;
+}
+
+/** FSL bval and bvec text for the given volumes. */
+export function gradientText(bvals, bvecs, volumes) {
+  const bval = volumes.map((volume) => bvals[volume]).join(" ");
+  const bvec = bvecs.map((row) => volumes.map((volume) => row[volume]).join(" ")).join("\n");
+  return { bval: `${bval}\n`, bvec: `${bvec}\n` };
+}
+
+/**
+ * The tensor maps from niimath dtifit's outputs, with the keys that the WebAssembly fit uses.
+ * dtifit writes no AD or RD: AD is L1 and RD is the mean of L2 and L3. V1 is one 4D map of
+ * three frames (x, y, z) and keeps the eigenvector sign that dtifit gives it. dtifit's V2, V3,
+ * MO and tensor maps are not used.
+ * @param {Record<string, Float32Array>} maps one array per name in DTIFIT_INPUTS
+ */
+export function dtifitMaps(maps, voxels) {
+  for (const name of DTIFIT_INPUTS) {
+    const expected = name === "V1" ? 3 * voxels : voxels;
+    if (maps[name]?.length !== expected) throw new Error(`niimath dtifit wrote no ${name} map on the DWI grid.`);
+  }
+  const { FA, MD, L1, L2, L3, S0, V1 } = maps;
+  const RD = new Float32Array(voxels);
+  for (let i = 0; i < voxels; i++) RD[i] = (L2[i] + L3[i]) / 2;
+  return {
+    FA,
+    MD,
+    AD: L1,
+    RD,
+    S0,
+    V1x: V1.slice(0, voxels),
+    V1y: V1.slice(voxels, 2 * voxels),
+    V1z: V1.slice(2 * voxels, 3 * voxels),
+  };
+}
+
 /** A direction map as three frames (x, y, z) after one another, as a 4D NIfTI holds them. */
 export function stackFrames(maps, keys) {
   const voxels = maps[keys[0]].length;

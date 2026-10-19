@@ -1,5 +1,5 @@
 // One fitting worker: loads the noddi WebAssembly once, then fits chunks of masked voxels.
-// Messages in: { type: "init", bvals, bvecs, weighted, noddi } then { type: "fit", id, data, voxels }.
+// Messages in: { type: "init", bvals, bvecs, weighted, tensor, noddi } then { type: "fit", id, data, voxels }.
 // Messages out: { type: "ready" }, { type: "done", id, tensor, noddi } or { type: "error", message }.
 import { loadNoddi } from "@neurodesk/noddi";
 import wasmUrl from "@neurodesk/noddi/wasm?url";
@@ -23,7 +23,8 @@ self.onmessage = async ({ data: message }) => {
     }
     if (message.type === "fit") {
       const { bvals, bvecs, weighted } = settings;
-      const tensor = api.dtiFit(message.data, message.voxels, bvals, bvecs, { weighted });
+      // Without `tensor` (the niimath dtifit option) the pool fits NODDI only.
+      const tensor = settings.tensor === false ? null : api.dtiFit(message.data, message.voxels, bvals, bvecs, { weighted });
       const noddi = model ? model.fit(message.data, message.voxels) : null;
       self.postMessage({ type: "done", id: message.id, tensor, noddi }, [...transferables(tensor), ...transferables(noddi)]);
     }

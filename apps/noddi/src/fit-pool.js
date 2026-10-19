@@ -8,12 +8,12 @@ export function workerCount(hardware = globalThis.navigator?.hardwareConcurrency
 }
 
 /**
- * Fits the tensor (and NODDI when `noddi`) to every voxel in `indices`.
- * @returns {Promise<{ tensor: Record<string, Float32Array>, noddi: Record<string, Float32Array> | null }>}
+ * Fits the tensor (unless `tensor` is false) and NODDI (when `noddi`) to every voxel in `indices`.
+ * @returns {Promise<{ tensor: Record<string, Float32Array> | null, noddi: Record<string, Float32Array> | null }>}
  */
-export function fitVolume({ data, voxels, volumes, indices, bvals, bvecs, weighted, noddi, signal, onProgress }) {
+export function fitVolume({ data, voxels, volumes, indices, bvals, bvecs, weighted, tensor = true, noddi, signal, onProgress }) {
   const work = chunks(indices, CHUNK_VOXELS);
-  const tensorMaps = emptyMaps("tensor", voxels);
+  const tensorMaps = tensor ? emptyMaps("tensor", voxels) : null;
   const noddiMaps = noddi ? emptyMaps("noddi", voxels) : null;
   const workers = [];
   return new Promise((resolve, reject) => {
@@ -46,14 +46,39 @@ export function fitVolume({ data, voxels, volumes, indices, bvals, bvecs, weight
         if (message.type === "error") return finish(new Error(message.message));
         if (message.type === "ready") return send(worker);
         if (message.type !== "done") return;
-        scatterChunk(tensorMaps, message.tensor, work[message.id]);
+        if (tensorMaps && message.tensor) scatterChunk(tensorMaps, message.tensor, work[message.id]);
         if (noddiMaps && message.noddi) scatterChunk(noddiMaps, message.noddi, work[message.id]);
         done++;
         onProgress?.(done / work.length);
         if (done === work.length) finish();
         else send(worker);
       };
-      worker.postMessage({ type: "init", bvals, bvecs, weighted, noddi });
+      worker.postMessage({ type: "init", bvals, bvecs, weighted, tensor, noddi });
     }
+  });
+}
+
+/**
+ * Fits the tensor with niimath dtifit in a worker (see dtifit.js). Cancelling stops the worker.
+ * @returns {Promise<Record<string, Float32Array>>} the maps with the WebAssembly fit's keys
+ */
+export function fitDtifitVolume(input, signal) {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL("./dtifit-worker.js", import.meta.url), { type: "module" });
+    const finish = (error, tensor) => {
+      signal?.removeEventListener("abort", abort);
+      worker.terminate();
+      if (error) reject(error);
+      else resolve(tensor);
+    };
+    const abort = () => finish(signal.reason ?? new DOMException("Fitting cancelled", "AbortError"));
+    if (signal?.aborted) return abort();
+    signal?.addEventListener("abort", abort, { once: true });
+    worker.onerror = (event) => finish(new Error(event.message || "The niimath dtifit worker failed."));
+    worker.onmessage = ({ data: message }) => {
+      if (message.type === "error") finish(new Error(message.message));
+      else if (message.type === "done") finish(null, message.tensor);
+    };
+    worker.postMessage(input);
   });
 }

@@ -1,16 +1,22 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
   MAPS,
+  TENSOR_FITS,
   bidsStem,
   chunks,
+  dtifitMaps,
   emptyMaps,
   gatherChunk,
+  gradientText,
+  isEveryVolume,
   mapName,
   maskIndices,
   maskName,
   meanVolumes,
   scatterChunk,
+  selectVolumes,
   stackFrames,
 } from "../src/pipeline.js";
 
@@ -47,6 +53,50 @@ test("gather and scatter round-trip a chunk of masked voxels", () => {
   scatterChunk(maps, { ICVF: Float32Array.from([0.5]), unknown: Float32Array.from([9]) }, second);
   assert.deepEqual(Array.from(maps.ICVF), [0, 0, 0, 0, 0.5]);
   assert.equal(maps.unknown, undefined);
+});
+
+test("the tensor-fit options agree in the page, the automation schema and the pipeline", () => {
+  const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  const select = html.match(/<select id="tensorFit">([\s\S]*?)<\/select>/)[1];
+  const options = [...select.matchAll(/<option value="([^"]+)"( selected)?/g)];
+  assert.deepEqual(options.map((m) => m[1]), [...TENSOR_FITS]);
+  assert.deepEqual(options.filter((m) => m[2]).map((m) => m[1]), ["wls"]);
+  const automation = JSON.parse(readFileSync(new URL("../automation.json", import.meta.url), "utf8"));
+  const parameter = automation.operations.fit.parameters.tensorFit;
+  assert.deepEqual(parameter.enum, [...TENSOR_FITS]);
+  assert.equal(parameter.default, "wls");
+});
+
+test("volume selection keeps the given volumes in their order, with their gradients", () => {
+  // Three volumes of two voxels.
+  const data = Float32Array.from([1, 2, 3, 4, 5, 6]);
+  assert.deepEqual(Array.from(selectVolumes(data, 2, [0, 2])), [1, 2, 5, 6]);
+  assert.equal(isEveryVolume([0, 1, 2], 3), true);
+  assert.equal(isEveryVolume([0, 2], 3), false);
+  assert.equal(isEveryVolume([1, 0, 2], 3), false);
+  const text = gradientText([0, 1000, 2000], [[0, 1, 0], [0, 0, 1], [0, 0, 0]], [0, 1]);
+  assert.deepEqual(text, { bval: "0 1000\n", bvec: "0 1\n0 0\n0 0\n" });
+});
+
+test("niimath dtifit outputs map to the tensor maps: AD is L1, RD the mean of L2 and L3", () => {
+  const voxels = 2;
+  const maps = dtifitMaps({
+    FA: Float32Array.from([0.5, 0]),
+    MD: Float32Array.from([1e-3, 0]),
+    L1: Float32Array.from([2e-3, 0]),
+    L2: Float32Array.from([1e-3, 0]),
+    L3: Float32Array.from([0, 0]),
+    S0: Float32Array.from([900, 0]),
+    V1: Float32Array.from([1, 0, 0, 0, 0, 0]),
+  }, voxels);
+  assert.deepEqual(Object.keys(maps).sort(), Object.keys(emptyMaps("tensor", voxels)).sort());
+  assert.deepEqual(Array.from(maps.AD), [Math.fround(2e-3), 0]);
+  assert.deepEqual(Array.from(maps.RD), [Math.fround(0.5e-3), 0]);
+  assert.deepEqual(Array.from(maps.V1x), [1, 0]);
+  assert.deepEqual(Array.from(maps.V1y), [0, 0]);
+  assert.deepEqual(Array.from(maps.V1z), [0, 0]);
+  assert.deepEqual(Array.from(maps.S0), [900, 0]);
+  assert.throws(() => dtifitMaps({ ...maps, L1: maps.AD, L2: maps.RD, L3: maps.RD, V1: maps.V1x }, voxels), /no V1 map/);
 });
 
 test("direction frames stack x, y and z volumes", () => {

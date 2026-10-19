@@ -26,8 +26,8 @@ import { parseBvalBvec } from "@neurodesk/dwi2trx/gradients";
 import { loadNoddi } from "@neurodesk/noddi";
 import wasmUrl from "@neurodesk/noddi/wasm?url";
 import { APP } from "./config.js";
-import { MAPS, bidsStem, mapName, maskIndices, maskName, meanVolumes, stackFrames } from "./pipeline.js";
-import { fitVolume } from "./fit-pool.js";
+import { MAPS, bidsStem, isEveryVolume, mapName, maskIndices, maskName, meanVolumes, stackFrames } from "./pipeline.js";
+import { fitDtifitVolume, fitVolume } from "./fit-pool.js";
 import examples from "../examples.json";
 
 const $ = (id) => document.getElementById(id);
@@ -225,7 +225,8 @@ async function fitModels(signal) {
   setBusy(true);
   clearOutputs();
   const withNoddi = $("fitNoddi").checked && !input.table.noddiError;
-  const weighted = $("tensorFit").value === "wls";
+  const tensorFit = $("tensorFit").value;
+  const dtifit = tensorFit === "niimath-dtifit";
   progress.setCancellable(true);
   try {
     let brain = mask;
@@ -242,21 +243,44 @@ async function fitModels(signal) {
     }
     const indices = maskIndices(brain);
     if (!indices.length) throw new Error("The brain mask has no voxels. Supply a mask, or check the b0 volumes.");
-    progress.begin(`Fitting ${indices.length} voxels…`);
-    progress.setCancellable(true);
-    status(`Fitting ${withNoddi ? "tensor and NODDI" : "tensor"} to ${indices.length} voxels`);
-    const fit = await fitVolume({
-      data: input.data,
-      voxels: input.voxels,
-      volumes: input.bvals.length,
-      indices,
-      bvals: input.bvals,
-      bvecs: input.bvecs,
-      weighted,
-      noddi: withNoddi,
-      signal: controller.signal,
-      onProgress: (fraction) => progress.setProgress(fraction),
-    });
+    const fit = { tensor: null, noddi: null };
+    if (dtifit) {
+      const volumes = input.table.dtiVolumes;
+      progress.begin("Fitting the tensor with niimath dtifit…");
+      progress.setCancellable(true);
+      status(`Fitting the tensor with niimath dtifit to ${indices.length} voxels`);
+      fit.tensor = await fitDtifitVolume({
+        buffer: input.buffer,
+        // The DWI goes to niimath unchanged when the fit uses every volume.
+        data: isEveryVolume(volumes, input.bvals.length) ? null : input.data,
+        dims: input.dims,
+        bvals: input.bvals,
+        bvecs: input.bvecs,
+        volumes,
+        mask: brain,
+      }, controller.signal);
+      log.log(`niimath dtifit on ${volumes.length} of ${input.bvals.length} volumes`, "info");
+    }
+    if (!dtifit || withNoddi) {
+      progress.begin(`Fitting ${indices.length} voxels…`);
+      progress.setCancellable(true);
+      status(`Fitting ${dtifit ? "NODDI" : withNoddi ? "tensor and NODDI" : "tensor"} to ${indices.length} voxels`);
+      const pool = await fitVolume({
+        data: input.data,
+        voxels: input.voxels,
+        volumes: input.bvals.length,
+        indices,
+        bvals: input.bvals,
+        bvecs: input.bvecs,
+        weighted: tensorFit === "wls",
+        tensor: !dtifit,
+        noddi: withNoddi,
+        signal: controller.signal,
+        onProgress: (fraction) => progress.setProgress(fraction),
+      });
+      fit.tensor ??= pool.tensor;
+      fit.noddi = pool.noddi;
+    }
     const stem = bidsStem(input.name);
     const dims = input.dims;
     const rows = {};
@@ -287,7 +311,7 @@ async function fitModels(signal) {
     status(`Fitted ${indices.length} voxels · ${Object.keys(rows).length} maps`);
     return {
       artifacts,
-      provenance: { method: withNoddi ? "dti+noddi-amico" : "dti", tensorFit: weighted ? "wls" : "ols", maskVoxels: indices.length, mask: maskSource },
+      provenance: { method: withNoddi ? "dti+noddi-amico" : "dti", tensorFit, maskVoxels: indices.length, mask: maskSource },
     };
   } catch (error) {
     progress.reset();

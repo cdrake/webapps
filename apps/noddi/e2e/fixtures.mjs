@@ -3,7 +3,7 @@
 import { gzipSync } from "node:zlib";
 import { createNiftiFromData, createNiftiHeaderFromVolume } from "@neurodesk/webapp-components/file-io";
 
-export function syntheticDwi({ size = 8, shells = [1000, 2000], directions = 30 } = {}) {
+export function syntheticDwi({ size = 8, shells = [1000, 2000], directions = 30, eigenvalues = [1.7e-3, 0.3e-3, 0.3e-3] } = {}) {
   const bvals = [0, 0];
   const bvecs = [[0, 0], [0, 0], [0, 0]];
   for (const b of shells) {
@@ -18,7 +18,7 @@ export function syntheticDwi({ size = 8, shells = [1000, 2000], directions = 30 
     }
   }
   const voxels = size * size * size;
-  const [l1, l2, l3] = [1.7e-3, 0.3e-3, 0.3e-3];
+  const [l1, l2, l3] = eigenvalues;
   // Signal inside a one-voxel border of background, so the empty-mask test has background voxels.
   const inside = [];
   for (let z = 1; z < size - 1; z++) {
