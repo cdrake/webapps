@@ -41,7 +41,7 @@ test('reads only 352 bytes of a sparse 1 GiB NIfTI file', async (t) => {
   assert.deepEqual(reads, [[0, 352]]);
 });
 
-test('streams gzip past a long comment and cancels before reading all voxel data', async () => {
+test('streams gzip past a long comment and cancels a paced source early', { timeout: 5000 }, async () => {
   const bytes = header();
   const gzip = gzipSync(Buffer.concat([bytes, randomBytes(2 * 1024 ** 2)]));
   // A valid gzip FCOMMENT can put the compressed header beyond a fixed 64 KiB prefix.
@@ -50,20 +50,25 @@ test('streams gzip past a long comment and cancels before reading all voxel data
   const file = new File([compressed], 'large.nii.gz');
   file.arrayBuffer = () => { throw new Error('Must not read the whole gzip'); };
   let readBytes = 0;
-  let cancelled = false;
+  let onCancel;
+  const cancelled = new Promise(resolve => { onCancel = resolve; });
   file.stream = () => new ReadableStream({
-    pull(controller) {
+    async pull(controller) {
+      // Model asynchronous I/O; Node 22 can buffer an entire synchronous source.
+      await new Promise(resolve => setImmediate(resolve));
       const next = Math.min(readBytes + 4096, compressed.length);
       controller.enqueue(compressed.subarray(readBytes, next));
       readBytes = next;
       if (next === compressed.length) controller.close();
     },
-    cancel() { cancelled = true; },
+    cancel() { onCancel(); },
   });
   assert.deepEqual(await readNiftiHeader(file), parseNiftiHeader(bytes));
-  // Cancellation propagates through pipeThrough asynchronously.
-  await new Promise(resolve => setImmediate(resolve));
-  assert.equal(cancelled, true);
+  // Wait for cancellation to propagate through pipeThrough, not an event-loop tick.
+  await new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('Source was not cancelled')), 4000);
+    cancelled.then(() => { clearTimeout(timer); resolve(); });
+  });
   assert.ok(readBytes < compressed.length, `${readBytes} of ${compressed.length} compressed bytes read`);
 });
 
