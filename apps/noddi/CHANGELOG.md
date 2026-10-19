@@ -1,5 +1,14 @@
 # noddi
 
+## 0.3.20261019
+
+### Patch Changes
+
+- Updated dependencies [da2584b]
+  - @neurodesk/runtime-support@0.9.2
+  - @neurodesk/dwi2trx@0.5.20261019
+  - @neurodesk/noddi@0.3.20261019
+
 ## 0.3.20261018
 
 ### Minor Changes

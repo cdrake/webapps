@@ -1,6 +1,6 @@
 {
   "name": "dicom2bids",
-  "version": "0.1.20261018",
+  "version": "0.1.20261019",
   "private": true,
   "license": "MIT",
   "type": "module",

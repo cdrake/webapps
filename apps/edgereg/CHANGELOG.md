@@ -1,5 +1,13 @@
 # edgereg
 
+## 0.5.20261019
+
+### Patch Changes
+
+- Updated dependencies [da2584b]
+  - @neurodesk/runtime-support@0.9.2
+  - @neurodesk/edgereg@0.5.20261019
+
 ## 0.5.20261018
 
 ### Minor Changes

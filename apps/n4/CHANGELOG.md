@@ -10,6 +10,10 @@
 
 ### Patch Changes
 
+- Updated dependencies [da2584b]
+  - @neurodesk/runtime-support@0.9.2
+  - @neurodesk/dwi2trx@0.5.20261019
+  - @neurodesk/n4@0.3.20261019
 - @neurodesk/n4@0.3.20261019
 
 ## 0.2.20261018

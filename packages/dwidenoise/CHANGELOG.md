@@ -1,5 +1,7 @@
 # @neurodesk/dwidenoise
 
+## 0.2.20261019
+
 ## 0.2.20261018
 
 ### Minor Changes

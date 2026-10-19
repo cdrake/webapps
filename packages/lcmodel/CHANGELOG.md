@@ -1,5 +1,7 @@
 # @neurodesk/lcmodel
 
+## 0.8.20261019
+
 ## 0.8.20261018
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # degibbs
 
+## 0.2.20261019
+
+### Patch Changes
+
+- Updated dependencies [da2584b]
+  - @neurodesk/runtime-support@0.9.2
+  - @neurodesk/degibbs@0.2.20261019
+
 ## 0.2.20261018
 
 ### Minor Changes

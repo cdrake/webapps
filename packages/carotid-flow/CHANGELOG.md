@@ -1,5 +1,7 @@
 # @neurodesk/carotid-flow
 
+## 0.4.20261019
+
 ## 0.4.20261018
 
 ### Patch Changes
