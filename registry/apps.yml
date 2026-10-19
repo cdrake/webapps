@@ -921,9 +921,10 @@ apps:
     anatomy: [any]
     modalities: [mri]
     inputs: [dicom, nifti]
-    hardware: cpu
+    hardware: webgpu-optional
     legacy_domain: null
     runtime: vite-wasm
+    app_scoped_runtime_families: [mindgrab-20260925]
     model_manifest: null
     asset_manifest_schema: null
     source: neurodesk/webapps@local

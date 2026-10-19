@@ -526,7 +526,7 @@ apps:
         doi: 10.1098/rstb.2001.0915
       - group: Brain extraction
         title: MindGrab
-        reference: "Fani A, Nassar M, Ghosh S, et al. MindGrab for BrainChop: fast and accurate skull stripping for command line and browser. arXiv. 2025."
+        reference: "Fani A, Doan M, Le I, et al. MindGrab for BrainChop: fast and accurate skull stripping for command line and browser. arXiv. 2025."
         url: https://arxiv.org/abs/2506.11860
       - group: Brain extraction
         title: Brainchop
@@ -733,7 +733,7 @@ apps:
         code: https://github.com/BBillot/SynthSR
       - group: Brain extraction
         title: MindGrab
-        reference: "Fani A, Nassar M, Ghosh S, et al. MindGrab for BrainChop: fast and accurate skull stripping for command line and browser. arXiv. 2025."
+        reference: "Fani A, Doan M, Le I, et al. MindGrab for BrainChop: fast and accurate skull stripping for command line and browser. arXiv. 2025."
         url: https://arxiv.org/abs/2506.11860
       - group: Brain extraction
         title: Brainchop
@@ -807,7 +807,7 @@ apps:
         code: https://github.com/rordenlab/niimath
       - group: Brain extraction
         title: MindGrab
-        reference: "Fani A, Nassar M, Ghosh S, et al. MindGrab for BrainChop: fast and
+        reference: "Fani A, Doan M, Le I, et al. MindGrab for BrainChop: fast and
           accurate skull stripping for command line and browser. arXiv. 2025."
         url: https://arxiv.org/abs/2506.11860
       - group: DICOM conversion
@@ -925,7 +925,7 @@ apps:
         code: https://github.com/pyushkevich/greedy
       - group: Brain extraction
         title: MindGrab
-        reference: "Fani A, Nassar M, Ghosh S, et al. MindGrab for BrainChop: fast and accurate skull stripping for command line and browser. arXiv. 2025."
+        reference: "Fani A, Doan M, Le I, et al. MindGrab for BrainChop: fast and accurate skull stripping for command line and browser. arXiv. 2025."
         url: https://arxiv.org/abs/2506.11860
       - group: Brain extraction
         title: Brainchop
@@ -1077,7 +1077,7 @@ apps:
         code: https://github.com/rohitrango/FireANTs
       - group: Brain extraction
         title: MindGrab
-        reference: "Fani A, Nassar M, Ghosh S, et al. MindGrab for BrainChop: fast and accurate skull stripping for command line and browser. arXiv. 2025."
+        reference: "Fani A, Doan M, Le I, et al. MindGrab for BrainChop: fast and accurate skull stripping for command line and browser. arXiv. 2025."
         url: https://arxiv.org/abs/2506.11860
       - group: Brain extraction
         title: Brainchop
@@ -1125,7 +1125,7 @@ apps:
       code: https://github.com/Bostrix/FSL-BET2
     - group: Brain extraction
       title: MindGrab
-      reference: 'Fani A, Nassar M, Ghosh S, et al. MindGrab for BrainChop: fast and accurate skull stripping for command line and browser. arXiv.
+      reference: 'Fani A, Doan M, Le I, et al. MindGrab for BrainChop: fast and accurate skull stripping for command line and browser. arXiv.
         2025.'
       url: https://arxiv.org/abs/2506.11860
     - group: Brain extraction
@@ -1500,7 +1500,7 @@ apps:
     citations:
       - group: Brain extraction
         title: MindGrab
-        reference: "Fani A, Nassar M, Ghosh S, et al. MindGrab for BrainChop: fast and accurate skull stripping for command line and browser. arXiv. 2025."
+        reference: "Fani A, Doan M, Le I, et al. MindGrab for BrainChop: fast and accurate skull stripping for command line and browser. arXiv. 2025."
         url: https://arxiv.org/abs/2506.11860
       - group: Brain extraction
         title: Brainchop
@@ -1605,7 +1605,7 @@ apps:
         code: https://github.com/MRtrix3/mrtrix3
       - group: Brain extraction
         title: MindGrab
-        reference: "Fani A, Nassar M, Ghosh S, et al. MindGrab for BrainChop: fast and accurate skull stripping for command line and browser. arXiv. 2025."
+        reference: "Fani A, Doan M, Le I, et al. MindGrab for BrainChop: fast and accurate skull stripping for command line and browser. arXiv. 2025."
         url: https://arxiv.org/abs/2506.11860
       - group: Brain extraction
         title: Brainchop

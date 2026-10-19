@@ -182,7 +182,7 @@ fetal, 3D printing, functional MRI) and no longer repeat the title.
 | fastprep | Preprocess fMRI BOLD runs in the style of fMRIPrep. | Brain | MRI | NIfTI | WebGPU optional | – |
 | NODDI | Fit diffusion tensor and NODDI maps from diffusion MRI. | Brain | MRI | DICOM, NIfTI | WebGPU optional | – |
 | Degibbs | Remove Gibbs ringing from MRI scans. | Any anatomy | MRI | DICOM, NIfTI | No GPU needed | – |
-| N4 | Correct intensity bias fields in MRI scans. | Any anatomy | MRI | DICOM, NIfTI | No GPU needed | – |
+| N4 | Correct intensity bias fields in MRI scans. | Any anatomy | MRI | DICOM, NIfTI | WebGPU optional | – |
 | DICOM to BIDS | Convert scanner DICOM exports to anatomical and DWI BIDS. | Any anatomy | MRI | DICOM | No GPU needed | – |
 | Dwidenoise | Denoise diffusion MRI with Patch2Self. | Brain | MRI | DICOM, NIfTI | No GPU needed | – |
 

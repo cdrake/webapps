@@ -247,16 +247,12 @@ async function correct(signal) {
     let maskSource = "supplied";
     if (!brain) {
       const what = input.frames > 1 ? "the mean b0" : "the image";
-      progress.begin(`Extracting the brain from ${what} with MindGrab…`);
-      progress.setCancellable(true);
       status(`Extracting the brain from ${what} with MindGrab`);
       const image = createNiftiFromData(reference, input.buffer, { dims: input.dims });
       const extracted = await brainMask(new Uint8Array(image), { assetPath: `${import.meta.env.BASE_URL}mindgrab/`, signal: controller.signal });
       brain = Uint8Array.from(readNiftiFrames(extracted.mask).data, (value) => (value > 0 ? 1 : 0));
       maskSource = `mindgrab-${mindgrab.version}-${extracted.backend}`;
       log.log(`MindGrab ${mindgrab.version} brain mask on ${extracted.backend}`, "info");
-      progress.begin("Fitting the bias field…");
-      progress.setCancellable(true);
     }
     if (!brain.some(Boolean)) throw new Error("The brain mask has no voxels. Supply a mask, or check the image.");
     status(`Fitting the bias field to ${brain.reduce((sum, v) => sum + v, 0)} voxels`);

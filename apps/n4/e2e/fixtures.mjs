@@ -42,6 +42,17 @@ export function tissueMask({ nx = 40, ny = 32, nz = 24 } = {}) {
   return { name: "sub-01_desc-brain_mask.nii.gz", mimeType: "application/gzip", buffer: gzipSync(Buffer.from(nifti)) };
 }
 
+/** The full 16³ ramp phantom, on the grid dcm2niix writes for dicomSeries({ slices: 16 }). */
+export function dicomMask() {
+  const header = createNiftiHeaderFromVolume({ hdr: {
+    dims: [3, 16, 16, 16, 1, 1, 1, 1],
+    pixDims: [1, 1, 1, 1, 1, 1, 1, 1],
+    affine: [[-1, 0, 0, 0], [0, 1, 0, -15], [0, 0, 1, 0], [0, 0, 0, 1]],
+  } });
+  const nifti = createNiftiFromData(new Uint8Array(16 ** 3).fill(1), header, { dims: [16, 16, 16] });
+  return { name: "dicom-mask.nii.gz", mimeType: "application/gzip", buffer: gzipSync(Buffer.from(nifti)) };
+}
+
 /** Coefficient of variation of the first volume over the tissue voxels. */
 export function tissueVariation(data, tissue) {
   const values = tissue.map((i) => data[i]);

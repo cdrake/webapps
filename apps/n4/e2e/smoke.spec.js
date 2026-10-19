@@ -5,7 +5,7 @@ import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
 import { readNiftiFrames } from "@neurodesk/webapp-components/file-io";
-import { biasedSeries, tissueMask, tissueVariation } from "./fixtures.mjs";
+import { biasedSeries, dicomMask, tissueMask, tissueVariation } from "./fixtures.mjs";
 import { dicomSeries } from "../../../test-utils/dicom-fixture.mjs";
 
 const examples = JSON.parse(readFileSync(new URL("../examples.json", import.meta.url), "utf8"));
@@ -272,6 +272,10 @@ test("DICOM correction downloads an anonymized sidecar", async ({ page }) => {
   await page.goto("/");
   await page.locator("#imageInput").setInputFiles(dicomSeries({ slices: 16, patient: { birthDate: "19800102" } }));
   await expect(page.locator("#fileInfo")).toContainText(".nii", { timeout: 60000 });
+  // The DICOM fixture is an intensity ramp, so use its known mask rather than skull stripping it.
+  await page.locator("#advancedSettings").evaluate((section) => { section.open = true; });
+  await page.locator("#maskInput").setInputFiles(dicomMask());
+  await expect(page.locator("#maskInfo")).toContainText("4096 voxels");
   await page.locator("#runButton").click();
   await expect(page.locator("#statusText")).toHaveText("Bias field corrected", { timeout: 60000 });
   const event = await download(page, "Sidecar");
