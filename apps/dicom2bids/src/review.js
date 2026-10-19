@@ -1,6 +1,6 @@
 // The editable review is a view of in-memory series, not a second copy of their
 // scientific state. Closing a disclosure never resets the user's assignments.
-import { DIRECTIONS, SCAN_TYPES } from './bids.js';
+import { DIRECTIONS, SCAN_TYPES, directionLabel } from './bids.js';
 
 const TYPE_LABELS = { exclude: 'Exclude', T1w: 'T1w', T2w: 'T2w', FLAIR: 'FLAIR', dwi: 'DWI', epi: 'Reverse DWI (fmap)' };
 
@@ -228,6 +228,7 @@ export function createSeriesReview({ rows, editor, onChange }) {
         value: item.type,
         update: (value) => {
           item.type = value;
+          if (!item.direction) item.direction = directionLabel(item);
           show(item);
         },
       });

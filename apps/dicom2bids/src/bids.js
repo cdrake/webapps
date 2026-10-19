@@ -14,6 +14,18 @@ const LABEL = /^[a-zA-Z0-9]+$/;
 const stem = (name) => name.replace(/\.(nii\.gz|nii|json|bval|bvec)$/i, '');
 const positive = (value) => typeof value === 'number' && Number.isFinite(value) && value > 0;
 
+export function directionLabel(item) {
+  return ['dwi', 'epi'].includes(item.type) && DIRECTIONS.includes(item.metadata.PhaseEncodingDirection)
+    ? item.metadata.PhaseEncodingDirection.replace('-', 'minus') : '';
+}
+
+function nonMagnitude(metadata) {
+  const component = metadata.ComplexImageComponent;
+  const imageType = [].concat(metadata.ImageType || []).flatMap(value => String(value).toUpperCase().split(/[\\\s,]+/));
+  return (component && component !== 'MAGNITUDE')
+    || imageType.some(value => ['P', 'PHASE', 'R', 'REAL', 'I', 'IMAGINARY'].includes(value));
+}
+
 /** Pair by exact output stem, including echo/split suffixes emitted by dcm2niix. */
 export async function seriesFromOutputs(files, { signal } = {}) {
   const byName = new Map();
@@ -45,12 +57,12 @@ export async function seriesFromOutputs(files, { signal } = {}) {
       bval: bval ? await bval.text() : '',
       bvec: bvec ? await bvec.text() : '',
       acquisition: '',
-      direction: DIRECTIONS.includes(metadata.PhaseEncodingDirection)
-        ? metadata.PhaseEncodingDirection.replace('-', 'minus') : '',
+      direction: '',
       targets: [],
       reviewed: false,
     };
     item.type = suggestType(item);
+    item.direction = directionLabel(item);
     series.push(item);
   }
   signal?.throwIfAborted();
@@ -66,7 +78,7 @@ export async function seriesFromOutputs(files, { signal } = {}) {
 export function suggestType(item) {
   const text = `${item.metadata.SeriesDescription || ''} ${item.metadata.ProtocolName || ''}`.toLowerCase();
   const imageType = [].concat(item.metadata.ImageType || []).join(' ').toUpperCase();
-  if (/DERIVED|ADC|TRACE|FA\b/.test(imageType) || /locali[sz]er|scout|\badc\b|\btrace\b/.test(text)) return 'exclude';
+  if (nonMagnitude(item.metadata) || /DERIVED|ADC|TRACE|FA\b/.test(imageType) || /locali[sz]er|scout|\badc\b|\btrace\b/.test(text)) return 'exclude';
   if (item.bval.trim()) {
     const b = item.bval.trim().split(/\s+/).map(Number);
     // A complete reversed diffusion acquisition retains its gradients in dwi/.
@@ -114,13 +126,14 @@ export function validateDataset(series, options) {
   if (!included.length) add(null, 'series', 'Include at least one supported acquisition.');
   const byId = new Map(included.map((item) => [item.id, item]));
   for (const item of included) {
+    const directionAllowed = ['dwi', 'epi'].includes(item.type);
     if (!SCAN_TYPES.includes(item.type)) add(item.id, 'type', 'Choose a supported scan type.');
     if (!item.reviewed) add(item.id, 'reviewed', 'Confirm the scan type and metadata.');
     if (item.acquisition && !LABEL.test(item.acquisition)) add(item.id, 'acquisition', 'Use letters and digits only.');
-    if (item.direction && !LABEL.test(item.direction)) add(item.id, 'direction', 'Use letters and digits only.');
+    if (directionAllowed && item.direction && !LABEL.test(item.direction)) add(item.id, 'direction', 'Use letters and digits only.');
     const meta = item.metadata;
     if (meta.Modality && meta.Modality !== 'MR') add(item.id, 'type', 'Only MR acquisitions are supported.');
-    if (meta.ComplexImageComponent && meta.ComplexImageComponent !== 'MAGNITUDE') {
+    if (nonMagnitude(meta)) {
       add(item.id, 'type', 'Only magnitude images are supported; exclude phase, real and imaginary components.');
     }
     for (const key of ['EchoTime', 'RepetitionTime', 'TotalReadoutTime', 'EffectiveEchoSpacing']) {
@@ -129,8 +142,11 @@ export function validateDataset(series, options) {
     if (meta.PhaseEncodingDirection !== undefined && !DIRECTIONS.includes(meta.PhaseEncodingDirection)) {
       add(item.id, 'PhaseEncodingDirection', 'Choose i, i-, j, j-, k or k- in NIfTI voxel axes.');
     }
-    if ((item.direction || item.type === 'epi') && !DIRECTIONS.includes(meta.PhaseEncodingDirection)) {
+    if (directionAllowed && (item.direction || item.type === 'epi') && !DIRECTIONS.includes(meta.PhaseEncodingDirection)) {
       add(item.id, 'PhaseEncodingDirection', 'Enter the phase encoding direction from the acquisition metadata.');
+    }
+    if (!directionAllowed && (item.bval.trim() || item.bvec.trim())) {
+      add(item.id, 'type', 'Diffusion gradients require DWI or reverse DWI. Switch back to DWI to keep or clear its gradients.');
     }
     if (item.type === 'dwi' || item.bval.trim() || item.bvec.trim()) {
       const message = gradientError(item);
@@ -172,7 +188,8 @@ const TECHNICAL_FIELDS = new Set([
   'ManufacturersModelName', 'MRAcquisitionType', 'ScanningSequence', 'SequenceVariant',
   'ScanOptions', 'ImageType', 'ComplexImageComponent', 'EchoTime', 'EchoNumber',
   'RepetitionTime', 'InversionTime', 'FlipAngle', 'SliceThickness', 'SpacingBetweenSlices',
-  'SliceTiming', 'MultibandAccelerationFactor', 'ParallelReductionFactorInPlane',
+  'SliceTiming', 'SliceEncodingDirection', 'EchoTrainLength', 'InPlanePhaseEncodingDirectionDICOM',
+  'MultibandAccelerationFactor', 'ParallelReductionFactorInPlane',
   'PartialFourier', 'PhaseEncodingDirection', 'TotalReadoutTime', 'EffectiveEchoSpacing',
   'ReconMatrixPE', 'AcquisitionMatrixPE', 'AcquisitionDuration', 'DwellTime',
   'PixelBandwidth', 'PercentPhaseFOV', 'PercentSampling', 'NumberOfAverages',
@@ -191,7 +208,7 @@ export function datasetPaths(series, { subject, session }) {
   const prefix = `sub-${subject}_ses-${session}`;
   const base = (item) => prefix
     + (item.acquisition ? `_acq-${item.acquisition}` : '')
-    + (item.direction ? `_dir-${item.direction}` : '');
+    + (['dwi', 'epi'].includes(item.type) && item.direction ? `_dir-${item.direction}` : '');
   const keys = included.map((item) => `${base(item)}_${item.type}`);
   const counts = new Map();
   return new Map(included.map((item, index) => {

@@ -39,6 +39,79 @@ test('each anatomical contrast alone exports a complete dataset without requirin
   }
 });
 
+test('anatomical outputs never carry direction entities, including after a scan type edit', async () => {
+  const [suggested] = await seriesFromOutputs([
+    image(), new File([JSON.stringify({ SeriesDescription: 'MPRAGE', PhaseEncodingDirection: 'j-' })], 'scan.json'),
+  ]);
+  assert.equal(suggested.type, 'T1w');
+  assert.equal(suggested.direction, '');
+  const item = await acquisition('dwi', { metadata: { PhaseEncodingDirection: 'j-' }, bval: '0', bvec: '0\n0\n0' });
+  assert.equal(item.direction, 'jminus');
+  assert.match(datasetPaths([item], settings).get(item.id), /_dir-jminus_dwi$/);
+  for (const type of ['T1w', 'T2w', 'FLAIR']) {
+    item.type = type;
+    item.bval = '';
+    item.bvec = '';
+    const { entries, paths } = await buildDataset([item], settings);
+    const path = `sub-01/ses-01/anat/sub-01_ses-01_${type}`;
+    assert.equal(paths.get(item.id), path);
+    assert.ok(entries[`${path}.nii.gz`]);
+    assert.equal(json(entries, `${path}.json`).PhaseEncodingDirection, 'j-');
+  }
+  const second = { ...item, id: 'series2', direction: 'other' };
+  assert.deepEqual([...datasetPaths([item, second], settings).values()], [
+    'sub-01/ses-01/anat/sub-01_ses-01_run-1_FLAIR',
+    'sub-01/ses-01/anat/sub-01_ses-01_run-2_FLAIR',
+  ]);
+});
+
+test('omit preserves slice timing orientation and technical encoding metadata without identifiers', async () => {
+  const item = await acquisition('T1w', { metadata: {
+    SliceTiming: [0.5, 0], SliceEncodingDirection: 'k-', EchoTrainLength: 16,
+    InPlanePhaseEncodingDirectionDICOM: 'COL', PatientName: 'PRIVATE', InstitutionName: 'PRIVATE',
+  } });
+  const { entries, paths } = await buildDataset([item], settings);
+  const metadata = json(entries, `${paths.get(item.id)}.json`);
+  assert.deepEqual(metadata.SliceTiming, [0.5, 0]);
+  assert.equal(metadata.SliceEncodingDirection, 'k-');
+  assert.equal(metadata.EchoTrainLength, 16);
+  assert.equal(metadata.InPlanePhaseEncodingDirectionDICOM, 'COL');
+  assert.equal(metadata.PatientName, undefined);
+  assert.equal(metadata.InstitutionName, undefined);
+});
+
+test('reassigning diffusion to anatomy refuses hidden gradient sidecars without deleting them', async () => {
+  const item = await acquisition('dwi', { bval: '0', bvec: '0\n0\n0' });
+  for (const type of ['T1w', 'T2w', 'FLAIR']) {
+    item.type = type;
+    assert.ok(validateDataset([item], settings).some(error => error.field === 'type' && /clear its gradients/.test(error.message)));
+    await assert.rejects(buildDataset([item], settings), /highlighted/);
+    assert.equal(item.bval, '0');
+    assert.equal(item.bvec, '0\n0\n0');
+  }
+  item.type = 'dwi';
+  assert.deepEqual(validateDataset([item], settings), []);
+});
+
+test('classic and enhanced non-magnitude components stay excluded and cannot be confirmed into anatomy', async () => {
+  for (const metadata of [
+    { ImageType: ['ORIGINAL', 'PRIMARY', 'P', 'ND'] },
+    { ImageType: ['ORIGINAL', 'PRIMARY', 'PHASE'] },
+    { ImageType: 'ORIGINAL\\PRIMARY\\P\\ND' },
+    { ImageType: ['ORIGINAL', 'PRIMARY', 'R'] },
+    { ImageType: ['ORIGINAL', 'PRIMARY', 'IMAGINARY'] },
+    { ComplexImageComponent: 'PHASE' },
+    { ComplexImageComponent: 'MAGNITUDE', ImageType: ['ORIGINAL', 'PRIMARY', 'P'] },
+  ]) {
+    const item = await acquisition('T1w', { metadata: { SeriesDescription: 'MPRAGE', ...metadata } });
+    const [suggested] = await seriesFromOutputs([item.image, new File([JSON.stringify(item.metadata)], 'scan.json')]);
+    assert.equal(suggested.type, 'exclude', JSON.stringify(metadata));
+    assert.ok(validateDataset([item], settings).some(error => /Only magnitude/.test(error.message)), JSON.stringify(metadata));
+  }
+  const magnitude = await acquisition('T1w', { metadata: { ImageType: ['ORIGINAL', 'PRIMARY', 'M', 'ND'] } });
+  assert.deepEqual(validateDataset([magnitude], settings), []);
+});
+
 test('pairing follows output stems rather than output order, preserving DWI voxel/gradient order', async () => {
   const files = [image('diffusion.nii', 2), new File(['0 1000'], 'diffusion.bval'), new File(['0 1\n0 0\n0 0'], 'diffusion.bvec'), new File(['{}'], 'diffusion.json')];
   const [item] = await seriesFromOutputs(files.reverse());
@@ -83,7 +156,7 @@ test('vectors allow rounding error, with zero vectors reserved for low-b volumes
 
 test('reverse fieldmaps name actual DWI targets and identify both forward and reverse B0 sources', async () => {
   const dwi = { ...await acquisition('dwi', { volumes: 2, bval: '0 1000', bvec: '0 1\n0 0\n0 0', metadata: { PhaseEncodingDirection: 'j', TotalReadoutTime: 0.05 } }), id: 'dwi' };
-  const reverse = { ...await acquisition('epi', { metadata: { PhaseEncodingDirection: 'j-', TotalReadoutTime: 0.05 } }), id: 'reverse', targets: ['dwi'] };
+  const reverse = { ...await acquisition('epi', { metadata: { PhaseEncodingDirection: 'j-', TotalReadoutTime: 0.05 } }), id: 'reverse', direction: 'jminus', targets: ['dwi'] };
   const { entries, paths } = await buildDataset([dwi, reverse], settings);
   assert.match(paths.get('reverse'), /\/fmap\/.*_dir-jminus_epi$/);
   const fmap = json(entries, `${paths.get('reverse')}.json`);
