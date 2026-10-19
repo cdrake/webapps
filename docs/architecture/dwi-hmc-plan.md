@@ -6,7 +6,7 @@ Plan, 18 October 2026, for step 6 of the [diffusion design](dwi-microstructure-d
 
 | Crate | Status | Content |
 |---|---|---|
-| `gradients` | reuse, extend | Add a b0 rule for each method. NiFreeze uses `b <= 50` and `b *= |g|` renormalisation (`data/dmri/utils.py:36,269-280`). QSIPrep uses `b < 100` (`cli/parser.py:589-594`). The current rule is `b < 50` and it rejects short vectors (`gradients/src/lib.rs:6,45-58`). |
+| `gradients` | reuse, extend | Add a b0 rule for each method. NiFreeze uses `b <= 50` and scales b by the gradient vector norm (`data/dmri/utils.py:36,269-280`). QSIPrep uses `b < 100` (`cli/parser.py:589-594`). The current rule is `b < 50` and it rejects short vectors (`gradients/src/lib.rs:6,45-58`). |
 | `tensor` | reuse, extend | `fit_dipy_wls` follows dipy 1.7 with an f64 Cholesky solve (`tensor/src/lib.rs:106-123`). Add a dipy 1.12.1 variant: `pinv`, float32 log, eigenvalue floor `1e-6/max(B)` (`dti.py:1476-1512`). |
 | `hmc` | new | Dataset, b0 split, `advanced_clip`, leave-one-out loop, motion decomposition, bvec rotation, TSV. |
 | `gp` | new | Spherical kriging kernel, sklearn log marginal likelihood, L-BFGS-B. |
@@ -112,7 +112,7 @@ Gates:
 - Deterministic checks (fixed tolerances; these stay):
   - Decomposing the reference `.mat` files gives `motion_params.csv` and `motion.tsv` to 1e-6, on the grid of the tool that made the reference (section 4).
   - The SHORE prediction on the reference inputs agrees to 1e-5 relative.
-  - The GP prediction on the reference inputs agrees to its stated tolerance (M5 sets it; the native predictions are byte-identical over seeds and precisions).
+  - The GP prediction on the reference inputs agrees to the tolerance that [#448](https://github.com/neurodesk/webapps/issues/448) sets (proposed: 99.99 % of the mask voxels exact, and ±1 at the others). The native predictions are byte-identical over seeds and precisions.
   - bvec rotation agrees to the printed precision.
 - Registration (WASM, `--float 1`): first replay the kept inputs, then run end to end. It is not held to a fixed 0.2 mm / 0.2° gate (Q53, decided 2026-10-19). It is held to the seed spread of native double NiFreeze:
   - Let `d_seed[v, k] = |gp(seed 1234) - gp(seed 1235)|` for DWI volume `v` and axis `k` (trans x/y/z in mm about the world grid centre, rotation-vector x/y/z in degrees). For each shell `s` and axis `k`, the limit is `L[s, k] = max over the volumes v of shell s of d_seed[v, k]`.
