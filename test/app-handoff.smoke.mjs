@@ -24,6 +24,13 @@ async function handoff(engine, isolationHeaders) {
   const profile = await mkdtemp(join(tmpdir(), `handoff-${engine}-`));
   // A profile on disk: WebKit's ephemeral sessions refuse Blobs in IndexedDB.
   const context = await { chromium, firefox, webkit }[engine].launchPersistentContext(profile, { args: launchArgs[engine] ?? [] });
+  const page = context.pages()[0] ?? await context.newPage();
+  const diagnostics = [];
+  page.on('pageerror', (error) => diagnostics.push(error.message));
+  page.on('requestfailed', (request) => diagnostics.push(`${request.url()}: ${request.failure()?.errorText}`));
+  page.on('console', (message) => {
+    if (message.type() === 'error') diagnostics.push(message.text());
+  });
   try {
     await context.addInitScript(() => {
       if (!location.pathname.includes('/white-matter-lesions/')) return;
@@ -37,11 +44,10 @@ async function handoff(engine, isolationHeaders) {
         }
       };
     });
-    const page = context.pages()[0] ?? await context.newPage();
     page.setDefaultTimeout(60000);
     await page.goto(`${site.origin}/dicomview/`);
-    // The first visit may reload once for isolation; work in the page that stays.
-    await page.waitForFunction(() => window.crossOriginIsolated && document.getElementById('dicomInput'));
+    // The isolation reload can expose the input before its module registers the change handler.
+    await page.waitForFunction(() => window.crossOriginIsolated && typeof window.neurodeskAutomation?.dispatch === 'function');
     await page.locator('#dicomInput').setInputFiles(dicomSeries({ series: 7, slices: 12 }).map(({ name, mimeType, buffer }) => ({ name, mimeType, buffer })));
     const send = page.getByRole('button', { name: 'Open in White matter lesions', exact: true });
     await expect(send).toBeEnabled();
@@ -79,6 +85,16 @@ async function handoff(engine, isolationHeaders) {
     assert.equal(after.isolated, true);
     if (!isolationHeaders) assert.ok(after.loads >= 2, `the receiving page reloaded for isolation (${after.loads} load)`);
     return after.loads;
+  } catch (error) {
+    const state = await page.evaluate(() => ({
+      url: location.href,
+      isolated: window.crossOriginIsolated,
+      ready: typeof window.neurodeskAutomation?.dispatch === 'function',
+      files: document.getElementById('dicomInput')?.files.length,
+      messages: Object.fromEntries(['statusText', 'fileInfo', 'handoffNote'].map((id) => [id, document.getElementById(id)?.textContent])),
+    })).catch((diagnosticError) => ({ error: diagnosticError.message }));
+    console.error('Handoff failure diagnostics:', JSON.stringify({ state, errors: diagnostics }));
+    throw error;
   } finally {
     await context.close();
     await site.close();

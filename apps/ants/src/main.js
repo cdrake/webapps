@@ -334,11 +334,6 @@ $("cancelButton").onclick = () => {
 };
 
 async function init() {
-  if (!navigator.gpu) {
-    setBusy(false);
-    status("WebGPU is unavailable. ANTs needs a recent desktop browser.", true);
-    return;
-  }
   await runTask("Initializing image viewers…", async () => {
     try {
       await attachViewers();
