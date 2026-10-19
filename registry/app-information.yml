@@ -1634,7 +1634,7 @@ apps:
         reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
         url: https://github.com/niivue/niivue
 
-  dicom2bids:
+  dcm2niix:
     about:
       - Convert one MRI scanner examination into a reviewed BIDS dataset, entirely in the browser. Supported acquisitions are T1w, T2w, FLAIR, diffusion MRI and reverse phase encoding EPI fieldmaps.
     packages:

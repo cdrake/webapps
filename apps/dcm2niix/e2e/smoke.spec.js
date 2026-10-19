@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { gunzipSync, strFromU8, unzipSync, zipSync } from 'fflate';
-import { dicomSeries } from '../../../test-utils/dicom-fixture.mjs';
+import { dicomSeries, explicit } from '../../../test-utils/dicom-fixture.mjs';
 
 const examples = JSON.parse(readFileSync(new URL('../examples.json', import.meta.url), 'utf8'));
 
@@ -55,6 +55,65 @@ for (const type of ['T1w', 'T2w', 'FLAIR']) {
     await expect(page.locator('#runButton')).toBeDisabled();
   });
 }
+
+test('real multi-echo conversion keeps acquisition runs after exclusion and requires echo time', async ({ page }) => {
+  const input = [1, 2].flatMap(series => dicomSeries({ series, volumes: 2 }).map((file, index) => {
+    const echo = index < 4 ? 1 : 2;
+    const buffer = Buffer.from(file.buffer);
+    const tag = Buffer.from([0x18, 0, 0x81, 0, 0x44, 0x53, 2, 0]);
+    const location = buffer.indexOf(tag);
+    expect(location).toBeGreaterThan(0);
+    buffer.write(echo === 1 ? '20' : '40', location + tag.length);
+    const end = location + tag.length + 2;
+    return { ...file, buffer: Buffer.concat([buffer.subarray(0, end), explicit(0x18, 0x86, 'IS', echo), buffer.subarray(end)]) };
+  }));
+  await page.goto('./');
+  await page.locator('#imageInput').setInputFiles(input);
+  const rows = page.locator('#seriesRows tr');
+  await expect(rows).toHaveCount(4, { timeout: 120000 });
+  await page.locator('#subject').fill('01');
+  await page.locator('#session').fill('01');
+  await page.locator('#privacy').selectOption('omit');
+  let excluded;
+  let edited;
+  for (let index = 0; index < 4; index++) {
+    const row = rows.nth(index);
+    await row.locator('select').selectOption('T1w');
+    await row.getByRole('button', { name: /^Edit / }).click();
+    await page.getByText('All acquisition metadata', { exact: true }).click();
+    const input = page.locator('#seriesEditor textarea');
+    const metadata = JSON.parse(await input.inputValue());
+    if (metadata.SeriesNumber === 1 && metadata.EchoNumber === 1) {
+      excluded = index;
+      await row.locator('select').selectOption('exclude');
+    } else {
+      if (metadata.SeriesNumber === 2 && metadata.EchoNumber === 2) {
+        delete metadata.EchoTime;
+        await input.fill(JSON.stringify(metadata));
+        await page.getByRole('button', { name: 'Apply metadata', exact: true }).click();
+        edited = index;
+      }
+      await row.locator('input[type=checkbox]').check();
+    }
+  }
+  expect(excluded).toBeDefined();
+  expect(edited).toBeDefined();
+  await page.locator('#runButton').click();
+  await expect(page.locator('#statusText')).toContainText('Enter echo time in seconds');
+  const echoTime = page.locator('[id$="-EchoTime"]');
+  await expect(echoTime).toHaveAttribute('aria-invalid', 'true');
+  await echoTime.fill('0.04');
+  await echoTime.blur();
+  await rows.nth(edited).locator('input[type=checkbox]').check();
+  const entries = await downloadDataset(page);
+  const prefix = 'sub-01/ses-01/anat/sub-01_ses-01';
+  expect(Object.keys(entries).filter(name => name.endsWith('_T1w.json')).sort()).toEqual([
+    `${prefix}_run-1_echo-2_T1w.json`, `${prefix}_run-2_echo-1_T1w.json`, `${prefix}_run-2_echo-2_T1w.json`,
+  ]);
+  const metadata = JSON.parse(strFromU8(entries[`${prefix}_run-2_echo-2_T1w.json`]));
+  expect(metadata.EchoTime).toBe(0.04);
+  expect(metadata.SeriesInstanceUID).toBeUndefined();
+});
 
 test('ZIP input and explicit retained metadata export work without persisting patient data', async ({ page }) => {
   const archive = zipSync(Object.fromEntries(dicomSeries().map(({ name, buffer }) => [`scanner/series/${name}`, buffer])));
@@ -308,9 +367,9 @@ test('automation requires explicit assignments and returns a downloadable BIDS a
 });
 
 test('public Philips enhanced DWI preserves native voxel and gradient ordering', async ({ page }) => {
-  test.skip(!process.env.DICOM2BIDS_DWI_DIR, 'Provision pinned data with node scripts/e2e-test-data.mjs dicom2bids.');
+  test.skip(!process.env.DCM2NIIX_DWI_DIR, 'Provision pinned data with node scripts/e2e-test-data.mjs dcm2niix.');
   test.setTimeout(180000);
-  const directory = process.env.DICOM2BIDS_DWI_DIR;
+  const directory = process.env.DCM2NIIX_DWI_DIR;
   await page.goto('./');
   await page.locator('#imageInput').setInputFiles(join(directory, 'IM_0001.dcm'));
   await reviewAnatomical(page, 'dwi');

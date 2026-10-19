@@ -11,7 +11,7 @@ import { expect } from '@playwright/test';
 import { verifyMuscleMapFullPipeline, createSyntheticMuscleMapNifti } from '../../test/musclemap-full-pipeline-smoke.mjs';
 import { startReferenceServer } from '../../test-utils/compute-reference-server.mjs';
 
-export const workflowApps = ['nesvor', 'musclemap', 'vesselboost', 'spinalcordtoolbox', 'calmar', 'qsmbly', 'seedseg', 'dicompare', 'deface', 'easy-mp2rage', 'niimath', 'dicom2vid', 'browserqc', 'surfannotate', 'zarro', 'synthsr', 'synthseg', 'syncro', 'dwi2trx', 'edgereg', 'greedy', 'ants', 'brain2print', 'topofit', 'fireants', 'brain-extraction', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel', 'elastix', 'dicomview', 'fastprep', 'noddi', 'degibbs', 'n4', 'dicom2bids', 'dwidenoise'];
+export const workflowApps = ['nesvor', 'musclemap', 'vesselboost', 'spinalcordtoolbox', 'calmar', 'qsmbly', 'seedseg', 'dicompare', 'deface', 'easy-mp2rage', 'niimath', 'dicom2vid', 'browserqc', 'surfannotate', 'zarro', 'synthsr', 'synthseg', 'syncro', 'dwi2trx', 'edgereg', 'greedy', 'ants', 'brain2print', 'topofit', 'fireants', 'brain-extraction', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel', 'elastix', 'dicomview', 'fastprep', 'noddi', 'degibbs', 'n4', 'dcm2niix', 'dwidenoise'];
 
 /**
  * Anything a workflow needs before the desktop app starts. NeSVoR computes on a
@@ -99,14 +99,14 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     assert.ok(bytes.length > 352, 'Output must contain image data');
     return { filename: data.filename, bytes: data.bytes.length };
   };
-  if (['deface', 'brain2print', 'dwi2trx', 'ants', 'greedy', 'edgereg', 'fireants', 'elastix', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel', 'dicomview', 'fastprep', 'noddi', 'degibbs', 'n4', 'dicom2bids', 'dwidenoise'].includes(id)) {
+  if (['deface', 'brain2print', 'dwi2trx', 'ants', 'greedy', 'edgereg', 'fireants', 'elastix', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel', 'dicomview', 'fastprep', 'noddi', 'degibbs', 'n4', 'dcm2niix', 'dwidenoise'].includes(id)) {
     const examples = JSON.parse(await readFile(join(root, 'apps', id, 'examples.json')));
     const selector = page.getByRole('combobox', { name: 'Input', exact: true });
     await expect(selector).toBeEnabled({ timeout: 120000 });
     await selector.selectOption(examples[0].id);
     await expect(page.locator('[data-neurodesk-examples]')).toHaveAttribute('data-example-state', 'ready', { timeout: 120000 });
   }
-  if (id === 'dicom2bids') {
+  if (id === 'dcm2niix') {
     await expect(page.locator('#seriesRows tr')).toHaveCount(1, { timeout: 120000 });
     await page.locator('#subject').fill('01');
     await page.locator('#session').fill('01');
@@ -114,7 +114,7 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     await page.locator('#seriesRows select').selectOption('T1w');
     await page.locator('#seriesRows input[type=checkbox]').check();
     const archive = await download('#runButton');
-    const { unzipSync } = createRequire(join(root, 'apps/dicom2bids/package.json'))('fflate');
+    const { unzipSync } = createRequire(join(root, 'apps/dcm2niix/package.json'))('fflate');
     const entries = unzipSync(archive.bytes);
     assert.ok(entries['dataset_description.json']);
     const image = entries['sub-01/ses-01/anat/sub-01_ses-01_T1w.nii.gz'];

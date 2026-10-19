@@ -937,9 +937,9 @@ apps:
       shared_runtime: false
       browser_test: true
       release: false
-  - id: dicom2bids
-    path: dicom2bids
-    title: DICOM to BIDS
+  - id: dcm2niix
+    path: dcm2niix
+    title: dcm2niix
     description: Convert scanner DICOM exports to anatomical and DWI BIDS.
     categories: [image-processing]
     keywords: [DICOM, NIfTI, BIDS, MRI, diffusion, conversion, dcm2niix]

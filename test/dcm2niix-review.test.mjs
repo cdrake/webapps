@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { JSDOM } from 'jsdom';
-import { createSeriesReview } from '../apps/dicom2bids/src/review.js';
+import { createSeriesReview } from '../apps/dcm2niix/src/review.js';
 
 function fixture(t) {
   const dom = new JSDOM('<table><tbody id="rows"></tbody></table><div id="editor"></div>');
