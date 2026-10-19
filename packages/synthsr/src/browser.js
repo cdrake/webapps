@@ -1,6 +1,5 @@
 import { createStreamedWasmSession, needsStreamedWasm, WASM_IMPLEMENTATION } from './wasm-session.js';
-import { createGpuSession, planGpuGraph, GPU_IMPLEMENTATION } from './gpu-session.js';
-import { gpuBufferLimit } from '@neurodesk/runtime-support/gpu-unet';
+import { createGpuSession, gpuBufferLimit, planGpuGraph, GPU_IMPLEMENTATION } from './gpu-session.js';
 
 export { createGpuSession, planGpuGraph, GPU_IMPLEMENTATION } from './gpu-session.js';
 
