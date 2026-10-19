@@ -45,6 +45,13 @@ name = "dwi-gradients"
 version = "0.1.0"
 
 [[package]]
+name = "dwi-hmc"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+]
+
+[[package]]
 name = "dwi-tensor"
 version = "0.1.0"
 dependencies = [
