@@ -48,7 +48,7 @@
           "formats": [
             "nifti"
           ],
-          "description": "Optional brain mask on the image grid; replaces the Otsu mask",
+          "description": "Optional brain mask on the image grid; replaces the MindGrab mask",
           "minimum": 0,
           "maximum": 1
         }

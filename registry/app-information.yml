@@ -1578,6 +1578,9 @@ apps:
       - name: MRtrix3 dwibiascorrect ants
         url: https://github.com/MRtrix3/mrtrix3
         role: the DWI procedure around N4 (MPL-2.0)
+      - name: MindGrab (brainchop)
+        url: https://github.com/neuroneural/brainchop
+        role: default brain extraction from the mean b0 or the image, on the GPU or CPU
       - name: NiiVue
         url: https://github.com/niivue/niivue
         role: image viewer
@@ -1600,6 +1603,15 @@ apps:
           framework for medical image processing and visualisation. NeuroImage. 2019;202:116137."
         doi: 10.1016/j.neuroimage.2019.116137
         code: https://github.com/MRtrix3/mrtrix3
+      - group: Brain extraction
+        title: MindGrab
+        reference: "Fani A, Nassar M, Ghosh S, et al. MindGrab for BrainChop: fast and accurate skull stripping for command line and browser. arXiv. 2025."
+        url: https://arxiv.org/abs/2506.11860
+      - group: Brain extraction
+        title: Brainchop
+        reference: "Masoud M, Hu F, Plis S. Brainchop: in-browser MRI volumetric segmentation and rendering. Journal of Open Source Software. 2023;8(83):5098."
+        doi: 10.21105/joss.05098
+        code: https://github.com/neuroneural/brainchop
       - group: DICOM conversion
         title: dcm2niix
         reference: "Li X, Morgan PS, Ashburner J, Smith J, Rorden C. The first step for

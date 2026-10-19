@@ -33,6 +33,15 @@ export function biasedSeries({ nx = 40, ny = 32, nz = 24, frames = 3, bvals = [0
   };
 }
 
+/** The tissue block of `biasedSeries` with the same grid, as a gzipped NIfTI brain mask. */
+export function tissueMask({ nx = 40, ny = 32, nz = 24 } = {}) {
+  const mask = new Uint8Array(nx * ny * nz);
+  for (const i of biasedSeries({ nx, ny, nz, frames: 1, bvals: [0] }).tissue) mask[i] = 1;
+  const header = createNiftiHeaderFromVolume({ hdr: { dims: [3, nx, ny, nz, 1, 1, 1, 1], pixDims: [1, 4, 4, 4, 1, 1, 1, 1] } });
+  const nifti = createNiftiFromData(mask, header, { dims: [nx, ny, nz] });
+  return { name: "sub-01_desc-brain_mask.nii.gz", mimeType: "application/gzip", buffer: gzipSync(Buffer.from(nifti)) };
+}
+
 /** Coefficient of variation of the first volume over the tissue voxels. */
 export function tissueVariation(data, tissue) {
   const values = tissue.map((i) => data[i]);

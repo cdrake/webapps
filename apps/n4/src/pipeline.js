@@ -1,5 +1,4 @@
-// DOM-free steps of the n4 workflow: the b0 mean, the Otsu mask and BIDS derivative names.
-import { computeOtsuThreshold } from "@neurodesk/webapp-components/volume";
+// DOM-free steps of the n4 workflow: the b0 mean and BIDS derivative names.
 
 /** The b0 volumes of a series (b < 50 s/mm²), or every volume of a series without b-values. */
 export function b0Volumes(bvals, frames) {
@@ -21,12 +20,6 @@ export function meanVolumes(data, voxels, volumes) {
   }
   for (let i = 0; i < voxels; i++) mean[i] /= volumes.length;
   return mean;
-}
-
-/** A brain mask from an Otsu threshold of an image. */
-export function otsuMask(image) {
-  const { thresholdValue } = computeOtsuThreshold(image);
-  return Uint8Array.from(image, (value) => (value > thresholdValue ? 1 : 0));
 }
 
 /** The BIDS stem and suffix of an image name: sub-01_dwi.nii.gz gives ["sub-01", "dwi"]. */

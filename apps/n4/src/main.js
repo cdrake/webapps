@@ -22,10 +22,11 @@ import {
 } from "@neurodesk/webapp-components/file-io";
 import { registerAppAutomation } from "@neurodesk/webapp-components/automation";
 import { readDiffusionSeries, runDcm2niix } from "@neurodesk/runtime-support/dcm2niix-client";
+import { brainMask, mindgrab } from "@neurodesk/runtime-support/mindgrab";
 import { parseNumbers } from "@neurodesk/dwi2trx/gradients";
 import { divideVolumes, rescaleBias } from "@neurodesk/n4";
 import { APP } from "./config.js";
-import { b0Volumes, meanVolumes, otsuMask, outputNames } from "./pipeline.js";
+import { b0Volumes, meanVolumes, outputNames } from "./pipeline.js";
 import examples from "../examples.json";
 
 const $ = (id) => document.getElementById(id);
@@ -240,7 +241,21 @@ async function correct(signal) {
   try {
     const voxels = input.dims[0] * input.dims[1] * input.dims[2];
     const reference = meanVolumes(input.data, voxels, input.reference);
-    const brain = mask ?? otsuMask(reference);
+    let brain = mask;
+    let maskSource = "supplied";
+    if (!brain) {
+      const what = input.frames > 1 ? "the mean b0" : "the image";
+      progress.begin(`Extracting the brain from ${what} with MindGrab…`);
+      progress.setCancellable(true);
+      status(`Extracting the brain from ${what} with MindGrab`);
+      const image = createNiftiFromData(reference, input.buffer, { dims: input.dims });
+      const extracted = await brainMask(new Uint8Array(image), { assetPath: `${import.meta.env.BASE_URL}mindgrab/`, signal: controller.signal });
+      brain = Uint8Array.from(readNiftiFrames(extracted.mask).data, (value) => (value > 0 ? 1 : 0));
+      maskSource = `mindgrab-${mindgrab.version}-${extracted.backend}`;
+      log.log(`MindGrab ${mindgrab.version} brain mask on ${extracted.backend}`, "info");
+      progress.begin("Fitting the bias field…");
+      progress.setCancellable(true);
+    }
     if (!brain.some(Boolean)) throw new Error("The brain mask has no voxels. Supply a mask, or check the image.");
     status(`Fitting the bias field to ${brain.reduce((sum, v) => sum + v, 0)} voxels`);
     const { corrected, bias } = await runN4(
@@ -283,7 +298,7 @@ async function correct(signal) {
     status("Bias field corrected");
     return {
       artifacts: Object.entries(rows).map(([role, row]) => ({ role, file: row.file })),
-      provenance: { method: "ants-n4-2.6.2-wasm", procedure: input.frames > 1 ? "mrtrix-dwibiascorrect-ants" : "n4", mask: mask ? "supplied" : "otsu", shrink: 4, bspline: [100, 3], convergence: [1000, 0] },
+      provenance: { method: "ants-n4-2.6.2-wasm", procedure: input.frames > 1 ? "mrtrix-dwibiascorrect-ants" : "n4", mask: maskSource, shrink: 4, bspline: [100, 3], convergence: [1000, 0] },
     };
   } catch (error) {
     progress.reset();

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { b0Volumes, meanVolumes, otsuMask, outputNames } from "../src/pipeline.js";
+import { b0Volumes, meanVolumes, outputNames } from "../src/pipeline.js";
 
 test("the bias field comes from the b0 volumes, or every volume without b-values", () => {
   assert.deepEqual(b0Volumes([0, 1000, 5, 2000], 4), [0, 2]);
@@ -11,10 +11,9 @@ test("the bias field comes from the b0 volumes, or every volume without b-values
   }
 });
 
-test("the mean and Otsu mask separate tissue from background", () => {
+test("the reference is the voxel-wise mean of the chosen volumes", () => {
   const mean = meanVolumes(Float32Array.from([0, 2, 100, 100, 2, 0, 100, 102]), 4, [0, 1]);
   assert.deepEqual(Array.from(mean), [1, 1, 100, 101]);
-  assert.deepEqual(Array.from(otsuMask(mean)), [0, 0, 1, 1]);
 });
 
 test("derivative names keep the BIDS suffix", () => {

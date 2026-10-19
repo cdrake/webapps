@@ -5,7 +5,7 @@ import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
 import { readNiftiFrames } from "@neurodesk/webapp-components/file-io";
-import { biasedSeries, tissueVariation } from "./fixtures.mjs";
+import { biasedSeries, tissueMask, tissueVariation } from "./fixtures.mjs";
 import { dicomSeries } from "../../../test-utils/dicom-fixture.mjs";
 
 const examples = JSON.parse(readFileSync(new URL("../examples.json", import.meta.url), "utf8"));
@@ -15,6 +15,15 @@ async function download(page, label) {
   const event = page.waitForEvent("download");
   await page.locator("#resultList .nd-volume-toggle").filter({ hasText: label }).getByRole("button", { name: "Download" }).click();
   return event;
+}
+
+/** Loads a series and its tissue mask: the synthetic block is not a head, so MindGrab is not used. */
+async function loadWithMask(page, files, grid = {}) {
+  await page.locator("#imageInput").setInputFiles(files);
+  await expect(page.locator("#runButton")).toBeEnabled({ timeout: 60000 });
+  await page.locator("#advancedSettings").evaluate((section) => { section.open = true; });
+  await page.locator("#maskInput").setInputFiles(tissueMask(grid));
+  await expect(page.locator("#maskInfo")).toContainText("voxels");
 }
 
 async function readDownload(event) {
@@ -47,7 +56,7 @@ test("a biased DWI is flattened, every volume by the same field", async ({ page 
   test.setTimeout(120000);
   const series = biasedSeries();
   await page.goto("/");
-  await page.locator("#imageInput").setInputFiles(series.files);
+  await loadWithMask(page, series.files);
   await expect(page.locator("#modeNote")).toHaveText("DWI: the field is fitted to the mean of 2 b0 volumes.");
   await page.locator("#runButton").click();
   await expect(page.locator("#statusText")).toHaveText("Bias field corrected", { timeout: 90000 });
@@ -71,9 +80,8 @@ test("cancelling stops the worker and permits another run", async ({ page }) => 
   test.setTimeout(120000);
   const series = biasedSeries({ nx: 160, ny: 160, nz: 120, frames: 1, bvals: [0] });
   await page.goto("/");
-  await page.locator("#imageInput").setInputFiles(series.files);
   // A 3 M-voxel image takes some seconds to read and show.
-  await expect(page.locator("#runButton")).toBeEnabled({ timeout: 60000 });
+  await loadWithMask(page, series.files, { nx: 160, ny: 160, nz: 120 });
   await page.locator("#runButton").click();
   await expect(page.locator("#cancelButton")).toBeVisible();
   await page.locator("#cancelButton").click();
@@ -90,12 +98,33 @@ for (const example of examples) {
     await expect(page.locator("#fileInfo")).toContainText("dwi.nii.gz", { timeout: 120000 });
     await page.locator("#runButton").click();
     await expect(page.locator("#statusText")).toHaveText("Bias field corrected", { timeout: 150000 });
+    await expect(page.locator("#technicalLog")).toContainText(/MindGrab .+ brain mask on (cpu|webgpu|webgl2)/);
     await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(5);
     const image = download(page, "Corrected image");
     expect((await image).suggestedFilename()).toBe("dwi_desc-n4.nii.gz");
     expect((await readDownload(image)).frames).toBe(21);
   });
 }
+
+test("cancelling default MindGrab extraction permits a complete retry", async ({ page }) => {
+  test.setTimeout(240000);
+  await page.goto("/");
+  await page.locator("select[data-neurodesk-example]").selectOption(examples[0].id);
+  await expect(page.locator("#runButton")).toBeEnabled({ timeout: 120000 });
+  const started = page.waitForEvent("worker");
+  await page.locator("#runButton").click();
+  const worker = await started;
+  const stopped = new Promise((resolve) => worker.once("close", resolve));
+  await expect(page.locator("#statusText")).toHaveText("Extracting the brain from the mean b0 with MindGrab");
+  await page.locator("#cancelButton").click();
+  await stopped;
+  await expect(page.locator("#statusText")).toHaveText("Cancelled");
+  await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(0);
+  await expect(page.locator("#runButton")).toBeEnabled();
+  await page.locator("#runButton").click();
+  await expect(page.locator("#statusText")).toHaveText("Bias field corrected", { timeout: 150000 });
+  await expect(page.locator("#technicalLog")).toContainText(/MindGrab .+ brain mask on (cpu|webgpu|webgl2)/);
+});
 
 for (const failure of ["download", "empty image"]) {
   test(`a failed ${failure} can retry the same example`, async ({ page }) => {
@@ -155,8 +184,10 @@ test("the automation operation returns the corrected image, field and mask", asy
   const series = biasedSeries();
   await page.goto("/");
   await page.locator("#neurodesk-input-transfer").setInputFiles(series.files);
+  await page.evaluate(() => globalThis.neurodeskAutomation.dispatch("adopt", { role: "image" }));
+  await page.locator("#neurodesk-input-transfer").setInputFiles(tissueMask());
   await page.evaluate(async () => {
-    await globalThis.neurodeskAutomation.dispatch("adopt", { role: "image" });
+    await globalThis.neurodeskAutomation.dispatch("adopt", { role: "mask" });
     await globalThis.neurodeskAutomation.dispatch("start", {});
   });
   await expect.poll(() => page.evaluate(async () => (await globalThis.neurodeskAutomation.dispatch("snapshot")).state), { timeout: 90000 }).toBe("succeeded");
@@ -168,8 +199,7 @@ test("the automation operation returns the corrected image, field and mask", asy
 test("cancelling while results are compressed does not publish downloads", async ({ page }) => {
   test.setTimeout(120000);
   await page.goto("/");
-  await page.locator("#imageInput").setInputFiles(biasedSeries().files);
-  await expect(page.locator("#runButton")).toBeEnabled();
+  await loadWithMask(page, biasedSeries().files);
   await page.evaluate(() => {
     const NativeCompressionStream = CompressionStream;
     const gate = new Promise((resolve) => { window.finishPacking = resolve; });
@@ -227,7 +257,7 @@ test("a cancelled mask import keeps correction from racing the mask read", async
 test("b-values are preserved when gradient directions are absent", async ({ page }) => {
   await page.goto("/");
   const files = biasedSeries().files.filter((file) => !file.name.endsWith(".bvec"));
-  await page.locator("#imageInput").setInputFiles(files);
+  await loadWithMask(page, files);
   await expect(page.locator("#modeNote")).toHaveText("DWI: the field is fitted to the mean of 2 b0 volumes.");
   await page.locator("#runButton").click();
   await expect(page.locator("#statusText")).toHaveText("Bias field corrected", { timeout: 90000 });
