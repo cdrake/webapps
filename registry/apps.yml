@@ -736,7 +736,7 @@ apps:
     categories: [data-preparation]
     keywords: [DICOM, NIfTI, BIDS, MRI, diffusion, conversion, dcm2niix]
     legacy_domain: null
-    runtime: react-vite
+    runtime: vite-wasm
     model_manifest: null
     asset_manifest_schema: null
     source: neurodesk/webapps@local
