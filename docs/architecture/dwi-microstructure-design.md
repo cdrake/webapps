@@ -33,13 +33,13 @@ The repository has no denoising, Gibbs unringing, motion correction, susceptibil
 | `dwidenoise` | MP-PCA | MRtrix `dwidenoise` | noise map median relative difference < 2 %, denoised NRMSE < 1 % |
 | `degibbs` | subvoxel shift | MRtrix `mrdegibbs` | NRMSE < 1 % |
 | `n4` | N4 | ANTs `N4BiasFieldCorrection` | field correlation > 0.99 in mask |
-| `hmc` | NiFreeze (default), SHORELine | NiFreeze, QSIPrep | registration: for each shell and axis, within the spread of the native reference runs (NiFreeze GP: native double, seed 1234 against seed 1235; SHORELine: QSIPrep 26.1.1 repeats e1-e3), [HMC plan, section 5](dwi-hmc-plan.md#5-reference-runs-and-gates); deterministic parts: motion decomposition 1e-6, SHORE prediction 1e-5 relative, GP prediction to the tolerance that [#448](https://github.com/neurodesk/webapps/issues/448) sets (proposed: 99.99 % of the mask voxels exact, ±1 at the others), b-vectors to the printed precision |
+| `hmc` | NiFreeze (default), SHORELine | NiFreeze, QSIPrep | registration: NiFreeze GP, for each volume and axis, within the native double spread of seed 1234 against seed 1235 (Q53); SHORELine gate awaits maintainer confirmation, [HMC plan, section 5](dwi-hmc-plan.md#5-reference-runs-and-gates); deterministic parts: motion decomposition 1e-6, SHORE prediction 1e-5 relative, GP prediction to the tolerance that [#448](https://github.com/neurodesk/webapps/issues/448) sets (proposed: 99.99 % of the mask voxels exact, ±1 at the others), b-vectors to the printed precision |
 | `sdc` | SyN-SDC; later reverse-PE topup and Synb0-DisCo | native ANTs, same schedule | field median absolute difference < 0.5 Hz in brain |
 | `noddi` | DTI (WLS, default; niimath dtifit as option), NODDI by AMICO (default), NODDI toolbox, nonlinear fit | FSL `dtifit`; AMICO; NODDI toolbox in Octave; dmipy | FA and MD median absolute difference < 0.01 in WM; NODDI maps < 0.02 in WM |
 
 Each gate is a start value.
 Make a gate tighter when the port shows what it can do. Do not make a gate looser.
-The `hmc` registration gate is the exception (Q53): the start value was 0.2 mm and 0.2° for each volume, but native NiFreeze GP with a different seed, and QSIPrep with a different run, move more than that. Thus the registration is held to the spread of the native runs, and the WebAssembly registration runs `antsRegistration --float 1` (no 3DDouble build).
+The `hmc` registration gate is the exception (Q53): the start value was 0.2 mm and 0.2° for each volume, but native NiFreeze GP with a different seed, and QSIPrep with a different run, move more than that. Q53 requires the native double seed spread for the same volume and axis. Native `--float 1` fails that rule on 40/90 GP volumes in M0. The shell-maximum alternative and SHORELine extension in the HMC plan are proposals awaiting an issue-owner decision. The WebAssembly registration still runs `antsRegistration --float 1` (no 3DDouble build).
 Compare each NODDI method with its own reference only. The differences between methods are information for About, not a test.
 
 ### Rules for every app

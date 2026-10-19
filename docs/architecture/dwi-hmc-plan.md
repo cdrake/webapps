@@ -20,7 +20,7 @@ Put ANTs in a new package `packages/hmc-registration` beside `packages/registrat
 Use the ANTs 52bc0ab WASM kernel for both methods. Do not use greedy for parity, because its NMI metric is different from GC and Mattes. Greedy can be a later "fast" option with no parity claim.
 
 Changes in the new module:
-- Do not build `antsRegistration3DDouble.cxx`; keep its stub (`unsupported.cxx:10`). NiFreeze emits no `--float` (`nipype registration.py:463-467`), so native ANTs selects double (`antsRegistration.cxx:706-746`). The WASM module runs NiFreeze's argv with `--float 1`. Q53 is decided (section 8): the float result is held to the seed spread of native double, not to a fixed gate. Native `--float 1` passes that rule on all 90 GP volumes (section 9).
+- Do not build `antsRegistration3DDouble.cxx`; keep its stub (`unsupported.cxx:10`). NiFreeze emits no `--float` (`nipype registration.py:463-467`), so native ANTs selects double (`antsRegistration.cxx:706-746`). The WASM module runs NiFreeze's argv with `--float 1`. Q53 is decided (section 8): the float result is held to the seed spread of native double, not to a fixed gate. The per-volume, per-axis rule fails on 40 of 90 GP volumes in M0. A shell-maximum alternative is proposed in section 5 and awaits the issue owner's decision.
 - Add `AverageImages` and `AverageAffineTransform` entry points. Add `--apply` with HammingWindowedSinc, LanczosWindowedSinc and BSpline. Today `--apply` has only linear and nearest (`apply.cxx:28-31`).
 - Expose a generic `run(argv)`. Always pass `--random-seed`, because ENV is not exported (`CMakeLists.txt:37`). The kernel uses one thread (`main.cxx:15`).
 
@@ -114,21 +114,22 @@ Gates:
   - The SHORE prediction on the reference inputs agrees to 1e-5 relative.
   - The GP prediction on the reference inputs agrees to the tolerance that [#448](https://github.com/neurodesk/webapps/issues/448) sets (proposed: 99.99 % of the mask voxels exact, and ±1 at the others). The native predictions are byte-identical over seeds and precisions.
   - bvec rotation agrees to the printed precision.
-- Registration (WASM, `--float 1`): first replay the kept inputs, then run end to end. It is not held to a fixed 0.2 mm / 0.2° gate (Q53, decided 2026-10-19). It is held to the seed spread of native double NiFreeze:
-  - Let `d_seed[v, k] = |gp(seed 1234) - gp(seed 1235)|` for DWI volume `v` and axis `k` (trans x/y/z in mm about the world grid centre, rotation-vector x/y/z in degrees). For each shell `s` and axis `k`, the limit is `L[s, k] = max over the volumes v of shell s of d_seed[v, k]`.
-  - A WASM volume passes when `|wasm(seed 1234) - gp(seed 1234)| <= L[s, k]` on each of its six axes. The run passes when every volume passes.
-  - The limits, from `hmc/reference/compare/q53-seed-rule.json`: b1000 0.117 / 0.248 / 0.219 mm, 0.291 / 0.228 / 0.195°; b3000 0.426 / 0.709 / 0.402 mm, 0.550 / 0.591 / 0.788°. Native `--float 1` passes on all 90 volumes (largest ratio to its limit 0.72).
+- Registration (WASM, `--float 1`): first replay the kept inputs, then run end to end. Q53 in [#408](https://github.com/neurodesk/webapps/issues/408) replaces the fixed 0.2 mm and 0.2° gate with the seed spread of native double NiFreeze for each volume and axis.
+  - Let `d_seed[v, k] = |gp(seed 1234) - gp(seed 1235)|` for DWI volume `v` and axis `k` (trans x/y/z in mm about the world grid centre, rotation-vector x/y/z in degrees).
+  - A WASM volume passes when `|wasm(seed 1234) - gp(seed 1234)| <= d_seed[v, k]` on each of its six axes. The run passes when every volume passes.
+  - **Proposed alternative, not accepted:** for each shell `s` and axis `k`, use `L[s, k] = max over the volumes v of shell s of d_seed[v, k]` instead. This would loosen Q53. It needs an issue-owner decision before it can be an acceptance gate.
+  - The limits, from `hmc/reference/compare/q53-seed-rule.json`: b1000 0.117 / 0.248 / 0.219 mm, 0.291 / 0.228 / 0.195°; b3000 0.426 / 0.709 / 0.402 mm, 0.550 / 0.591 / 0.788°. Native `--float 1` passes this proposed alternative on all 90 volumes (largest ratio to its proposed limit 0.72). This is not a pass under Q53.
   - M0 measured these limits on GP only, from one seed pair. The trivial model has no seed pair in M0.
-  - The literal per-cell reading (`|float - double| <= d_seed[v, k]` of the same volume and axis) cannot be used: native `--float 1` fails it on 40 of 90 volumes (58 of 540 cells), because one seed pair gives some cells a spread near 0.
-- SHORELine registration (WASM, `--float 1`; decided 2026-10-19, it extends Q53): not held to the fixed 0.2 mm / 0.2° gate. As for GP, it is held to the spread of native runs, here the QSIPrep 26.1.1 repeat spread of e1, e2 and e3 (host epic). The rule has the same form as the GP rule (`hmc/reference/qsiprep/spread-e123-rule.json`):
+  - Native `--float 1` fails the required per-volume, per-axis rule on 40 of 90 volumes (58 of 540 cells), because one seed pair gives some cells a spread near 0. Keep this failure visible. Do not replace the rule with the proposal without the issue owner's decision.
+- **Proposed SHORELine registration gate, decision pending:** extend the shell-maximum alternative to the QSIPrep 26.1.1 repeat spread of e1, e2 and e3 (host epic). This proposal in `hmc/reference/qsiprep/spread-e123-rule.json` is not an accepted extension of Q53. [#408](https://github.com/neurodesk/webapps/issues/408) requires maintainer confirmation of the SHORELine rule.
   - Let `d[v, k]` = the maximum over the pairs (e1, e2), (e1, e3), (e2, e3) of `|run_a - run_b|` for volume `v` and axis `k` (trans x/y/z in mm about the world grid centre, rotation-vector x/y/z in degrees of QSIPrep's `decompose44` rotation). For each shell `s` (b0, b1000, b3000) and axis `k`, the limit is `L[s, k] = max over the volumes v of shell s of d[v, k]`.
-  - A WASM volume passes when `|wasm - ref| <= L[s, k]` on each of its six axes. The run passes when all 101 volumes pass. `ref` is the QSIPrep run whose inputs the WASM run replays. Only `qsiprep-r1` keeps the fixed images, so M2 replays the argv of r1's `command.txt` files with r1's ANTs seed (57526, as `ANTS_RANDOM_SEED`) against r1's images and compares with r1's `.mat` files.
+  - Under this proposal, a WASM volume would pass when `|wasm - ref| <= L[s, k]` on each of its six axes. The run would pass when all 101 volumes pass. `ref` is the QSIPrep run whose inputs the WASM run replays. Only `qsiprep-r1` keeps the fixed images, so M2 replays the argv of r1's `command.txt` files with r1's ANTs seed (57526, as `ANTS_RANDOM_SEED`) against r1's images and compares with r1's `.mat` files.
   - The limits: b0 0.007 / 0.018 / 0.022 mm, 0.037 / 0.030 / 0.015°; b1000 0.026 / 0.031 / 0.029 mm, 0.051 / 0.043 / 0.061°; b3000 0.046 / 0.055 / 0.141 mm, 0.208 / 0.096 / 0.183°. By QSIPrep's translation formula (for a check in its own convention): b0 0.037 / 0.040 / 0.089 mm, b1000 0.170 / 0.152 / 0.188 mm, b3000 0.350 / 0.637 / 0.461 mm. These are the shell maxima of the repeat-spread table in section 9.
   - The spread includes the per-run seed and the per-run SynthStrip mask: each run drew its own ANTs seed and made its own b0 template and SynthStrip mask (the model-stage `--masks`, 25-30 voxels different). Thus the limits are not seed noise only.
   - The cross-host run r1 is not always within these limits: against e1, e2 and e3, 4, 10 and 9 of 101 volumes are over a limit at the world centre (largest ratio 1.80), and 4, 8 and 3 by QSIPrep's formula (largest ratio 1.58) (`qsiprep/spread-r1-e{1,2,3}.json`). The limits rest on three runs on one host. The M2 replay keeps r1's inputs, so it does not have the template and mask change.
   - The SHORELine transform is affine (|scale − 1| up to 0.026, shear up to 0.013), so its rotation is not unique. The limits use the rotation of QSIPrep's `decompose44` (transforms3d), because the port must match QSIPrep's `motion_params_*.csv` to 1e-6. With the polar factor of the same affine, the b3000 maximum is 0.073 / 0.081 / 0.094° and 0/101 volumes are over 0.2°; with `decompose44` it is 0.208 / 0.096 / 0.183° and 1/101.
   - The mask displacement does not depend on a convention: the largest b3000 displacement of the mask voxels between two runs is 0.48-0.50 mm (MindGrab mask 0.484 mm for e1-e3 and 0.488 mm with r1; e1 SynthStrip mask 0.497 and 0.500 mm). The six-axis limits ignore scale and shear.
-- The QSIPrep repeat spread is above the fixed gate for b3000 (section 9). The plan rule was to stop and report this; M0 reported it, and the user decided the spread rule above.
+- The QSIPrep repeat spread is above the fixed gate for b3000 (section 9). M0 reports this result. The proposed SHORELine acceptance rule remains blocked on the maintainer decision required by #408.
 - On the slab, report the through-plane axes separately. ds005577 is the main SHORELine gate.
 
 ## 6. Runtime and memory
@@ -154,7 +155,7 @@ Replace the WASM numbers with the milestone M3 benchmark.
 
 1. M0: reference runs, kept intermediates and masks, pinned on Hugging Face. Status: NiFreeze runs done; QSIPrep r1 and the repeats e1-e3 done; the folder `hmc/reference/` is ready; the upload and its revision are pending ([#409](https://github.com/neurodesk/webapps/issues/409), which waits for Hugging Face write access, [#374](https://github.com/neurodesk/webapps/issues/374); section 9).
 2. M1: `hmc` motion decomposition, bvec rotation and TSV, tested with the reference `.mat` files.
-3. M2: `hmc-registration` with generic argv, `--float 1` only (no 3DDouble, Q53). Replay the reference inputs and apply the spread rules of section 5 (GP: the seed spread; SHORELine: the e1-e3 repeat spread).
+3. M2: `hmc-registration` with generic argv, `--float 1` only (no 3DDouble, Q53). Replay the reference inputs and apply Q53's per-volume, per-axis seed-spread rule for GP. Report its failures. The shell-maximum alternatives and the SHORELine gate in section 5 await an issue-owner decision.
 4. M3: NiFreeze `trivial` end to end, Node CLI, benchmark.
 5. M4: `shore`, b0 template and SHORELine iterations.
 6. M5: `gp`.
@@ -172,10 +173,10 @@ Replace the WASM numbers with the milestone M3 benchmark.
    **Decided (Q52):** MindGrab (model `mindgrab`) of the mean b0 by default; the user can upload a mask. The reference runs use a MindGrab mask made with `@neurodesk/node-drivers/mindgrab`, so the port can use the same mask. QSIPrep cannot take it; it uses its own SynthStrip mask.
 5. Can NiFreeze use `--float 1` if a measurement shows it within the gate? Then 3DDouble is not necessary.
    **First step (Q53):** measure `--float 1` against double before anyone builds 3DDouble. Measured (section 9): within the fixed gate on b0→b0, not within it for GP (7/90 volumes), but smaller than NiFreeze's own seed noise.
-   **Decided (Q53, 2026-10-19):** the WASM registration (`--float 1`) is not held to the fixed 0.2 mm / 0.2° gate. It is compared against the seed-to-seed spread of native double NiFreeze (gp against gp-seed1235): a WASM result passes when its difference from native double with the same seed is within that spread. Section 5 states the exact rule and the limits; native `--float 1` passes on 90/90 volumes. No 3DDouble build is needed. The fixed tolerances stay for the deterministic parts (motion decomposition, bvec rotation, SHORE and GP predictions).
+   **Decided (Q53, 2026-10-19):** the WASM registration (`--float 1`) is not held to the fixed 0.2 mm / 0.2° gate. It is compared against the seed-to-seed spread of native double NiFreeze (gp against gp-seed1235): a WASM result passes when its difference from native double with the same seed is within that spread. Section 5 states the required per-volume, per-axis rule. Native `--float 1` fails on 40/90 volumes. The shell-maximum alternative is a proposal awaiting the issue owner's decision. No 3DDouble build is needed. The fixed tolerances stay for the deterministic parts (motion decomposition, bvec rotation, SHORE and GP predictions).
 6. Is a QSIPrep run on the slab acceptable, and which flag skips the anatomical input?
    **Decided (Q54):** QSIPrep 26.1.1 SHORELine on ds005577 (whole brain, not the slab), three repeats. The flag is `--anat-modality none` (section 5).
-   **Decided (2026-10-19, extends Q53):** the spread of the three repeats is above the fixed gate for b3000 (1/101 volumes at the world centre with the `decompose44` rotation, 32/101 by QSIPrep's formula; section 9). The SHORELine port is not held to the fixed 0.2 mm / 0.2° gate. Like NiFreeze GP, its WASM registration passes when it is within the QSIPrep 26.1.1 repeat spread of e1-e3, for each shell and axis, with QSIPrep's `decompose44` rotation and the world-centre translation. The limit is the shell maximum over the volumes and the pairs. The spread includes the per-run seed and the per-run SynthStrip mask. Section 5 states the exact rule and the limits. The deterministic parts keep their fixed tolerances.
+   **Decision pending:** the spread of the three repeats is above the fixed gate for b3000 (1/101 volumes at the world centre with the `decompose44` rotation, 32/101 by QSIPrep's formula; section 9). Section 5 proposes a shell-maximum rule from e1-e3 with QSIPrep's `decompose44` rotation and the world-centre translation. The spread includes the per-run seed and the per-run SynthStrip mask. The proposal needs the maintainer confirmation required by #408. The deterministic parts keep their fixed tolerances.
 7. Must the port copy the in-place clip quirk on float data, or only run the integer path?
    **Decided (Q55):** copy the quirk, and record whether the input is float or integer. ds005577 is int16 (no scaling), so the DWI data is not clipped in place. But the trivial model's target (`bzero`) is float64, so the quirk is active there (section 3).
 
@@ -242,7 +243,7 @@ Measured 18-19 October 2026. Data: Hugging Face dataset `neurodeskorg/webapps`, 
 - **Seed noise:** a change of seed in double moves the GP result more than float does, by more than the gate and by about as much as the GP motion itself (0.3-0.7 mm median). The cause is NiFreeze's Random sampling and the fixed iteration limits, which make the result depend on the path.
 - **Decision (2026-10-19):** no 3DDouble. The WASM registration is held to the seed spread of native double, not to the fixed gate (section 5 states the rule; section 8, question 5).
 
-Seed-spread limits `L[s, k]` (largest |gp(1234) - gp(1235)| in the shell) and the largest |gp-float - gp| (`compare/q53-seed-rule.json`):
+Proposed shell-maximum limits `L[s, k]` (largest |gp(1234) - gp(1235)| in the shell) and the largest |gp-float - gp| (`compare/q53-seed-rule.json`):
 
 | Shell | trans x / y / z (mm), world centre | rot x / y / z (°) | trans x / y / z (mm), QSIPrep formula |
 | --- | --- | --- | --- |
@@ -250,9 +251,9 @@ Seed-spread limits `L[s, k]` (largest |gp(1234) - gp(1235)| in the shell) and th
 | b3000 limit | 0.426 / 0.709 / 0.402 | 0.550 / 0.591 / 0.788 | 2.596 / 1.747 / 1.718 |
 | float, all 90 volumes, largest | 0.151 / 0.289 / 0.175 | 0.347 / 0.312 / 0.162 | 0.648 / 0.763 / 1.079 |
 
-- Native `--float 1` passes the rule on 90/90 volumes in both conventions. Its largest ratio to its limit is 0.72.
+- Native `--float 1` passes the proposed shell-maximum alternative on 90/90 volumes in both conventions. Its largest ratio to the proposed limit is 0.72. This does not satisfy Q53's required per-volume, per-axis rule.
 - Median |Δ|: float 0.01-0.03 mm and 0.02-0.03°; seed 0.08-0.13 mm and 0.12-0.15° (world centre).
-- The per-cell reading of the rule fails float on 40/90 volumes (58/540 cells), so section 5 uses the shell maximum.
+- Q53's required per-volume, per-axis rule fails float on 40/90 volumes (58/540 cells). Section 5 records the shell-maximum alternative as an unaccepted proposal. M0 has not established a passing registration result under Q53.
 
 ### QSIPrep SHORELine
 
@@ -277,7 +278,7 @@ Seed-spread limits `L[s, k]` (largest |gp(1234) - gp(1235)| in the shell) and th
 | b1000 (30) | 0.026 / 0.031 / 0.029 | 0.170 / 0.152 / 0.188 | 0.051 / 0.043 / 0.061 | 0.128 | 0 | 0 |
 | b3000 (60) | 0.046 / 0.055 / 0.141 | 0.350 / 0.637 / 0.461 | 0.208 / 0.096 / 0.183 | 0.484 | 1 | 32 |
 
-- The spread is above the fixed gate for b3000: volume 53 at the world centre (Δrot x 0.208°), and 32 volumes by QSIPrep's formula, because of the 184-188 mm lever arm (section 4). b0 and b1000 are within the gate in both conventions. M0 reported it; the user then decided the spread rule (section 5; section 8, question 6).
+- The spread is above the fixed gate for b3000: volume 53 at the world centre (Δrot x 0.208°), and 32 volumes by QSIPrep's formula, because of the 184-188 mm lever arm (section 4). b0 and b1000 are within the gate in both conventions. M0 reports it. The shell-maximum alternative awaits a maintainer decision (section 5; section 8, question 6).
 - The rotation columns use `decompose44`. The affine's polar factor gives 0/101 volumes over 0.2° (b3000 maximum 0.073 / 0.081 / 0.094°). The convention-free mask displacement is 0.48-0.50 mm for b3000 (e1 SynthStrip mask: 0.497 mm, 0.500 mm with r1), above 0.2 mm in every convention (section 5).
 - The spread includes the seed, and also the per-run b0 template and SynthStrip mask.
 - With r1 added (a different host, `--nthreads 1`): 1/101 over the gate at the world centre and 39/101 by QSIPrep's formula. The maximum values change very little (world-centre b3000 x 0.046 → 0.083 mm, mask displacement 0.484 → 0.488 mm). But for each volume and axis, r1 is not always within the e1-e3 limits: against e1, e2 and e3, 4, 10 and 9 of 101 volumes are over a limit at the world centre (largest ratio 1.38, 1.48 and 1.80); 4, 8 and 3 by QSIPrep's formula (1.39, 1.58 and 1.54).
