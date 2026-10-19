@@ -199,6 +199,25 @@ try {
     await expect(page.locator('#threshold')).toHaveValue('60');
     await expect(page.locator('#saveButton')).toBeDisabled();
   });
+  await check('white-matter-lesions', async page => {
+    const status = page.locator('footer#status #statusText');
+    await expect(status).toHaveText('Drag and drop files', { timeout: 60000 });
+    await expect(page.locator('#runButton')).toBeDisabled();
+    await page.locator('#imageInput').setInputFiles(nifti('interface-flair.nii'));
+    await expect(status).toHaveText('FLAIR loaded · ready to segment lesions');
+    await expect(page.locator('#fileInfo')).toHaveText('interface-flair.nii · 16 × 16 × 16 voxels');
+    await expect(page.getByRole('button',{name:'Segment lesions',exact:true})).toBeEnabled();
+    await page.locator('#folds').selectOption('5');
+    await page.locator('#skullStripped').check();
+    const advanced = page.locator('#advancedSettings > summary');
+    await advanced.tap();
+    await expect(page.locator('#folds')).toBeHidden();
+    await advanced.tap();
+    await expect(page.locator('#folds')).toHaveValue('5');
+    await expect(page.locator('#skullStripped')).toBeChecked();
+    await expect(page.locator('#cancelButton')).toBeHidden();
+    await expect(page.locator('#outputSection')).not.toHaveAttribute('open', '');
+  });
   await check('elastix', async page => {
     await expect(page.locator('#runButton')).toBeDisabled();
     await page.locator('#method').selectOption('rigid');
