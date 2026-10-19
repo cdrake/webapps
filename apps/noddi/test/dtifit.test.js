@@ -1,6 +1,6 @@
 // The niimath dtifit option through the real dtifit-enabled niimath WASM in Node: it fits the
-// same volumes as the WebAssembly tensor fit, and its FA and MD equal DWI2TRX's fit of those
-// volumes.
+// same volumes as the WebAssembly tensor fit, its FA and MD equal DWI2TRX's fit of those
+// volumes, and its maps agree with the WebAssembly ordinary least squares fit.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
@@ -48,8 +48,8 @@ test("FA and MD equal DWI2TRX's on a single-shell DWI, where the fit uses every 
   assert.ok(Math.abs(maps.AD[centre] - 1.7e-3) < 1e-5, `AD ${maps.AD[centre]}`);
   assert.ok(Math.abs(maps.RD[centre] - 0.45e-3) < 1e-5, `RD ${maps.RD[centre]}`);
   assert.ok(Math.abs(maps.S0[centre] - 1000) < 1, `S0 ${maps.S0[centre]}`);
-  // niimath's default -xflip auto flips x on this grid (positive sform determinant): V1 is (-1, 0, 0).
-  assert.ok(Math.abs(maps.V1x[centre] + 1) < 1e-4, `V1x ${maps.V1x[centre]}`);
+  // With -xflip 0 and the WebAssembly fit's sign, V1 is (1, 0, 0).
+  assert.ok(Math.abs(maps.V1x[centre] - 1) < 1e-4, `V1x ${maps.V1x[centre]}`);
   assert.ok(Math.abs(maps.V1y[centre]) < 1e-4 && Math.abs(maps.V1z[centre]) < 1e-4);
 });
 
@@ -74,4 +74,45 @@ test("voxels outside the mask stay zero", async () => {
   for (const name of ["FA", "MD", "AD", "RD", "S0"]) {
     assert.equal(maps[name].reduce((count, value, i) => count + (i !== centre && value !== 0 ? 1 : 0), 0), 0, name);
   }
+});
+
+/** The centre voxel of niimath dtifit and of the WebAssembly OLS fit, on the same DWI. */
+async function centreFits(options) {
+  const input = appInput(syntheticDwi({ shells: [1000], ...options }));
+  const voxels = input.dims[0] * input.dims[1] * input.dims[2];
+  const centre = 4 + 8 * (4 + 8 * 4);
+  const dtifit = await fitDtifit(runNiimath, { ...input, mask: null });
+  const ols = noddi.dtiFit(input.data, voxels, input.bvals, input.bvecs, { weighted: false });
+  const at = (maps) => Object.fromEntries(Object.entries(maps).map(([key, values]) => [key, values[centre]]));
+  return { dtifit: at(dtifit), ols: at(ols) };
+}
+
+function assertSameTensor({ dtifit, ols }, label) {
+  for (const key of ["FA", "MD", "AD", "RD", "S0"]) {
+    assert.ok(Math.abs(dtifit[key] - ols[key]) <= 1e-5 * Math.abs(ols[key]), `${label} ${key}: dtifit ${dtifit[key]}, OLS ${ols[key]}`);
+  }
+  for (const key of ["V1x", "V1y", "V1z"]) {
+    assert.ok(Math.abs(dtifit[key] - ols[key]) < 1e-5, `${label} ${key}: dtifit ${dtifit[key]}, OLS ${ols[key]}`);
+  }
+}
+
+// An oblique first eigenvector, so that a mirror in x is not the same as a sign change.
+const OBLIQUE = { direction: [1, 1, 0.3], eigenvalues: [1.7e-3, 0.5e-3, 0.3e-3] };
+
+test("on an oblique tensor every map equals the WebAssembly OLS fit, with either sign of the sform determinant", async () => {
+  const positive = await centreFits({ ...OBLIQUE, affine: [[2, 0, 0, 0], [0, 2, 0, 0], [0, 0, 2, 0]] });
+  assertSameTensor(positive, "positive determinant");
+  const truth = OBLIQUE.direction.map((value) => value / Math.hypot(...OBLIQUE.direction));
+  assert.ok(Math.abs(positive.dtifit.V1x - truth[0]) < 1e-4 && Math.abs(positive.dtifit.V1y - truth[1]) < 1e-4, `V1 ${positive.dtifit.V1x}, ${positive.dtifit.V1y}`);
+  assertSameTensor(await centreFits({ ...OBLIQUE, affine: [[-2, 0, 0, 0], [0, 2, 0, 0], [0, 0, 2, 0]] }), "negative determinant");
+});
+
+test("bvecs of length 0.9 give the same diffusivities as unit bvecs, as in the WebAssembly fit", async () => {
+  assertSameTensor(await centreFits({ ...OBLIQUE, bvecScale: 0.9 }), "bvecs of length 0.9");
+});
+
+test("with a negative eigenvalue FA, MD, AD and RD are all zero", async () => {
+  const { dtifit } = await centreFits({ eigenvalues: [1.7e-3, 0.3e-3, -0.2e-3] });
+  for (const key of ["FA", "MD", "AD", "RD"]) assert.equal(dtifit[key], 0, key);
+  assert.ok(dtifit.S0 > 0);
 });

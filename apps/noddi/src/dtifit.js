@@ -32,6 +32,8 @@ export async function fitDtifit(run, { buffer, data, dims, bvals, bvecs, volumes
     bval: encoder.encode(text.bval),
     bvec: encoder.encode(text.bvec),
     mask: mask ? await gzip(new Uint8Array(createNiftiFromData(mask, buffer, { dims }))) : undefined,
+    // V1 in the bvec frame, as the WebAssembly fit gives it, on every grid.
+    xflip: "0",
   });
   const maps = {};
   for (const name of DTIFIT_INPUTS) maps[name] = readNiftiFrames(await decodeNiftiBuffer(fitted[name])).data;

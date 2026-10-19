@@ -54,3 +54,17 @@ test('the runner takes one call at a time and recovers from a failed call', asyn
   const maps = await fitTensor(runNiimath, input);
   assert.ok(maps.FA.length > 0);
 });
+
+test('xflip goes to dtifit as -xflip; without it the argv does not change', async () => {
+  const calls = [];
+  const run = async (args, { outputs }) => {
+    calls.push(args);
+    return { outputs: Object.fromEntries(outputs.map((name) => [name, new Uint8Array()])) };
+  };
+  const input = dwi();
+  await fitTensor(run, input);
+  await fitTensor(run, { ...input, xflip: '0' });
+  assert.ok(!calls[0].includes('-xflip'));
+  assert.deepEqual(calls[1].slice(-2), ['-xflip', '0']);
+  await assert.rejects(fitTensor(run, { ...input, xflip: 'no' }), /xflip must be/);
+});
