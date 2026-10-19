@@ -202,6 +202,14 @@ export function exportMetadata(metadata, privacy) {
   return Object.fromEntries(Object.entries(metadata).filter(([key]) => TECHNICAL_FIELDS.has(key)));
 }
 
+// dcm2niix writes EchoNumber 1 only when it flags the series as multi-echo; its _e<N> suffix is always there.
+function echoNumber(item) {
+  const value = item.metadata.EchoNumber;
+  if (Number.isInteger(value) && value >= 1) return value;
+  const suffix = /_e(\d+)(?:_[a-z]+)?\.nii(?:\.gz)?$/i.exec(item.image?.name || '');
+  return suffix ? Number(suffix[1]) : 0;
+}
+
 /** Allocate names before writing associations, so every link names an actual output. */
 export function datasetPaths(series, { subject, session }) {
   const included = series.filter((item) => item.type !== 'exclude');
@@ -209,14 +217,26 @@ export function datasetPaths(series, { subject, session }) {
   const base = (item) => prefix
     + (item.acquisition ? `_acq-${item.acquisition}` : '')
     + (['dwi', 'epi'].includes(item.type) && item.direction ? `_dir-${item.direction}` : '');
-  const keys = included.map((item) => `${base(item)}_${item.type}`);
+  const groups = included.map((item) => `${base(item)}_${item.type}`);
+  // Multi-echo anatomy (dcm2niix _e1, _e2) is one acquisition: label its echoes, not runs.
+  // Of this app's datatypes only anat/ allows echo-, so DWI and fieldmap echoes stay runs.
+  const echo = included.map((item, index) => {
+    const value = echoNumber(item);
+    if (!['T1w', 'T2w', 'FLAIR'].includes(item.type) || !value) return '';
+    const echoes = new Set(included
+      .filter((other, otherIndex) => groups[otherIndex] === groups[index])
+      .map(echoNumber)
+      .filter(Boolean));
+    return echoes.size > 1 ? `_echo-${value}` : '';
+  });
+  const keys = groups.map((group, index) => `${group}${echo[index]}`);
   const counts = new Map();
   return new Map(included.map((item, index) => {
     const key = keys[index];
     const run = (counts.get(key) || 0) + 1;
     counts.set(key, run);
     const repeated = keys.filter((candidate) => candidate === key).length > 1;
-    const name = `${base(item)}${repeated ? `_run-${run}` : ''}_${item.type}`;
+    const name = `${base(item)}${repeated ? `_run-${run}` : ''}${echo[index]}_${item.type}`;
     const datatype = item.type === 'epi' ? 'fmap' : item.type === 'dwi' ? 'dwi' : 'anat';
     return [item.id, `sub-${subject}/ses-${session}/${datatype}/${name}`];
   }));

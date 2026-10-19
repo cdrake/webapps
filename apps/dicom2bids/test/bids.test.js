@@ -180,6 +180,33 @@ test('separate repeated acquisitions receive unique run paths without merging', 
   assert.match(paths.get(two.id), /_run-2_T1w$/);
 });
 
+test('multi-echo anatomy receives echo entities, and repeated multi-echo runs keep both', async () => {
+  const first = await acquisition('T1w', { metadata: { EchoNumber: 1 }, name: 'mprage_e1' });
+  const second = { ...await acquisition('T1w', { metadata: { EchoNumber: 2 }, name: 'mprage_e2' }), id: 'series2' };
+  assert.deepEqual([...datasetPaths([first, second], settings).values()], [
+    'sub-01/ses-01/anat/sub-01_ses-01_echo-1_T1w',
+    'sub-01/ses-01/anat/sub-01_ses-01_echo-2_T1w',
+  ]);
+  const repeat = [first, second].map((item, index) => ({ ...item, id: `repeat${index}` }));
+  assert.deepEqual([...datasetPaths([first, second, ...repeat], settings).values()], [
+    'sub-01/ses-01/anat/sub-01_ses-01_run-1_echo-1_T1w',
+    'sub-01/ses-01/anat/sub-01_ses-01_run-1_echo-2_T1w',
+    'sub-01/ses-01/anat/sub-01_ses-01_run-2_echo-1_T1w',
+    'sub-01/ses-01/anat/sub-01_ses-01_run-2_echo-2_T1w',
+  ]);
+  const unflagged = await acquisition('T1w', { name: 'memprage_e1' });
+  const pair = [unflagged, { ...second, id: 'series3' }];
+  assert.deepEqual([...datasetPaths(pair, settings).values()], [
+    'sub-01/ses-01/anat/sub-01_ses-01_echo-1_T1w',
+    'sub-01/ses-01/anat/sub-01_ses-01_echo-2_T1w',
+  ]);
+  const single = { ...first, id: 'single' };
+  assert.deepEqual([...datasetPaths([first, single], settings).values()], [
+    'sub-01/ses-01/anat/sub-01_ses-01_run-1_T1w',
+    'sub-01/ses-01/anat/sub-01_ses-01_run-2_T1w',
+  ]);
+});
+
 test('privacy is explicit and omit filters unknown text and NIfTI text without changing the source', async () => {
   const metadata = { PatientName: 'PRIVATE', PatientID: 'ID', AcquisitionDateTime: '2026-01-01', ProtocolName: 'PRIVATE', UnrecognizedPrivateField: 'PRIVATE', EchoTime: 0.003 };
   const item = await acquisition('T1w', { metadata });
