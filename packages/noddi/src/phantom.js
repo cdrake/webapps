@@ -56,7 +56,7 @@ export function phantomTissue(x, y, z, size) {
 }
 
 /**
- * @returns {{ nifti: Uint8Array, bval: string, bvec: string, voxels: number, inside: number[] }}
+ * @returns {{ nifti: Uint8Array, bval: string, bvec: string, dims: number[], voxels: number, inside: number[] }}
  *   `nifti` is uncompressed float32 NIfTI-1 on a 2 mm grid
  */
 export function multiShellPhantom({ size = 16, noise = 0.02, seed = 1 } = {}) {
@@ -93,6 +93,7 @@ export function multiShellPhantom({ size = 16, noise = 0.02, seed = 1 } = {}) {
     nifti,
     bval: `${bvals.join(' ')}\n`,
     bvec: `${bvecs.map((row) => row.join(' ')).join('\n')}\n`,
+    dims: [size, size, size],
     voxels,
     inside,
   };
