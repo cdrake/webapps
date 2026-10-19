@@ -6,9 +6,10 @@ export const LESIONS = Object.freeze({ path: 'white-matter-lesions', title: 'Whi
 
 // Why an image cannot be sent, or null when it can: a time series or a single slice cannot.
 export async function lesionHandoffBlocker(image) {
-  const { dimensionality, frames } = await describeNiftiFile(image);
+  const { dimensionality, dims, frames } = await describeNiftiFile(image);
   if (frames > 1) return `${LESIONS.title} takes one 3D image; this one has ${frames} volumes.`;
-  if (dimensionality < 3) return `${LESIONS.title} takes a 3D image; this one is a single slice.`;
+  // dimensionality is 2 for a depth of exactly 1; a depth of 0 or less is no 3D image either.
+  if (dimensionality < 3 || dims[2] < 2) return `${LESIONS.title} takes a 3D image; this one is a single slice.`;
   return null;
 }
 

@@ -47,6 +47,12 @@ test('a time series or a single slice is refused with a reason short enough to s
   assert.ok(series.length <= 90);
 });
 
+test('a depth of zero or less is refused as a single slice', async () => {
+  const single = 'White matter lesions takes a 3D image; this one is a single slice.';
+  assert.equal(await lesionHandoffBlocker(nifti([3, 64, 64, 0, 1, 1, 1, 1])), single);
+  assert.equal(await lesionHandoffBlocker(nifti([3, 64, 64, -1, 1, 1, 1, 1], { gzip: true })), single);
+});
+
 test('the chosen image goes alone, under its download name', async () => {
   const series = { uid: '1.2.3', number: 4, description: 'FLAIR sag' };
   const dcm2niix = (name) => new File(['nifti'], name);
