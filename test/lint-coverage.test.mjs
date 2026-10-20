@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import test from 'node:test';
+import test, { before } from 'node:test';
 import { ESLint } from 'eslint';
 import config from '../eslint.config.js';
 import { assertCoverage, sourceInventory } from '../scripts/quality/lint-inventory.mjs';
@@ -18,6 +18,27 @@ const sourceDirectory = ({ name, sources }) => {
 import { preservedLintFilters } from '../scripts/lint-workspaces.mjs';
 
 const eslint = new ESLint({ cwd: root, overrideConfigFile: join(root, 'eslint.config.js') });
+
+// Each canary is removed in a finally block, which a killed run never reaches. Its
+// leftovers are untracked source that would fail every later lint, so remove them first.
+const canaryParents = [
+  ...typedPromiseProjects.map(sourceDirectory),
+  'packages/components/src/',
+  'apps/brain2print/src/',
+  'apps/brain2print/dist/',
+  '.audit/',
+];
+before(async () => {
+  for (const parent of canaryParents) {
+    const entries = await readdir(join(root, parent)).catch((error) => {
+      if (error.code === 'ENOENT') return [];
+      throw error;
+    });
+    for (const entry of entries.filter((name) => /^(promise-canary|type-canary|lint-canary|lint-alias)-/.test(name))) {
+      await rm(join(root, parent, entry), { recursive: true, force: true });
+    }
+  }
+});
 
 test('every owned tracked source receives nonempty correctness rules', async () => {
   const files = sourceInventory(root);
