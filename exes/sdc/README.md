@@ -63,7 +63,13 @@ On ds005134 sub-01 (116 × 116 × 68, 2 mm, PE j-; the prepared pair of the opti
 | full run, field | 5.9e-6 mm |
 
 The field in Hz differs from the float32 PyHySCO run of the options document by a median of 5.0e-6 Hz in the brain (maximum 0.026 Hz).
-The WebAssembly module gives the native field to 3.8e-6 Hz (the CLI writes float32).
+The WebAssembly module in Node gives the native field to 3.8e-6 Hz on this volume (the CLI writes float32).
+In Chromium, the app's field for the slab example equals the CLI's float32 output in all 44,696 brain voxels (`apps/sdc/e2e/smoke.spec.js`, the port gate).
 One run takes 1.3 s natively on one thread and 1.7 s in Node.
+
+### Limits
+
+- The app reads each 4D input whole as float32 before it averages the b = 0 volumes: a 130-volume DWI series of 116 × 116 × 69 voxels takes about 480 MB in the tab. Give the app only the b = 0 volumes when memory is short.
+- The phase-encoding direction must be i or j (PyHySCO's restriction).
 
 To repeat it: run `validation/pyhysco_reference.py` with PyHySCO 0.0.4 and PyTorch, then `cargo run --release --example parity -- <its output directory>`.

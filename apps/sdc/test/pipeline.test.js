@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { b0Frames, bidsStem, fieldSidecar, meanFrames, outputNames, sameAffine, selectPair, voxelSizes } from "../src/pipeline.js";
+import { b0Frames, bidsStem, fieldSidecar, meanFrames, outputNames, selectPair, voxelSizes } from "../src/pipeline.js";
 
 const entry = (name, pe, bval = null) => ({ image: { name }, sidecar: pe ? { PhaseEncodingDirection: pe, TotalReadoutTime: 0.04 } : null, bval });
 
@@ -35,8 +35,6 @@ test("the mean averages the chosen volumes voxel by voxel", () => {
 test("voxel sizes are the affine's column lengths", () => {
   const affine = [[0, -2, 0, 10], [2, 0, 0, 0], [0, 0, 2.5, 0]];
   assert.deepEqual(voxelSizes(affine), [2, 2, 2.5]);
-  assert.ok(sameAffine(affine, affine.map((row) => row.map((v) => v + 1e-5))));
-  assert.ok(!sameAffine(affine, affine.map((row) => row.map((v) => v + 0.1))));
 });
 
 test("outputs are named from image 1's BIDS stem", () => {

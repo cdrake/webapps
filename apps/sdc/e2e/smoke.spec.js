@@ -92,6 +92,13 @@ test("a pair with the same direction is refused", async ({ page }) => {
   await expect(page.locator("#runButton")).toBeDisabled();
 });
 
+test("images on different grids are refused", async ({ page }) => {
+  await page.goto("/");
+  await page.locator("#imageInput").setInputFiles(syntheticPair({ dims2: [8, 40, 5] }));
+  await expect(page.locator("#statusText")).toHaveText("The images are on different grids (8×40×4 and 8×40×5); both must be in one space.");
+  await expect(page.locator("#runButton")).toBeDisabled();
+});
+
 test("cancelling stops the estimate and permits another run", async ({ page }) => {
   await page.goto("/");
   await page.locator("#imageInput").setInputFiles(syntheticPair({ dims: [128, 128, 60] }));

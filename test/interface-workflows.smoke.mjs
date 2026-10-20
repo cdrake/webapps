@@ -404,5 +404,27 @@ try {
     await expect(page.locator('#tensorFit')).toHaveValue('ols');
     await expect(page.locator('#outputSection')).not.toHaveAttribute('open', '');
   });
+  await check('sdc', async page => {
+    await expect(page.locator('#statusText')).toHaveText('Drag and drop files', { timeout: 60000 });
+    await expect(page.locator('#technicalLog')).toHaveClass(/collapsed/);
+    const sidecar = (name, direction) => ({ name, mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ PhaseEncodingDirection: direction, TotalReadoutTime: 0.04 })) });
+    await page.locator('#imageInput').setInputFiles([
+      ...dwiSeries('sub-01_dir-AP_dwi'),
+      sidecar('sub-01_dir-AP_dwi.json', 'j-'),
+      nifti('sub-01_dir-PA_epi.nii'),
+      sidecar('sub-01_dir-PA_epi.json', 'j'),
+    ]);
+    await expect(page.locator('#fileInfo')).toHaveText('Image 1: sub-01_dir-AP_dwi.nii · j- · b = 0 mean of 1/13');
+    await expect(page.locator('#runButton')).toBeEnabled();
+    // The field reference chosen after loading must survive closing the section.
+    await page.locator('#reference').selectOption({ label: 'sub-01_dir-PA_epi.nii' });
+    const task = page.locator('#taskSection > summary');
+    await task.tap();
+    await expect(page.locator('#reference')).toBeHidden();
+    await task.tap();
+    await expect(page.locator('#reference')).toHaveValue('0');
+    await expect(page.locator('#fileInfo')).toHaveText('Image 1: sub-01_dir-PA_epi.nii · j');
+    await expect(page.locator('#outputSection')).not.toHaveAttribute('open', '');
+  });
 } finally { await browser.close(); await site.close(); }
 if (failures.length) throw new Error(failures.join('\n'));

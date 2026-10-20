@@ -32,12 +32,12 @@ function nifti(dims, frames, shift) {
 const json = (value) => Buffer.from(JSON.stringify(value));
 
 /** Files for setInputFiles: an AP DWI series (two b = 0 volumes and one b = 1000) and a PA EPI. */
-export function syntheticPair({ dims = [8, 40, 4], shift = 3, pe = ["j-", "j"] } = {}) {
+export function syntheticPair({ dims = [8, 40, 4], dims2 = dims, shift = 3, pe = ["j-", "j"] } = {}) {
   return [
     { name: "sub-01_dir-AP_dwi.nii.gz", mimeType: "application/gzip", buffer: nifti(dims, 3, shift) },
     { name: "sub-01_dir-AP_dwi.json", mimeType: "application/json", buffer: json({ PhaseEncodingDirection: pe[0], TotalReadoutTime: TRT }) },
     { name: "sub-01_dir-AP_dwi.bval", mimeType: "text/plain", buffer: Buffer.from("0 0 1000") },
-    { name: "sub-01_dir-PA_epi.nii.gz", mimeType: "application/gzip", buffer: nifti(dims, 1, -shift) },
+    { name: "sub-01_dir-PA_epi.nii.gz", mimeType: "application/gzip", buffer: nifti(dims2, 1, -shift) },
     { name: "sub-01_dir-PA_epi.json", mimeType: "application/json", buffer: json({ PhaseEncodingDirection: pe[1], TotalReadoutTime: TRT }) },
   ];
 }

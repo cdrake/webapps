@@ -12,11 +12,11 @@ import {
   bindInfoTooltips,
   ProgressManager,
 } from "@neurodesk/webapp-components/ui";
-import { createNiftiFromData, decodeNiftiBuffer, downloadFile, readNiftiFrames } from "@neurodesk/webapp-components/file-io";
+import { createNiftiFromData, decodeNiftiBuffer, downloadFile, readNiftiFrames, sameNiftiGrid } from "@neurodesk/webapp-components/file-io";
 import { registerAppAutomation } from "@neurodesk/webapp-components/automation";
 import { readDiffusionSeries, runDcm2niix } from "@neurodesk/runtime-support/dcm2niix-client";
 import { APP } from "./config.js";
-import { b0Frames, fieldSidecar, meanFrames, outputNames, sameAffine, selectPair, voxelSizes } from "./pipeline.js";
+import { b0Frames, fieldSidecar, meanFrames, outputNames, selectPair, voxelSizes } from "./pipeline.js";
 import { estimateField } from "./estimate.js";
 import examples from "../examples.json";
 
@@ -153,7 +153,8 @@ async function loadFiles(filesPromise, signal) {
     const inputs = [];
     for (const entry of chosen) inputs.push(await readInput(entry, controller.signal));
     const [first, second] = inputs;
-    if (first.dims.join() !== second.dims.join() || !sameAffine(first.affine, second.affine)) {
+    // 0.01 mm: two series of one session can differ by float32 rounding of their affines.
+    if (first.dims.join() !== second.dims.join() || !sameNiftiGrid(first.buffer, second.buffer, 0.01)) {
       throw new Error(`The images are on different grids (${first.dims.join("×")} and ${second.dims.join("×")}); both must be in one space.`);
     }
     const trt = Number(first.sidecar.TotalReadoutTime);

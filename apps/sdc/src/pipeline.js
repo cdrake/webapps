@@ -53,14 +53,6 @@ export function voxelSizes(affine) {
   return [0, 1, 2].map((j) => Math.hypot(affine[0][j], affine[1][j], affine[2][j]));
 }
 
-/** True when two affines agree to `tolerance` mm in every entry. */
-export function sameAffine(a, b, tolerance = 1e-3) {
-  for (let r = 0; r < 3; r++) {
-    for (let c = 0; c < 4; c++) if (Math.abs(a[r][c] - b[r][c]) > tolerance) return false;
-  }
-  return true;
-}
-
 /** BIDS stem of an image name, without its suffix and any desc entity. */
 export function bidsStem(fileName) {
   const base = fileName.replace(/\.nii(\.gz)?$/i, "");
