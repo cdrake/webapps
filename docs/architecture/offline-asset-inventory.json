@@ -2053,8 +2053,8 @@
         }
       ],
       "source_files": [
-        "apps/dwi2trx/src/dwi2trx/dtifit.ts",
         "apps/dwi2trx/src/dwi2trx/input.ts",
+        "apps/dwi2trx/src/dwi2trx/tensor-worker.ts",
         "apps/dwi2trx/src/main.ts"
       ]
     },

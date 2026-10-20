@@ -1,5 +1,5 @@
 /**
- * End-to-end check of the shared dtifit pipeline through the app's niimath runner
+ * End-to-end check of the shared dtifit pipeline through the package's niimath runner
  * against the bundled sample. Runs the real WASM (unmasked dtifit), so it needs the
  * vendored niimath.
  * Run: node --experimental-strip-types src/dwi2trx/dtifit.test.ts  (Node 22+).
@@ -10,7 +10,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { gunzipSync } from 'node:zlib'
 import { fitTensor } from '@neurodesk/dwi2trx'
-import { runNiimath } from './dtifit.ts'
+import { runNiimath } from '@neurodesk/dwi2trx/runner'
 
 const fixtureDir = process.env.DWI2TRX_FIXTURE_DIR || 'public'
 const fixture = join(fixtureDir, 'dwi.nii.gz')

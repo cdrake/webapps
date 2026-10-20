@@ -1,7 +1,7 @@
 import { version as mindgrabVersion } from '@brainchop/mindgrab/package.json'
 import { segment } from '@brainchop/mindgrab'
 import { MASK_OPTIONS, TENSOR_MAPS, assertMaskOnGrid, extractB0, fitTensor } from '@neurodesk/dwi2trx'
-import { runNiimath } from './dtifit'
+import { runNiimath } from '@neurodesk/dwi2trx/runner'
 import type { DwiInput } from './state'
 
 const bytes = async (file: File) => new Uint8Array(await file.arrayBuffer())

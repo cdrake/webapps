@@ -3,18 +3,15 @@ import { link, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { basename, dirname, join, resolve } from 'node:path';
 import { decodeNiftiBuffer, isValidNifti1, parseNiftiHeader } from '@neurodesk/webapp-components/file-io/nifti';
 import { loadMindgrabCpu } from '@neurodesk/node-drivers/mindgrab';
-import { runNiimath } from '@neurodesk/node-drivers/niimath';
-import createNiimath from '@niivue/niimath/niimath.js';
 import packageJson from '../package.json' with { type: 'json' };
 import { countDirections } from './gradients.js';
 import { MASK_OPTIONS, TENSOR_MAPS, assertMaskOnGrid, extractB0, fitTensor, mapFileName } from './tensor.js';
+import { runNiimath as run } from './node-runner.js';
 
 const MINDGRAB_PACKAGE = import.meta.resolve('@brainchop/mindgrab/package.json');
 const readVersion = async (url) => JSON.parse(await readFile(new URL(url), 'utf8')).version;
 export const NIIMATH_VERSION = await readVersion(new URL('../package.json', import.meta.resolve('@niivue/niimath')));
 export const MINDGRAB_VERSION = await readVersion(MINDGRAB_PACKAGE);
-
-const run = (args, files) => runNiimath(createNiimath, args, files);
 
 // Little-endian NIfTI-1, which the web app accepts and the header reader parses.
 const isNifti = (buffer) => buffer.byteLength >= 352 && new DataView(buffer).getInt32(0, true) === 348 && isValidNifti1(buffer);

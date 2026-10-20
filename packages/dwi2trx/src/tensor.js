@@ -39,10 +39,16 @@ export async function extractB0(run, { dwi, bvalText }) {
 /**
  * Fits the diffusion tensor with niimath --dtifit and returns every map in TENSOR_MAPS as .nii.gz
  * bytes. Without `mask` the fit is unmasked; a mask must lie on the DWI's voxel grid and goes to
- * dtifit unchanged (no dilation: the FA is noisy at the scalp).
+ * dtifit unchanged (no dilation: the FA is noisy at the scalp). `xflip` is dtifit's -xflip
+ * ('0', '1' or 'auto'); without it dtifit uses 'auto', which negates the x component of the
+ * eigenvectors on a grid with a positive sform determinant.
  */
-export async function fitTensor(run, { dwi, bval, bvec, mask }) {
+export async function fitTensor(run, { dwi, bval, bvec, mask, xflip }) {
   const args = ['--dtifit', '-k', 'dwi', '-r', 'dwi.bvec', '-b', 'dwi.bval', '-o', 'dti'];
+  if (xflip !== undefined) {
+    if (!['0', '1', 'auto'].includes(xflip)) throw new Error(`xflip must be '0', '1' or 'auto', not '${xflip}'.`);
+    args.push('-xflip', xflip);
+  }
   const inputs = { 'dwi.nii.gz': dwi, 'dwi.bval': bval, 'dwi.bvec': bvec };
   if (mask) {
     await assertMaskOnGrid(dwi, mask);
