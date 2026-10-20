@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Phase 2: ds004146 sub-0001 to sub-0005, every method, one run at a time.
-# Usage: phase2.sh
+# Usage: phase2.sh [subject-number...]   (default 0001 to 0005)
 set -uo pipefail
 source "$(dirname "$0")/common.sh"
 methods="topup topup-single ants pyhysco pyhysco-gpu qwarp drbuddi fdnet fdnet-pa-first"
-for s in 0001 0002 0003 0004 0005; do
+for s in ${@:-0001 0002 0003 0004 0005}; do
   sub=ds004146-sub-$s
   b=$ROOT/bids/ds004146/sub-$s/ses-01
   "$SCRIPTS/prep.sh" $sub \

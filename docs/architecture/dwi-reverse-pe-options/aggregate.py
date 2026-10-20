@@ -1,5 +1,9 @@
 """Combine every subject's metrics into the document's tables and apply the gate.
 
+A check passes on a subject if the method's ratio to topup is at most the
+larger of the fixed limit (AP-PA 1.1, BBR 1.02) and topup-single's ratio on
+that subject. The fixed-limit result is printed too.
+
 Usage: aggregate.py <runs-dir> [subject...]
 
 Prints Markdown: one row per method and subject, then one row per method with
@@ -53,17 +57,28 @@ def main(runs, *subjects):
     )
     print("| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |")
     passes = {}
+    strict_passes = {}
     for sub, rows in table.items():
         ref = rows["topup"]
+        # "Close" means within topup's own spread: the limit on a subject is the
+        # larger of the fixed limit and topup-single's ratio there.
+        single = rows["topup-single"]
+        appa_limit = max(AP_PA_LIMIT, single["appa_mad"] / ref["appa_mad"])
+        bbr_limit = max(BBR_LIMIT, single["bbr_cost"] / ref["bbr_cost"])
         for method in ORDER:
             m = rows.get(method)
             if m is None:
                 continue
             ok = (
+                m["appa_mad"] <= appa_limit * ref["appa_mad"]
+                and m["bbr_cost"] <= bbr_limit * ref["bbr_cost"]
+            )
+            strict = (
                 m["appa_mad"] <= AP_PA_LIMIT * ref["appa_mad"]
                 and m["bbr_cost"] <= BBR_LIMIT * ref["bbr_cost"]
             )
             passes.setdefault(method, []).append(ok)
+            strict_passes.setdefault(method, []).append(strict)
             print(
                 f"| {sub} | {method} | {fmt(m['appa_mad'])} | {fmt(m.get('appa_mad_nojac'))} "
                 f"| {fmt(m['bbr_cost'], 4)} | {fmt(m['field_vs_topup_mad_hz'])} "
@@ -74,9 +89,9 @@ def main(runs, *subjects):
 
     print()
     print(
-        "| Method | Image gate (subjects passed) | Mean Δfield demeaned (Hz) | Mean Δfield (Hz) | Mean r | Mean time (s) | Max peak RAM (MB) |"
+        "| Method | Image gate (subjects passed) | Fixed limits only | Mean Δfield demeaned (Hz) | Mean Δfield (Hz) | Mean r | Mean time (s) | Max peak RAM (MB) |"
     )
-    print("| --- | --- | --- | --- | --- | --- | --- |")
+    print("| --- | --- | --- | --- | --- | --- | --- | --- |")
     means = {}
     for method in ORDER:
         vals = [rows[method] for rows in table.values() if method in rows]
@@ -87,6 +102,7 @@ def main(runs, *subjects):
         rams = [v["peak_rss_mb"] for v in vals if "peak_rss_mb" in v]
         print(
             f"| {method} | {sum(passes[method])}/{len(passes[method])} "
+            f"| {sum(strict_passes[method])}/{len(strict_passes[method])} "
             f"| {fmt(means[method])} | {fmt(average(vals, 'field_vs_topup_mad_hz'))} "
             f"| {fmt(average(vals, 'field_vs_topup_r'))} "
             f"| {fmt(sum(times) / len(times)) if times else ''} | {fmt(max(rams)) if rams else ''} |"

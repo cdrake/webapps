@@ -17,7 +17,26 @@ Thus the solver comes first and Synb0-DisCo is a later front end.
 
 ## Recommendation
 
-RESULTS PENDING.
+**By the rule: DR-BUDDI.**
+It is the only candidate that passes the image gate on all six subjects.
+Its field is the closest to topup's: a mean demeaned Δfield of 1.43 Hz, the same as topup's own spread (topup with one b0 per side, 1.39 Hz).
+No cheaper port is within the 1.5 x margin: PyHySCO is at 1.52 x.
+
+**What we build first: PyHySCO, then DR-BUDDI.**
+DR-BUDDI took 42 minutes and 5 GB natively with 8 threads.
+In a browser that is probably more than an hour, near the WebAssembly memory limit.
+This measurement does not show that a browser port is usable.
+PyHySCO took 4 s and 0.9 GB, its port is small, and its gap is small and stated here:
+
+- Its AP-PA agreement is better than topup's on every subject (0.72 to 0.89 x).
+- Its T1w alignment is a little worse on two subjects: BBR 1.024 x (sub-0003, inside topup's own spread there) and 1.030 x (sub-0005, outside it).
+- Its field differs from topup's by 2.18 Hz (demeaned), against 1.43 Hz for DR-BUDDI.
+
+Thus `apps/sdc` ([#473](https://github.com/neurodesk/webapps/issues/473)) ships PyHySCO as its first method and default.
+DR-BUDDI is a follow-up issue that starts with a WebAssembly build, memory and timing check before the full port.
+When DR-BUDDI is usable in the browser, it becomes the "closest to topup" option.
+FD-Net (5/6, 3.62 Hz) can be a third option only after the HCP data-use terms are checked.
+ANTs restricted SyN and 3dQwarp fail the gate on every subject.
 
 ## Candidates
 
@@ -126,6 +145,11 @@ A method passes if its image metrics are close to topup's or better, on every su
 - **T1w alignment.**
   The BBR cost of the corrected mean b0 against the T1w white matter (FSL `flirt -cost bbr`, one shared start) is at most 1.02 x topup's value.
 
+"Close" means within topup's own spread.
+On each subject the limit is the larger of the fixed value above and the ratio that topup with one b0 per side gets there.
+This change was made after phase 2 showed sub-0003, where topup with one b0 per side fails the fixed limits itself (AP-PA 1.23 x, BBR 1.065 x).
+The results show both forms.
+
 **Ranking.**
 The methods are ranked by the median absolute difference of their field from topup's in the brain, after the median offset is removed (the demeaned Δfield).
 A constant field is a translation along the PE axis.
@@ -159,15 +183,83 @@ Phase 1 found three errors in the first scripts, and each fix comes from the too
 
 ## Results
 
-RESULTS PENDING.
+The full tables, with every method and subject, come from `aggregate.py runs`.
+All times are native, with 8 threads; PyHySCO also ran once on the RTX 5080.
+
+### Summary over six subjects
+
+| Method | Image gate, topup-spread limit | Image gate, fixed limits | Mean Δfield demeaned (Hz) | Mean Δfield (Hz) | Mean r | Mean time (s) | Max peak RAM (GB) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `topup` | 6/6 | 6/6 | 0 | 0 | 1 | 163 | 1.04 |
+| `topup`, one b0 per side | 6/6 | 5/6 | 1.39 | 1.43 | 0.992 | 40 | 0.26 |
+| DR-BUDDI | **6/6** | **6/6** | **1.43** | 3.94 | 0.981 | 2530 | 4.96 |
+| PyHySCO | 5/6 | 4/6 | 2.18 | 4.49 | 0.954 | 4.3 (GPU 1.9) | 0.94 (GPU 1.81) |
+| FD-Net | 5/6 | 5/6 | 3.62 | 5.01 | 0.931 | 6.6 | 1.28 |
+| FD-Net, PA as first input | 4/6 | 3/6 | 3.70 | 4.62 | 0.924 | 6.6 | 1.29 |
+| ANTs restricted SyN | 0/6 | 0/6 | 4.06 | 5.91 | 0.728 | 369 | 0.73 |
+| `3dQwarp -plusminus` | 0/6 | 0/6 | 12.2 | 12.4 | 0.354 | 35 | 0.35 |
+
+topup's time is high on sub-01 (438 s) because it gets all 21 b0 volumes there.
+The PyHySCO GPU run gives the same field as the CPU run.
+
+### Image gate ratios to topup, per subject
+
+AP-PA / BBR, each divided by topup's value.
+
+| Subject | `topup`, one b0 per side | DR-BUDDI | PyHySCO | FD-Net |
+| --- | --- | --- | --- | --- |
+| ds005134 sub-01 | 1.03 / 0.995 | 0.81 / 0.987 | 0.89 / 1.005 | 0.84 / 0.989 |
+| ds004146 sub-0001 | 1.05 / 1.000 | 0.84 / 1.007 | 0.82 / 1.011 | 0.94 / 1.018 |
+| ds004146 sub-0002 | 1.03 / 1.001 | 0.81 / 0.997 | 0.79 / 1.009 | 0.85 / 1.009 |
+| ds004146 sub-0003 | 1.23 / 1.065 | 0.87 / 1.009 | 0.85 / 1.024 | 0.91 / 1.018 |
+| ds004146 sub-0004 | 1.02 / 1.002 | 0.70 / 0.971 | 0.72 / 0.976 | 0.77 / 0.980 |
+| ds004146 sub-0005 | 1.04 / 1.002 | 0.90 / 1.016 | 0.88 / **1.030** | 1.01 / **1.034** |
+
+Every reverse-PE method agrees better between AP and PA than topup, because each one fits the mean pair directly.
+The T1w alignment separates them.
+
+### Demeaned Δfield from topup (Hz), per subject
+
+| Subject | `topup`, one b0 per side | DR-BUDDI | PyHySCO | FD-Net |
+| --- | --- | --- | --- | --- |
+| ds005134 sub-01 | 0.79 | 1.93 | 2.73 | 4.25 |
+| ds004146 sub-0001 | 0.97 | 1.14 | 1.55 | 3.31 |
+| ds004146 sub-0002 | 0.85 | 1.32 | 1.90 | 3.25 |
+| ds004146 sub-0003 | 3.93 | 1.58 | 3.31 | 4.77 |
+| ds004146 sub-0004 | 1.16 | 1.38 | 1.87 | 2.96 |
+| ds004146 sub-0005 | 0.66 | 1.22 | 1.74 | 3.21 |
+
+### Second reference: the GRE field map (ds005134 sub-01)
+
+All methods agree with the GRE field in shape; topup's correlation with it is 0.94.
+topup's offset from it is -5.6 Hz, which the demeaned value removes.
+Demeaned difference from the GRE field: topup 2.74 Hz, topup with one b0 per side 2.86, DR-BUDDI 3.29, PyHySCO 3.60, FD-Net 4.47, ANTs 2.91, 3dQwarp 7.29.
+The GRE map puts the methods in the same order as topup does, except ANTs, whose field is smooth but whose images fail the gate.
+
+### Why ANTs and 3dQwarp fail
+
+Neither has Jacobian modulation, and the gate's AP-PA metric includes it.
+Without it (`appa_mad_nojac`, reported only), ANTs has the best AP-PA agreement on every subject (0.84 to 0.91 x topup), and 3dQwarp has it on sub-01 only (0.74 x).
+But their fields differ from topup's in shape (mean r 0.73 and 0.35), and the modulated images and the BBR cost fail on every subject.
+3dQwarp's own corrected outputs also fail (AP-PA 0.119 against topup's 0.073 on sub-01), so the cause is not our resampler.
 
 ## Port gate
 
-RESULTS PENDING.
+A port passes when its browser field agrees with the native field of the same method on ds005134 sub-01: median absolute difference < 0.1 Hz in the brain.
+This applies to the CPU WebAssembly path and, separately, to the WebGPU path.
+The native fields come from the reference runs above; follow-up issue 1 pins them on Hugging Face.
+The browser run must use the same mean AP and PA pair, so the app's preparation also needs a check against `prep.sh`.
+
+For DR-BUDDI, a port is not started until a WebAssembly build of the solver runs sub-01 inside the browser memory limit in an acceptable time.
 
 ## Follow-up issues
 
-RESULTS PENDING.
+1. **Pin the evaluation data on Hugging Face.** The prepared inputs, the native fields of every method and the metrics, under a pinned revision, so the port gate and these tables can be reproduced without OpenNeuro and `epic`. Needs #374.
+2. **DR-BUDDI in WebAssembly.** First a feasibility check: build the solver (not the bundled BET library) with the ITK WebAssembly toolchain of `packages/registration`, run sub-01 in a browser, and measure time and memory, also with fewer iterations or a coarser schedule. Port into `apps/sdc` only if that passes and the field still passes the gate.
+3. **WebGPU path for PyHySCO.** The Gauss-Newton and PCG steps as WebGPU kernels, held to the CPU field by the port gate.
+4. **ANTs restricted SyN.** It failed the gate on every subject with the SyN-SDC schedule. When SyN-SDC (#444, #462) is in `apps/sdc`, either find a reverse-PE schedule that passes the gate or keep ANTs for single-PE data only.
+5. **Synb0-DisCo front end.** Its `--notopup` output (a synthetic undistorted b0) as the second image for the chosen solver, for data without a reverse-PE b0. Needs its own check against topup with the same synthetic image.
+6. **fastprep PEPOLAR.** Use the `sdc` solver package in fastprep for reverse-PE field estimation.
 
 ## Reproduce
 
