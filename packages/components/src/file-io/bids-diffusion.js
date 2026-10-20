@@ -17,7 +17,7 @@ const DATASET_METADATA_FILES = new Set(['dataset_description.json', 'participant
 
 /**
  * @param {Iterable<File> | ArrayLike<File>} fileList
- * @returns {Promise<import('./bids').BidsDiffusionReadResult>}
+ * @returns {Promise<import('./bids-diffusion').BidsDiffusionReadResult>}
  */
 export async function readBidsDiffusion(fileList) {
   const entries = Array.from(fileList || [], describeFile);
@@ -116,7 +116,7 @@ export async function readBidsDiffusion(fileList) {
 /**
  * Split a BIDS file name into its entities, suffix and extension.
  * @param {string} name
- * @returns {import('./bids').BidsFileName}
+ * @returns {import('./bids-diffusion').BidsFileName}
  */
 export function parseBidsName(name) {
   const base = String(name).replace(/^.*\//, '');

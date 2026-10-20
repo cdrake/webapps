@@ -34,8 +34,8 @@
       "default": "./src/file-io/NiftiUtils.js"
     },
     "./file-io/bids": {
-      "types": "./src/file-io/bids.d.ts",
-      "default": "./src/file-io/bids.js"
+      "types": "./src/file-io/bids-diffusion.d.ts",
+      "default": "./src/file-io/bids-diffusion.js"
     },
     "./file-io/mesh": "./src/file-io/mesh.js",
     "./fetch": {

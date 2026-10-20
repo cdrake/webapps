@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseBidsName, readBidsDiffusion } from '../src/file-io/index.js';
-import { readBidsDiffusion as readFromSubpath } from '../src/file-io/bids.js';
+import { readBidsDiffusion as readFromSubpath } from '../src/file-io/bids-diffusion.js';
 
 /** A File as a folder input gives it: a name, a webkitRelativePath and text(). */
 function fakeFile(path, content = '') {
