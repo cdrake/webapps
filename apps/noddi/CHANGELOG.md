@@ -5,6 +5,7 @@
 ### Minor Changes
 
 - 5312f0e: NODDI has a portable command line. `noddi DWI BVAL BVEC OUTPUT_DIR` runs the web app's fit in Node: a MindGrab brain mask of the mean b0 on the CPU (`--mask FILE` or `--no-mask` instead), the tensor fit and, with two or more shells, NODDI (AMICO), on worker threads (`--threads N`). The fit, its chunking and its output names move into `@neurodesk/noddi`, which the app imports, so both write the same files. Release archives for Linux x64, Windows x64 and macOS arm64 are checked against the web app's own downloads of the example and a two-shell phantom.
+
 - ccea86e: NODDI has a third tensor fit, niimath dtifit, in Advanced settings beside weighted least squares (the default) and ordinary least squares. It is FSL dtifit's default linear fit in the dtifit-enabled niimath build that DWI2TRX uses, and it runs in a Web Worker on the same volumes as the other fits: the b0 volumes and the shells up to b = 1200 s/mm². Its FA and MD are equal to DWI2TRX's fit of the same volumes, unit gradients and mask. niimath dtifit writes no AD or RD map, so AD is its first eigenvalue and RD is the mean of the second and third; where niimath sets MD to zero for a negative eigenvalue, AD and RD are zero too. The app gives niimath unit bvecs and runs it with `-xflip 0`, and the direction map gets the sign rule of the other fits, so FA, MD, AD, RD, S0 and the direction agree with the ordinary least squares fit on the same data. The maps keep their BIDS names, the provenance records `tensorFit: "niimath-dtifit"`, and the automation `tensorFit` parameter accepts `niimath-dtifit`. With NODDI selected, the NODDI fit runs after it.
 
   `@neurodesk/dwi2trx/runner` exports `runNiimath`, the browser's niimath runner on one cached module of the vendored dtifit build. The DWI2TRX tensor worker now imports it from the package instead of an app copy. `fitTensor` takes an optional `xflip` (`'0'`, `'1'` or `'auto'`), which goes to dtifit as `-xflip`; without it the argv does not change.
@@ -12,15 +13,23 @@
 ### Patch Changes
 
 - @neurodesk/dwi2trx@0.6.20261020
+
 - @neurodesk/noddi@0.4.20261020
+
 - d0df450: Rebuild the shared, file-pinned dtifit runtime from niimath cc26582a250c411b5c3c3c05c91dfd58f66be089 with Emscripten 6.0.13 so equal or nearly equal tensor eigenvalues retain unit, orthogonal directions. Record the source, toolchain, flags and licenses and cover the actual runtime with degenerate-tensor regressions. Re-record the production browser reference for V1–V3 because the repaired eigensolver changes the vectors and may reverse their arbitrary signs; scalar maps, tensor coefficients, the mask and every header remain byte identical.
+
 - Keep tensor backend selection in NODDI's shared fitting pipeline. The command line accepts
   `--tensor-fit niimath-dtifit` and uses the same corrected vendored runtime, volume selection,
   map conversion and optional NODDI fit as the browser. Weighted least squares remains the default.
+
 - Updated dependencies [a36fde4]
+
 - Updated dependencies [5312f0e]
+
 - Updated dependencies [ccea86e]
+
 - Updated dependencies [d0df450]
+
 - Updated dependencies
   - @neurodesk/webapp-components@0.18.0
   - @neurodesk/noddi@0.4.20261020
@@ -54,6 +63,16 @@
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
   - @neurodesk/dwi2trx@0.5.20261020
+  - @neurodesk/noddi@0.3.20261020
+
+- 4b40da1: The input size limit moves from dwi2trx to `@neurodesk/webapp-components/file-io/input-limits` (`MAX_INPUT_BYTES`, `InputTooLargeError`, `formatBytes`, `assertInputSize`). It adds `decodedFloat32Bytes`, the size of the Float32 array an image decodes to (voxels × frames × 4), and `assertNiftiDecodedSize`, which refuses a NIfTI above the 2 GB limit from its header alone; `readNiftiHeader` stops gzip streaming after the header when supported. dwi2trx imports the shared module. NODDI and Degibbs refuse a DWI whose decoded image is above the limit before reading it, and the status bar names the size and the limit.
+
+- Updated dependencies [c865c0c]
+
+- Updated dependencies [4b40da1]
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/dwi2trx@0.5.20261020
+  - @neurodesk/runtime-support@0.9.4
   - @neurodesk/noddi@0.3.20261020
 
 ## 0.3.20261019

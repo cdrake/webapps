@@ -59,6 +59,19 @@
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/nesvor@0.3.20261020
 
+- Updated dependencies [c865c0c]
+
+- Updated dependencies [4b40da1]
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/nesvor@0.3.20261020
+  - @neurodesk/runtime-support@0.9.4
+
+- Updated dependencies [d1fa022]
+
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/nesvor@0.3.20261020
+
 ## 0.3.20261019
 
 ### Patch Changes
@@ -455,6 +468,11 @@
 - Publish the experimental NeSVoR browser reconstruction with WebGPU brain masking, motion correction, N4 preprocessing, deformation and reconstruction, plus optional Linux NVIDIA remote compute. WebGPU is the default, progress is logged throughout processing, and acquisition thickness remains editable without a confirmation checkbox. Hardware GPU performance and full-acquisition CUDA parity remain unverified.
   - @neurodesk/nesvor@0.3.20260930
 
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.5.2
+  - @neurodesk/nesvor@0.3.20260930
+
 ## 0.3.20260924
 
 ### Patch Changes
@@ -471,6 +489,10 @@
   - @neurodesk/nesvor@0.3.20260924
 
 - Updated dependencies
+  - @neurodesk/nesvor@0.3.20260924
+
+- Remove the mandatory slice-thickness confirmation. Allow reconstruction with inferred thicknesses, show a non-blocking spacing note, and retain editable values and numeric validation.
+
   - @neurodesk/nesvor@0.3.20260924
 
 ## 0.3.20260921
@@ -493,6 +515,10 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.5.1
+  - @neurodesk/nesvor@0.3.20260921
+
+- Updated dependencies
+
   - @neurodesk/nesvor@0.3.20260921
 
 ### Minor Changes

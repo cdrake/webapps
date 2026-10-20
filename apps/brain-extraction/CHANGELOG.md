@@ -74,6 +74,27 @@
 - Updated dependencies [657c330]
   - @neurodesk/brain-extraction@0.4.20261020
 
+- Updated dependencies [c865c0c]
+
+- Updated dependencies [4b40da1]
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/runtime-support@0.9.4
+  - @neurodesk/synthsr@0.6.20261020
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/brain-extraction@0.4.20261020
+
+- Updated dependencies [657c330]
+
+  - @neurodesk/brain-extraction@0.4.20261020
+
+- Updated dependencies [d1fa022]
+
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/synthsr@0.6.20261020
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/brain-extraction@0.4.20261020
+
 ## 0.4.20261019
 
 ### Patch Changes
@@ -550,6 +571,12 @@
   - @neurodesk/synthsr@0.5.20260930
   - @neurodesk/brain-extraction@0.1.12
 
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.7.0
+  - @neurodesk/synthsr@0.5.20260930
+  - @neurodesk/brain-extraction@0.1.13
+
 ## 0.3.20260928
 
 ### Patch Changes
@@ -577,6 +604,12 @@
   - @neurodesk/webapp-components@0.6.0
   - @neurodesk/synthsr@0.5.20260928
   - @neurodesk/brain-extraction@0.1.10
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.6.1
+  - @neurodesk/synthsr@0.5.20260928
+  - @neurodesk/brain-extraction@0.1.11
 
 ### Minor Changes
 
@@ -652,6 +685,12 @@
   - @neurodesk/webapp-components@0.4.2
   - @neurodesk/synthsr@0.4.20260920
   - @neurodesk/brain-extraction@0.1.4
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.4.3
+  - @neurodesk/synthsr@0.4.20260920
+  - @neurodesk/brain-extraction@0.1.5
 
 ## 0.1.20260918
 

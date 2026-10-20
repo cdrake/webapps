@@ -75,6 +75,19 @@
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/greedy@0.6.20261020
 
+- Updated dependencies [c865c0c]
+
+- Updated dependencies [4b40da1]
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/runtime-support@0.9.4
+  - @neurodesk/greedy@0.6.20261020
+
+- Updated dependencies [d1fa022]
+
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/greedy@0.6.20261020
+
 ## 0.6.20261019
 
 ### Patch Changes
@@ -466,6 +479,11 @@
   - @neurodesk/webapp-components@0.6.2
   - @neurodesk/greedy@0.4.20260930
 
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.7.0
+  - @neurodesk/greedy@0.4.20260930
+
 ## 0.4.20260928
 
 ### Patch Changes
@@ -489,6 +507,11 @@
 
 - Updated dependencies [93381e8]
   - @neurodesk/webapp-components@0.6.0
+  - @neurodesk/greedy@0.4.20260928
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.6.1
   - @neurodesk/greedy@0.4.20260928
 
 ### Minor Changes
@@ -561,6 +584,11 @@
 - e1adeb4: Add rigid-body affine registration with `-dof 6` and stream scalar 4-D series when reslicing, preserving temporal metadata.
   - @neurodesk/greedy@0.3.20260920
 
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.4.2
+  - @neurodesk/greedy@0.3.20260920
+
 ## 0.3.20260918
 
 ### Patch Changes
@@ -621,6 +649,10 @@
   - @neurodesk/webapp-components@0.2.0
   - @neurodesk/greedy@0.3.20260915
 
+- Reject out-of-field registration trial coordinates before integer conversion, preventing a threaded WebAssembly crash during SYNcro normalization. Include complete desktop and HPC release packaging with offline workflow gates.
+
+  - @neurodesk/greedy@0.3.20260915
+
 ### Minor Changes
 
 - Add a shared Standalone action and offline desktop packaging with included, checksum-verified models and runtime dependencies. Remove the lightNIIng topbar link while retaining its About statement.
@@ -644,6 +676,10 @@
   - @neurodesk/greedy@0.2.20260914
 
 - Updated dependencies
+  - @neurodesk/greedy@0.2.20260914
+
+- Allow the isolated Apple signing job to look up draft releases before notarization.
+
   - @neurodesk/greedy@0.2.20260914
 
 ### Minor Changes
@@ -674,6 +710,12 @@
   - @neurodesk/webapp-components@0.1.4
   - @neurodesk/greedy@0.1.20260914
 
+- Updated dependencies [4add8da]
+
+  - @neurodesk/greedy@0.1.20260914
+  - @neurodesk/webapp-components@0.1.5
+  - @neurodesk/runtime-support@0.1.2
+
 ## 0.1.20260911
 
 ### Patch Changes
@@ -690,6 +732,10 @@
   - @neurodesk/greedy@0.1.20260911
 
 - Updated dependencies
+  - @neurodesk/greedy@0.1.20260911
+
+- Updated dependencies [dc50e56]
+
   - @neurodesk/greedy@0.1.20260911
 
 ### Minor Changes

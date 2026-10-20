@@ -51,6 +51,19 @@
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/lcmodel@0.8.20261020
 
+- Updated dependencies [c865c0c]
+
+- Updated dependencies [4b40da1]
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/lcmodel@0.8.20261020
+  - @neurodesk/runtime-support@0.9.4
+
+- Updated dependencies [d1fa022]
+
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/lcmodel@0.8.20261020
+
 ## 0.8.20261019
 
 ### Patch Changes

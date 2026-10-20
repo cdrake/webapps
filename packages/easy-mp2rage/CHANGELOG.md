@@ -35,11 +35,21 @@
 - Updated dependencies [46935f7]
   - @neurodesk/webapp-components@0.16.0
 
+- Updated dependencies [c865c0c]
+
+- Updated dependencies [4b40da1]
+  - @neurodesk/webapp-components@0.17.0
+
+- Updated dependencies [d9718cd]
+
+  - @neurodesk/webapp-components@0.16.3
+
 ## 0.8.20261019
 
 ### Patch Changes
 
 - Updated dependencies [af2e8db]
+
 - Updated dependencies [b3404ec]
   - @neurodesk/webapp-components@0.16.3
 

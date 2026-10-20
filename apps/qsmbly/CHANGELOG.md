@@ -35,13 +35,24 @@
 - Updated dependencies [46935f7]
   - @neurodesk/webapp-components@0.16.0
 
+- Updated dependencies [c865c0c]
+
+- Updated dependencies [4b40da1]
+  - @neurodesk/webapp-components@0.17.0
+
+- Updated dependencies [d9718cd]
+
+  - @neurodesk/webapp-components@0.16.3
+
 ## 0.31.20261019
 
 ### Patch Changes
 
 - Updated dependencies [af2e8db]
+
 - Updated dependencies [b3404ec]
   - @neurodesk/webapp-components@0.16.3
+
 - 521ae0d: Adopt upstream QSMxT's shared engine for magnitude/phase QSM, multi-echo CLEAR-SWI and T2*/R2* mapping. Its V-SHARP default omits deconvolution and its B0 direction follows the image affine; these intentionally change the previous browser map.
 
   Preserve the Neurodesk workspace, shared examples, cancellation and field-map paths. Repair phase-sidecar and worker interoperability, validate echo grids and mixed-endian inputs, retain magnitude-only relaxometry through QSMxT's ARLO implementation, and report exact loaded dependency commits.
@@ -330,6 +341,10 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.6.2
 
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.7.0
+
 ## 0.29.20260928
 
 ### Patch Changes
@@ -357,6 +372,10 @@
 
 - Updated dependencies [93381e8]
   - @neurodesk/webapp-components@0.6.0
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.6.1
 
 ### Minor Changes
 
@@ -421,6 +440,10 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.4.2
 
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.4.3
+
 ## 0.27.20260918
 
 ### Minor Changes
@@ -479,6 +502,10 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.2.0
 
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.2.1
+
 ### Minor Changes
 
 - Add a shared Standalone action and offline desktop packaging with included, checksum-verified models and runtime dependencies. Remove the lightNIIng topbar link while retaining its About statement.
@@ -502,6 +529,10 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.1.4
+
+- Updated dependencies [4add8da]
+
+  - @neurodesk/webapp-components@0.1.5
 
 ## 0.24.20260910
 

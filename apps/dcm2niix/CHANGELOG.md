@@ -1,5 +1,24 @@
 # dcm2niix
 
+## 0.2.20261020
+
+### Minor Changes
+
+- 5c9c3b2: Add dcm2niix, a browser-only catalog app that converts one MRI examination at a time into a reviewed BIDS dataset. Accept files, folders and ZIP archives; review anatomical, diffusion and reverse phase encoding acquisitions; enter missing metadata; and download an organized BIDS dataset with an explicit identifying-metadata policy. Preserve separate acquisitions and image/gradient ordering, and link reverse EPI fieldmaps to their DWI targets. Include a pinned DICOM example, Philips native-reference checks and offline/interface workflow coverage.
+
+### Patch Changes
+
+- Updated dependencies [14db080]
+
+- Updated dependencies [03261d0]
+
+- Updated dependencies [c865c0c]
+
+- Updated dependencies [4b40da1]
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/dicom2vid@0.5.20261020
+  - @neurodesk/runtime-support@0.9.4
+
 ## 0.1.20261020
 
 ### Patch Changes
@@ -8,6 +27,7 @@
   - @neurodesk/webapp-components@0.18.0
   - @neurodesk/runtime-support@0.9.5
   - @neurodesk/dicom2vid@0.5.20261020
+
 - Receive the source DICOM series from DICOM View's shared Open in another webapp menu.
 
 - Updated dependencies [14db080]
@@ -73,4 +93,9 @@
 - Updated dependencies [b67e4e9]
   - @neurodesk/runtime-support@0.7.2
   - @neurodesk/webapp-components@0.15.1
+  - @neurodesk/dicom2vid@0.5.20261018
+
+- Updated dependencies [7c0d201]
+  - @neurodesk/webapp-components@0.16.2
+  - @neurodesk/runtime-support@0.9.1
   - @neurodesk/dicom2vid@0.5.20261018

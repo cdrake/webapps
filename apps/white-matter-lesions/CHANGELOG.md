@@ -101,6 +101,23 @@
   - @neurodesk/synthstrip@0.1.5
   - @neurodesk/white-matter-lesions@0.5.20261020
 
+- Updated dependencies [c865c0c]
+
+- Updated dependencies [4b40da1]
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/runtime-support@0.9.4
+  - @neurodesk/synthsr@0.6.20261020
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/white-matter-lesions@0.5.20261020
+
+- Updated dependencies [d1fa022]
+
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/synthsr@0.6.20261020
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/white-matter-lesions@0.5.20261020
+
 ## 0.5.20261019
 
 ### Patch Changes
@@ -589,6 +606,11 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.6.2
+  - @neurodesk/synthsr@0.5.20260930
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.7.0
   - @neurodesk/synthsr@0.5.20260930
 
 ### Minor Changes

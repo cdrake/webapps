@@ -40,11 +40,23 @@
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/vesselboost@0.6.20261020
 
+- Updated dependencies [c865c0c]
+
+- Updated dependencies [4b40da1]
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/vesselboost@0.6.20261020
+
+- Updated dependencies [d9718cd]
+
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/vesselboost@0.6.20261020
+
 ## 0.6.20261019
 
 ### Patch Changes
 
 - Updated dependencies [af2e8db]
+
 - Updated dependencies [b3404ec]
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/vesselboost@0.6.20261019
@@ -319,6 +331,10 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.6.2
 
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.7.0
+
 ## 0.5.20260928
 
 ### Patch Changes
@@ -342,6 +358,10 @@
 
 - Updated dependencies [93381e8]
   - @neurodesk/webapp-components@0.6.0
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.6.1
 
 ### Minor Changes
 
@@ -419,6 +439,10 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.4.2
 
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.4.3
+
 ## 0.4.20260918
 
 ### Minor Changes
@@ -446,6 +470,10 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.3.1
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.4.1
 
 ## 0.3.20260916
 
@@ -477,6 +505,10 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.2.0
 
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.2.1
+
 ### Minor Changes
 
 - Add a shared Standalone action and offline desktop packaging with included, checksum-verified models and runtime dependencies. Remove the lightNIIng topbar link while retaining its About statement.
@@ -496,6 +528,10 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.1.4
+
+- Updated dependencies [4add8da]
+
+  - @neurodesk/webapp-components@0.1.5
 
 ## 0.2.20260910
 

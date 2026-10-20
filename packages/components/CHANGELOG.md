@@ -32,9 +32,12 @@
   DICOM View opens series in the ACS layout, without the 3D render, with FreeBrowse's
   panel closed.
 
+- 4b40da1: The input size limit moves from dwi2trx to `@neurodesk/webapp-components/file-io/input-limits` (`MAX_INPUT_BYTES`, `InputTooLargeError`, `formatBytes`, `assertInputSize`). It adds `decodedFloat32Bytes`, the size of the Float32 array an image decodes to (voxels × frames × 4), and `assertNiftiDecodedSize`, which refuses a NIfTI above the 2 GB limit from its header alone; `readNiftiHeader` stops gzip streaming after the header when supported. dwi2trx imports the shared module. NODDI and Degibbs refuse a DWI whose decoded image is above the limit before reading it, and the status bar names the size and the limit.
+
 ### Patch Changes
 
 - 03261d0: Cancel a pending shell handoff when the user chooses files, drops another input or starts an example. Stop the stored-file copy and input wait so an older handoff cannot replace the newer choice or its status.
+
 - c865c0c: Serialize ME-ICA previews and restore the previous image, overlay, frame and display window when an import fails or is cancelled. Replacement echoes clear stale echo times, superseded imports cannot replace newer inputs, and automation cancellation stops the processing worker. The shared queue retains the existing single-volume preview adapter.
 
 ## 0.16.3

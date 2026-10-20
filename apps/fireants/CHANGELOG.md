@@ -73,6 +73,19 @@
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/fireants@0.4.20261020
 
+- Updated dependencies [c865c0c]
+
+- Updated dependencies [4b40da1]
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/runtime-support@0.9.4
+  - @neurodesk/fireants@0.4.20261020
+
+- Updated dependencies [d1fa022]
+
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/fireants@0.4.20261020
+
 ## 0.4.20261019
 
 ### Patch Changes
@@ -443,6 +456,10 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.6.2
 
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.7.0
+
 ## 0.2.20260928
 
 ### Patch Changes
@@ -464,6 +481,10 @@
 
 - Updated dependencies [93381e8]
   - @neurodesk/webapp-components@0.6.0
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.6.1
 
 ### Minor Changes
 
@@ -520,6 +541,10 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.4.2
 
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.4.3
+
 ## 0.1.20260918
 
 ### Patch Changes
@@ -563,6 +588,10 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.2.0
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.2.1
 
 ### Minor Changes
 

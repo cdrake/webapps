@@ -97,6 +97,10 @@
     "./elements/compute-connection": {
       "types": "./src/elements/compute-connection.d.ts",
       "default": "./src/elements/compute-connection.js"
+    },
+    "./file-io/input-limits": {
+      "types": "./src/file-io/input-limits.d.ts",
+      "default": "./src/file-io/input-limits.js"
     }
   },
   "scripts": {
