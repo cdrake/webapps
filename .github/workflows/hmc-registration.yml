@@ -9,11 +9,13 @@ on:
     paths:
       - '.github/workflows/hmc-registration.yml'
       - 'packages/hmc-registration/**'
+      - 'pnpm-lock.yaml'
   push:
     branches: [main]
     paths:
       - '.github/workflows/hmc-registration.yml'
       - 'packages/hmc-registration/**'
+      - 'pnpm-lock.yaml'
   workflow_dispatch:
 
 concurrency:

@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { pathToFileURL } from "node:url";
+import { gzipSync } from "node:zlib";
 import { makeTestPair } from "../scripts/make-test-data.mjs";
 import { checkArguments, createHmcRegistration, readMatTransform } from "../src/index.js";
 import { KERNEL, loadHmcRegistration, readHmcRegistrationWasm } from "../src/node.js";
@@ -64,6 +65,13 @@ test("run(argv) recovers the known rigid shift and writes native ANTs's bytes", 
   // The same kernel serves later runs, with the same result.
   const again = ants.run([...ARGV], await inputs());
   assert.deepEqual(again.outputs["out0GenericAffine.mat"], mat);
+});
+
+test("a .nii.gz input is read as gzipped NIfTI", async () => {
+  const ants = await loadHmcRegistration();
+  const argv = ARGV.map((token) => token.replace("fixed.nii,", "fixed.nii.gz,"));
+  const { outputs } = ants.run(argv, { "fixed.nii.gz": gzipSync(await data("fixed.nii")), "moving.nii": await data("moving.nii") });
+  assert.equal(sha256(outputs["out0GenericAffine.mat"]), NATIVE_MAT_SHA256);
 });
 
 test("the seed reaches the kernel", async () => {
