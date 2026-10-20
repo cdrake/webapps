@@ -21,6 +21,7 @@
 //! 1010) are read as well. Every coordinate is LPS, as in ITK.
 
 pub mod clip;
+pub mod motion;
 
 use std::fmt;
 
