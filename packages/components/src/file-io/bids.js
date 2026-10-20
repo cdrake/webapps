@@ -13,6 +13,7 @@ const SIDECAR_EXTENSIONS = ['.json', '.bval', '.bvec'];
 const SUBJECT_FOLDER = /^sub-[A-Za-z0-9]+$/;
 const SESSION_FOLDER = /^ses-[A-Za-z0-9]+$/;
 const BIDS_URI_PREFIX = 'bids::';
+const DATASET_METADATA_FILES = new Set(['dataset_description.json', 'participants.tsv', 'participants.json', 'samples.tsv', 'samples.json', '.bidsignore']);
 
 /**
  * @param {Iterable<File> | ArrayLike<File>} fileList
@@ -106,7 +107,7 @@ export async function readBidsDiffusion(fileList) {
 
   runs.sort((a, b) => a.root.localeCompare(b.root) || a.path.localeCompare(b.path));
   const unpaired = entries
-    .filter(entry => !used.has(entry) && !isDatasetMetadata(entry, roots))
+    .filter(entry => !used.has(entry) && (invalid.has(entry) || !isDatasetMetadata(entry, roots)))
     .map(entry => ({ file: entry.file, path: entry.fullPath, reason: unpairedReason(entry, context, fieldmaps) }))
     .sort((a, b) => a.path.localeCompare(b.path));
   return { runs, unpaired };
@@ -317,13 +318,15 @@ function gradientError(image, bval, bvec) {
 
 /** Files at the dataset root (dataset_description.json, README, top-level sidecars) are not inputs. */
 function isDatasetMetadata(entry, roots) {
-  return Boolean(entry.atRoot) && roots.has(entry.root);
+  if (!entry.atRoot || !roots.has(entry.root)) return false;
+  return DATASET_METADATA_FILES.has(entry.name)
+    || /^(README|CHANGES|LICENSE)(\.(md|rst|txt))?$/i.test(entry.name);
 }
 
 function unpairedReason(entry, context, fieldmaps) {
   if (context.invalid.has(entry)) return context.invalid.get(entry);
-  if (entry.atRoot) return 'Not inside a sub-* folder.';
   const sidecarKind = ['json', 'bval', 'bvec'].includes(entry.kind);
+  if (entry.atRoot) return sidecarKind ? 'No diffusion input uses this sidecar.' : 'Not inside a sub-* folder.';
   if (entry.inLayout && !entry.datatype && sidecarKind) return 'No image that this file applies to is used.';
   if (!entry.inLayout || !entry.datatype) return 'Not in a BIDS datatype folder (sub-*/[ses-*/]<datatype>/).';
   if (entry.datatype === 'dwi') {

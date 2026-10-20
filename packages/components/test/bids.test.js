@@ -209,7 +209,10 @@ test('merges JSON sidecars by inheritance, deeper levels winning', async () => {
   assert.equal(run.json.name, 'sub-01_ses-1_run-1_dwi.json');
   assert.equal(run.bval.webkitRelativePath, 'ds/dwi.bval');
   assert.equal(run.error, null);
-  assert.deepEqual(unpairedPaths(result), ['ds/sub-01/ses-1/sub-01_ses-1_acq-other_dwi.json']);
+  assert.deepEqual(unpairedPaths(result), [
+    'ds/sub-01/ses-1/sub-01_ses-1_acq-other_dwi.json',
+    'ds/task-rest_bold.json'
+  ]);
 });
 
 test('reads a dropped folder whose root is a parent of the dataset', async () => {
@@ -262,4 +265,47 @@ test('reports a sidecar that applies to a run but is not valid JSON', async () =
   assert.equal(result.unpaired.length, 1);
   assert.equal(result.unpaired[0].path, 'ds/sub-01/sub-01_dwi.json');
   assert.match(result.unpaired[0].reason, /^JSON sidecar could not be read: /);
+});
+
+test('reports an invalid inherited JSON sidecar at the dataset root', async () => {
+  const result = await readBidsDiffusion(tree({
+    ...dwiRun('sub-01/dwi/sub-01'),
+    'dwi.json': '{ broken'
+  }));
+  assert.deepEqual(result.runs[0].sidecar, { PhaseEncodingDirection: 'j-' });
+  assert.equal(result.unpaired.length, 1);
+  assert.equal(result.unpaired[0].path, 'ds/dwi.json');
+  assert.match(result.unpaired[0].reason, /^JSON sidecar could not be read: /);
+});
+
+test('lists unexpected root files while omitting dataset metadata', async () => {
+  const result = await readBidsDiffusion(tree({
+    ...dwiRun('sub-01/dwi/sub-01'),
+    'dataset_description.json': { Name: 'test', BIDSVersion: '1.10.0' },
+    'participants.tsv': 'participant_id\nsub-01\n',
+    'participants.json': { participant_id: { Description: 'Participant identifier' } },
+    'samples.json': { sample_id: { Description: 'Sample identifier' } },
+    'README': 'Dataset documentation',
+    'CHANGES.md': 'Dataset history',
+    'LICENSE.txt': 'Dataset licence',
+    '.bidsignore': 'notes.txt\n',
+    'unrelated.nii.gz': '',
+    'notes.txt': 'An unpaired file'
+  }));
+  assert.deepEqual(result.unpaired.map(entry => [entry.path, entry.reason]), [
+    ['ds/notes.txt', 'Not inside a sub-* folder.'],
+    ['ds/unrelated.nii.gz', 'Not inside a sub-* folder.']
+  ]);
+});
+
+test('lists root sidecars that apply to no diffusion input', async () => {
+  const result = await readBidsDiffusion(tree({
+    ...dwiRun('sub-01/dwi/sub-01'),
+    'acq-other_dwi.bvec': '0 1\n0 0\n0 0',
+    'acq-other_dwi.json': { EchoTime: 0.12 }
+  }));
+  assert.deepEqual(result.unpaired.map(entry => [entry.path, entry.reason]), [
+    ['ds/acq-other_dwi.bvec', 'No diffusion input uses this sidecar.'],
+    ['ds/acq-other_dwi.json', 'No diffusion input uses this sidecar.']
+  ]);
 });
