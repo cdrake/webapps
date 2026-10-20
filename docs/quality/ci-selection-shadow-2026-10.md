@@ -212,6 +212,28 @@ Replayed over the last 70 merged pull requests plus #240–#247 (78 in all), wit
 
 `registry/standalone.json` (#292) remains open.
 
+**Follow-up (`.gitattributes`).** A root `.gitattributes` change used to select the full catalog. Now the planner asks
+git which files' attributes differ between the merge base and head: `git check-attr -a --source=<rev>` for every file in
+the head tree. Each such file counts as changed, so it goes through the ordinary rules, with `.gitattributes:` as the
+prefix of each reason.
+
+This uses git's own pattern matching, including nested `.gitattributes` files. A comment, or a rule that matches no
+tracked file, selects nothing. When the comparison fails, the change selects the full catalog.
+
+Per-app CI jobs never read `export-ignore` or other `git archive` attributes, so checkout content is the only input an
+attribute can change.
+
+Replay over every merged pull request since #206 that changed `.gitattributes` (#206, #237, #238, #310, #312, #313,
+#317, #343):
+
+- oracle misses: 0;
+- full-catalog fallbacks: 8 before, 3 after. Those three fall back for other files;
+- per-app jobs: 247 of 247 `app-tests` before, 157 after;
+- #310 and #312 (SynthSeg norms fixtures) now select synthseg only, through `packages/synthseg/test`. The oracle
+  expects none, because package tests are exempt;
+- #237 selects one app (oracle 1);
+- #317 and #343 still select all 31 apps, through their other files.
+
 ## Root quality tools, 2026-10-17 follow-up
 
 Root-only Knip and Stryker devDependencies now have independent ownership.

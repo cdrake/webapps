@@ -914,3 +914,47 @@ test('a push run tests the merges whose own runs were cancelled, and falls back 
     assert.match(fallback.fallback_reason, /successful ci run on main/, name);
   }
 });
+
+test('a .gitattributes change selects the apps whose files now check out differently', async (t) => {
+  const { root, run } = await plannerFixture(t);
+  const git = (...args) => execFileSync('git', ['-c', 'user.name=planner', '-c', 'user.email=planner@example.org', ...args], { cwd: root, encoding: 'utf8' }).trim();
+  git('init', '--quiet');
+  for (const path of ['apps/niimath/fixture.tsv', 'apps/calmar/notes.txt', 'exes/unused/data.bin']) {
+    await mkdir(join(root, path, '..'), { recursive: true });
+    await writeFile(join(root, path), path);
+  }
+  await writeFile(join(root, '.gitattributes'), 'apps/calmar/*.txt whitespace=-trailing-space\n');
+  git('add', '-A');
+  git('commit', '--quiet', '-m', 'base');
+  const base = git('rev-parse', 'HEAD');
+  const plan = async (attributes) => {
+    await writeFile(join(root, '.gitattributes'), attributes);
+    git('commit', '--quiet', '-am', attributes || 'empty');
+    const result = run('--base', base, '--head', 'HEAD');
+    assert.equal(result.status, 0, result.stderr);
+    return JSON.parse(result.stdout);
+  };
+
+  // Each plan diffs from `base`, whose only rule covers calmar's notes.
+  // A new rule for an app's fixture selects that app, and no other.
+  const fixture = await plan('apps/calmar/*.txt whitespace=-trailing-space\napps/niimath/*.tsv -text\n');
+  assert.deepEqual(JSON.parse(fixture.selected_ids), ['niimath']);
+  assert.match(JSON.parse(fixture.selection_reasons).apps.niimath[0], /^\.gitattributes: apps\/niimath\/fixture\.tsv/);
+  // Removing a rule touches the files it covered.
+  const removed = await plan('');
+  assert.deepEqual(JSON.parse(removed.selected_ids), ['calmar']);
+  // Comments and rules matching no app file select nothing.
+  const none = await plan('# apps/niimath/fixture.tsv\napps/calmar/*.txt whitespace=-trailing-space\nexes/unused/*.bin -text\n');
+  assert.deepEqual(JSON.parse(none.selected_ids), []);
+  assert.equal(none.fallback_reason, '');
+  // A pattern without a directory reaches every file it matches.
+  const everywhere = await plan('apps/calmar/*.txt whitespace=-trailing-space\n*.tsv -text\n');
+  assert.deepEqual(JSON.parse(everywhere.selected_ids), ['niimath']);
+});
+
+test('a .gitattributes change without a comparable base selects the full catalog', async () => {
+  const registry = await loadAppsRegistry();
+  const plan = createAppPlan(registry, ['.gitattributes'], await graph, new Map());
+  assert.equal(plan.allApps, true);
+  assert.match(plan.reasons.fallback, /\.gitattributes: the files whose attributes changed are unknown/);
+});
