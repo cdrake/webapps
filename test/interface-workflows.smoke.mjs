@@ -37,6 +37,27 @@ async function check(id, workflow) {
   finally { await page.close(); }
 }
 try {
+  await check('me-ica', async page => {
+    await page.locator('#advancedSettings > summary').tap();
+    await page.locator('#seed').fill('17');
+    await page.locator('#tedpca').selectOption('kic');
+    await page.locator('#advancedSettings > summary').tap();
+    await expect(page.locator('#seed')).toBeHidden();
+    const echoes = [1, 2, 3].flatMap(index => [
+      nifti(`echo-${index}.nii`),
+      { name: `echo-${index}.json`, mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ EchoTime: index * 0.015 })) },
+    ]);
+    await page.locator('#imageInput').setInputFiles(echoes);
+    await expect(page.locator('#runButton')).toBeEnabled();
+    await expect(page.locator('#imageLabel')).toContainText('echo-1.nii');
+    await page.locator('#inputSection > summary').tap();
+    await expect(page.locator('#echoTimes')).toBeHidden();
+    await page.locator('#inputSection > summary').tap();
+    await expect(page.locator('#echoTimes')).toHaveValue('15 30 45');
+    await page.locator('#advancedSettings > summary').tap();
+    await expect(page.locator('#seed')).toHaveValue('17');
+    await expect(page.locator('#tedpca')).toHaveValue('kic');
+  });
   await check('lcmodel', async page => {
     await page.locator('#waterSection > summary').tap();
     await expect(page.locator('#waterInput')).toBeDisabled();

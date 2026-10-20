@@ -7,10 +7,10 @@ import {
   createConsole,
   createExampleSelector,
   createInfoDialog,
+  createPreviewQueue,
   createResultList,
   createViewerToolbar,
   ProgressManager,
-  renderCommand,
 } from "@neurodesk/webapp-components/ui";
 import { downloadFile } from "@neurodesk/webapp-components/file-io";
 import { registerAppAutomation } from "@neurodesk/webapp-components/automation";
@@ -34,7 +34,7 @@ mountImagingWorkspace({
   status: "#status",
   title: "ME-ICA",
   subtitle: "Multi-echo fMRI denoising (tedana) in the browser",
-  controlsContract: { about: "#aboutBtn", privacy: "#privacyBtn", standalone: "#standaloneBtn" },
+  controlsContract: { about: "#aboutBtn", privacy: "#privacyBtn" },
 });
 
 // Viewer: one NiiVue canvas; the Components tab swaps in the metrics table.
@@ -75,18 +75,6 @@ const viewerReady = viewer.attachTo("gl1").then(() => {
 const info = createInfoDialog({ id: "infoDialog" });
 $("aboutBtn").onclick = () => info.open("About ME-ICA", $("aboutContent"));
 $("privacyBtn").onclick = () => info.open("Privacy", $("privacyContent"));
-$("standaloneBtn").onclick = () => {
-  info.open("Run ME-ICA in a terminal", $("standaloneContent"));
-  info.body.append(renderCommand({
-    id: "meIcaStandaloneCommands",
-    command: [
-      "git clone https://github.com/niivue/meica-rs",
-      "cd meica-rs",
-      "cargo build --release",
-      "./target/release/meica -d echo1.nii.gz echo2.nii.gz echo3.nii.gz -e 15.2 35.32 55.42 --out-dir out",
-    ].join("\n"),
-  }).root);
-};
 
 function status(message, error = false) {
   $("statusText").textContent = message;
@@ -99,18 +87,21 @@ let echoes = [];
 let outputs = null;
 let busy = false;
 let active = null;
+let importController = null;
+let dataController = new AbortController();
 
 const results = createResultList({
   element: $("resultList"),
   onView: (stage, result) => {
     if (stage === "metrics") return showComponents();
-    void show(result.file, result.description, { statMap: stage === "accepted" || stage === "components", ...(stage === "t2star" && { cal: T2STAR_WINDOW }) });
+    const signal = outputs?.signal;
+    void show(result.file, result.description, { signal, statMap: stage === "accepted" || stage === "components", ...(stage === "t2star" && { cal: T2STAR_WINDOW }) })
+      .catch(error => { if (error.name !== "AbortError") status(error.message, true); });
   },
   onDownload: (_stage, result) => downloadFile(result.file),
 });
 const runner = createRunner({
   createWorker: () => new Worker(new URL("./worker.js", import.meta.url), { type: "module" }),
-  onActiveChange: (running) => progress.setCancellable(running),
 });
 
 function setBusy(value) {
@@ -128,18 +119,38 @@ const T2STAR_WINDOW = { calMin: 0, calMax: 0.1 };
 
 /** Show an image. Component maps (tedana's "stat-z" maps: regression weights on z-scored data,
  * mostly within ±0.7) go over the S0 map as warm/cool overlays from |0.3|, about the top 10%. */
-async function show(file, label, { frame = 0, statMap = false, cal } = {}) {
-  await viewerReady;
-  $("componentReport").hidden = true;
-  const s0 = outputs?.files.get("S0map.nii.gz");
-  const volumes = statMap && s0
-    ? [{ url: s0, name: s0.name }, { url: file, name: file.name, colormap: "warm", colormapNegative: "winter", calMin: 0.3, calMax: 0.7 }]
-    : [{ url: file, name: file.name, ...cal }];
-  await viewer.loadVolumes(volumes);
-  if (frame) await viewer.setFrame4D(viewer.volumes.at(-1).id, frame);
-  $("emptyState").hidden = true;
-  $("imageLabel").textContent = label;
-  if (toolbar.viewTabs.querySelector(".active")?.dataset.view === "components") showLayout("multiplanar");
+const display = createPreviewQueue({
+  ready: viewerReady,
+  render: async (preview) => {
+    if (!preview) {
+      await viewer.removeAllVolumes();
+      $("emptyState").hidden = false;
+      $("imageLabel").textContent = "";
+      $("componentReport").hidden = true;
+      return;
+    }
+    const window = preview.range ? { calMin: preview.range[0], calMax: preview.range[1] } : {};
+    const volumes = preview.base
+      ? [{ url: preview.base, name: preview.base.name }, { url: preview.file, name: preview.file.name, colormap: "warm", colormapNegative: "winter", calMin: 0.3, calMax: 0.7 }]
+      : [{ url: preview.file, name: preview.file.name, ...window }];
+    await viewer.loadVolumes(volumes);
+    if (preview.frame) await viewer.setFrame4D(viewer.volumes.at(-1).id, preview.frame);
+    $("componentReport").hidden = true;
+    $("emptyState").hidden = true;
+    $("imageLabel").textContent = preview.label;
+    if (toolbar.viewTabs.querySelector(".active")?.dataset.view === "components") showLayout("multiplanar");
+  },
+});
+
+function show(file, label, { frame = 0, statMap = false, cal, signal } = {}) {
+  const preview = Object.freeze({
+    file,
+    base: statMap ? outputs?.files.get("S0map.nii.gz") ?? null : null,
+    label,
+    frame,
+    range: cal ? Object.freeze([cal.calMin, cal.calMax]) : null,
+  });
+  return display(preview, { signal });
 }
 
 function showLayout(id) {
@@ -163,25 +174,43 @@ function clearOutputs() {
 // Inputs: echo images (any order) with optional sidecars that supply TE and ordering.
 async function loadFiles(files, signal) {
   if (busy) throw new Error("ME-ICA is busy. Wait or cancel, then retry.");
-  const grouped = await groupEchoes(files);
   signal?.throwIfAborted();
-  if (grouped.echoes.length < MIN_ECHOES) throw new Error("Choose at least three echo NIfTI images (with their JSON sidecars if available).");
-  clearOutputs();
-  echoes = grouped.echoes;
-  regressors = grouped.regressors;
-  if (grouped.echoTimes) $("echoTimes").value = grouped.echoTimes;
-  $("fileInfo").hidden = false;
-  $("fileInfo").textContent = `${echoes.length} echoes: ${echoes.map((e) => e.file.name).join(", ")}${regressors ? ` · regressors ${regressors.name}` : ""}${grouped.ignored.length ? ` · ignored ${grouped.ignored.join(", ")}` : ""}`;
-  $("dropZone").classList.add("has-files");
-  $("runButton").disabled = false;
-  await show(echoes[0].file, `Echo 1 · ${echoes[0].file.name}`);
-  signal?.throwIfAborted();
-  status(grouped.echoTimes ? `${echoes.length} echoes loaded; echo times from sidecars` : `${echoes.length} echoes loaded; enter their echo times`);
+  importController?.abort();
+  const controller = new AbortController();
+  importController = controller;
+  $("runButton").disabled = true;
+  const abort = () => controller.abort(signal.reason);
+  signal?.addEventListener("abort", abort, { once: true });
+  try {
+    const grouped = await groupEchoes(files);
+    controller.signal.throwIfAborted();
+    if (grouped.echoes.length < MIN_ECHOES) throw new Error("Choose at least three echo NIfTI images (with their JSON sidecars if available).");
+    await show(grouped.echoes[0].file, `Echo 1 · ${grouped.echoes[0].file.name}`, { signal: controller.signal });
+    controller.signal.throwIfAborted();
+    dataController.abort();
+    dataController = new AbortController();
+    clearOutputs();
+    echoes = grouped.echoes;
+    regressors = grouped.regressors;
+    $("echoTimes").value = grouped.echoTimes;
+    $("fileInfo").hidden = false;
+    $("fileInfo").textContent = `${echoes.length} echoes: ${echoes.map((e) => e.file.name).join(", ")}${regressors ? ` · regressors ${regressors.name}` : ""}${grouped.ignored.length ? ` · ignored ${grouped.ignored.join(", ")}` : ""}`;
+    $("dropZone").classList.add("has-files");
+    $("runButton").disabled = false;
+    $("imageInput").dispatchEvent(new CustomEvent("nd-files", { bubbles: true, detail: { files: [...files] } }));
+    status(grouped.echoTimes ? `${echoes.length} echoes loaded; echo times from sidecars` : `${echoes.length} echoes loaded; enter their echo times`);
+  } finally {
+    signal?.removeEventListener("abort", abort);
+    if (importController === controller) {
+      importController = null;
+      $("runButton").disabled = busy || echoes.length < MIN_ECHOES;
+    }
+  }
 }
 
 function importFiles(files) {
   exampleControl.cancel();
-  return loadFiles(files).catch((error) => status(error.message, true));
+  return loadFiles(files).catch((error) => { if (error.name !== "AbortError") status(error.message, true); });
 }
 $("imageInput").addEventListener("change", (event) => {
   const files = Array.from(event.target.files);
@@ -223,7 +252,9 @@ function onPhase(phase) {
 const MEDIA = { ".nii.gz": "application/gzip", ".tsv": "text/tab-separated-values", ".json": "application/json" };
 const asFile = ({ name, buffer }) => new File([buffer], name, { type: Object.entries(MEDIA).find(([ext]) => name.endsWith(ext))?.[1] ?? "application/octet-stream" });
 
-async function run() {
+async function run(signal) {
+  signal?.throwIfAborted();
+  if (importController) throw new Error("Wait for the echo import to finish.");
   if (busy || echoes.length < MIN_ECHOES) return null;
   const tes = parseEchoTimes($("echoTimes").value, echoes.length);
   const external = REGRESSOR_TREES.has($("tree").value);
@@ -235,20 +266,27 @@ async function run() {
     maxit: Number($("maxit").value),
     maxrestart: Number($("maxrestart").value),
     command: `me-ica (browser) -e ${tes.join(" ")} --tree ${$("tree").value} --tedpca ${$("tedpca").value} --seed ${$("seed").value}${external ? ` --external ${regressors.name}` : ""}`,
-    ...(external && { external: await regressors.text() }),
   };
   if (![options.seed, options.maxit, options.maxrestart].every(Number.isInteger) || options.seed < 0) throw new Error("Seed, iterations and restarts must be non-negative integers.");
   clearOutputs();
   setBusy(true);
   active = new AbortController();
+  const controller = active;
+  const abort = () => controller.abort(signal.reason);
+  signal?.addEventListener("abort", abort, { once: true });
   progress.begin("Starting ME-ICA…");
   try {
+    if (external) options.external = await regressors.text();
+    controller.signal.throwIfAborted();
     const buffers = await Promise.all(echoes.map((e) => e.file.arrayBuffer()));
     const payload = { echoes: echoes.map((e, i) => ({ name: e.file.name, buffer: buffers[i] })), tes, options };
-    const out = await runner.run(payload, buffers, onPhase, active.signal);
-    outputs = { summary: out.summary, files: new Map(out.files.map((f) => [f.name, asFile(f)])) };
+    const out = await runner.run(payload, buffers, onPhase, controller.signal);
+    controller.signal.throwIfAborted();
+    const next = { summary: out.summary, files: new Map(out.files.map((f) => [f.name, asFile(f)])), signal: dataController.signal };
+    await show(next.files.get("desc-denoised_bold.nii.gz"), "Denoised series", { signal: controller.signal });
+    controller.signal.throwIfAborted();
+    outputs = next;
     renderOutputs();
-    await show(outputs.files.get("desc-denoised_bold.nii.gz"), "Denoised series");
     progress.end(`${out.summary.accepted} of ${out.summary.n_components} components accepted`);
     status(`Done: ${out.summary.n_components} components, ${out.summary.accepted} accepted, ${out.summary.rejected} rejected (seed ${out.summary.seed})`);
     return outputs;
@@ -256,6 +294,7 @@ async function run() {
     progress.end(error.name === "AbortError" ? "Cancelled" : "Failed", { success: false });
     throw error;
   } finally {
+    signal?.removeEventListener("abort", abort);
     active = null;
     setBusy(false);
   }
@@ -289,7 +328,9 @@ function renderOutputs() {
 // Components tab: tedana's metrics table; a row shows that component's z-map.
 async function showComponents() {
   if (!outputs) return;
-  const [header, ...rows] = (await outputs.files.get("desc-tedana_metrics.tsv").text()).trim().split("\n").map((l) => l.split("\t"));
+  const current = outputs;
+  const [header, ...rows] = (await current.files.get("desc-tedana_metrics.tsv").text()).trim().split("\n").map((l) => l.split("\t"));
+  if (outputs !== current) return;
   const col = (name) => header.indexOf(name);
   const columns = [["Component", "Component"], ["classification", "Class"], ["kappa", "Kappa"], ["rho", "Rho"], ["variance explained", "Variance %"], ["classification_tags", "Tags"]];
   const table = document.createElement("table");
@@ -305,7 +346,8 @@ async function showComponents() {
       const value = row[col(name)];
       tr.insertCell().textContent = /^-?\d+\.\d+/.test(value) ? Number(value).toFixed(2) : value === "n/a" ? "" : value;
     }
-    const open = () => void show(outputs.files.get("desc-ICA_stat-z_components.nii.gz"), `${row[0]} map · ${row[col("classification")]}`, { frame: k, statMap: true });
+    const open = () => void show(current.files.get("desc-ICA_stat-z_components.nii.gz"), `${row[0]} map · ${row[col("classification")]}`, { frame: k, statMap: true, signal: current.signal })
+      .catch(error => { if (error.name !== "AbortError") status(error.message, true); });
     tr.onclick = open;
     tr.onkeydown = (event) => (event.key === "Enter" || event.key === " ") && (event.preventDefault(), open());
   });
@@ -339,7 +381,7 @@ registerAppAutomation({
       await loadFiles([...inputs.echoes, ...(inputs.sidecars ?? []), ...(inputs.regressors ?? [])], signal);
       if (parameters.echoTimes) $("echoTimes").value = parameters.echoTimes;
       for (const id of ["tree", "tedpca", "seed"]) if (parameters[id] != null) $(id).value = String(parameters[id]);
-      const done = await run();
+      const done = await run(signal);
       const file = (name) => done.files.get(name);
       return {
         artifacts: [
@@ -356,5 +398,8 @@ registerAppAutomation({
 });
 window.addEventListener("pagehide", () => {
   exampleControl.destroy();
+  importController?.abort();
+  dataController.abort();
+  active?.abort();
   runner.cancel();
 });

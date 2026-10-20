@@ -179,3 +179,169 @@ test("automation denoises declared echoes and sidecars", async ({ page }) => {
   expect(report.artifacts.denoised.sha256).toBe(expected.sha256["desc-denoised_bold.nii.gz"]);
   expect(report.artifacts.metrics.sha256).toBe(expected.sha256["desc-tedana_metrics.tsv"]);
 });
+
+function syntheticEcho(name) {
+  const bytes = Buffer.alloc(352 + 2 * 2 * 2 * 4 * 4);
+  bytes.writeInt32LE(348, 0);
+  [4, 2, 2, 2, 4, 1, 1, 1].forEach((value, i) => bytes.writeInt16LE(value, 40 + 2 * i));
+  bytes.writeInt16LE(16, 70);
+  bytes.writeInt16LE(32, 72);
+  for (let i = 0; i < 8; i++) bytes.writeFloatLE(1, 76 + 4 * i);
+  bytes.writeFloatLE(352, 108);
+  bytes.writeInt16LE(1, 254);
+  [0, 5, 10].forEach(i => bytes.writeFloatLE(1, 280 + 4 * i));
+  bytes.write('n+1', 344);
+  for (let i = 0; i < 32; i++) bytes.writeFloatLE(1 + i % 8, 352 + 4 * i);
+  return { name, mimeType: 'application/octet-stream', buffer: bytes };
+}
+const syntheticBundle = prefix => [1, 2, 3].flatMap(i => [
+  syntheticEcho(`${prefix}${i}.nii`),
+  { name: `${prefix}${i}.json`, mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ EchoTime: i * 0.015 })) },
+]);
+
+test('replacement echoes without sidecars require fresh echo times', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('#imageInput').setInputFiles(syntheticBundle('first'));
+  await expect(page.locator('#fileInfo')).toContainText('first1.nii');
+  await expect(page.locator('#echoTimes')).toHaveValue('15 30 45');
+  await page.locator('#imageInput').setInputFiles([1, 2, 3].map(i => syntheticEcho(`second${i}.nii`)));
+  await expect(page.locator('#fileInfo')).toContainText('second1.nii');
+  await expect(page.locator('#echoTimes')).toHaveValue('');
+});
+
+test('a delayed old import cannot replace newer echoes', async ({ page }) => {
+  await page.addInitScript(() => {
+    const text = File.prototype.text;
+    File.prototype.text = function () {
+      if (this.name === 'old1.json') {
+        return new Promise(resolve => {
+          globalThis.releaseOld = () => resolve('{"EchoTime":0.015}');
+        });
+      }
+      return text.call(this);
+    };
+  });
+  await page.goto('/');
+  await page.locator('#imageInput').setInputFiles(syntheticBundle('old'));
+  await expect.poll(() => page.evaluate(() => typeof globalThis.releaseOld)).toBe('function');
+  await page.locator('#imageInput').setInputFiles(syntheticBundle('new'));
+  await expect(page.locator('#fileInfo')).toContainText('new1.nii');
+  await page.evaluate(() => globalThis.releaseOld());
+  await page.waitForTimeout(500);
+  await expect(page.locator('#fileInfo')).toContainText('new1.nii');
+});
+
+test('automation cancellation terminates its processing worker', async ({ page }) => {
+  test.setTimeout(300000);
+  await page.addInitScript(() => {
+    const Native = Worker;
+    globalThis.jobs = 0;
+    globalThis.terminatedJobs = 0;
+    globalThis.Worker = class extends Native {
+      postMessage(data, ...rest) {
+        if (data?.echoes) {
+          this.isProcessingJob = true;
+          globalThis.jobs++;
+        }
+        return super.postMessage(data, ...rest);
+      }
+      terminate() {
+        if (this.isProcessingJob) globalThis.terminatedJobs++;
+        return super.terminate();
+      }
+    };
+  });
+  await page.goto('/');
+  for (const [role, files] of [['echoes', await examplePaths('echo')], ['sidecars', await examplePaths('metadata')]]) {
+    await page.locator('#neurodesk-input-transfer').setInputFiles(files);
+    await page.evaluate(r => globalThis.neurodeskAutomation.dispatch('adopt', { role: r }), role);
+  }
+  await page.evaluate(() => globalThis.neurodeskAutomation.dispatch('start', {}));
+  await expect.poll(() => page.evaluate(() => globalThis.jobs), { timeout: 60000 }).toBe(1);
+  await page.evaluate(() => globalThis.neurodeskAutomation.dispatch('cancel', {}));
+  await expect.poll(() => page.evaluate(() => globalThis.terminatedJobs), { timeout: 3000 }).toBe(1);
+  await expect(page.locator('#runButton')).toBeEnabled();
+});
+
+test('a superseded native viewer load settles before the replacement renders', async ({ page }) => {
+  await page.addInitScript(() => {
+    const Native = Worker;
+    const text = File.prototype.text;
+    globalThis.latestNativeLoads = 0;
+    File.prototype.text = function () {
+      return text.call(this).then(value => {
+        if (this.name === 'latest3.json') globalThis.latestPrepared = true;
+        return value;
+      });
+    };
+    globalThis.Worker = class extends Native {
+      postMessage(data, ...rest) {
+        if (data?.url instanceof File && data.url.name === 'slow1.nii' && !globalThis.releaseNative) {
+          globalThis.releaseNative = () => super.postMessage(data, ...rest);
+          return;
+        }
+        if (data?.url instanceof File && data.url.name === 'latest1.nii') globalThis.latestNativeLoads++;
+        return super.postMessage(data, ...rest);
+      }
+    };
+  });
+  await page.goto('/');
+  await page.locator('#imageInput').setInputFiles(syntheticBundle('base'));
+  await expect(page.locator('#imageLabel')).toContainText('base1.nii');
+  await page.locator('#imageInput').setInputFiles(syntheticBundle('slow'));
+  await expect.poll(() => page.evaluate(() => typeof globalThis.releaseNative)).toBe('function');
+  await page.locator('#imageInput').setInputFiles(syntheticBundle('latest'));
+  await expect.poll(() => page.evaluate(() => globalThis.latestPrepared)).toBe(true);
+  expect(await page.evaluate(() => globalThis.latestNativeLoads)).toBe(0);
+  await page.evaluate(() => globalThis.releaseNative());
+  await expect(page.locator('#fileInfo')).toContainText('latest1.nii');
+  await expect(page.locator('#imageLabel')).toContainText('latest1.nii');
+  expect(await page.evaluate(() => globalThis.latestNativeLoads)).toBe(1);
+});
+
+test('a failed echo preview preserves the previous inputs and display', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('#imageInput').setInputFiles(syntheticBundle('prior'));
+  await expect(page.locator('#imageLabel')).toContainText('prior1.nii');
+  const invalid = syntheticBundle('broken').map(file => file.name.endsWith('.nii')
+    ? { ...file, buffer: Buffer.from('not a NIfTI image') }
+    : file);
+  await page.locator('#imageInput').setInputFiles(invalid);
+  await expect(page.locator('#statusText')).toHaveClass(/error/);
+  await expect(page.locator('#runButton')).toBeEnabled();
+  await expect(page.locator('#fileInfo')).toHaveText('3 echoes: prior1.nii, prior2.nii, prior3.nii');
+  await expect(page.locator('#imageLabel')).toContainText('prior1.nii');
+  await expect(page.locator('#echoTimes')).toHaveValue('15 30 45');
+});
+
+test('cancelling while echo bytes are read prevents a processing worker', async ({ page }) => {
+  await page.addInitScript(() => {
+    const read = File.prototype.arrayBuffer;
+    const Native = Worker;
+    globalThis.processingWorkers = 0;
+    File.prototype.arrayBuffer = function () {
+      if (this.name === 'read1.nii') {
+        return new Promise(resolve => {
+          globalThis.releaseRead = () => read.call(this).then(resolve);
+        });
+      }
+      return read.call(this);
+    };
+    globalThis.Worker = class extends Native {
+      postMessage(data, ...rest) {
+        if (data?.echoes) globalThis.processingWorkers++;
+        return super.postMessage(data, ...rest);
+      }
+    };
+  });
+  await page.goto('/');
+  await page.locator('#imageInput').setInputFiles(syntheticBundle('read'));
+  await expect(page.locator('#runButton')).toBeEnabled();
+  await page.locator('#runButton').click();
+  await expect.poll(() => page.evaluate(() => typeof globalThis.releaseRead)).toBe('function');
+  await page.locator('#cancelButton').click();
+  await page.evaluate(() => globalThis.releaseRead());
+  await expect(page.locator('#statusText')).toHaveText('Cancelled');
+  await expect(page.locator('#runButton')).toBeEnabled();
+  expect(await page.evaluate(() => globalThis.processingWorkers)).toBe(0);
+});

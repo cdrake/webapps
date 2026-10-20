@@ -88,7 +88,6 @@
 
       <button id="aboutBtn" type="button" hidden>About</button>
       <button id="privacyBtn" type="button" hidden>Privacy</button>
-      <button id="standaloneBtn" type="button" hidden>Standalone</button>
     </header>
 
     <main id="viewer">
@@ -113,7 +112,6 @@
       <p>Inputs are the echoes of one run, motion corrected but not otherwise processed, with their BIDS sidecars or typed echo times, plus a confounds TSV (tedana's <code>--external</code>) for the regressor trees. Outputs use tedana's BIDS names; the denoised series is <code>desc-denoised_bold</code>. tedana's HTML report and figures are not produced, and options that select other tedana code (curve fitting, robustICA, masks) are not available.</p>
     </template>
     <template id="privacyContent"><p>Images are processed locally in this browser and are never uploaded.</p></template>
-    <template id="standaloneContent"><p>The engine is <a href="https://github.com/niivue/meica-rs">meica-rs</a>; its <code>meica</code> command line takes tedana's flags and writes the same outputs.</p></template>
 
     <script type="module" src="/src/main.js"></script>
   </body>
