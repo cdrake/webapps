@@ -30,7 +30,7 @@ plans releases with Changesets on a workspace; `test/app-versions.test.mjs`
 keeps covering that part. The two Carotid Flow modules share one suite of small
 in-memory NIfTI files. `packages/carotid-flow/test/node.test.js` runs the command
 line on the phantom and is not part of this run. The workspace graph's suite
-builds one fixture tree with a case for each path rule; `test/app-plan.test.mjs`
+builds small fixture trees for path rules and comment parsing; `test/app-plan.test.mjs`
 reads the whole repository and stays out of the run.
 `test/mutation-quality.test.mjs`
 fails when a range no longer covers exactly its functions or the name pattern
@@ -115,6 +115,32 @@ cost.
 
 ## Results and reviewed survivors
 
+The 2026-10-20 workspace-graph comment fixtures cover whole-line comments,
+preserved directives, block/JSDoc and inline comments, comment-looking string
+and template lines, and parser-rejected source. Paired JavaScript/TypeScript
+and top-level-await cases keep parsing sensitive to the filename and module
+mode. A comment between `from` and a bare workspace specifier must leave
+whitespace, not text that hides the import.
+
+The module-only run on main assessed 393 mutants: 351 killed, 8 timed out and
+34 survived. With the fixtures it kills 368, with the same 8 timeouts and 17
+survivors (95.67% detected). Neither run has uncovered mutants or compile or
+runtime errors. Comment parsing previously had coverage only in
+`test/app-plan.test.mjs`, outside this module's sandbox. Production graph
+behavior, CI selection and scientific gates are unchanged. Rerun with
+`MUTATION_MODULE=workspace-graph pnpm exec stryker run
+stryker.config.mjs`.
+
+The three remaining comment-parsing mutants are equivalent:
+
+- `workspace-graph.mjs:44`, dropping `$` from `LINE_COMMENT`: the greedy `.*`
+  already ends at the line terminator or end of the input.
+- `workspace-graph.mjs:79`, removing the `Line` filter or making it always true:
+  the extra block-comment ranges start at `/*`, never at the `//` offset checked
+  by the replacement callback.
+
+The other 14 workspace-graph survivors are the previously reviewed cases below.
+
 The 2026-10-17 package-metadata correction assesses 195 lockfile-analyzer mutants,
 with 178 killed, 7 timed out and 10 survivors. No mutants are uncovered or have
 compile or runtime errors. Rerun with `MUTATION_MODULE=lockfile-impact pnpm exec
@@ -126,11 +152,13 @@ snapshots, malformed resolution mappings and absent top-level sections.
 The eight earlier survivors below and the two root-tool survivors remain;
 no new survivor remains from the metadata validation:
 
-- A default excluded-tool list containing `"Stryker was here"` matches no npm
-  package name, because spaces are invalid in a package name.
-- Running the root-tool normalization with an empty excluded-tool list only
-  removes an empty `devDependencies` mapping. pnpm omits that empty mapping;
-  all actual roots and their closures remain identical.
+- `lockfile-impact.mjs:108`: a default excluded-tool list containing
+  `"Stryker was here"` matches no npm package name, because spaces are invalid
+  in a package name.
+- `lockfile-impact.mjs:116`: running the root-tool normalization with an empty
+  excluded-tool list only removes an empty `devDependencies` mapping. pnpm
+  omits that empty mapping; all actual roots and their closures remain
+  identical.
 
 The pilot on 2026-10-10 killed all 10 mutants in `disconnectome.js`.
 
@@ -201,12 +229,12 @@ Equivalent mutants:
 - `formatG` line 27, `x > 0` to `x >= 0`: only reached for infinite `x`.
 - `formatG` line 32, `/^[-+]/` to `/[-+]/`: the exponent string has a sign only
   at its start.
-- `lockfile-impact.mjs:46`, `/\(.*$/` to `/\(.*/`: a snapshot key has no line
+- `lockfile-impact.mjs:55`, `/\(.*$/` to `/\(.*/`: a snapshot key has no line
   break, so `.*` already reaches its end.
-- `lockfile-impact.mjs:59` and `:83`, an extra `"Stryker was here"` entry in the
+- `lockfile-impact.mjs:73` and `:97`, an extra `"Stryker was here"` entry in the
   pending or link list: no snapshot and no importer has that name, so it adds
   nothing to a closure and links nothing.
-- `lockfile-impact.mjs:76`, `snapshots[key]?.[field]` to `snapshots[key][field]`:
+- `lockfile-impact.mjs:90`, `snapshots[key]?.[field]` to `snapshots[key][field]`:
   `snapshotOf` returns only keys present in `snapshots`, and pnpm writes every
   snapshot as a mapping.
 - Carotid Flow `series.js:31`, `<= 1e-5` to `< 1e-5` in the spacing check:
@@ -214,38 +242,38 @@ Equivalent mutants:
   `1e-5` has its lowest set bit at 2^-69. Their difference can equal it only if
   one spacing has a float32 ulp of 2^-69 or less, that is, a spacing below 2^-45
   mm (about 3e-14 mm), which no scanner writes.
-- `workspace-graph.mjs:23` and `:30`, `(?:\.\.\/)+` to `(?:\.\.\/)`: the
+- `workspace-graph.mjs:24` and `:31`, `(?:\.\.\/)+` to `(?:\.\.\/)`: the
   patterns are not anchored, so the last `../` before `packages/` still matches.
-- `workspace-graph.mjs:44` and `:45`, `'(catalog)'` or `'(site)'` to `''`: the
+- `workspace-graph.mjs:48` and `:49`, `'(catalog)'` or `'(site)'` to `''`: the
   names only key the two CI entry nodes. No changed path is empty, and the two
   names stay distinct.
-- `workspace-graph.mjs:70`, dropping `.sort()` after `readdir`: on Linux and
+- `workspace-graph.mjs:85`, dropping `.sort()` after `readdir`: on Linux and
   macOS libuv sorts directory entries by name, so the order is already sorted.
   CI plans on Linux.
-- `workspace-graph.mjs:84`, `() => false` to `() => undefined`, `:90`, `return
-  null` to no return, and `:89` and `:141`, `'utf8'` to `''`: `undefined` is as
+- `workspace-graph.mjs:99`, `() => false` to `() => undefined`, `:105`, `return
+  null` to no return, and `:104` and `:156`, `'utf8'` to `''`: `undefined` is as
   falsy as `false`, every caller reads the manifest with `?.`, and
   `JSON.parse` reads a `Buffer` as its UTF-8 text.
-- `workspace-graph.mjs:117`, resolving every dependency spec as a path
+- `workspace-graph.mjs:132`, resolving every dependency spec as a path
   (`startsWith('file:')` to `true` or to `startsWith('')`): a version range,
   `workspace:`, `npm:`, repository or URL spec without its first five characters
   resolves inside the dependent's own directory, which `nodeOf` maps to the node
   itself, removed later, or to an app, which is never followed. An `http:` URL
   becomes an absolute path outside the repository, which maps to no node.
-- `workspace-graph.mjs:147` and `:148`, a step without `run` or a filtered
+- `workspace-graph.mjs:162` and `:163`, a step without `run` or a filtered
   `pnpm --filter` command read as `"Stryker was here!"`, and the filter pattern
   stopping one character into the script name: none of these strings names a
   root file or starts with `pnpm `, and workspace script names hold only word
   characters, `:` and `-`, so the rest of the name cannot name a root file
   either.
-- `lockfile-impact.mjs:87`, treating every version as a `link:`: the path
+- `lockfile-impact.mjs:101`, treating every version as a `link:`: the path
   formed from the rest of a registry version (`'1.0.0'.slice(5)` is empty, so the
   importer links itself) never names another importer.
 
 Unspecified input:
 
-- `lockfile-impact.mjs:72` and `:86`, `entry?.version` to `entry.version`, and
-  `:86` `?? ''` to `?? "Stryker was here!"`: pnpm writes every importer entry with
+- `lockfile-impact.mjs:86` and `:100`, `entry?.version` to `entry.version`, and
+  `:100` `?? ''` to `?? "Stryker was here!"`: pnpm writes every importer entry with
   a `version`. The fallbacks only decide whether an entry without one is skipped
   or throws a `TypeError`, which fails the plan job loudly; no rule specifies
   either for a lockfile pnpm does not write.
