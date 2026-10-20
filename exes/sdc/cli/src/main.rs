@@ -17,7 +17,8 @@ const USAGE: &str = "usage: sdc pyhysco <image1.nii[.gz]> <image2.nii[.gz]> <out
 Estimates the susceptibility field from two b0 images with opposite phase-encoding
 directions (PyHySCO 0.0.4 defaults). PhaseEncodingDirection and TotalReadoutTime come
 from each image's BIDS sidecar (.json next to it) unless given. A 4D input is averaged
-over its volumes, without motion correction; image 2 must already be aligned to image 1.
+over its volumes, without motion correction: those with b <= 50 when a .bval is next to
+it. Image 2 must be in the space of image 1.
 
 Writes <prefix>_fieldmap.nii.gz (Hz) with its sidecar, and <prefix>_corrected1/2.nii.gz
 (quality control, PyHySCO's normalized intensities).";
@@ -27,9 +28,14 @@ struct Image {
     affine: [[f64; 4]; 3],
     data: Vec<f64>,
     volumes: usize,
+    used: usize,
 }
 
-fn decode(bytes: &[u8]) -> Result<Image, String> {
+/// Volumes with b at or below this are b = 0, as in the app.
+const B0_MAX: f64 = 50.0;
+
+/// The image, averaged over the volumes `keep` selects (all when it is `None`).
+fn decode(bytes: &[u8], keep: Option<&[bool]>) -> Result<Image, String> {
     let inflated;
     let bytes = if bytes.starts_with(&[0x1f, 0x8b]) {
         let mut out = vec![];
@@ -65,22 +71,38 @@ fn decode(bytes: &[u8]) -> Result<Image, String> {
     }
     let (slope, inter) = (raw.scl_slope as f64, raw.scl_inter as f64);
     let scaled = slope.is_finite() && slope != 0.0 && (slope != 1.0 || inter != 0.0);
+    if let Some(keep) = keep
+        && keep.len() != volumes
+    {
+        return Err(format!(
+            "the bval has {} values for {volumes} volumes",
+            keep.len()
+        ));
+    }
+    let used = keep.map_or(volumes, |k| k.iter().filter(|&&b| b).count());
+    if used == 0 {
+        return Err(format!("no volume with b <= {B0_MAX}"));
+    }
     let mut data = vec![0.0; n];
     for (k, c) in bytes[offset..offset + count * width]
         .chunks_exact(width)
         .enumerate()
     {
+        if keep.is_some_and(|keep| !keep[k / n]) {
+            continue;
+        }
         let v = scalar(c);
         data[k % n] += if scaled { v * slope + inter } else { v };
     }
-    if volumes > 1 {
-        data.iter_mut().for_each(|v| *v /= volumes as f64);
+    if used > 1 {
+        data.iter_mut().for_each(|v| *v /= used as f64);
     }
     Ok(Image {
         dims,
         affine: h.affine,
         data,
         volumes,
+        used,
     })
 }
 
@@ -124,16 +146,34 @@ fn voxel(a: &[[f64; 4]; 3]) -> [f64; 3] {
     std::array::from_fn(|j| (a[0][j].powi(2) + a[1][j].powi(2) + a[2][j].powi(2)).sqrt())
 }
 
-fn sidecar(path: &Path) -> Value {
+fn stem(path: &Path) -> String {
     let name = path.to_string_lossy();
-    let stem = name
-        .strip_suffix(".nii.gz")
+    name.strip_suffix(".nii.gz")
         .or_else(|| name.strip_suffix(".nii"))
-        .unwrap_or(&name);
-    std::fs::read_to_string(format!("{stem}.json"))
+        .unwrap_or(&name)
+        .to_string()
+}
+
+fn sidecar(path: &Path) -> Value {
+    std::fs::read_to_string(format!("{}.json", stem(path)))
         .ok()
         .and_then(|t| serde_json::from_str(&t).ok())
         .unwrap_or(Value::Null)
+}
+
+/// The b = 0 volumes from the `.bval` next to the image, if there is one.
+fn b0_volumes(path: &Path) -> Result<Option<Vec<bool>>, String> {
+    let Ok(text) = std::fs::read_to_string(format!("{}.bval", stem(path))) else {
+        return Ok(None);
+    };
+    text.split_whitespace()
+        .map(|v| {
+            v.parse::<f64>()
+                .map(|b| b <= B0_MAX)
+                .map_err(|e| format!("{}.bval: {e}", stem(path)))
+        })
+        .collect::<Result<Vec<_>, _>>()
+        .map(Some)
 }
 
 /// "j-" → (1, -1)
@@ -198,7 +238,10 @@ fn run(args: &[String]) -> Result<(), String> {
     let read = |p: &Path| {
         std::fs::read(p)
             .map_err(|e| format!("{}: {e}", p.display()))
-            .and_then(|b| decode(&b).map_err(|e| format!("{}: {e}", p.display())))
+            .and_then(|b| {
+                let keep = b0_volumes(p)?;
+                decode(&b, keep.as_deref()).map_err(|e| format!("{}: {e}", p.display()))
+            })
     };
     let (im1, im2) = (read(&path1)?, read(&path2)?);
     if im1.dims != im2.dims {
@@ -210,8 +253,8 @@ fn run(args: &[String]) -> Result<(), String> {
     for (name, img) in [("image 1", &im1), ("image 2", &im2)] {
         if img.volumes > 1 {
             eprintln!(
-                "{name}: averaged {} volumes without motion correction",
-                img.volumes
+                "{name}: averaged {} of {} volumes (b <= {B0_MAX} when a .bval is next to it), without motion correction",
+                img.used, img.volumes
             );
         }
     }

@@ -1,0 +1,6 @@
+{
+  "description": "The native sdc command line's field for the ds005134 slab example (exes/sdc/validation/make_example.py, then sdc pyhysco on the two example images).",
+  "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0000000000000000000000000000000000000000/sdc/validation/ds005134-sub-01-slab/native_fieldmap.nii.gz",
+  "sha256": "d6056a44f338130fedc40fc9ebc9920666fc7e4d2e4077739ce0c8ad4ed28b64",
+  "bytes": 510957
+}

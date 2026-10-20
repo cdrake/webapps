@@ -868,6 +868,28 @@ importers:
         specifier: 2.9.0
         version: 2.9.0
 
+  apps/sdc:
+    dependencies:
+      '@neurodesk/runtime-support':
+        specifier: workspace:*
+        version: link:../../packages/runtime-support
+      '@neurodesk/sdc':
+        specifier: workspace:*
+        version: link:../../packages/sdc
+      '@neurodesk/webapp-components':
+        specifier: workspace:*
+        version: link:../../packages/components
+      '@niivue/niivue':
+        specifier: 1.0.0-rc.14
+        version: 1.0.0-rc.14
+    devDependencies:
+      '@playwright/test':
+        specifier: 1.64.0
+        version: 1.64.0
+      vite:
+        specifier: ^5.0.0
+        version: 5.4.21(@types/node@24.13.3)(lightningcss@1.32.0)
+
   apps/seedseg:
     dependencies:
       '@neurodesk/seedseg':
@@ -1503,6 +1525,8 @@ importers:
       vite:
         specifier: ^6.3.2
         version: 6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.14)(yaml@2.9.0)
+
+  packages/sdc: {}
 
   packages/seedseg:
     dependencies:

@@ -1569,3 +1569,38 @@ apps:
         title: NiiVue
         reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
         url: https://github.com/niivue/niivue
+
+  sdc:
+    packages:
+      - name: PyHySCO 0.0.4 (Rust and WebAssembly port)
+        url: https://github.com/EmoryMLIP/PyHySCO
+        role: susceptibility field estimation, ported under the GPL-3.0
+      - name: NiiVue
+        url: https://github.com/niivue/niivue
+        role: image viewer
+      - name: dcm2niix (WebAssembly)
+        url: https://github.com/rordenlab/dcm2niix
+        role: DICOM to NIfTI conversion
+    citations:
+      - group: Distortion correction
+        title: PyHySCO
+        reference: "Julian A, Ruthotto L. PyHySCO: GPU-enabled susceptibility artifact distortion
+          correction in seconds. arXiv:2403.10706. 2024."
+        url: https://arxiv.org/abs/2403.10706
+        code: https://github.com/EmoryMLIP/PyHySCO
+      - group: Distortion correction
+        title: Hyperelastic susceptibility artifact correction
+        reference: "Ruthotto L, Kugel H, Olesch J, Fischer B, Modersitzki J, Burger M, Wolters CH.
+          Diffeomorphic susceptibility artifact correction of diffusion-weighted magnetic resonance
+          images. Physics in Medicine and Biology. 2012;57(18):5715–5731."
+        doi: 10.1088/0031-9155/57/18/5715
+      - group: DICOM conversion
+        title: dcm2niix
+        reference: "Li X, Morgan PS, Ashburner J, Smith J, Rorden C. The first step for
+          neuroimaging data analysis: DICOM to NIfTI conversion. Journal of
+          Neuroscience Methods. 2016;264:47–56."
+        doi: 10.1016/j.jneumeth.2016.03.001
+      - group: Visualization
+        title: NiiVue
+        reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
+        url: https://github.com/niivue/niivue

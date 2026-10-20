@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SDC — NeuroDesk</title>
+  </head>
+  <body>
+    <header id="controls">
+      <details class="nd-sidebar-section" id="inputSection" open>
+        <summary class="nd-section-title">Input images</summary>
+        <div class="nd-section-content">
+          <div id="exampleControl"></div>
+          <label class="nd-file" id="dropZone">
+            <input id="imageInput" type="file" data-neurodesk-input="image" multiple aria-label="Choose two images with opposite phase-encoding directions, with their JSON sidecars and an optional bval" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span>Drop an AP/PA pair with sidecars, NIfTI or DICOM</span>
+          </label>
+          <p id="fileInfo" class="nd-file-info" hidden></p>
+          <p id="pairInfo" class="nd-file-info" hidden></p>
+        </div>
+      </details>
+
+      <details class="nd-sidebar-section" id="taskSection" open>
+        <summary class="nd-section-title">Field estimation</summary>
+        <div class="nd-section-content">
+          <div class="nd-field">
+            <label for="method">Method
+              <span class="nd-info-icon" tabindex="0" aria-label="About the method">i<span class="nd-info-tooltip">PyHySCO 0.0.4 with its command-line defaults: a 1D field per phase-encoding line, hyperelastic regularization and Gauss-Newton. It was the closest fast method to FSL topup in the reverse-PE comparison.</span></span>
+            </label>
+            <select id="method"><option value="pyhysco" selected>PyHySCO</option></select>
+          </div>
+          <div class="nd-field">
+            <label for="reference">Field reference
+              <span class="nd-info-icon" tabindex="0" aria-label="About the field reference">i<span class="nd-info-tooltip">The field is written on this image's grid, with topup's sign for its phase-encoding direction. The DWI series is chosen when one input has a bval.</span></span>
+            </label>
+            <select id="reference" disabled><option value="0">Image 1</option></select>
+          </div>
+          <p class="nd-hint">Both images in one space; their b = 0 volumes are averaged.</p>
+          <button id="runButton" class="nd-btn nd-btn-primary" type="button" disabled>Estimate field</button>
+        </div>
+      </details>
+
+      <details class="nd-sidebar-section" id="outputSection">
+        <summary class="nd-section-title">Output</summary>
+        <div class="nd-section-content">
+          <div id="resultList"></div>
+        </div>
+      </details>
+
+      <button id="aboutBtn" type="button" hidden>About</button>
+      <button id="privacyBtn" type="button" hidden>Privacy</button>
+    </header>
+
+    <main id="viewer">
+      <div class="nd-viewer-canvas-wrapper">
+        <canvas id="gl1" aria-label="Image viewer"></canvas>
+        <p id="emptyState" class="nd-viewer-empty">Drop an image pair anywhere, or choose an example.</p>
+      </div>
+      <div class="nd-viewer-info"><span id="location" class="nd-viewer-info-primary"></span></div>
+    </main>
+
+    <footer id="status">
+      <span class="nd-status-label">Status</span>
+      <span id="statusText" class="nd-status-text" role="status" aria-live="polite">Drag and drop files</span>
+      <span id="elapsed" class="nd-status-elapsed"></span>
+      <progress id="progress" max="1" value="0" aria-label="Estimation progress"></progress>
+      <button id="cancelButton" class="nd-btn-cancel" type="button" title="Cancel estimation" aria-label="Cancel estimation" hidden>×</button>
+    </footer>
+
+    <template id="aboutContent">
+      <p>SDC estimates the susceptibility field of an EPI acquisition from two b = 0 images with opposite phase-encoding directions, such as AP and PA, in this browser. It is a port of PyHySCO 0.0.4 (Julian and Ruthotto 2024), the hyperelastic susceptibility correction of Ruthotto et al. 2012, and gives PyHySCO's field to within 1e-5 Hz. In a comparison on six subjects it was the closest fast method to FSL topup; DR-BUDDI was closer but takes about 40 minutes. Each input's volumes with b ≤ 50 are averaged, without motion correction, and the two images must be in one space. The field is in Hz, with topup's sign, on the grid of the field reference; a constant offset against another tool is a translation along the phase-encoding axis. The corrected images are for quality control: the app does not resample the DWI series. The example is a 10-slice slab of OpenNeuro ds005134 (CC0); because the regularization is 3D, a slab's field is not identical to the field of the full volume. The solver is GPL-3.0-or-later, as PyHySCO is.</p>
+    </template>
+    <template id="privacyContent"><p>Images are processed locally in this browser and are never uploaded.</p></template>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

@@ -769,3 +769,23 @@ apps:
       shared_runtime: false
       browser_test: true
       release: false
+  - id: sdc
+    path: sdc
+    title: SDC
+    description: Distortion correction from reverse phase-encoding b0.
+    categories: [diffusion-imaging]
+    keywords: [susceptibility distortion, topup, PyHySCO, reverse phase-encoding, diffusion MRI, field map, WebAssembly]
+    legacy_domain: null
+    runtime: vite-wasm
+    model_manifest: null
+    asset_manifest_schema: null
+    source: neurodesk/webapps@local
+    license: GPL-3.0-or-later
+    maintainers: [neurodesk]
+    support_status: experimental
+    shell: imaging-workspace
+    ci:
+      toolchains: [node]
+      shared_runtime: false
+      browser_test: true
+      release: false

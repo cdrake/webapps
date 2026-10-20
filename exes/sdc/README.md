@@ -26,7 +26,24 @@ target/release/sdc pyhysco sub-01_dir-AP_epi.nii.gz sub-01_dir-PA_epi.nii.gz sub
 
 The port keeps PyHySCO's quirks: the barrier gives 0 where |∂b| ≥ 1 (its `nan_to_num`), the line search keeps the positive descent value after it flips an ascent direction, PCG returns its last iterate, and the gradient uses PyHySCO's interpolation derivative also where the interpolation clamps.
 
-The inputs must be in one space: image 2 aligned to image 1. A 4D input is averaged over its volumes without motion correction.
+### Inputs
+
+The app and the command line average each input's b = 0 volumes (b ≤ 50 when a bval is given) without motion correction, and do not align image 2 to image 1: both must be in one space, as two series of one session usually are.
+The options document gave every method a prepared pair instead: each direction's b = 0 volumes aligned with `mcflirt`, averaged, and the PA mean aligned rigidly to the AP mean with ANTs.
+On its six subjects that preparation does not bring PyHySCO closer to topup:
+
+| Subject | Prepared pair | Plain means | Raw difference between the two fields |
+| --- | --- | --- | --- |
+| ds005134 sub-01 | 2.74 | 2.09 | 2.93 |
+| ds004146 sub-0001 | 1.55 | 1.57 | 4.62 |
+| ds004146 sub-0002 | 1.90 | 1.70 | 5.11 |
+| ds004146 sub-0003 | 3.31 | 3.81 | 3.44 |
+| ds004146 sub-0004 | 1.87 | 1.72 | 8.03 |
+| ds004146 sub-0005 | 1.74 | 1.64 | 2.11 |
+| Mean | 2.18 | 2.09 | |
+
+Values are median absolute differences in Hz in the options document's brain mask (MindGrab on topup's corrected mean b0); the first two columns are the demeaned difference from topup.
+The raw difference between the two fields is mostly a constant: the rigid PA-to-AP alignment absorbs part of the distortion as a translation along the phase-encoding axis.
 
 ### Deliberate divergence
 
