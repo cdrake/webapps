@@ -71,6 +71,15 @@
   - @neurodesk/runtime-support@0.9.3
   - @neurodesk/synthsr@0.6.20261020
 
+- Updated dependencies [a36fde4]
+
+- Updated dependencies
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/runtime-support@0.8.1
+  - @neurodesk/synthsr@0.6.20261020
+
 ## 0.6.20261019
 
 ### Patch Changes

@@ -34,11 +34,39 @@
 
 - 4b40da1: The input size limit moves from dwi2trx to `@neurodesk/webapp-components/file-io/input-limits` (`MAX_INPUT_BYTES`, `InputTooLargeError`, `formatBytes`, `assertInputSize`). It adds `decodedFloat32Bytes`, the size of the Float32 array an image decodes to (voxels × frames × 4), and `assertNiftiDecodedSize`, which refuses a NIfTI above the 2 GB limit from its header alone; `readNiftiHeader` stops gzip streaming after the header when supported. dwi2trx imports the shared module. NODDI and Degibbs refuse a DWI whose decoded image is above the limit before reading it, and the status bar names the size and the limit.
 
+- a36fde4: `@neurodesk/webapp-components/file-io` reads diffusion inputs from a BIDS folder. `readBidsDiffusion(files)` takes the files of a folder input or a dropped folder (each with its `webkitRelativePath`) and returns one record per `dwi/*_dwi.nii[.gz]` run: its `.bval`, `.bvec` and JSON sidecar, merged by BIDS inheritance from the dataset root down; the `fmap/*_epi` images whose `IntendedFor` names it, as a `bids::` URI or a subject-relative path; and the subject's `anat/*_T1w` image, from the same session first. Sessions and several runs are supported, and the dataset may sit below the dropped folder. A run without a `.bval` or `.bvec` carries an `error` that names the missing file. Files the reader cannot pair are listed with the reason. Types are at `@neurodesk/webapp-components/file-io/bids`.
+
+- DICOM View's "Open in White matter lesions" button is now an "Open in another webapp"
+  menu that lists every app of the site from the registry. Most apps receive the converted
+  NIfTI image; apps the registry marks `handoff: dicom` (dicompare, QSMbly, dwi2trx, NODDI,
+  Carotid Flow) receive the series' DICOM files, and `handoff: none` keeps an app that cannot
+  use a single series (Zarro, FastPrep, SurfAnnotate, LCModel) out of the menu. The shared shell
+  receives a handoff for every app the way a page drop opens files, through the app's own
+  inputs; dicompare opens the files as reference acquisitions, and White matter lesions
+  keeps its own receiver.
+
+  A multiframe DICOM whose frames lie in different planes, such as a scanner's MPR head
+  scout, which dcm2niix refuses, now shows each frame as its own correctly placed slice
+  instead of failing with exit code 2. `readDicomFrames` in `@neurodesk/dicom2vid` reads a
+  file's frames with their own position, orientation and pixel spacing.
+
+  Dropping files or a folder on the image now opens them. FreeBrowse draws NiiVue inside a
+  shadow root, so the page drop never saw the canvas and NiiVue swallowed the drop; the page
+  drop now reads the event's composed path. It also no longer routes files to the
+  automation contract's hidden input.
+
+  DICOM View opens series in the ACS layout, without the 3D render, with FreeBrowse's
+  panel closed.
+
+- The input size limit moves from dwi2trx to `@neurodesk/webapp-components/file-io/input-limits` (`MAX_INPUT_BYTES`, `InputTooLargeError`, `formatBytes`, `assertInputSize`). It adds `decodedFloat32Bytes`, the size of the Float32 array an image decodes to (voxels × frames × 4), and `assertNiftiDecodedSize`, which refuses a NIfTI above the 2 GB limit from its header alone; `readNiftiHeader` stops gzip streaming after the header when supported. dwi2trx imports the shared module. NODDI and Degibbs refuse a DWI whose decoded image is above the limit before reading it, and the status bar names the size and the limit.
+
 ### Patch Changes
 
 - 03261d0: Cancel a pending shell handoff when the user chooses files, drops another input or starts an example. Stop the stored-file copy and input wait so an older handoff cannot replace the newer choice or its status.
 
 - c865c0c: Serialize ME-ICA previews and restore the previous image, overlay, frame and display window when an import fails or is cancelled. Replacement echoes clear stale echo times, superseded imports cannot replace newer inputs, and automation cancellation stops the processing worker. The shared queue retains the existing single-volume preview adapter.
+
+- Cancel a pending shell handoff when the user chooses files, drops another input or starts an example. Stop the stored-file copy and input wait so an older handoff cannot replace the newer choice or its status.
 
 ## 0.16.3
 
