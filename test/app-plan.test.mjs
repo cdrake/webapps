@@ -358,19 +358,80 @@ test('ESLint stays out of every app build, unit test and browser test', async ()
   for (const name of [...CATALOG_JOBS, 'composite-site']) {
     for (const step of ci.jobs[name].steps) assert.doesNotMatch(step.run ?? '', /\blint\b|eslint/, `${name} runs lint`);
   }
+  const packages = await workspaceScripts();
+  // The traversal crosses packages: SYNcro's build builds Greedy's WebAssembly.
+  assert.ok(scriptsRun(packages, 'apps/syncro', ['build']).some(([dir, name]) => dir === 'packages/greedy' && name === 'build:wasm'));
   for (const app of await loadAppsRegistry().then(registry => registry.apps)) {
-    const scripts = JSON.parse(await readFile(join(repoRoot, 'apps', app.id, 'package.json'), 'utf8')).scripts ?? {};
-    const pending = ['build', 'test:e2e', app.ci.release_test ?? 'test'];
-    const seen = new Set();
-    while (pending.length) {
-      const name = pending.pop();
-      if (seen.has(name) || !scripts[name]) continue;
-      seen.add(name);
-      assert.doesNotMatch(scripts[name], /\beslint\b|scripts\/lint\.mjs|eslint\.config/, `${app.id} ${name} runs ESLint or its runner`);
-      for (const [, next] of scripts[name].matchAll(/\b(?:pnpm|npm)(?: run)? ([\w:-]+)/g)) pending.push(next);
+    for (const [dir, name, command] of scriptsRun(packages, `apps/${app.id}`, ['build', 'test:e2e', app.ci.release_test ?? 'test'])) {
+      assert.doesNotMatch(command, /\beslint\b|scripts\/lint\.mjs|eslint\.config/, `${app.id}'s CI scripts reach ${dir} ${name}, which runs ESLint or its runner`);
     }
   }
 });
+
+// Every workspace package's directory, name and scripts, the root as '.'.
+async function workspaceScripts() {
+  const dirs = ['.', ...['apps', 'packages', 'exes', 'site/easter-eggs'].flatMap((top) => {
+    try {
+      return execFileSync('git', ['ls-files', '--', `${top}/*/package.json`], { cwd: repoRoot, encoding: 'utf8' }).split('\n').filter(Boolean).map((path) => path.slice(0, -'/package.json'.length));
+    } catch {
+      return [];
+    }
+  })];
+  const packages = new Map();
+  for (const dir of dirs) {
+    const manifest = JSON.parse(await readFile(join(repoRoot, dir, 'package.json'), 'utf8'));
+    packages.set(dir, { name: manifest.name, scripts: manifest.scripts ?? {} });
+  }
+  return packages;
+}
+
+// The [dir, script, command] triples that running `names` in `start` executes:
+// lifecycle hooks, scripts run by name, and scripts in other packages reached
+// through `pnpm --filter`, `-C`/`--dir`, `--prefix`, `-w`, `-r` or `cd`. An
+// unresolvable filter reaches every package.
+function scriptsRun(packages, start, names) {
+  const resolveFilter = (from, filter) => {
+    if (filter.startsWith('.')) return [join(from, filter).replace(/\/$/, '') || '.'];
+    const exact = [...packages].filter(([, manifest]) => manifest.name === filter).map(([dir]) => dir);
+    return exact.length ? exact : [...packages.keys()];
+  };
+  const seen = new Set();
+  const visited = [];
+  const pending = names.map((name) => [start, name]);
+  while (pending.length) {
+    const [dir, name] = pending.pop();
+    for (const hook of [`pre${name}`, name, `post${name}`]) {
+      const command = packages.get(dir)?.scripts[hook];
+      if (command === undefined || seen.has(`${dir}\0${hook}`)) continue;
+      seen.add(`${dir}\0${hook}`);
+      visited.push([dir, hook, command]);
+      let cwd = dir;
+      for (const segment of command.split(/&&|\|\||;|\|/)) {
+        const words = segment.trim().split(/\s+/).filter(Boolean);
+        if (words[0] === 'cd' && words[1]) {
+          cwd = join(cwd, words[1]);
+          continue;
+        }
+        if (words[0] !== 'pnpm' && words[0] !== 'npm') continue;
+        let targets = [cwd];
+        let index = 1;
+        while (index < words.length && words[index].startsWith('-')) {
+          const [flag, inline] = words[index].split('=');
+          const value = () => inline ?? words[++index];
+          if (flag === '--filter' || flag === '-F') targets = resolveFilter(cwd, value());
+          else if (flag === '-C' || flag === '--dir' || flag === '--prefix') targets = [join(cwd, value())];
+          else if (flag === '-w' || flag === '--workspace-root') targets = ['.'];
+          else if (flag === '-r' || flag === '--recursive') targets = [...packages.keys()];
+          index += 1;
+        }
+        if (words[index] === 'run' || words[index] === 'run-script') index += 1;
+        const script = words[index];
+        if (script) for (const target of targets) pending.push([target, script]);
+      }
+    }
+  }
+  return visited;
+}
 
 test('a lockfile-only runtime upgrade selects the apps that resolve it', async () => {
   const plan = await lockPlan(changeLock((lock) => {
