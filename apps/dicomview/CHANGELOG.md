@@ -49,6 +49,8 @@
   - @neurodesk/dicom2vid@0.5.20261020
   - @neurodesk/runtime-support@0.9.4
 
+- Keep the generic handoff Privacy disclosure when integrating the catalog: DICOM targets receive the original scanner headers, and no image is uploaded.
+
 ## 0.3.20261020
 
 ### Patch Changes
