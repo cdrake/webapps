@@ -39,6 +39,18 @@ export function appPath(baseURI) {
   return new URL('.', baseURI).pathname.split('/').filter(Boolean).at(-1) ?? '';
 }
 
+// The apps of the site another app can open with its data, in title order, without the page's
+// own: the shell's app information lists them from the registry. `receives` is the form an app
+// takes, 'nifti' or 'dicom'.
+export function handoffTargets(document = globalThis.document) {
+  let catalog = [];
+  try {
+    catalog = JSON.parse(document.querySelector('script[data-neurodesk-app-information]')?.textContent || '{}').catalog ?? [];
+  } catch { /* no catalog: nothing to offer */ }
+  const own = appPath(document.baseURI);
+  return catalog.filter((app) => app.path !== own).sort((a, b) => a.title.localeCompare(b.title));
+}
+
 function openDatabase() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DATABASE, 1);

@@ -87,15 +87,23 @@ const fixture = `<!doctype html>
     return { title: result.source.title, names: result.files.map((file) => file.name) };
   });
   window.handoff = handoff;
+  // The shell's receiver, which puts the files on the page's input as a drop would.
+  window.changed = [];
+  document.getElementById('scan').addEventListener('change', (event) => window.changed.push([...event.target.files].map((file) => file.name)));
+  window.receiveAsShell = () => import('/handoff/receive.js')
+    .then(({ receiveHandoff }) => receiveHandoff(document))
+    .then((result) => result && result.files.map((file) => file.name));
   window.ready = true;
-</script>`;
+</script>
+<input id="scan" type="file" data-neurodesk-input="image" multiple>`;
 
 const root = await mkdtemp(join(tmpdir(), 'handoff-browser-'));
 for (const app of [SENDER, RECEIVER]) {
   await mkdir(join(root, app), { recursive: true });
   await writeFile(join(root, app, 'index.html'), fixture);
 }
-const files = new Map([['/handoff/index.js', fileURLToPath(new URL('../src/handoff/index.js', import.meta.url))]]);
+const files = new Map(['handoff/index.js', 'handoff/receive.js', 'ui/pageDrop.js', 'file-io/detectFiles.js']
+  .map((name) => [`/${name}`, fileURLToPath(new URL(`../src/${name}`, import.meta.url))]));
 const site = await serveSite(root, { files });
 after(async () => {
   await site.close();
@@ -173,6 +181,21 @@ function suite(engine) {
       assert.equal(await page.evaluate(() => location.hash), '#view=axial&q=a%20b');
       assert.equal(await page.evaluate(() => window.files[0].text()), 'scan.nii bytes', 'the files outlive their entry');
       assert.equal(await page.evaluate(() => window.receive()), null, 'nothing left to receive');
+    });
+
+    test('the shell opens a handoff through the page\'s own input, as a drop would', async () => {
+      const { page } = await sentInTab(await fresh());
+      assert.deepEqual(await page.evaluate(() => window.receiveAsShell()), ['scan.nii', 'scan.json']);
+      assert.deepEqual(await page.evaluate(() => window.changed), [['scan.nii', 'scan.json']]);
+      assert.deepEqual(await page.evaluate(() => window.keys()), [], 'the entry is gone');
+    });
+
+    test('the shell leaves a handoff to an app that takes it itself', async () => {
+      const { page } = await sentInTab(await fresh());
+      await page.evaluate(() => { document.body.dataset.neurodeskHandoffReceiver = ''; });
+      assert.equal(await page.evaluate(() => window.receiveAsShell()), null);
+      assert.deepEqual(await page.evaluate(() => window.changed), []);
+      assert.deepEqual(await page.evaluate(() => window.receive()), { title: 'DICOM View', names: ['scan.nii', 'scan.json'] });
     });
 
     test('a taken image of several megabytes stays readable in a new worker after its entry is gone', async () => {

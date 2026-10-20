@@ -23,3 +23,11 @@ export function sweepHandoffs(): Promise<void>;
 export function sendHandoff(options: { target: string; source: HandoffSource; files: File[]; document?: Document; signal?: AbortSignal }): Promise<void>;
 export function copiesInPieces(userAgent: string): boolean;
 export function takeHandoff(options?: { document?: Document; signal?: AbortSignal }): Promise<{ source: HandoffSource; files: File[] } | null>;
+export interface HandoffTarget {
+  id: string;
+  path: string;
+  title: string;
+  receives: 'nifti' | 'dicom';
+}
+export function handoffTargets(document?: Document): HandoffTarget[];
+export function receiveHandoff(document?: Document): Promise<{ source: HandoffSource; files: File[] } | null>;
