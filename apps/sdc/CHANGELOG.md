@@ -10,6 +10,11 @@
 
 ### Patch Changes
 
+- 14b5939: Exclude ME-ICA and SDC from the single-series application handoff menu. Their workflows require an echo bundle or an opposite-phase pair, so a lone converted image cannot supply their inputs.
+- Updated dependencies [c865c0c]
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/runtime-support@0.8.2
+  - @neurodesk/sdc@0.2.20261020
 - 8681691: SDC validates phase encoding and a finite positive TotalReadoutTime for both images, refusing unequal readouts because the current PyHySCO model assumes equal and opposite displacements. The command line keeps its explicit phase-direction flags and common --trt override. BIDS input uses the shared reader's IntendedFor associations to select one AP/PA fieldmap pair or a DWI with its reverse fieldmap, and refuses ambiguous pairs and unrelated subjects. Remove the unused app-config version placeholder so release metadata has one source. Keep the app and pipeline package on the same UTC release version.
 - Updated dependencies [b7612b4]
 - Updated dependencies [8681691]

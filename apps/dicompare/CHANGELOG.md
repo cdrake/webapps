@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Updated dependencies [c865c0c]
+  - @neurodesk/webapp-components@0.17.1
 - DICOM View's "Open in White matter lesions" button is now an "Open in another webapp"
   menu that lists every app of the site from the registry. Most apps receive the converted
   NIfTI image; apps the registry marks `handoff: dicom` (dicompare, QSMbly, dwi2trx, NODDI,

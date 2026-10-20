@@ -1,5 +1,11 @@
 # @neurodesk/webapp-components
 
+## 0.17.1
+
+### Patch Changes
+
+- c865c0c: Serialize ME-ICA previews and restore the previous image, overlay, frame and display window when an import fails or is cancelled. Replacement echoes clear stale echo times, superseded imports cannot replace newer inputs, and automation cancellation stops the processing worker. The shared queue retains the existing single-volume preview adapter.
+
 ## 0.17.0
 
 ### Minor Changes
