@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Keep Brain2Print's exported application version synchronized with its dated package release. Remove DWI2TRX's unused app-local version placeholder.
+  - @neurodesk/brain2print@0.5.20261020
 - Updated dependencies [a36fde4]
   - @neurodesk/webapp-components@0.18.0
   - @neurodesk/brain2print@0.5.20261020

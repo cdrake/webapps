@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- @neurodesk/dwi2trx@0.6.20261020
+- @neurodesk/n4@0.3.20261020
 - Updated dependencies [a36fde4]
 - Updated dependencies [ccea86e]
 - Updated dependencies [d0df450]

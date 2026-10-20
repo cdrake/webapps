@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Record the dated SynthSR application version in browser inference provenance and keep it synchronized during release.
+  - @neurodesk/synthsr@0.6.20261020
 - Updated dependencies [a36fde4]
   - @neurodesk/webapp-components@0.18.0
   - @neurodesk/runtime-support@0.9.5

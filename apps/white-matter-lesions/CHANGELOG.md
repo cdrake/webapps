@@ -4,11 +4,14 @@
 
 ### Patch Changes
 
+- @neurodesk/synthsr@0.6.20261020
+- @neurodesk/white-matter-lesions@0.5.20261020
 - Keep NeSVoR's exported application version synchronized with its dated package release instead of reporting 0.0.0.
 
   Remove the unused duplicate version field from White matter lesions.
 
   - @neurodesk/white-matter-lesions@0.5.20261020
+
 - Updated dependencies [a36fde4]
   - @neurodesk/webapp-components@0.18.0
   - @neurodesk/runtime-support@0.9.5

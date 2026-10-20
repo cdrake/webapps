@@ -62,6 +62,7 @@ async function fixture(t) {
   await manifest('packages/components', { name: '@neurodesk/webapp-components', version: '0.1.3' });
   await manifest('packages/unrelated', { name: 'unrelated', version: '1.0.0' });
   await manifest('apps/synthsr', { name: 'synthsr', version: '0.2.20260930', private: true });
+  await put('apps/synthsr/src/inference-worker.js', "const runtime = { app: 'SynthSR web 0.2.20260930' };\n");
   await manifest('packages/synthsr', { name: '@neurodesk/synthsr', version: '0.2.20260930' });
   await put('exes/synthsr/Cargo.toml', '[package]\nname = "synthsr"\nversion = "0.2.20260930"\n\n[dependencies]\nort = { version = "=2.0.0" }\n');
   await put('exes/synthsr/Cargo.lock', '[[package]]\nname = "synthsr"\nversion = "0.2.20260930"\n');
@@ -115,6 +116,7 @@ test('a linked-package changeset releases the app, package and native versions t
   await applyRelease(release);
   assert.equal((await json('apps/synthsr')).version, '0.3.20261001');
   assert.equal((await json('packages/synthsr')).version, '0.3.20261001');
+  assert.equal(await readFile(join(root, 'apps/synthsr/src/inference-worker.js'), 'utf8'), "const runtime = { app: 'SynthSR web 0.3.20261001' };\n");
   assert.match(await readFile(join(root, 'packages/synthsr/CHANGELOG.md'), 'utf8'), /New synthesis method/);
   assert.match(await readFile(join(root, 'exes/synthsr/Cargo.toml'), 'utf8'), /ort = \{ version = "=2.0.0" \}/);
   assert.deepEqual(await embeddedVersionMismatches(await workspacePackages(root), root), []);

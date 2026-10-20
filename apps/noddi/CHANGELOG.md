@@ -11,6 +11,8 @@
 
 ### Patch Changes
 
+- @neurodesk/dwi2trx@0.6.20261020
+- @neurodesk/noddi@0.4.20261020
 - d0df450: Rebuild the shared, file-pinned dtifit runtime from niimath cc26582a250c411b5c3c3c05c91dfd58f66be089 with Emscripten 6.0.13 so equal or nearly equal tensor eigenvalues retain unit, orthogonal directions. Record the source, toolchain, flags and licenses and cover the actual runtime with degenerate-tensor regressions. Re-record the production browser reference for V1–V3 because the repaired eigensolver changes the vectors and may reverse their arbitrary signs; scalar maps, tensor coefficients, the mask and every header remain byte identical.
 - Keep tensor backend selection in NODDI's shared fitting pipeline. The command line accepts
   `--tensor-fit niimath-dtifit` and uses the same corrected vendored runtime, volume selection,
