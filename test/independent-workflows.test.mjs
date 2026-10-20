@@ -399,5 +399,8 @@ test('the command-line closure follows workspace exports and relative imports', 
   const syncro = commandLineClosure(repoRoot, 'packages/syncro');
   for (const path of ['packages/registration/src/node.js', 'packages/synthstrip/src/index.js', 'packages/synthsr/src/pipeline.js']) assert.ok(syncro.includes(path), path);
   assert.ok(syncro.every((path) => !path.startsWith('packages/syncro/')));
-  assert.ok(commandLineClosure(repoRoot, 'packages/lcmodel').includes('packages/node-drivers/src/dcm2niix.js'));
+  const lcmodel = commandLineClosure(repoRoot, 'packages/lcmodel');
+  assert.ok(lcmodel.includes('packages/node-drivers/src/dcm2niix.js'));
+  // A worker loaded through new URL(..., import.meta.url).
+  assert.ok(lcmodel.includes('packages/node-drivers/src/mindgrab-worker.js'));
 });

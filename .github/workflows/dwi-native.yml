@@ -12,6 +12,7 @@ on:
       - 'packages/components/src/file-io/NiftiUtils.js'
       - 'packages/dwi2trx/src/gradients.js'
       - 'packages/node-drivers/src/mindgrab.js'
+      - 'packages/node-drivers/src/mindgrab-worker.js'
   push:
     branches: [main]
     paths:
@@ -24,6 +25,7 @@ on:
       - 'packages/components/src/file-io/NiftiUtils.js'
       - 'packages/dwi2trx/src/gradients.js'
       - 'packages/node-drivers/src/mindgrab.js'
+      - 'packages/node-drivers/src/mindgrab-worker.js'
   workflow_dispatch:
 
 concurrency:
