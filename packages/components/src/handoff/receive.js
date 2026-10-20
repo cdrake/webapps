@@ -38,7 +38,8 @@ function inputAppears(document) {
 export async function receiveHandoff(document = globalThis.document) {
   if (!handoffId(document.location.hash)) return null;
   const window = document.defaultView;
-  // Module scripts run in order; the app's own, and any handoff marker it renders, come after the shell's.
+  // Module scripts run in order and the app's own come after the shell's. The receiver marker
+  // must be in the served HTML: one an app renders after load is not seen.
   await loaded(window);
   if (document.querySelector('[data-neurodesk-handoff-receiver]')) return null;
   const received = await takeHandoff({ document });

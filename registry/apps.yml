@@ -624,6 +624,7 @@ apps:
     license: BSD-3-Clause
     maintainers: [neurodesk]
     support_status: experimental
+    handoff: none
     shell: imaging-workspace
     ci:
       toolchains: [node, rust-wasm]
