@@ -311,7 +311,9 @@ impl<'a, T: Copy + Into<f64>> GpModel<'a, T> {
     ) -> Result<Self, ModelError> {
         let [nx, ny, nz] = series.shape;
         let nvox = voxel_count(series.shape)?;
-        if series.dwi.len() != nvox * series.len() || series.bvals.len() != series.len() {
+        if nvox.checked_mul(series.len()) != Some(series.dwi.len())
+            || series.bvals.len() != series.len()
+        {
             return Err(ModelError::Shape(
                 "the series data and gradients do not agree".into(),
             ));

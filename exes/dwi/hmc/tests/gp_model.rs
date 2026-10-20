@@ -205,3 +205,26 @@ fn model_refuses_bad_input() {
         Err(ModelError::Index { .. })
     ));
 }
+
+#[test]
+fn model_refuses_zero_and_overflowing_dimensions() {
+    let (data, rule, bval, bvec) = series(DTI_MIN_ORIENTATIONS);
+    let (bvals, bvecs) = read_gradients(&bval, &bvec).unwrap();
+    let gradients = rule.read(bvals, bvecs).unwrap();
+    let mut series = DwiSeries::split(&data, SHAPE, &gradients).unwrap();
+    series.dwi.clear();
+    series.bzero = None;
+    for shape in [
+        [0, 1, 1],
+        [usize::MAX, 2, 1],
+        [usize::MAX, 1, 1],
+        [1usize << (usize::BITS - 1), 1, 1],
+    ] {
+        series.shape = shape;
+        assert!(matches!(
+            GpModel::new(&series, None),
+            Err(ModelError::Shape(_))
+        ));
+        assert!(series.dwi.is_empty());
+    }
+}
