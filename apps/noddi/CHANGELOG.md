@@ -5,22 +5,32 @@
 ### Patch Changes
 
 - 4b40da1: The input size limit moves from dwi2trx to `@neurodesk/webapp-components/file-io/input-limits` (`MAX_INPUT_BYTES`, `InputTooLargeError`, `formatBytes`, `assertInputSize`). It adds `decodedFloat32Bytes`, the size of the Float32 array an image decodes to (voxels × frames × 4), and `assertNiftiDecodedSize`, which refuses a NIfTI above the 2 GB limit from its header alone; `readNiftiHeader` stops gzip streaming after the header when supported. dwi2trx imports the shared module. NODDI and Degibbs refuse a DWI whose decoded image is above the limit before reading it, and the status bar names the size and the limit.
+
 - Updated dependencies [14db080]
+
 - Updated dependencies [03261d0]
+
 - Updated dependencies [4b40da1]
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/dwi2trx@0.5.20261020
   - @neurodesk/runtime-support@0.9.4
   - @neurodesk/noddi@0.3.20261020
+
 - 14b8248: MindGrab's automatic backend no longer runs WebGL2 on a software renderer (SwiftShader, llvmpipe), which returned a blank brain mask without WebGPU; the threaded CPU module runs instead. The choice and MindGrab's own output appear in the technical log.
+
 - Updated dependencies [3f1d770]
+
 - Updated dependencies [14b8248]
+
 - Updated dependencies [d9718cd]
+
 - Updated dependencies [d1fa022]
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
   - @neurodesk/dwi2trx@0.5.20261020
   - @neurodesk/noddi@0.3.20261020
+
+- Updated dependencies [c865c0c]
 
 ## 0.3.20261019
 
@@ -40,17 +50,28 @@
 ### Patch Changes
 
 - 7c0d201: Restore the last committed image after cancelled or failed viewer loads. Share queued volume previews across NODDI, Degibbs, N4 and Dwidenoise, retaining source files and calibrated map ranges while rollback finishes before controls unlock.
+
 - Updated dependencies [7c0d201]
   - @neurodesk/webapp-components@0.16.2
   - @neurodesk/dwi2trx@0.5.20261018
   - @neurodesk/runtime-support@0.9.1
   - @neurodesk/noddi@0.3.20261018
+
 - 870c729: NODDI's About and Cite dialogs now credit MindGrab and Brainchop for the default brain mask. Browser checks verify worker cleanup when MindGrab extraction is cancelled and a complete retry with the real example.
+
 - Updated dependencies
+
 - Updated dependencies [46935f7]
   - @neurodesk/runtime-support@0.9.0
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/dwi2trx@0.5.20261018
+  - @neurodesk/noddi@0.3.20261018
+
+- Updated dependencies [7c0d201]
+
+  - @neurodesk/webapp-components@0.16.2
+  - @neurodesk/dwi2trx@0.5.20261018
+  - @neurodesk/runtime-support@0.9.1
   - @neurodesk/noddi@0.3.20261018
 
 ## 0.2.20261018
@@ -72,8 +93,11 @@
   The shared diffusion reader pairs a single optional bval or bvec with a sole image independently. Supplying FSL `bvals` without `bvecs` now preserves the b-values for workflows that do not need gradient directions.
 
 - Updated dependencies [ea2a6d2]
+
 - Updated dependencies [0511cd7]
+
 - Updated dependencies [a07f659]
+
 - Updated dependencies [3329c39]
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/noddi@0.2.20261018
@@ -95,19 +119,29 @@
 ### Patch Changes
 
 - 14b8248: MindGrab's automatic backend no longer runs WebGL2 on a software renderer (SwiftShader, llvmpipe), which returned a blank brain mask without WebGPU; the threaded CPU module runs instead. The choice and MindGrab's own output appear in the technical log.
+
 - 870c729: NODDI's About and Cite dialogs now credit MindGrab and Brainchop for the default brain mask. Browser checks verify worker cleanup when MindGrab extraction is cancelled and a complete retry with the real example.
+
 - 1f4aecd: Cancelling NODDI input preparation, mask reading or map compression now prevents late results and permits retry. Mask reading blocks fitting and requires a single 3D mask. Model choices survive replacement imports and examples, including when single-shell data temporarily prevents NODDI. Its AMICO fit uses the shared strict b0 cutoff, so a volume with b = 50 s/mm² remains diffusion weighted rather than entering the mean b0. The committed WebAssembly module includes this correction.
 
   The shared diffusion reader pairs a single optional bval or bvec with a sole image independently. Supplying FSL `bvals` without `bvecs` now preserves the b-values for workflows that do not need gradient directions.
 
 - Updated dependencies [ea2a6d2]
+
 - Updated dependencies [3f1d770]
+
 - Updated dependencies [14b8248]
+
 - Updated dependencies [d9718cd]
+
 - Updated dependencies [c1a4dda]
+
 - Updated dependencies [1f4aecd]
+
 - Updated dependencies [3329c39]
+
 - Updated dependencies [46935f7]
+
 - Updated dependencies [d1fa022]
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0

@@ -14,9 +14,15 @@
 
 ## 0.6.20261018
 
+
+
 ## 0.6.20261017
 
+
+
 ## 0.6.20261016
+
+
 
 ## 0.6.20261015
 
@@ -44,6 +50,8 @@
 
 ## 0.6.20261012
 
+
+
 ## 0.6.20261010
 
 ### Patch Changes
@@ -62,9 +70,14 @@
 ### Patch Changes
 
 - Updated dependencies [22aa4bf]
+
   - @neurodesk/runtime-support@0.2.1
+
 - Updated dependencies
   - @neurodesk/runtime-support@0.2.0
+
+- Updated dependencies [22aa4bf]
+  - @neurodesk/runtime-support@0.2.1
 
 ## 0.6.20261005
 
@@ -82,33 +95,57 @@
 
 - Share native affine inversion and RAS axis selection between SynthSR and SynthSeg,
   including SynthSeg WASM, while preserving each method's preprocessing and outputs.
+
 - Share raw NIfTI-1 header and scalar decoding between native SynthSR, native
   SynthSeg and SynthSeg WASM while preserving each reader's validation, precision,
   scaling and geometry rules.
+
 - Updated dependencies [257192b]
   - @neurodesk/runtime-support@0.1.3
 
 ## 0.5.20261004
 
+
+
 ## 0.5.20261003
+
+
 
 ## 0.5.20260930
 
+
+
 ## 0.5.20260928
+
+
 
 ## 0.4.20260928
 
+
+
 ## 0.4.20260924
+
+
 
 ## 0.4.20260923
 
+
+
 ## 0.4.20260920
+
+
 
 ## 0.4.20260918
 
+
+
 ## 0.4.20260916
 
+
+
 ## 0.4.20260915
+
+
 
 ## 0.3.20260914
 

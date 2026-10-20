@@ -32,6 +32,8 @@
 
 - 03261d0: Cancel a pending shell handoff when the user chooses files, drops another input or starts an example. Stop the stored-file copy and input wait so an older handoff cannot replace the newer choice or its status.
 
+- c865c0c: Serialize ME-ICA previews and restore the previous image, overlay, frame and display window when an import fails or is cancelled. Replacement echoes clear stale echo times, superseded imports cannot replace newer inputs, and automation cancellation stops the processing worker. The shared queue retains the existing single-volume preview adapter.
+
 ## 0.16.3
 
 ### Patch Changes
@@ -41,6 +43,7 @@
   matter lesions passes its load job's signal, so the footer × ends the copy of an
   image sent from another app. `copiesInPieces` is exported and pinned to the user
   agents Playwright's engines report.
+
 - d9718cd: White matter lesions reads only the NIfTI header when an image is chosen. It used to copy the whole image into memory to read its dimensions, which added a second copy of a 1 GB FLAIR to the load. The shared `readNiftiHeader(file)` reads the first bytes of a plain or gzipped file, and `describeNiftiFile` is built on it.
 
 ## 0.16.2
@@ -139,7 +142,9 @@
 ### Patch Changes
 
 - 2ae93ae: The input menu now reads "Load data or example…", and its file actions are **Load files…** and **Load folder…**. In Chrome and Edge on desktop they open the browser's Open and Select dialogs instead of the file input's, which asked to "Upload" files: nothing is uploaded, and the menu no longer says so. A folder's files keep their paths within it, as a dropped folder's do. Other browsers, and any browser where those dialogs fail, open the file input's picker as before.
+
 - ccb2970: Remove closed class-toggled dialogs from the accessibility tree and keyboard navigation using synchronized inert and aria-hidden state, preserving fade transitions and focus restoration. This prevents repeated attempts to dismiss an already-closed SCT About dialog.
+
 - 67a5a8f: Style report controls (`.nd-report-controls`): a sticky row of shared fields above a report shown in place of the canvas. Style dicompare compliance reports from design tokens in the shared stylesheet.
 
 ## 0.14.3
@@ -224,6 +229,7 @@
   repository-wide reference searches. The shared preview module no longer carries
   a second NIfTI parser and writer; NiftiUtils remains the only one. Outputs and
   behaviour are unchanged.
+
 - ad92e2f: Merge upstream astewartau/qsmbly 2f91e83..d2afebc:
 
   - One numerical path: total- and local-field maps and QSMART run through the same config-driven qsm-core stages as raw phase, so the same settings give the same numbers whichever input they start from (#142). Field strength is always required; TGV and MEDI on a field map ask for its echo time.
@@ -366,6 +372,7 @@
 ### Patch Changes
 
 - 93381e8: Remove the static bottom bar (version, privacy sentence, duplicate More Apps and GitHub links) from the six inference-workspace apps. The shared app bar already shows the version and links, and Privacy has its own dialog. The unused `.app-footer` and `.nd-app-footer` rules leave the shared stylesheets and the hosted theme.
+
 - 93381e8: Every app now opens on its workspace and shows live status only in the bottom bar: a short message, a progress bar, elapsed time and a cancel × that appears while a run can be cancelled. Start pages, landing overlays and welcome modals are gone, and their copy moved to About. Every app has a technical log below the viewer that starts collapsed. Sidebar help longer than 90 characters moved into info tooltips or About, and each sidebar has one primary action. `ProgressManager` now drives the design-system footer, including the elapsed counter and the cancel button.
 
   The shared example selector shows one short line once an example loads; the description and expected result moved to a tooltip beside the Example label. NiiMath gained the shared layout tabs and About dialog and no longer ships app CSS.
@@ -451,6 +458,7 @@ Result lists now render a visibility checkbox whenever a result has a boolean `v
 ### Patch Changes
 
 - 3cd773f: Greedy and EdgeReg show all three viewer panels on phones. TopoFit conforms axis-aligned and oblique scans through the pinned npm niimath WebAssembly worker. SYNcro now matches the native three-input workflow, offers four checksum-pinned tutorials, defaults to MindGrab and Greedy with SynthStrip and ANTs alternatives, uses niimath for lesion and masking operations, and switches one NiiVue viewer between images with automatic lesion overlays. SynthSR lets adapter limits govern its largest activation buffer, so validated 256×256×192 scans and larger volumes on capable GPUs are attempted while other shared U-Net callers retain their existing limit. Add the standalone ANTS registration demo.
+
 - 4add8da: Let TopoFit users show multiple cortical meshes together and reveal them inside the 3D volume with an adjustable X-ray control.
 
 ## 0.1.4

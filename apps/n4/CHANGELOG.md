@@ -5,20 +5,28 @@
 ### Patch Changes
 
 - Updated dependencies [14db080]
+
 - Updated dependencies [03261d0]
+
 - Updated dependencies [4b40da1]
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/dwi2trx@0.5.20261020
   - @neurodesk/runtime-support@0.9.4
   - @neurodesk/n4@0.3.20261020
+
 - Updated dependencies [3f1d770]
+
 - Updated dependencies [14b8248]
+
 - Updated dependencies [d9718cd]
+
 - Updated dependencies [d1fa022]
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
   - @neurodesk/dwi2trx@0.5.20261020
   - @neurodesk/n4@0.3.20261020
+
+- Updated dependencies [c865c0c]
 
 ## 0.3.20261019
 
@@ -34,7 +42,14 @@
   - @neurodesk/runtime-support@0.9.2
   - @neurodesk/dwi2trx@0.5.20261019
   - @neurodesk/n4@0.3.20261019
+
 - @neurodesk/n4@0.3.20261019
+
+- Updated dependencies [da2584b]
+
+  - @neurodesk/runtime-support@0.9.2
+  - @neurodesk/dwi2trx@0.5.20261019
+  - @neurodesk/n4@0.3.20261019
 
 ## 0.2.20261018
 
@@ -47,27 +62,49 @@
 ### Patch Changes
 
 - 7c0d201: Restore the last committed image after cancelled or failed viewer loads. Share queued volume previews across NODDI, Degibbs, N4 and Dwidenoise, retaining source files and calibrated map ranges while rollback finishes before controls unlock.
+
 - Updated dependencies [7c0d201]
   - @neurodesk/webapp-components@0.16.2
   - @neurodesk/dwi2trx@0.5.20261018
   - @neurodesk/runtime-support@0.9.1
   - @neurodesk/n4@0.2.20261018
+
 - Updated dependencies
+
 - Updated dependencies [46935f7]
   - @neurodesk/runtime-support@0.9.0
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/dwi2trx@0.5.20261018
   - @neurodesk/n4@0.2.20261018
+
 - 4e3015f: Keep cancellation effective during mask import and output compression, and publish downloads only after processing and viewing finish. Preserve independently supplied gradient files, reject invalid b-values and multi-volume masks, replace existing BIDS description entities, report loaded files to the shared input controls, and anonymize converted DICOM sidecars.
 
   Register NODDI, Degibbs and N4 with the release tool so their apps, scientific packages and embedded version strings receive matching date versions. Their shared Rust diffusion workspace retains its own internal version.
 
 - Updated dependencies [ea2a6d2]
+
 - Updated dependencies [80bd5e9]
+
 - Updated dependencies [0511cd7]
+
 - Updated dependencies [a07f659]
+
 - Updated dependencies [3329c39]
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/n4@0.2.20261018
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/dwi2trx@0.5.20261018
+
+- Updated dependencies [7c0d201]
+
+  - @neurodesk/webapp-components@0.16.2
+  - @neurodesk/dwi2trx@0.5.20261018
+  - @neurodesk/runtime-support@0.9.1
+  - @neurodesk/n4@0.2.20261018
+
+- Updated dependencies [46935f7]
+
+  - @neurodesk/runtime-support@0.9.0
+  - @neurodesk/webapp-components@0.16.1
+  - @neurodesk/dwi2trx@0.5.20261018
+  - @neurodesk/n4@0.2.20261018

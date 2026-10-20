@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createNiivueVolumePreview } from '../src/ui/volume-preview.js';
+import { createNiivueVolumePreview, createPreviewQueue } from '../src/ui/volume-preview.js';
 
 function deferred() {
   const result = {};
@@ -245,4 +245,34 @@ test('readiness failure leaves the viewer unchanged', async () => {
   await assert.rejects(show(a), (actual) => actual === error);
   assert.equal(loads, 0);
   assert.equal(emptyState.hidden, false);
+});
+
+
+test('the shared queue restores every field of a complete renderer snapshot', async () => {
+  const accepted = Object.freeze({ file: 'components.nii', base: 'S0map.nii', frame: 3, range: Object.freeze([0.3, 0.7]), label: 'ICA 3' });
+  const replacement = Object.freeze({ file: 'new-input.nii', base: null, frame: 0, range: null, label: 'New echo' });
+  const entered = deferred();
+  const release = deferred();
+  let visible;
+  const draws = [];
+  const show = createPreviewQueue({
+    ready: Promise.resolve(),
+    render: async snapshot => {
+      visible = snapshot && structuredClone(snapshot);
+      draws.push(snapshot?.file ?? null);
+      if (snapshot === replacement) {
+        entered.resolve();
+        await release.promise;
+      }
+    },
+  });
+  await show(accepted);
+  const controller = new AbortController();
+  const failed = assert.rejects(show(replacement, { signal: controller.signal }), { name: 'AbortError' });
+  await entered.promise;
+  controller.abort();
+  release.resolve();
+  await failed;
+  assert.deepEqual(visible, { file: 'components.nii', base: 'S0map.nii', frame: 3, range: [0.3, 0.7], label: 'ICA 3' });
+  assert.deepEqual(draws, ['components.nii', 'new-input.nii', 'components.nii']);
 });

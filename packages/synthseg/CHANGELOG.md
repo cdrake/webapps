@@ -5,10 +5,14 @@
 ### Patch Changes
 
 - Updated dependencies [14db080]
+
 - Updated dependencies [03261d0]
+
 - Updated dependencies [4b40da1]
   - @neurodesk/webapp-components@0.17.0
+
 - Updated dependencies [3f1d770]
+
 - Updated dependencies [d9718cd]
 
   - @neurodesk/webapp-components@0.16.3
@@ -24,7 +28,14 @@
 - Updated dependencies [46935f7]
   - @neurodesk/webapp-components@0.16.0
 
+- Updated dependencies [c865c0c]
+
+- Updated dependencies [d9718cd]
+  - @neurodesk/webapp-components@0.16.3
+
 ## 0.11.20261019
+
+
 
 ## 0.11.20261018
 
@@ -32,20 +43,49 @@
 
 - Updated dependencies [7c0d201]
   - @neurodesk/webapp-components@0.16.2
+
 - Updated dependencies [46935f7]
   - @neurodesk/webapp-components@0.16.1
+
 - Updated dependencies [ea2a6d2]
+
 - Updated dependencies [0511cd7]
+
 - Updated dependencies [3329c39]
   - @neurodesk/webapp-components@0.16.0
+
 - Updated dependencies [b67e4e9]
   - @neurodesk/webapp-components@0.15.1
+
 - Updated dependencies [b68209b]
   - @neurodesk/webapp-components@0.15.0
+
 - Updated dependencies [2ae93ae]
+
 - Updated dependencies [ccb2970]
+
 - Updated dependencies [67a5a8f]
   - @neurodesk/webapp-components@0.14.4
+
+- Updated dependencies [7c0d201]
+
+  - @neurodesk/webapp-components@0.16.2
+
+- Updated dependencies [46935f7]
+
+  - @neurodesk/webapp-components@0.16.1
+
+- Updated dependencies [3329c39]
+
+  - @neurodesk/webapp-components@0.16.0
+
+- Updated dependencies [b67e4e9]
+
+  - @neurodesk/webapp-components@0.15.1
+
+- Updated dependencies [b68209b]
+
+  - @neurodesk/webapp-components@0.15.0
 
 ## 0.11.20261017
 
@@ -64,9 +104,15 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.14.2
+
 - 6ec972a: Pin the IXI and AHEAD volume norms to neurocontainers commit 347cf6fb, the merge of the 7 T reference into main. The files are byte-identical to the previous pin, so every report is unchanged; only the population data version shown in the report and About changes.
+
 - Updated dependencies [7443048]
   - @neurodesk/webapp-components@0.14.1
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.14.2
 
 ## 0.10.20261015
 
@@ -104,6 +150,7 @@
 ### Patch Changes
 
 - Updated dependencies [dd65e6a]
+
 - Updated dependencies [dcc74e7]
   - @neurodesk/webapp-components@0.14.0
 
@@ -137,7 +184,9 @@
 ### Patch Changes
 
 - Updated dependencies [27c9549]
+
 - Updated dependencies [850e642]
+
 - Updated dependencies [ad92e2f]
   - @neurodesk/webapp-components@0.13.0
 
@@ -166,8 +215,13 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.12.2
+
 - Updated dependencies
   - @neurodesk/webapp-components@0.12.1
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.12.2
 
 ## 0.6.20261009
 
@@ -178,6 +232,7 @@
 ### Patch Changes
 
 - Updated dependencies [66bf9e9]
+
 - Updated dependencies [501ea0c]
   - @neurodesk/webapp-components@0.12.0
 
@@ -186,10 +241,16 @@
 ### Patch Changes
 
 - 16041b5: Pin the SHA-256 of every validation input and FreeSurfer golden in `model.manifest.json` (`validation.sha256`). `make -C exes/synthseg fetch-validation` now verifies cached and freshly downloaded copies against them, so the native and browser parity checks never compare against an unchecked file.
+
 - Updated dependencies [22aa4bf]
   - @neurodesk/runtime-support@0.2.1
+
 - Updated dependencies
   - @neurodesk/runtime-support@0.2.0
+
+- Updated dependencies [22aa4bf]
+
+  - @neurodesk/runtime-support@0.2.1
 
 ## 0.5.20261005
 
@@ -203,31 +264,53 @@
 
 - Share native affine inversion and RAS axis selection between SynthSR and SynthSeg,
   including SynthSeg WASM, while preserving each method's preprocessing and outputs.
+
 - Share raw NIfTI-1 header and scalar decoding between native SynthSR, native
   SynthSeg and SynthSeg WASM while preserving each reader's validation, precision,
   scaling and geometry rules.
+
 - Updated dependencies [257192b]
   - @neurodesk/runtime-support@0.1.3
 
 ## 0.5.20261003
 
+
+
 ## 0.5.20260930
+
+
 
 ## 0.5.20260928
 
+
+
 ## 0.4.20260928
+
+
 
 ## 0.3.20260924
 
+
+
 ## 0.3.20260923
+
+
 
 ## 0.3.20260920
 
+
+
 ## 0.3.20260918
+
+
 
 ## 0.3.20260916
 
+
+
 ## 0.3.20260915
+
+
 
 ## 0.2.20260914
 

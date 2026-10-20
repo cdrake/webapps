@@ -2,7 +2,11 @@
 
 ## 0.15.20261020
 
+
+
 ## 0.15.20261018
+
+
 
 ## 0.15.20261017
 
@@ -13,6 +17,8 @@
   Retain the command line's schema-generation Python after upstream moved web schema exports to JavaScript. Its generated schema and reference outputs are unchanged.
 
 ## 0.15.20261016
+
+
 
 ## 0.15.20261015
 

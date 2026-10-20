@@ -29,19 +29,28 @@
 ### Patch Changes
 
 - Updated dependencies [14db080]
+
 - Updated dependencies [03261d0]
+
 - Updated dependencies [4b40da1]
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/dicom2vid@0.5.20261020
   - @neurodesk/runtime-support@0.9.4
+
+- Keep the generic handoff Privacy disclosure when integrating the catalog: DICOM targets receive the original scanner headers, and no image is uploaded.
+
+- Updated dependencies [c865c0c]
 
 ## 0.3.20261020
 
 ### Patch Changes
 
 - Updated dependencies [3f1d770]
+
 - Updated dependencies [14b8248]
+
 - Updated dependencies [d9718cd]
+
 - Updated dependencies [d1fa022]
 
   - @neurodesk/webapp-components@0.16.3
@@ -65,11 +74,23 @@
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/dicom2vid@0.5.20261020
 
+- Updated dependencies [d1fa022]
+
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/runtime-support@0.8.0
+  - @neurodesk/dicom2vid@0.5.20261020
+
+- Updated dependencies [d1fa022]
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/dicom2vid@0.5.20261020
+
 ## 0.3.20261019
 
 ### Patch Changes
 
 - 894b3a1: The Open in White matter lesions check reads a gzipped NIfTI's header through the shared streaming decoder instead of a fixed 64 KB prefix, so a valid `.nii.gz` whose header lies past the first 64 KB of compressed data is no longer refused as uncheckable.
+
 - Updated dependencies [da2584b]
   - @neurodesk/runtime-support@0.9.2
 
@@ -91,22 +112,59 @@
   - @neurodesk/webapp-components@0.16.2
   - @neurodesk/runtime-support@0.9.1
   - @neurodesk/dicom2vid@0.5.20261018
+
 - Updated dependencies
+
 - Updated dependencies [46935f7]
   - @neurodesk/runtime-support@0.9.0
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/dicom2vid@0.5.20261018
+
 - Updated dependencies [ea2a6d2]
+
 - Updated dependencies [0511cd7]
+
 - Updated dependencies [a07f659]
+
 - Updated dependencies [3329c39]
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
+
 - Updated dependencies [b67e4e9]
   - @neurodesk/runtime-support@0.7.2
   - @neurodesk/webapp-components@0.15.1
   - @neurodesk/dicom2vid@0.5.20261018
+
 - Updated dependencies [b68209b]
+  - @neurodesk/webapp-components@0.15.0
+  - @neurodesk/runtime-support@0.7.1
+  - @neurodesk/dicom2vid@0.5.20261018
+
+- Updated dependencies [7c0d201]
+
+  - @neurodesk/webapp-components@0.16.2
+  - @neurodesk/runtime-support@0.9.1
+  - @neurodesk/dicom2vid@0.5.20261018
+
+- Updated dependencies [46935f7]
+
+  - @neurodesk/runtime-support@0.9.0
+  - @neurodesk/webapp-components@0.16.1
+  - @neurodesk/dicom2vid@0.5.20261018
+
+- Updated dependencies [3329c39]
+
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/runtime-support@0.8.0
+
+- Updated dependencies [b67e4e9]
+
+  - @neurodesk/runtime-support@0.7.2
+  - @neurodesk/webapp-components@0.15.1
+  - @neurodesk/dicom2vid@0.5.20261018
+
+- Updated dependencies [b68209b]
+
   - @neurodesk/webapp-components@0.15.0
   - @neurodesk/runtime-support@0.7.1
   - @neurodesk/dicom2vid@0.5.20261018
@@ -146,10 +204,13 @@
   Choosing another series while an image still loads clears that image before the new one loads.
 
 - Updated dependencies [67a5a8f]
-- Updated dependencies [67a5a8f]
+
 - Updated dependencies [b8b37d6]
+
 - Updated dependencies [2ae93ae]
+
 - Updated dependencies [ccb2970]
+
 - Updated dependencies [67a5a8f]
   - @neurodesk/runtime-support@0.7.0
   - @neurodesk/dicom2vid@0.5.20261018

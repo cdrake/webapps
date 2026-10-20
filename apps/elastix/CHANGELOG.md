@@ -25,14 +25,20 @@
 ### Patch Changes
 
 - Updated dependencies [14db080]
+
 - Updated dependencies [03261d0]
+
 - Updated dependencies [4b40da1]
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/elastix@0.5.20261020
   - @neurodesk/runtime-support@0.9.4
+
 - Updated dependencies [3f1d770]
+
 - Updated dependencies [14b8248]
+
 - Updated dependencies [d9718cd]
+
 - Updated dependencies [d1fa022]
 
   - @neurodesk/webapp-components@0.16.3
@@ -52,6 +58,13 @@
 - Updated dependencies [d1fa022]
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
+  - @neurodesk/elastix@0.5.20261020
+
+- Updated dependencies [c865c0c]
+
+- Updated dependencies [d1fa022]
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
   - @neurodesk/elastix@0.5.20261020
 
 ## 0.5.20261019
@@ -90,17 +103,35 @@
   - @neurodesk/webapp-components@0.16.2
   - @neurodesk/elastix@0.5.20261018
   - @neurodesk/runtime-support@0.9.1
+
 - Updated dependencies
+
 - Updated dependencies [46935f7]
   - @neurodesk/runtime-support@0.9.0
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/elastix@0.5.20261018
+
 - Updated dependencies [ea2a6d2]
+
 - Updated dependencies [0511cd7]
+
 - Updated dependencies [a07f659]
+
 - Updated dependencies [3329c39]
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
+  - @neurodesk/elastix@0.5.20261018
+
+- Updated dependencies [7c0d201]
+
+  - @neurodesk/webapp-components@0.16.2
+  - @neurodesk/elastix@0.5.20261018
+  - @neurodesk/runtime-support@0.9.1
+
+- Updated dependencies [46935f7]
+
+  - @neurodesk/runtime-support@0.9.0
+  - @neurodesk/webapp-components@0.16.1
   - @neurodesk/elastix@0.5.20261018
 
 ## 0.4.20261018
@@ -111,15 +142,33 @@
   - @neurodesk/runtime-support@0.7.2
   - @neurodesk/webapp-components@0.15.1
   - @neurodesk/elastix@0.4.20261018
+
 - Updated dependencies [b68209b]
   - @neurodesk/webapp-components@0.15.0
   - @neurodesk/runtime-support@0.7.1
   - @neurodesk/elastix@0.4.20261018
+
 - Updated dependencies [67a5a8f]
+
 - Updated dependencies [b8b37d6]
+
 - Updated dependencies [2ae93ae]
+
 - Updated dependencies [ccb2970]
+
 - Updated dependencies [67a5a8f]
+  - @neurodesk/runtime-support@0.7.0
+  - @neurodesk/webapp-components@0.14.4
+  - @neurodesk/elastix@0.4.20261018
+
+- Updated dependencies [b68209b]
+
+  - @neurodesk/webapp-components@0.15.0
+  - @neurodesk/runtime-support@0.7.1
+  - @neurodesk/elastix@0.4.20261018
+
+- Updated dependencies [67a5a8f]
+
   - @neurodesk/runtime-support@0.7.0
   - @neurodesk/webapp-components@0.14.4
   - @neurodesk/elastix@0.4.20261018
@@ -138,10 +187,14 @@
 
 - Updated dependencies [d7d3420]
   - @neurodesk/elastix@0.4.20261017
+
 - Refuse OME-TIFF export when the selected TIFF Image's original physical sizes are unknown or its Plane positions cannot be preserved. Keep schema-default micrometer units for known sizes and normalize supported length symbols, including pm and Å. Preserve required CLI outputs after optional TIFF encoder or partial-write failures, and cover cancellation during compression.
+
 - Updated dependencies
   - @neurodesk/elastix@0.4.20261017
-- Updated dependencies
+
+- Updated dependencies [d7d3420]
+
   - @neurodesk/elastix@0.4.20261017
 
 ## 0.3.20261017
@@ -150,10 +203,15 @@
 
 - Updated dependencies [b0797ba]
   - @neurodesk/elastix@0.3.20261017
+
 - Updated dependencies [b547d52]
   - @neurodesk/webapp-components@0.14.3
   - @neurodesk/elastix@0.3.20261017
   - @neurodesk/runtime-support@0.6.4
+
+- Updated dependencies [b0797ba]
+
+  - @neurodesk/elastix@0.3.20261017
 
 ## 0.3.20261016
 
@@ -163,10 +221,17 @@
   - @neurodesk/webapp-components@0.14.2
   - @neurodesk/runtime-support@0.6.3
   - @neurodesk/elastix@0.3.20261016
+
 - Updated dependencies [7443048]
   - @neurodesk/webapp-components@0.14.1
   - @neurodesk/elastix@0.3.20261016
   - @neurodesk/runtime-support@0.6.2
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.14.2
+  - @neurodesk/runtime-support@0.6.3
+  - @neurodesk/elastix@0.3.20261016
 
 ## 0.3.20261015
 
@@ -175,6 +240,7 @@
 - Updated dependencies [c74b26f]
   - @neurodesk/runtime-support@0.6.1
   - @neurodesk/elastix@0.3.20261015
+
 - dd65e6a: Visual refresh: Inter, neutral greys with the Neurodesk logo green for action,
   focus and selection only, a compact 48px app bar, sentence-case section titles
   and a quieter status bar. The example menu is now the input control: examples,
@@ -191,10 +257,17 @@
   restore loaded examples.
 
 - Updated dependencies [0569da8]
+
 - Updated dependencies [dd65e6a]
+
 - Updated dependencies [dcc74e7]
   - @neurodesk/runtime-support@0.6.0
   - @neurodesk/webapp-components@0.14.0
+  - @neurodesk/elastix@0.3.20261015
+
+- Updated dependencies [c74b26f]
+
+  - @neurodesk/runtime-support@0.6.1
   - @neurodesk/elastix@0.3.20261015
 
 ## 0.3.20261014
@@ -206,8 +279,11 @@
 ### Patch Changes
 
 - Updated dependencies [d926b19]
+
 - Updated dependencies [27c9549]
+
 - Updated dependencies [850e642]
+
 - Updated dependencies [ad92e2f]
   - @neurodesk/elastix@0.3.20261014
   - @neurodesk/runtime-support@0.5.0
@@ -232,15 +308,22 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.12.2
   - @neurodesk/runtime-support@0.4.2
+
 - Updated dependencies
   - @neurodesk/webapp-components@0.12.1
   - @neurodesk/runtime-support@0.4.1
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.12.2
+  - @neurodesk/runtime-support@0.4.2
 
 ## 0.1.20261010
 
 ### Patch Changes
 
 - Update the shared runtime-support dependency after moving portable Node drivers into their own dependency-free package.
+
 - Recover OME-Zarr affine transforms with centered, scaled QR and reject invalid or inaccurate coefficients before export. Cancelled TIFF and OME-Zarr reads now stop before display serialization, pass cancellation to supported remote stores, and cannot create a fresh IO worker or delay the next import.
 
 ## 0.1.20261009

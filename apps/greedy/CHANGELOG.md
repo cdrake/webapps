@@ -25,15 +25,22 @@
 ### Patch Changes
 
 - Updated dependencies [14db080]
+
 - Updated dependencies [03261d0]
+
 - Updated dependencies [4b40da1]
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/runtime-support@0.9.4
   - @neurodesk/greedy@0.6.20261020
+
 - 14b8248: MindGrab's automatic backend no longer runs WebGL2 on a software renderer (SwiftShader, llvmpipe), which returned a blank brain mask without WebGPU; the threaded CPU module runs instead. The choice and MindGrab's own output appear in the technical log.
+
 - Updated dependencies [3f1d770]
+
 - Updated dependencies [14b8248]
+
 - Updated dependencies [d9718cd]
+
 - Updated dependencies [d1fa022]
 
   - @neurodesk/webapp-components@0.16.3
@@ -55,6 +62,13 @@
 - Updated dependencies [d1fa022]
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
+  - @neurodesk/greedy@0.6.20261020
+
+- Updated dependencies [c865c0c]
+
+- Updated dependencies [d1fa022]
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
   - @neurodesk/greedy@0.6.20261020
 
 ## 0.6.20261019
@@ -93,19 +107,42 @@
   - @neurodesk/webapp-components@0.16.2
   - @neurodesk/runtime-support@0.9.1
   - @neurodesk/greedy@0.6.20261018
+
 - ac01831: These apps no longer refuse to start in a browser without WebGPU. NiiVue falls back to WebGL2 when WebGPU is absent, and MindGrab falls back to WebGL2 or the threaded CPU, so the viewers, defacing, registration, brain extraction, quality control and meshing now run in browsers such as Firefox on Linux. When the browser offers neither WebGPU nor WebGL2, the app says that the image viewer cannot start.
   - @neurodesk/greedy@0.6.20261018
+
 - Updated dependencies
+
 - Updated dependencies [46935f7]
   - @neurodesk/runtime-support@0.9.0
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/greedy@0.6.20261018
+
 - Updated dependencies [ea2a6d2]
+
 - Updated dependencies [0511cd7]
+
 - Updated dependencies [a07f659]
+
 - Updated dependencies [3329c39]
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
+  - @neurodesk/greedy@0.6.20261018
+
+- Updated dependencies [7c0d201]
+
+  - @neurodesk/webapp-components@0.16.2
+  - @neurodesk/runtime-support@0.9.1
+  - @neurodesk/greedy@0.6.20261018
+
+- ac01831: These apps no longer refuse to start in a browser without WebGPU. NiiVue falls back to WebGL2 when WebGPU is absent, and MindGrab falls back to WebGL2 or the threaded CPU, so the viewers, defacing, registration, brain extraction, quality control and meshing now run in browsers such as Firefox on Linux. When the browser offers neither WebGPU nor WebGL2, the app says that the image viewer cannot start.
+
+  - @neurodesk/greedy@0.6.20261018
+
+- Updated dependencies [46935f7]
+
+  - @neurodesk/runtime-support@0.9.0
+  - @neurodesk/webapp-components@0.16.1
   - @neurodesk/greedy@0.6.20261018
 
 ## 0.5.20261018
@@ -116,15 +153,33 @@
   - @neurodesk/runtime-support@0.7.2
   - @neurodesk/webapp-components@0.15.1
   - @neurodesk/greedy@0.5.20261018
+
 - Updated dependencies [b68209b]
   - @neurodesk/webapp-components@0.15.0
   - @neurodesk/runtime-support@0.7.1
   - @neurodesk/greedy@0.5.20261018
+
 - Updated dependencies [67a5a8f]
+
 - Updated dependencies [b8b37d6]
+
 - Updated dependencies [2ae93ae]
+
 - Updated dependencies [ccb2970]
+
 - Updated dependencies [67a5a8f]
+  - @neurodesk/runtime-support@0.7.0
+  - @neurodesk/webapp-components@0.14.4
+  - @neurodesk/greedy@0.5.20261018
+
+- Updated dependencies [b68209b]
+
+  - @neurodesk/webapp-components@0.15.0
+  - @neurodesk/runtime-support@0.7.1
+  - @neurodesk/greedy@0.5.20261018
+
+- Updated dependencies [67a5a8f]
+
   - @neurodesk/runtime-support@0.7.0
   - @neurodesk/webapp-components@0.14.4
   - @neurodesk/greedy@0.5.20261018
@@ -146,9 +201,16 @@
   - @neurodesk/webapp-components@0.14.2
   - @neurodesk/runtime-support@0.6.3
   - @neurodesk/greedy@0.5.20261016
+
 - Updated dependencies [7443048]
   - @neurodesk/webapp-components@0.14.1
   - @neurodesk/runtime-support@0.6.2
+  - @neurodesk/greedy@0.5.20261016
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.14.2
+  - @neurodesk/runtime-support@0.6.3
   - @neurodesk/greedy@0.5.20261016
 
 ## 0.5.20261015
@@ -158,6 +220,7 @@
 - Updated dependencies [c74b26f]
   - @neurodesk/runtime-support@0.6.1
   - @neurodesk/greedy@0.5.20261015
+
 - dd65e6a: Visual refresh: Inter, neutral greys with the Neurodesk logo green for action,
   focus and selection only, a compact 48px app bar, sentence-case section titles
   and a quieter status bar. The example menu is now the input control: examples,
@@ -174,10 +237,17 @@
   restore loaded examples.
 
 - Updated dependencies [0569da8]
+
 - Updated dependencies [dd65e6a]
+
 - Updated dependencies [dcc74e7]
   - @neurodesk/runtime-support@0.6.0
   - @neurodesk/webapp-components@0.14.0
+  - @neurodesk/greedy@0.5.20261015
+
+- Updated dependencies [c74b26f]
+
+  - @neurodesk/runtime-support@0.6.1
   - @neurodesk/greedy@0.5.20261015
 
 ## 0.5.20261014
@@ -188,8 +258,11 @@
   repository-wide reference searches. The shared preview module no longer carries
   a second NIfTI parser and writer; NiftiUtils remains the only one. Outputs and
   behaviour are unchanged.
+
 - Updated dependencies [27c9549]
+
 - Updated dependencies [850e642]
+
 - Updated dependencies [ad92e2f]
   - @neurodesk/runtime-support@0.5.0
   - @neurodesk/webapp-components@0.13.0
@@ -209,7 +282,14 @@
   - @neurodesk/webapp-components@0.12.3
   - @neurodesk/runtime-support@0.4.3
   - @neurodesk/greedy@0.5.20261012
+
 - @neurodesk/greedy@0.5.20261012
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.12.3
+  - @neurodesk/runtime-support@0.4.3
+  - @neurodesk/greedy@0.5.20261012
 
 ## 0.4.20261010
 
@@ -219,9 +299,16 @@
   - @neurodesk/webapp-components@0.12.2
   - @neurodesk/runtime-support@0.4.2
   - @neurodesk/greedy@0.4.20261010
+
 - Updated dependencies
   - @neurodesk/runtime-support@0.4.1
   - @neurodesk/webapp-components@0.12.1
+  - @neurodesk/greedy@0.4.20261010
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.12.2
+  - @neurodesk/runtime-support@0.4.2
   - @neurodesk/greedy@0.4.20261010
 
 ## 0.4.20261009
@@ -229,8 +316,11 @@
 ### Patch Changes
 
 - 4c12e24: Recover affine registrations that start on a shared grid. Greedy's default sample jitter (`-jitter 0.5`) was missing, so when the fixed and moving images shared a voxel grid the affine stayed at the identity while reporting success: a copy of the template turned 8° and shifted 9 mm came back 21 mm from the truth, and is now recovered to 0.4 mm. `greedy-rs -jitter SIGMA` sets the jitter; `-jitter 0` keeps the previous exact sampling.
+
 - Updated dependencies [66bf9e9]
+
 - Updated dependencies [501ea0c]
+
 - Updated dependencies [64ffefa]
   - @neurodesk/webapp-components@0.12.0
   - @neurodesk/runtime-support@0.3.0
@@ -244,12 +334,26 @@
   - @neurodesk/webapp-components@0.11.1
   - @neurodesk/runtime-support@0.2.1
   - @neurodesk/greedy@0.4.20261007
+
 - Updated dependencies
   - @neurodesk/webapp-components@0.11.0
   - @neurodesk/runtime-support@0.2.0
   - @neurodesk/greedy@0.4.20261007
+
 - Updated dependencies [70f2770]
   - @neurodesk/webapp-components@0.10.2
+  - @neurodesk/greedy@0.4.20261007
+
+- Updated dependencies [22aa4bf]
+
+  - @neurodesk/webapp-components@0.11.1
+  - @neurodesk/runtime-support@0.2.1
+  - @neurodesk/greedy@0.4.20261007
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.11.0
+  - @neurodesk/runtime-support@0.2.0
   - @neurodesk/greedy@0.4.20261007
 
 ## 0.4.20261004
@@ -259,15 +363,34 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.10.1
   - @neurodesk/greedy@0.4.20261004
+
 - Updated dependencies [0204fe1]
+
 - Updated dependencies [ec85a09]
   - @neurodesk/webapp-components@0.10.0
   - @neurodesk/greedy@0.4.20261004
+
 - Updated dependencies [257192b]
   - @neurodesk/runtime-support@0.1.3
   - @neurodesk/greedy@0.4.20261004
+
 - Updated dependencies
   - @neurodesk/webapp-components@0.9.0
+  - @neurodesk/greedy@0.4.20261004
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.10.1
+  - @neurodesk/greedy@0.4.20261004
+
+- Updated dependencies [ec85a09]
+
+  - @neurodesk/webapp-components@0.10.0
+  - @neurodesk/greedy@0.4.20261004
+
+- Updated dependencies [257192b]
+
+  - @neurodesk/runtime-support@0.1.3
   - @neurodesk/greedy@0.4.20261004
 
 ## 0.4.20261003
@@ -283,14 +406,18 @@
 ### Patch Changes
 
 - Updated dependencies
+
 - Updated dependencies
   - @neurodesk/webapp-components@0.7.0
   - @neurodesk/greedy@0.4.20260930
 
-### Patch Changes
-
 - Updated dependencies
   - @neurodesk/webapp-components@0.6.2
+  - @neurodesk/greedy@0.4.20260930
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.7.0
   - @neurodesk/greedy@0.4.20260930
 
 ## 0.4.20260928
@@ -301,23 +428,28 @@
   - @neurodesk/webapp-components@0.6.1
   - @neurodesk/greedy@0.4.20260928
 
-### Minor Changes
-
-- Expose typed operations across the application catalog, including multiple inputs, DICOM series selection, variable artifacts and viewer workflows. Share awaited processing and cancellation between each app and its agent adapter. Publish verified result reports and scientific provenance.
-
-  Add bounded desktop viewer sessions and MCP controls using public viewer APIs. Native SynthSeg now reports per-label counts and physical volumes. Include real-model CPU checks and a Mac runner for Metal, WebGPU and buffer-planning evidence without raising the validated SynthSeg limit.
-
-### Patch Changes
-
 - 93381e8: Every app now opens on its workspace and shows live status only in the bottom bar: a short message, a progress bar, elapsed time and a cancel × that appears while a run can be cancelled. Start pages, landing overlays and welcome modals are gone, and their copy moved to About. Every app has a technical log below the viewer that starts collapsed. Sidebar help longer than 90 characters moved into info tooltips or About, and each sidebar has one primary action. `ProgressManager` now drives the design-system footer, including the elapsed counter and the cancel button.
 
   The shared example selector shows one short line once an example loads; the description and expected result moved to a tooltip beside the Example label. NiiMath gained the shared layout tabs and About dialog and no longer ships app CSS.
 
 - Updated dependencies
+
 - Updated dependencies [93381e8]
+
 - Updated dependencies [93381e8]
   - @neurodesk/webapp-components@0.6.0
   - @neurodesk/greedy@0.4.20260928
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.6.1
+  - @neurodesk/greedy@0.4.20260928
+
+### Minor Changes
+
+- Expose typed operations across the application catalog, including multiple inputs, DICOM series selection, variable artifacts and viewer workflows. Share awaited processing and cancellation between each app and its agent adapter. Publish verified result reports and scientific provenance.
+
+  Add bounded desktop viewer sessions and MCP controls using public viewer APIs. Native SynthSeg now reports per-label counts and physical volumes. Include real-model CPU checks and a Mac runner for Metal, WebGPU and buffer-planning evidence without raising the validated SynthSeg limit.
 
 ## 0.3.20260928
 
@@ -356,22 +488,32 @@
   - @neurodesk/webapp-components@0.4.4
   - @neurodesk/greedy@0.3.20260920
 
-### Patch Changes
-
 - Updated dependencies
   - @neurodesk/webapp-components@0.4.3
   - @neurodesk/greedy@0.3.20260920
 
-### Patch Changes
-
 - efd8af3: Show the Example control before the file picker in every app, replace the registration apps' stale "Loading the default images" empty state, give FireANTs a CPU time budget and progress messages, ship BrowserQC's CPU MindGrab bundle with a longer segmentation budget, select CPU processing in SynthSR and brain extraction when no WebGPU adapter exists, start MuscleMap at 50 % overlap without WebGPU, and run VesselBoost's hosted example workflow in its browser tests.
+
 - Updated dependencies
   - @neurodesk/webapp-components@0.4.2
   - @neurodesk/greedy@0.3.20260920
 
-### Patch Changes
-
 - e1adeb4: Add rigid-body affine registration with `-dof 6` and stream scalar 4-D series when reslicing, preserving temporal metadata.
+  - @neurodesk/greedy@0.3.20260920
+
+- Updated dependencies [4959500]
+
+  - @neurodesk/webapp-components@0.4.4
+  - @neurodesk/greedy@0.3.20260920
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.4.3
+  - @neurodesk/greedy@0.3.20260920
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.4.2
   - @neurodesk/greedy@0.3.20260920
 
 ## 0.3.20260918
@@ -385,6 +527,7 @@
   - @neurodesk/greedy@0.3.20260918
 
 - Replace shared UI builders with light-DOM custom elements for consoles, file fields, result lists, viewer toolbars and example selectors. Migrate app callers, isolate control IDs and upload scopes, and preserve state while cleaning up listeners and cancelled downloads across component removal.
+
 - Updated dependencies
   - @neurodesk/webapp-components@0.4.0
   - @neurodesk/greedy@0.3.20260918
@@ -394,6 +537,7 @@
 ### Patch Changes
 
 - Standardize example selection across the app catalog with complete scientific input bundles, shared cancellation and retry, and explicit processing. Add missing examples, curate existing datasets, fix QSMbly retry and TopoFit cancellation, and require example manifests and browser coverage for every app and the generator.
+
 - Updated dependencies
   - @neurodesk/webapp-components@0.3.0
   - @neurodesk/greedy@0.3.20260916
@@ -406,26 +550,34 @@
   - @neurodesk/webapp-components@0.2.2
   - @neurodesk/greedy@0.3.20260915
 
-### Patch Changes
-
 - Updated dependencies
   - @neurodesk/webapp-components@0.2.1
   - @neurodesk/greedy@0.3.20260915
 
-### Patch Changes
+- Reject out-of-field registration trial coordinates before integer conversion, preventing a threaded WebAssembly crash during SYNcro normalization. Include complete desktop and HPC release packaging with offline workflow gates.
+  - @neurodesk/greedy@0.3.20260915
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.0
+  - @neurodesk/greedy@0.3.20260915
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.2.2
+  - @neurodesk/greedy@0.3.20260915
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.2.1
+  - @neurodesk/greedy@0.3.20260915
 
 - Reject out-of-field registration trial coordinates before integer conversion, preventing a threaded WebAssembly crash during SYNcro normalization. Include complete desktop and HPC release packaging with offline workflow gates.
+
   - @neurodesk/greedy@0.3.20260915
 
 ### Minor Changes
 
 - Add a shared Standalone action and offline desktop packaging with included, checksum-verified models and runtime dependencies. Remove the lightNIIng topbar link while retaining its About statement.
-
-### Patch Changes
-
-- Updated dependencies
-  - @neurodesk/webapp-components@0.2.0
-  - @neurodesk/greedy@0.3.20260915
 
 ## 0.2.20260914
 
@@ -434,37 +586,48 @@
 - Write native release checksums with LF line endings on every platform so Linux and macOS uploaders can verify Windows archives.
   - @neurodesk/greedy@0.2.20260914
 
-### Patch Changes
+- Allow the isolated Apple signing job to look up draft releases before notarization.
+  - @neurodesk/greedy@0.2.20260914
+
+- Updated dependencies
+  - @neurodesk/greedy@0.2.20260914
+
+- Write native release checksums with LF line endings on every platform so Linux and macOS uploaders can verify Windows archives.
+
+  - @neurodesk/greedy@0.2.20260914
 
 - Allow the isolated Apple signing job to look up draft releases before notarization.
+
   - @neurodesk/greedy@0.2.20260914
 
 ### Minor Changes
 
 - Add offline Greedy native packaging for Linux x64, Windows x64 and Apple ARM, with an isolated signed and notarized macOS installer release. Add an npm-installable CLI that bundles native binaries and validates installed packages on each target. Document the catalog-wide CLI rollout and remaining pipeline ports.
 
-### Patch Changes
-
-- Updated dependencies
-  - @neurodesk/greedy@0.2.20260914
-
 ## 0.1.20260914
 
 ### Patch Changes
 
 - 7bda502: Restore cross-origin isolation for Greedy on GitHub Pages with the scoped COI service-worker fallback. Build the browser runtime from source and ship it only in the versioned standalone web release. Add `-rb VALUE|AUTO` to set the reslice background, including CT air-background detection.
+
 - 3cd773f: Greedy and EdgeReg show all three viewer panels on phones. TopoFit conforms axis-aligned and oblique scans through the pinned npm niimath WebAssembly worker. SYNcro now matches the native three-input workflow, offers four checksum-pinned tutorials, defaults to MindGrab and Greedy with SynthStrip and ANTs alternatives, uses niimath for lesion and masking operations, and switches one NiiVue viewer between images with automatic lesion overlays. SynthSR lets adapter limits govern its largest activation buffer, so validated 256×256×192 scans and larger volumes on capable GPUs are attempted while other shared U-Net callers retain their existing limit. Add the standalone ANTS registration demo.
+
 - Updated dependencies [3cd773f]
+
 - Updated dependencies [4add8da]
   - @neurodesk/greedy@0.1.20260914
   - @neurodesk/webapp-components@0.1.5
   - @neurodesk/runtime-support@0.1.2
 
-### Patch Changes
-
 - Updated dependencies
   - @neurodesk/webapp-components@0.1.4
   - @neurodesk/greedy@0.1.20260914
+
+- Updated dependencies [4add8da]
+
+  - @neurodesk/greedy@0.1.20260914
+  - @neurodesk/webapp-components@0.1.5
+  - @neurodesk/runtime-support@0.1.2
 
 ## 0.1.20260911
 
@@ -477,17 +640,15 @@
 - Updated dependencies [dc50e56]
   - @neurodesk/greedy@0.1.20260911
 
-### Patch Changes
-
 - Updated dependencies
+  - @neurodesk/greedy@0.1.20260911
+
+- Updated dependencies [dc50e56]
+
   - @neurodesk/greedy@0.1.20260911
 
 ### Minor Changes
 
 - Add the reusable Greedy Rust/WebAssembly registration package and the Greedy browser app with affine and deformable modes, brain-only defaults, and MindGrab extraction for custom images.
+
 - Validate NIfTI spatial geometry, exercise both registration modes in the routine browser suite, and document the pinned MindGrab retry limitation.
-
-### Patch Changes
-
-- Updated dependencies
-  - @neurodesk/greedy@0.1.20260911
