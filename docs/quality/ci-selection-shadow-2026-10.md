@@ -300,6 +300,23 @@ Rerun with `node scripts/app-plan-shadow.mjs --prs 240,242,246,273,302
 comment-derived graph edges, `.gitattributes`, native workflow inputs and
 stacked-PR duplication remain separate work.
 
+**ESLint follow-up.** `eslint`, `@eslint/js` and `globals` join the independent root tools. ESLint is loaded only by
+`scripts/lint.mjs`, `eslint.config.js` and `test/lint-coverage.test.mjs`. Only workspace-contracts and `code-quality.yml`
+run it, and both run on every pull request.
+
+The apps' `lint` scripts run `scripts/check-app-js.mjs`, not ESLint. The per-app jobs run each app's `build`,
+`test:e2e` and release test script, and none of those invokes ESLint.
+
+A contract checks three things and fails when any of them changes:
+
+- no other source file imports these packages;
+- no per-app or composite-site step runs lint;
+- no CI-run app script, including the scripts it calls, runs ESLint.
+
+#241 is the only merged pull request that changed them, and it still falls back: it also adds the
+`@neurodesk/code-quality` workspace devDependency and new root scripts. An ESLint-only bump now selects no app. #243
+falls back because of its lockfile's `packageExtensionsChecksum` section.
+
 ## Measurements
 
 Window: `ci` runs created 2026-10-13 00:00 to 2026-10-15 18:30 UTC.

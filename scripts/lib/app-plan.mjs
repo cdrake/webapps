@@ -27,8 +27,11 @@ const MODEL_MANIFEST = /^models\/([^/]+)\.manifest\.json$/;
 const NON_CODE_FILES = new Set(['README.md', 'LICENSES.md']);
 const LOCKFILE = 'pnpm-lock.yaml';
 const REGISTRY = 'registry/apps.yml';
-// Only the independent unused-code and mutation workflows execute these root tools.
-const INDEPENDENT_ROOT_DEV_DEPENDENCIES = ['knip', '@stryker-mutator/core'];
+// Root tools no per-app or composite-site job executes: Knip and Stryker run
+// in the unused-code and mutation workflows, ESLint (scripts/lint.mjs,
+// eslint.config.js) in workspace-contracts and code-quality on every pull
+// request. test/app-plan.test.mjs fails when an app's CI scripts load one.
+export const INDEPENDENT_ROOT_DEV_DEPENDENCIES = ['knip', '@stryker-mutator/core', 'eslint', '@eslint/js', 'globals'];
 const GITATTRIBUTES = '.gitattributes';
 // Outside the composite build and its own tests, only these root files read
 // the runtime manifest; an app whose build or tests stage pinned runtime files

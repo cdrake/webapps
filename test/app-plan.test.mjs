@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import test from 'node:test';
 import { parse, stringify } from 'yaml';
-import { createAppPlan, RUNTIME_MANIFEST_READERS, SITE_ONLY_FILES } from '../scripts/lib/app-plan.mjs';
+import { createAppPlan, INDEPENDENT_ROOT_DEV_DEPENDENCIES, RUNTIME_MANIFEST_READERS, SITE_ONLY_FILES } from '../scripts/lib/app-plan.mjs';
 import { testedBase } from '../scripts/lib/tested-base.mjs';
 import { lockfileImpact } from '../scripts/lib/lockfile-impact.mjs';
 import { loadAppsRegistry, repoRoot } from '../scripts/lib/apps-registry.mjs';
@@ -272,7 +272,7 @@ async function lockPlan(after) {
 
 test('root Knip and Stryker changes run their independent workflows without selecting apps', async () => {
   const registry = await loadAppsRegistry();
-  for (const name of ['knip', '@stryker-mutator/core']) {
+  for (const name of INDEPENDENT_ROOT_DEV_DEPENDENCIES) {
     const before = { devDependencies: { [name]: '1.0.0', esbuild: '1.0.0' }, scripts: {} };
     const after = { devDependencies: { [name]: '2.0.0', esbuild: '1.0.0' }, scripts: { 'quality:unused': 'node scripts/report-unused-code.mjs' } };
     const root = changeLock(lock => {
@@ -333,6 +333,38 @@ test('Knip and Stryker remain independent of app, native and browser inputs', as
     const workflow = parse(await readFile(join(repoRoot, `.github/workflows/${file}.yml`), 'utf8'));
     assert.ok(Object.hasOwn(workflow.on, 'pull_request'), `${file} still runs on every PR`);
     assert.ok(Object.values(workflow.jobs).some(job => job.steps.some(step => step.run === command)), command);
+  }
+});
+
+test('ESLint stays out of every app build, unit test and browser test', async () => {
+  // Only the lint runner, the shared config and the lint coverage test load it.
+  const loaders = new Set(['scripts/lint.mjs', 'eslint.config.js', 'test/lint-coverage.test.mjs']);
+  const imports = /(?:from\s*|import\s*\(\s*|require\(\s*)['"](?:eslint|@eslint\/js|globals)(?:\/[^'"]*)?['"]/;
+  const sources = execFileSync('git', ['ls-files', '-z'], { cwd: repoRoot, encoding: 'utf8' })
+    .split('\0').filter(path => /\.(?:[cm]?[jt]sx?)$/.test(path));
+  for (const path of sources) {
+    if (loaders.has(path)) continue;
+    assert.doesNotMatch(await readFile(join(repoRoot, path), 'utf8'), imports, `${path} loads ESLint; revisit INDEPENDENT_ROOT_DEV_DEPENDENCIES`);
+  }
+  // The per-app jobs run each app's build, test:e2e and release test script.
+  const workspace = await graph;
+  const catalog = reachableFrom(workspace, CATALOG);
+  for (const path of loaders) assert.ok(!catalog.has(path), `ci.yml's per-app jobs run ${path}`);
+  const ci = parse(await readFile(join(repoRoot, '.github/workflows/ci.yml'), 'utf8'));
+  for (const name of [...CATALOG_JOBS, 'composite-site']) {
+    for (const step of ci.jobs[name].steps) assert.doesNotMatch(step.run ?? '', /\blint\b|eslint/, `${name} runs lint`);
+  }
+  for (const app of await loadAppsRegistry().then(registry => registry.apps)) {
+    const scripts = JSON.parse(await readFile(join(repoRoot, 'apps', app.id, 'package.json'), 'utf8')).scripts ?? {};
+    const pending = ['build', 'test:e2e', app.ci.release_test ?? 'test'];
+    const seen = new Set();
+    while (pending.length) {
+      const name = pending.pop();
+      if (seen.has(name) || !scripts[name]) continue;
+      seen.add(name);
+      assert.doesNotMatch(scripts[name], /\beslint\b/, `${app.id} ${name} runs ESLint`);
+      for (const [, next] of scripts[name].matchAll(/\b(?:pnpm|npm)(?: run)? ([\w:-]+)/g)) pending.push(next);
+    }
   }
 });
 
@@ -404,8 +436,8 @@ test('a quality-tool lockfile change selects what editing that tool selects, not
 test('lockfile changes the planner cannot scope select the whole catalog with a reason', async () => {
   const cases = {
     'root importer': [(lock) => {
-      lock.importers['.'].devDependencies.eslint = dep('9.1.0');
-      resolve(lock, 'eslint@9.1.0');
+      lock.importers['.'].devDependencies.esbuild = dep('9.1.0');
+      resolve(lock, 'esbuild@9.1.0');
     }, /root's dependencies resolve for every workspace member/],
     overrides: [(lock) => {
       lock.overrides = { pako: '2.1.1' };
@@ -746,7 +778,7 @@ test('workflow outputs include the fallback reason and complete matrices', async
 });
 
 test('manifest-only tool changes validate the unchanged lockfile through the CLI', async (t) => {
-  for (const name of ['knip', '@stryker-mutator/core']) {
+  for (const name of INDEPENDENT_ROOT_DEV_DEPENDENCIES) {
     for (const variant of ['valid', 'missing metadata', 'invalid resolution', 'missing snapshot', 'unparsable', 'unavailable']) {
       await t.test(`${name}: ${variant}`, async (t) => {
         const { root, run } = await plannerFixture(t);
