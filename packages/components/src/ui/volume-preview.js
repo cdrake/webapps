@@ -1,20 +1,9 @@
-/** Serializes one NiiVue display and restores its last committed preview on failure or cancellation. */
-export function createNiivueVolumePreview({ viewer, ready, emptyState }) {
+/** Serializes rendering and restores the last committed immutable snapshot on failure or cancellation. */
+export function createPreviewQueue({ ready, render }) {
   let committed = null;
   let tail = Promise.resolve();
 
-  async function render(preview) {
-    if (preview) {
-      const window = preview.range ? { calMin: preview.range[0], calMax: preview.range[1] } : {};
-      await viewer.loadVolumes([{ url: preview.file, name: preview.file.name, colormap: 'gray', ...window }]);
-    } else {
-      await viewer.removeAllVolumes();
-    }
-    emptyState.hidden = Boolean(preview);
-  }
-
-  return async function show(preview, { signal } = {}) {
-    const next = { file: preview.file, range: preview.range && [...preview.range] };
+  return async function show(next, { signal } = {}) {
     const pending = tail.then(async () => {
       signal?.throwIfAborted();
       await ready;
@@ -46,4 +35,20 @@ export function createNiivueVolumePreview({ viewer, ready, emptyState }) {
     tail = pending.catch(() => {});
     return pending;
   };
+}
+
+/** NiiVue adapter for a single file and an optional copied scalar-map window. */
+export function createNiivueVolumePreview({ viewer, ready, emptyState }) {
+  async function render(preview) {
+    if (preview) {
+      const window = preview.range ? { calMin: preview.range[0], calMax: preview.range[1] } : {};
+      await viewer.loadVolumes([{ url: preview.file, name: preview.file.name, colormap: 'gray', ...window }]);
+    } else {
+      await viewer.removeAllVolumes();
+    }
+    emptyState.hidden = Boolean(preview);
+  }
+
+  const show = createPreviewQueue({ ready, render });
+  return (preview, options) => show({ file: preview.file, range: preview.range && [...preview.range] }, options);
 }

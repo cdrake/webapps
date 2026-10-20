@@ -11,7 +11,7 @@ import { expect } from '@playwright/test';
 import { verifyMuscleMapFullPipeline, createSyntheticMuscleMapNifti } from '../../test/musclemap-full-pipeline-smoke.mjs';
 import { startReferenceServer } from '../../test-utils/compute-reference-server.mjs';
 
-export const workflowApps = ['nesvor', 'musclemap', 'vesselboost', 'spinalcordtoolbox', 'calmar', 'qsmbly', 'seedseg', 'dicompare', 'deface', 'easy-mp2rage', 'niimath', 'dicom2vid', 'browserqc', 'surfannotate', 'zarro', 'synthsr', 'synthseg', 'syncro', 'dwi2trx', 'edgereg', 'greedy', 'ants', 'brain2print', 'topofit', 'fireants', 'brain-extraction', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel', 'elastix', 'dicomview', 'fastprep', 'noddi', 'degibbs', 'n4', 'dcm2niix', 'dwidenoise'];
+export const workflowApps = ['nesvor', 'musclemap', 'vesselboost', 'spinalcordtoolbox', 'calmar', 'qsmbly', 'seedseg', 'dicompare', 'deface', 'easy-mp2rage', 'niimath', 'dicom2vid', 'browserqc', 'surfannotate', 'zarro', 'synthsr', 'synthseg', 'syncro', 'dwi2trx', 'edgereg', 'greedy', 'ants', 'brain2print', 'topofit', 'fireants', 'brain-extraction', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel', 'elastix', 'dicomview', 'fastprep', 'noddi', 'degibbs', 'n4', 'dcm2niix', 'dwidenoise', 'me-ica'];
 
 /**
  * Anything a workflow needs before the desktop app starts. NeSVoR computes on a
@@ -99,7 +99,7 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     assert.ok(bytes.length > 352, 'Output must contain image data');
     return { filename: data.filename, bytes: data.bytes.length };
   };
-  if (['deface', 'brain2print', 'dwi2trx', 'ants', 'greedy', 'edgereg', 'fireants', 'elastix', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel', 'dicomview', 'fastprep', 'noddi', 'degibbs', 'n4', 'dcm2niix', 'dwidenoise'].includes(id)) {
+  if (['deface', 'brain2print', 'dwi2trx', 'ants', 'greedy', 'edgereg', 'fireants', 'elastix', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel', 'dicomview', 'fastprep', 'noddi', 'degibbs', 'n4', 'dcm2niix', 'dwidenoise', 'me-ica'].includes(id)) {
     const examples = JSON.parse(await readFile(join(root, 'apps', id, 'examples.json')));
     const selector = page.getByRole('combobox', { name: 'Input', exact: true });
     await expect(selector).toBeEnabled({ timeout: 120000 });
