@@ -54,6 +54,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "dwi-ec-distortion"
+version = "0.1.0"
+dependencies = [
+ "dwi-shore",
+]
+
+[[package]]
 name = "dwi-gp"
 version = "0.1.0"
 dependencies = [
@@ -73,6 +80,27 @@ dependencies = [
  "dwi-gradients",
  "flate2",
  "serde_json",
+]
+
+[[package]]
+name = "dwi-pe-field"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+]
+
+[[package]]
+name = "dwi-shore"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+]
+
+[[package]]
+name = "dwi-slice-outliers"
+version = "0.1.0"
+dependencies = [
+ "dwi-shore",
 ]
 
 [[package]]
