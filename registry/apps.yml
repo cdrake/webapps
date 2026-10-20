@@ -151,6 +151,7 @@ apps:
     modalities: [mri]
     inputs: [dicom, nifti]
     hardware: cpu
+    handoff: dicom
     legacy_domain: qsmbly.neurodesk.org
     runtime: rust-wasm
     model_manifest: models/qsmbly.manifest.json
@@ -201,6 +202,7 @@ apps:
     modalities: [mri]
     inputs: [dicom]
     hardware: cpu
+    handoff: dicom
     legacy_domain: dicompare.neurodesk.org
     runtime: react-vite
     model_manifest: null
@@ -349,6 +351,7 @@ apps:
     modalities: [surface]
     inputs: [freesurfer, gifti, mesh]
     hardware: cpu
+    handoff: none
     legacy_domain: null
     runtime: vite-webgpu
     model_manifest: null
@@ -373,6 +376,7 @@ apps:
     modalities: [microscopy]
     inputs: [ome-zarr]
     hardware: cpu
+    handoff: none
     legacy_domain: null
     runtime: vite-webgpu
     model_manifest: null
@@ -476,6 +480,7 @@ apps:
     modalities: [mri]
     inputs: [dicom, nifti]
     hardware: webgpu-required
+    handoff: dicom
     legacy_domain: null
     runtime: vite-webgpu
     model_manifest: null
@@ -699,6 +704,7 @@ apps:
     modalities: [mri]
     inputs: [dicom, nifti]
     hardware: cpu
+    handoff: dicom
     legacy_domain: null
     runtime: react-vite
     model_manifest: null
@@ -723,6 +729,7 @@ apps:
     modalities: [mrs]
     inputs: [dicom, nifti, mrs-raw]
     hardware: cpu
+    handoff: none
     legacy_domain: null
     runtime: vite-wasm
     model_manifest: models/lcmodel.manifest.json
@@ -847,6 +854,7 @@ apps:
     modalities: [mri]
     inputs: [nifti]
     hardware: webgpu-optional
+    handoff: none
     legacy_domain: null
     runtime: vite-webgpu
     model_manifest: null
@@ -873,6 +881,7 @@ apps:
     modalities: [mri]
     inputs: [dicom, nifti]
     hardware: webgpu-optional
+    handoff: dicom
     legacy_domain: null
     runtime: vite-wasm
     model_manifest: null
@@ -947,6 +956,7 @@ apps:
     modalities: [mri]
     inputs: [dicom]
     hardware: cpu
+    handoff: dicom
     legacy_domain: null
     runtime: vite-wasm
     model_manifest: null
@@ -977,6 +987,31 @@ apps:
     asset_manifest_schema: null
     source: neurodesk/webapps@local
     license: BSD-3-Clause
+    maintainers: [neurodesk]
+    support_status: experimental
+    shell: imaging-workspace
+    ci:
+      toolchains: [node]
+      shared_runtime: false
+      browser_test: true
+      release: false
+
+  - id: me-ica
+    path: me-ica
+    title: ME-ICA
+    description: Multi-echo fMRI denoising with tedana's ME-ICA.
+    categories: [image-processing]
+    keywords: [multi-echo, fMRI, denoising, ICA, tedana, T2*, BOLD]
+    anatomy: [brain]
+    modalities: [mri]
+    inputs: [nifti]
+    hardware: cpu
+    legacy_domain: null
+    runtime: vite-wasm
+    model_manifest: null
+    asset_manifest_schema: null
+    source: neurodesk/webapps@local
+    license: LGPL-2.1-only
     maintainers: [neurodesk]
     support_status: experimental
     shell: imaging-workspace
