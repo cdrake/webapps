@@ -5,16 +5,27 @@
 ### Patch Changes
 
 - Updated dependencies [14db080]
+
 - Updated dependencies [03261d0]
+
 - Updated dependencies [c865c0c]
   - @neurodesk/webapp-components@0.17.0
+
 - Updated dependencies [ea2a6d2]
+
 - Updated dependencies [3f1d770]
+
 - Updated dependencies [d9718cd]
+
 - Updated dependencies [c1a4dda]
+
 - Updated dependencies [3329c39]
+
 - Updated dependencies [46935f7]
   - @neurodesk/webapp-components@0.16.0
+
+- Updated dependencies [d9718cd]
+  - @neurodesk/webapp-components@0.16.3
 
 ## 0.31.20261019
 
@@ -66,6 +77,21 @@
 - Updated dependencies [67a5a8f]
   - @neurodesk/webapp-components@0.14.4
 
+- Updated dependencies [7c0d201]
+  - @neurodesk/webapp-components@0.16.2
+
+- Updated dependencies [46935f7]
+  - @neurodesk/webapp-components@0.16.1
+
+- Updated dependencies [3329c39]
+  - @neurodesk/webapp-components@0.16.0
+
+- Updated dependencies [b67e4e9]
+  - @neurodesk/webapp-components@0.15.1
+
+- Updated dependencies [b68209b]
+  - @neurodesk/webapp-components@0.15.0
+
 ## 0.31.20261017
 
 ### Patch Changes
@@ -85,6 +111,9 @@
 
 - Updated dependencies [7443048]
   - @neurodesk/webapp-components@0.14.1
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.14.2
 
 ## 0.31.20261015
 
@@ -176,6 +205,9 @@
 
 - Show the complete registry citation list through the shared Cite dialog, include the single-step TGV paper, and check upstream DOI coverage during sync.
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.12.1
+
 ## 0.29.20261009
 
 ### Patch Changes
@@ -222,6 +254,12 @@
 - Updated dependencies [70f2770]
   - @neurodesk/webapp-components@0.10.2
 
+- Updated dependencies [22aa4bf]
+  - @neurodesk/webapp-components@0.11.1
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.11.0
+
 ## 0.29.20261004
 
 ### Patch Changes
@@ -238,6 +276,12 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.9.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.10.1
+
+- Updated dependencies [ec85a09]
+  - @neurodesk/webapp-components@0.10.0
 
 ## 0.29.20261003
 

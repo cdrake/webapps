@@ -5,17 +5,25 @@
 ### Patch Changes
 
 - @neurodesk/runtime-support@0.9.4
+
 - Updated dependencies [14b8248]
+
 - Updated dependencies [c1a4dda]
+
 - Updated dependencies [1f4aecd]
+
 - Updated dependencies [d1fa022]
   - @neurodesk/runtime-support@0.8.0
+
+- Updated dependencies [d1fa022]
+  - @neurodesk/runtime-support@0.9.3
 
 ## 1.4.20261019
 
 ### Patch Changes
 
 - @neurodesk/runtime-support@0.9.3
+
 - Updated dependencies [da2584b]
   - @neurodesk/runtime-support@0.9.2
 
@@ -50,6 +58,18 @@
 - Updated dependencies [b8b37d6]
   - @neurodesk/runtime-support@0.7.0
 
+- Updated dependencies
+  - @neurodesk/runtime-support@0.9.0
+
+- Updated dependencies [a07f659]
+  - @neurodesk/runtime-support@0.8.0
+
+- Updated dependencies [b67e4e9]
+  - @neurodesk/runtime-support@0.7.2
+
+- Updated dependencies [b68209b]
+  - @neurodesk/runtime-support@0.7.1
+
 ## 1.4.20261017
 
 ### Patch Changes
@@ -65,6 +85,9 @@
   - @neurodesk/runtime-support@0.6.3
 
 - @neurodesk/runtime-support@0.6.2
+
+- Updated dependencies
+  - @neurodesk/runtime-support@0.6.3
 
 ## 1.4.20261015
 
@@ -90,3 +113,6 @@
 
 - Updated dependencies [0569da8]
   - @neurodesk/runtime-support@0.6.0
+
+- Updated dependencies [c74b26f]
+  - @neurodesk/runtime-support@0.6.1

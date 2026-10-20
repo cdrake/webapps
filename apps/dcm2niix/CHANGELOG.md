@@ -5,25 +5,44 @@
 ### Patch Changes
 
 - Receive the source DICOM series from DICOM View's shared Open in another webapp menu.
+
 - Updated dependencies [14db080]
+
 - Updated dependencies [03261d0]
+
 - Updated dependencies [c865c0c]
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/dicom2vid@0.5.20261020
   - @neurodesk/runtime-support@0.9.4
+
+- Updated dependencies [3f1d770]
+
+- Updated dependencies [14b8248]
+
+- Updated dependencies [d9718cd]
+
+- Updated dependencies [d1fa022]
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/dicom2vid@0.5.20261020
 
 ## 0.1.20261019
 
 ### Patch Changes
 
 - Keep anatomical echo files attached to their converter acquisition when outputs are interleaved or an echo is excluded. Order runs by the converter's series number, preserve split acquisitions, and require echo time before exporting echo-labelled images. Refuse ambiguous duplicate echoes until acquisition labels distinguish them.
+
 - Name the echoes of a multi-echo anatomical acquisition (dcm2niix `_e1`, `_e2`) with the BIDS `echo-` entity instead of `run-`. Repeated multi-echo acquisitions keep both entities.
+
 - Updated dependencies [af2e8db]
+
 - Updated dependencies [b3404ec]
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
   - @neurodesk/dicom2vid@0.5.20261019
+
 - ac0b4e9: Keep anatomical filenames free of direction entities after review edits, preserve slice-timing orientation and technical encoding metadata in privacy-filtered exports, and reject classic DICOM phase/real/imaginary images. Refuse anatomical exports with attached diffusion gradients until the user reassigns the scan or clears them. Report missing or malformed automation assignments clearly and classify the app as Vite with WebAssembly.
+
 - Updated dependencies [da2584b]
   - @neurodesk/runtime-support@0.9.2
 
@@ -41,7 +60,9 @@
   - @neurodesk/webapp-components@0.16.2
   - @neurodesk/runtime-support@0.9.1
   - @neurodesk/dicom2vid@0.5.20261018
+
 - a560d01: Invalidate confirmation while replacement gradients load, keep the latest edit when reads overlap, and block export until the edit settles. Reject materially non-unit b-vectors without changing the supplied values.
+
 - Updated dependencies [b67e4e9]
   - @neurodesk/runtime-support@0.7.2
   - @neurodesk/webapp-components@0.15.1

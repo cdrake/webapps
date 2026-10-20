@@ -25,7 +25,9 @@
 ### Patch Changes
 
 - Updated dependencies [14db080]
+
 - Updated dependencies [03261d0]
+
 - Updated dependencies [c865c0c]
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/runtime-support@0.9.4
@@ -34,15 +36,25 @@
   - @neurodesk/brain-extraction@0.4.20261020
   - @neurodesk/greedy@0.6.20261020
   - @neurodesk/syncro@0.7.20261020
+
 - 14b8248: MindGrab's automatic backend no longer runs WebGL2 on a software renderer (SwiftShader, llvmpipe), which returned a blank brain mask without WebGPU; the threaded CPU module runs instead. The choice and MindGrab's own output appear in the technical log.
+
 - Updated dependencies [ea2a6d2]
+
 - Updated dependencies [3f1d770]
+
 - Updated dependencies [14b8248]
+
 - Updated dependencies [d9718cd]
+
 - Updated dependencies [c1a4dda]
+
 - Updated dependencies [1f4aecd]
+
 - Updated dependencies [3329c39]
+
 - Updated dependencies [46935f7]
+
 - Updated dependencies [d1fa022]
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
@@ -52,11 +64,21 @@
   - @neurodesk/brain-extraction@0.4.20261020
   - @neurodesk/greedy@0.6.20261020
 
+- Updated dependencies [d1fa022]
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/synthsr@0.6.20261020
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/brain-extraction@0.4.20261020
+  - @neurodesk/syncro@0.7.20261020
+  - @neurodesk/greedy@0.6.20261020
+
 ## 0.7.20261019
 
 ### Patch Changes
 
 - Updated dependencies [af2e8db]
+
 - Updated dependencies [b3404ec]
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
@@ -65,9 +87,11 @@
   - @neurodesk/brain-extraction@0.4.20261019
   - @neurodesk/greedy@0.6.20261019
   - @neurodesk/syncro@0.7.20261019
+
 - Updated dependencies [5ad652c]
   - @neurodesk/brain-extraction@0.4.20261019
   - @neurodesk/syncro@0.7.20261019
+
 - Updated dependencies [da2584b]
   - @neurodesk/synthsr@0.6.20261019
   - @neurodesk/runtime-support@0.9.2
@@ -108,9 +132,13 @@
   - @neurodesk/brain-extraction@0.4.20261018
   - @neurodesk/greedy@0.6.20261018
   - @neurodesk/syncro@0.7.20261018
+
 - @neurodesk/greedy@0.6.20261018
+
 - @neurodesk/syncro@0.7.20261018
+
 - Updated dependencies
+
 - Updated dependencies [46935f7]
   - @neurodesk/runtime-support@0.9.0
   - @neurodesk/webapp-components@0.16.1
@@ -119,9 +147,13 @@
   - @neurodesk/brain-extraction@0.4.20261018
   - @neurodesk/greedy@0.6.20261018
   - @neurodesk/syncro@0.7.20261018
+
 - Updated dependencies [ea2a6d2]
+
 - Updated dependencies [0511cd7]
+
 - Updated dependencies [a07f659]
+
 - Updated dependencies [3329c39]
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
@@ -172,6 +204,24 @@
   - @neurodesk/greedy@0.5.20261018
   - @neurodesk/syncro@0.6.20261018
 
+- Updated dependencies [b67e4e9]
+  - @neurodesk/runtime-support@0.7.2
+  - @neurodesk/webapp-components@0.15.1
+  - @neurodesk/synthsr@0.6.20261018
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/brain-extraction@0.4.20261018
+  - @neurodesk/greedy@0.5.20261018
+  - @neurodesk/syncro@0.6.20261018
+
+- Updated dependencies [b68209b]
+  - @neurodesk/webapp-components@0.15.0
+  - @neurodesk/runtime-support@0.7.1
+  - @neurodesk/synthsr@0.6.20261018
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/brain-extraction@0.4.20261018
+  - @neurodesk/greedy@0.5.20261018
+  - @neurodesk/syncro@0.6.20261018
+
 ## 0.6.20261017
 
 ### Patch Changes
@@ -204,6 +254,15 @@
 - Updated dependencies [7443048]
   - @neurodesk/webapp-components@0.14.1
   - @neurodesk/runtime-support@0.6.2
+  - @neurodesk/synthsr@0.6.20261016
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/brain-extraction@0.4.20261016
+  - @neurodesk/greedy@0.5.20261016
+  - @neurodesk/syncro@0.6.20261016
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.14.2
+  - @neurodesk/runtime-support@0.6.3
   - @neurodesk/synthsr@0.6.20261016
   - @neurodesk/synthstrip@0.1.5
   - @neurodesk/brain-extraction@0.4.20261016
@@ -257,6 +316,23 @@
   - @neurodesk/brain-extraction@0.4.20261015
   - @neurodesk/syncro@0.6.20261015
 
+- Updated dependencies [c74b26f]
+  - @neurodesk/runtime-support@0.6.1
+  - @neurodesk/synthsr@0.6.20261015
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/brain-extraction@0.4.20261015
+  - @neurodesk/greedy@0.5.20261015
+  - @neurodesk/syncro@0.6.20261015
+
+- Updated dependencies [dcc74e7]
+  - @neurodesk/runtime-support@0.6.0
+  - @neurodesk/webapp-components@0.14.0
+  - @neurodesk/synthsr@0.6.20261015
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/brain-extraction@0.4.20261015
+  - @neurodesk/greedy@0.5.20261015
+  - @neurodesk/syncro@0.6.20261015
+
 ## 0.6.20261014
 
 ### Patch Changes
@@ -292,6 +368,15 @@
 
 - @neurodesk/syncro@0.6.20261012
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.12.3
+  - @neurodesk/runtime-support@0.4.3
+  - @neurodesk/synthsr@0.6.20261012
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/brain-extraction@0.4.20261012
+  - @neurodesk/greedy@0.5.20261012
+  - @neurodesk/syncro@0.6.20261012
+
 ## 0.6.20261010
 
 ### Patch Changes
@@ -321,6 +406,18 @@
   - @neurodesk/synthsr@0.6.20261010
   - @neurodesk/synthstrip@0.1.5
   - @neurodesk/greedy@0.4.20261010
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.12.2
+  - @neurodesk/registration@0.1.1
+  - @neurodesk/runtime-support@0.4.2
+  - @neurodesk/synthsr@0.6.20261010
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/brain-extraction@0.4.20261010
+  - @neurodesk/greedy@0.4.20261010
+
+- Updated dependencies
+  - @neurodesk/syncro@0.6.20261010
 
 ## 0.6.20261009
 
@@ -376,6 +473,22 @@
   - @neurodesk/synthsr@0.6.20261007
   - @neurodesk/brain-extraction@0.1.21
 
+- Updated dependencies [22aa4bf]
+  - @neurodesk/webapp-components@0.11.1
+  - @neurodesk/runtime-support@0.2.1
+  - @neurodesk/synthsr@0.6.20261007
+  - @neurodesk/synthstrip@0.1.3
+  - @neurodesk/brain-extraction@0.1.23
+  - @neurodesk/greedy@0.4.20261007
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.11.0
+  - @neurodesk/runtime-support@0.2.0
+  - @neurodesk/synthsr@0.6.20261007
+  - @neurodesk/synthstrip@0.1.2
+  - @neurodesk/brain-extraction@0.1.22
+  - @neurodesk/greedy@0.4.20261007
+
 ## 0.5.20261005
 
 ### Patch Changes
@@ -421,6 +534,22 @@
   - @neurodesk/runtime-support@0.1.3
   - @neurodesk/brain-extraction@0.1.16
   - @neurodesk/greedy@0.4.20261004
+
+- Updated dependencies
+  - @neurodesk/synthsr@0.6.20261004
+  - @neurodesk/brain-extraction@0.1.19
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.10.1
+  - @neurodesk/greedy@0.4.20261004
+  - @neurodesk/synthsr@0.6.20261004
+  - @neurodesk/brain-extraction@0.1.18
+
+- Updated dependencies [ec85a09]
+  - @neurodesk/webapp-components@0.10.0
+  - @neurodesk/greedy@0.4.20261004
+  - @neurodesk/synthsr@0.6.20261004
+  - @neurodesk/brain-extraction@0.1.17
 
 ## 0.4.20261004
 

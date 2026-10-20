@@ -17,6 +17,14 @@
 - Updated dependencies [b3404ec]
   - @neurodesk/webapp-components@0.16.3
 
+## 0.34.20261020
+
+### Patch Changes
+
+- Updated dependencies [3f1d770]
+- Updated dependencies [d9718cd]
+  - @neurodesk/webapp-components@0.16.3
+
 ## 0.34.20261019
 
 ### Patch Changes
@@ -35,6 +43,7 @@
 ### Patch Changes
 
 - 803cb7e: Complete anatomy, modality, input and hardware metadata for NODDI, Degibbs, N4, DICOM to BIDS and Dwidenoise. Align six existing cards with their supported startup without WebGPU.
+
 - f2cfdd3: Share the checksum-verified ONNX Runtime asyncify binary in composite sites while keeping pthread modules inside each app's service-worker scope. This keeps the expanded catalog within its existing hosting budget.
 
 ## 0.32.20261018
@@ -49,9 +58,12 @@
 ### Patch Changes
 
 - Updated dependencies [ea2a6d2]
+
 - Updated dependencies [0511cd7]
+
 - Updated dependencies [3329c39]
   - @neurodesk/webapp-components@0.16.0
+
 - Updated dependencies [b67e4e9]
   - @neurodesk/webapp-components@0.15.1
 
@@ -358,9 +370,15 @@
 
 ## 0.7.20260917
 
+
+
 ## 0.7.20260916
 
+
+
 ## 0.6.20260916
+
+
 
 ## 0.6.20260915
 

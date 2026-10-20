@@ -40,7 +40,16 @@
   matter lesions passes its load job's signal, so the footer × ends the copy of an
   image sent from another app. `copiesInPieces` is exported and pinned to the user
   agents Playwright's engines report.
+
 - b3404ec: Read only the NIfTI header when loading a White matter lesions image, avoiding a full-image allocation just to display and check its dimensions.
+
+- 3f1d770: `takeHandoff` takes a `signal`: an abort stops the copy out of storage instead of
+  letting it run on in the background, and rejects with the signal's reason. White
+  matter lesions passes its load job's signal, so the footer × ends the copy of an
+  image sent from another app. `copiesInPieces` is exported and pinned to the user
+  agents Playwright's engines report.
+
+- d9718cd: White matter lesions reads only the NIfTI header when an image is chosen. It used to copy the whole image into memory to read its dimensions, which added a second copy of a 1 GB FLAIR to the load. The shared `readNiftiHeader(file)` reads the first bytes of a plain or gzipped file, and `describeNiftiFile` is built on it.
 
 ## 0.16.2
 

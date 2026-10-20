@@ -5,11 +5,27 @@
 ### Patch Changes
 
 - Updated dependencies [14db080]
+
 - Updated dependencies [03261d0]
+
 - Updated dependencies [c865c0c]
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/dwi2trx@0.5.20261020
   - @neurodesk/runtime-support@0.9.4
+  - @neurodesk/noddi@0.3.20261020
+
+- 14b8248: MindGrab's automatic backend no longer runs WebGL2 on a software renderer (SwiftShader, llvmpipe), which returned a blank brain mask without WebGPU; the threaded CPU module runs instead. The choice and MindGrab's own output appear in the technical log.
+
+- Updated dependencies [3f1d770]
+
+- Updated dependencies [14b8248]
+
+- Updated dependencies [d9718cd]
+
+- Updated dependencies [d1fa022]
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/dwi2trx@0.5.20261020
   - @neurodesk/noddi@0.3.20261020
 
 ## 0.3.20261019
@@ -17,11 +33,13 @@
 ### Patch Changes
 
 - Updated dependencies [af2e8db]
+
 - Updated dependencies [b3404ec]
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/dwi2trx@0.5.20261019
   - @neurodesk/runtime-support@0.9.3
   - @neurodesk/noddi@0.3.20261019
+
 - Updated dependencies [da2584b]
   - @neurodesk/runtime-support@0.9.2
   - @neurodesk/dwi2trx@0.5.20261019
@@ -36,13 +54,17 @@
 ### Patch Changes
 
 - 7c0d201: Restore the last committed image after cancelled or failed viewer loads. Share queued volume previews across NODDI, Degibbs, N4 and Dwidenoise, retaining source files and calibrated map ranges while rollback finishes before controls unlock.
+
 - Updated dependencies [7c0d201]
   - @neurodesk/webapp-components@0.16.2
   - @neurodesk/dwi2trx@0.5.20261018
   - @neurodesk/runtime-support@0.9.1
   - @neurodesk/noddi@0.3.20261018
+
 - 870c729: NODDI's About and Cite dialogs now credit MindGrab and Brainchop for the default brain mask. Browser checks verify worker cleanup when MindGrab extraction is cancelled and a complete retry with the real example.
+
 - Updated dependencies
+
 - Updated dependencies [46935f7]
   - @neurodesk/runtime-support@0.9.0
   - @neurodesk/webapp-components@0.16.1
@@ -68,8 +90,11 @@
   The shared diffusion reader pairs a single optional bval or bvec with a sole image independently. Supplying FSL `bvals` without `bvecs` now preserves the b-values for workflows that do not need gradient directions.
 
 - Updated dependencies [ea2a6d2]
+
 - Updated dependencies [0511cd7]
+
 - Updated dependencies [a07f659]
+
 - Updated dependencies [3329c39]
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/noddi@0.2.20261018

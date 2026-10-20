@@ -5,7 +5,9 @@
 ### Patch Changes
 
 - @neurodesk/synthsr@0.6.20261020
+
 - @neurodesk/synthstrip@0.1.5
+
 - Updated dependencies [d1fa022]
   - @neurodesk/synthsr@0.6.20261020
   - @neurodesk/synthstrip@0.1.5
@@ -15,8 +17,11 @@
 ### Patch Changes
 
 - @neurodesk/synthsr@0.6.20261019
+
 - @neurodesk/synthstrip@0.1.5
+
 - 5ad652c: Load the shared compact BET WebAssembly kernel in the browser instead of a second full QSM bundle. Align its core pin with QSMbly while preserving the existing BET mask references and original image geometry.
+
 - Updated dependencies [da2584b]
   - @neurodesk/synthsr@0.6.20261019
   - @neurodesk/synthstrip@0.1.5

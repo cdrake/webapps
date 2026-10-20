@@ -5,22 +5,38 @@
 ### Patch Changes
 
 - Updated dependencies [14db080]
+
 - Updated dependencies [03261d0]
+
 - Updated dependencies [c865c0c]
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/carotid-flow@0.4.20261020
   - @neurodesk/runtime-support@0.9.4
+
 - Updated dependencies [ea2a6d2]
+
 - Updated dependencies [3f1d770]
+
 - Updated dependencies [14b8248]
+
 - Updated dependencies [d9718cd]
+
 - Updated dependencies [c1a4dda]
+
 - Updated dependencies [1f4aecd]
+
 - Updated dependencies [3329c39]
+
 - Updated dependencies [46935f7]
+
 - Updated dependencies [d1fa022]
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
+  - @neurodesk/carotid-flow@0.4.20261020
+
+- Updated dependencies [d1fa022]
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
   - @neurodesk/carotid-flow@0.4.20261020
 
 ## 0.4.20261019
@@ -28,10 +44,12 @@
 ### Patch Changes
 
 - Updated dependencies [af2e8db]
+
 - Updated dependencies [b3404ec]
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/carotid-flow@0.4.20261019
   - @neurodesk/runtime-support@0.9.3
+
 - Updated dependencies [da2584b]
   - @neurodesk/runtime-support@0.9.2
   - @neurodesk/carotid-flow@0.4.20261019
@@ -90,6 +108,30 @@
   - @neurodesk/webapp-components@0.14.4
   - @neurodesk/carotid-flow@0.4.20261018
 
+- Updated dependencies [7c0d201]
+  - @neurodesk/webapp-components@0.16.2
+  - @neurodesk/carotid-flow@0.4.20261018
+  - @neurodesk/runtime-support@0.9.1
+
+- Updated dependencies [46935f7]
+  - @neurodesk/runtime-support@0.9.0
+  - @neurodesk/webapp-components@0.16.1
+  - @neurodesk/carotid-flow@0.4.20261018
+
+- Updated dependencies [3329c39]
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/runtime-support@0.8.0
+
+- Updated dependencies [b67e4e9]
+  - @neurodesk/runtime-support@0.7.2
+  - @neurodesk/webapp-components@0.15.1
+  - @neurodesk/carotid-flow@0.4.20261018
+
+- Updated dependencies [b68209b]
+  - @neurodesk/webapp-components@0.15.0
+  - @neurodesk/runtime-support@0.7.1
+  - @neurodesk/carotid-flow@0.4.20261018
+
 ## 0.4.20261017
 
 ### Patch Changes
@@ -113,6 +155,11 @@
   - @neurodesk/webapp-components@0.14.1
   - @neurodesk/carotid-flow@0.4.20261016
   - @neurodesk/runtime-support@0.6.2
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.14.2
+  - @neurodesk/runtime-support@0.6.3
+  - @neurodesk/carotid-flow@0.4.20261016
 
 ## 0.4.20261015
 
@@ -145,6 +192,10 @@
 - Updated dependencies [dcc74e7]
   - @neurodesk/runtime-support@0.6.0
   - @neurodesk/webapp-components@0.14.0
+  - @neurodesk/carotid-flow@0.4.20261015
+
+- Updated dependencies [c74b26f]
+  - @neurodesk/runtime-support@0.6.1
   - @neurodesk/carotid-flow@0.4.20261015
 
 ## 0.4.20261014
@@ -183,6 +234,11 @@
   - @neurodesk/runtime-support@0.4.1
   - @neurodesk/carotid-flow@0.4.20261010
   - @neurodesk/webapp-components@0.12.1
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.12.2
+  - @neurodesk/runtime-support@0.4.2
+  - @neurodesk/carotid-flow@0.4.20261010
 
 ## 0.4.20261009
 
@@ -225,6 +281,16 @@
   - @neurodesk/carotid-flow@0.4.20261007
   - @neurodesk/webapp-components@0.10.2
 
+- Updated dependencies [22aa4bf]
+  - @neurodesk/webapp-components@0.11.1
+  - @neurodesk/runtime-support@0.2.1
+  - @neurodesk/carotid-flow@0.4.20261007
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.11.0
+  - @neurodesk/runtime-support@0.2.0
+  - @neurodesk/carotid-flow@0.4.20261007
+
 ## 0.3.20261004
 
 ### Patch Changes
@@ -247,6 +313,15 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.9.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.10.1
+
+- Updated dependencies [ec85a09]
+  - @neurodesk/webapp-components@0.10.0
+
+- Updated dependencies [257192b]
+  - @neurodesk/runtime-support@0.1.3
 
 ## 0.3.20261003
 
