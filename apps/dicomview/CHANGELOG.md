@@ -28,9 +28,14 @@
 
 ### Patch Changes
 
+- Keep the generic handoff Privacy disclosure when integrating the catalog: DICOM targets receive the original scanner headers, and no image is uploaded.
+
 - Updated dependencies [14db080]
+
 - Updated dependencies [03261d0]
+
 - Updated dependencies [c865c0c]
+
 - Updated dependencies [4b40da1]
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/dicom2vid@0.5.20261020
@@ -65,6 +70,7 @@
 - Updated dependencies [46935f7]
 
 - Updated dependencies [d1fa022]
+
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/dicom2vid@0.5.20261020
@@ -72,6 +78,11 @@
 - Updated dependencies [d1fa022]
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/dicom2vid@0.5.20261020
+
+- Updated dependencies [d1fa022]
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/runtime-support@0.8.0
   - @neurodesk/dicom2vid@0.5.20261020
 
 ## 0.3.20261019
@@ -129,6 +140,17 @@
   - @neurodesk/dicom2vid@0.5.20261018
 
 - Updated dependencies [b68209b]
+
+  - @neurodesk/webapp-components@0.15.0
+  - @neurodesk/runtime-support@0.7.1
+  - @neurodesk/dicom2vid@0.5.20261018
+
+- Updated dependencies [b67e4e9]
+  - @neurodesk/runtime-support@0.7.2
+  - @neurodesk/webapp-components@0.15.1
+  - @neurodesk/dicom2vid@0.5.20261018
+
+- Updated dependencies [b68209b]
   - @neurodesk/webapp-components@0.15.0
   - @neurodesk/runtime-support@0.7.1
   - @neurodesk/dicom2vid@0.5.20261018
@@ -146,11 +168,6 @@
 - Updated dependencies [3329c39]
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
-
-- Updated dependencies [b67e4e9]
-  - @neurodesk/runtime-support@0.7.2
-  - @neurodesk/webapp-components@0.15.1
-  - @neurodesk/dicom2vid@0.5.20261018
 
 ## 0.2.20261018
 
