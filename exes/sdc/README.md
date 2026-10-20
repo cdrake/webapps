@@ -30,6 +30,7 @@ The port keeps PyHySCO's quirks: the barrier gives 0 where |∂b| ≥ 1 (its `na
 
 The app and the command line average each input's b = 0 volumes (b ≤ 50 when a bval is given) without motion correction, and do not align image 2 to image 1: both must be in one space, as two series of one session usually are.
 Both inputs need a phase-encoding direction and the same finite positive `TotalReadoutTime`: this PyHySCO model assumes equal and opposite displacements.
+The shared core refuses nonfinite intensities and a zero or unrepresentable common intensity range before normalization, rather than returning NaN field maps.
 The command line's `--pe1` and `--pe2` override the individual directions; `--trt` supplies a common readout time for both images.
 The options document gave every method a prepared pair instead: each direction's b = 0 volumes aligned with `mcflirt`, averaged, and the PA mean aligned rigidly to the AP mean with ANTs.
 On its six subjects that preparation does not bring PyHySCO closer to topup:

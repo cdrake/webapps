@@ -54,3 +54,22 @@ test("phase-encoding directions", () => {
   assert.ok(!isReversePair("j", "j"));
   assert.ok(!isReversePair("i", "j-"));
 });
+
+test("constant and nonfinite images are refused without poisoning the next run", () => {
+  const dims = [4, 8, 4];
+  const first = bumps(dims, 1);
+  const second = bumps(dims, -1);
+  const options = { phaseEncodingDirection: "j", totalReadoutTime: 0.05 };
+  const constant = new Float64Array(first.length).fill(1);
+  assert.throws(() => pyhysco(constant, constant, dims, [2, 2, 2], options), /refused/);
+  for (const value of [NaN, Infinity, -Infinity]) {
+    const invalid = first.slice();
+    invalid[16] = value;
+    assert.throws(() => pyhysco(invalid, second, dims, [2, 2, 2], options), /refused/);
+    assert.throws(() => pyhysco(first, invalid, dims, [2, 2, 2], options), /refused/);
+  }
+  const corrected = pyhysco(first, second, dims, [2, 2, 2], options);
+  assert.ok(corrected.field.every(Number.isFinite));
+  assert.ok(corrected.corrected1.every(Number.isFinite));
+  assert.ok(corrected.corrected2.every(Number.isFinite));
+});

@@ -101,6 +101,19 @@ pub fn pyhysco(pair: &Pair, options: &hysco::Options) -> Result<Correction, Stri
     if m.iter().any(|&k| k < 3) {
         return Err("each image axis needs at least 3 voxels".into());
     }
+    let mut min = f64::INFINITY;
+    let mut max = f64::NEG_INFINITY;
+    for &value in pair.image1.iter().chain(pair.image2.iter()) {
+        if !value.is_finite() {
+            return Err("images must contain only finite intensities".into());
+        }
+        min = min.min(value);
+        max = max.max(value);
+    }
+    let range = max - min;
+    if range <= 0.0 || !range.is_finite() || !(256.0 / range).is_finite() {
+        return Err("images need a finite, nonzero common intensity range".into());
+    }
     let grid = hysco::Grid::new(m, perm.map(|a| pair.voxel[a]));
     let mut i1 = permute(pair.image1, pair.dims, perm);
     let mut i2 = permute(pair.image2, pair.dims, perm);
@@ -158,5 +171,41 @@ mod tests {
         assert!(pyhysco(&pair(0.0, 1.0), &options).is_err());
         assert!(pyhysco(&pair(f64::NAN, 1.0), &options).is_err());
         assert!(pyhysco(&pair(0.04, 0.5), &options).is_err());
+    }
+
+    #[test]
+    fn nonfinite_and_zero_range_images_are_refused() {
+        let image: Vec<f64> = (0..27).map(f64::from).collect();
+        let options = hysco::Options::default();
+        fn pair<'a>(first: &'a [f64], second: &'a [f64]) -> Pair<'a> {
+            Pair {
+                image1: first,
+                image2: second,
+                dims: [3, 3, 3],
+                voxel: [2.0; 3],
+                pe: 1,
+                pe_sign: 1.0,
+                total_readout_time: 0.05,
+            }
+        }
+        for invalid in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            let mut corrupted = image.clone();
+            corrupted[13] = invalid;
+            for inputs in [pair(&corrupted, &image), pair(&image, &corrupted)] {
+                assert_eq!(
+                    pyhysco(&inputs, &options).err().as_deref(),
+                    Some("images must contain only finite intensities")
+                );
+            }
+        }
+        for value in [0.0, 1.0] {
+            let constant = vec![value; 27];
+            assert_eq!(
+                pyhysco(&pair(&constant, &constant), &options)
+                    .err()
+                    .as_deref(),
+                Some("images need a finite, nonzero common intensity range")
+            );
+        }
     }
 }

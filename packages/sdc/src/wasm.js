@@ -30,7 +30,7 @@ export async function loadSdc(source) {
       new Float64Array(wasm.memory.buffer, in1, length).set(image1);
       new Float64Array(wasm.memory.buffer, in2, length).set(image2);
       const iterations = wasm.pyhysco(in1, in2, dims[0], dims[1], dims[2], voxel[0], voxel[1], voxel[2], axis, sign, trt, field, out1, out2);
-      if (iterations === 0) throw new Error("PyHySCO refused the input: check the voxel sizes and that each axis has at least 3 voxels.");
+      if (iterations === 0) throw new Error("PyHySCO refused the input: images need finite intensities, a nonzero common intensity range, positive voxel sizes and at least 3 voxels per axis.");
       const read = (pointer) => new Float64Array(wasm.memory.buffer, pointer, length).slice();
       return { field: read(field), corrected1: read(out1), corrected2: read(out2), iterations };
     } finally {

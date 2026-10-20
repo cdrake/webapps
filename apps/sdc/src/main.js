@@ -8,6 +8,7 @@ import {
   createInfoDialog,
   createConsole,
   createViewerToolbar,
+  createNiivueVolumePreview,
   createExampleSelector,
   bindInfoTooltips,
   ProgressManager,
@@ -72,16 +73,13 @@ function status(message, error = false) {
 const results = createResultList({
   element: $("resultList"),
   onView: (_stage, result) => {
-    void showVolume(result.file).catch((error) => status(error.message, true));
+    if (loading || running) return;
+    void showVolume({ file: result.file }).catch((error) => status(error.message, true));
   },
   onDownload: (_stage, result) => downloadFile(result.file),
 });
 
-async function showVolume(file) {
-  await viewerReady;
-  await viewer.loadVolumes([{ url: file, name: file.name, colormap: "gray" }]);
-  $("emptyState").hidden = true;
-}
+const showVolume = createNiivueVolumePreview({ viewer, ready: viewerReady, emptyState: $("emptyState") });
 
 async function gzipFile(buffer, name) {
   const stream = new Blob([buffer]).stream().pipeThrough(new CompressionStream("gzip"));
@@ -96,6 +94,7 @@ function clearOutputs() {
 
 function setBusy(busy) {
   $("imageInput").disabled = busy;
+  $("resultList").inert = busy;
   exampleControl?.setDisabled(busy);
   $("reference").disabled = busy || !pair;
   $("runButton").disabled = busy || !pair;
@@ -158,7 +157,7 @@ async function loadFiles(filesPromise, signal) {
       throw new Error(`The images are on different grids (${first.dims.join("×")} and ${second.dims.join("×")}); both must be in one space.`);
     }
     const preview = await gzipFile(createNiftiFromData(Float32Array.from(first.mean), first.buffer, { dims: first.dims }), "image1_b0_mean.nii.gz");
-    await showVolume(preview);
+    await showVolume({ file: preview }, { signal: controller.signal });
     controller.signal.throwIfAborted();
     pair = inputs;
     clearOutputs();
@@ -219,7 +218,7 @@ async function estimate(signal) {
       corrected1: { description: "Corrected image 1 (QC)", file: corrected1 },
       corrected2: { description: "Corrected image 2 (QC)", file: corrected2 },
     };
-    await showVolume(field);
+    await showVolume({ file: field }, { signal: controller.signal });
     controller.signal.throwIfAborted();
     outputs = rows;
     results.render(rows);

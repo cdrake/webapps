@@ -24,6 +24,71 @@ async function volume(downloadEvent) {
   return readNiftiFrames(gunzipSync(readFileSync(await (await downloadEvent).path())));
 }
 
+async function holdPreview(page, suffix) {
+  await page.evaluate((suffix) => {
+    const post = Worker.prototype.postMessage;
+    Worker.prototype.postMessage = function (message, ...options) {
+      if (!(message?.url instanceof File) || !message.url.name.endsWith(suffix)) {
+        return post.call(this, message, ...options);
+      }
+      Worker.prototype.postMessage = post;
+      window.finishSdcPreview = () => post.call(this, message, ...options);
+    };
+  }, suffix);
+}
+
+test("cancelling the first input preview restores the empty viewer and permits retry", async ({ page }) => {
+  await page.goto("/");
+  await holdPreview(page, "image1_b0_mean.nii.gz");
+  await page.locator("#imageInput").setInputFiles(syntheticPair());
+  await page.waitForFunction(() => typeof window.finishSdcPreview === "function");
+  await page.locator("#cancelButton").click();
+  await page.evaluate(() => window.finishSdcPreview());
+  await expect(page.locator("#statusText")).toHaveText("Cancelled");
+  await expect(page.locator("#emptyState")).toBeVisible();
+  await expect(page.locator("#fileInfo")).toBeHidden();
+  await expect(page.locator("#runButton")).toBeDisabled();
+  await page.locator("#imageInput").setInputFiles(syntheticPair());
+  await expect(page.locator("#runButton")).toBeEnabled();
+  await expect(page.locator("#emptyState")).toBeHidden();
+});
+
+test("cancelling a replacement preview preserves the committed field and downloads", async ({ page }) => {
+  await page.goto("/");
+  await page.locator("#imageInput").setInputFiles(syntheticPair());
+  await expect(page.locator("#runButton")).toBeEnabled();
+  await page.locator("#runButton").click();
+  await expect(page.locator("#statusText")).toContainText("Field estimated", { timeout: 60000 });
+  const before = await page.locator("#gl1").screenshot();
+  await holdPreview(page, "image1_b0_mean.nii.gz");
+  await page.locator("#imageInput").setInputFiles(syntheticPair({ shift: 6 }));
+  await page.waitForFunction(() => typeof window.finishSdcPreview === "function");
+  await expect(page.locator("#resultList")).toHaveJSProperty("inert", true);
+  await page.locator("#cancelButton").click();
+  await page.evaluate(() => window.finishSdcPreview());
+  await expect(page.locator("#statusText")).toHaveText("Cancelled");
+  await expect(page.locator("#runButton")).toBeEnabled();
+  await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(4);
+  expect(await page.locator("#gl1").screenshot()).toEqual(before);
+  expect((await download(page, "Field map (Hz)")).suggestedFilename()).toBe("sub-01_dir-AP_fieldmap.nii.gz");
+});
+
+test("cancelling the field preview restores the input mean", async ({ page }) => {
+  await page.goto("/");
+  await page.locator("#imageInput").setInputFiles(syntheticPair());
+  await expect(page.locator("#runButton")).toBeEnabled();
+  const before = await page.locator("#gl1").screenshot();
+  await holdPreview(page, "_fieldmap.nii.gz");
+  await page.locator("#runButton").click();
+  await page.waitForFunction(() => typeof window.finishSdcPreview === "function");
+  await page.locator("#cancelButton").click();
+  await page.evaluate(() => window.finishSdcPreview());
+  await expect(page.locator("#statusText")).toHaveText("Cancelled");
+  await expect(page.locator("#runButton")).toBeEnabled();
+  await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(0);
+  expect(await page.locator("#gl1").screenshot()).toEqual(before);
+});
+
 test("app boots", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("#viewer")).toBeVisible();
