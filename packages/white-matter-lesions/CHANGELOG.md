@@ -4,8 +4,22 @@
 
 ### Patch Changes
 
+- @neurodesk/synthsr@0.6.20261020
+- @neurodesk/synthstrip@0.1.5
+- @neurodesk/synthsr@0.6.20261020
+
+- @neurodesk/synthstrip@0.1.5
+
 - Updated dependencies [d1fa022]
   - @neurodesk/synthsr@0.6.20261020
+  - @neurodesk/synthstrip@0.1.5
+
+## 0.5.20261019
+
+### Patch Changes
+
+- Updated dependencies [da2584b]
+  - @neurodesk/synthsr@0.6.20261019
   - @neurodesk/synthstrip@0.1.5
 
 ## 0.5.20261018
@@ -13,6 +27,7 @@
 ### Patch Changes
 
 - @neurodesk/synthsr@0.6.20261018
+
 - @neurodesk/synthstrip@0.1.5
 
 ## 0.4.20261018
@@ -20,6 +35,7 @@
 ### Patch Changes
 
 - @neurodesk/synthsr@0.6.20261018
+
 - @neurodesk/synthstrip@0.1.5
 
 ## 0.4.20261017
@@ -35,8 +51,7 @@
 ### Patch Changes
 
 - @neurodesk/synthsr@0.6.20261016
-- @neurodesk/synthstrip@0.1.5
-- @neurodesk/synthsr@0.6.20261016
+
 - @neurodesk/synthstrip@0.1.5
 
 ## 0.3.20261015
@@ -44,7 +59,9 @@
 ### Patch Changes
 
 - @neurodesk/synthsr@0.6.20261015
+
 - @neurodesk/synthstrip@0.1.5
+
 - 84d192a: FLAMeS no longer rejects high-resolution FLAIR. A 0.4 mm 3D FLAIR of
   544 × 544 × 480 voxels exceeded SynthSR's 128 Mi voxel reader cap and failed
   with "Unsupported image dimensions". An input finer than FLAMeS's
@@ -55,6 +72,7 @@
   `flames` command writes it as `INPUT_flair_resampled.nii`. Inputs at or
   coarser than 1 × 0.9 × 0.9 mm are unchanged. `readVolume` in
   `@neurodesk/synthsr` takes an optional `maxVoxels` cap.
+
 - Updated dependencies [84d192a]
   - @neurodesk/synthsr@0.6.20261015
 
@@ -71,6 +89,7 @@
 ### Patch Changes
 
 - @neurodesk/synthsr@0.6.20261012
+
 - @neurodesk/synthstrip@0.1.5
 
 ## 0.3.20261010
@@ -82,7 +101,9 @@
 ### Patch Changes
 
 - @neurodesk/synthsr@0.6.20261010
+
 - @neurodesk/synthstrip@0.1.5
+
 - Updated dependencies
   - @neurodesk/synthsr@0.6.20261010
   - @neurodesk/synthstrip@0.1.5
@@ -104,6 +125,7 @@
 ### Patch Changes
 
 - @neurodesk/synthstrip@0.1.3
+
 - @neurodesk/synthsr@0.6.20261007
+
 - @neurodesk/synthstrip@0.1.2
-- @neurodesk/synthsr@0.6.20261007
