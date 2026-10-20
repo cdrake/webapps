@@ -835,8 +835,8 @@
           "label": "freesurfer 8.2.0 (20261005)",
           "url": "https://hub.docker.com/r/vnmd/freesurfer_8.2.0",
           "dockerImage": "vnmd/freesurfer_8.2.0:20261005",
-          "apptainerUrl": "https://neurocontainers.neurodesk.workers.dev/freesurfer_8.2.0_20261005.simg",
-          "apptainerName": "freesurfer_8.2.0_20261005"
+          "apptainerUrl": "https://neurocontainers.neurodesk.workers.dev/freesurfer_8.2.0_20261019.simg",
+          "apptainerName": "freesurfer_8.2.0_20261019"
         }
       ]
     },
