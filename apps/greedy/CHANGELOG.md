@@ -2,13 +2,40 @@
 
 ## 0.6.20261020
 
+### Minor Changes
+
+- 3329c39: The registration apps load their images through one shared fixed/moving pair
+  (`nd-image-pair`, `createImagePair`). Each app now says fixed and moving, never
+  stationary. The fixed card comes first. Each card has explicit "Load fixed
+  image…" / "Load moving image…" and "Folder…" pickers, a drop zone, a summary
+  of size and spacing, a series select and a clear ×, and Swap exchanges the two.
+  Examples fill the slots by role through the same path as a user's file, and a
+  failed load keeps the previous image. The fixed card offers built-in templates from
+  the new `registry/templates.json`: FSL MNI152 1 mm brain and head and the ICBM152
+  avg152 2 mm head, downloaded and checked with `fetchModel`, and cited in each app.
+  elastix offers them for 3D images only. SYNcro shows its MNI152 template as a
+  locked fixed image, its scan is the moving image, and it fetches the template from
+  the catalogue address. Brain extraction in ANTs, Greedy and FireANTs has its own
+  Fixed and Moving buttons below the pair.
+
+  Cancelling an example preserves the previous image even when the app supplies
+  its own cancellation signal. Image summaries convert NIfTI spatial units to
+  millimetres before showing voxel spacing.
+
 ### Patch Changes
 
+- Updated dependencies [14db080]
+- Updated dependencies [03261d0]
+- Updated dependencies [4b40da1]
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/runtime-support@0.9.4
+  - @neurodesk/greedy@0.6.20261020
 - 14b8248: MindGrab's automatic backend no longer runs WebGL2 on a software renderer (SwiftShader, llvmpipe), which returned a blank brain mask without WebGPU; the threaded CPU module runs instead. The choice and MindGrab's own output appear in the technical log.
 - Updated dependencies [3f1d770]
 - Updated dependencies [14b8248]
 - Updated dependencies [d9718cd]
 - Updated dependencies [d1fa022]
+
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
   - @neurodesk/greedy@0.6.20261020
@@ -29,26 +56,6 @@
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/greedy@0.6.20261020
-
-### Minor Changes
-
-- 3329c39: The registration apps load their images through one shared fixed/moving pair
-  (`nd-image-pair`, `createImagePair`). Each app now says fixed and moving, never
-  stationary. The fixed card comes first. Each card has explicit "Load fixed
-  image…" / "Load moving image…" and "Folder…" pickers, a drop zone, a summary
-  of size and spacing, a series select and a clear ×, and Swap exchanges the two.
-  Examples fill the slots by role through the same path as a user's file, and a
-  failed load keeps the previous image. The fixed card offers built-in templates from
-  the new `registry/templates.json`: FSL MNI152 1 mm brain and head and the ICBM152
-  avg152 2 mm head, downloaded and checked with `fetchModel`, and cited in each app.
-  elastix offers them for 3D images only. SYNcro shows its MNI152 template as a
-  locked fixed image, its scan is the moving image, and it fetches the template from
-  the catalogue address. Brain extraction in ANTs, Greedy and FireANTs has its own
-  Fixed and Moving buttons below the pair.
-
-  Cancelling an example preserves the previous image even when the app supplies
-  its own cancellation signal. Image summaries convert NIfTI spatial units to
-  millimetres before showing voxel spacing.
 
 ## 0.6.20261019
 

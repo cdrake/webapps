@@ -2,31 +2,6 @@
 
 ## 0.5.20261020
 
-### Patch Changes
-
-- Updated dependencies [3f1d770]
-- Updated dependencies [14b8248]
-- Updated dependencies [d9718cd]
-- Updated dependencies [d1fa022]
-  - @neurodesk/webapp-components@0.16.3
-  - @neurodesk/runtime-support@0.9.3
-  - @neurodesk/elastix@0.5.20261020
-
-- Updated dependencies [ea2a6d2]
-
-- Updated dependencies [c1a4dda]
-
-- Updated dependencies [1f4aecd]
-
-- Updated dependencies [3329c39]
-
-- Updated dependencies [46935f7]
-
-- Updated dependencies [d1fa022]
-  - @neurodesk/webapp-components@0.16.0
-  - @neurodesk/runtime-support@0.8.0
-  - @neurodesk/elastix@0.5.20261020
-
 ### Minor Changes
 
 - 3329c39: The registration apps load their images through one shared fixed/moving pair
@@ -46,6 +21,38 @@
   Cancelling an example preserves the previous image even when the app supplies
   its own cancellation signal. Image summaries convert NIfTI spatial units to
   millimetres before showing voxel spacing.
+
+### Patch Changes
+
+- Updated dependencies [14db080]
+- Updated dependencies [03261d0]
+- Updated dependencies [4b40da1]
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/elastix@0.5.20261020
+  - @neurodesk/runtime-support@0.9.4
+- Updated dependencies [3f1d770]
+- Updated dependencies [14b8248]
+- Updated dependencies [d9718cd]
+- Updated dependencies [d1fa022]
+
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/elastix@0.5.20261020
+
+- Updated dependencies [ea2a6d2]
+
+- Updated dependencies [c1a4dda]
+
+- Updated dependencies [1f4aecd]
+
+- Updated dependencies [3329c39]
+
+- Updated dependencies [46935f7]
+
+- Updated dependencies [d1fa022]
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/runtime-support@0.8.0
+  - @neurodesk/elastix@0.5.20261020
 
 ## 0.5.20261019
 

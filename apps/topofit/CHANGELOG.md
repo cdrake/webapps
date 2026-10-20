@@ -4,10 +4,17 @@
 
 ### Patch Changes
 
+- Updated dependencies [14db080]
+- Updated dependencies [03261d0]
+- Updated dependencies [4b40da1]
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/runtime-support@0.9.4
+  - @neurodesk/topofit@0.15.20261020
 - Updated dependencies [3f1d770]
 - Updated dependencies [14b8248]
 - Updated dependencies [d9718cd]
 - Updated dependencies [d1fa022]
+
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
   - @neurodesk/topofit@0.15.20261020
