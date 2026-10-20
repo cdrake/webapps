@@ -3,6 +3,7 @@ name: spinalcordtoolbox-native
 on:
   pull_request:
     paths:
+      - 'packages/components/package.json'
       - '.github/workflows/spinalcordtoolbox-native.yml'
       - 'packages/spinalcordtoolbox/**'
       - 'packages/components/src/worker/**'
@@ -13,6 +14,7 @@ on:
   push:
     branches: [main]
     paths:
+      - 'packages/components/package.json'
       - '.github/workflows/spinalcordtoolbox-native.yml'
       - '.github/workflows/node-cli-portable.yml'
       - 'exes/node-cli/**'

@@ -3,6 +3,7 @@ name: synthseg-native
 on:
   pull_request:
     paths:
+      - 'packages/components/package.json'
       - '.github/workflows/synthseg-native.yml'
       - 'exes/synthseg/**'
       - 'exes/nifti/**'

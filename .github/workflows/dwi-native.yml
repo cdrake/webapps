@@ -3,6 +3,9 @@ name: dwi-native
 on:
   pull_request:
     paths:
+      - 'packages/components/package.json'
+      - 'packages/dwi2trx/package.json'
+      - 'packages/node-drivers/package.json'
       - '.github/workflows/dwi-native.yml'
       - '.github/actions/setup-wasm-opt/**'
       - 'exes/dwi/**'
@@ -16,6 +19,9 @@ on:
   push:
     branches: [main]
     paths:
+      - 'packages/components/package.json'
+      - 'packages/dwi2trx/package.json'
+      - 'packages/node-drivers/package.json'
       - '.github/workflows/dwi-native.yml'
       - '.github/actions/setup-wasm-opt/**'
       - 'exes/dwi/**'

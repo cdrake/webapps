@@ -13,6 +13,8 @@ name: lcmodel-native
 on:
   pull_request:
     paths:
+      - 'packages/components/package.json'
+      - 'packages/node-drivers/package.json'
       - '.github/workflows/lcmodel-native.yml'
       - 'exes/lcmodel/**'
       - 'exes/fida/**'
@@ -26,6 +28,8 @@ on:
   push:
     branches: [main]
     paths:
+      - 'packages/components/package.json'
+      - 'packages/node-drivers/package.json'
       - '.github/workflows/lcmodel-native.yml'
       - '.github/workflows/node-cli-portable.yml'
       - 'exes/node-cli/**'

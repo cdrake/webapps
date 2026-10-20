@@ -37,12 +37,14 @@ const isFile = (path) => existsSync(path) && statSync(path).isFile();
 function resolveSpecifier(packages, specifier, from) {
   if (specifier.startsWith('.')) {
     const base = resolve(dirname(from), specifier);
-    return [base, `${base}.js`, `${base}.mjs`, join(base, 'index.js')].find(isFile) ?? null;
+    const file = [base, `${base}.js`, `${base}.mjs`, join(base, 'index.js')].find(isFile);
+    return file ? [file] : [];
   }
   const name = specifier.startsWith('@') ? specifier.split('/').slice(0, 2).join('/') : specifier.split('/')[0];
   const dir = packages.get(name);
-  if (!dir) return null;
-  const exports = exportsOf(JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')));
+  if (!dir) return [];
+  const manifest = join(dir, 'package.json');
+  const exports = exportsOf(JSON.parse(readFileSync(manifest, 'utf8')));
   const subpath = `.${specifier.slice(name.length)}`;
   let target = exportTarget(exports[subpath]);
   for (const [key, value] of Object.entries(exports)) {
@@ -50,7 +52,7 @@ function resolveSpecifier(packages, specifier, from) {
       target = exportTarget(value)?.replace('*', subpath.slice(key.length - 1));
     }
   }
-  return target && isFile(join(dir, target)) ? join(dir, target) : null;
+  return target && isFile(join(dir, target)) ? [manifest, join(dir, target)] : [manifest];
 }
 
 export function commandLineClosure(root, packageDir) {
@@ -72,8 +74,9 @@ export function commandLineClosure(root, packageDir) {
     for (const match of readFileSync(file, 'utf8').matchAll(IMPORT)) {
       // A URL string is always relative to the module, with or without ./.
       const specifier = match[4] ? (match[4].startsWith('.') ? match[4] : `./${match[4]}`) : match[1] ?? match[2] ?? match[3];
-      const next = resolveSpecifier(packages, specifier, file);
-      if (next && !seen.has(next)) pending.push(next);
+      for (const next of resolveSpecifier(packages, specifier, file)) {
+        if (!seen.has(next)) pending.push(next);
+      }
     }
   }
   return [...seen]

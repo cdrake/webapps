@@ -371,7 +371,7 @@ test('Brain2Print browser CPU parity skips optional CUDA installation', async ()
 });
 
 // GitHub's `paths` glob: `**` crosses directories, `*` does not.
-const pathGlob = (pattern) => new RegExp(`^${pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*\*\/?/g, '\u0000').replace(/\*/g, '[^/]*').replace(/\u0000/g, '.*')}$`);
+const pathGlob = (pattern) => new RegExp(`^${pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*\*\/?/g, '\u0000').replace(/\*/g, '[^/]*').replaceAll('\u0000', '.*')}$`);
 
 test('a native or CLI workflow runs when a file its command line imports changes', async () => {
   const files = (await readdir(new URL('../.github/workflows/', import.meta.url))).filter((name) => name.endsWith('.yml')).sort();

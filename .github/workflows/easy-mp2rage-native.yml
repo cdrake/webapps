@@ -3,6 +3,7 @@ name: easy-mp2rage-native
 on:
   pull_request:
     paths:
+      - 'packages/components/package.json'
       - '.github/workflows/easy-mp2rage-native.yml'
       - '.github/actions/setup-wasm-opt/**'
       - 'packages/easy-mp2rage/**'
@@ -11,6 +12,7 @@ on:
   push:
     branches: [main]
     paths:
+      - 'packages/components/package.json'
       - '.github/workflows/easy-mp2rage-native.yml'
       - '.github/actions/setup-wasm-opt/**'
       - '.github/workflows/node-cli-portable.yml'

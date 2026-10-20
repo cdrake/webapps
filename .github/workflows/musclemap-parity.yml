@@ -3,6 +3,7 @@ name: musclemap-parity
 on:
   pull_request:
     paths:
+      - 'packages/components/package.json'
       - 'apps/musclemap/**'
       - 'packages/musclemap/**'
       - 'packages/components/src/volume/**'
@@ -11,6 +12,7 @@ on:
   push:
     branches: [main]
     paths:
+      - 'packages/components/package.json'
       - 'apps/musclemap/**'
       - 'packages/musclemap/**'
       - 'packages/components/src/volume/**'
