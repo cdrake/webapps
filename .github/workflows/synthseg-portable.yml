@@ -8,6 +8,8 @@ on:
       - '.github/workflows/synthseg-portable.yml'
       - 'packages/synthseg/**'
       - 'apps/synthseg/**'
+      - 'packages/components/src/automation/**'
+      - 'packages/components/src/file-io/**'
   push:
     branches: [main]
     paths:
@@ -16,6 +18,8 @@ on:
       - 'exes/node-cli/**'
       - 'packages/synthseg/**'
       - 'apps/synthseg/**'
+      - 'packages/components/src/automation/**'
+      - 'packages/components/src/file-io/**'
   workflow_dispatch:
     inputs:
       publish_release:

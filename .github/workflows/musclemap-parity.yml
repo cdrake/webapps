@@ -7,6 +7,7 @@ on:
       - 'packages/musclemap/**'
       - 'packages/components/src/volume/**'
       - '.github/workflows/musclemap-parity.yml'
+      - 'packages/components/src/file-io/NiftiUtils.js'
   push:
     branches: [main]
     paths:
@@ -14,6 +15,7 @@ on:
       - 'packages/musclemap/**'
       - 'packages/components/src/volume/**'
       - '.github/workflows/musclemap-parity.yml'
+      - 'packages/components/src/file-io/NiftiUtils.js'
   workflow_dispatch:
     inputs:
       full_volumes:

@@ -9,6 +9,9 @@ on:
       - 'packages/noddi/**'
       - 'packages/degibbs/**'
       - 'packages/dwidenoise/**'
+      - 'packages/components/src/file-io/NiftiUtils.js'
+      - 'packages/dwi2trx/src/gradients.js'
+      - 'packages/node-drivers/src/mindgrab.js'
   push:
     branches: [main]
     paths:
@@ -18,6 +21,9 @@ on:
       - 'packages/noddi/**'
       - 'packages/degibbs/**'
       - 'packages/dwidenoise/**'
+      - 'packages/components/src/file-io/NiftiUtils.js'
+      - 'packages/dwi2trx/src/gradients.js'
+      - 'packages/node-drivers/src/mindgrab.js'
   workflow_dispatch:
 
 concurrency:

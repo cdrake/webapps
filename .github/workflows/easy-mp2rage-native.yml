@@ -7,6 +7,7 @@ on:
       - '.github/actions/setup-wasm-opt/**'
       - 'packages/easy-mp2rage/**'
       - 'apps/easy-mp2rage/**'
+      - 'packages/components/src/file-io/NiftiUtils.js'
   push:
     branches: [main]
     paths:
@@ -16,6 +17,7 @@ on:
       - 'exes/node-cli/**'
       - 'packages/easy-mp2rage/**'
       - 'apps/easy-mp2rage/**'
+      - 'packages/components/src/file-io/NiftiUtils.js'
   workflow_dispatch:
     inputs:
       sign_release:

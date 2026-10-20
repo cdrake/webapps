@@ -9,6 +9,8 @@ on:
       - 'exes/native-publish/**'
       - 'test-utils/native-nifti/**'
       - 'packages/synthseg/**'
+      - 'packages/components/src/automation/**'
+      - 'packages/components/src/file-io/**'
   workflow_dispatch:
     inputs:
       sign_release:

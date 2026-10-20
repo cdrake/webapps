@@ -9,6 +9,7 @@ on:
       - 'packages/components/src/volume/**'
       - 'packages/components/src/file-io/**'
       - 'apps/vesselboost/**'
+      - 'packages/components/src/inference/workerProtocol.js'
   push:
     branches: [main]
     paths:
@@ -20,6 +21,7 @@ on:
       - 'packages/components/src/volume/**'
       - 'packages/components/src/file-io/**'
       - 'apps/vesselboost/**'
+      - 'packages/components/src/inference/workerProtocol.js'
   workflow_dispatch:
     inputs:
       sign_release:
