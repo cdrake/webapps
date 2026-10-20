@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -129,4 +130,27 @@ test("the executable prints help, passes self-check and reports errors", async (
   assert.equal(bad.status, 1);
   assert.match(bad.stderr, /Give a NIfTI image and a new output directory/);
   assert.match(spawnSync(process.execPath, [bin, "download-models"], { encoding: "utf8" }).stdout, /0 model files/);
+});
+
+test("preserves an output created by another run after the empty-directory check", async () => {
+  const dir = await scratch();
+  try {
+    const input = await writeSeries(dir);
+    const out = join(dir, "out");
+    const name = "sub-01_desc-degibbs_dwi.nii.gz";
+    const target = join(out, name);
+    const run = removeRinging({
+      input: input.image,
+      output: out,
+      onProgress() {
+        mkdirSync(out, { recursive: true });
+        writeFileSync(target, "another run owns this image");
+      },
+    });
+    await assert.rejects(run, { code: "EEXIST" });
+    assert.equal(await readFile(target, "utf8"), "another run owns this image");
+    assert.deepEqual(await readdir(out), [name]);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 });

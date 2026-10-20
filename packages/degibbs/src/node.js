@@ -1,7 +1,7 @@
 // The degibbs command line: the web app's workflow on a NIfTI file, with the same WebAssembly
 // module, the same NIfTI writer and the same output names, so each output is the app's download.
 import { randomUUID } from 'node:crypto';
-import { access, mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
+import { access, link, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { createNiftiFromData, createNiftiHeaderFromVolume, decodeNiftiBuffer, readNiftiFrames } from '@neurodesk/webapp-components/file-io/nifti';
@@ -86,10 +86,9 @@ async function writeAtomically(path, bytes) {
   const partial = `${path}.${randomUUID()}.partial`;
   try {
     await writeFile(partial, bytes, { flag: 'wx' });
-    await rename(partial, path);
-  } catch (error) {
+    await link(partial, path);
+  } finally {
     await rm(partial, { force: true });
-    throw error;
   }
 }
 
