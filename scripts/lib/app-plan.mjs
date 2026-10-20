@@ -29,6 +29,17 @@ const LOCKFILE = 'pnpm-lock.yaml';
 const REGISTRY = 'registry/apps.yml';
 // Only the independent unused-code and mutation workflows execute these root tools.
 const INDEPENDENT_ROOT_DEV_DEPENDENCIES = ['knip', '@stryker-mutator/core'];
+const GITATTRIBUTES = '.gitattributes';
+// Outside the composite build and its own tests, only these root files read
+// the runtime manifest; an app whose build or tests stage pinned runtime files
+// reaches one of them. test/app-plan.test.mjs fails on a new reader.
+const RUNTIME_MANIFEST = 'runtime-assets/manifest.json';
+export const RUNTIME_MANIFEST_READERS = ['scripts/fetch-app-runtime.mjs'];
+// site/ files only the composite build copies: the landing page, its
+// analytics settings, the Pages 404 page and the dicompare route shim. The
+// app shell, theme, fonts and logo go into every app and stay shared.
+// test/app-plan.test.mjs fails when anything else names them.
+export const SITE_ONLY_FILES = new Set(['site/landing.css', 'site/landing.js', 'site/analytics.json', 'site/404.html', 'site/dicompare-routes.js']);
 
 function same(a, b) {
   return JSON.stringify(a) === JSON.stringify(b);
@@ -190,6 +201,29 @@ export function selectAffectedApps(registry, changedPaths = [], graph = null, ma
       }
       continue;
     }
+    if (SITE_ONLY_FILES.has(path)) {
+      siteBuild(`${path}: only the composite build copies it`);
+      continue;
+    }
+    if (path === RUNTIME_MANIFEST && graph) {
+      siteBuild(`${path}: the composite build assembles the shared runtime store from it`);
+      for (const reader of RUNTIME_MANIFEST_READERS) selectReaching(reader, `${path}: ${reader} stages the files it pins`);
+      continue;
+    }
+    if (path === GITATTRIBUTES) {
+      // An attribute change touches the files that now check out differently.
+      const files = manifests.get(path)?.files;
+      if (!files) {
+        shared(`${path}: the files whose attributes changed are unknown`);
+        continue;
+      }
+      if (!files.length) continue;
+      const touched = selectAffectedApps(registry, files, graph, new Map()).reasons;
+      if (touched.fallback) shared(`${path}: ${touched.fallback}`);
+      for (const [id, reasons] of Object.entries(touched.apps)) select(id, `${path}: ${reasons[0]}`);
+      for (const reason of touched.site) siteBuild(`${path}: ${reason}`);
+      continue;
+    }
     if (path === REGISTRY) {
       const impact = manifests.get(path) ? registryImpact(manifests.get(path)) : { shared: 'the base or head registry is unavailable' };
       if (impact.shared) {
@@ -288,7 +322,7 @@ export function changedPathsFromGit({ base, head = 'HEAD', cwd }) {
   }
 }
 
-const MANIFEST = /^(?:(?:packages|apps|exes)\/[^/]+\/)?package\.json$|^registry\/(?:offline-assets\.lock\.json|apps\.yml)$|^pnpm-lock\.yaml$/;
+const MANIFEST = /^(?:(?:packages|apps|exes)\/[^/]+\/)?package\.json$|^registry\/(?:offline-assets\.lock\.json|apps\.yml)$|^pnpm-lock\.yaml$|^\.gitattributes$/;
 
 // The text of each changed manifest and the lockfile for root manifest edits,
 // at the merge base (changedPathsFromGit diffs from there) and at head. A manifest
@@ -307,6 +341,14 @@ export function changedManifests({ base, head = 'HEAD', cwd, changedPaths }) {
     return manifests;
   }
   for (const path of paths) {
+    if (path === GITATTRIBUTES) {
+      try {
+        manifests.set(path, { files: attributeChanges({ base: mergeBase, head, cwd }) });
+      } catch {
+        // Without the attribute comparison the change stays shared.
+      }
+      continue;
+    }
     try {
       manifests.set(path, { before: show(['show', `${mergeBase}:${path}`]), after: show(['show', `${head}:${path}`]) });
     } catch {
@@ -314,4 +356,24 @@ export function changedManifests({ base, head = 'HEAD', cwd, changedPaths }) {
     }
   }
   return manifests;
+}
+
+// The files at `head` whose git attributes differ between `base` and `head`,
+// as git itself resolves them from every .gitattributes in each tree. Only
+// these can check out differently, so they are what an attribute change
+// touches.
+export function attributeChanges({ base, head, cwd }) {
+  const git = (args, input) => execFileSync('git', args, { cwd, input, encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'], maxBuffer: 256 * 1024 * 1024 });
+  const files = git(['ls-tree', '-r', '-z', '--name-only', head]);
+  const attributes = (source) => {
+    const fields = git(['check-attr', '--stdin', '-z', '-a', `--source=${source}`], files).split('\0');
+    const byFile = new Map();
+    for (let index = 0; index + 2 < fields.length; index += 3) {
+      byFile.set(fields[index], [...(byFile.get(fields[index]) ?? []), `${fields[index + 1]}=${fields[index + 2]}`]);
+    }
+    return byFile;
+  };
+  const [before, after] = [attributes(base), attributes(head)];
+  const key = (list) => (list ?? []).sort().join('\n');
+  return files.split('\0').filter(Boolean).filter((file) => key(before.get(file)) !== key(after.get(file)));
 }

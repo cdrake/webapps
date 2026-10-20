@@ -104,6 +104,12 @@
 
 - Updated dependencies [4b40da1]
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.2
+  - @neurodesk/runtime-support@0.9.6
+  - @neurodesk/edgereg@0.5.20261020
+- Updated dependencies [14db080]
+
 ## 0.5.20261019
 
 ### Patch Changes

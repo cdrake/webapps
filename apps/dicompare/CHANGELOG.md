@@ -94,6 +94,19 @@
 
 - Updated dependencies [4b40da1]
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.2
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.1
+- 14db080: DICOM View's "Open in White matter lesions" button is now an "Open in another webapp"
+  menu that lists every app of the site from the registry. Most apps receive the converted
+  NIfTI image; apps the registry marks `handoff: dicom` (dicompare, QSMbly, dwi2trx, NODDI,
+  Carotid Flow) receive the series' DICOM files, and `handoff: none` keeps an app that cannot
+  use a single series (Zarro, FastPrep, SurfAnnotate, LCModel) out of the menu. The shared shell
+  receives a handoff for every app the way a page drop opens files, through the app's own
+  inputs; dicompare opens the files as reference acquisitions, and White matter lesions
+  keeps its own receiver.
+
 ## 0.15.20261019
 
 ### Patch Changes

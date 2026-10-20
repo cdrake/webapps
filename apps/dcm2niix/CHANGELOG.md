@@ -23,6 +23,16 @@
   - @neurodesk/dicom2vid@0.5.20261020
   - @neurodesk/runtime-support@0.9.4
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.2
+  - @neurodesk/runtime-support@0.9.6
+  - @neurodesk/dicom2vid@0.5.20261020
+- Updated dependencies
+  - @neurodesk/runtime-support@0.9.5
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/dicom2vid@0.5.20261020
+- Updated dependencies [14db080]
+
 ## 0.1.20261020
 
 ### Patch Changes
@@ -54,6 +64,8 @@
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
   - @neurodesk/dicom2vid@0.5.20261020
+
+- Updated dependencies [4b40da1]
 
 ## 0.1.20261019
 

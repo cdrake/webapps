@@ -33,12 +33,13 @@ Before this design, the repository had no denoising, Gibbs unringing, motion cor
 | `dwidenoise` | Patch2Self version 1 (patch radius 0, OLS), a port of DIPY 1.12.1 | DIPY 1.12.1 `patch2self` | denoised NRMSE ≤ 1e-6 against DIPY version 1 in float64 on the slab oracle; on the stage 1 simulation, RMSE / raw noise 0.38 (i.i.d. noise) and 0.39 (spatially correlated noise) |
 | `degibbs` | subvoxel shift | MRtrix `mrdegibbs` | NRMSE < 1 % |
 | `n4` | N4 | ANTs `N4BiasFieldCorrection` | field correlation > 0.99 in mask |
-| `hmc` | NiFreeze (default), SHORELine | NiFreeze, QSIPrep | motion parameters within 0.2 mm and 0.2° per volume |
+| `hmc` | NiFreeze (default), SHORELine | NiFreeze, QSIPrep | registration: NiFreeze GP, for each volume and axis, within the native double spread of seed 1234 against seed 1235 (Q53); SHORELine gate awaits maintainer confirmation, [HMC plan, section 5](dwi-hmc-plan.md#5-reference-runs-and-gates); deterministic parts: motion decomposition 1e-6, SHORE prediction 1e-5 relative, GP prediction to the tolerance that [#448](https://github.com/neurodesk/webapps/issues/448) sets (proposed: 99.99 % of the mask voxels exact, ±1 at the others), b-vectors to the printed precision |
 | `sdc` | SyN-SDC; later reverse-PE topup and Synb0-DisCo | native ANTs, same schedule | field median absolute difference < 0.5 Hz in brain |
 | `noddi` | DTI (WLS, default; niimath dtifit as option), NODDI by AMICO (default), NODDI toolbox, nonlinear fit | FSL `dtifit`; AMICO; NODDI toolbox in Octave; dmipy | FA and MD median absolute difference < 0.01 in WM; NODDI maps < 0.02 in WM |
 
 Each gate is a start value.
 Make a gate tighter when the port shows what it can do. Do not make a gate looser.
+The `hmc` registration gate is the exception (Q53): the start value was 0.2 mm and 0.2° for each volume, but native NiFreeze GP with a different seed, and QSIPrep with a different run, move more than that. Q53 requires the native double seed spread for the same volume and axis. Native `--float 1` fails that rule on 40/90 GP volumes in M0. The shell-maximum alternative and SHORELine extension in the HMC plan are proposals awaiting an issue-owner decision. The WebAssembly registration still runs `antsRegistration --float 1` (no 3DDouble build).
 Compare each NODDI method with its own reference only. The differences between methods are information for About, not a test.
 
 ### Rules for every app
@@ -160,23 +161,32 @@ CI uses cropped data. Native reference outputs go to the Hugging Face dataset at
 
 ## Build order
 
+The tracking issue [#467](https://github.com/neurodesk/webapps/issues/467) lists the remaining work, and [#468](https://github.com/neurodesk/webapps/issues/468) gives a suggested order. Each open item below names its issues.
+
 1. `exes/dwi` workspace, `gradients` and `tensor` crates, BIDS folder reader.
 2. `noddi` with DTI and AMICO.
 
-Status, 19 October 2026: the crates, the AMICO port, the `noddi` app and its command line are done. The first app slice reads NIfTI with bval and bvec, or DICOM (`readDiffusionSeries`), masks with MindGrab on the mean b0 or a supplied mask, and fits in Web Workers. These parts of steps 1 and 2 remain open:
+Status, 19 October 2026: the crates, the AMICO port, the `noddi` app and its command line ([#423](https://github.com/neurodesk/webapps/issues/423)) are done. The first app slice reads NIfTI with bval and bvec, or DICOM (`readDiffusionSeries`), masks with MindGrab on the mean b0 or a supplied mask, and fits in Web Workers. These parts of steps 1 and 2 remain open:
 
-- the BIDS folder reader;
-- the niimath dtifit option (Q14 "allow both");
-- a CI workflow that runs the `exes/dwi` tests, `check:wasm` and `tests/oracle.rs` with a pinned oracle file (without it the oracle test skips, which the data-gated test rule forbids);
-- the ds005134 example, after its upload to Hugging Face;
-- a size limit for the input: `readNiftiFrames` holds the whole series as Float32, about 500 MB for a full-brain ds005134 DWI plus its decompressed data (dwi2trx's `input-limits.ts` is the pattern; the limit belongs in the shared package).
-3. `dwidenoise`: done. Patch2Self version 1 (`exes/dwi/denoise`, `packages/dwidenoise`, `apps/dwidenoise`). Open: the command line, and the upload of the slab oracle to the Hugging Face dataset so that CI runs `tests/oracle.rs`.
-4. `degibbs`: done. A port of MRtrix 3.0.8 `mrdegibbs` (`exes/dwi/degibbs`, `packages/degibbs`, `apps/degibbs`). Open: the command line.
-5. `n4`, with an N4 entry point in the ANTs WebAssembly build.
-6. `hmc`: NiFreeze, then SHORELine.
-7. `sdc` with SyN-SDC. The [SDC port and validation plan](dwi-sdc-plan.md) gives the sdcflows 2.17.1 facts, the reference runs, the gate and the milestones.
-8. NODDI toolbox and nonlinear methods in `noddi`.
-9. Later: reverse-PE topup, then Synb0-DisCo.
+- the BIDS folder reader ([#410](https://github.com/neurodesk/webapps/issues/410), [#411](https://github.com/neurodesk/webapps/issues/411));
+- the niimath dtifit option (Q14 "allow both", [#422](https://github.com/neurodesk/webapps/issues/422));
+- a CI workflow that runs the `exes/dwi` tests, `check:wasm` and `tests/oracle.rs` with a pinned oracle file (without it the oracle test skips, which the data-gated test rule forbids; [#418](https://github.com/neurodesk/webapps/issues/418));
+- the ds005134 example, after its upload to Hugging Face ([#421](https://github.com/neurodesk/webapps/issues/421));
+- a size limit for the input: `readNiftiFrames` holds the whole series as Float32, about 500 MB for a full-brain ds005134 DWI plus its decompressed data (dwi2trx's `input-limits.ts` is the pattern; the limit belongs in the shared package; [#412](https://github.com/neurodesk/webapps/issues/412));
+- shared code, CI and vendor checks for all DWI apps: [#413](https://github.com/neurodesk/webapps/issues/413), [#414](https://github.com/neurodesk/webapps/issues/414), [#415](https://github.com/neurodesk/webapps/issues/415), [#416](https://github.com/neurodesk/webapps/issues/416), [#417](https://github.com/neurodesk/webapps/issues/417), [#419](https://github.com/neurodesk/webapps/issues/419), [#420](https://github.com/neurodesk/webapps/issues/420).
+3. `dwidenoise`: done. Patch2Self version 1 (`exes/dwi/denoise`, `packages/dwidenoise`, `apps/dwidenoise`), merged in [#380](https://github.com/neurodesk/webapps/pull/380) (with [#386](https://github.com/neurodesk/webapps/pull/386)). Open: [#428](https://github.com/neurodesk/webapps/issues/428), [#429](https://github.com/neurodesk/webapps/issues/429), [#430](https://github.com/neurodesk/webapps/issues/430), [#431](https://github.com/neurodesk/webapps/issues/431).
+4. `degibbs`: the app is merged ([#379](https://github.com/neurodesk/webapps/pull/379)); open: [#432](https://github.com/neurodesk/webapps/issues/432), [#433](https://github.com/neurodesk/webapps/issues/433), [#434](https://github.com/neurodesk/webapps/issues/434).
+5. `n4`, with an N4 entry point in the ANTs WebAssembly build: done in [#380](https://github.com/neurodesk/webapps/pull/380). Open: [#435](https://github.com/neurodesk/webapps/issues/435), [#436](https://github.com/neurodesk/webapps/issues/436), [#437](https://github.com/neurodesk/webapps/issues/437).
+6. `hmc`: NiFreeze, then SHORELine. The [HMC plan](dwi-hmc-plan.md) gives the milestones.
+   - Reference data and M0 upload: [#409](https://github.com/neurodesk/webapps/issues/409).
+   - M1, deterministic parts: [#438](https://github.com/neurodesk/webapps/issues/438), [#439](https://github.com/neurodesk/webapps/issues/439), [#440](https://github.com/neurodesk/webapps/issues/440), [#441](https://github.com/neurodesk/webapps/issues/441), [#442](https://github.com/neurodesk/webapps/issues/442), [#443](https://github.com/neurodesk/webapps/issues/443).
+   - M2, registration module and WebAssembly replay: [#444](https://github.com/neurodesk/webapps/issues/444), [#445](https://github.com/neurodesk/webapps/issues/445), [#446](https://github.com/neurodesk/webapps/issues/446).
+   - M3 and M5, NiFreeze trivial and GP end to end: [#449](https://github.com/neurodesk/webapps/issues/449), [#450](https://github.com/neurodesk/webapps/issues/450), [#447](https://github.com/neurodesk/webapps/issues/447), [#448](https://github.com/neurodesk/webapps/issues/448), [#451](https://github.com/neurodesk/webapps/issues/451), [#452](https://github.com/neurodesk/webapps/issues/452).
+   - App and command line: [#453](https://github.com/neurodesk/webapps/issues/453), [#454](https://github.com/neurodesk/webapps/issues/454).
+   - M4 and M6, SHORELine: [#455](https://github.com/neurodesk/webapps/issues/455), [#456](https://github.com/neurodesk/webapps/issues/456), [#457](https://github.com/neurodesk/webapps/issues/457), [#458](https://github.com/neurodesk/webapps/issues/458), [#459](https://github.com/neurodesk/webapps/issues/459); prototypes: [#479](https://github.com/neurodesk/webapps/issues/479), [#480](https://github.com/neurodesk/webapps/issues/480), [#481](https://github.com/neurodesk/webapps/issues/481).
+7. `sdc` with SyN-SDC: [#460](https://github.com/neurodesk/webapps/issues/460), [#461](https://github.com/neurodesk/webapps/issues/461), [#462](https://github.com/neurodesk/webapps/issues/462), [#463](https://github.com/neurodesk/webapps/issues/463), [#464](https://github.com/neurodesk/webapps/issues/464), [#465](https://github.com/neurodesk/webapps/issues/465), [#466](https://github.com/neurodesk/webapps/issues/466). The [SDC port and validation plan](dwi-sdc-plan.md) gives the sdcflows 2.17.1 facts, the reference runs, the gate and the milestones.
+8. NODDI toolbox and nonlinear methods in `noddi`: [#424](https://github.com/neurodesk/webapps/issues/424), [#425](https://github.com/neurodesk/webapps/issues/425), [#426](https://github.com/neurodesk/webapps/issues/426), [#427](https://github.com/neurodesk/webapps/issues/427).
+9. Later: reverse-PE topup ([#471](https://github.com/neurodesk/webapps/issues/471), [#473](https://github.com/neurodesk/webapps/issues/473)), then Synb0-DisCo.
 
 ## Deferred, and why
 

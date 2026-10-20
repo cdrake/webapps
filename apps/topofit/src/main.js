@@ -340,8 +340,8 @@ async function ensureViewer() {
         });
       }
       viewer.addEventListener('volumeUpdated', ({ detail: { volume, changes } }) => {
-        if (viewerBusy || busy || !viewer.meshes.length || volume.name !== source?.name || changes.opacity === undefined) return;
-        anatomyIn3D = changes.opacity > 0;
+        if (viewerBusy || busy || !viewer.meshes.length || volume.name !== source?.name || (changes.opacity === undefined && changes.visible === undefined)) return;
+        anatomyIn3D = volume.visible !== false && volume.opacity > 0;
         viewer.setClipPlane([anatomyIn3D ? 2 : -1, 0, 0]);
       });
       viewer.addEventListener('locationChange', (event) => {
@@ -387,7 +387,7 @@ function syncMeshControls() {
   if (displayedResult) {
     const files = displayedResult === 'qc' || displayedResult === 'patch-qc' ? viewer.volumes : viewer.meshes;
     const displayed = files.find((file) => file.name === outputs.get(displayedResult)?.name);
-    if (!displayed || displayed.opacity === 0) {
+    if (!displayed || displayed.opacity === 0 || displayed.visible === false) {
       showPatchMeasurements(null);
       displayedResult = null;
       $('imageLabel').textContent = 'VIEWER SCENE';

@@ -1,5 +1,11 @@
 # @neurodesk/synthstrip
 
+## 0.2.0
+
+### Minor Changes
+
+- Add SynthStrip no-CSF extraction to the browser and command line, with distinct output names and a checksum-pinned model included in offline bundles. Keep a completed no-CSF browser run in normal CI.
+
 ## 0.1.5
 
 ### Patch Changes

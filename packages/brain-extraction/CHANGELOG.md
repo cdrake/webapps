@@ -1,5 +1,12 @@
 # @neurodesk/brain-extraction
 
+## 0.5.20261020
+
+### Patch Changes
+
+- Updated dependencies
+  - @neurodesk/synthstrip@0.2.0
+
 ## 0.4.20261020
 
 ### Patch Changes
@@ -24,6 +31,12 @@
 
 - Record the injected MindGrab runtime's actual version in brain extraction provenance, including SYNcro's separately pinned build.
 
+- @neurodesk/synthsr@0.6.20261020
+- @neurodesk/synthstrip@0.1.5
+- @neurodesk/synthsr@0.6.20261020
+
+- @neurodesk/synthsr@0.6.20261020
+- @neurodesk/synthstrip@0.1.5
 - @neurodesk/synthsr@0.6.20261020
 - @neurodesk/synthstrip@0.1.5
 - @neurodesk/synthsr@0.6.20261020

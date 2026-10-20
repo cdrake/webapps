@@ -80,6 +80,22 @@
   - @neurodesk/dicom2vid@0.5.20261020
 - Keep the generic handoff Privacy disclosure when integrating the catalog: DICOM targets receive the original scanner headers, and no image is uploaded.
 
+- NiiVue moves to 1.0.0-rc.26 in Brain Extraction, Carotid Flow, SYNcro, SynthSeg, White Matter Lesions, and, through the shared FreeBrowse viewer, Spinal Cord Toolbox, DICOM View and TopoFit. From rc.25, NiiVue places a loaded drawing on the right voxels of a sagittal or otherwise permuted image (niivue/mono#251), so the mask editor no longer probes and reverses NiiVue's load on opening a mask. Opening a mask for editing now takes one load instead of up to five on such images. MuscleMap, SeedSeg and VesselBoost run NiiVue 0.68, which already loaded drawings correctly; they pick up the simpler editor.
+
+  From rc.22 NiiVue renders with WebGL2 by default, so the five apps that pinned rc.11 or rc.14 draw their viewer with WebGL2 even where WebGPU is available; segmentation and other processing keep their own WebGPU backends.
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.2
+  - @neurodesk/runtime-support@0.9.6
+  - @neurodesk/dicom2vid@0.5.20261020
+- Updated dependencies [14db080]
+
+- Updated dependencies [4b40da1]
+
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/dicom2vid@0.5.20261020
+  - @neurodesk/runtime-support@0.9.4
+
 ## 0.3.20261020
 
 ### Patch Changes

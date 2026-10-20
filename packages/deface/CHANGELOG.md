@@ -34,6 +34,12 @@
   - @neurodesk/runtime-support@0.9.5
 - @neurodesk/runtime-support@0.9.4
 
+- Updated dependencies
+  - @neurodesk/runtime-support@0.9.6
+- Updated dependencies
+  - @neurodesk/runtime-support@0.9.5
+- @neurodesk/runtime-support@0.9.4
+
 ## 1.4.20261019
 
 ### Patch Changes

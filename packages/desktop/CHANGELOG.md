@@ -1,5 +1,12 @@
 # @neurodesk/desktop
 
+## 0.37.20261020
+
+### Patch Changes
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.2
+
 ## 0.36.20261020
 
 ### Patch Changes
@@ -24,6 +31,10 @@
 - Updated dependencies [c865c0c]
 
 - Updated dependencies [4b40da1]
+  - @neurodesk/webapp-components@0.17.0
+
+- Updated dependencies [4b40da1]
+
   - @neurodesk/webapp-components@0.17.0
 
 ## 0.35.20261019
