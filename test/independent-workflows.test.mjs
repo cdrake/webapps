@@ -403,4 +403,6 @@ test('the command-line closure follows workspace exports and relative imports', 
   assert.ok(lcmodel.includes('packages/node-drivers/src/dcm2niix.js'));
   // A worker loaded through new URL(..., import.meta.url).
   assert.ok(lcmodel.includes('packages/node-drivers/src/mindgrab-worker.js'));
+  // An asset named without ./ is relative to the module too.
+  assert.ok(commandLineClosure(repoRoot, 'packages/deface').includes('packages/runtime-support/src/niimath/niimath.wasm'));
 });

@@ -7,9 +7,9 @@ import { dirname, join, relative, resolve } from 'node:path';
 // workflows filter on these so that a change to a dependency runs them.
 // It is a lower bound: computed specifiers and non-import reads are not seen.
 
-// Imports, plus files loaded through `new URL('./file', import.meta.url)`:
+// Imports, plus files loaded through `new URL('file', import.meta.url)`:
 // workers, WebAssembly and data next to the module.
-const IMPORT = /(?:import|export)\s[^'"`;]*?from\s*['"]([^'"]+)['"]|import\s*\(\s*['"]([^'"]+)['"]\s*\)|import\s+['"]([^'"]+)['"]|new\s+URL\(\s*['"](\.{1,2}\/[^'"]+)['"]\s*,\s*import\.meta\.url\s*\)/g;
+const IMPORT = /(?:import|export)\s[^'"`;]*?from\s*['"]([^'"]+)['"]|import\s*\(\s*['"]([^'"]+)['"]\s*\)|import\s+['"]([^'"]+)['"]|new\s+URL\(\s*['"]((?![a-z][\w+.-]*:|\/)[^'"]+)['"]\s*,\s*import\.meta\.url\s*\)/g;
 // Entry points a command line or its Node API starts from, besides `bin`.
 const NODE_ENTRIES = ['./node', '.'];
 const SOURCE_ENTRIES = ['src/node.js', 'src/index.js'];
@@ -70,7 +70,9 @@ export function commandLineClosure(root, packageDir) {
     seen.add(file);
     if (!/\.[cm]?js$/.test(file)) continue;
     for (const match of readFileSync(file, 'utf8').matchAll(IMPORT)) {
-      const next = resolveSpecifier(packages, match[1] ?? match[2] ?? match[3] ?? match[4], file);
+      // A URL string is always relative to the module, with or without ./.
+      const specifier = match[4] ? (match[4].startsWith('.') ? match[4] : `./${match[4]}`) : match[1] ?? match[2] ?? match[3];
+      const next = resolveSpecifier(packages, specifier, file);
       if (next && !seen.has(next)) pending.push(next);
     }
   }
