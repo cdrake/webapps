@@ -246,6 +246,13 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.9.0
 
+- a928230: Correct segmentation and label results by hand before downloading them. Every mask and label-map row in Results (cord, lesion, TotalSpineSeg labels and disc markers) now has an Edit button that opens the shared mask editor under the viewer toolbar, with the input image as the base. Apply replaces the result with the edited uint8 NIfTI under the same file name and labels the row `(edited)`; Download then returns the edit. Cancel, a new run, Clear results, a new input or hiding the edited overlay discard unapplied strokes. Lesion statistics and automation reports keep the values the pipeline computed.
+
+- Updated dependencies [0204fe1]
+
+- Updated dependencies [ec85a09]
+  - @neurodesk/webapp-components@0.10.0
+
 ## 0.5.20261003
 
 ### Patch Changes
@@ -259,6 +266,11 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.6.2
+
+- Updated dependencies
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.7.0
 
 ## 0.5.20260928
 
@@ -276,6 +288,9 @@
 
 - Updated dependencies [93381e8]
   - @neurodesk/webapp-components@0.6.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.6.1
 
 ### Minor Changes
 
@@ -316,6 +331,12 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.4.2
 
+- Updated dependencies [4959500]
+  - @neurodesk/webapp-components@0.4.4
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.4.3
+
 ## 0.4.20260918
 
 ### Minor Changes
@@ -352,6 +373,12 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.2.0
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.2
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.1
+
 ### Minor Changes
 
 - Add a shared Standalone action and offline desktop packaging with included, checksum-verified models and runtime dependencies. Remove the lightNIIng topbar link while retaining its About statement.
@@ -362,6 +389,11 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.1.4
+
+- Updated dependencies [3cd773f]
+
+- Updated dependencies [4add8da]
+  - @neurodesk/webapp-components@0.1.5
 
 ## 0.2.20260910
 

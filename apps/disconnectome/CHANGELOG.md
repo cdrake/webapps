@@ -266,6 +266,12 @@
   - @neurodesk/webapp-components@0.6.2
   - @neurodesk/nii2tvx@0.2.20260930
 
+- Updated dependencies
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.7.0
+  - @neurodesk/nii2tvx@0.2.20260930
+
 ## 0.2.20260928
 
 ### Patch Changes
@@ -280,6 +286,10 @@
 
 - Updated dependencies [93381e8]
   - @neurodesk/webapp-components@0.6.0
+  - @neurodesk/nii2tvx@0.2.20260928
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.6.1
   - @neurodesk/nii2tvx@0.2.20260928
 
 ### Minor Changes
@@ -315,4 +325,9 @@
 - Updated dependencies [c8a0be2]
 
 - Updated dependencies
+  - @neurodesk/nii2tvx@0.1.20260923
+
+- Disconnectome gains the shared Support action along with every other webapp. It
+  merged after the release that recorded the action for the other 25 apps, so this
+  notes it against the same release date.
   - @neurodesk/nii2tvx@0.1.20260923

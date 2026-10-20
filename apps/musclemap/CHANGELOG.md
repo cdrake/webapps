@@ -181,6 +181,11 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.1.4
 
+- Updated dependencies [3cd773f]
+
+- Updated dependencies [4add8da]
+  - @neurodesk/webapp-components@0.1.5
+
 ## 1.5.20260910
 
 ### Minor Changes
@@ -261,12 +266,33 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.6.2
 
+- Updated dependencies
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.7.0
+
 ## 1.4.20260928
 
 ### Patch Changes
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.5.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.6.1
+
+- 93381e8: Remove the static bottom bar (version, privacy sentence, duplicate More Apps and GitHub links) from the six inference-workspace apps. The shared app bar already shows the version and links, and Privacy has its own dialog. The unused `.app-footer` and `.nd-app-footer` rules leave the shared stylesheets and the hosted theme.
+
+- 93381e8: Every app now opens on its workspace and shows live status only in the bottom bar: a short message, a progress bar, elapsed time and a cancel × that appears while a run can be cancelled. Start pages, landing overlays and welcome modals are gone, and their copy moved to About. Every app has a technical log below the viewer that starts collapsed. Sidebar help longer than 90 characters moved into info tooltips or About, and each sidebar has one primary action. `ProgressManager` now drives the design-system footer, including the elapsed counter and the cancel button.
+
+  The shared example selector shows one short line once an example loads; the description and expected result moved to a tooltip beside the Example label. NiiMath gained the shared layout tabs and About dialog and no longer ships app CSS.
+
+- Updated dependencies
+
+- Updated dependencies [93381e8]
+
+- Updated dependencies [93381e8]
+  - @neurodesk/webapp-components@0.6.0
 
 ### Minor Changes
 
@@ -302,6 +328,12 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.4.2
 
+- Updated dependencies [4959500]
+  - @neurodesk/webapp-components@0.4.4
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.4.3
+
 ## 1.4.20260918
 
 ### Patch Changes
@@ -314,6 +346,11 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.3.1
+
+- Clarify that each input's image type describes the uploaded file. Rename View to Preview file and the per-file checkbox to Include in segmentation.
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.4.1
 
 ## 1.4.20260916
 
@@ -331,6 +368,15 @@
 - Add Run offline instructions through the shared Standalone action, linking the MuscleMap 1.4 Neurodesk container on Zenodo with its checksum, setup guidance and copyable CPU segmentation command.
 
 - Restore the 1.4 model release series after the catalog-wide release incorrectly advanced it to 1.5. Pin the series in the release planner so webapp and shared dependency changes only advance the UTC date. Synchronize the application and generated model catalog versions.
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.2
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.1
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.0
 
 ### Minor Changes
 

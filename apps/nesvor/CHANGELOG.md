@@ -271,6 +271,30 @@
 - Publish the experimental NeSVoR browser reconstruction with WebGPU brain masking, motion correction, N4 preprocessing, deformation and reconstruction, plus optional Linux NVIDIA remote compute. WebGPU is the default, progress is logged throughout processing, and acquisition thickness remains editable without a confirmation checkbox. Hardware GPU performance and full-acquisition CUDA parity remain unverified.
   - @neurodesk/nesvor@0.3.20260930
 
+- Enable the shared cross-origin isolation fallback on static hosts such as GitHub Pages so N4 can use SharedArrayBuffer. Include NeSVoR in deployed isolation checks and verify its compute-server-first standalone download layout.
+  - @neurodesk/nesvor@0.3.20260930
+
+- Register stack loading and viewer inspection with the shared automation contract. Opening stacks replaces prior inputs and waits for the viewer; reconstruction remains an interactive operation.
+  - @neurodesk/nesvor@0.3.20260930
+
+- Updated dependencies
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.7.0
+  - @neurodesk/nesvor@0.3.20260930
+
+- Discover a same-host compute server only after remote processing is selected. Browser mode no longer requests a nonexistent API from the static website.
+  - @neurodesk/nesvor@0.3.20260930
+
+- Use a portable runtime cache when building NeSVoR outside the development workspace. Preserve ZARRo export progress and cancellation when volume loading completes after the export starts.
+  - @neurodesk/nesvor@0.3.20260930
+
+- Release the experimental NeSVoR browser and remote compute workflows. Package the required ONNX runtime with gzip compression and omit unused runtime variants. Include shared compute connection recovery, cancellation and Linux server setup instructions.
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.5.2
+  - @neurodesk/nesvor@0.3.20260930
+
 ## 0.3.20260924
 
 ### Patch Changes
@@ -280,11 +304,27 @@
 - Updated dependencies
   - @neurodesk/nesvor@0.3.20260924
 
+- Run MONAIfbs brain masking through ONNX Runtime WebGPU while preserving the pinned model, eight augmentations and postprocessing. Report the masking backend and add GPU numerical and production worker verification.
+
+- Remove the mandatory slice-thickness confirmation. Allow reconstruction with inferred thicknesses, show a non-blocking spacing note, and retain editable values and numeric validation.
+  - @neurodesk/nesvor@0.3.20260924
+
 ## 0.3.20260921
 
 ### Patch Changes
 
 - @neurodesk/nesvor@0.3.20260921
+
+- Put compute-server installation first in the shared Standalone dialog for NeSVoR. Show Linux/NVIDIA prerequisites, archive extraction, doctor and container download commands, startup with the current webapp origin, and address/pairing instructions. Support verified preview downloads without presenting them as published releases.
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.5.1
+  - @neurodesk/nesvor@0.3.20260921
+
+- Implement browser MONAIfbs masking, ITK N4 bias correction and deformable reconstruction, including analytic Jacobian regularization and complete optimizer updates. Publish pinned model/runtime assets with attribution and integrity checks. Verify the combined objective against upstream PyTorch, fetal mask voxels against the original checkpoint, and N4 plus deformation through the production browser workflow. Add a hardware-only full-acquisition validation command. Full-budget performance and CUDA reconstruction parity remain unverified.
+
+- Updated dependencies
+  - @neurodesk/nesvor@0.3.20260921
 
 ### Minor Changes
 

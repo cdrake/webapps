@@ -177,6 +177,11 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.6.2
 
+- Updated dependencies
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.7.0
+
 ## 0.12.20260928
 
 ### Patch Changes
@@ -187,6 +192,9 @@
 
 - Updated dependencies [93381e8]
   - @neurodesk/webapp-components@0.6.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.6.1
 
 ## 0.11.20260928
 
@@ -244,6 +252,9 @@
 
   STL export uses the shared busy and cancellation controls so replacement input cannot receive stale downloads.
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.4.2
+
 ## 0.7.20260919
 
 ## 0.7.20260918
@@ -277,6 +288,12 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.2.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.2
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.1
 
 ## 0.6.20260914
 

@@ -351,6 +351,13 @@
   - @neurodesk/synthsr@0.5.20260930
   - @neurodesk/brain-extraction@0.1.12
 
+- Updated dependencies
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.7.0
+  - @neurodesk/synthsr@0.5.20260930
+  - @neurodesk/brain-extraction@0.1.13
+
 ## 0.3.20260928
 
 ### Patch Changes
@@ -367,6 +374,11 @@
   - @neurodesk/webapp-components@0.6.0
   - @neurodesk/synthsr@0.5.20260928
   - @neurodesk/brain-extraction@0.1.10
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.6.1
+  - @neurodesk/synthsr@0.5.20260928
+  - @neurodesk/brain-extraction@0.1.11
 
 ### Minor Changes
 
@@ -421,6 +433,16 @@
   - @neurodesk/synthsr@0.4.20260920
   - @neurodesk/brain-extraction@0.1.4
 
+- Updated dependencies [4959500]
+  - @neurodesk/webapp-components@0.4.4
+  - @neurodesk/synthsr@0.4.20260920
+  - @neurodesk/brain-extraction@0.1.6
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.4.3
+  - @neurodesk/synthsr@0.4.20260920
+  - @neurodesk/brain-extraction@0.1.5
+
 ## 0.1.20260918
 
 ### Patch Changes
@@ -460,6 +482,10 @@
 ### Patch Changes
 
 - Include Brain extraction in the offline desktop suite with its SynthStrip model and a real BET extraction and download check. Reuse the shared MindGrab adapter in SYNcro.
+
+- Add T1 and T2 head MRI examples with cancellable downloads and retry. Remove the BET method description and clarify that the current browser SynthStrip adapter uses the CPU. Require declared, pinned examples and browser coverage for newly generated apps.
+
+- Publish Brain extraction in a separately versioned offline suite.
 
 ### Minor Changes
 

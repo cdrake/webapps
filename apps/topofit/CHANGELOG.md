@@ -304,6 +304,12 @@
   - @neurodesk/webapp-components@0.6.2
   - @neurodesk/topofit@0.12.20260930
 
+- Updated dependencies
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.7.0
+  - @neurodesk/topofit@0.12.20260930
+
 ## 0.12.20260928
 
 ### Patch Changes
@@ -318,6 +324,10 @@
 
 - Updated dependencies [93381e8]
   - @neurodesk/webapp-components@0.6.0
+  - @neurodesk/topofit@0.12.20260928
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.6.1
   - @neurodesk/topofit@0.12.20260928
 
 ### Minor Changes
@@ -420,6 +430,14 @@
 - Updated dependencies [a213c53]
   - @neurodesk/topofit@0.7.20260920
 
+- Style dialog inputs with the shared field controls and give them 44 px touch targets and 16 px text on phones. Verify TopoFit's STL settings at desktop and phone widths.
+
+- efd8af3: Show the Example control before the file picker in every app, replace the registration apps' stale "Loading the default images" empty state, give FireANTs a CPU time budget and progress messages, ship BrowserQC's CPU MindGrab bundle with a longer segmentation budget, select CPU processing in SynthSR and brain extraction when no WebGPU adapter exists, start MuscleMap at 50 % overlap without WebGPU, and run VesselBoost's hosted example workflow in its browser tests.
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.4.2
+  - @neurodesk/topofit@0.7.20260920
+
 ## 0.7.20260919
 
 ### Patch Changes
@@ -470,6 +488,14 @@
   - @neurodesk/webapp-components@0.2.0
   - @neurodesk/topofit@0.7.20260915
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.2
+  - @neurodesk/topofit@0.7.20260915
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.1
+  - @neurodesk/topofit@0.7.20260915
+
 ### Minor Changes
 
 - Add a shared Standalone action and offline desktop packaging with included, checksum-verified models and runtime dependencies. Remove the lightNIIng topbar link while retaining its About statement.
@@ -493,6 +519,17 @@
 
 - Updated dependencies
   - @neurodesk/topofit@0.5.20260914
+
+- 3cd773f: Greedy and EdgeReg show all three viewer panels on phones. TopoFit conforms axis-aligned and oblique scans through the pinned npm niimath WebAssembly worker. SYNcro now matches the native three-input workflow, offers four checksum-pinned tutorials, defaults to MindGrab and Greedy with SynthStrip and ANTs alternatives, uses niimath for lesion and masking operations, and switches one NiiVue viewer between images with automatic lesion overlays. SynthSR lets adapter limits govern its largest activation buffer, so validated 256×256×192 scans and larger volumes on capable GPUs are attempted while other shared U-Net callers retain their existing limit. Add the standalone ANTS registration demo.
+
+- 4add8da: Let TopoFit users show multiple cortical meshes together and reveal them inside the 3D volume with an adjustable X-ray control.
+
+- Updated dependencies [3cd773f]
+
+- Updated dependencies [4add8da]
+  - @neurodesk/topofit@0.5.20260914
+  - @neurodesk/webapp-components@0.1.5
+  - @neurodesk/runtime-support@0.1.2
 
 ### Minor Changes
 

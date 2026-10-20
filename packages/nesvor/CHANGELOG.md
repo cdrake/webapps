@@ -151,6 +151,8 @@
 
 - Default to WebGPU, report measured training batch and preprocessing progress in the live and downloaded logs, and move detailed sidebar explanations into accessible help tooltips.
 
+- Run MONAIfbs brain masking through ONNX Runtime WebGPU while preserving the pinned model, eight augmentations and postprocessing. Report the masking backend and add GPU numerical and production worker verification.
+
 ## 0.3.20260921
 
 ### Patch Changes

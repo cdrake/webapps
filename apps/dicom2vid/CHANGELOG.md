@@ -168,6 +168,8 @@
 
   The shared example selector shows one short line once an example loads; the description and expected result moved to a tooltip beside the Example label. NiiMath gained the shared layout tabs and About dialog and no longer ships app CSS.
 
+- Publish the current automation contract and JSON Schema at both static build URLs, including clean builds without a prior development session. Refresh cached builds when the shared automation contract or browser adapter changes.
+
 ### Minor Changes
 
 - Expose typed operations across the application catalog, including multiple inputs, DICOM series selection, variable artifacts and viewer workflows. Share awaited processing and cancellation between each app and its agent adapter. Publish verified result reports and scientific provenance.

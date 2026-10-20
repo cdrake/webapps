@@ -247,6 +247,11 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.6.2
 
+- Updated dependencies
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.7.0
+
 ## 0.14.20260929
 
 ### Patch Changes
@@ -267,6 +272,11 @@
 
 - Updated dependencies [93381e8]
   - @neurodesk/webapp-components@0.6.0
+
+- ccece98: Keep populated reference and test-data controls from overlapping on narrow screens.
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.6.1
 
 ### Minor Changes
 
@@ -306,6 +316,12 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.4.2
+
+- Updated dependencies [4959500]
+  - @neurodesk/webapp-components@0.4.4
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.4.3
 
 ## 0.13.20260918
 

@@ -297,6 +297,11 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.6.2
 
+- Updated dependencies
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.7.0
+
 ## 1.3.20260928
 
 ### Patch Changes
@@ -311,6 +316,9 @@
 
 - Updated dependencies [93381e8]
   - @neurodesk/webapp-components@0.6.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.6.1
 
 ### Minor Changes
 
@@ -353,6 +361,12 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.4.2
 
+- Updated dependencies [4959500]
+  - @neurodesk/webapp-components@0.4.4
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.4.3
+
 ## 1.2.20260918
 
 ### Patch Changes
@@ -383,6 +397,12 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.2.0
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.2
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.1
+
 ### Minor Changes
 
 - Add a shared Standalone action and offline desktop packaging with included, checksum-verified models and runtime dependencies. Remove the lightNIIng topbar link while retaining its About statement.
@@ -393,6 +413,12 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.1.4
+
+- Updated dependencies [3cd773f]
+
+- Updated dependencies [4add8da]
+  - @neurodesk/webapp-components@0.1.5
+  - @neurodesk/runtime-support@0.1.2
 
 ## 1.1.20260910
 

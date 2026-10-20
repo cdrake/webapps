@@ -452,6 +452,14 @@
   - @neurodesk/synthsr@0.5.20260930
   - @neurodesk/brain-extraction@0.1.12
 
+- Updated dependencies
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.7.0
+  - @neurodesk/greedy@0.4.20260930
+  - @neurodesk/synthsr@0.5.20260930
+  - @neurodesk/brain-extraction@0.1.13
+
 ## 0.4.20260928
 
 ### Patch Changes
@@ -469,6 +477,12 @@
   - @neurodesk/greedy@0.4.20260928
   - @neurodesk/synthsr@0.5.20260928
   - @neurodesk/brain-extraction@0.1.10
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.6.1
+  - @neurodesk/greedy@0.4.20260928
+  - @neurodesk/synthsr@0.5.20260928
+  - @neurodesk/brain-extraction@0.1.11
 
 ### Minor Changes
 
@@ -517,6 +531,24 @@
 
 - @neurodesk/greedy@0.3.20260920
 
+- Updated dependencies [4959500]
+  - @neurodesk/webapp-components@0.4.4
+  - @neurodesk/greedy@0.3.20260920
+  - @neurodesk/synthsr@0.4.20260920
+  - @neurodesk/brain-extraction@0.1.6
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.4.3
+  - @neurodesk/greedy@0.3.20260920
+  - @neurodesk/synthsr@0.4.20260920
+  - @neurodesk/brain-extraction@0.1.5
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.4.2
+  - @neurodesk/greedy@0.3.20260920
+  - @neurodesk/synthsr@0.4.20260920
+  - @neurodesk/brain-extraction@0.1.4
+
 ## 0.3.20260918
 
 ### Patch Changes
@@ -558,6 +590,21 @@
   - @neurodesk/greedy@0.3.20260915
   - @neurodesk/synthsr@0.4.20260915
 
+- Include Brain extraction in the offline desktop suite with its SynthStrip model and a real BET extraction and download check. Reuse the shared MindGrab adapter in SYNcro.
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.2
+  - @neurodesk/greedy@0.3.20260915
+  - @neurodesk/synthsr@0.4.20260915
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.1
+  - @neurodesk/greedy@0.3.20260915
+  - @neurodesk/synthsr@0.4.20260915
+
+- Reject out-of-field registration trial coordinates before integer conversion, preventing a threaded WebAssembly crash during SYNcro normalization. Include complete desktop and HPC release packaging with offline workflow gates.
+  - @neurodesk/greedy@0.3.20260915
+
 ### Minor Changes
 
 - Add a shared Standalone action and offline desktop packaging with included, checksum-verified models and runtime dependencies. Remove the lightNIIng topbar link while retaining its About statement.
@@ -568,6 +615,19 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.1.4
+  - @neurodesk/synthsr@0.3.20260914
+
+- Updated dependencies
+  - @neurodesk/greedy@0.2.20260914
+
+- 3cd773f: Greedy and EdgeReg show all three viewer panels on phones. TopoFit conforms axis-aligned and oblique scans through the pinned npm niimath WebAssembly worker. SYNcro now matches the native three-input workflow, offers four checksum-pinned tutorials, defaults to MindGrab and Greedy with SynthStrip and ANTs alternatives, uses niimath for lesion and masking operations, and switches one NiiVue viewer between images with automatic lesion overlays. SynthSR lets adapter limits govern its largest activation buffer, so validated 256×256×192 scans and larger volumes on capable GPUs are attempted while other shared U-Net callers retain their existing limit. Add the standalone ANTS registration demo.
+
+- Updated dependencies [3cd773f]
+
+- Updated dependencies [4add8da]
+  - @neurodesk/greedy@0.1.20260914
+  - @neurodesk/webapp-components@0.1.5
+  - @neurodesk/runtime-support@0.1.2
   - @neurodesk/synthsr@0.3.20260914
 
 ## 0.2.20260910

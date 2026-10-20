@@ -388,6 +388,12 @@
   - @neurodesk/webapp-components@0.6.2
   - @neurodesk/synthseg@0.5.20260930
 
+- Updated dependencies
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.7.0
+  - @neurodesk/synthseg@0.5.20260930
+
 ## 0.5.20260928
 
 ### Patch Changes
@@ -398,6 +404,16 @@
 
 - Updated dependencies [93381e8]
   - @neurodesk/webapp-components@0.6.0
+  - @neurodesk/synthseg@0.5.20260928
+
+- Use portable underscore MCP tool names, explicit input cardinality, and declared SynthSeg browser geometry limits for preflight validation. Preserve duplicate DICOM filenames during conversion, release viewer sessions when their windows close, and prevent cancellation/retry races.
+
+  Resolve QSM voxel-dependent defaults for supplied masks before reconstruction, so generated-mask and supplied-mask runs produce the same output. Add complete Mac scientific validation commands and evidence checks. The SynthSeg GPU buffer ceiling remains unchanged.
+
+- 3fb0b87: One click on the labels Download button saved the file twice: the result list's download callback and a second `saveBtn.onclick` handler both fired. The button now downloads once, and batch jobs no longer fail with "Duplicate output".
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.6.1
   - @neurodesk/synthseg@0.5.20260928
 
 ### Minor Changes
@@ -449,6 +465,14 @@
   - @neurodesk/webapp-components@0.4.2
   - @neurodesk/synthseg@0.3.20260920
 
+- Updated dependencies [4959500]
+  - @neurodesk/webapp-components@0.4.4
+  - @neurodesk/synthseg@0.3.20260920
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.4.3
+  - @neurodesk/synthseg@0.3.20260920
+
 ## 0.3.20260918
 
 ### Patch Changes
@@ -483,6 +507,14 @@
   - @neurodesk/webapp-components@0.2.0
   - @neurodesk/synthseg@0.3.20260915
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.2
+  - @neurodesk/synthseg@0.3.20260915
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.1
+  - @neurodesk/synthseg@0.3.20260915
+
 ### Minor Changes
 
 - Add a shared Standalone action and offline desktop packaging with included, checksum-verified models and runtime dependencies. Remove the lightNIIng topbar link while retaining its About statement.
@@ -493,6 +525,13 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.1.4
+  - @neurodesk/synthseg@0.2.20260914
+
+- Updated dependencies [3cd773f]
+
+- Updated dependencies [4add8da]
+  - @neurodesk/webapp-components@0.1.5
+  - @neurodesk/runtime-support@0.1.2
   - @neurodesk/synthseg@0.2.20260914
 
 ## 0.2.20260910

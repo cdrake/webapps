@@ -314,6 +314,12 @@
   - @neurodesk/webapp-components@0.6.2
   - @neurodesk/greedy@0.4.20260930
 
+- Updated dependencies
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.7.0
+  - @neurodesk/greedy@0.4.20260930
+
 ## 0.4.20260928
 
 ### Patch Changes
@@ -328,6 +334,10 @@
 
 - Updated dependencies [93381e8]
   - @neurodesk/webapp-components@0.6.0
+  - @neurodesk/greedy@0.4.20260928
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.6.1
   - @neurodesk/greedy@0.4.20260928
 
 ### Minor Changes
@@ -372,6 +382,20 @@
 - e1adeb4: Add rigid-body affine registration with `-dof 6` and stream scalar 4-D series when reslicing, preserving temporal metadata.
   - @neurodesk/greedy@0.3.20260920
 
+- Updated dependencies [4959500]
+  - @neurodesk/webapp-components@0.4.4
+  - @neurodesk/greedy@0.3.20260920
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.4.3
+  - @neurodesk/greedy@0.3.20260920
+
+- efd8af3: Show the Example control before the file picker in every app, replace the registration apps' stale "Loading the default images" empty state, give FireANTs a CPU time budget and progress messages, ship BrowserQC's CPU MindGrab bundle with a longer segmentation budget, select CPU processing in SynthSR and brain extraction when no WebGPU adapter exists, start MuscleMap at 50 % overlap without WebGPU, and run VesselBoost's hosted example workflow in its browser tests.
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.4.2
+  - @neurodesk/greedy@0.3.20260920
+
 ## 0.3.20260918
 
 ### Patch Changes
@@ -406,6 +430,17 @@
   - @neurodesk/webapp-components@0.2.0
   - @neurodesk/greedy@0.3.20260915
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.2
+  - @neurodesk/greedy@0.3.20260915
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.1
+  - @neurodesk/greedy@0.3.20260915
+
+- Reject out-of-field registration trial coordinates before integer conversion, preventing a threaded WebAssembly crash during SYNcro normalization. Include complete desktop and HPC release packaging with offline workflow gates.
+  - @neurodesk/greedy@0.3.20260915
+
 ### Minor Changes
 
 - Add a shared Standalone action and offline desktop packaging with included, checksum-verified models and runtime dependencies. Remove the lightNIIng topbar link while retaining its About statement.
@@ -415,6 +450,12 @@
 ### Patch Changes
 
 - Updated dependencies
+  - @neurodesk/greedy@0.2.20260914
+
+- Write native release checksums with LF line endings on every platform so Linux and macOS uploaders can verify Windows archives.
+  - @neurodesk/greedy@0.2.20260914
+
+- Allow the isolated Apple signing job to look up draft releases before notarization.
   - @neurodesk/greedy@0.2.20260914
 
 ### Minor Changes
@@ -429,11 +470,29 @@
   - @neurodesk/webapp-components@0.1.4
   - @neurodesk/greedy@0.1.20260914
 
+- 7bda502: Restore cross-origin isolation for Greedy on GitHub Pages with the scoped COI service-worker fallback. Build the browser runtime from source and ship it only in the versioned standalone web release. Add `-rb VALUE|AUTO` to set the reslice background, including CT air-background detection.
+
+- 3cd773f: Greedy and EdgeReg show all three viewer panels on phones. TopoFit conforms axis-aligned and oblique scans through the pinned npm niimath WebAssembly worker. SYNcro now matches the native three-input workflow, offers four checksum-pinned tutorials, defaults to MindGrab and Greedy with SynthStrip and ANTs alternatives, uses niimath for lesion and masking operations, and switches one NiiVue viewer between images with automatic lesion overlays. SynthSR lets adapter limits govern its largest activation buffer, so validated 256×256×192 scans and larger volumes on capable GPUs are attempted while other shared U-Net callers retain their existing limit. Add the standalone ANTS registration demo.
+
+- Updated dependencies [3cd773f]
+
+- Updated dependencies [4add8da]
+  - @neurodesk/greedy@0.1.20260914
+  - @neurodesk/webapp-components@0.1.5
+  - @neurodesk/runtime-support@0.1.2
+
 ## 0.1.20260911
 
 ### Patch Changes
 
 - Updated dependencies
+  - @neurodesk/greedy@0.1.20260911
+
+- dc50e56: Normalize NIfTI spatial units to millimetres and preserve scaled integer intensities when writing registered images. Isolate registration workers so cancelled input reads cannot affect a subsequent run.
+
+  Use the shared download helper in both registration apps and expose Greedy command-line instructions through the application bar.
+
+- Updated dependencies [dc50e56]
   - @neurodesk/greedy@0.1.20260911
 
 ### Minor Changes
