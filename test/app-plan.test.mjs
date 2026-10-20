@@ -7,11 +7,11 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import test from 'node:test';
 import { parse, stringify } from 'yaml';
-import { createAppPlan } from '../scripts/lib/app-plan.mjs';
+import { createAppPlan, RUNTIME_MANIFEST_READERS, SITE_ONLY_FILES } from '../scripts/lib/app-plan.mjs';
 import { testedBase } from '../scripts/lib/tested-base.mjs';
 import { lockfileImpact } from '../scripts/lib/lockfile-impact.mjs';
 import { loadAppsRegistry, repoRoot } from '../scripts/lib/apps-registry.mjs';
-import { CATALOG_JOBS, loadConservativeWorkspaceGraph, WorkspaceGraphConfigurationError } from '../scripts/lib/workspace-graph.mjs';
+import { CATALOG, CATALOG_JOBS, loadConservativeWorkspaceGraph, reachableFrom, WorkspaceGraphConfigurationError } from '../scripts/lib/workspace-graph.mjs';
 
 const graph = loadConservativeWorkspaceGraph(repoRoot);
 
@@ -45,7 +45,7 @@ test('homepage easter-egg changes select no catalog apps', async () => {
 
 test('shared homepage files still select the complete app catalog', async () => {
   const registry = await loadAppsRegistry();
-  for (const path of ['site/landing.js', 'site/app-theme.css', 'scripts/lib/landing-page.mjs']) {
+  for (const path of ['site/app-shell.js', 'site/app-theme.css', 'site/fonts/inter.woff2', 'scripts/lib/landing-page.mjs']) {
     const plan = createAppPlan(registry, [path]);
     assert.equal(plan.selected.length, registry.apps.length, path);
   }
@@ -957,4 +957,93 @@ test('a .gitattributes change without a comparable base selects the full catalog
   const plan = createAppPlan(registry, ['.gitattributes'], await graph, new Map());
   assert.equal(plan.allApps, true);
   assert.match(plan.reasons.fallback, /\.gitattributes: the files whose attributes changed are unknown/);
+});
+
+// Tracked files, Markdown aside, whose text matches the extended regex `pattern`.
+function filesNaming(pattern) {
+  const grep = spawnSync('git', ['grep', '-lzE', pattern, '--', '.', ':!*.md'], { cwd: repoRoot, encoding: 'utf8' });
+  assert.ok(grep.status === 0 || grep.status === 1, grep.stderr);
+  return grep.stdout.split('\0').filter(Boolean);
+}
+
+test('composite-only site files select the site build and no app', async () => {
+  const registry = await loadAppsRegistry();
+  for (const path of SITE_ONLY_FILES) {
+    for (const withGraph of [await graph, null]) {
+      const plan = createAppPlan(registry, [path], withGraph);
+      assert.deepEqual(plan.selected, [], path);
+      assert.equal(plan.site, true, path);
+      assert.equal(plan.reasons.fallback, null, path);
+    }
+  }
+  // The shell, theme and fonts go into every app.
+  for (const path of ['site/app-shell.js', 'site/app-theme.css', 'site/theme.js', 'site/fonts/inter.woff2']) {
+    assert.equal(createAppPlan(registry, [path], await graph).allApps, true, path);
+  }
+});
+
+test('only the composite build and its own tests read the composite-only site files', async () => {
+  const workspace = await graph;
+  const registry = await loadAppsRegistry();
+  const readers = new Set([
+    'scripts/build-site.mjs',
+    'scripts/lib/landing-page.mjs',
+    'scripts/lib/dicompare-routes.mjs',
+    'scripts/write-analytics.mjs',
+    'test-utils/dicompare-routes.mjs',
+    'knip.config.mjs',
+    // The planner names them to classify them.
+    'scripts/lib/app-plan.mjs',
+    ...SITE_ONLY_FILES,
+  ]);
+  // Upstream copies naming their own landing.css and SPA 404 page.
+  const unrelated = new Set(['apps/qsmbly/upstream.json', 'apps/dicompare/legacy-ci/deploy.yml']);
+  const names = [...SITE_ONLY_FILES].map((path) => path.slice('site/'.length).replaceAll('.', '\\.'));
+  for (const file of filesNaming(names.join('|'))) {
+    if (file.startsWith('test/') || file.startsWith('site/easter-eggs/') || unrelated.has(file)) continue;
+    assert.ok(readers.has(file), `${file} names a composite-only site file; check it, then list it as a reader here`);
+  }
+  const catalog = reachableFrom(workspace, CATALOG);
+  for (const reader of readers) {
+    assert.ok(!catalog.has(reader), `ci.yml's per-app jobs run ${reader}`);
+    for (const app of registry.apps) assert.ok(!reachableFrom(workspace, `apps/${app.id}`).has(reader), `${app.id} reaches ${reader}`);
+  }
+});
+
+test('a runtime manifest change selects the apps that stage its files and the site build', async () => {
+  const registry = await loadAppsRegistry();
+  const workspace = await graph;
+  const reaches = (app, node) => reachableFrom(workspace, `apps/${app.id}`).has(node);
+  const plan = createAppPlan(registry, ['runtime-assets/manifest.json'], workspace);
+  const staging = registry.apps.filter((app) => RUNTIME_MANIFEST_READERS.some((reader) => reaches(app, reader)));
+  assert.ok(staging.length > 0);
+  assert.deepEqual(plan.selected.map((app) => app.id), staging.map((app) => app.id));
+  assert.equal(plan.site, true);
+  assert.equal(createAppPlan(registry, ['runtime-assets/manifest.json']).allApps, true, 'without a graph the manifest stays shared');
+
+  // Every other reader belongs to a selected app, a package only selected apps
+  // reach, the composite build, or a check outside the per-app jobs.
+  const selected = new Set(plan.selected.map((app) => app.id));
+  const composite = new Set(['scripts/lib/runtime-assets.mjs', 'scripts/audit-artifacts.mjs', 'test-utils/asyncify-runtime-startup.mjs']);
+  // The planner names the manifest to classify it.
+  const planner = 'scripts/lib/app-plan.mjs';
+  const catalog = reachableFrom(workspace, CATALOG);
+  for (const file of composite) {
+    assert.ok(!catalog.has(file), `ci.yml's per-app jobs run ${file}`);
+    for (const app of registry.apps) assert.ok(!reaches(app, file), `${app.id} reaches ${file}`);
+  }
+  for (const file of filesNaming(String.raw`runtime-assets(/|['"]\s*,\s*['"])manifest\.json`)) {
+    if (RUNTIME_MANIFEST_READERS.includes(file) || composite.has(file) || file === planner || file.startsWith('test/') || file === 'knip.config.mjs') continue;
+    if (/^\.github\/workflows\/(?!ci\.yml$)/.test(file)) continue;
+    const app = file.match(/^apps\/([^/]+)\//)?.[1];
+    if (app) {
+      assert.ok(selected.has(app), `${file} reads the runtime manifest but ${app} is not selected`);
+      continue;
+    }
+    const owner = file.match(/^packages\/[^/]+/)?.[0];
+    assert.ok(owner, `${file} reads the runtime manifest; check it, then add it to RUNTIME_MANIFEST_READERS`);
+    for (const user of registry.apps.filter((candidate) => reaches(candidate, owner))) {
+      assert.ok(selected.has(user.id), `${file} reads the runtime manifest, and ${user.id} reaches ${owner} but is not selected`);
+    }
+  }
 });

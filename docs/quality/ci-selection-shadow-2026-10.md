@@ -234,6 +234,37 @@ Replay over every merged pull request since #206 that changed `.gitattributes` (
 - #237 selects one app (oracle 1);
 - #317 and #343 still select all 31 apps, through their other files.
 
+**Follow-up (runtime manifest and composite-only site files).** Both used to select the full catalog ("no rule
+classifies it").
+
+`runtime-assets/manifest.json` is read at plan time by:
+
+- `scripts/fetch-app-runtime.mjs`, which stages pinned files into the apps that call it;
+- `apps/seedseg` and `packages/seedseg` tests, inside apps that call the fetcher;
+- the composite build (`scripts/lib/runtime-assets.mjs`, `scripts/audit-artifacts.mjs`,
+  `test-utils/asyncify-runtime-startup.mjs`);
+- Knip and the contract tests.
+
+A change to the manifest now selects the apps that reach the fetcher (musclemap, vesselboost, spinalcordtoolbox,
+calmar, seedseg, syncro and brain-extraction) and the site build. The composite site's catalog e2e covers the shared
+store for every app. Without a workspace graph, the change stays shared.
+
+`site/landing.css`, `landing.js`, `analytics.json`, `404.html` and `dicompare-routes.js` are copied only by the
+composite build, so a change to one of them selects only the site build. The app shell, theme, fonts and logo still
+select every app.
+
+Two tests guard both lists. Each one greps every tracked file that names one of these files and fails on a reader it
+has not classified; the runtime-manifest guard found `asyncify-runtime-startup.mjs`. The tests also check that no app
+or per-app job reaches a listed composite reader.
+
+Replay over every merged pull request since #186 that changed these files (#186, #238, #293, #301, #313, #319, #370,
+#380):
+
+- oracle misses: 0;
+- full-catalog fallbacks: 8 before, 4 after; the other four fall back for other files;
+- #319 (`landing.css`) and #370 (`404.html`) now select no app, matching an oracle of 0;
+- #301 and #238 now narrow, selecting 31 and 30 apps through their other files.
+
 ## Root quality tools, 2026-10-17 follow-up
 
 Root-only Knip and Stryker devDependencies now have independent ownership.

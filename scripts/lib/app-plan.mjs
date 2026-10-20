@@ -30,6 +30,16 @@ const REGISTRY = 'registry/apps.yml';
 // Only the independent unused-code and mutation workflows execute these root tools.
 const INDEPENDENT_ROOT_DEV_DEPENDENCIES = ['knip', '@stryker-mutator/core'];
 const GITATTRIBUTES = '.gitattributes';
+// Outside the composite build and its own tests, only these root files read
+// the runtime manifest; an app whose build or tests stage pinned runtime files
+// reaches one of them. test/app-plan.test.mjs fails on a new reader.
+const RUNTIME_MANIFEST = 'runtime-assets/manifest.json';
+export const RUNTIME_MANIFEST_READERS = ['scripts/fetch-app-runtime.mjs'];
+// site/ files only the composite build copies: the landing page, its
+// analytics settings, the Pages 404 page and the dicompare route shim. The
+// app shell, theme, fonts and logo go into every app and stay shared.
+// test/app-plan.test.mjs fails when anything else names them.
+export const SITE_ONLY_FILES = new Set(['site/landing.css', 'site/landing.js', 'site/analytics.json', 'site/404.html', 'site/dicompare-routes.js']);
 
 function same(a, b) {
   return JSON.stringify(a) === JSON.stringify(b);
@@ -189,6 +199,15 @@ export function selectAffectedApps(registry, changedPaths = [], graph = null, ma
         else if (!graph) shared(`${path}: ${reason}, and there is no workspace graph to find its users`);
         else selectReaching(importer, `${path}: ${reason}`);
       }
+      continue;
+    }
+    if (SITE_ONLY_FILES.has(path)) {
+      siteBuild(`${path}: only the composite build copies it`);
+      continue;
+    }
+    if (path === RUNTIME_MANIFEST && graph) {
+      siteBuild(`${path}: the composite build assembles the shared runtime store from it`);
+      for (const reader of RUNTIME_MANIFEST_READERS) selectReaching(reader, `${path}: ${reader} stages the files it pins`);
       continue;
     }
     if (path === GITATTRIBUTES) {
