@@ -101,6 +101,12 @@
   - @neurodesk/dwi2trx@0.5.20261018
   - @neurodesk/noddi@0.3.20261018
 
+- Updated dependencies [7c0d201]
+  - @neurodesk/webapp-components@0.16.2
+  - @neurodesk/dwi2trx@0.5.20261018
+  - @neurodesk/runtime-support@0.9.1
+  - @neurodesk/noddi@0.3.20261018
+
 ## 0.2.20261018
 
 ### Minor Changes

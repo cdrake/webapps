@@ -148,6 +148,19 @@
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/ants@0.5.20261018
 
+- Updated dependencies [7c0d201]
+  - @neurodesk/webapp-components@0.16.2
+  - @neurodesk/ants@0.5.20261018
+  - @neurodesk/runtime-support@0.9.1
+
+- ac01831: These apps no longer refuse to start in a browser without WebGPU. NiiVue falls back to WebGL2 when WebGPU is absent, and MindGrab falls back to WebGL2 or the threaded CPU, so the viewers, defacing, registration, brain extraction, quality control and meshing now run in browsers such as Firefox on Linux. When the browser offers neither WebGPU nor WebGL2, the app says that the image viewer cannot start.
+  - @neurodesk/ants@0.5.20261018
+
+- Updated dependencies [46935f7]
+  - @neurodesk/runtime-support@0.9.0
+  - @neurodesk/webapp-components@0.16.1
+  - @neurodesk/ants@0.5.20261018
+
 ## 0.4.20261018
 
 ### Patch Changes
@@ -186,6 +199,11 @@
 - Updated dependencies [67a5a8f]
   - @neurodesk/runtime-support@0.7.0
   - @neurodesk/webapp-components@0.14.4
+  - @neurodesk/ants@0.4.20261018
+
+- Updated dependencies [b67e4e9]
+  - @neurodesk/runtime-support@0.7.2
+  - @neurodesk/webapp-components@0.15.1
   - @neurodesk/ants@0.4.20261018
 
 ## 0.4.20261017

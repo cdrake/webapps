@@ -98,6 +98,21 @@
   - @neurodesk/webapp-components@0.14.4
   - @neurodesk/vesselboost@0.6.20261018
 
+- Updated dependencies [7c0d201]
+  - @neurodesk/webapp-components@0.16.2
+  - @neurodesk/vesselboost@0.6.20261018
+
+- Updated dependencies [46935f7]
+  - @neurodesk/webapp-components@0.16.1
+  - @neurodesk/vesselboost@0.6.20261018
+
+- Updated dependencies [3329c39]
+  - @neurodesk/webapp-components@0.16.0
+
+- Updated dependencies [b67e4e9]
+  - @neurodesk/webapp-components@0.15.1
+  - @neurodesk/vesselboost@0.6.20261018
+
 ## 0.6.20261017
 
 ### Patch Changes
