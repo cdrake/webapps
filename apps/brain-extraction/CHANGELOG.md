@@ -4,9 +4,23 @@
 
 ### Patch Changes
 
+- Updated dependencies [14db080]
+
+- Updated dependencies [03261d0]
+
+- Updated dependencies [c865c0c]
+
+- Updated dependencies [4b40da1]
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/runtime-support@0.9.4
+  - @neurodesk/synthsr@0.6.20261020
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/brain-extraction@0.4.20261020
+
 - 657c330: Record the injected MindGrab runtime's actual version in brain extraction provenance, including SYNcro's separately pinned build.
 
 - Updated dependencies [657c330]
+
   - @neurodesk/brain-extraction@0.4.20261020
 
 - 14b8248: MindGrab's automatic backend no longer runs WebGL2 on a software renderer (SwiftShader, llvmpipe), which returned a blank brain mask without WebGPU; the threaded CPU module runs instead. The choice and MindGrab's own output appear in the technical log.
@@ -18,6 +32,7 @@
 - Updated dependencies [d9718cd]
 
 - Updated dependencies [d1fa022]
+
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
   - @neurodesk/synthsr@0.6.20261020
@@ -41,6 +56,16 @@
   - @neurodesk/synthstrip@0.1.5
   - @neurodesk/brain-extraction@0.4.20261020
 
+- Updated dependencies [657c330]
+  - @neurodesk/brain-extraction@0.4.20261020
+
+- Updated dependencies [d1fa022]
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/synthsr@0.6.20261020
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/brain-extraction@0.4.20261020
+
 ## 0.4.20261019
 
 ### Patch Changes
@@ -56,6 +81,7 @@
 ### Patch Changes
 
 - Updated dependencies [7c0d201]
+
   - @neurodesk/webapp-components@0.16.2
   - @neurodesk/runtime-support@0.9.1
   - @neurodesk/synthsr@0.6.20261018
@@ -65,6 +91,7 @@
 - Updated dependencies
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/runtime-support@0.9.0
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/synthsr@0.6.20261018
@@ -78,10 +105,12 @@
 - Updated dependencies [a07f659]
 
 - Updated dependencies [3329c39]
+
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
 
 - Updated dependencies [b67e4e9]
+
   - @neurodesk/runtime-support@0.7.2
   - @neurodesk/webapp-components@0.15.1
   - @neurodesk/synthsr@0.6.20261018
@@ -89,6 +118,7 @@
   - @neurodesk/brain-extraction@0.4.20261018
 
 - Updated dependencies [b68209b]
+
   - @neurodesk/webapp-components@0.15.0
   - @neurodesk/runtime-support@0.7.1
   - @neurodesk/synthsr@0.6.20261018
@@ -106,6 +136,38 @@
 - Updated dependencies [67a5a8f]
   - @neurodesk/runtime-support@0.7.0
   - @neurodesk/webapp-components@0.14.4
+  - @neurodesk/synthsr@0.6.20261018
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/brain-extraction@0.4.20261018
+
+- Updated dependencies [7c0d201]
+  - @neurodesk/webapp-components@0.16.2
+  - @neurodesk/runtime-support@0.9.1
+  - @neurodesk/synthsr@0.6.20261018
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/brain-extraction@0.4.20261018
+
+- Updated dependencies [46935f7]
+  - @neurodesk/runtime-support@0.9.0
+  - @neurodesk/webapp-components@0.16.1
+  - @neurodesk/synthsr@0.6.20261018
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/brain-extraction@0.4.20261018
+
+- Updated dependencies [3329c39]
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/runtime-support@0.8.0
+
+- Updated dependencies [b67e4e9]
+  - @neurodesk/runtime-support@0.7.2
+  - @neurodesk/webapp-components@0.15.1
+  - @neurodesk/synthsr@0.6.20261018
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/brain-extraction@0.4.20261018
+
+- Updated dependencies [b68209b]
+  - @neurodesk/webapp-components@0.15.0
+  - @neurodesk/runtime-support@0.7.1
   - @neurodesk/synthsr@0.6.20261018
   - @neurodesk/synthstrip@0.1.5
   - @neurodesk/brain-extraction@0.4.20261018
@@ -128,6 +190,7 @@
 - Persist checksum-verified model and example caches across browser restarts. Bind runtime caches to each document’s checksum manifest to avoid reusing bytes from a different deployment.
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.14.2
   - @neurodesk/runtime-support@0.6.3
   - @neurodesk/synthsr@0.6.20261016
@@ -146,11 +209,19 @@
   - @neurodesk/synthstrip@0.1.5
   - @neurodesk/brain-extraction@0.4.20261016
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.14.2
+  - @neurodesk/runtime-support@0.6.3
+  - @neurodesk/synthsr@0.6.20261016
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/brain-extraction@0.4.20261016
+
 ## 0.4.20261015
 
 ### Patch Changes
 
 - Updated dependencies [c74b26f]
+
   - @neurodesk/runtime-support@0.6.1
   - @neurodesk/synthsr@0.6.20261015
   - @neurodesk/synthstrip@0.1.5
@@ -176,6 +247,7 @@
 - Updated dependencies [dd65e6a]
 
 - Updated dependencies [dcc74e7]
+
   - @neurodesk/runtime-support@0.6.0
   - @neurodesk/webapp-components@0.14.0
   - @neurodesk/synthsr@0.6.20261015
@@ -184,6 +256,19 @@
 
 - Updated dependencies [84d192a]
   - @neurodesk/synthsr@0.6.20261015
+  - @neurodesk/brain-extraction@0.4.20261015
+
+- Updated dependencies [c74b26f]
+  - @neurodesk/runtime-support@0.6.1
+  - @neurodesk/synthsr@0.6.20261015
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/brain-extraction@0.4.20261015
+
+- Updated dependencies [dcc74e7]
+  - @neurodesk/runtime-support@0.6.0
+  - @neurodesk/webapp-components@0.14.0
+  - @neurodesk/synthsr@0.6.20261015
+  - @neurodesk/synthstrip@0.1.5
   - @neurodesk/brain-extraction@0.4.20261015
 
 ## 0.4.20261014
@@ -219,6 +304,7 @@
 - Preserve original operation failures while draining GPU error scopes and reject failed DICOM field fallback tasks without hanging. Resolve correctness findings with switch scopes, safe own-property checks, equivalent regular expressions and documented optional cleanup/cache behavior. Surface actionable release, filesystem and schema preload failures; retain scientific literals and arithmetic.
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.12.2
   - @neurodesk/runtime-support@0.4.2
   - @neurodesk/synthsr@0.6.20261010
@@ -231,6 +317,13 @@
   - @neurodesk/brain-extraction@0.4.20261010
   - @neurodesk/synthsr@0.6.20261010
   - @neurodesk/synthstrip@0.1.5
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.12.2
+  - @neurodesk/runtime-support@0.4.2
+  - @neurodesk/synthsr@0.6.20261010
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/brain-extraction@0.4.20261010
 
 ## 0.4.20261009
 
@@ -262,6 +355,27 @@
 ### Patch Changes
 
 - Updated dependencies [22aa4bf]
+
+  - @neurodesk/webapp-components@0.11.1
+  - @neurodesk/runtime-support@0.2.1
+  - @neurodesk/synthsr@0.6.20261007
+  - @neurodesk/synthstrip@0.1.3
+  - @neurodesk/brain-extraction@0.1.23
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.11.0
+  - @neurodesk/runtime-support@0.2.0
+  - @neurodesk/synthsr@0.6.20261007
+  - @neurodesk/synthstrip@0.1.2
+  - @neurodesk/brain-extraction@0.1.22
+
+- Updated dependencies [70f2770]
+  - @neurodesk/webapp-components@0.10.2
+  - @neurodesk/synthsr@0.6.20261007
+  - @neurodesk/brain-extraction@0.1.21
+
+- Updated dependencies [22aa4bf]
   - @neurodesk/webapp-components@0.11.1
   - @neurodesk/runtime-support@0.2.1
   - @neurodesk/synthsr@0.6.20261007
@@ -274,11 +388,6 @@
   - @neurodesk/synthsr@0.6.20261007
   - @neurodesk/synthstrip@0.1.2
   - @neurodesk/brain-extraction@0.1.22
-
-- Updated dependencies [70f2770]
-  - @neurodesk/webapp-components@0.10.2
-  - @neurodesk/synthsr@0.6.20261007
-  - @neurodesk/brain-extraction@0.1.21
 
 ## 0.3.20261005
 
@@ -293,10 +402,12 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/synthsr@0.6.20261004
   - @neurodesk/brain-extraction@0.1.19
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.10.1
   - @neurodesk/synthsr@0.6.20261004
   - @neurodesk/brain-extraction@0.1.18
@@ -304,6 +415,33 @@
 - bf52742: Correct the brain mask in the viewer before downloading it. Edit on the brain mask row shows the mask in red over the input image and opens the shared editor with Draw, Erase and Fill tools. Apply replaces the mask in the Output list, which then reads `Brain mask (edited)`, and Download returns the edited mask under the same name as a uint8 NIfTI. Cancel discards the strokes. Loading a new image or running extraction again closes an open edit. The brain image and the run report remain as extraction produced them.
 
 - Updated dependencies [0204fe1]
+
+- Updated dependencies [ec85a09]
+
+  - @neurodesk/webapp-components@0.10.0
+  - @neurodesk/synthsr@0.6.20261004
+  - @neurodesk/brain-extraction@0.1.17
+
+- Updated dependencies [257192b]
+
+  - @neurodesk/synthsr@0.6.20261004
+  - @neurodesk/synthstrip@0.1.1
+  - @neurodesk/runtime-support@0.1.3
+  - @neurodesk/brain-extraction@0.1.16
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.9.0
+  - @neurodesk/synthsr@0.5.20261004
+  - @neurodesk/brain-extraction@0.1.15
+
+- Updated dependencies
+  - @neurodesk/synthsr@0.6.20261004
+  - @neurodesk/brain-extraction@0.1.19
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.10.1
+  - @neurodesk/synthsr@0.6.20261004
+  - @neurodesk/brain-extraction@0.1.18
 
 - Updated dependencies [ec85a09]
   - @neurodesk/webapp-components@0.10.0
@@ -315,11 +453,6 @@
   - @neurodesk/synthstrip@0.1.1
   - @neurodesk/runtime-support@0.1.3
   - @neurodesk/brain-extraction@0.1.16
-
-- Updated dependencies
-  - @neurodesk/webapp-components@0.9.0
-  - @neurodesk/synthsr@0.5.20261004
-  - @neurodesk/brain-extraction@0.1.15
 
 ## 0.3.20261003
 
@@ -337,6 +470,7 @@
 - Updated dependencies
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.7.0
   - @neurodesk/synthsr@0.5.20260930
   - @neurodesk/brain-extraction@0.1.13
@@ -346,11 +480,17 @@
   - @neurodesk/synthsr@0.5.20260930
   - @neurodesk/brain-extraction@0.1.12
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.7.0
+  - @neurodesk/synthsr@0.5.20260930
+  - @neurodesk/brain-extraction@0.1.13
+
 ## 0.3.20260928
 
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.6.1
   - @neurodesk/synthsr@0.5.20260928
   - @neurodesk/brain-extraction@0.1.11
@@ -367,6 +507,11 @@
   - @neurodesk/webapp-components@0.6.0
   - @neurodesk/synthsr@0.5.20260928
   - @neurodesk/brain-extraction@0.1.10
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.6.1
+  - @neurodesk/synthsr@0.5.20260928
+  - @neurodesk/brain-extraction@0.1.11
 
 ### Minor Changes
 
@@ -415,11 +560,13 @@
 ### Patch Changes
 
 - Updated dependencies [4959500]
+
   - @neurodesk/webapp-components@0.4.4
   - @neurodesk/synthsr@0.4.20260920
   - @neurodesk/brain-extraction@0.1.6
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.4.3
   - @neurodesk/synthsr@0.4.20260920
   - @neurodesk/brain-extraction@0.1.5
@@ -431,6 +578,16 @@
   - @neurodesk/synthsr@0.4.20260920
   - @neurodesk/brain-extraction@0.1.4
 
+- Updated dependencies [4959500]
+  - @neurodesk/webapp-components@0.4.4
+  - @neurodesk/synthsr@0.4.20260920
+  - @neurodesk/brain-extraction@0.1.6
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.4.3
+  - @neurodesk/synthsr@0.4.20260920
+  - @neurodesk/brain-extraction@0.1.5
+
 ## 0.1.20260918
 
 ### Patch Changes
@@ -438,6 +595,7 @@
 - Include and initialize the Rayon worker helpers required by QSMbly's updated BET runtime.
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.3.1
 
 - Updated dependencies
@@ -452,6 +610,9 @@
   - @neurodesk/webapp-components@0.4.0
   - @neurodesk/synthsr@0.4.20260918
   - @neurodesk/brain-extraction@0.1.2
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.3.1
 
 ## 0.1.20260916
 

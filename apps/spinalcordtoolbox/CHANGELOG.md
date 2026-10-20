@@ -4,9 +4,20 @@
 
 ### Patch Changes
 
+- Updated dependencies [14db080]
+
+- Updated dependencies [03261d0]
+
+- Updated dependencies [c865c0c]
+
+- Updated dependencies [4b40da1]
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/spinalcordtoolbox@0.9.20261020
+
 - Updated dependencies [3f1d770]
 
 - Updated dependencies [d9718cd]
+
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/spinalcordtoolbox@0.9.20261020
 
@@ -22,15 +33,21 @@
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/spinalcordtoolbox@0.9.20261020
 
+- Updated dependencies [d9718cd]
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/spinalcordtoolbox@0.9.20261020
+
 ## 0.9.20261018
 
 ### Patch Changes
 
 - Updated dependencies [7c0d201]
+
   - @neurodesk/webapp-components@0.16.2
   - @neurodesk/spinalcordtoolbox@0.9.20261018
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/spinalcordtoolbox@0.9.20261018
 
@@ -39,13 +56,16 @@
 - Updated dependencies [0511cd7]
 
 - Updated dependencies [3329c39]
+
   - @neurodesk/webapp-components@0.16.0
 
 - Updated dependencies [b67e4e9]
+
   - @neurodesk/webapp-components@0.15.1
   - @neurodesk/spinalcordtoolbox@0.9.20261018
 
 - Updated dependencies [b68209b]
+
   - @neurodesk/webapp-components@0.15.0
   - @neurodesk/spinalcordtoolbox@0.9.20261018
 
@@ -63,6 +83,25 @@
   - @neurodesk/webapp-components@0.14.4
   - @neurodesk/spinalcordtoolbox@0.9.20261018
 
+- Updated dependencies [7c0d201]
+  - @neurodesk/webapp-components@0.16.2
+  - @neurodesk/spinalcordtoolbox@0.9.20261018
+
+- Updated dependencies [46935f7]
+  - @neurodesk/webapp-components@0.16.1
+  - @neurodesk/spinalcordtoolbox@0.9.20261018
+
+- Updated dependencies [3329c39]
+  - @neurodesk/webapp-components@0.16.0
+
+- Updated dependencies [b67e4e9]
+  - @neurodesk/webapp-components@0.15.1
+  - @neurodesk/spinalcordtoolbox@0.9.20261018
+
+- Updated dependencies [b68209b]
+  - @neurodesk/webapp-components@0.15.0
+  - @neurodesk/spinalcordtoolbox@0.9.20261018
+
 ## 0.9.20261017
 
 ### Patch Changes
@@ -78,11 +117,16 @@
 - Persist checksum-verified model and example caches across browser restarts. Bind runtime caches to each document’s checksum manifest to avoid reusing bytes from a different deployment.
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.14.2
   - @neurodesk/spinalcordtoolbox@0.9.20261016
 
 - Updated dependencies [7443048]
   - @neurodesk/webapp-components@0.14.1
+  - @neurodesk/spinalcordtoolbox@0.9.20261016
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.14.2
   - @neurodesk/spinalcordtoolbox@0.9.20261016
 
 ## 0.9.20261015
@@ -158,10 +202,14 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.12.2
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.12.1
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.12.2
 
 ## 0.8.20261009
 
@@ -195,10 +243,14 @@
 ### Patch Changes
 
 - Updated dependencies [22aa4bf]
+
   - @neurodesk/webapp-components@0.11.1
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.11.0
+
+- Updated dependencies [22aa4bf]
+  - @neurodesk/webapp-components@0.11.1
 
 ## 0.6.20261007
 
@@ -231,6 +283,7 @@
 - Updated dependencies [0204fe1]
 
 - Updated dependencies [ec85a09]
+
   - @neurodesk/webapp-components@0.10.0
 
 - Give the viewer Zoom and Fit controls 44-pixel touch targets through the shared workspace stylesheet.
@@ -239,6 +292,9 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.9.0
+
+- Updated dependencies [ec85a09]
+  - @neurodesk/webapp-components@0.10.0
 
 ## 0.5.20261003
 
@@ -254,16 +310,21 @@
 - Updated dependencies
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.7.0
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.6.2
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.7.0
 
 ## 0.5.20260928
 
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.6.1
 
 - 93381e8: Remove the static bottom bar (version, privacy sentence, duplicate More Apps and GitHub links) from the six inference-workspace apps. The shared app bar already shows the version and links, and Privacy has its own dialog. The unused `.app-footer` and `.nd-app-footer` rules leave the shared stylesheets and the hosted theme.
@@ -278,6 +339,9 @@
 
 - Updated dependencies [93381e8]
   - @neurodesk/webapp-components@0.6.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.6.1
 
 ### Minor Changes
 
@@ -316,13 +380,21 @@
 ### Patch Changes
 
 - Updated dependencies [4959500]
+
   - @neurodesk/webapp-components@0.4.4
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.4.3
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.4.2
+
+- Updated dependencies [4959500]
+  - @neurodesk/webapp-components@0.4.4
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.4.3
 
 ## 0.4.20260918
 
@@ -358,13 +430,21 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.2
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.1
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.2.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.2
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.1
 
 ### Minor Changes
 
@@ -377,10 +457,14 @@
 - Updated dependencies [3cd773f]
 
 - Updated dependencies [4add8da]
+
   - @neurodesk/webapp-components@0.1.5
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.1.4
+
+- Updated dependencies [4add8da]
+  - @neurodesk/webapp-components@0.1.5
 
 ## 0.2.20260910
 

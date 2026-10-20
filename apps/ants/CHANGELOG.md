@@ -2,7 +2,38 @@
 
 ## 0.5.20261020
 
+### Minor Changes
+
+- 3329c39: The registration apps load their images through one shared fixed/moving pair
+  (`nd-image-pair`, `createImagePair`). Each app now says fixed and moving, never
+  stationary. The fixed card comes first. Each card has explicit "Load fixed
+  image…" / "Load moving image…" and "Folder…" pickers, a drop zone, a summary
+  of size and spacing, a series select and a clear ×, and Swap exchanges the two.
+  Examples fill the slots by role through the same path as a user's file, and a
+  failed load keeps the previous image. The fixed card offers built-in templates from
+  the new `registry/templates.json`: FSL MNI152 1 mm brain and head and the ICBM152
+  avg152 2 mm head, downloaded and checked with `fetchModel`, and cited in each app.
+  elastix offers them for 3D images only. SYNcro shows its MNI152 template as a
+  locked fixed image, its scan is the moving image, and it fetches the template from
+  the catalogue address. Brain extraction in ANTs, Greedy and FireANTs has its own
+  Fixed and Moving buttons below the pair.
+
+  Cancelling an example preserves the previous image even when the app supplies
+  its own cancellation signal. Image summaries convert NIfTI spatial units to
+  millimetres before showing voxel spacing.
+
 ### Patch Changes
+
+- Updated dependencies [14db080]
+
+- Updated dependencies [03261d0]
+
+- Updated dependencies [c865c0c]
+
+- Updated dependencies [4b40da1]
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/ants@0.5.20261020
+  - @neurodesk/runtime-support@0.9.4
 
 - 14b8248: MindGrab's automatic backend no longer runs WebGL2 on a software renderer (SwiftShader, llvmpipe), which returned a blank brain mask without WebGPU; the threaded CPU module runs instead. The choice and MindGrab's own output appear in the technical log.
 
@@ -13,6 +44,7 @@
 - Updated dependencies [d9718cd]
 
 - Updated dependencies [d1fa022]
+
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
   - @neurodesk/ants@0.5.20261020
@@ -36,25 +68,10 @@
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/ants@0.5.20261020
 
-### Minor Changes
-
-- 3329c39: The registration apps load their images through one shared fixed/moving pair
-  (`nd-image-pair`, `createImagePair`). Each app now says fixed and moving, never
-  stationary. The fixed card comes first. Each card has explicit "Load fixed
-  image…" / "Load moving image…" and "Folder…" pickers, a drop zone, a summary
-  of size and spacing, a series select and a clear ×, and Swap exchanges the two.
-  Examples fill the slots by role through the same path as a user's file, and a
-  failed load keeps the previous image. The fixed card offers built-in templates from
-  the new `registry/templates.json`: FSL MNI152 1 mm brain and head and the ICBM152
-  avg152 2 mm head, downloaded and checked with `fetchModel`, and cited in each app.
-  elastix offers them for 3D images only. SYNcro shows its MNI152 template as a
-  locked fixed image, its scan is the moving image, and it fetches the template from
-  the catalogue address. Brain extraction in ANTs, Greedy and FireANTs has its own
-  Fixed and Moving buttons below the pair.
-
-  Cancelling an example preserves the previous image even when the app supplies
-  its own cancellation signal. Image summaries convert NIfTI spatial units to
-  millimetres before showing voxel spacing.
+- Updated dependencies [d1fa022]
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/ants@0.5.20261020
 
 ## 0.5.20261019
 
@@ -89,11 +106,13 @@
 ### Patch Changes
 
 - Updated dependencies [7c0d201]
+
   - @neurodesk/webapp-components@0.16.2
   - @neurodesk/ants@0.5.20261018
   - @neurodesk/runtime-support@0.9.1
 
 - ac01831: These apps no longer refuse to start in a browser without WebGPU. NiiVue falls back to WebGL2 when WebGPU is absent, and MindGrab falls back to WebGL2 or the threaded CPU, so the viewers, defacing, registration, brain extraction, quality control and meshing now run in browsers such as Firefox on Linux. When the browser offers neither WebGPU nor WebGL2, the app says that the image viewer cannot start.
+
   - @neurodesk/ants@0.5.20261018
 
 - 46935f7: Serialize example imports and file replacements so a cancelled image rollback finishes before the next load. Restore the primary picker when file actions are disabled and stream compressed NIfTI headers for image summaries. Tighten the ANTs example checks so "not brain extracted" cannot pass as "brain extracted".
@@ -101,6 +120,7 @@
 - Updated dependencies
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/runtime-support@0.9.0
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/ants@0.5.20261018
@@ -116,11 +136,25 @@
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/ants@0.5.20261018
 
+- Updated dependencies [7c0d201]
+  - @neurodesk/webapp-components@0.16.2
+  - @neurodesk/ants@0.5.20261018
+  - @neurodesk/runtime-support@0.9.1
+
+- ac01831: These apps no longer refuse to start in a browser without WebGPU. NiiVue falls back to WebGL2 when WebGPU is absent, and MindGrab falls back to WebGL2 or the threaded CPU, so the viewers, defacing, registration, brain extraction, quality control and meshing now run in browsers such as Firefox on Linux. When the browser offers neither WebGPU nor WebGL2, the app says that the image viewer cannot start.
+  - @neurodesk/ants@0.5.20261018
+
+- Updated dependencies [46935f7]
+  - @neurodesk/runtime-support@0.9.0
+  - @neurodesk/webapp-components@0.16.1
+  - @neurodesk/ants@0.5.20261018
+
 ## 0.4.20261018
 
 ### Patch Changes
 
 - Updated dependencies [b68209b]
+
   - @neurodesk/webapp-components@0.15.0
   - @neurodesk/runtime-support@0.7.1
   - @neurodesk/ants@0.4.20261018
@@ -134,6 +168,7 @@
 - Updated dependencies [ccb2970]
 
 - Updated dependencies [67a5a8f]
+
   - @neurodesk/runtime-support@0.7.0
   - @neurodesk/webapp-components@0.14.4
   - @neurodesk/ants@0.4.20261018
@@ -141,6 +176,16 @@
 - Updated dependencies [b67e4e9]
   - @neurodesk/runtime-support@0.7.2
   - @neurodesk/webapp-components@0.15.1
+  - @neurodesk/ants@0.4.20261018
+
+- Updated dependencies [b68209b]
+  - @neurodesk/webapp-components@0.15.0
+  - @neurodesk/runtime-support@0.7.1
+  - @neurodesk/ants@0.4.20261018
+
+- Updated dependencies [67a5a8f]
+  - @neurodesk/runtime-support@0.7.0
+  - @neurodesk/webapp-components@0.14.4
   - @neurodesk/ants@0.4.20261018
 
 ## 0.4.20261017
@@ -157,6 +202,7 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.14.2
   - @neurodesk/runtime-support@0.6.3
   - @neurodesk/ants@0.4.20261016
@@ -166,11 +212,17 @@
   - @neurodesk/ants@0.4.20261016
   - @neurodesk/runtime-support@0.6.2
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.14.2
+  - @neurodesk/runtime-support@0.6.3
+  - @neurodesk/ants@0.4.20261016
+
 ## 0.4.20261015
 
 ### Patch Changes
 
 - Updated dependencies [c74b26f]
+
   - @neurodesk/runtime-support@0.6.1
   - @neurodesk/ants@0.4.20261015
 
@@ -196,6 +248,10 @@
 - Updated dependencies [dcc74e7]
   - @neurodesk/runtime-support@0.6.0
   - @neurodesk/webapp-components@0.14.0
+  - @neurodesk/ants@0.4.20261015
+
+- Updated dependencies [c74b26f]
+  - @neurodesk/runtime-support@0.6.1
   - @neurodesk/ants@0.4.20261015
 
 ## 0.4.20261014
@@ -230,6 +286,7 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.12.2
   - @neurodesk/registration@0.1.1
   - @neurodesk/runtime-support@0.4.2
@@ -239,6 +296,12 @@
   - @neurodesk/runtime-support@0.4.1
   - @neurodesk/ants@0.4.20261010
   - @neurodesk/webapp-components@0.12.1
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.12.2
+  - @neurodesk/registration@0.1.1
+  - @neurodesk/runtime-support@0.4.2
+  - @neurodesk/ants@0.4.20261010
 
 ## 0.4.20261009
 
@@ -264,6 +327,19 @@
 ### Patch Changes
 
 - Updated dependencies [22aa4bf]
+
+  - @neurodesk/webapp-components@0.11.1
+  - @neurodesk/runtime-support@0.2.1
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.11.0
+  - @neurodesk/runtime-support@0.2.0
+
+- Updated dependencies [70f2770]
+  - @neurodesk/webapp-components@0.10.2
+
+- Updated dependencies [22aa4bf]
   - @neurodesk/webapp-components@0.11.1
   - @neurodesk/runtime-support@0.2.1
 
@@ -271,26 +347,35 @@
   - @neurodesk/webapp-components@0.11.0
   - @neurodesk/runtime-support@0.2.0
 
-- Updated dependencies [70f2770]
-  - @neurodesk/webapp-components@0.10.2
-
 ## 0.3.20261004
 
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.10.1
 
 - Updated dependencies [0204fe1]
+
+- Updated dependencies [ec85a09]
+
+  - @neurodesk/webapp-components@0.10.0
+
+- Updated dependencies [257192b]
+
+  - @neurodesk/runtime-support@0.1.3
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.9.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.10.1
 
 - Updated dependencies [ec85a09]
   - @neurodesk/webapp-components@0.10.0
 
 - Updated dependencies [257192b]
   - @neurodesk/runtime-support@0.1.3
-
-- Updated dependencies
-  - @neurodesk/webapp-components@0.9.0
 
 ## 0.3.20261003
 
@@ -306,16 +391,21 @@
 - Updated dependencies
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.7.0
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.6.2
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.7.0
 
 ## 0.3.20260928
 
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.6.1
 
 - 93381e8: Every app now opens on its workspace and shows live status only in the bottom bar: a short message, a progress bar, elapsed time and a cancel × that appears while a run can be cancelled. Start pages, landing overlays and welcome modals are gone, and their copy moved to About. Every app has a technical log below the viewer that starts collapsed. Sidebar help longer than 90 characters moved into info tooltips or About, and each sidebar has one primary action. `ProgressManager` now drives the design-system footer, including the elapsed counter and the cancel button.
@@ -328,6 +418,9 @@
 
 - Updated dependencies [93381e8]
   - @neurodesk/webapp-components@0.6.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.6.1
 
 ### Minor Changes
 
@@ -366,15 +459,23 @@
 ### Patch Changes
 
 - Updated dependencies [4959500]
+
   - @neurodesk/webapp-components@0.4.4
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.4.3
 
 - efd8af3: Show the Example control before the file picker in every app, replace the registration apps' stale "Loading the default images" empty state, give FireANTs a CPU time budget and progress messages, ship BrowserQC's CPU MindGrab bundle with a longer segmentation budget, select CPU processing in SynthSR and brain extraction when no WebGPU adapter exists, start MuscleMap at 50 % overlap without WebGPU, and run VesselBoost's hosted example workflow in its browser tests.
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.4.2
+
+- Updated dependencies [4959500]
+  - @neurodesk/webapp-components@0.4.4
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.4.3
 
 ## 0.2.20260918
 
@@ -404,13 +505,21 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.2
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.1
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.2.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.2
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.1
 
 ### Minor Changes
 

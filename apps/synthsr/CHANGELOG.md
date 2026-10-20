@@ -4,6 +4,17 @@
 
 ### Patch Changes
 
+- Updated dependencies [14db080]
+
+- Updated dependencies [03261d0]
+
+- Updated dependencies [c865c0c]
+
+- Updated dependencies [4b40da1]
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/runtime-support@0.9.4
+  - @neurodesk/synthsr@0.6.20261020
+
 - d1fa022: SynthSR no longer runs on a software WebGPU adapter. fastprep chooses WebAssembly when the adapter is a fallback (SwiftShader on a VM or a hosted runner) or cannot bind the volume's largest buffer, and the SynthSR app starts on CPU there. The GPU buffer-limit message gives both sizes in MiB, so a need just above the limit no longer reads as "1.0 GiB but this device allows 1.0 GiB".
 
 - Updated dependencies [3f1d770]
@@ -13,6 +24,7 @@
 - Updated dependencies [d9718cd]
 
 - Updated dependencies [d1fa022]
+
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
   - @neurodesk/synthsr@0.6.20261020
@@ -34,6 +46,11 @@
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/synthsr@0.6.20261020
 
+- Updated dependencies [d1fa022]
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/synthsr@0.6.20261020
+
 ## 0.6.20261019
 
 ### Patch Changes
@@ -49,6 +66,7 @@
 ### Patch Changes
 
 - Updated dependencies [7c0d201]
+
   - @neurodesk/webapp-components@0.16.2
   - @neurodesk/runtime-support@0.9.1
   - @neurodesk/synthsr@0.6.20261018
@@ -56,6 +74,7 @@
 - Updated dependencies
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/runtime-support@0.9.0
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/synthsr@0.6.20261018
@@ -69,15 +88,18 @@
 - Updated dependencies [a07f659]
 
 - Updated dependencies [3329c39]
+
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
 
 - Updated dependencies [b67e4e9]
+
   - @neurodesk/runtime-support@0.7.2
   - @neurodesk/webapp-components@0.15.1
   - @neurodesk/synthsr@0.6.20261018
 
 - Updated dependencies [b68209b]
+
   - @neurodesk/webapp-components@0.15.0
   - @neurodesk/runtime-support@0.7.1
   - @neurodesk/synthsr@0.6.20261018
@@ -93,6 +115,30 @@
 - Updated dependencies [67a5a8f]
   - @neurodesk/runtime-support@0.7.0
   - @neurodesk/webapp-components@0.14.4
+  - @neurodesk/synthsr@0.6.20261018
+
+- Updated dependencies [7c0d201]
+  - @neurodesk/webapp-components@0.16.2
+  - @neurodesk/runtime-support@0.9.1
+  - @neurodesk/synthsr@0.6.20261018
+
+- Updated dependencies [46935f7]
+  - @neurodesk/runtime-support@0.9.0
+  - @neurodesk/webapp-components@0.16.1
+  - @neurodesk/synthsr@0.6.20261018
+
+- Updated dependencies [3329c39]
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/runtime-support@0.8.0
+
+- Updated dependencies [b67e4e9]
+  - @neurodesk/runtime-support@0.7.2
+  - @neurodesk/webapp-components@0.15.1
+  - @neurodesk/synthsr@0.6.20261018
+
+- Updated dependencies [b68209b]
+  - @neurodesk/webapp-components@0.15.0
+  - @neurodesk/runtime-support@0.7.1
   - @neurodesk/synthsr@0.6.20261018
 
 ## 0.6.20261017
@@ -111,6 +157,7 @@
 - Persist checksum-verified model and example caches across browser restarts. Bind runtime caches to each document’s checksum manifest to avoid reusing bytes from a different deployment.
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.14.2
   - @neurodesk/runtime-support@0.6.3
   - @neurodesk/synthsr@0.6.20261016
@@ -120,11 +167,17 @@
   - @neurodesk/runtime-support@0.6.2
   - @neurodesk/synthsr@0.6.20261016
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.14.2
+  - @neurodesk/runtime-support@0.6.3
+  - @neurodesk/synthsr@0.6.20261016
+
 ## 0.6.20261015
 
 ### Patch Changes
 
 - Updated dependencies [c74b26f]
+
   - @neurodesk/runtime-support@0.6.1
   - @neurodesk/synthsr@0.6.20261015
 
@@ -148,11 +201,21 @@
 - Updated dependencies [dd65e6a]
 
 - Updated dependencies [dcc74e7]
+
   - @neurodesk/runtime-support@0.6.0
   - @neurodesk/webapp-components@0.14.0
   - @neurodesk/synthsr@0.6.20261015
 
 - Updated dependencies [84d192a]
+  - @neurodesk/synthsr@0.6.20261015
+
+- Updated dependencies [c74b26f]
+  - @neurodesk/runtime-support@0.6.1
+  - @neurodesk/synthsr@0.6.20261015
+
+- Updated dependencies [dcc74e7]
+  - @neurodesk/runtime-support@0.6.0
+  - @neurodesk/webapp-components@0.14.0
   - @neurodesk/synthsr@0.6.20261015
 
 ## 0.6.20261014
@@ -187,6 +250,7 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.12.2
   - @neurodesk/runtime-support@0.4.2
   - @neurodesk/synthsr@0.6.20261010
@@ -194,6 +258,11 @@
 - Updated dependencies
   - @neurodesk/runtime-support@0.4.1
   - @neurodesk/webapp-components@0.12.1
+  - @neurodesk/synthsr@0.6.20261010
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.12.2
+  - @neurodesk/runtime-support@0.4.2
   - @neurodesk/synthsr@0.6.20261010
 
 ## 0.6.20261009
@@ -214,6 +283,22 @@
 ### Patch Changes
 
 - Updated dependencies [22aa4bf]
+
+  - @neurodesk/webapp-components@0.11.1
+  - @neurodesk/runtime-support@0.2.1
+  - @neurodesk/synthsr@0.6.20261007
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.11.0
+  - @neurodesk/runtime-support@0.2.0
+  - @neurodesk/synthsr@0.6.20261007
+
+- Updated dependencies [70f2770]
+  - @neurodesk/webapp-components@0.10.2
+  - @neurodesk/synthsr@0.6.20261007
+
+- Updated dependencies [22aa4bf]
   - @neurodesk/webapp-components@0.11.1
   - @neurodesk/runtime-support@0.2.1
   - @neurodesk/synthsr@0.6.20261007
@@ -221,10 +306,6 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.11.0
   - @neurodesk/runtime-support@0.2.0
-  - @neurodesk/synthsr@0.6.20261007
-
-- Updated dependencies [70f2770]
-  - @neurodesk/webapp-components@0.10.2
   - @neurodesk/synthsr@0.6.20261007
 
 ## 0.6.20261005
@@ -248,15 +329,18 @@
   including SynthSeg WASM, while preserving each method's preprocessing and outputs.
 
 - Updated dependencies
+
   - @neurodesk/synthsr@0.6.20261004
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.10.1
   - @neurodesk/synthsr@0.6.20261004
 
 - Updated dependencies [0204fe1]
 
 - Updated dependencies [ec85a09]
+
   - @neurodesk/webapp-components@0.10.0
   - @neurodesk/synthsr@0.6.20261004
 
@@ -267,6 +351,17 @@
 - Updated dependencies [257192b]
   - @neurodesk/synthsr@0.6.20261004
   - @neurodesk/runtime-support@0.1.3
+
+- Updated dependencies
+  - @neurodesk/synthsr@0.6.20261004
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.10.1
+  - @neurodesk/synthsr@0.6.20261004
+
+- Updated dependencies [ec85a09]
+  - @neurodesk/webapp-components@0.10.0
+  - @neurodesk/synthsr@0.6.20261004
 
 ## 0.5.20261004
 
@@ -293,6 +388,7 @@
 - Updated dependencies
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.7.0
   - @neurodesk/synthsr@0.5.20260930
 
@@ -300,11 +396,16 @@
   - @neurodesk/webapp-components@0.6.2
   - @neurodesk/synthsr@0.5.20260930
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.7.0
+  - @neurodesk/synthsr@0.5.20260930
+
 ## 0.5.20260928
 
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.6.1
   - @neurodesk/synthsr@0.5.20260928
 
@@ -318,6 +419,10 @@
 
 - Updated dependencies [93381e8]
   - @neurodesk/webapp-components@0.6.0
+  - @neurodesk/synthsr@0.5.20260928
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.6.1
   - @neurodesk/synthsr@0.5.20260928
 
 ### Minor Changes
@@ -360,10 +465,12 @@
 ### Patch Changes
 
 - Updated dependencies [4959500]
+
   - @neurodesk/webapp-components@0.4.4
   - @neurodesk/synthsr@0.4.20260920
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.4.3
   - @neurodesk/synthsr@0.4.20260920
 
@@ -371,6 +478,14 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.4.2
+  - @neurodesk/synthsr@0.4.20260920
+
+- Updated dependencies [4959500]
+  - @neurodesk/webapp-components@0.4.4
+  - @neurodesk/synthsr@0.4.20260920
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.4.3
   - @neurodesk/synthsr@0.4.20260920
 
 ## 0.4.20260918
@@ -404,15 +519,25 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.2
   - @neurodesk/synthsr@0.4.20260915
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.1
   - @neurodesk/synthsr@0.4.20260915
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.2.0
+  - @neurodesk/synthsr@0.4.20260915
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.2
+  - @neurodesk/synthsr@0.4.20260915
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.1
   - @neurodesk/synthsr@0.4.20260915
 
 ### Minor Changes
@@ -428,12 +553,18 @@
 - Updated dependencies [3cd773f]
 
 - Updated dependencies [4add8da]
+
   - @neurodesk/webapp-components@0.1.5
   - @neurodesk/runtime-support@0.1.2
   - @neurodesk/synthsr@0.3.20260914
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.1.4
+  - @neurodesk/synthsr@0.3.20260914
+
+- Updated dependencies [4add8da]
+  - @neurodesk/webapp-components@0.1.5
+  - @neurodesk/runtime-support@0.1.2
   - @neurodesk/synthsr@0.3.20260914
 
 ## 0.3.20260910

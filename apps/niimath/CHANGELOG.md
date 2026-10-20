@@ -4,6 +4,16 @@
 
 ### Patch Changes
 
+- Updated dependencies [14db080]
+
+- Updated dependencies [03261d0]
+
+- Updated dependencies [c865c0c]
+
+- Updated dependencies [4b40da1]
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/runtime-support@0.9.4
+
 - Updated dependencies [3f1d770]
 
 - Updated dependencies [14b8248]
@@ -11,6 +21,7 @@
 - Updated dependencies [d9718cd]
 
 - Updated dependencies [d1fa022]
+
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
 
@@ -28,6 +39,10 @@
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
 
+- Updated dependencies [d1fa022]
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
+
 ## 1.3.20261019
 
 ### Patch Changes
@@ -40,12 +55,14 @@
 ### Patch Changes
 
 - Updated dependencies [7c0d201]
+
   - @neurodesk/webapp-components@0.16.2
   - @neurodesk/runtime-support@0.9.1
 
 - Updated dependencies
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/runtime-support@0.9.0
   - @neurodesk/webapp-components@0.16.1
 
@@ -56,14 +73,17 @@
 - Updated dependencies [a07f659]
 
 - Updated dependencies [3329c39]
+
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
 
 - Updated dependencies [b67e4e9]
+
   - @neurodesk/runtime-support@0.7.2
   - @neurodesk/webapp-components@0.15.1
 
 - Updated dependencies [b68209b]
+
   - @neurodesk/webapp-components@0.15.0
   - @neurodesk/runtime-support@0.7.1
 
@@ -79,6 +99,26 @@
   - @neurodesk/runtime-support@0.7.0
   - @neurodesk/webapp-components@0.14.4
 
+- Updated dependencies [7c0d201]
+  - @neurodesk/webapp-components@0.16.2
+  - @neurodesk/runtime-support@0.9.1
+
+- Updated dependencies [46935f7]
+  - @neurodesk/runtime-support@0.9.0
+  - @neurodesk/webapp-components@0.16.1
+
+- Updated dependencies [3329c39]
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/runtime-support@0.8.0
+
+- Updated dependencies [b67e4e9]
+  - @neurodesk/runtime-support@0.7.2
+  - @neurodesk/webapp-components@0.15.1
+
+- Updated dependencies [b68209b]
+  - @neurodesk/webapp-components@0.15.0
+  - @neurodesk/runtime-support@0.7.1
+
 ## 1.3.20261017
 
 ### Patch Changes
@@ -92,6 +132,7 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.14.2
   - @neurodesk/runtime-support@0.6.3
 
@@ -99,11 +140,16 @@
   - @neurodesk/webapp-components@0.14.1
   - @neurodesk/runtime-support@0.6.2
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.14.2
+  - @neurodesk/runtime-support@0.6.3
+
 ## 1.3.20261015
 
 ### Patch Changes
 
 - Updated dependencies [c74b26f]
+
   - @neurodesk/runtime-support@0.6.1
 
 - dd65e6a: Visual refresh: Inter, neutral greys with the Neurodesk logo green for action,
@@ -128,6 +174,9 @@
 - Updated dependencies [dcc74e7]
   - @neurodesk/runtime-support@0.6.0
   - @neurodesk/webapp-components@0.14.0
+
+- Updated dependencies [c74b26f]
+  - @neurodesk/runtime-support@0.6.1
 
 ## 1.3.20261014
 
@@ -156,12 +205,17 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.12.2
   - @neurodesk/runtime-support@0.4.2
 
 - Updated dependencies
   - @neurodesk/runtime-support@0.4.1
   - @neurodesk/webapp-components@0.12.1
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.12.2
+  - @neurodesk/runtime-support@0.4.2
 
 ## 1.3.20261009
 
@@ -180,6 +234,19 @@
 ### Patch Changes
 
 - Updated dependencies [22aa4bf]
+
+  - @neurodesk/webapp-components@0.11.1
+  - @neurodesk/runtime-support@0.2.1
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.11.0
+  - @neurodesk/runtime-support@0.2.0
+
+- Updated dependencies [70f2770]
+  - @neurodesk/webapp-components@0.10.2
+
+- Updated dependencies [22aa4bf]
   - @neurodesk/webapp-components@0.11.1
   - @neurodesk/runtime-support@0.2.1
 
@@ -187,26 +254,35 @@
   - @neurodesk/webapp-components@0.11.0
   - @neurodesk/runtime-support@0.2.0
 
-- Updated dependencies [70f2770]
-  - @neurodesk/webapp-components@0.10.2
-
 ## 1.3.20261004
 
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.10.1
 
 - Updated dependencies [0204fe1]
+
+- Updated dependencies [ec85a09]
+
+  - @neurodesk/webapp-components@0.10.0
+
+- Updated dependencies [257192b]
+
+  - @neurodesk/runtime-support@0.1.3
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.9.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.10.1
 
 - Updated dependencies [ec85a09]
   - @neurodesk/webapp-components@0.10.0
 
 - Updated dependencies [257192b]
   - @neurodesk/runtime-support@0.1.3
-
-- Updated dependencies
-  - @neurodesk/webapp-components@0.9.0
 
 ## 1.3.20261003
 
@@ -222,16 +298,21 @@
 - Updated dependencies
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.7.0
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.6.2
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.7.0
 
 ## 1.3.20260928
 
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.6.1
 
 - 93381e8: Every app now opens on its workspace and shows live status only in the bottom bar: a short message, a progress bar, elapsed time and a cancel × that appears while a run can be cancelled. Start pages, landing overlays and welcome modals are gone, and their copy moved to About. Every app has a technical log below the viewer that starts collapsed. Sidebar help longer than 90 characters moved into info tooltips or About, and each sidebar has one primary action. `ProgressManager` now drives the design-system footer, including the elapsed counter and the cancel button.
@@ -244,6 +325,9 @@
 
 - Updated dependencies [93381e8]
   - @neurodesk/webapp-components@0.6.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.6.1
 
 ### Minor Changes
 
@@ -282,15 +366,23 @@
 ### Patch Changes
 
 - Updated dependencies [4959500]
+
   - @neurodesk/webapp-components@0.4.4
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.4.3
 
 - efd8af3: Show the Example control before the file picker in every app, replace the registration apps' stale "Loading the default images" empty state, give FireANTs a CPU time budget and progress messages, ship BrowserQC's CPU MindGrab bundle with a longer segmentation budget, select CPU processing in SynthSR and brain extraction when no WebGPU adapter exists, start MuscleMap at 50 % overlap without WebGPU, and run VesselBoost's hosted example workflow in its browser tests.
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.4.2
+
+- Updated dependencies [4959500]
+  - @neurodesk/webapp-components@0.4.4
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.4.3
 
 ## 1.2.20260918
 
@@ -322,13 +414,21 @@
 - 5f5edfa: Wait for image loading to finish before enabling processing, and prevent input changes during processing so downloads contain the processed image.
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.2
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.1
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.2.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.2
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.1
 
 ### Minor Changes
 
@@ -341,11 +441,16 @@
 - Updated dependencies [3cd773f]
 
 - Updated dependencies [4add8da]
+
   - @neurodesk/webapp-components@0.1.5
   - @neurodesk/runtime-support@0.1.2
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.1.4
+
+- Updated dependencies [4add8da]
+  - @neurodesk/webapp-components@0.1.5
+  - @neurodesk/runtime-support@0.1.2
 
 ## 1.1.20260910
 

@@ -4,9 +4,12 @@
 
 ### Patch Changes
 
+- @neurodesk/runtime-support@0.9.4
+
 - Updated dependencies [14b8248]
 
 - Updated dependencies [d1fa022]
+
   - @neurodesk/runtime-support@0.9.3
 
 - Updated dependencies [c1a4dda]
@@ -15,6 +18,9 @@
 
 - Updated dependencies [d1fa022]
   - @neurodesk/runtime-support@0.8.0
+
+- Updated dependencies [d1fa022]
+  - @neurodesk/runtime-support@0.9.3
 
 ## 1.4.20261019
 
@@ -30,9 +36,32 @@
 - @neurodesk/runtime-support@0.9.1
 
 - Updated dependencies
+
   - @neurodesk/runtime-support@0.9.0
 
 - Updated dependencies [0511cd7]
+
+- Updated dependencies [a07f659]
+
+  - @neurodesk/runtime-support@0.8.0
+
+- Updated dependencies [b67e4e9]
+
+  - @neurodesk/runtime-support@0.7.2
+
+- Updated dependencies [b68209b]
+
+  - @neurodesk/runtime-support@0.7.1
+
+- 45ae49a: Remove verified dead code from the unused-code report (#256): dicompare's unused technical-log helpers, QSMbly's duplicate `QsmEchoViewer` export and Deface's unused `@neurodesk/webapp-components` devDependency. The calmar and SCT task tests now import the modules they check by literal path.
+
+- Updated dependencies [67a5a8f]
+
+- Updated dependencies [b8b37d6]
+  - @neurodesk/runtime-support@0.7.0
+
+- Updated dependencies
+  - @neurodesk/runtime-support@0.9.0
 
 - Updated dependencies [a07f659]
   - @neurodesk/runtime-support@0.8.0
@@ -42,13 +71,6 @@
 
 - Updated dependencies [b68209b]
   - @neurodesk/runtime-support@0.7.1
-
-- 45ae49a: Remove verified dead code from the unused-code report (#256): dicompare's unused technical-log helpers, QSMbly's duplicate `QsmEchoViewer` export and Deface's unused `@neurodesk/webapp-components` devDependency. The calmar and SCT task tests now import the modules they check by literal path.
-
-- Updated dependencies [67a5a8f]
-
-- Updated dependencies [b8b37d6]
-  - @neurodesk/runtime-support@0.7.0
 
 ## 1.4.20261017
 
@@ -61,9 +83,13 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/runtime-support@0.6.3
 
 - @neurodesk/runtime-support@0.6.2
+
+- Updated dependencies
+  - @neurodesk/runtime-support@0.6.3
 
 ## 1.4.20261015
 
@@ -80,6 +106,7 @@
 ### Patch Changes
 
 - Updated dependencies [c74b26f]
+
   - @neurodesk/runtime-support@0.6.1
 
 - a1a9b25: Let Deface archive validation use the launcher's bundled model directory instead
@@ -88,3 +115,6 @@
 
 - Updated dependencies [0569da8]
   - @neurodesk/runtime-support@0.6.0
+
+- Updated dependencies [c74b26f]
+  - @neurodesk/runtime-support@0.6.1

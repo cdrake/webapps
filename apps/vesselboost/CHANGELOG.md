@@ -4,9 +4,20 @@
 
 ### Patch Changes
 
+- Updated dependencies [14db080]
+
+- Updated dependencies [03261d0]
+
+- Updated dependencies [c865c0c]
+
+- Updated dependencies [4b40da1]
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/vesselboost@0.6.20261020
+
 - Updated dependencies [3f1d770]
 
 - Updated dependencies [d9718cd]
+
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/vesselboost@0.6.20261020
 
@@ -22,9 +33,49 @@
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/vesselboost@0.6.20261020
 
+- Updated dependencies [d9718cd]
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/vesselboost@0.6.20261020
+
 ## 0.6.20261018
 
 ### Patch Changes
+
+- Updated dependencies [7c0d201]
+
+  - @neurodesk/webapp-components@0.16.2
+  - @neurodesk/vesselboost@0.6.20261018
+
+- Updated dependencies [46935f7]
+
+  - @neurodesk/webapp-components@0.16.1
+  - @neurodesk/vesselboost@0.6.20261018
+
+- Updated dependencies [ea2a6d2]
+
+- Updated dependencies [0511cd7]
+
+- Updated dependencies [3329c39]
+
+  - @neurodesk/webapp-components@0.16.0
+
+- Updated dependencies [b67e4e9]
+
+  - @neurodesk/webapp-components@0.15.1
+  - @neurodesk/vesselboost@0.6.20261018
+
+- Updated dependencies [b68209b]
+
+  - @neurodesk/webapp-components@0.15.0
+  - @neurodesk/vesselboost@0.6.20261018
+
+- Updated dependencies [2ae93ae]
+
+- Updated dependencies [ccb2970]
+
+- Updated dependencies [67a5a8f]
+  - @neurodesk/webapp-components@0.14.4
+  - @neurodesk/vesselboost@0.6.20261018
 
 - Updated dependencies [7c0d201]
   - @neurodesk/webapp-components@0.16.2
@@ -33,10 +84,6 @@
 - Updated dependencies [46935f7]
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/vesselboost@0.6.20261018
-
-- Updated dependencies [ea2a6d2]
-
-- Updated dependencies [0511cd7]
 
 - Updated dependencies [3329c39]
   - @neurodesk/webapp-components@0.16.0
@@ -47,14 +94,6 @@
 
 - Updated dependencies [b68209b]
   - @neurodesk/webapp-components@0.15.0
-  - @neurodesk/vesselboost@0.6.20261018
-
-- Updated dependencies [2ae93ae]
-
-- Updated dependencies [ccb2970]
-
-- Updated dependencies [67a5a8f]
-  - @neurodesk/webapp-components@0.14.4
   - @neurodesk/vesselboost@0.6.20261018
 
 ## 0.6.20261017
@@ -72,11 +111,16 @@
 - Persist checksum-verified model and example caches across browser restarts. Bind runtime caches to each document’s checksum manifest to avoid reusing bytes from a different deployment.
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.14.2
   - @neurodesk/vesselboost@0.6.20261016
 
 - Updated dependencies [7443048]
   - @neurodesk/webapp-components@0.14.1
+  - @neurodesk/vesselboost@0.6.20261016
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.14.2
   - @neurodesk/vesselboost@0.6.20261016
 
 ## 0.6.20261015
@@ -141,12 +185,17 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.12.2
   - @neurodesk/vesselboost@0.6.20261010
 
 - Updated dependencies
   - @neurodesk/vesselboost@0.6.20261010
   - @neurodesk/webapp-components@0.12.1
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.12.2
+  - @neurodesk/vesselboost@0.6.20261010
 
 ## 0.5.20261010
 
@@ -169,9 +218,11 @@
 ### Patch Changes
 
 - Updated dependencies [22aa4bf]
+
   - @neurodesk/webapp-components@0.11.1
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.11.0
 
 - 70f2770: Space the technical log's Copy and Clear buttons apart by grouping them in the shared `nd-console-actions` row; they had run together as "CopyClear". Remove the unused legacy `.console-clear` styles.
@@ -179,11 +230,18 @@
 - Updated dependencies [70f2770]
   - @neurodesk/webapp-components@0.10.2
 
+- Updated dependencies [22aa4bf]
+  - @neurodesk/webapp-components@0.11.1
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.11.0
+
 ## 0.5.20261004
 
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.10.1
 
 - 90d1665: Correct the vessel segmentation or the brain mask in the viewer before downloading it. Both result rows have an Edit button that opens the shared mask editor over the analysis image, with Draw, Erase and Fill tools, Undo, Apply and Cancel. Apply replaces the result, which is then labelled `(edited)`, and Download returns the edited mask as a uint8 NIfTI with the same name. Changing a setting or running a step again closes an open edit. The automation report keeps the masks the pipeline computed.
@@ -191,10 +249,17 @@
 - Updated dependencies [0204fe1]
 
 - Updated dependencies [ec85a09]
+
   - @neurodesk/webapp-components@0.10.0
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.9.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.10.1
+
+- Updated dependencies [ec85a09]
+  - @neurodesk/webapp-components@0.10.0
 
 ## 0.5.20261003
 
@@ -210,16 +275,21 @@
 - Updated dependencies
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.7.0
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.6.2
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.7.0
 
 ## 0.5.20260928
 
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.6.1
 
 - 93381e8: Remove the static bottom bar (version, privacy sentence, duplicate More Apps and GitHub links) from the six inference-workspace apps. The shared app bar already shows the version and links, and Privacy has its own dialog. The unused `.app-footer` and `.nd-app-footer` rules leave the shared stylesheets and the hosted theme.
@@ -234,6 +304,9 @@
 
 - Updated dependencies [93381e8]
   - @neurodesk/webapp-components@0.6.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.6.1
 
 ### Minor Changes
 
@@ -254,9 +327,13 @@
 - Updated dependencies
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.5.2
 
 - Fix N4 correction, BET extraction and denoising by calling the preprocessing module's named exports instead of properties on its initializer. Add a browser CI regression test that runs every Rust preprocessing method through the production worker and compiled WASM.
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.5.2
 
 ## 0.4.20260928
 
@@ -289,15 +366,23 @@
 ### Patch Changes
 
 - Updated dependencies [4959500]
+
   - @neurodesk/webapp-components@0.4.4
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.4.3
 
 - efd8af3: Show the Example control before the file picker in every app, replace the registration apps' stale "Loading the default images" empty state, give FireANTs a CPU time budget and progress messages, ship BrowserQC's CPU MindGrab bundle with a longer segmentation budget, select CPU processing in SynthSR and brain extraction when no WebGPU adapter exists, start MuscleMap at 50 % overlap without WebGPU, and run VesselBoost's hosted example workflow in its browser tests.
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.4.2
+
+- Updated dependencies [4959500]
+  - @neurodesk/webapp-components@0.4.4
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.4.3
 
 ## 0.4.20260918
 
@@ -312,6 +397,7 @@
 - Replace the vessel-only example with an original 3T TOF-MRA control scan from the Lausanne OpenNeuro dataset. Pin the unmodified scan and checksum in the offline inventory, retain acquisition provenance, and add a hosted-data check that rejects sparse vessel-only inputs. Verify example selection through segmentation and NIfTI download in the production browser workflow. Allow the interface audit to wait for full-resolution example imports.
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.4.1
 
 - Replace shared UI builders with light-DOM custom elements for consoles, file fields, result lists, viewer toolbars and example selectors. Migrate app callers, isolate control IDs and upload scopes, and preserve state while cleaning up listeners and cancelled downloads across component removal.
@@ -322,6 +408,9 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.3.1
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.4.1
 
 ## 0.3.20260916
 
@@ -337,13 +426,21 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.2
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.1
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.2.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.2
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.1
 
 ### Minor Changes
 
@@ -356,10 +453,14 @@
 - Updated dependencies [3cd773f]
 
 - Updated dependencies [4add8da]
+
   - @neurodesk/webapp-components@0.1.5
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.1.4
+
+- Updated dependencies [4add8da]
+  - @neurodesk/webapp-components@0.1.5
 
 ## 0.2.20260910
 

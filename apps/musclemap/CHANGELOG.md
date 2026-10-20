@@ -4,9 +4,20 @@
 
 ### Patch Changes
 
+- Updated dependencies [14db080]
+
+- Updated dependencies [03261d0]
+
+- Updated dependencies [c865c0c]
+
+- Updated dependencies [4b40da1]
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/musclemap@1.5.20261020
+
 - Updated dependencies [3f1d770]
 
 - Updated dependencies [d9718cd]
+
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/musclemap@1.5.20261020
 
@@ -22,9 +33,49 @@
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/musclemap@1.5.20261020
 
+- Updated dependencies [d9718cd]
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/musclemap@1.5.20261020
+
 ## 1.5.20261018
 
 ### Patch Changes
+
+- Updated dependencies [7c0d201]
+
+  - @neurodesk/webapp-components@0.16.2
+  - @neurodesk/musclemap@1.5.20261018
+
+- Updated dependencies [46935f7]
+
+  - @neurodesk/webapp-components@0.16.1
+  - @neurodesk/musclemap@1.5.20261018
+
+- Updated dependencies [ea2a6d2]
+
+- Updated dependencies [0511cd7]
+
+- Updated dependencies [3329c39]
+
+  - @neurodesk/webapp-components@0.16.0
+
+- Updated dependencies [b67e4e9]
+
+  - @neurodesk/webapp-components@0.15.1
+  - @neurodesk/musclemap@1.5.20261018
+
+- Updated dependencies [b68209b]
+
+  - @neurodesk/webapp-components@0.15.0
+  - @neurodesk/musclemap@1.5.20261018
+
+- Updated dependencies [2ae93ae]
+
+- Updated dependencies [ccb2970]
+
+- Updated dependencies [67a5a8f]
+  - @neurodesk/webapp-components@0.14.4
+  - @neurodesk/musclemap@1.5.20261018
 
 - Updated dependencies [7c0d201]
   - @neurodesk/webapp-components@0.16.2
@@ -33,10 +84,6 @@
 - Updated dependencies [46935f7]
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/musclemap@1.5.20261018
-
-- Updated dependencies [ea2a6d2]
-
-- Updated dependencies [0511cd7]
 
 - Updated dependencies [3329c39]
   - @neurodesk/webapp-components@0.16.0
@@ -47,14 +94,6 @@
 
 - Updated dependencies [b68209b]
   - @neurodesk/webapp-components@0.15.0
-  - @neurodesk/musclemap@1.5.20261018
-
-- Updated dependencies [2ae93ae]
-
-- Updated dependencies [ccb2970]
-
-- Updated dependencies [67a5a8f]
-  - @neurodesk/webapp-components@0.14.4
   - @neurodesk/musclemap@1.5.20261018
 
 ## 1.5.20261017
@@ -72,11 +111,16 @@
 - Persist checksum-verified model and example caches across browser restarts. Bind runtime caches to each document’s checksum manifest to avoid reusing bytes from a different deployment.
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.14.2
   - @neurodesk/musclemap@1.5.20261016
 
 - Updated dependencies [7443048]
   - @neurodesk/webapp-components@0.14.1
+  - @neurodesk/musclemap@1.5.20261016
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.14.2
   - @neurodesk/musclemap@1.5.20261016
 
 ## 1.5.20261015
@@ -156,10 +200,15 @@
 - Preserve original operation failures while draining GPU error scopes and reject failed DICOM field fallback tasks without hanging. Resolve correctness findings with switch scopes, safe own-property checks, equivalent regular expressions and documented optional cleanup/cache behavior. Surface actionable release, filesystem and schema preload failures; retain scientific literals and arithmetic.
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.12.2
   - @neurodesk/musclemap@1.5.20261010
 
 - Updated dependencies [98eb502]
+  - @neurodesk/musclemap@1.5.20261010
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.12.2
   - @neurodesk/musclemap@1.5.20261010
 
 ## 1.5.20260914
@@ -169,10 +218,14 @@
 - Updated dependencies [3cd773f]
 
 - Updated dependencies [4add8da]
+
   - @neurodesk/webapp-components@0.1.5
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.1.4
+
+- Updated dependencies [4add8da]
+  - @neurodesk/webapp-components@0.1.5
 
 ## 1.5.20260910
 
@@ -203,9 +256,11 @@
 ### Patch Changes
 
 - Updated dependencies [22aa4bf]
+
   - @neurodesk/webapp-components@0.11.1
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.11.0
 
 - 70f2770: Space the technical log's Copy and Clear buttons apart by grouping them in the shared `nd-console-actions` row; they had run together as "CopyClear". Remove the unused legacy `.console-clear` styles.
@@ -217,11 +272,18 @@
 - Updated dependencies [70f2770]
   - @neurodesk/webapp-components@0.10.2
 
+- Updated dependencies [22aa4bf]
+  - @neurodesk/webapp-components@0.11.1
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.11.0
+
 ## 1.4.20261004
 
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.10.1
 
 - e6baa09: Correct a segmentation in the viewer before downloading it. Generated, consolidated and uploaded label maps whose display copy shares their voxel grid show Edit in the Results list, which opens the shared mask editor with the muscle names in its Label select. Apply replaces the result, labels it `(edited)`, reloads the overlay and makes Download return the edited uint8 class-index map under the same file name; Calculate Metrics then reads the edited labels. A new run, new input, consolidation or Clear All closes an open edit without applying it.
@@ -229,12 +291,19 @@
 - Updated dependencies [0204fe1]
 
 - Updated dependencies [ec85a09]
+
   - @neurodesk/webapp-components@0.10.0
 
 - Match upstream positive foreground cropping, MONAI and PyTorch grid arithmetic, and integer temporary-chunk storage with MONAI float64 decoding. Keep the per-label Dice gate and add upstream-derived regression fixtures, checksummed public full-volume references, browser parity CI, and explicit WebGPU execution evidence. Retain provenance for failed comparisons, prevent stale passing reports, and use portable CI scratch directories. Document the isolated inference-runtime boundary differences.
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.9.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.10.1
+
+- Updated dependencies [ec85a09]
+  - @neurodesk/webapp-components@0.10.0
 
 ## 1.4.20261003
 
@@ -250,16 +319,21 @@
 - Updated dependencies
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.7.0
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.6.2
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.7.0
 
 ## 1.4.20260928
 
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.6.1
 
 - 93381e8: Remove the static bottom bar (version, privacy sentence, duplicate More Apps and GitHub links) from the six inference-workspace apps. The shared app bar already shows the version and links, and Privacy has its own dialog. The unused `.app-footer` and `.nd-app-footer` rules leave the shared stylesheets and the hosted theme.
@@ -273,10 +347,17 @@
 - Updated dependencies [93381e8]
 
 - Updated dependencies [93381e8]
+
   - @neurodesk/webapp-components@0.6.0
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.5.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.6.1
+
+- Updated dependencies [93381e8]
+  - @neurodesk/webapp-components@0.6.0
 
 ### Minor Changes
 
@@ -308,15 +389,23 @@
 ### Patch Changes
 
 - Updated dependencies [4959500]
+
   - @neurodesk/webapp-components@0.4.4
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.4.3
 
 - efd8af3: Show the Example control before the file picker in every app, replace the registration apps' stale "Loading the default images" empty state, give FireANTs a CPU time budget and progress messages, ship BrowserQC's CPU MindGrab bundle with a longer segmentation budget, select CPU processing in SynthSR and brain extraction when no WebGPU adapter exists, start MuscleMap at 50 % overlap without WebGPU, and run VesselBoost's hosted example workflow in its browser tests.
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.4.2
+
+- Updated dependencies [4959500]
+  - @neurodesk/webapp-components@0.4.4
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.4.3
 
 ## 1.4.20260918
 
@@ -325,6 +414,7 @@
 - Clarify that each input's image type describes the uploaded file. Rename View to Preview file and the per-file checkbox to Include in segmentation.
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.4.1
 
 - Replace shared UI builders with light-DOM custom elements for consoles, file fields, result lists, viewer toolbars and example selectors. Migrate app callers, isolate control IDs and upload scopes, and preserve state while cleaning up listeners and cancelled downloads across component removal.
@@ -335,6 +425,9 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.3.1
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.4.1
 
 ## 1.4.20260916
 
@@ -350,6 +443,22 @@
 ### Patch Changes
 
 - Updated dependencies
+
+  - @neurodesk/webapp-components@0.2.2
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.2.1
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.2.0
+
+- Add Run offline instructions through the shared Standalone action, linking the MuscleMap 1.4 Neurodesk container on Zenodo with its checksum, setup guidance and copyable CPU segmentation command.
+
+- Restore the 1.4 model release series after the catalog-wide release incorrectly advanced it to 1.5. Pin the series in the release planner so webapp and shared dependency changes only advance the UTC date. Synchronize the application and generated model catalog versions.
+
+- Updated dependencies
   - @neurodesk/webapp-components@0.2.2
 
 - Updated dependencies
@@ -357,10 +466,6 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.2.0
-
-- Add Run offline instructions through the shared Standalone action, linking the MuscleMap 1.4 Neurodesk container on Zenodo with its checksum, setup guidance and copyable CPU segmentation command.
-
-- Restore the 1.4 model release series after the catalog-wide release incorrectly advanced it to 1.5. Pin the series in the release planner so webapp and shared dependency changes only advance the UTC date. Synchronize the application and generated model catalog versions.
 
 ### Minor Changes
 

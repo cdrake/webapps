@@ -4,6 +4,17 @@
 
 ### Patch Changes
 
+- Updated dependencies [14db080]
+
+- Updated dependencies [03261d0]
+
+- Updated dependencies [c865c0c]
+
+- Updated dependencies [4b40da1]
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/lcmodel@0.8.20261020
+  - @neurodesk/runtime-support@0.9.4
+
 - Updated dependencies [3f1d770]
 
 - Updated dependencies [14b8248]
@@ -11,6 +22,7 @@
 - Updated dependencies [d9718cd]
 
 - Updated dependencies [d1fa022]
+
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
   - @neurodesk/lcmodel@0.8.20261020
@@ -30,6 +42,11 @@
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/lcmodel@0.8.20261020
 
+- Updated dependencies [d1fa022]
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/lcmodel@0.8.20261020
+
 ## 0.8.20261019
 
 ### Patch Changes
@@ -43,6 +60,7 @@
 ### Patch Changes
 
 - Updated dependencies [7c0d201]
+
   - @neurodesk/webapp-components@0.16.2
   - @neurodesk/lcmodel@0.8.20261018
   - @neurodesk/runtime-support@0.9.1
@@ -50,6 +68,7 @@
 - Updated dependencies
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/runtime-support@0.9.0
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/lcmodel@0.8.20261018
@@ -61,15 +80,18 @@
 - Updated dependencies [a07f659]
 
 - Updated dependencies [3329c39]
+
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
 
 - Updated dependencies [b67e4e9]
+
   - @neurodesk/runtime-support@0.7.2
   - @neurodesk/webapp-components@0.15.1
   - @neurodesk/lcmodel@0.8.20261018
 
 - Updated dependencies [b68209b]
+
   - @neurodesk/webapp-components@0.15.0
   - @neurodesk/runtime-support@0.7.1
   - @neurodesk/lcmodel@0.8.20261018
@@ -85,6 +107,30 @@
 - Updated dependencies [67a5a8f]
   - @neurodesk/runtime-support@0.7.0
   - @neurodesk/webapp-components@0.14.4
+  - @neurodesk/lcmodel@0.8.20261018
+
+- Updated dependencies [7c0d201]
+  - @neurodesk/webapp-components@0.16.2
+  - @neurodesk/lcmodel@0.8.20261018
+  - @neurodesk/runtime-support@0.9.1
+
+- Updated dependencies [46935f7]
+  - @neurodesk/runtime-support@0.9.0
+  - @neurodesk/webapp-components@0.16.1
+  - @neurodesk/lcmodel@0.8.20261018
+
+- Updated dependencies [3329c39]
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/runtime-support@0.8.0
+
+- Updated dependencies [b67e4e9]
+  - @neurodesk/runtime-support@0.7.2
+  - @neurodesk/webapp-components@0.15.1
+  - @neurodesk/lcmodel@0.8.20261018
+
+- Updated dependencies [b68209b]
+  - @neurodesk/webapp-components@0.15.0
+  - @neurodesk/runtime-support@0.7.1
   - @neurodesk/lcmodel@0.8.20261018
 
 ## 0.8.20261017
@@ -103,6 +149,7 @@
 - Persist checksum-verified model and example caches across browser restarts. Bind runtime caches to each document’s checksum manifest to avoid reusing bytes from a different deployment.
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.14.2
   - @neurodesk/runtime-support@0.6.3
   - @neurodesk/lcmodel@0.8.20261016
@@ -112,11 +159,17 @@
   - @neurodesk/lcmodel@0.8.20261016
   - @neurodesk/runtime-support@0.6.2
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.14.2
+  - @neurodesk/runtime-support@0.6.3
+  - @neurodesk/lcmodel@0.8.20261016
+
 ## 0.8.20261015
 
 ### Patch Changes
 
 - Updated dependencies [c74b26f]
+
   - @neurodesk/runtime-support@0.6.1
   - @neurodesk/lcmodel@0.8.20261015
 
@@ -128,6 +181,7 @@
   protocol-matching heuristic; the site's private acquisition has not been tested.
 
 - Updated dependencies [e59305a]
+
   - @neurodesk/lcmodel@0.8.20261015
 
 - dd65e6a: Visual refresh: Inter, neutral greys with the Neurodesk logo green for action,
@@ -154,6 +208,13 @@
   - @neurodesk/webapp-components@0.14.0
   - @neurodesk/lcmodel@0.8.20261015
 
+- Updated dependencies [c74b26f]
+  - @neurodesk/runtime-support@0.6.1
+  - @neurodesk/lcmodel@0.8.20261015
+
+- Updated dependencies [e59305a]
+  - @neurodesk/lcmodel@0.8.20261015
+
 ## 0.8.20261014
 
 ### Patch Changes
@@ -176,17 +237,29 @@
 ### Patch Changes
 
 - Keep accompanying anatomical images optional when importing spectroscopy folders. Skip unusable images with a warning, offer None when choosing a series, and clear previous anatomy when skipping. Automation uses only its explicit T1 input and never waits for the graphical series chooser.
+
+  - @neurodesk/lcmodel@0.8.20261013
+
+- Invalidate measured tissue correction and map downloads when replacement anatomy is adopted, before waiting for viewer presentation.
+
+  - @neurodesk/lcmodel@0.8.20261013
+
+- 36d64d0: Reject imports that mix LCModel RAW and vendor spectra before replacing the current session or fit. Continue allowing RAW spectra with anatomical images.
+
+  - @neurodesk/lcmodel@0.8.20261013
+
+- Finish the progress indicator and hide cancellation when automation preparation fails. Show the input error or Cancelled while preserving the loaded session.
+
+- Updated dependencies
+  - @neurodesk/lcmodel@0.8.20261013
+
+- Keep accompanying anatomical images optional when importing spectroscopy folders. Skip unusable images with a warning, offer None when choosing a series, and clear previous anatomy when skipping. Automation uses only its explicit T1 input and never waits for the graphical series chooser.
   - @neurodesk/lcmodel@0.8.20261013
 
 - Invalidate measured tissue correction and map downloads when replacement anatomy is adopted, before waiting for viewer presentation.
   - @neurodesk/lcmodel@0.8.20261013
 
 - 36d64d0: Reject imports that mix LCModel RAW and vendor spectra before replacing the current session or fit. Continue allowing RAW spectra with anatomical images.
-  - @neurodesk/lcmodel@0.8.20261013
-
-- Finish the progress indicator and hide cancellation when automation preparation fails. Show the input error or Cancelled while preserving the loaded session.
-
-- Updated dependencies
   - @neurodesk/lcmodel@0.8.20261013
 
 ## 0.8.20261012
@@ -216,12 +289,18 @@
 - Updated dependencies
 
 - Updated dependencies
+
   - @neurodesk/lcmodel@0.8.20261012
   - @neurodesk/webapp-components@0.12.3
   - @neurodesk/runtime-support@0.4.3
 
 - Updated dependencies
   - @neurodesk/lcmodel@0.8.20261012
+
+- Updated dependencies
+  - @neurodesk/lcmodel@0.8.20261012
+  - @neurodesk/webapp-components@0.12.3
+  - @neurodesk/runtime-support@0.4.3
 
 ## 0.7.20261012
 
@@ -255,6 +334,7 @@
 - Classify Philips SDAT water references with the shared naming rule. `_water_off`, `_nows`, `_wref` and `_h2o` now pair with their spectrum instead of being loaded as additional metabolite datasets.
 
 - Updated dependencies [8321cb9]
+
   - @neurodesk/lcmodel@0.7.20261012
 
 - 1ce9fe7: Fix three failures reported from multi-site data:
@@ -266,6 +346,9 @@
 - Updated dependencies [1ce9fe7]
   - @neurodesk/lcmodel@0.7.20261012
 
+- Updated dependencies [8321cb9]
+  - @neurodesk/lcmodel@0.7.20261012
+
 ## 0.7.20261010
 
 ### Minor Changes
@@ -275,6 +358,7 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.12.2
   - @neurodesk/runtime-support@0.4.2
   - @neurodesk/lcmodel@0.7.20261010
@@ -283,6 +367,11 @@
   - @neurodesk/lcmodel@0.7.20261010
   - @neurodesk/runtime-support@0.4.1
   - @neurodesk/webapp-components@0.12.1
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.12.2
+  - @neurodesk/runtime-support@0.4.2
+  - @neurodesk/lcmodel@0.7.20261010
 
 ## 0.6.20261010
 
@@ -319,6 +408,25 @@
 ### Patch Changes
 
 - Updated dependencies [22aa4bf]
+
+  - @neurodesk/webapp-components@0.11.1
+  - @neurodesk/runtime-support@0.2.1
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.11.0
+  - @neurodesk/runtime-support@0.2.0
+
+- Fix NIfTI-MRS preprocessing for singleton coil and dynamic dimensions, and preserve echo and repetition times in milliseconds through fitting and export. Add an openly licensed PRESS NIfTI-MRS example with a water reference and a reproducible conversion recipe.
+
+- Updated dependencies
+
+  - @neurodesk/lcmodel@0.3.2
+
+- Updated dependencies [70f2770]
+  - @neurodesk/webapp-components@0.10.2
+
+- Updated dependencies [22aa4bf]
   - @neurodesk/webapp-components@0.11.1
   - @neurodesk/runtime-support@0.2.1
 
@@ -326,13 +434,8 @@
   - @neurodesk/webapp-components@0.11.0
   - @neurodesk/runtime-support@0.2.0
 
-- Fix NIfTI-MRS preprocessing for singleton coil and dynamic dimensions, and preserve echo and repetition times in milliseconds through fitting and export. Add an openly licensed PRESS NIfTI-MRS example with a water reference and a reproducible conversion recipe.
-
 - Updated dependencies
   - @neurodesk/lcmodel@0.3.2
-
-- Updated dependencies [70f2770]
-  - @neurodesk/webapp-components@0.10.2
 
 ## 0.5.20261005
 
@@ -345,18 +448,30 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.10.1
 
 - Updated dependencies [0204fe1]
+
+- Updated dependencies [ec85a09]
+
+  - @neurodesk/webapp-components@0.10.0
+
+- Updated dependencies [257192b]
+
+  - @neurodesk/runtime-support@0.1.3
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.9.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.10.1
 
 - Updated dependencies [ec85a09]
   - @neurodesk/webapp-components@0.10.0
 
 - Updated dependencies [257192b]
   - @neurodesk/runtime-support@0.1.3
-
-- Updated dependencies
-  - @neurodesk/webapp-components@0.9.0
 
 ## 0.5.20261003
 

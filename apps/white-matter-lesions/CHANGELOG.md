@@ -4,6 +4,41 @@
 
 ### Patch Changes
 
+- 14db080: DICOM View's "Open in White matter lesions" button is now an "Open in another webapp"
+  menu that lists every app of the site from the registry. Most apps receive the converted
+  NIfTI image; apps the registry marks `handoff: dicom` (dicompare, QSMbly, dwi2trx, NODDI,
+  Carotid Flow) receive the series' DICOM files, and `handoff: none` keeps an app that cannot
+  use a single series (Zarro, FastPrep, SurfAnnotate, LCModel) out of the menu. The shared shell
+  receives a handoff for every app the way a page drop opens files, through the app's own
+  inputs; dicompare opens the files as reference acquisitions, and White matter lesions
+  keeps its own receiver.
+
+  A multiframe DICOM whose frames lie in different planes, such as a scanner's MPR head
+  scout, which dcm2niix refuses, now shows each frame as its own correctly placed slice
+  instead of failing with exit code 2. `readDicomFrames` in `@neurodesk/dicom2vid` reads a
+  file's frames with their own position, orientation and pixel spacing.
+
+  Dropping files or a folder on the image now opens them. FreeBrowse draws NiiVue inside a
+  shadow root, so the page drop never saw the canvas and NiiVue swallowed the drop; the page
+  drop now reads the event's composed path. It also no longer routes files to the
+  automation contract's hidden input.
+
+  DICOM View opens series in the ACS layout, without the 3D render, with FreeBrowse's
+  panel closed.
+
+- Updated dependencies [14db080]
+
+- Updated dependencies [03261d0]
+
+- Updated dependencies [c865c0c]
+
+- Updated dependencies [4b40da1]
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/runtime-support@0.9.4
+  - @neurodesk/synthsr@0.6.20261020
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/white-matter-lesions@0.5.20261020
+
 - 3f1d770: `takeHandoff` takes a `signal`: an abort stops the copy out of storage instead of
   letting it run on in the background, and rejects with the signal's reason. White
   matter lesions passes its load job's signal, so the footer × ends the copy of an
@@ -19,6 +54,7 @@
 - Updated dependencies [d9718cd]
 
 - Updated dependencies [d1fa022]
+
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
   - @neurodesk/synthsr@0.6.20261020
@@ -38,6 +74,13 @@
 - Updated dependencies [d1fa022]
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
+  - @neurodesk/synthsr@0.6.20261020
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/white-matter-lesions@0.5.20261020
+
+- Updated dependencies [d1fa022]
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
   - @neurodesk/synthsr@0.6.20261020
   - @neurodesk/synthstrip@0.1.5
   - @neurodesk/white-matter-lesions@0.5.20261020
@@ -67,6 +110,7 @@
 ### Patch Changes
 
 - Updated dependencies [7c0d201]
+
   - @neurodesk/webapp-components@0.16.2
   - @neurodesk/runtime-support@0.9.1
   - @neurodesk/synthsr@0.6.20261018
@@ -76,6 +120,7 @@
 - Updated dependencies
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/runtime-support@0.9.0
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/synthsr@0.6.20261018
@@ -89,10 +134,12 @@
 - Updated dependencies [a07f659]
 
 - Updated dependencies [3329c39]
+
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
 
 - Updated dependencies [b67e4e9]
+
   - @neurodesk/runtime-support@0.7.2
   - @neurodesk/webapp-components@0.15.1
   - @neurodesk/synthsr@0.6.20261018
@@ -102,6 +149,31 @@
 - Updated dependencies [b68209b]
   - @neurodesk/webapp-components@0.15.0
   - @neurodesk/runtime-support@0.7.1
+  - @neurodesk/synthsr@0.6.20261018
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/white-matter-lesions@0.5.20261018
+
+- Updated dependencies [7c0d201]
+  - @neurodesk/webapp-components@0.16.2
+  - @neurodesk/runtime-support@0.9.1
+  - @neurodesk/synthsr@0.6.20261018
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/white-matter-lesions@0.5.20261018
+
+- Updated dependencies [46935f7]
+  - @neurodesk/runtime-support@0.9.0
+  - @neurodesk/webapp-components@0.16.1
+  - @neurodesk/synthsr@0.6.20261018
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/white-matter-lesions@0.5.20261018
+
+- Updated dependencies [3329c39]
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/runtime-support@0.8.0
+
+- Updated dependencies [b67e4e9]
+  - @neurodesk/runtime-support@0.7.2
+  - @neurodesk/webapp-components@0.15.1
   - @neurodesk/synthsr@0.6.20261018
   - @neurodesk/synthstrip@0.1.5
   - @neurodesk/white-matter-lesions@0.5.20261018
@@ -149,6 +221,7 @@
 - Persist checksum-verified model and example caches across browser restarts. Bind runtime caches to each document’s checksum manifest to avoid reusing bytes from a different deployment.
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.14.2
   - @neurodesk/runtime-support@0.6.3
   - @neurodesk/synthsr@0.6.20261016
@@ -167,11 +240,19 @@
   - @neurodesk/synthstrip@0.1.5
   - @neurodesk/white-matter-lesions@0.3.20261016
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.14.2
+  - @neurodesk/runtime-support@0.6.3
+  - @neurodesk/synthsr@0.6.20261016
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/white-matter-lesions@0.3.20261016
+
 ## 0.3.20261015
 
 ### Patch Changes
 
 - Updated dependencies [c74b26f]
+
   - @neurodesk/runtime-support@0.6.1
   - @neurodesk/synthsr@0.6.20261015
   - @neurodesk/synthstrip@0.1.5
@@ -197,6 +278,7 @@
 - Updated dependencies [dd65e6a]
 
 - Updated dependencies [dcc74e7]
+
   - @neurodesk/runtime-support@0.6.0
   - @neurodesk/webapp-components@0.14.0
   - @neurodesk/synthsr@0.6.20261015
@@ -217,6 +299,19 @@
 - Updated dependencies [84d192a]
   - @neurodesk/white-matter-lesions@0.3.20261015
   - @neurodesk/synthsr@0.6.20261015
+
+- Updated dependencies [c74b26f]
+  - @neurodesk/runtime-support@0.6.1
+  - @neurodesk/synthsr@0.6.20261015
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/white-matter-lesions@0.3.20261015
+
+- Updated dependencies [dcc74e7]
+  - @neurodesk/runtime-support@0.6.0
+  - @neurodesk/webapp-components@0.14.0
+  - @neurodesk/synthsr@0.6.20261015
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/white-matter-lesions@0.3.20261015
 
 ## 0.3.20261014
 
@@ -253,6 +348,7 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.12.2
   - @neurodesk/runtime-support@0.4.2
   - @neurodesk/synthsr@0.6.20261010
@@ -265,6 +361,13 @@
   - @neurodesk/webapp-components@0.12.1
   - @neurodesk/synthsr@0.6.20261010
   - @neurodesk/synthstrip@0.1.5
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.12.2
+  - @neurodesk/runtime-support@0.4.2
+  - @neurodesk/synthsr@0.6.20261010
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/white-matter-lesions@0.3.20261010
 
 ## 0.2.20261009
 
@@ -292,6 +395,7 @@
 ### Patch Changes
 
 - Updated dependencies [22aa4bf]
+
   - @neurodesk/webapp-components@0.11.1
   - @neurodesk/runtime-support@0.2.1
   - @neurodesk/synthsr@0.6.20261007
@@ -299,6 +403,7 @@
   - @neurodesk/white-matter-lesions@0.2.20261007
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.11.0
   - @neurodesk/runtime-support@0.2.0
   - @neurodesk/synthsr@0.6.20261007
@@ -311,6 +416,20 @@
   - @neurodesk/webapp-components@0.10.2
   - @neurodesk/white-matter-lesions@0.2.20261007
   - @neurodesk/synthsr@0.6.20261007
+
+- Updated dependencies [22aa4bf]
+  - @neurodesk/webapp-components@0.11.1
+  - @neurodesk/runtime-support@0.2.1
+  - @neurodesk/synthsr@0.6.20261007
+  - @neurodesk/synthstrip@0.1.3
+  - @neurodesk/white-matter-lesions@0.2.20261007
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.11.0
+  - @neurodesk/runtime-support@0.2.0
+  - @neurodesk/synthsr@0.6.20261007
+  - @neurodesk/synthstrip@0.1.2
+  - @neurodesk/white-matter-lesions@0.2.20261007
 
 ## 0.1.20261005
 
@@ -326,15 +445,39 @@
 - f12d686: Fall back to the CPU when WebGPU returns blank lesion scores. Some virtual GPUs, including GitHub's macOS runners, complete a WebGPU run but return all zeros, which reported no lesions. Non-finite or constant network output now counts as a WebGPU failure, so the segmentation restarts on WebAssembly.
 
 - Updated dependencies
+
   - @neurodesk/synthsr@0.6.20261004
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.10.1
   - @neurodesk/synthsr@0.6.20261004
 
 - df84067: Correct the lesion mask in the viewer before downloading it. Edit on the lesion mask row opens the shared editor over the FLAIR with Draw, Erase and Fill tools. Apply replaces the mask in the Output list and recomputes the lesion count, volume and lesion table from the edited mask, marking both rows `(edited)`. Download returns the edited mask under the same name as a uint8 NIfTI. Cancel discards the strokes. Loading a new image or segmenting again closes an open edit. The probability map and the run report remain as the model produced them.
 
 - Updated dependencies [0204fe1]
+
+- Updated dependencies [ec85a09]
+
+  - @neurodesk/webapp-components@0.10.0
+  - @neurodesk/synthsr@0.6.20261004
+
+- Updated dependencies [257192b]
+
+  - @neurodesk/synthsr@0.6.20261004
+  - @neurodesk/synthstrip@0.1.1
+  - @neurodesk/runtime-support@0.1.3
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.9.0
+  - @neurodesk/synthsr@0.5.20261004
+
+- Updated dependencies
+  - @neurodesk/synthsr@0.6.20261004
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.10.1
+  - @neurodesk/synthsr@0.6.20261004
 
 - Updated dependencies [ec85a09]
   - @neurodesk/webapp-components@0.10.0
@@ -344,10 +487,6 @@
   - @neurodesk/synthsr@0.6.20261004
   - @neurodesk/synthstrip@0.1.1
   - @neurodesk/runtime-support@0.1.3
-
-- Updated dependencies
-  - @neurodesk/webapp-components@0.9.0
-  - @neurodesk/synthsr@0.5.20261004
 
 ## 0.1.20261003
 
@@ -366,11 +505,16 @@
 - Updated dependencies
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.7.0
   - @neurodesk/synthsr@0.5.20260930
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.6.2
+  - @neurodesk/synthsr@0.5.20260930
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.7.0
   - @neurodesk/synthsr@0.5.20260930
 
 ### Minor Changes
