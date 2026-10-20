@@ -1,5 +1,5 @@
 [workspace]
-members = ["gradients", "tensor", "amico", "degibbs", "noddi-wasm", "degibbs-wasm", "pe-field", "gp", "hmc", "shore"]
+members = ["gradients", "tensor", "amico", "degibbs", "noddi-wasm", "degibbs-wasm", "shore", "slice-outliers", "gp", "hmc", "pe-field"]
 resolver = "2"
 
 [workspace.package]
