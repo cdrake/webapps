@@ -93,6 +93,57 @@ fn split_takes_the_median_of_the_b0_volumes() {
     assert_eq!(s.bvecs[0], g.bvecs[2]);
 }
 
+fn one_voxel_series(b0: &[f64]) -> DwiSeries<f64> {
+    let (bval, bvec) = table(DTI_MIN_ORIENTATIONS);
+    let (bvals, bvecs) = read_gradients(&bval, &bvec).unwrap();
+    let gradients = B0Rule::NiFreeze
+        .read(
+            [vec![0.0; b0.len()], bvals[2..].to_vec()].concat(),
+            [vec![[0.0; 3]; b0.len()], bvecs[2..].to_vec()].concat(),
+        )
+        .unwrap();
+    let mut data = b0.to_vec();
+    data.extend([700.0; DTI_MIN_ORIENTATIONS]);
+    DwiSeries::split(&data, [1, 1, 1], &gradients).unwrap()
+}
+
+#[test]
+fn split_median_matches_numpy_for_non_finite_and_finite_b0_values() {
+    let cases: &[(&[f64], f64)] = &[
+        (&[7.0, 1.0, 3.0], 3.0),
+        (&[7.0, 1.0, 5.0, 3.0], 4.0),
+        (&[f64::NAN, 3.0, 7.0], f64::NAN),
+        (&[1.0, 3.0, 7.0, f64::NAN], f64::NAN),
+        (&[f64::NEG_INFINITY, 0.0, f64::INFINITY], 0.0),
+        (&[f64::INFINITY, f64::INFINITY], f64::INFINITY),
+        (&[f64::NEG_INFINITY, f64::INFINITY], f64::NAN),
+        (&[-0.0, 0.0], 0.0),
+        (&[-0.0, 0.0, -0.0], 0.0),
+    ];
+    for &(b0, expected) in cases {
+        let series = one_voxel_series(b0);
+        let median = series.bzero.unwrap()[0];
+        if expected.is_nan() {
+            assert!(median.is_nan(), "{b0:?}: {median}");
+        } else {
+            assert_eq!(median.to_bits(), expected.to_bits(), "{b0:?}");
+        }
+    }
+}
+
+#[test]
+fn a_nan_b0_median_keeps_the_mask_and_finite_dwi_prediction() {
+    for b0 in [&[f64::NAN, 3.0][..], &[1.0, 3.0, f64::NAN][..]] {
+        let series = one_voxel_series(b0);
+        assert!(series.bzero.as_ref().unwrap()[0].is_nan());
+        assert!(series.dwi.iter().all(|v| v.is_finite()));
+        let model = GpModel::new(&series, None).unwrap();
+        assert_eq!(model.data_mask(), &[true]);
+        assert_eq!(model.fit_predict(0).unwrap().volume, vec![700.0]);
+        assert!(series.bzero.as_ref().unwrap()[0].is_nan());
+    }
+}
+
 #[test]
 fn data_mask_removes_voxels_where_bzero_is_below_1e_5() {
     let bzero = [0.0, 1e-5, 9.9e-6, 3.0, -1.0];

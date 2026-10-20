@@ -207,10 +207,13 @@ impl<T: Copy + Into<f64>> DwiSeries<T> {
     }
 }
 
-/// `np.median` of a column of finite values (`numpy/lib/_function_base_impl.py`): the middle
+/// `np.median` of a column (`numpy/lib/_function_base_impl.py`): NaN propagates; otherwise the middle
 /// value, or the mean of the two middle values, `(a + b) / 2` as `np.mean` gives it.
 fn median(column: &mut [f64]) -> f64 {
-    column.sort_by(|a, b| a.partial_cmp(b).expect("finite"));
+    if column.iter().any(|value| value.is_nan()) {
+        return f64::NAN;
+    }
+    column.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     let n = column.len();
     if n % 2 == 1 {
         column[n / 2]
