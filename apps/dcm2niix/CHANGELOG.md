@@ -1,5 +1,17 @@
 # dcm2niix
 
+## 0.1.20261020
+
+### Patch Changes
+
+- Receive the source DICOM series from DICOM View's shared Open in another webapp menu.
+- Updated dependencies [14db080]
+- Updated dependencies [03261d0]
+- Updated dependencies [c865c0c]
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/dicom2vid@0.5.20261020
+  - @neurodesk/runtime-support@0.9.4
+
 ## 0.1.20261019
 
 ### Patch Changes

@@ -1,5 +1,16 @@
 # dwidenoise
 
+## 0.2.20261020
+
+### Patch Changes
+
+- Updated dependencies [14db080]
+- Updated dependencies [03261d0]
+- Updated dependencies [c865c0c]
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/runtime-support@0.9.4
+  - @neurodesk/dwidenoise@0.2.20261020
+
 ## 0.2.20261019
 
 ### Patch Changes

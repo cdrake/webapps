@@ -1,5 +1,21 @@
 # @neurodesk/easy-mp2rage
 
+## 0.8.20261020
+
+### Patch Changes
+
+- Updated dependencies [14db080]
+- Updated dependencies [03261d0]
+- Updated dependencies [c865c0c]
+  - @neurodesk/webapp-components@0.17.0
+- Updated dependencies [ea2a6d2]
+- Updated dependencies [3f1d770]
+- Updated dependencies [d9718cd]
+- Updated dependencies [c1a4dda]
+- Updated dependencies [3329c39]
+- Updated dependencies [46935f7]
+  - @neurodesk/webapp-components@0.16.0
+
 ## 0.8.20261019
 
 ### Patch Changes
@@ -13,19 +29,33 @@
 ### Patch Changes
 
 - Updated dependencies [7c0d201]
+
   - @neurodesk/webapp-components@0.16.2
+
 - Updated dependencies [46935f7]
+
   - @neurodesk/webapp-components@0.16.1
+
 - Updated dependencies [ea2a6d2]
+
 - Updated dependencies [0511cd7]
+
 - Updated dependencies [3329c39]
+
   - @neurodesk/webapp-components@0.16.0
+
 - Updated dependencies [b67e4e9]
+
   - @neurodesk/webapp-components@0.15.1
+
 - Updated dependencies [b68209b]
+
   - @neurodesk/webapp-components@0.15.0
+
 - Updated dependencies [2ae93ae]
+
 - Updated dependencies [ccb2970]
+
 - Updated dependencies [67a5a8f]
   - @neurodesk/webapp-components@0.14.4
 
@@ -41,7 +71,9 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.14.2
+
 - Updated dependencies [7443048]
   - @neurodesk/webapp-components@0.14.1
 
@@ -50,6 +82,7 @@
 ### Patch Changes
 
 - Updated dependencies [dd65e6a]
+
 - Updated dependencies [dcc74e7]
   - @neurodesk/webapp-components@0.14.0
 
@@ -58,7 +91,9 @@
 ### Patch Changes
 
 - Updated dependencies [27c9549]
+
 - Updated dependencies [850e642]
+
 - Updated dependencies [ad92e2f]
   - @neurodesk/webapp-components@0.13.0
 
@@ -78,7 +113,9 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.12.2
+
 - Updated dependencies
   - @neurodesk/webapp-components@0.12.1
 
@@ -93,6 +130,7 @@
 ### Patch Changes
 
 - Updated dependencies [66bf9e9]
+
 - Updated dependencies [501ea0c]
   - @neurodesk/webapp-components@0.12.0
 
@@ -105,9 +143,14 @@
 ### Patch Changes
 
 - Updated dependencies [22aa4bf]
+
   - @neurodesk/webapp-components@0.11.1
+
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.11.0
+
 - b7dd98f: The web app and the command line refuse INV1 or INV2 images that have UNI's dimensions but a different orientation, voxel size or origin, instead of combining them voxel for voxel with the wrong anatomy. `parameters.json` now records every setting that changes a result: the tfl reference angle, FOV extension, the uncorrected fallback and whether the mask came from INV2 or UNI. Each release archive is checked against Python pipeline outputs for every option, and the committed WebAssembly core is rebuilt from source and compared before packaging.
+
 - Updated dependencies [70f2770]
   - @neurodesk/webapp-components@0.10.2
