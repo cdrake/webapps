@@ -24,13 +24,15 @@
 - Updated dependencies [d1fa022]
   - @neurodesk/runtime-support@0.8.0
 
-- Updated dependencies [d1fa022]
-
   - @neurodesk/runtime-support@0.9.3
 
 - @neurodesk/runtime-support@0.8.1
 
 - @neurodesk/runtime-support@0.8.2
+
+- Updated dependencies
+  - @neurodesk/runtime-support@0.9.5
+- @neurodesk/runtime-support@0.9.4
 
 ## 1.4.20261019
 

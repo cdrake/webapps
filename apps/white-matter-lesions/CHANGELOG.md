@@ -101,16 +101,12 @@
   - @neurodesk/synthstrip@0.1.5
   - @neurodesk/white-matter-lesions@0.5.20261020
 
-- Updated dependencies [c865c0c]
-
 - Updated dependencies [4b40da1]
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/runtime-support@0.9.4
   - @neurodesk/synthsr@0.6.20261020
   - @neurodesk/synthstrip@0.1.5
   - @neurodesk/white-matter-lesions@0.5.20261020
-
-- Updated dependencies [d1fa022]
 
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
@@ -126,19 +122,6 @@
   receives a handoff for every app the way a page drop opens files, through the app's own
   inputs; dicompare opens the files as reference acquisitions, and White matter lesions
   keeps its own receiver.
-
-  A multiframe DICOM whose frames lie in different planes, such as a scanner's MPR head
-  scout, which dcm2niix refuses, now shows each frame as its own correctly placed slice
-  instead of failing with exit code 2. `readDicomFrames` in `@neurodesk/dicom2vid` reads a
-  file's frames with their own position, orientation and pixel spacing.
-
-  Dropping files or a folder on the image now opens them. FreeBrowse draws NiiVue inside a
-  shadow root, so the page drop never saw the canvas and NiiVue swallowed the drop; the page
-  drop now reads the event's composed path. It also no longer routes files to the
-  automation contract's hidden input.
-
-  DICOM View opens series in the ACS layout, without the 3D render, with FreeBrowse's
-  panel closed.
 
 - Updated dependencies [a36fde4]
 
@@ -157,6 +140,23 @@
   - @neurodesk/synthsr@0.6.20261020
   - @neurodesk/synthstrip@0.1.5
   - @neurodesk/white-matter-lesions@0.5.20261020
+
+- Updated dependencies
+  - @neurodesk/runtime-support@0.9.5
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/synthsr@0.6.20261020
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/white-matter-lesions@0.5.20261020
+- 14db080: DICOM View's "Open in White matter lesions" button is now an "Open in another webapp"
+  menu that lists every app of the site from the registry. Most apps receive the converted
+  NIfTI image; apps the registry marks `handoff: dicom` (dicompare, QSMbly, dwi2trx, NODDI,
+  Carotid Flow) receive the series' DICOM files, and `handoff: none` keeps an app that cannot
+  use a single series (Zarro, FastPrep, SurfAnnotate, LCModel) out of the menu. The shared shell
+  receives a handoff for every app the way a page drop opens files, through the app's own
+  inputs; dicompare opens the files as reference acquisitions, and White matter lesions
+  keeps its own receiver.
+
+- Updated dependencies [4b40da1]
 
 ## 0.5.20261019
 
@@ -467,8 +467,6 @@
   - @neurodesk/synthstrip@0.1.5
   - @neurodesk/white-matter-lesions@0.3.20261010
 
-- Updated dependencies
-
   - @neurodesk/white-matter-lesions@0.3.20261010
   - @neurodesk/runtime-support@0.4.1
   - @neurodesk/webapp-components@0.12.1
@@ -574,8 +572,6 @@
 
   - @neurodesk/synthsr@0.6.20261004
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.10.1
   - @neurodesk/synthsr@0.6.20261004
 
@@ -593,8 +589,6 @@
   - @neurodesk/synthsr@0.6.20261004
   - @neurodesk/synthstrip@0.1.1
   - @neurodesk/runtime-support@0.1.3
-
-- Updated dependencies
 
   - @neurodesk/webapp-components@0.9.0
   - @neurodesk/synthsr@0.5.20261004
@@ -639,16 +633,12 @@
 - 5909f26: Fix the lesion probability overlay by using NiiVue's supported display-range options. Probabilities below 0.1 stay transparent instead of tinting the entire FLAIR image orange; downloaded probabilities are unchanged. Open Advanced settings by default so skull stripping, model and processing options are immediately visible.
 
 - Updated dependencies
-
-- Updated dependencies
   - @neurodesk/webapp-components@0.7.0
   - @neurodesk/synthsr@0.5.20260930
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.6.2
   - @neurodesk/synthsr@0.5.20260930
-
-- Updated dependencies
 
   - @neurodesk/webapp-components@0.7.0
   - @neurodesk/synthsr@0.5.20260930

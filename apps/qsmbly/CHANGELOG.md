@@ -35,12 +35,8 @@
 - Updated dependencies [46935f7]
   - @neurodesk/webapp-components@0.16.0
 
-- Updated dependencies [c865c0c]
-
 - Updated dependencies [4b40da1]
   - @neurodesk/webapp-components@0.17.0
-
-- Updated dependencies [d9718cd]
 
   - @neurodesk/webapp-components@0.16.3
 
@@ -53,6 +49,12 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.18.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.1
+- Updated dependencies [14db080]
+
+- Updated dependencies [4b40da1]
 
 ## 0.31.20261019
 
@@ -315,8 +317,6 @@
 
   - @neurodesk/webapp-components@0.10.0
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.9.0
 
 - Updated dependencies [ec85a09]
@@ -344,14 +344,10 @@
   - @neurodesk/webapp-components@0.6.2
 
 - Updated dependencies
-
-- Updated dependencies
   - @neurodesk/webapp-components@0.7.0
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.6.2
-
-- Updated dependencies
 
   - @neurodesk/webapp-components@0.7.0
 
@@ -369,8 +365,6 @@
 
 - Updated dependencies [93381e8]
 
-- Updated dependencies [93381e8]
-
   - @neurodesk/webapp-components@0.6.0
 
 - Use portable underscore MCP tool names, explicit input cardinality, and declared SynthSeg browser geometry limits for preflight validation. Preserve duplicate DICOM filenames during conversion, release viewer sessions when their windows close, and prevent cancellation/retry races.
@@ -382,8 +376,6 @@
 
 - Updated dependencies [93381e8]
   - @neurodesk/webapp-components@0.6.0
-
-- Updated dependencies
 
   - @neurodesk/webapp-components@0.6.1
 
@@ -450,8 +442,6 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.4.2
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.4.3
 
 ## 0.27.20260918
@@ -499,8 +489,6 @@
 
   - @neurodesk/webapp-components@0.2.0
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.2.2
 
 - Updated dependencies
@@ -511,8 +499,6 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.2.0
-
-- Updated dependencies
 
   - @neurodesk/webapp-components@0.2.1
 

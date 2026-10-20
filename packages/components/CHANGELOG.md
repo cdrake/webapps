@@ -34,6 +34,12 @@
 
 - Serialize ME-ICA previews and restore the previous image, overlay, frame and display window when an import fails or is cancelled. Replacement echoes clear stale echo times, superseded imports cannot replace newer inputs, and automation cancellation stops the processing worker. The shared queue retains the existing single-volume preview adapter.
 
+## 0.17.1
+
+### Patch Changes
+
+- Add helpers for the dcm2niix app. `runDcm2niix` takes a `timeoutMs` conversion deadline and terminates a stalled worker. `clearNiftiText` removes NIfTI header text and extensions and keeps geometry and voxels. Editable report fields share the workflow field styling, and clearing a workspace releases its automation output.
+
 ## 0.17.0
 
 ### Minor Changes
@@ -72,19 +78,6 @@
   receives a handoff for every app the way a page drop opens files, through the app's own
   inputs; dicompare opens the files as reference acquisitions, and White matter lesions
   keeps its own receiver.
-
-  A multiframe DICOM whose frames lie in different planes, such as a scanner's MPR head
-  scout, which dcm2niix refuses, now shows each frame as its own correctly placed slice
-  instead of failing with exit code 2. `readDicomFrames` in `@neurodesk/dicom2vid` reads a
-  file's frames with their own position, orientation and pixel spacing.
-
-  Dropping files or a folder on the image now opens them. FreeBrowse draws NiiVue inside a
-  shadow root, so the page drop never saw the canvas and NiiVue swallowed the drop; the page
-  drop now reads the event's composed path. It also no longer routes files to the
-  automation contract's hidden input.
-
-  DICOM View opens series in the ACS layout, without the 3D render, with FreeBrowse's
-  panel closed.
 
 - The input size limit moves from dwi2trx to `@neurodesk/webapp-components/file-io/input-limits` (`MAX_INPUT_BYTES`, `InputTooLargeError`, `formatBytes`, `assertInputSize`). It adds `decodedFloat32Bytes`, the size of the Float32 array an image decodes to (voxels × frames × 4), and `assertNiftiDecodedSize`, which refuses a NIfTI above the 2 GB limit from its header alone; `readNiftiHeader` stops gzip streaming after the header when supported. dwi2trx imports the shared module. NODDI and Degibbs refuse a DWI whose decoded image is above the limit before reading it, and the status bar names the size and the limit.
 
@@ -161,12 +154,6 @@
   millimetres before showing voxel spacing.
 
 - c1a4dda: NODDI is a new app that fits diffusion tensor and NODDI maps to a DWI in the browser. Load a DWI NIfTI with its bval and bvec, or a DICOM diffusion series, and choose Fit models. The tensor fit (weighted or ordinary least squares, on the b0 volumes and the shells up to b = 1200 s/mm², or the lowest shell when none is that low) gives FA, MD, AD, RD, S0 and the principal direction. With two or more shells, NODDI by AMICO gives ICVF, ISOVF, ODI and the fibre direction; with one shell the app says so and fits the tensor only. The fit uses a MindGrab brain mask of the mean b0, or a mask you supply on the DWI grid, and runs in Web Workers with a cancel. Every map downloads with its BIDS diffusion derivative name, for example `sub-01_model-noddi_param-icvf_dwimap.nii.gz`.
-
-  `@neurodesk/noddi` holds the WebAssembly fit, built from the Rust crates in `exes/dwi`. Its NODDI fit is a port of AMICO 1.5.4, the last BSD-licensed release, and agrees with AMICO 1.5.4 to a median of 1e-4 in white matter. It rotates each atom exactly instead of through AMICO's 1° lookup table.
-
-  `readDiffusionSeries` in `@neurodesk/runtime-support/dcm2niix-client` returns each image with its bval, bvec and sidecar, from NIfTI files or a converted DICOM series. FSL's `bvals` and `bvecs` files count as gradients, with or without a stem: the image readers no longer pass them to dcm2niix as DICOM, and a page drop sends them to an app's gradients input.
-
-  `createNiftiFromData` writes a 4D map when `dims` has a fourth entry greater than 1, so a direction map can be saved as three frames.
 
 ### Patch Changes
 

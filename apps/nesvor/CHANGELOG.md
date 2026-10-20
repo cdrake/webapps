@@ -59,14 +59,10 @@
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/nesvor@0.3.20261020
 
-- Updated dependencies [c865c0c]
-
 - Updated dependencies [4b40da1]
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/nesvor@0.3.20261020
   - @neurodesk/runtime-support@0.9.4
-
-- Updated dependencies [d1fa022]
 
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
@@ -85,6 +81,14 @@
   - @neurodesk/webapp-components@0.18.0
   - @neurodesk/nesvor@0.3.20261020
   - @neurodesk/runtime-support@0.8.2
+
+- Updated dependencies
+  - @neurodesk/runtime-support@0.9.5
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/nesvor@0.3.20261020
+- Updated dependencies [14db080]
+
+- Updated dependencies [4b40da1]
 
 ## 0.3.20261019
 
@@ -150,8 +154,6 @@
 - Updated dependencies [2ae93ae]
 
 - Updated dependencies [ccb2970]
-
-- Updated dependencies [67a5a8f]
 
   - @neurodesk/runtime-support@0.7.0
   - @neurodesk/webapp-components@0.14.4
@@ -303,13 +305,9 @@
 
   - @neurodesk/nesvor@0.3.20261010
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.12.2
   - @neurodesk/nesvor@0.3.20261010
   - @neurodesk/runtime-support@0.4.2
-
-- Updated dependencies
 
   - @neurodesk/runtime-support@0.4.1
   - @neurodesk/webapp-components@0.12.1
@@ -397,8 +395,6 @@
   - @neurodesk/runtime-support@0.1.3
   - @neurodesk/nesvor@0.3.20261004
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.9.0
   - @neurodesk/nesvor@0.3.20261004
 
@@ -436,13 +432,7 @@
 
 - Enable the shared cross-origin isolation fallback on static hosts such as GitHub Pages so N4 can use SharedArrayBuffer. Include NeSVoR in deployed isolation checks and verify its compute-server-first standalone download layout.
 
-  - @neurodesk/nesvor@0.3.20260930
-
 - Register stack loading and viewer inspection with the shared automation contract. Opening stacks replaces prior inputs and waits for the viewer; reconstruction remains an interactive operation.
-
-  - @neurodesk/nesvor@0.3.20260930
-
-- Updated dependencies
 
 - Updated dependencies
 
@@ -451,11 +441,7 @@
 
 - Discover a same-host compute server only after remote processing is selected. Browser mode no longer requests a nonexistent API from the static website.
 
-  - @neurodesk/nesvor@0.3.20260930
-
 - Use a portable runtime cache when building NeSVoR outside the development workspace. Preserve ZARRo export progress and cancellation when volume loading completes after the export starts.
-
-  - @neurodesk/nesvor@0.3.20260930
 
 - Release the experimental NeSVoR browser and remote compute workflows. Package the required ONNX runtime with gzip compression and omit unused runtime variants. Include shared compute connection recovery, cancellation and Linux server setup instructions.
 
@@ -482,8 +468,6 @@
 - Publish the experimental NeSVoR browser reconstruction with WebGPU brain masking, motion correction, N4 preprocessing, deformation and reconstruction, plus optional Linux NVIDIA remote compute. WebGPU is the default, progress is logged throughout processing, and acquisition thickness remains editable without a confirmation checkbox. Hardware GPU performance and full-acquisition CUDA parity remain unverified.
   - @neurodesk/nesvor@0.3.20260930
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.5.2
   - @neurodesk/nesvor@0.3.20260930
 
@@ -507,8 +491,6 @@
 
 - Remove the mandatory slice-thickness confirmation. Allow reconstruction with inferred thicknesses, show a non-blocking spacing note, and retain editable values and numeric validation.
 
-  - @neurodesk/nesvor@0.3.20260924
-
 ## 0.3.20260921
 
 ### Patch Changes
@@ -530,8 +512,6 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.5.1
   - @neurodesk/nesvor@0.3.20260921
-
-- Updated dependencies
 
   - @neurodesk/nesvor@0.3.20260921
 

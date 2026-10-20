@@ -51,14 +51,10 @@
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/lcmodel@0.8.20261020
 
-- Updated dependencies [c865c0c]
-
 - Updated dependencies [4b40da1]
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/lcmodel@0.8.20261020
   - @neurodesk/runtime-support@0.9.4
-
-- Updated dependencies [d1fa022]
 
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
@@ -77,6 +73,14 @@
   - @neurodesk/webapp-components@0.18.0
   - @neurodesk/lcmodel@0.8.20261020
   - @neurodesk/runtime-support@0.8.2
+
+- Updated dependencies
+  - @neurodesk/runtime-support@0.9.5
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/lcmodel@0.8.20261020
+- Updated dependencies [14db080]
+
+- Updated dependencies [4b40da1]
 
 ## 0.8.20261019
 
@@ -142,8 +146,6 @@
 - Updated dependencies [2ae93ae]
 
 - Updated dependencies [ccb2970]
-
-- Updated dependencies [67a5a8f]
 
   - @neurodesk/runtime-support@0.7.0
   - @neurodesk/webapp-components@0.14.4
@@ -299,17 +301,11 @@
 
 - Invalidate measured tissue correction and map downloads when replacement anatomy is adopted, before waiting for viewer presentation.
 
-  - @neurodesk/lcmodel@0.8.20261013
-
 - 36d64d0: Reject imports that mix LCModel RAW and vendor spectra before replacing the current session or fit. Continue allowing RAW spectra with anatomical images.
-
-  - @neurodesk/lcmodel@0.8.20261013
 
 - Finish the progress indicator and hide cancellation when automation preparation fails. Show the input error or Cancelled while preserving the loaded session.
 
 - Updated dependencies
-
-  - @neurodesk/lcmodel@0.8.20261013
 
 - 36d64d0: Reject imports that mix LCModel RAW and vendor spectra before replacing the current session or fit. Continue allowing RAW spectra with anatomical images.
   - @neurodesk/lcmodel@0.8.20261013
@@ -349,13 +345,9 @@
 
 - Updated dependencies
 
-- Updated dependencies
-
   - @neurodesk/lcmodel@0.8.20261012
   - @neurodesk/webapp-components@0.12.3
   - @neurodesk/runtime-support@0.4.3
-
-- Updated dependencies
 
   - @neurodesk/lcmodel@0.8.20261012
 
@@ -410,8 +402,6 @@
 
 - Updated dependencies [1ce9fe7]
 
-  - @neurodesk/lcmodel@0.7.20261012
-
 - Updated dependencies [8321cb9]
   - @neurodesk/lcmodel@0.7.20261012
 
@@ -431,8 +421,6 @@
   - @neurodesk/webapp-components@0.12.2
   - @neurodesk/runtime-support@0.4.2
   - @neurodesk/lcmodel@0.7.20261010
-
-- Updated dependencies
 
   - @neurodesk/lcmodel@0.7.20261010
   - @neurodesk/runtime-support@0.4.1
@@ -494,8 +482,6 @@
 
 - Fix NIfTI-MRS preprocessing for singleton coil and dynamic dimensions, and preserve echo and repetition times in milliseconds through fitting and export. Add an openly licensed PRESS NIfTI-MRS example with a water reference and a reproducible conversion recipe.
 
-- Updated dependencies
-
   - @neurodesk/lcmodel@0.3.2
 
 - Updated dependencies [70f2770]
@@ -539,8 +525,6 @@
 - Updated dependencies [257192b]
 
   - @neurodesk/runtime-support@0.1.3
-
-- Updated dependencies
 
   - @neurodesk/webapp-components@0.9.0
 

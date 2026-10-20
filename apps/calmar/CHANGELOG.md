@@ -40,13 +40,9 @@
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/calmar@0.7.20261020
 
-- Updated dependencies [c865c0c]
-
 - Updated dependencies [4b40da1]
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/calmar@0.7.20261020
-
-- Updated dependencies [d9718cd]
 
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/calmar@0.7.20261020
@@ -62,6 +58,13 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.18.0
   - @neurodesk/calmar@0.7.20261020
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/calmar@0.7.20261020
+- Updated dependencies [14db080]
+
+- Updated dependencies [4b40da1]
 
 ## 0.7.20261019
 
@@ -257,8 +260,6 @@
 
 - Reuse the shared NIfTI-1 reader in the CALMAR command line. Honour both byte orders and disable intercept scaling when the slope is zero; preserve source byte order in derived images.
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.12.1
   - @neurodesk/calmar@0.6.20261010
 
@@ -326,8 +327,6 @@
 
   - @neurodesk/webapp-components@0.10.0
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.9.0
 
 - Updated dependencies [ec85a09]
@@ -355,14 +354,10 @@
   - @neurodesk/webapp-components@0.6.2
 
 - Updated dependencies
-
-- Updated dependencies
   - @neurodesk/webapp-components@0.7.0
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.6.2
-
-- Updated dependencies
 
   - @neurodesk/webapp-components@0.7.0
 
@@ -380,8 +375,6 @@
 
 - Updated dependencies [93381e8]
 
-- Updated dependencies [93381e8]
-
   - @neurodesk/webapp-components@0.6.0
 
 - Updated dependencies
@@ -389,8 +382,6 @@
 
 - Updated dependencies [93381e8]
   - @neurodesk/webapp-components@0.6.0
-
-- Updated dependencies
 
   - @neurodesk/webapp-components@0.6.1
 
@@ -447,8 +438,6 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.4.2
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.4.3
 
 ## 0.4.20260918
@@ -467,8 +456,6 @@
 
   - @neurodesk/webapp-components@0.4.0
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.3.1
 
 - Load only the structural T1 in the stroke example so Run analysis computes the lesion mask for review before network mapping.
@@ -478,8 +465,6 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.3.1
-
-- Updated dependencies
 
   - @neurodesk/webapp-components@0.4.1
 
@@ -500,8 +485,6 @@
 
   - @neurodesk/webapp-components@0.2.0
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.2.2
 
 - Updated dependencies
@@ -512,8 +495,6 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.2.0
-
-- Updated dependencies
 
   - @neurodesk/webapp-components@0.2.1
 

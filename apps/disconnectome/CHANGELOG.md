@@ -51,14 +51,10 @@
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/nii2tvx@0.3.20261020
 
-- Updated dependencies [c865c0c]
-
 - Updated dependencies [4b40da1]
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/runtime-support@0.9.4
   - @neurodesk/nii2tvx@0.3.20261020
-
-- Updated dependencies [d1fa022]
 
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
@@ -77,6 +73,14 @@
   - @neurodesk/webapp-components@0.18.0
   - @neurodesk/runtime-support@0.8.2
   - @neurodesk/nii2tvx@0.3.20261020
+
+- Updated dependencies
+  - @neurodesk/runtime-support@0.9.5
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/nii2tvx@0.3.20261020
+- Updated dependencies [14db080]
+
+- Updated dependencies [4b40da1]
 
 ## 0.3.20261019
 
@@ -142,8 +146,6 @@
 - Updated dependencies [2ae93ae]
 
 - Updated dependencies [ccb2970]
-
-- Updated dependencies [67a5a8f]
 
   - @neurodesk/runtime-support@0.7.0
   - @neurodesk/webapp-components@0.14.4
@@ -290,8 +292,6 @@
   - @neurodesk/runtime-support@0.4.2
   - @neurodesk/nii2tvx@0.3.20261010
 
-- Updated dependencies
-
   - @neurodesk/runtime-support@0.4.1
   - @neurodesk/webapp-components@0.12.1
   - @neurodesk/nii2tvx@0.3.20261010
@@ -381,8 +381,6 @@
   - @neurodesk/runtime-support@0.1.3
   - @neurodesk/nii2tvx@0.2.20261004
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.9.0
   - @neurodesk/nii2tvx@0.2.20261004
 
@@ -420,16 +418,12 @@
   - @neurodesk/nii2tvx@0.2.20260930
 
 - Updated dependencies
-
-- Updated dependencies
   - @neurodesk/webapp-components@0.7.0
   - @neurodesk/nii2tvx@0.2.20260930
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.6.2
   - @neurodesk/nii2tvx@0.2.20260930
-
-- Updated dependencies
 
   - @neurodesk/webapp-components@0.7.0
   - @neurodesk/nii2tvx@0.2.20260930
@@ -446,8 +440,6 @@
 
 - Updated dependencies [93381e8]
 
-- Updated dependencies [93381e8]
-
   - @neurodesk/webapp-components@0.6.0
   - @neurodesk/nii2tvx@0.2.20260928
 
@@ -458,8 +450,6 @@
 - Updated dependencies [93381e8]
   - @neurodesk/webapp-components@0.6.0
   - @neurodesk/nii2tvx@0.2.20260928
-
-- Updated dependencies
 
   - @neurodesk/webapp-components@0.6.1
   - @neurodesk/nii2tvx@0.2.20260928
@@ -511,5 +501,3 @@
 - Disconnectome gains the shared Support action along with every other webapp. It
   merged after the release that recorded the action for the other 25 apps, so this
   notes it against the same release date.
-
-  - @neurodesk/nii2tvx@0.1.20260923

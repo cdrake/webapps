@@ -35,12 +35,8 @@
 - Updated dependencies [46935f7]
   - @neurodesk/webapp-components@0.16.0
 
-- Updated dependencies [c865c0c]
-
 - Updated dependencies [4b40da1]
   - @neurodesk/webapp-components@0.17.0
-
-- Updated dependencies [d9718cd]
 
   - @neurodesk/webapp-components@0.16.3
 
@@ -53,6 +49,12 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.18.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.1
+- Updated dependencies [14db080]
+
+- Updated dependencies [4b40da1]
 
 ## 0.4.20261019
 
@@ -188,8 +190,6 @@
   obsolete shared UI parity test helper and register release-maintained version
   records as explicit Knip roots.
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.12.1
 
 - Updated dependencies
@@ -252,8 +252,6 @@
 
   - @neurodesk/webapp-components@0.10.0
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.9.0
 
 - Updated dependencies [ec85a09]
@@ -282,10 +280,6 @@
 
 - Retry example downloads and OME-Zarr reads that the host rate-limits (HTTP 429), honouring Retry-After, instead of failing the example.
 
-- Updated dependencies
-
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.7.0
 
 - Preserve NIfTI export progress and Cancel when a pending viewer load finishes during the export.
@@ -308,8 +302,6 @@
 
 - Updated dependencies [93381e8]
 
-- Updated dependencies [93381e8]
-
   - @neurodesk/webapp-components@0.6.0
 
 - Updated dependencies
@@ -317,8 +309,6 @@
 
 - Updated dependencies [93381e8]
   - @neurodesk/webapp-components@0.6.0
-
-- Updated dependencies
 
   - @neurodesk/webapp-components@0.6.1
 
@@ -377,8 +367,6 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.4.2
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.4.3
 
 ## 0.3.20260918
@@ -412,8 +400,6 @@
 
   - @neurodesk/webapp-components@0.2.0
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.2.2
 
 - Updated dependencies
@@ -424,8 +410,6 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.2.0
-
-- Updated dependencies
 
   - @neurodesk/webapp-components@0.2.1
 

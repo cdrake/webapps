@@ -107,8 +107,6 @@
   - @neurodesk/brain-extraction@0.4.20261020
   - @neurodesk/syncro@0.7.20261020
 
-- Updated dependencies [c865c0c]
-
 - Updated dependencies [4b40da1]
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/runtime-support@0.9.4
@@ -122,8 +120,6 @@
 
   - @neurodesk/brain-extraction@0.4.20261020
   - @neurodesk/syncro@0.7.20261020
-
-- Updated dependencies [d1fa022]
 
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
@@ -176,6 +172,18 @@
   - @neurodesk/synthstrip@0.1.5
   - @neurodesk/greedy@0.6.20261020
   - @neurodesk/syncro@0.7.20261020
+
+- Updated dependencies
+  - @neurodesk/runtime-support@0.9.5
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/synthsr@0.6.20261020
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/brain-extraction@0.4.20261020
+  - @neurodesk/greedy@0.6.20261020
+  - @neurodesk/syncro@0.7.20261020
+- Updated dependencies [14db080]
+
+- Updated dependencies [4b40da1]
 
 ## 0.7.20261019
 
@@ -289,6 +297,16 @@
   - @neurodesk/greedy@0.6.20261018
   - @neurodesk/syncro@0.7.20261018
 
+- Updated dependencies [3329c39]
+
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/runtime-support@0.8.0
+  - @neurodesk/syncro@0.7.20261018
+  - @neurodesk/synthsr@0.6.20261018
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/brain-extraction@0.4.20261018
+  - @neurodesk/greedy@0.6.20261018
+
 ## 0.6.20261018
 
 ### Patch Changes
@@ -320,8 +338,6 @@
 - Updated dependencies [2ae93ae]
 
 - Updated dependencies [ccb2970]
-
-- Updated dependencies [67a5a8f]
 
   - @neurodesk/runtime-support@0.7.0
   - @neurodesk/webapp-components@0.14.4
@@ -547,11 +563,7 @@
 
 - Declare workspace dependencies without expanding SYNcro portable runtime installations. Mark dicompare type imports explicitly and separate the unchanged NeSVoR reference validator from worker orchestration to remove dependency cycles.
 
-- Updated dependencies
-
   - @neurodesk/syncro@0.6.20261010
-
-- Updated dependencies
 
   - @neurodesk/runtime-support@0.4.1
   - @neurodesk/webapp-components@0.12.1
@@ -678,8 +690,6 @@
   - @neurodesk/synthsr@0.6.20261004
   - @neurodesk/brain-extraction@0.1.19
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.10.1
   - @neurodesk/greedy@0.4.20261004
   - @neurodesk/synthsr@0.6.20261004
@@ -759,8 +769,6 @@
   - @neurodesk/brain-extraction@0.1.12
 
 - Updated dependencies
-
-- Updated dependencies
   - @neurodesk/webapp-components@0.7.0
   - @neurodesk/greedy@0.4.20260930
   - @neurodesk/synthsr@0.5.20260930
@@ -771,8 +779,6 @@
   - @neurodesk/greedy@0.4.20260930
   - @neurodesk/synthsr@0.5.20260930
   - @neurodesk/brain-extraction@0.1.12
-
-- Updated dependencies
 
   - @neurodesk/webapp-components@0.7.0
   - @neurodesk/greedy@0.4.20260930
@@ -788,8 +794,6 @@
   The shared example selector shows one short line once an example loads; the description and expected result moved to a tooltip beside the Example label. NiiMath gained the shared layout tabs and About dialog and no longer ships app CSS.
 
 - Updated dependencies
-
-- Updated dependencies [93381e8]
 
 - Updated dependencies [93381e8]
 
@@ -809,8 +813,6 @@
   - @neurodesk/greedy@0.4.20260928
   - @neurodesk/synthsr@0.5.20260928
   - @neurodesk/brain-extraction@0.1.10
-
-- Updated dependencies
 
   - @neurodesk/webapp-components@0.6.1
   - @neurodesk/greedy@0.4.20260928
@@ -896,8 +898,6 @@
   - @neurodesk/synthsr@0.4.20260920
   - @neurodesk/brain-extraction@0.1.5
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.4.2
   - @neurodesk/greedy@0.3.20260920
   - @neurodesk/synthsr@0.4.20260920
@@ -947,13 +947,9 @@
 
 - Include Brain extraction in the offline desktop suite with its SynthStrip model and a real BET extraction and download check. Reuse the shared MindGrab adapter in SYNcro.
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.2.2
   - @neurodesk/greedy@0.3.20260915
   - @neurodesk/synthsr@0.4.20260915
-
-- Updated dependencies
 
   - @neurodesk/webapp-components@0.2.1
   - @neurodesk/greedy@0.3.20260915
@@ -993,8 +989,6 @@
 
   - @neurodesk/webapp-components@0.1.4
   - @neurodesk/synthsr@0.3.20260914
-
-- Updated dependencies
 
   - @neurodesk/greedy@0.2.20260914
 

@@ -56,12 +56,8 @@
 - Updated dependencies [46935f7]
   - @neurodesk/webapp-components@0.16.0
 
-- Updated dependencies [c865c0c]
-
 - Updated dependencies [4b40da1]
   - @neurodesk/webapp-components@0.17.0
-
-- Updated dependencies [d9718cd]
 
   - @neurodesk/webapp-components@0.16.3
 
@@ -74,6 +70,12 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.18.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.1
+- Updated dependencies [14db080]
+
+- Updated dependencies [4b40da1]
 
 ## 0.5.20261019
 
@@ -199,8 +201,6 @@
   - @neurodesk/webapp-components@0.12.2
 
 - Move caller-pinned MindGrab and niimath Node drivers and their independent browser parity validation to dependency-free `@neurodesk/node-drivers`. Migrate every command line and remove the old runtime-support exports. Keep SynthSR and SynthStrip browser runtimes out of production Node deployments so portable brain-extraction and BrowserQC archives omit browser dependencies.
-
-- Updated dependencies
 
   - @neurodesk/node-drivers@0.2.0
   - @neurodesk/webapp-components@0.12.1

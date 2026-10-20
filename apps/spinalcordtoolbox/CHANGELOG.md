@@ -40,13 +40,9 @@
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/spinalcordtoolbox@0.9.20261020
 
-- Updated dependencies [c865c0c]
-
 - Updated dependencies [4b40da1]
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/spinalcordtoolbox@0.9.20261020
-
-- Updated dependencies [d9718cd]
 
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/spinalcordtoolbox@0.9.20261020
@@ -62,6 +58,13 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.18.0
   - @neurodesk/spinalcordtoolbox@0.9.20261020
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/spinalcordtoolbox@0.9.20261020
+- Updated dependencies [14db080]
+
+- Updated dependencies [4b40da1]
 
 ## 0.9.20261019
 
@@ -251,8 +254,6 @@
 
   - @neurodesk/webapp-components@0.12.2
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.12.1
 
 - Updated dependencies
@@ -370,14 +371,10 @@
   - @neurodesk/webapp-components@0.6.2
 
 - Updated dependencies
-
-- Updated dependencies
   - @neurodesk/webapp-components@0.7.0
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.6.2
-
-- Updated dependencies
 
   - @neurodesk/webapp-components@0.7.0
 
@@ -395,8 +392,6 @@
 
 - Updated dependencies [93381e8]
 
-- Updated dependencies [93381e8]
-
   - @neurodesk/webapp-components@0.6.0
 
 - Updated dependencies
@@ -404,8 +399,6 @@
 
 - Updated dependencies [93381e8]
   - @neurodesk/webapp-components@0.6.0
-
-- Updated dependencies
 
   - @neurodesk/webapp-components@0.6.1
 
@@ -462,8 +455,6 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.4.2
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.4.3
 
 ## 0.4.20260918
@@ -503,8 +494,6 @@
 
   - @neurodesk/webapp-components@0.2.0
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.2.2
 
 - Updated dependencies
@@ -515,8 +504,6 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.2.0
-
-- Updated dependencies
 
   - @neurodesk/webapp-components@0.2.1
 

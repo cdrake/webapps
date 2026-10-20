@@ -40,13 +40,9 @@
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/vesselboost@0.6.20261020
 
-- Updated dependencies [c865c0c]
-
 - Updated dependencies [4b40da1]
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/vesselboost@0.6.20261020
-
-- Updated dependencies [d9718cd]
 
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/vesselboost@0.6.20261020
@@ -62,6 +58,13 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.18.0
   - @neurodesk/vesselboost@0.6.20261020
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/vesselboost@0.6.20261020
+- Updated dependencies [14db080]
+
+- Updated dependencies [4b40da1]
 
 ## 0.6.20261019
 
@@ -235,8 +238,6 @@
   - @neurodesk/webapp-components@0.12.2
   - @neurodesk/vesselboost@0.6.20261010
 
-- Updated dependencies
-
   - @neurodesk/vesselboost@0.6.20261010
   - @neurodesk/webapp-components@0.12.1
 
@@ -307,8 +308,6 @@
 
   - @neurodesk/webapp-components@0.10.0
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.9.0
 
 - Updated dependencies [ec85a09]
@@ -336,14 +335,10 @@
   - @neurodesk/webapp-components@0.6.2
 
 - Updated dependencies
-
-- Updated dependencies
   - @neurodesk/webapp-components@0.7.0
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.6.2
-
-- Updated dependencies
 
   - @neurodesk/webapp-components@0.7.0
 
@@ -361,8 +356,6 @@
 
 - Updated dependencies [93381e8]
 
-- Updated dependencies [93381e8]
-
   - @neurodesk/webapp-components@0.6.0
 
 - Updated dependencies
@@ -370,8 +363,6 @@
 
 - Updated dependencies [93381e8]
   - @neurodesk/webapp-components@0.6.0
-
-- Updated dependencies
 
   - @neurodesk/webapp-components@0.6.1
 
@@ -390,8 +381,6 @@
 - Every app now opens on its workspace and shows live status only in the bottom bar: a short message, a progress bar, elapsed time and a cancel × that appears while a run can be cancelled. Start pages, landing overlays and welcome modals are gone, and their copy moved to About. Every app has a technical log below the viewer that starts collapsed. Sidebar help longer than 90 characters moved into info tooltips or About, and each sidebar has one primary action. `ProgressManager` now drives the design-system footer, including the elapsed counter and the cancel button.
 
   The shared example selector shows one short line once an example loads; the description and expected result moved to a tooltip beside the Example label. NiiMath gained the shared layout tabs and About dialog and no longer ships app CSS.
-
-- Updated dependencies
 
 - Updated dependencies
 
@@ -451,8 +440,6 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.4.2
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.4.3
 
 ## 0.4.20260918
@@ -471,8 +458,6 @@
 
   - @neurodesk/webapp-components@0.4.0
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.3.1
 
 - Replace the vessel-only example with an original 3T TOF-MRA control scan from the Lausanne OpenNeuro dataset. Pin the unmodified scan and checksum in the offline inventory, retain acquisition provenance, and add a hosted-data check that rejects sparse vessel-only inputs. Verify example selection through segmentation and NIfTI download in the production browser workflow. Allow the interface audit to wait for full-resolution example imports.
@@ -482,8 +467,6 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.3.1
-
-- Updated dependencies
 
   - @neurodesk/webapp-components@0.4.1
 
@@ -504,8 +487,6 @@
 
   - @neurodesk/webapp-components@0.2.0
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.2.2
 
 - Updated dependencies
@@ -516,8 +497,6 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.2.0
-
-- Updated dependencies
 
   - @neurodesk/webapp-components@0.2.1
 

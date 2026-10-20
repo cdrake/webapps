@@ -35,12 +35,8 @@
 - Updated dependencies [46935f7]
   - @neurodesk/webapp-components@0.16.0
 
-- Updated dependencies [c865c0c]
-
 - Updated dependencies [4b40da1]
   - @neurodesk/webapp-components@0.17.0
-
-- Updated dependencies [d9718cd]
 
   - @neurodesk/webapp-components@0.16.3
 
@@ -53,6 +49,12 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.18.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.1
+- Updated dependencies [14db080]
+
+- Updated dependencies [4b40da1]
 
 ## 0.7.20261019
 
@@ -188,8 +190,6 @@
   - @neurodesk/webapp-components@0.12.2
 
 - Reuse the shared NIfTI-1 reader in the CALMAR command line. Honour both byte orders and disable intercept scaling when the slope is zero; preserve source byte order in derived images.
-
-- Updated dependencies
 
   - @neurodesk/webapp-components@0.12.1
 
