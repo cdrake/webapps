@@ -13,6 +13,23 @@
   - @neurodesk/runtime-support@0.9.3
   - @neurodesk/synthsr@0.6.20261020
 
+- f248934: SynthSR builds with npm 12. Its standalone package step read `npm pack --json` as an array, which npm 11 prints; npm 12 prints an object keyed by package name, and the build stopped with "object is not iterable". The step now reads both.
+
+- Updated dependencies [ea2a6d2]
+
+- Updated dependencies [c1a4dda]
+
+- Updated dependencies [1f4aecd]
+
+- Updated dependencies [3329c39]
+
+- Updated dependencies [46935f7]
+
+- Updated dependencies [d1fa022]
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/runtime-support@0.8.0
+  - @neurodesk/synthsr@0.6.20261020
+
 ## 0.6.20261019
 
 ### Patch Changes
