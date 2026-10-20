@@ -1,5 +1,20 @@
 # @neurodesk/noddi
 
+## 0.4.20261020
+
+### Minor Changes
+
+- Keep tensor backend selection in NODDI's shared fitting pipeline. The command line accepts
+  `--tensor-fit niimath-dtifit` and uses the same corrected vendored runtime, volume selection,
+  map conversion and optional NODDI fit as the browser. Weighted least squares remains the default.
+
+### Patch Changes
+
+- Updated dependencies [ccea86e]
+- Updated dependencies [d0df450]
+- Updated dependencies
+  - @neurodesk/dwi2trx@0.6.20261020
+
 ## 0.3.20261020
 
 ### Minor Changes
