@@ -109,14 +109,23 @@
 ### Patch Changes
 
 - Updated dependencies [ea2a6d2]
+
 - Updated dependencies [c5908f7]
+
 - Updated dependencies [3f1d770]
+
 - Updated dependencies [14b8248]
+
 - Updated dependencies [d9718cd]
+
 - Updated dependencies [c1a4dda]
+
 - Updated dependencies [1f4aecd]
+
 - Updated dependencies [3329c39]
+
 - Updated dependencies [46935f7]
+
 - Updated dependencies [d1fa022]
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/degibbs@0.2.0

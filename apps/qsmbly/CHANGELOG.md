@@ -6,6 +6,7 @@
 
 - Updated dependencies [a36fde4]
   - @neurodesk/webapp-components@0.18.0
+
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
@@ -30,6 +31,9 @@
 
 - Updated dependencies [d9718cd]
   - @neurodesk/webapp-components@0.16.3
+
+- Updated dependencies [46935f7]
+  - @neurodesk/webapp-components@0.16.0
 
 ## 0.31.20261019
 
@@ -82,24 +86,11 @@
 
   - @neurodesk/webapp-components@0.14.4
 
-- Updated dependencies [7c0d201]
-
-  - @neurodesk/webapp-components@0.16.2
-
-- Updated dependencies [46935f7]
-
-  - @neurodesk/webapp-components@0.16.1
-
-- Updated dependencies [3329c39]
-
-  - @neurodesk/webapp-components@0.16.0
-
-- Updated dependencies [b67e4e9]
-
-  - @neurodesk/webapp-components@0.15.1
-
 - Updated dependencies [b68209b]
   - @neurodesk/webapp-components@0.15.0
+
+- Updated dependencies [67a5a8f]
+  - @neurodesk/webapp-components@0.14.4
 
 ## 0.31.20261017
 
@@ -124,6 +115,9 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.14.2
+
+- Updated dependencies [7443048]
+  - @neurodesk/webapp-components@0.14.1
 
 ## 0.31.20261015
 
@@ -265,12 +259,14 @@
 
   - @neurodesk/webapp-components@0.10.2
 
-- Updated dependencies [22aa4bf]
-
-  - @neurodesk/webapp-components@0.11.1
-
 - Updated dependencies
   - @neurodesk/webapp-components@0.11.0
+
+- Updated dependencies [22aa4bf]
+  - @neurodesk/webapp-components@0.11.1
+
+- Updated dependencies [70f2770]
+  - @neurodesk/webapp-components@0.10.2
 
 ## 0.29.20261004
 
@@ -290,12 +286,14 @@
 
   - @neurodesk/webapp-components@0.9.0
 
-- Updated dependencies
-
-  - @neurodesk/webapp-components@0.10.1
-
 - Updated dependencies [ec85a09]
   - @neurodesk/webapp-components@0.10.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.10.1
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.9.0
 
 ## 0.29.20261003
 
@@ -316,6 +314,9 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.7.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.6.2
 
 ## 0.29.20260928
 
@@ -341,6 +342,9 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.6.1
+
+- Updated dependencies [93381e8]
+  - @neurodesk/webapp-components@0.6.0
 
 ### Minor Changes
 
@@ -399,6 +403,12 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.4.3
 
+- Updated dependencies [4959500]
+  - @neurodesk/webapp-components@0.4.4
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.4.2
+
 ## 0.27.20260918
 
 ### Minor Changes
@@ -451,6 +461,12 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.2.1
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.2
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.0
+
 ### Minor Changes
 
 - Add a shared Standalone action and offline desktop packaging with included, checksum-verified models and runtime dependencies. Remove the lightNIIng topbar link while retaining its About statement.
@@ -471,6 +487,9 @@
 
 - Updated dependencies [4add8da]
   - @neurodesk/webapp-components@0.1.5
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.1.4
 
 ## 0.24.20260910
 

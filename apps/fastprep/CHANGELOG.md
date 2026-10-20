@@ -5,11 +5,13 @@
 ### Patch Changes
 
 - @neurodesk/synthsr@0.6.20261020
+
 - Updated dependencies [a36fde4]
   - @neurodesk/webapp-components@0.18.0
   - @neurodesk/runtime-support@0.9.5
   - @neurodesk/synthsr@0.6.20261020
   - @neurodesk/greedy@0.6.20261020
+
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
@@ -55,6 +57,12 @@
 - Updated dependencies [d1fa022]
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/synthsr@0.6.20261020
+  - @neurodesk/greedy@0.6.20261020
+
+- Updated dependencies [d1fa022]
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/runtime-support@0.8.0
   - @neurodesk/synthsr@0.6.20261020
   - @neurodesk/greedy@0.6.20261020
 
@@ -158,43 +166,17 @@
 
   - @neurodesk/fastprep@0.1.20261017
 
-- Updated dependencies [7c0d201]
-
-  - @neurodesk/webapp-components@0.16.2
-  - @neurodesk/runtime-support@0.9.1
-  - @neurodesk/synthsr@0.6.20261018
-  - @neurodesk/greedy@0.6.20261018
-
-- Updated dependencies [46935f7]
-
-  - @neurodesk/runtime-support@0.9.0
-  - @neurodesk/webapp-components@0.16.1
-  - @neurodesk/synthsr@0.6.20261018
-  - @neurodesk/greedy@0.6.20261018
-
-- Updated dependencies [3329c39]
-
-  - @neurodesk/webapp-components@0.16.0
-  - @neurodesk/runtime-support@0.8.0
-  - @neurodesk/synthsr@0.6.20261018
-  - @neurodesk/greedy@0.6.20261018
-
-- Updated dependencies [b67e4e9]
-
-  - @neurodesk/runtime-support@0.7.2
-  - @neurodesk/webapp-components@0.15.1
-  - @neurodesk/synthsr@0.6.20261018
-  - @neurodesk/greedy@0.5.20261018
-
-- Updated dependencies [b68209b]
-
-  - @neurodesk/webapp-components@0.15.0
-  - @neurodesk/runtime-support@0.7.1
-  - @neurodesk/synthsr@0.6.20261018
-  - @neurodesk/greedy@0.5.20261018
-
 - Updated dependencies [67a5a8f]
   - @neurodesk/runtime-support@0.7.0
   - @neurodesk/webapp-components@0.14.4
   - @neurodesk/synthsr@0.6.20261018
   - @neurodesk/greedy@0.5.20261018
+
+- Updated dependencies [b68209b]
+  - @neurodesk/webapp-components@0.15.0
+  - @neurodesk/runtime-support@0.7.1
+  - @neurodesk/synthsr@0.6.20261018
+  - @neurodesk/greedy@0.5.20261018
+
+- Updated dependencies [1c11f1c]
+  - @neurodesk/fastprep@0.1.20261017

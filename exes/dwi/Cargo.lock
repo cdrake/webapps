@@ -85,6 +85,7 @@ version = "0.1.0"
 name = "dwi-hmc"
 version = "0.1.0"
 dependencies = [
+ "dwi-gradients",
  "serde_json",
 ]
 

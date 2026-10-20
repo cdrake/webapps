@@ -116,6 +116,9 @@
 - Updated dependencies [3329c39]
   - @neurodesk/webapp-components@0.16.0
 
+- Updated dependencies [46935f7]
+  - @neurodesk/webapp-components@0.16.0
+
 ## 0.7.2
 
 ### Patch Changes

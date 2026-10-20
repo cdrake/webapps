@@ -8,6 +8,7 @@
   - @neurodesk/webapp-components@0.18.0
   - @neurodesk/lcmodel@0.8.20261020
   - @neurodesk/runtime-support@0.9.5
+
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
@@ -43,6 +44,11 @@
 - Updated dependencies [d1fa022]
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/lcmodel@0.8.20261020
+
+- Updated dependencies [d1fa022]
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/runtime-support@0.8.0
   - @neurodesk/lcmodel@0.8.20261020
 
 ## 0.8.20261019
@@ -116,32 +122,14 @@
   - @neurodesk/webapp-components@0.14.4
   - @neurodesk/lcmodel@0.8.20261018
 
-- Updated dependencies [7c0d201]
-
-  - @neurodesk/webapp-components@0.16.2
-  - @neurodesk/lcmodel@0.8.20261018
-  - @neurodesk/runtime-support@0.9.1
-
-- Updated dependencies [46935f7]
-
-  - @neurodesk/runtime-support@0.9.0
-  - @neurodesk/webapp-components@0.16.1
-  - @neurodesk/lcmodel@0.8.20261018
-
-- Updated dependencies [3329c39]
-
-  - @neurodesk/webapp-components@0.16.0
-  - @neurodesk/runtime-support@0.8.0
-
-- Updated dependencies [b67e4e9]
-
-  - @neurodesk/runtime-support@0.7.2
-  - @neurodesk/webapp-components@0.15.1
-  - @neurodesk/lcmodel@0.8.20261018
-
 - Updated dependencies [b68209b]
   - @neurodesk/webapp-components@0.15.0
   - @neurodesk/runtime-support@0.7.1
+  - @neurodesk/lcmodel@0.8.20261018
+
+- Updated dependencies [67a5a8f]
+  - @neurodesk/runtime-support@0.7.0
+  - @neurodesk/webapp-components@0.14.4
   - @neurodesk/lcmodel@0.8.20261018
 
 ## 0.8.20261017
@@ -175,6 +163,11 @@
   - @neurodesk/webapp-components@0.14.2
   - @neurodesk/runtime-support@0.6.3
   - @neurodesk/lcmodel@0.8.20261016
+
+- Updated dependencies [7443048]
+  - @neurodesk/webapp-components@0.14.1
+  - @neurodesk/lcmodel@0.8.20261016
+  - @neurodesk/runtime-support@0.6.2
 
 ## 0.8.20261015
 
@@ -221,12 +214,16 @@
   - @neurodesk/webapp-components@0.14.0
   - @neurodesk/lcmodel@0.8.20261015
 
-- Updated dependencies [c74b26f]
+- Updated dependencies [e59305a]
+  - @neurodesk/lcmodel@0.8.20261015
 
+- Updated dependencies [c74b26f]
   - @neurodesk/runtime-support@0.6.1
   - @neurodesk/lcmodel@0.8.20261015
 
-- Updated dependencies [e59305a]
+- Updated dependencies [dcc74e7]
+  - @neurodesk/runtime-support@0.6.0
+  - @neurodesk/webapp-components@0.14.0
   - @neurodesk/lcmodel@0.8.20261015
 
 ## 0.8.20261014
@@ -268,15 +265,16 @@
 
   - @neurodesk/lcmodel@0.8.20261013
 
-- Keep accompanying anatomical images optional when importing spectroscopy folders. Skip unusable images with a warning, offer None when choosing a series, and clear previous anatomy when skipping. Automation uses only its explicit T1 input and never waits for the graphical series chooser.
+- 36d64d0: Reject imports that mix LCModel RAW and vendor spectra before replacing the current session or fit. Continue allowing RAW spectra with anatomical images.
+  - @neurodesk/lcmodel@0.8.20261013
 
+- Keep accompanying anatomical images optional when importing spectroscopy folders. Skip unusable images with a warning, offer None when choosing a series, and clear previous anatomy when skipping. Automation uses only its explicit T1 input and never waits for the graphical series chooser.
   - @neurodesk/lcmodel@0.8.20261013
 
 - Invalidate measured tissue correction and map downloads when replacement anatomy is adopted, before waiting for viewer presentation.
-
   - @neurodesk/lcmodel@0.8.20261013
 
-- 36d64d0: Reject imports that mix LCModel RAW and vendor spectra before replacing the current session or fit. Continue allowing RAW spectra with anatomical images.
+- Updated dependencies
   - @neurodesk/lcmodel@0.8.20261013
 
 ## 0.8.20261012
@@ -319,6 +317,9 @@
   - @neurodesk/lcmodel@0.8.20261012
   - @neurodesk/webapp-components@0.12.3
   - @neurodesk/runtime-support@0.4.3
+
+- Updated dependencies
+  - @neurodesk/lcmodel@0.8.20261012
 
 ## 0.7.20261012
 
@@ -368,6 +369,9 @@
 - Updated dependencies [8321cb9]
   - @neurodesk/lcmodel@0.7.20261012
 
+- Updated dependencies [1ce9fe7]
+  - @neurodesk/lcmodel@0.7.20261012
+
 ## 0.7.20261010
 
 ### Minor Changes
@@ -392,6 +396,11 @@
   - @neurodesk/webapp-components@0.12.2
   - @neurodesk/runtime-support@0.4.2
   - @neurodesk/lcmodel@0.7.20261010
+
+- Updated dependencies
+  - @neurodesk/lcmodel@0.7.20261010
+  - @neurodesk/runtime-support@0.4.1
+  - @neurodesk/webapp-components@0.12.1
 
 ## 0.6.20261010
 
@@ -447,18 +456,19 @@
 
   - @neurodesk/webapp-components@0.10.2
 
-- Updated dependencies [22aa4bf]
+- Updated dependencies
+  - @neurodesk/lcmodel@0.3.2
 
+- Updated dependencies [22aa4bf]
   - @neurodesk/webapp-components@0.11.1
   - @neurodesk/runtime-support@0.2.1
 
 - Updated dependencies
-
   - @neurodesk/webapp-components@0.11.0
   - @neurodesk/runtime-support@0.2.0
 
-- Updated dependencies
-  - @neurodesk/lcmodel@0.3.2
+- Updated dependencies [70f2770]
+  - @neurodesk/webapp-components@0.10.2
 
 ## 0.5.20261005
 
@@ -488,16 +498,17 @@
 
   - @neurodesk/webapp-components@0.9.0
 
-- Updated dependencies
+- Updated dependencies [257192b]
+  - @neurodesk/runtime-support@0.1.3
 
+- Updated dependencies
   - @neurodesk/webapp-components@0.10.1
 
 - Updated dependencies [ec85a09]
-
   - @neurodesk/webapp-components@0.10.0
 
-- Updated dependencies [257192b]
-  - @neurodesk/runtime-support@0.1.3
+- Updated dependencies
+  - @neurodesk/webapp-components@0.9.0
 
 ## 0.5.20261003
 

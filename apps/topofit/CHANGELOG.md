@@ -8,6 +8,7 @@
   - @neurodesk/webapp-components@0.18.0
   - @neurodesk/runtime-support@0.9.5
   - @neurodesk/topofit@0.15.20261020
+
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
@@ -43,6 +44,11 @@
 - Updated dependencies [d1fa022]
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/topofit@0.15.20261020
+
+- Updated dependencies [d1fa022]
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/runtime-support@0.8.0
   - @neurodesk/topofit@0.15.20261020
 
 ## 0.15.20261019
@@ -120,32 +126,14 @@
   - @neurodesk/webapp-components@0.14.4
   - @neurodesk/topofit@0.15.20261018
 
-- Updated dependencies [7c0d201]
-
-  - @neurodesk/webapp-components@0.16.2
-  - @neurodesk/runtime-support@0.9.1
-  - @neurodesk/topofit@0.15.20261018
-
-- Updated dependencies [46935f7]
-
-  - @neurodesk/runtime-support@0.9.0
-  - @neurodesk/webapp-components@0.16.1
-  - @neurodesk/topofit@0.15.20261018
-
-- Updated dependencies [3329c39]
-
-  - @neurodesk/webapp-components@0.16.0
-  - @neurodesk/runtime-support@0.8.0
-
-- Updated dependencies [b67e4e9]
-
-  - @neurodesk/runtime-support@0.7.2
-  - @neurodesk/webapp-components@0.15.1
-  - @neurodesk/topofit@0.15.20261018
-
 - Updated dependencies [b68209b]
   - @neurodesk/webapp-components@0.15.0
   - @neurodesk/runtime-support@0.7.1
+  - @neurodesk/topofit@0.15.20261018
+
+- Updated dependencies [67a5a8f]
+  - @neurodesk/runtime-support@0.7.0
+  - @neurodesk/webapp-components@0.14.4
   - @neurodesk/topofit@0.15.20261018
 
 ## 0.15.20261017
@@ -178,6 +166,11 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.14.2
   - @neurodesk/runtime-support@0.6.3
+  - @neurodesk/topofit@0.15.20261016
+
+- Updated dependencies [7443048]
+  - @neurodesk/webapp-components@0.14.1
+  - @neurodesk/runtime-support@0.6.2
   - @neurodesk/topofit@0.15.20261016
 
 ## 0.15.20261015
@@ -216,6 +209,11 @@
 
 - Updated dependencies [c74b26f]
   - @neurodesk/runtime-support@0.6.1
+  - @neurodesk/topofit@0.15.20261015
+
+- Updated dependencies [dcc74e7]
+  - @neurodesk/runtime-support@0.6.0
+  - @neurodesk/webapp-components@0.14.0
   - @neurodesk/topofit@0.15.20261015
 
 ## 0.15.20261014
@@ -259,6 +257,11 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.12.2
   - @neurodesk/runtime-support@0.4.2
+  - @neurodesk/topofit@0.15.20261010
+
+- Updated dependencies
+  - @neurodesk/runtime-support@0.4.1
+  - @neurodesk/webapp-components@0.12.1
   - @neurodesk/topofit@0.15.20261010
 
 ## 0.15.20261009
@@ -331,6 +334,10 @@
   - @neurodesk/runtime-support@0.2.0
   - @neurodesk/topofit@0.13.20261007
 
+- Updated dependencies [6be20aa]
+  - @neurodesk/webapp-components@0.10.2
+  - @neurodesk/topofit@0.13.20261007
+
 ## 0.12.20261005
 
 ### Patch Changes
@@ -366,18 +373,20 @@
   - @neurodesk/webapp-components@0.9.0
   - @neurodesk/topofit@0.12.20261004
 
-- Updated dependencies
+- Updated dependencies [257192b]
+  - @neurodesk/runtime-support@0.1.3
+  - @neurodesk/topofit@0.12.20261004
 
+- Updated dependencies
   - @neurodesk/webapp-components@0.10.1
   - @neurodesk/topofit@0.12.20261004
 
 - Updated dependencies [ec85a09]
-
   - @neurodesk/webapp-components@0.10.0
   - @neurodesk/topofit@0.12.20261004
 
-- Updated dependencies [257192b]
-  - @neurodesk/runtime-support@0.1.3
+- Updated dependencies
+  - @neurodesk/webapp-components@0.9.0
   - @neurodesk/topofit@0.12.20261004
 
 ## 0.12.20261003
@@ -403,6 +412,10 @@
   - @neurodesk/webapp-components@0.7.0
   - @neurodesk/topofit@0.12.20260930
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.6.2
+  - @neurodesk/topofit@0.12.20260930
+
 ## 0.12.20260928
 
 ### Patch Changes
@@ -422,6 +435,10 @@
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.6.1
+  - @neurodesk/topofit@0.12.20260928
+
+- Updated dependencies [93381e8]
+  - @neurodesk/webapp-components@0.6.0
   - @neurodesk/topofit@0.12.20260928
 
 ### Minor Changes
@@ -533,6 +550,9 @@
   - @neurodesk/webapp-components@0.4.2
   - @neurodesk/topofit@0.7.20260920
 
+- Updated dependencies [a213c53]
+  - @neurodesk/topofit@0.7.20260920
+
 ## 0.7.20260919
 
 ### Patch Changes
@@ -593,6 +613,14 @@
   - @neurodesk/webapp-components@0.2.1
   - @neurodesk/topofit@0.7.20260915
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.2
+  - @neurodesk/topofit@0.7.20260915
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.0
+  - @neurodesk/topofit@0.7.20260915
+
 ### Minor Changes
 
 - Add a shared Standalone action and offline desktop packaging with included, checksum-verified models and runtime dependencies. Remove the lightNIIng topbar link while retaining its About statement.
@@ -628,6 +656,9 @@
   - @neurodesk/topofit@0.5.20260914
   - @neurodesk/webapp-components@0.1.5
   - @neurodesk/runtime-support@0.1.2
+
+- Updated dependencies
+  - @neurodesk/topofit@0.5.20260914
 
 ### Minor Changes
 
