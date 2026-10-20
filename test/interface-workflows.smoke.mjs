@@ -59,6 +59,17 @@ try {
     await expect(page.locator('#fCsf')).toHaveValue('0.1');
     await expect(page.locator('#viewerNotice')).toBeHidden();
   });
+  await check('noddi', async page => {
+    const settings = page.locator('#advancedSettings > summary');
+    await expect(page.locator('#tensorFit')).toBeHidden();
+    await settings.tap();
+    await expect(page.locator('#tensorFit')).toHaveValue('wls');
+    await page.locator('#tensorFit').selectOption('niimath-dtifit');
+    await settings.tap();
+    await expect(page.locator('#tensorFit')).toBeHidden();
+    await settings.tap();
+    await expect(page.locator('#tensorFit')).toHaveValue('niimath-dtifit');
+  });
   await check('seedseg', async page => {
     const settings = page.locator('#seedseg-section-2 [data-disclosure-toggle]');
     await settings.tap();

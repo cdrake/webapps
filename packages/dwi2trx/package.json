@@ -13,7 +13,9 @@
   "exports": {
     ".": "./src/tensor.js",
     "./gradients": "./src/gradients.js",
-    "./node": "./src/node.js"
+    "./runner": "./src/runner.js",
+    "./node": "./src/node.js",
+    "./node-runner": "./src/node-runner.js"
   },
   "files": [
     "bin",
@@ -24,7 +26,7 @@
   ],
   "scripts": {
     "test": "node --test test/*.test.js",
-    "lint": "node --check src/tensor.js && node --check src/gradients.js && node --check src/node.js && node --check bin/dwi2trx.js"
+    "lint": "node --check src/tensor.js && node --check src/gradients.js && node --check src/runner.js && node --check src/node-runner.js && node --check src/node.js && node --check bin/dwi2trx.js"
   },
   "dependencies": {
     "@brainchop/mindgrab": "0.1.20260925",

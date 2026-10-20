@@ -4,6 +4,10 @@ import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
 import { readNiftiFrames } from "@neurodesk/webapp-components/file-io";
+import { fitTensor } from "@neurodesk/dwi2trx";
+import { parseBvalBvec } from "@neurodesk/dwi2trx/gradients";
+import { runNiimath } from "@neurodesk/dwi2trx/runner";
+import { gradientText } from "@neurodesk/noddi/pipeline";
 import { syntheticDwi, syntheticMask } from "./fixtures.mjs";
 
 const examples = JSON.parse(readFileSync(new URL("../examples.json", import.meta.url), "utf8"));
@@ -123,6 +127,34 @@ test("cancelling a fit stops the workers and permits another fit", async ({ page
   await expect(page.locator("#statusText")).toHaveText("Cancelled");
   await expect(page.locator("#runButton")).toBeEnabled();
   await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(0);
+});
+
+test("cancelling a niimath dtifit fit stops its worker and permits another fit", async ({ page, context }) => {
+  // The first fit's niimath WASM download waits until the fit is cancelled, so the cancel
+  // always reaches the dtifit worker while it runs.
+  let requests = 0;
+  let release;
+  const held = new Promise((resolve) => { release = resolve; });
+  // A route on the context also holds requests from the page's workers.
+  await context.route(/niimath[^/]*\.wasm$/, async (route) => {
+    requests += 1;
+    if (requests === 1) await held;
+    await route.continue().catch(() => {});
+  });
+  await page.goto("/");
+  await loadWithMask(page, syntheticDwi({ shells: [1000] }));
+  await page.locator("#tensorFit").selectOption("niimath-dtifit");
+  await page.locator("#runButton").click();
+  await expect(page.locator("#statusText")).toContainText("niimath dtifit");
+  await expect.poll(() => requests).toBe(1);
+  await page.locator("#cancelButton").click();
+  await expect(page.locator("#statusText")).toHaveText("Cancelled");
+  release();
+  await expect(page.locator("#runButton")).toBeEnabled();
+  await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(0);
+  await page.locator("#runButton").click();
+  await expect(page.locator("#statusText")).toContainText("Fitted", { timeout: 60000 });
+  await expect(page.locator("#technicalLog")).toContainText("niimath dtifit on 32 of 32 volumes");
 });
 
 test("cancelling while output maps are compressed publishes no maps and permits retry", async ({ page }) => {
@@ -330,5 +362,61 @@ test("the automation operation fits the tensor and returns its maps", async ({ p
   await expect.poll(() => page.evaluate(async () => (await globalThis.neurodeskAutomation.dispatch("snapshot")).state), { timeout: 60000 }).toBe("succeeded");
   const report = await page.evaluate(async () => (await globalThis.neurodeskAutomation.dispatch("snapshot")).report);
   expect(report.provenance.method).toBe("dti");
+  expect(report.provenance.tensorFit).toBe("wls");
   expect(Object.keys(report.artifacts)).toContain("tensor-fa");
+});
+
+test("the automation operation fits with niimath dtifit and NODDI, and names the fit", async ({ page }) => {
+  const dwi = syntheticDwi();
+  await page.goto("/");
+  await page.locator("#neurodesk-input-transfer").setInputFiles(dwi.files);
+  await page.evaluate(() => globalThis.neurodeskAutomation.dispatch("adopt", { role: "image" }));
+  await page.locator("#neurodesk-input-transfer").setInputFiles(syntheticMask({ value: 1 }));
+  await page.evaluate(async () => {
+    await globalThis.neurodeskAutomation.dispatch("adopt", { role: "mask" });
+    await globalThis.neurodeskAutomation.dispatch("start", { parameters: { tensorFit: "niimath-dtifit" } });
+  });
+  await expect.poll(() => page.evaluate(async () => (await globalThis.neurodeskAutomation.dispatch("snapshot")).state), { timeout: 120000 }).toBe("succeeded");
+  const report = await page.evaluate(async () => (await globalThis.neurodeskAutomation.dispatch("snapshot")).report);
+  expect(report.provenance.method).toBe("dti+noddi-amico");
+  expect(report.provenance.tensorFit).toBe("niimath-dtifit");
+  expect(Object.keys(report.artifacts)).toEqual(expect.arrayContaining(["tensor-fa", "tensor-rd", "tensor-direction", "noddi-icvf"]));
+  await expect(page.locator("#technicalLog")).toContainText("niimath dtifit on 32 of 62 volumes");
+});
+
+test("example with niimath dtifit downloads FA and MD equal to DWI2TRX's fit of the same gradients and mask", async ({ page, request }) => {
+  test.setTimeout(240000);
+  const example = examples[0];
+  await page.goto("/");
+  await page.locator("select[data-neurodesk-example]").selectOption(example.id);
+  await expect(page.locator("#runButton")).toBeEnabled({ timeout: 120000 });
+  await page.locator("#advancedSettings").evaluate((section) => { section.open = true; });
+  await page.locator("#tensorFit").selectOption("niimath-dtifit");
+  await page.locator("#runButton").click();
+  await expect(page.locator("#statusText")).toContainText("Fitted", { timeout: 180000 });
+  await expect(page.locator("#technicalLog")).toContainText("niimath dtifit on 21 of 21 volumes");
+  const rows = page.locator("#resultList .nd-volume-toggle");
+  await expect(rows).toHaveCount(7);
+  const download = async (label) => {
+    const event = page.waitForEvent("download");
+    await rows.filter({ hasText: new RegExp(`^View${label}Download$`) }).getByRole("button", { name: "Download" }).click();
+    const file = await event;
+    return { name: file.suggestedFilename(), bytes: readFileSync(await file.path()) };
+  };
+  const fa = await download("FA");
+  const md = await download("MD");
+  const mask = await download("Brain mask");
+  expect(fa.name).toBe("dwi_model-tensor_param-fa_dwimap.nii.gz");
+  expect(md.name).toBe("dwi_model-tensor_param-md_dwimap.nii.gz");
+  // DWI2TRX's fit (@neurodesk/dwi2trx in Node) of the example image with the app's brain mask.
+  const files = {};
+  for (const file of example.files) files[file.role] = await (await request.get(file.url)).body();
+  // The app gives niimath unit bvecs and -xflip 0 (see gradientText), so the reference does too.
+  const { bvals, bvecs } = parseBvalBvec(files.bval.toString(), files.bvec.toString());
+  const text = gradientText(bvals, bvecs, bvals.map((_, i) => i));
+  const reference = await fitTensor(runNiimath, { dwi: files.image, bval: Buffer.from(text.bval), bvec: Buffer.from(text.bvec), mask: mask.bytes, xflip: "0" });
+  const values = (bytes) => readNiftiFrames(gunzipSync(bytes)).data;
+  expect(values(fa.bytes)).toEqual(values(reference.FA));
+  expect(values(md.bytes)).toEqual(values(reference.MD));
+  expect(values(fa.bytes).filter((value) => value > 0).length).toBeGreaterThan(1000);
 });

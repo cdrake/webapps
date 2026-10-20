@@ -14,5 +14,6 @@ export default neurodeskViteConfig({
   // The MindGrab worker always passes assetPath, so its modules load from the mindgrab/ copies.
   worker: { plugins: () => [mindgrabFromAssetPath()] },
   build: { target: "esnext", outDir: "dist", assetsInlineLimit: 0 },
-  optimizeDeps: { exclude: ["@brainchop/mindgrab"] },
+  // Both load WASM through module URLs, which Vite's development prebundler cannot process.
+  optimizeDeps: { exclude: ["@brainchop/mindgrab", "@niivue/niimath"] },
 });

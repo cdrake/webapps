@@ -5,7 +5,7 @@ import { runFastprep } from "@neurodesk/fastprep";
 import { fetchModel } from "@neurodesk/webapp-components/worker";
 import { loadGreedy } from "@neurodesk/greedy";
 import { runSynthsr } from "@neurodesk/synthsr";
-import { createBrowserSession } from "@neurodesk/synthsr/browser";
+import { chooseBrowserBackend, createBrowserSession } from "@neurodesk/synthsr/browser";
 import { segment, segmentTissues } from "@brainchop/mindgrab";
 import * as ort from "onnxruntime-web/webgpu";
 import ortWasm from "onnxruntime-web/ort-wasm-simd-threaded.asyncify.wasm?url";
@@ -28,13 +28,16 @@ let model;
 async function synthsr(bytes) {
   const asset = synthsrManifest.assets.find((a) => a.filename === "synthsr-v2.onnx");
   model ??= fetchAsset(synthsrManifest, asset).then((b) => ({ bytes: b, hash: asset.sha256 }));
-  const backend = navigator.gpu && (await navigator.gpu.requestAdapter()) ? "webgpu" : "wasm";
   const { buffer } = await runSynthsr({
     buffer: bytes.slice().buffer,
-    options: { backend },
     Tensor: ort.Tensor,
     loadModel: () => model,
-    createSession: (b, be, shape) => createBrowserSession(ort, b, be, shape),
+    createSession: async (b, _requested, shape) => {
+      const adapter = await navigator.gpu?.requestAdapter({ powerPreference: "high-performance" }).catch(() => null);
+      const backend = chooseBrowserBackend(adapter, shape);
+      post({ log: `SynthSR on ${backend}` });
+      return createBrowserSession(ort, b, backend, shape);
+    },
   });
   return buffer;
 }

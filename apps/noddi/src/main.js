@@ -225,7 +225,7 @@ async function fitModels(signal) {
   setBusy(true);
   clearOutputs();
   const withNoddi = $("fitNoddi").checked && !input.table.noddiError;
-  const weighted = $("tensorFit").value === "wls";
+  const tensorFit = $("tensorFit").value;
   progress.setCancellable(true);
   try {
     let brain = mask;
@@ -242,21 +242,21 @@ async function fitModels(signal) {
     }
     const indices = maskIndices(brain);
     if (!indices.length) throw new Error("The brain mask has no voxels. Supply a mask, or check the b0 volumes.");
-    progress.begin(`Fitting ${indices.length} voxels…`);
-    progress.setCancellable(true);
-    status(`Fitting ${withNoddi ? "tensor and NODDI" : "tensor"} to ${indices.length} voxels`);
     const fit = await fitVolume({
-      data: input.data,
-      voxels: input.voxels,
-      volumes: input.bvals.length,
-      indices,
-      bvals: input.bvals,
-      bvecs: input.bvecs,
-      weighted,
+      input,
+      mask: brain,
+      tensorFit,
       noddi: withNoddi,
       signal: controller.signal,
+      onStage: (stage) => {
+        const model = stage === "dtifit" ? "tensor with niimath dtifit" : tensorFit === "niimath-dtifit" ? "NODDI" : withNoddi ? "tensor and NODDI" : "tensor";
+        progress.begin(`Fitting ${model}…`);
+        progress.setCancellable(true);
+        status(`Fitting ${model} to ${indices.length} voxels`);
+      },
       onProgress: (fraction) => progress.setProgress(fraction),
     });
+    if (tensorFit === "niimath-dtifit") log.log(`niimath dtifit on ${input.table.dtiVolumes.length} of ${input.bvals.length} volumes`, "info");
     const stem = bidsStem(input.name);
     const dims = input.dims;
     const rows = {};
@@ -279,7 +279,7 @@ async function fitModels(signal) {
     status(`Fitted ${indices.length} voxels · ${Object.keys(rows).length} maps`);
     return {
       artifacts,
-      provenance: { method: withNoddi ? "dti+noddi-amico" : "dti", tensorFit: weighted ? "wls" : "ols", maskVoxels: indices.length, mask: maskSource },
+      provenance: { method: withNoddi ? "dti+noddi-amico" : "dti", tensorFit, maskVoxels: indices.length, mask: maskSource },
     };
   } catch (error) {
     progress.reset();

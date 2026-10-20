@@ -3,7 +3,7 @@
  * (sform_code = 0, common in FSL-preprocessed DWI) must come back with the
  * sform filled in from the qform after a read. Everything niimath emits inherits
  * the repair — the b0 mindgrab masks, and the fit maps NiiVue displays — so
- * without the sync those come back misplaced (see dtifit.ts + vendor/niimath).
+ * without the sync those come back misplaced (see @neurodesk/dwi2trx/runner + vendor/niimath).
  *
  * Run: node --experimental-strip-types src/dwi2trx/niimath-sform.test.ts
  */
