@@ -2,49 +2,95 @@
 
 ## 0.6.20261020
 
+
+
 ## 0.6.20261019
+
+
 
 ## 0.6.20261018
 
+
+
 ## 0.5.20261018
+
+
 
 ## 0.5.20261017
 
+
+
 ## 0.5.20261016
+
+
 
 ## 0.5.20261015
 
+
+
 ## 0.5.20261014
+
+
 
 ## 0.5.20261012
 
+
+
 ## 0.4.20261010
+
+
 
 ## 0.4.20261009
 
+
+
 ## 0.4.20261007
+
+
 
 ## 0.4.20261004
 
+
+
 ## 0.4.20261003
+
+
 
 ## 0.4.20260930
 
+
+
 ## 0.4.20260928
+
+
 
 ## 0.3.20260928
 
+
+
 ## 0.3.20260924
+
+
 
 ## 0.3.20260923
 
+
+
 ## 0.3.20260920
+
+
 
 ## 0.3.20260918
 
+
+
 ## 0.3.20260916
 
+
+
 ## 0.3.20260915
+
+
 
 ## 0.2.20260914
 
@@ -66,11 +112,7 @@
 
   Use the shared download helper in both registration apps and expose Greedy command-line instructions through the application bar.
 
-### Patch Changes
-
 - Add nearest-neighbor reslice interpolation for discrete masks and label maps.
-
-### Patch Changes
 
 - Add native Greedy command-line help, retain upstream Greedy attribution in the CLI and npm package, and align the package and native Rust versions.
 
@@ -79,4 +121,5 @@
 ### Minor Changes
 
 - Add the reusable Greedy Rust/WebAssembly registration package and the Greedy browser app with affine and deformable modes, brain-only defaults, and MindGrab extraction for custom images.
+
 - Reject invalid NIfTI spatial geometry and verify the Rust workspace alongside the browser wrapper.

@@ -5,8 +5,11 @@
 ### Patch Changes
 
 - 14b8248: MindGrab's automatic backend no longer runs WebGL2 on a software renderer (SwiftShader, llvmpipe), which returned a blank brain mask without WebGPU; the threaded CPU module runs instead. The choice and MindGrab's own output appear in the technical log.
+
 - d1fa022: SynthSR no longer runs on a software WebGPU adapter. fastprep chooses WebAssembly when the adapter is a fallback (SwiftShader on a VM or a hosted runner) or cannot bind the volume's largest buffer, and the SynthSR app starts on CPU there. The GPU buffer-limit message gives both sizes in MiB, so a need just above the limit no longer reads as "1.0 GiB but this device allows 1.0 GiB".
+
 - Updated dependencies [3f1d770]
+
 - Updated dependencies [d9718cd]
   - @neurodesk/webapp-components@0.16.3
 
@@ -61,7 +64,9 @@
   The shared diffusion reader pairs a single optional bval or bvec with a sole image independently. Supplying FSL `bvals` without `bvecs` now preserves the b-values for workflows that do not need gradient directions.
 
 - Updated dependencies [ea2a6d2]
+
 - Updated dependencies [0511cd7]
+
 - Updated dependencies [3329c39]
   - @neurodesk/webapp-components@0.16.0
 
@@ -121,8 +126,11 @@
 ### Patch Changes
 
 - 67a5a8f: `readImageSeries` takes `anonymizeSidecar: true` to keep dcm2niix's default BIDS anonymisation, for sidecars a user can save.
+
 - Updated dependencies [2ae93ae]
+
 - Updated dependencies [ccb2970]
+
 - Updated dependencies [67a5a8f]
   - @neurodesk/webapp-components@0.14.4
 
@@ -138,6 +146,7 @@
 ### Patch Changes
 
 - Persist checksum-verified model and example caches across browser restarts. Bind runtime caches to each document’s checksum manifest to avoid reusing bytes from a different deployment.
+
 - Updated dependencies
   - @neurodesk/webapp-components@0.14.2
 
@@ -169,6 +178,7 @@
 ### Patch Changes
 
 - Updated dependencies [dd65e6a]
+
 - Updated dependencies [dcc74e7]
   - @neurodesk/webapp-components@0.14.0
 
@@ -202,7 +212,9 @@
 ### Patch Changes
 
 - Updated dependencies [27c9549]
+
 - Updated dependencies [850e642]
+
 - Updated dependencies [ad92e2f]
   - @neurodesk/webapp-components@0.13.0
 
@@ -218,6 +230,7 @@
 ### Patch Changes
 
 - Preserve original operation failures while draining GPU error scopes and reject failed DICOM field fallback tasks without hanging. Resolve correctness findings with switch scopes, safe own-property checks, equivalent regular expressions and documented optional cleanup/cache behavior. Surface actionable release, filesystem and schema preload failures; retain scientific literals and arithmetic.
+
 - Updated dependencies
   - @neurodesk/webapp-components@0.12.2
 
@@ -243,6 +256,7 @@
 ### Patch Changes
 
 - Updated dependencies [66bf9e9]
+
 - Updated dependencies [501ea0c]
   - @neurodesk/webapp-components@0.12.0
 

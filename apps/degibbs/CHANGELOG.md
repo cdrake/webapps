@@ -5,8 +5,11 @@
 ### Patch Changes
 
 - Updated dependencies [3f1d770]
+
 - Updated dependencies [14b8248]
+
 - Updated dependencies [d9718cd]
+
 - Updated dependencies [d1fa022]
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
@@ -33,19 +36,27 @@
 ### Patch Changes
 
 - 7c0d201: Restore the last committed image after cancelled or failed viewer loads. Share queued volume previews across NODDI, Degibbs, N4 and Dwidenoise, retaining source files and calibrated map ranges while rollback finishes before controls unlock.
+
 - Updated dependencies [7c0d201]
   - @neurodesk/webapp-components@0.16.2
   - @neurodesk/runtime-support@0.9.1
   - @neurodesk/degibbs@0.2.20261018
+
 - Updated dependencies
+
 - Updated dependencies [46935f7]
   - @neurodesk/runtime-support@0.9.0
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/degibbs@0.2.20261018
+
 - Updated dependencies [ea2a6d2]
+
 - Updated dependencies [c8ee6d5]
+
 - Updated dependencies [0511cd7]
+
 - Updated dependencies [a07f659]
+
 - Updated dependencies [3329c39]
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/degibbs@0.2.20261018
@@ -64,14 +75,23 @@
 ### Patch Changes
 
 - Updated dependencies [ea2a6d2]
+
 - Updated dependencies [c5908f7]
+
 - Updated dependencies [3f1d770]
+
 - Updated dependencies [14b8248]
+
 - Updated dependencies [d9718cd]
+
 - Updated dependencies [c1a4dda]
+
 - Updated dependencies [1f4aecd]
+
 - Updated dependencies [3329c39]
+
 - Updated dependencies [46935f7]
+
 - Updated dependencies [d1fa022]
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/degibbs@0.2.0

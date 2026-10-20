@@ -9,10 +9,15 @@
   matter lesions passes its load job's signal, so the footer × ends the copy of an
   image sent from another app. `copiesInPieces` is exported and pinned to the user
   agents Playwright's engines report.
+
 - d9718cd: White matter lesions reads only the NIfTI header when an image is chosen. It used to copy the whole image into memory to read its dimensions, which added a second copy of a 1 GB FLAIR to the load. The shared `readNiftiHeader(file)` reads the first bytes of a plain or gzipped file, and `describeNiftiFile` is built on it.
+
 - Updated dependencies [3f1d770]
+
 - Updated dependencies [14b8248]
+
 - Updated dependencies [d9718cd]
+
 - Updated dependencies [d1fa022]
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
@@ -67,25 +72,33 @@
   - @neurodesk/synthsr@0.6.20261018
   - @neurodesk/synthstrip@0.1.5
   - @neurodesk/white-matter-lesions@0.5.20261018
+
 - Updated dependencies
+
 - Updated dependencies [46935f7]
   - @neurodesk/runtime-support@0.9.0
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/synthsr@0.6.20261018
   - @neurodesk/synthstrip@0.1.5
   - @neurodesk/white-matter-lesions@0.5.20261018
+
 - Updated dependencies [ea2a6d2]
+
 - Updated dependencies [0511cd7]
+
 - Updated dependencies [a07f659]
+
 - Updated dependencies [3329c39]
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
+
 - Updated dependencies [b67e4e9]
   - @neurodesk/runtime-support@0.7.2
   - @neurodesk/webapp-components@0.15.1
   - @neurodesk/synthsr@0.6.20261018
   - @neurodesk/synthstrip@0.1.5
   - @neurodesk/white-matter-lesions@0.5.20261018
+
 - Updated dependencies [b68209b]
   - @neurodesk/webapp-components@0.15.0
   - @neurodesk/runtime-support@0.7.1
@@ -98,9 +111,13 @@
 ### Patch Changes
 
 - Updated dependencies [67a5a8f]
+
 - Updated dependencies [b8b37d6]
+
 - Updated dependencies [2ae93ae]
+
 - Updated dependencies [ccb2970]
+
 - Updated dependencies [67a5a8f]
   - @neurodesk/runtime-support@0.7.0
   - @neurodesk/webapp-components@0.14.4
@@ -117,6 +134,7 @@
 ### Patch Changes
 
 - Updated dependencies [b547d52]
+
 - Updated dependencies [202fd16]
   - @neurodesk/webapp-components@0.14.3
   - @neurodesk/white-matter-lesions@0.4.20261017
@@ -129,16 +147,19 @@
 ### Patch Changes
 
 - Persist checksum-verified model and example caches across browser restarts. Bind runtime caches to each document’s checksum manifest to avoid reusing bytes from a different deployment.
+
 - Updated dependencies
   - @neurodesk/webapp-components@0.14.2
   - @neurodesk/runtime-support@0.6.3
   - @neurodesk/synthsr@0.6.20261016
   - @neurodesk/synthstrip@0.1.5
   - @neurodesk/white-matter-lesions@0.3.20261016
+
 - 245a946: Run SynthStrip brain extraction through the streamed browser session, layer by layer in slabs,
   as SYNcro does. An image covering a whole head at 1 mm conforms to SynthStrip's 256³ grid, where
   one whole-graph ONNX Runtime session ran out of WebAssembly memory with "std::bad_alloc".
   The streamed session reproduces the recorded browser SynthStrip mask bit for bit.
+
 - Updated dependencies [7443048]
   - @neurodesk/webapp-components@0.14.1
   - @neurodesk/runtime-support@0.6.2
@@ -155,6 +176,7 @@
   - @neurodesk/synthsr@0.6.20261015
   - @neurodesk/synthstrip@0.1.5
   - @neurodesk/white-matter-lesions@0.3.20261015
+
 - dd65e6a: Visual refresh: Inter, neutral greys with the Neurodesk logo green for action,
   focus and selection only, a compact 48px app bar, sentence-case section titles
   and a quieter status bar. The example menu is now the input control: examples,
@@ -171,13 +193,16 @@
   restore loaded examples.
 
 - Updated dependencies [0569da8]
+
 - Updated dependencies [dd65e6a]
+
 - Updated dependencies [dcc74e7]
   - @neurodesk/runtime-support@0.6.0
   - @neurodesk/webapp-components@0.14.0
   - @neurodesk/synthsr@0.6.20261015
   - @neurodesk/synthstrip@0.1.5
   - @neurodesk/white-matter-lesions@0.3.20261015
+
 - 84d192a: FLAMeS no longer rejects high-resolution FLAIR. A 0.4 mm 3D FLAIR of
   544 × 544 × 480 voxels exceeded SynthSR's 128 Mi voxel reader cap and failed
   with "Unsupported image dimensions". An input finer than FLAMeS's
@@ -188,6 +213,7 @@
   `flames` command writes it as `INPUT_flair_resampled.nii`. Inputs at or
   coarser than 1 × 0.9 × 0.9 mm are unchanged. `readVolume` in
   `@neurodesk/synthsr` takes an optional `maxVoxels` cap.
+
 - Updated dependencies [84d192a]
   - @neurodesk/white-matter-lesions@0.3.20261015
   - @neurodesk/synthsr@0.6.20261015
@@ -197,7 +223,9 @@
 ### Patch Changes
 
 - Updated dependencies [27c9549]
+
 - Updated dependencies [850e642]
+
 - Updated dependencies [ad92e2f]
   - @neurodesk/runtime-support@0.5.0
   - @neurodesk/webapp-components@0.13.0
@@ -230,6 +258,7 @@
   - @neurodesk/synthsr@0.6.20261010
   - @neurodesk/synthstrip@0.1.5
   - @neurodesk/white-matter-lesions@0.3.20261010
+
 - Updated dependencies
   - @neurodesk/white-matter-lesions@0.3.20261010
   - @neurodesk/runtime-support@0.4.1
@@ -242,8 +271,11 @@
 ### Patch Changes
 
 - Updated dependencies [bb10737]
+
 - Updated dependencies [66bf9e9]
+
 - Updated dependencies [501ea0c]
+
 - Updated dependencies [64ffefa]
   - @neurodesk/synthstrip@0.1.4
   - @neurodesk/webapp-components@0.12.0
@@ -265,13 +297,16 @@
   - @neurodesk/synthsr@0.6.20261007
   - @neurodesk/synthstrip@0.1.3
   - @neurodesk/white-matter-lesions@0.2.20261007
+
 - Updated dependencies
   - @neurodesk/webapp-components@0.11.0
   - @neurodesk/runtime-support@0.2.0
   - @neurodesk/synthsr@0.6.20261007
   - @neurodesk/synthstrip@0.1.2
   - @neurodesk/white-matter-lesions@0.2.20261007
+
 - Updated dependencies [70f2770]
+
 - Updated dependencies [5ec8fe3]
   - @neurodesk/webapp-components@0.10.2
   - @neurodesk/white-matter-lesions@0.2.20261007
@@ -289,20 +324,27 @@
 ### Patch Changes
 
 - f12d686: Fall back to the CPU when WebGPU returns blank lesion scores. Some virtual GPUs, including GitHub's macOS runners, complete a WebGPU run but return all zeros, which reported no lesions. Non-finite or constant network output now counts as a WebGPU failure, so the segmentation restarts on WebAssembly.
+
 - Updated dependencies
   - @neurodesk/synthsr@0.6.20261004
+
 - Updated dependencies
   - @neurodesk/webapp-components@0.10.1
   - @neurodesk/synthsr@0.6.20261004
+
 - df84067: Correct the lesion mask in the viewer before downloading it. Edit on the lesion mask row opens the shared editor over the FLAIR with Draw, Erase and Fill tools. Apply replaces the mask in the Output list and recomputes the lesion count, volume and lesion table from the edited mask, marking both rows `(edited)`. Download returns the edited mask under the same name as a uint8 NIfTI. Cancel discards the strokes. Loading a new image or segmenting again closes an open edit. The probability map and the run report remain as the model produced them.
+
 - Updated dependencies [0204fe1]
+
 - Updated dependencies [ec85a09]
   - @neurodesk/webapp-components@0.10.0
   - @neurodesk/synthsr@0.6.20261004
+
 - Updated dependencies [257192b]
   - @neurodesk/synthsr@0.6.20261004
   - @neurodesk/synthstrip@0.1.1
   - @neurodesk/runtime-support@0.1.3
+
 - Updated dependencies
   - @neurodesk/webapp-components@0.9.0
   - @neurodesk/synthsr@0.5.20261004
@@ -321,20 +363,18 @@
 
 - 5909f26: Fix the lesion probability overlay by using NiiVue's supported display-range options. Probabilities below 0.1 stay transparent instead of tinting the entire FLAIR image orange; downloaded probabilities are unchanged. Open Advanced settings by default so skull stripping, model and processing options are immediately visible.
 
-### Patch Changes
+- Updated dependencies
 
 - Updated dependencies
-- Updated dependencies
   - @neurodesk/webapp-components@0.7.0
+  - @neurodesk/synthsr@0.5.20260930
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.6.2
   - @neurodesk/synthsr@0.5.20260930
 
 ### Minor Changes
 
 - Add White matter lesions: FLAMeS lesion segmentation of a single FLAIR image in the browser, after SynthStrip brain extraction, with a lesion mask, probability map and lesion table. Result lists can mark a result as not viewable, which keeps its row and disables View.
+
 - Expose FLAIR lesion segmentation through the shared automation contract, with awaited completion, cancellation, artifacts and model provenance.
-
-### Patch Changes
-
-- Updated dependencies
-  - @neurodesk/webapp-components@0.6.2
-  - @neurodesk/synthsr@0.5.20260930

@@ -5,9 +5,13 @@
 ### Patch Changes
 
 - 14b8248: MindGrab's automatic backend no longer runs WebGL2 on a software renderer (SwiftShader, llvmpipe), which returned a blank brain mask without WebGPU; the threaded CPU module runs instead. The choice and MindGrab's own output appear in the technical log.
+
 - Updated dependencies [3f1d770]
+
 - Updated dependencies [14b8248]
+
 - Updated dependencies [d9718cd]
+
 - Updated dependencies [d1fa022]
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
@@ -46,31 +50,45 @@
   - @neurodesk/webapp-components@0.16.2
   - @neurodesk/brain2print@0.5.20261018
   - @neurodesk/runtime-support@0.9.1
+
 - ac01831: These apps no longer refuse to start in a browser without WebGPU. NiiVue falls back to WebGL2 when WebGPU is absent, and MindGrab falls back to WebGL2 or the threaded CPU, so the viewers, defacing, registration, brain extraction, quality control and meshing now run in browsers such as Firefox on Linux. When the browser offers neither WebGPU nor WebGL2, the app says that the image viewer cannot start.
   - @neurodesk/brain2print@0.5.20261018
+
 - Updated dependencies
+
 - Updated dependencies [46935f7]
   - @neurodesk/runtime-support@0.9.0
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/brain2print@0.5.20261018
+
 - Updated dependencies [ea2a6d2]
+
 - Updated dependencies [0511cd7]
+
 - Updated dependencies [a07f659]
+
 - Updated dependencies [3329c39]
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
+
 - Updated dependencies [b67e4e9]
   - @neurodesk/runtime-support@0.7.2
   - @neurodesk/webapp-components@0.15.1
   - @neurodesk/brain2print@0.5.20261018
+
 - Updated dependencies [b68209b]
   - @neurodesk/webapp-components@0.15.0
   - @neurodesk/runtime-support@0.7.1
   - @neurodesk/brain2print@0.5.20261018
+
 - Updated dependencies [67a5a8f]
+
 - Updated dependencies [b8b37d6]
+
 - Updated dependencies [2ae93ae]
+
 - Updated dependencies [ccb2970]
+
 - Updated dependencies [67a5a8f]
   - @neurodesk/runtime-support@0.7.0
   - @neurodesk/webapp-components@0.14.4
@@ -93,6 +111,7 @@
   - @neurodesk/webapp-components@0.14.2
   - @neurodesk/runtime-support@0.6.3
   - @neurodesk/brain2print@0.5.20261016
+
 - Updated dependencies [7443048]
   - @neurodesk/webapp-components@0.14.1
   - @neurodesk/brain2print@0.5.20261016
@@ -105,6 +124,7 @@
 - Updated dependencies [c74b26f]
   - @neurodesk/runtime-support@0.6.1
   - @neurodesk/brain2print@0.5.20261015
+
 - dd65e6a: Visual refresh: Inter, neutral greys with the Neurodesk logo green for action,
   focus and selection only, a compact 48px app bar, sentence-case section titles
   and a quieter status bar. The example menu is now the input control: examples,
@@ -121,7 +141,9 @@
   restore loaded examples.
 
 - Updated dependencies [0569da8]
+
 - Updated dependencies [dd65e6a]
+
 - Updated dependencies [dcc74e7]
   - @neurodesk/runtime-support@0.6.0
   - @neurodesk/brain2print@0.5.20261015
@@ -132,7 +154,9 @@
 ### Patch Changes
 
 - Updated dependencies [27c9549]
+
 - Updated dependencies [850e642]
+
 - Updated dependencies [ad92e2f]
   - @neurodesk/runtime-support@0.5.0
   - @neurodesk/webapp-components@0.13.0
@@ -155,6 +179,7 @@
   - @neurodesk/webapp-components@0.12.2
   - @neurodesk/runtime-support@0.4.2
   - @neurodesk/brain2print@0.5.20261010
+
 - Updated dependencies
   - @neurodesk/runtime-support@0.4.1
   - @neurodesk/brain2print@0.5.20261010
@@ -175,7 +200,9 @@
   Mesh the brain mask rather than the label values for the label models (16chan18cls, mindmap labels, mindsnap). Meshing the raw labels at isovalue 0.5 placed the surface almost at the background voxel, so printed brains came out 17–20 % too large (87 % for mindsnap); the mesh now encloses the labelled voxels to within 5 %.
 
 - Updated dependencies [66bf9e9]
+
 - Updated dependencies [501ea0c]
+
 - Updated dependencies [64ffefa]
   - @neurodesk/brain2print@0.5.20261009
   - @neurodesk/webapp-components@0.12.0
@@ -186,15 +213,19 @@
 ### Patch Changes
 
 - Updated dependencies [f470c7b]
+
 - Updated dependencies [22aa4bf]
   - @neurodesk/topofit@0.14.20261007
   - @neurodesk/webapp-components@0.11.1
   - @neurodesk/runtime-support@0.2.1
+
 - Updated dependencies
   - @neurodesk/webapp-components@0.11.0
   - @neurodesk/runtime-support@0.2.0
   - @neurodesk/topofit@0.13.20261007
+
 - Updated dependencies [70f2770]
+
 - Updated dependencies [6be20aa]
   - @neurodesk/webapp-components@0.10.2
   - @neurodesk/topofit@0.13.20261007
@@ -212,13 +243,17 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.10.1
   - @neurodesk/topofit@0.12.20261004
+
 - Updated dependencies [0204fe1]
+
 - Updated dependencies [ec85a09]
   - @neurodesk/webapp-components@0.10.0
   - @neurodesk/topofit@0.12.20261004
+
 - Updated dependencies [257192b]
   - @neurodesk/runtime-support@0.1.3
   - @neurodesk/topofit@0.12.20261004
+
 - Updated dependencies
   - @neurodesk/webapp-components@0.9.0
   - @neurodesk/topofit@0.12.20261004
@@ -236,11 +271,10 @@
 ### Patch Changes
 
 - Updated dependencies
+
 - Updated dependencies
   - @neurodesk/webapp-components@0.7.0
   - @neurodesk/topofit@0.12.20260930
-
-### Patch Changes
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.6.2
@@ -254,19 +288,19 @@
   - @neurodesk/webapp-components@0.6.1
   - @neurodesk/topofit@0.12.20260928
 
+- Updated dependencies
+
+- Updated dependencies [93381e8]
+
+- Updated dependencies [93381e8]
+  - @neurodesk/webapp-components@0.6.0
+  - @neurodesk/topofit@0.12.20260928
+
 ### Minor Changes
 
 - Expose typed operations across the application catalog, including multiple inputs, DICOM series selection, variable artifacts and viewer workflows. Share awaited processing and cancellation between each app and its agent adapter. Publish verified result reports and scientific provenance.
 
   Add bounded desktop viewer sessions and MCP controls using public viewer APIs. Native SynthSeg now reports per-label counts and physical volumes. Include real-model CPU checks and a Mac runner for Metal, WebGPU and buffer-planning evidence without raising the validated SynthSeg limit.
-
-### Patch Changes
-
-- Updated dependencies
-- Updated dependencies [93381e8]
-- Updated dependencies [93381e8]
-  - @neurodesk/webapp-components@0.6.0
-  - @neurodesk/topofit@0.12.20260928
 
 ## 0.3.20260928
 
@@ -305,12 +339,8 @@
 - Updated dependencies [4959500]
   - @neurodesk/webapp-components@0.4.4
 
-### Patch Changes
-
 - Updated dependencies
   - @neurodesk/webapp-components@0.4.3
-
-### Patch Changes
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.4.2
@@ -325,6 +355,7 @@
   - @neurodesk/webapp-components@0.4.1
 
 - Replace shared UI builders with light-DOM custom elements for consoles, file fields, result lists, viewer toolbars and example selectors. Migrate app callers, isolate control IDs and upload scopes, and preserve state while cleaning up listeners and cancelled downloads across component removal.
+
 - Updated dependencies
   - @neurodesk/webapp-components@0.4.0
 
@@ -333,6 +364,7 @@
 ### Patch Changes
 
 - Standardize example selection across the app catalog with complete scientific input bundles, shared cancellation and retry, and explicit processing. Add missing examples, curate existing datasets, fix QSMbly retry and TopoFit cancellation, and require example manifests and browser coverage for every app and the generator.
+
 - Updated dependencies
   - @neurodesk/webapp-components@0.3.0
 
@@ -343,30 +375,25 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.2.2
 
-### Patch Changes
-
 - Updated dependencies
   - @neurodesk/webapp-components@0.2.1
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.0
 
 ### Minor Changes
 
 - Add a shared Standalone action and offline desktop packaging with included, checksum-verified models and runtime dependencies. Remove the lightNIIng topbar link while retaining its About statement.
-
-### Patch Changes
-
-- Updated dependencies
-  - @neurodesk/webapp-components@0.2.0
 
 ## 0.1.20260914
 
 ### Patch Changes
 
 - Updated dependencies [3cd773f]
+
 - Updated dependencies [4add8da]
   - @neurodesk/webapp-components@0.1.5
   - @neurodesk/runtime-support@0.1.2
-
-### Patch Changes
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.1.4
