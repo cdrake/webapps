@@ -5,6 +5,8 @@ import vm from 'node:vm';
 import { chromium } from '@playwright/test';
 import { loadAppsRegistry, repoRoot } from '../scripts/lib/apps-registry.mjs';
 import { serveSite } from '../test-utils/serve-site.mjs';
+import { verifyAsyncifyRuntime } from '../test-utils/asyncify-runtime-startup.mjs';
+import { verifyQsmBetRuntime } from '../test-utils/qsm-bet-runtime-startup.mjs';
 
 // A two-element Neg graph: exercise real ORT pthread startup without downloading a scientific model.
 const modelBase64 = 'CAcSDGJhY2tlbmQtdGVzdDpBCgsKAXgSAXkiA05lZxIQdGVzdF9uZWdfZXhhbXBsZVoPCgF4EgoKCAgBEgQKAggCYg8KAXkSCgoICAESBAoCCAJCBAoAEA0=';
@@ -81,6 +83,8 @@ try {
   }
   assert.equal(failures.length, 0, failures.join('\n'));
   assert.ok(tested >= 5, `Expected at least five ONNX worker apps, tested ${tested}`);
+  await verifyAsyncifyRuntime({ browser, base, apps: registry.apps, repoRoot });
+  await verifyQsmBetRuntime({ browser, repoRoot });
 } finally {
   await browser.close();
   await site?.close();

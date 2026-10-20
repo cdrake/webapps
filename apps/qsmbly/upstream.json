@@ -1,9 +1,8 @@
 {
   "repository": "https://github.com/astewartau/qsmbly",
-  "previousCommit": "02a49948920076e4ecaaa5eb36f24a0b85efc2d9",
-  "commit": "6e01b15b43b615639881f35e6b1f7dbc214e0864",
-  "qsmCore": "v0.35.0",
-  "qsmxtConfig": "v9.21.0",
+  "previousCommit": "d2afebc1b590d5cb016d0ade8782e9f25a44e7ac",
+  "commit": "cf88ee361e315c48d867156fd9b6de5599dc62cd",
+  "qsmCore": "8a3afda3716a859d93f1d41f1c8993335cc80c57",
   "integration": [
     "Keep the monorepo shell, design system, shared dialogs and real-brain example manifest.",
     "Adapt PipelineExecutor to QsmPipelineController and the shared WorkerSession protocol.",
@@ -13,9 +12,10 @@
     "Load Inter from css/inter.css, which pins the Google Fonts v20 files, not from the mutable fonts.googleapis.com stylesheet.",
     "Keep Cite owned by the shared shell. Move new upstream citations from index.html#citationsModal into registry/app-information.yml and test/app-information.test.mjs; do not restore the local Cite button, modal or handlers. The sync refreshes upstream-citations.json from its target commit and contract tests require every recorded DOI in the registry.",
     "Keep the phase filename separator character class without the redundant dot escape; this preserves upstream matching behavior under the monorepo correctness gate.",
-    "When the qsm-core or qsmxt-config tag in rust-wasm/Cargo.toml changes, pin packages/qsmbly/qsmxt.json to the QSMxT release built from the new qsmxt-config tag and rerecord packages/qsmbly/validation/browser-reference.json; packages/qsmbly/test/node.test.js fails until both match. The command line replays the command the Export dialog prints, read from #commandPreviewText after app.showCommandPreview().",
+    "When the pinned qsmxt-engine or its transitive qsm-core changes, rerecord packages/qsmbly/validation/browser-reference.json from the canonical production app. Replay the exact exported command with unchanged inputs against a checksum-pinned published native release under the existing numerical tolerances before changing packages/qsmbly/qsmxt.json. Browser and native core revisions may differ only with recorded compatibility evidence; test/node.test.js ties the reference to the actual Cargo commits and measured native version. Read the command from #commandPreviewText after app.showCommandPreview().",
     "Keep `@playwright/test` and `yaml` declared as exact devDependencies for the monorepo e2e suite; the dependency checker rejects tooling resolved through another workspace's or the root's node_modules.",
-    "Keep the monorepo idle status: #statusText starts as \"Drag and drop files\" (design system); the window-wide drop comes from the shared components."
+    "Keep the monorepo idle status: #statusText starts as \"Drag and drop files\" (design system); the window-wide drop comes from the shared components.",
+    "Keep the canonical Neurodesk workspace and shared controls. The upstream next.html/Preact preview is not imported; run its engine oracle separately against the pinned source when validating scientific changes."
   ],
   "branch": "main",
   "rewrite": {
@@ -35,11 +35,25 @@
     "package-lock.json",
     "scripts/capture-landing-shot.mjs",
     "scripts/publish-pages.sh",
-    "serve.py"
+    "serve.py",
+    "css/next.css",
+    "js/next/**",
+    "next.html",
+    "scripts/next-engine-parity.mjs",
+    "scripts/next-engine/**",
+    "scripts/next-fixtures.mjs",
+    "scripts/vendor-sync.mjs",
+    "scripts/vendored.mjs",
+    "tests/e2e/**",
+    "tsconfig.json",
+    "vendor/htm/**",
+    "vendor/preact/**",
+    "vendor/signals/**"
   ],
   "citationSnapshot": {
     "file": "index.html",
     "selector": "#citationsModal",
     "output": "upstream-citations.json"
-  }
+  },
+  "qsmxtEngine": "9fe168be40f67056c198f0df64734c486f137cac"
 }

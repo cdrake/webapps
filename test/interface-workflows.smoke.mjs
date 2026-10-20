@@ -83,6 +83,23 @@ try {
     await expect(page.locator('#seed')).toHaveValue('17');
     await expect(page.locator('#tedpca')).toHaveValue('kic');
   });
+  await check('dcm2niix', async page => {
+    await page.locator('#subject').fill('subject01');
+    await page.locator('#session').fill('baseline');
+    await page.locator('#taskSection > summary').tap();
+    await page.locator('#taskSection > summary').tap();
+    await expect(page.locator('#subject')).toHaveValue('subject01');
+    await expect(page.locator('#session')).toHaveValue('baseline');
+    await page.locator('#imageInput').setInputFiles(dicomSeries());
+    await expect(page.locator('#seriesRows tr')).toHaveCount(1, { timeout: 120000 });
+    await page.locator('#seriesRows select').selectOption('T1w');
+    await page.locator('#seriesRows input[type=checkbox]').check();
+    await page.locator('#privacy').selectOption('omit');
+    const pending = page.waitForEvent('download');
+    await page.locator('#runButton').tap();
+    await pending;
+    await expect(page.locator('#statusText')).toHaveText('BIDS dataset ready');
+  });
   await check('lcmodel', async page => {
     await page.locator('#waterSection > summary').tap();
     await expect(page.locator('#waterInput')).toBeDisabled();
@@ -104,6 +121,17 @@ try {
     await expect(page.locator('#fWm')).toHaveValue('0.3');
     await expect(page.locator('#fCsf')).toHaveValue('0.1');
     await expect(page.locator('#viewerNotice')).toBeHidden();
+  });
+  await check('noddi', async page => {
+    const settings = page.locator('#advancedSettings > summary');
+    await expect(page.locator('#tensorFit')).toBeHidden();
+    await settings.tap();
+    await expect(page.locator('#tensorFit')).toHaveValue('wls');
+    await page.locator('#tensorFit').selectOption('niimath-dtifit');
+    await settings.tap();
+    await expect(page.locator('#tensorFit')).toBeHidden();
+    await settings.tap();
+    await expect(page.locator('#tensorFit')).toHaveValue('niimath-dtifit');
   });
   await check('seedseg', async page => {
     const settings = page.locator('#seedseg-section-2 [data-disclosure-toggle]');

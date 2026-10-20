@@ -32,16 +32,26 @@ Emscripten `niimath.js` build works, including DWI2TRX's vendored dtifit build.
 
 `loadMindgrabCpu` drives `@brainchop/mindgrab`'s threaded CPU modules
 (Emscripten pthreads on `worker_threads`, weights compiled into the `.wasm`).
-It returns `segment` and `segmentTissues` with the wrapper's options and result
-shape, so code written against the browser wrapper, such as
-`runMindgrab({ segmenter })` in `@neurodesk/brain-extraction`, can take it:
+It returns `segment` and `segmentTissues` with the browser wrapper's options and
+result shape. To use `runMindgrab` from `@neurodesk/brain-extraction`, pass the CPU
+`segment` function and the version of that same package together in `runtime`.
+Given a decoded input `volume`:
 
 ```js
+import mindgrabPackage from '@brainchop/mindgrab/package.json' with { type: 'json' };
+import { runMindgrab } from '@neurodesk/brain-extraction/mindgrab';
 import { loadMindgrabCpu } from '@neurodesk/node-drivers/mindgrab';
 
-const mindgrab = await loadMindgrabCpu(import.meta.resolve('@brainchop/mindgrab/package.json'));
-const { image, mask } = await mindgrab.segment(niftiBytes, { model: 'mindgrab', mask: true });
+const { segment } = await loadMindgrabCpu(import.meta.resolve('@brainchop/mindgrab/package.json'));
+const { brain, mask, provenance } = await runMindgrab({
+  volume,
+  backend: 'cpu',
+  runtime: { segment, version: mindgrabPackage.version },
+});
 ```
+
+`brain` and `mask` are decoded volumes; `provenance.version` records that MindGrab
+package's version.
 
 All four models run: `mindgrab`, `mindmap`, `mindsnap` and `16chan18cls`. Each
 call runs in its own worker thread with one Emscripten thread per logical core,

@@ -17,10 +17,12 @@ export const LINKED_PACKAGES = Object.freeze({
   '@neurodesk/calmar': 'calmar',
   '@neurodesk/carotid-flow': 'carotid-flow',
   '@neurodesk/deface': 'deface',
+  '@neurodesk/degibbs': 'degibbs',
   '@neurodesk/dicompare': 'dicompare',
   '@neurodesk/nii2tvx': 'disconnectome',
   '@neurodesk/dicom2vid': 'dicom2vid',
   '@neurodesk/dwi2trx': 'dwi2trx',
+  '@neurodesk/dwidenoise': 'dwidenoise',
   '@neurodesk/easy-mp2rage': 'easy-mp2rage',
   '@neurodesk/edgereg': 'edgereg',
   '@neurodesk/elastix': 'elastix',
@@ -28,8 +30,10 @@ export const LINKED_PACKAGES = Object.freeze({
   '@neurodesk/greedy': 'greedy',
   '@neurodesk/lcmodel': 'lcmodel',
   '@neurodesk/musclemap': 'musclemap',
+  '@neurodesk/n4': 'n4',
   '@neurodesk/niimath': 'niimath',
   '@neurodesk/sdc': 'sdc',
+  '@neurodesk/noddi': 'noddi',
   '@neurodesk/seedseg': 'seedseg',
   '@neurodesk/spinalcordtoolbox': 'spinalcordtoolbox',
   '@neurodesk/synthseg': 'synthseg',
@@ -183,6 +187,24 @@ export function mergeSameVersionSections(text, version) {
  * version registers a site here; test/app-versions.test.mjs checks they agree.
  */
 export const EMBEDDED_VERSION_SITES = Object.freeze({
+  brain2print: [
+    { file: 'apps/brain2print/src/config.js', pattern: /(version: ")[^"]+(")/, replace: '$1{version}$2' },
+  ],
+  nesvor: [
+    { file: 'apps/nesvor/src/config.js', pattern: /(version: ")[^"]+(")/, replace: '$1{version}$2' },
+  ],
+  dwidenoise: [
+    { file: 'apps/dwidenoise/src/config.js', pattern: /(version: ")[^"]+(")/, replace: '$1{version}$2' },
+  ],
+  degibbs: [
+    { file: 'apps/degibbs/src/config.js', pattern: /(version: ")[^"]+(")/, replace: '$1{version}$2' },
+  ],
+  n4: [
+    { file: 'apps/n4/src/config.js', pattern: /(version: ")[^"]+(")/, replace: '$1{version}$2' },
+  ],
+  noddi: [
+    { file: 'apps/noddi/src/config.js', pattern: /(version: ")[^"]+(")/, replace: '$1{version}$2' },
+  ],
   qsmbly: [
     { file: 'apps/qsmbly/js/app/config.js', pattern: /(export const VERSION = ')[^']+(')/, replace: '$1{version}$2' },
     { file: 'apps/qsmbly/rust-wasm/Cargo.toml', pattern: /(name = "qsm_wasm"\nversion = ")[^"]+("\n)/, replace: '$1{version}$2' },
@@ -227,6 +249,7 @@ export const EMBEDDED_VERSION_SITES = Object.freeze({
     { file: 'apps/synthseg/src/inference-worker.js', pattern: /(app: 'SynthSeg web )[^']+(')/, replace: '$1{version}$2' },
   ],
   synthsr: [
+    { file: 'apps/synthsr/src/inference-worker.js', pattern: /(app: 'SynthSR web )[^']+(')/, replace: '$1{version}$2' },
     { file: 'exes/synthsr/Cargo.toml', pattern: /(^\[package\][\s\S]*?^version = ")[^"]+(")/m, replace: '$1{version}$2' },
     { file: 'exes/synthsr/Cargo.lock', pattern: /(name = "synthsr"\nversion = ")[^"]+(")/, replace: '$1{version}$2' },
   ],

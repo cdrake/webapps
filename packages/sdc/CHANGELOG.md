@@ -10,4 +10,5 @@
 
 ### Patch Changes
 
+- 311cd3f: Reject nonfinite and constant-range images before field estimation. Restore the last committed image when a preview is cancelled, keep inactive output controls inert during work, and pin the published, checksummed example and native reference data.
 - 8681691: SDC validates phase encoding and a finite positive TotalReadoutTime for both images, refusing unequal readouts because the current PyHySCO model assumes equal and opposite displacements. The command line keeps its explicit phase-direction flags and common --trt override. BIDS input uses the shared reader's IntendedFor associations to select one AP/PA fieldmap pair or a DWI with its reverse fieldmap, and refuses ambiguous pairs and unrelated subjects. Remove the unused app-config version placeholder so release metadata has one source. Keep the app and pipeline package on the same UTC release version.

@@ -1,0 +1,73 @@
+{
+  "inputs": {
+    "dwi": {
+      "dwi.nii.gz": "9007c69e6f93b94fd57bf427415a7b4bd2c0822a6b5ee334cb561b8a6ebcd50f",
+      "dwi.bval": "5b7b0b81f43794445d5b12fb227a5f4ed838c9df384d9a639d47d18fb067118b",
+      "dwi.bvec": "709d68fced5a626dc8496cd0d2950efe18d29187f6aa028bd05551c69e0f6376"
+    }
+  },
+  "browser": {
+    "path": "apps/degibbs/e2e/reference.spec.js: the app's degibbs automation, degibbs workers, built assets",
+    "app": "degibbs 0.0.20261018",
+    "browser": "Chromium 156.0.8078.4",
+    "seconds": 3,
+    "provenance": {
+      "dwi": {
+        "method": "mrdegibbs-3.0.8-port",
+        "sliceAxes": [
+          0,
+          1
+        ],
+        "nshifts": 20,
+        "minW": 1,
+        "maxW": 3,
+        "inputConversions": {
+          "image": {
+            "converter": null,
+            "candidates": [
+              {
+                "filename": "dwi.nii.gz",
+                "sha256": "9ecb22510ffab7fdcb534158b7652449e1d9f010b91fb3f3971622fbed339cb9",
+                "dimensions": [
+                  72,
+                  72,
+                  39,
+                  21
+                ],
+                "metadata": {}
+              }
+            ],
+            "selected": [
+              "9ecb22510ffab7fdcb534158b7652449e1d9f010b91fb3f3971622fbed339cb9"
+            ]
+          }
+        }
+      }
+    },
+    "outputs": {
+      "dwi": {
+        "image": {
+          "name": "dwi_desc-degibbs.nii.gz",
+          "bytes": 16003869,
+          "sha256": "0d8044caa09bf23189b4bef689567e7297b58158e0155df6294d257bd643ea9e",
+          "decompressedSha256": "e4843d268c8861ec655c23ead422d6b03bd19d6af0abc6f153be12d2fd504e43"
+        },
+        "bval": {
+          "name": "dwi_desc-degibbs.bval",
+          "bytes": 102,
+          "sha256": "5b7b0b81f43794445d5b12fb227a5f4ed838c9df384d9a639d47d18fb067118b"
+        },
+        "bvec": {
+          "name": "dwi_desc-degibbs.bvec",
+          "bytes": 535,
+          "sha256": "709d68fced5a626dc8496cd0d2950efe18d29187f6aa028bd05551c69e0f6376"
+        },
+        "sidecar": {
+          "name": "dwi_desc-degibbs.json",
+          "bytes": 100,
+          "sha256": "fb37aa8e852fceb2bca23f1bee034cd95cd2b2e56ad8243c03b5973b458928f6"
+        }
+      }
+    }
+  }
+}

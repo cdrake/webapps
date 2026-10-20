@@ -1,6 +1,6 @@
 import { awaitPipelineStep, createDicomConverter, createNiivueAdapter, registerAppAutomation } from '@neurodesk/webapp-components/automation';
 import { readNifti } from '@neurodesk/webapp-components/file-io';
-import { PIPELINE_DEFAULTS, MASK_PREP_DEFAULTS, VERSION, QSM_RS_VERSION } from './app/config.js';
+import { PIPELINE_DEFAULTS, MASK_PREP_DEFAULTS, VERSION } from './app/config.js';
 
 export function registerQsmAutomation(app) {
   const automation = registerAppAutomation({
@@ -73,7 +73,10 @@ export function registerQsmAutomation(app) {
             artifacts,
             summary: { dimensions: volume.dims, susceptibility: { unit: 'ppm', minimum, maximum } },
             provenance: {
-              appVersion: VERSION, qsmCoreVersion: QSM_RS_VERSION,
+              appVersion: VERSION, qsmCoreVersion: executor.buildVersions.qsm_rs.version,
+              qsmCoreCommit: executor.buildVersions.qsm_rs.commit,
+              qsmxtVersion: executor.buildVersions.qsmxt.version,
+              qsmxtCommit: executor.buildVersions.qsmxt.commit,
               executionProvider: 'wasm', settings: executor.getLastRunSettings(),
               echoTimesMs: parameters.echoTimesMs, fieldStrengthTesla: parameters.fieldStrength,
               mask: inputs.mask.length ? 'supplied' : `${parameters.maskSource}:robust`,

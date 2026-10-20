@@ -11,7 +11,7 @@
       "model": "mindgrab",
       "version": "0.1.20260925",
       "backend": "cpu",
-      "elapsedMs": 35045
+      "elapsedMs": 57388
     },
     "geometry": {
       "dims": [
@@ -63,10 +63,10 @@
   },
   "browser": {
     "path": "apps/dwi2trx/e2e/reference.spec.js: the app's fit automation with the mask role, tensor worker, built assets",
-    "app": "dwi2trx 0.4.20261007",
-    "niimath": "1.2.0-dtifit.0",
-    "browser": "Chromium 153.0.8010.12",
-    "seconds": 3,
+    "app": "dwi2trx 0.5.20261018",
+    "niimath": "1.2.0-dtifit.1",
+    "browser": "Chromium 156.0.8078.4",
+    "seconds": 5,
     "maps": {
       "FA": {
         "geometry": {
@@ -353,15 +353,15 @@
           ]
         },
         "datatype": 16,
-        "fileSha256": "f6208196d0e0dd2b9638edf4549998d623c87995dc053687bb18935de7f620ef",
+        "fileSha256": "fb917db7038fd87fd6d183b68694ce7b921930c380fefe782015de6286de810f",
         "headerSha256": "6e2a6474b91a5542968b7c94a3b7d24c9e80aa31ef4c351a81029baf00376f8a",
-        "voxelSha256": "af1513c7c7e6c3cfbdf7e5531d6a655d6d0643260458504a03c2683ea8bb747d",
+        "voxelSha256": "8441d771797256c400ff106e5b5465cc1103ab5f0bb83ab3a975e2b1e5a6910c",
         "nonFinite": 0,
         "nonzero": 144777,
-        "minimum": -0.9999522566795349,
-        "maximum": 0.9999896287918091,
-        "mean": -0.000783002742677408,
-        "std": 0.2820733514732315
+        "minimum": -0.9999896287918091,
+        "maximum": 0.9999807476997375,
+        "mean": -0.03252786750894501,
+        "std": 0.28019265968220036
       },
       "V2": {
         "geometry": {
@@ -403,15 +403,15 @@
           ]
         },
         "datatype": 16,
-        "fileSha256": "270edec7bc83a235fb998c9f1e1c01c9354ca761663ccc0ace5f539e9618d3cc",
+        "fileSha256": "4521569eb0936725267de63b50303c1c6e9581ac63eddf7a075552c21ee95813",
         "headerSha256": "6e2a6474b91a5542968b7c94a3b7d24c9e80aa31ef4c351a81029baf00376f8a",
-        "voxelSha256": "65c79dc4627cb177279c8cb0849a51f7a40b5c2c02d9c7203fad96bdc283b830",
+        "voxelSha256": "e82b44a7023da0d8b5c3f34d95c1cf7ba5cb0167e4b9e6cf391567c7c68f831e",
         "nonFinite": 0,
         "nonzero": 144777,
-        "minimum": -0.9999740719795227,
-        "maximum": 0.999995231628418,
-        "mean": -0.025426153036574216,
-        "std": 0.2809261459305178
+        "minimum": -0.999995231628418,
+        "maximum": 0.9999740719795227,
+        "mean": 0.009700250089340223,
+        "std": 0.281907598114296
       },
       "V3": {
         "geometry": {
@@ -453,15 +453,15 @@
           ]
         },
         "datatype": 16,
-        "fileSha256": "b4c6c31b8b75813c3e6564fe731f9e44beb5ad60c388810688492d1ed8ab0c6d",
+        "fileSha256": "f2a46006bebd317a8e5bdd1ce0b363855438ff3bd4666c2f932f439912295bc9",
         "headerSha256": "6e2a6474b91a5542968b7c94a3b7d24c9e80aa31ef4c351a81029baf00376f8a",
-        "voxelSha256": "2360f63d51ede72e6cd4833f8677427cd7c747dcb77c9182c8b05a0cc361e2fc",
+        "voxelSha256": "a653007e60d4e8cdccae2ed27538e9f06fcb01e09f58f8e621099421144b57b8",
         "nonFinite": 0,
         "nonzero": 144777,
-        "minimum": -0.9999697208404541,
-        "maximum": 0.9999958276748657,
-        "mean": 0.05291045236903157,
-        "std": 0.2770676320643745
+        "minimum": -0.9999958276748657,
+        "maximum": 0.9999088048934937,
+        "mean": -0.015983025915576123,
+        "std": 0.2816212555739896
       },
       "S0": {
         "geometry": {

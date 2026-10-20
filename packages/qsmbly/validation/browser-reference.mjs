@@ -15,7 +15,6 @@ import { extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { readNifti } from '@neurodesk/webapp-components/file-io/nifti';
-import qsmxt from '../qsmxt.json' with { type: 'json' };
 import { EXAMPLE, pinnedExample } from './example.mjs';
 import { measure } from './measure.mjs';
 
@@ -86,7 +85,7 @@ export async function recordBrowserReference({ dist = resolve('apps/qsmbly/dist'
     await page.evaluate(() => app.showCommandPreview());
     await page.waitForFunction(() => {
       const text = document.getElementById('commandPreviewText')?.textContent ?? '';
-      return text.startsWith('qsmxt ') && app._lastToml;
+      return text.split('\n').some(line => line.startsWith('qsmxt ')) && app._lastToml;
     });
     const command = await page.evaluate(() => document.getElementById('commandPreviewText').textContent.trim());
     const settings = await page.evaluate(() => app._lastToml);
@@ -102,6 +101,8 @@ export async function recordBrowserReference({ dist = resolve('apps/qsmbly/dist'
       browser: `chromium ${browser.version()}`,
       app: `qsmbly ${snapshot.report.provenance.appVersion}`,
       qsmCore: snapshot.report.provenance.qsmCoreVersion,
+      qsmCoreCommit: snapshot.report.provenance.qsmCoreCommit,
+      qsmxtEngineCommit: snapshot.report.provenance.qsmxtCommit,
       seconds,
       example: { id: EXAMPLE.id, sha256: Object.fromEntries(EXAMPLE.files.map((file) => [file.name, file.sha256])) },
       parameters: PARAMETERS,
@@ -125,8 +126,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const { values } = parseArgs({ options: { output: { type: 'string' }, dist: { type: 'string' } } });
   const previous = JSON.parse(await readFile(REFERENCE, 'utf8').catch(() => '{}'));
   const reference = await recordBrowserReference({ dist: values.dist && resolve(values.dist), output: values.output });
-  assert.equal(`v${reference.qsmCore}`, qsmxt.qsmCore,'the web app and the pinned QSMxT build on different qsm-core tags');
-  // The replay adjustments, tolerance and evidence come from comparing a CLI run; recording keeps them.
-  await writeFile(REFERENCE, formatReference({ ...reference, replay: previous.replay, tolerance: previous.tolerance, observed: previous.observed }));
+  const cargo = await readFile(new URL('../../../apps/qsmbly/rust-wasm/Cargo.toml', import.meta.url), 'utf8');
+  const pinnedEngine = /qsmxt-engine = \{[^}]*rev = "([0-9a-f]{40})"/.exec(cargo)?.[1];
+  assert.equal(reference.qsmxtEngineCommit, pinnedEngine, 'the browser bundle must match its pinned engine');
+  // Tolerance and evidence come from comparing the exported command; recording keeps them.
+  await writeFile(REFERENCE, formatReference({ ...reference, tolerance: previous.tolerance, observed: previous.observed }));
   console.log(`Recorded ${fileURLToPath(REFERENCE)} in ${reference.seconds} s: ${reference.command}`);
 }

@@ -1,0 +1,37 @@
+{
+  "name": "@neurodesk/hmc-registration",
+  "version": "0.1.1",
+  "description": "ANTs antsRegistration (3D float) in WebAssembly with a generic run(argv), for DWI head-motion correction",
+  "type": "module",
+  "private": true,
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": "./src/index.js",
+    "./node": "./src/node.js",
+    "./worker": "./src/worker.js",
+    "./module": "./wasm/hmc-registration.mjs",
+    "./wasm": "./wasm/hmc-registration.wasm"
+  },
+  "files": [
+    "src/*.js",
+    "wasm",
+    "LICENSE",
+    "NOTICE",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "test:browser": "node --test validation/browser-worker.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neurodesk/webapps.git",
+    "directory": "packages/hmc-registration"
+  }
+}

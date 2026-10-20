@@ -63,10 +63,11 @@
           "type": "string",
           "enum": [
             "wls",
-            "ols"
+            "ols",
+            "niimath-dtifit"
           ],
           "default": "wls",
-          "description": "Tensor fit: weighted or ordinary least squares"
+          "description": "Tensor fit: weighted or ordinary least squares, or niimath dtifit (FSL dtifit's default linear fit)"
         }
       },
       "artifacts": {

@@ -339,7 +339,7 @@ async function loadFiles(files, signal, loaded = () => "FLAIR loaded · ready to
     const images = await readImageFiles(received, { signal: current.controller.signal });
     current.controller.signal.throwIfAborted();
     if (images.length !== 1) throw new Error("Choose one FLAIR image: a NIfTI file or one DICOM series.");
-    // The header is enough here; the worker decodes the voxels, so a 0.4 mm FLAIR is read once.
+    // Read only the header here; the viewer and worker load the voxels separately.
     const { nx, ny, nz } = await readNiftiHeader(images[0]);
     if (nx * ny * nz > MAX_INPUT_VOXELS) throw new Error("Unsupported image dimensions.");
     current.controller.signal.throwIfAborted();

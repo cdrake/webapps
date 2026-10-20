@@ -67,6 +67,7 @@ export interface NiftiFromDataOptions {
 export function sameVoxelGrid(left: Pick<NiftiHeader, 'dims' | 'affine'>, right: Pick<NiftiHeader, 'dims' | 'affine'>): boolean;
 export function sameNiftiGrid(first: NiftiBytes, second: NiftiBytes, toleranceMm?: number): boolean;
 export function parseNiftiHeader(headerBuffer: NiftiBytes): NiftiHeader;
+export function readNiftiHeader(file: Blob): Promise<NiftiHeader>;
 export function extractAffine(view: NiftiBytes): NiftiAffine;
 export function isGzipped(data: NiftiBytes): boolean;
 export function isValidNifti1(data: NiftiBytes): boolean;
@@ -90,3 +91,5 @@ export function createMaskNifti(maskData: ArrayLike<number | boolean>, sourceHea
 export function createNiftiFromData(data: NiftiVoxelArray, sourceHeader: NiftiBytes, options?: NiftiFromDataOptions): ArrayBuffer;
 export function createNiftiHeaderFromVolume(volume: unknown): ArrayBuffer;
 export function createNiftiFromVolume(volume: unknown): ArrayBuffer;
+/** Copy an uncompressed NIfTI-1 image without free-text fields or extensions. */
+export function clearNiftiText(bufferLike: ArrayBuffer | ArrayBufferView): Uint8Array;

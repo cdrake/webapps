@@ -56,6 +56,8 @@ Paths in this table are relative to the repository root. Existing implementation
 | `noddi` | Diffusion tensor and NODDI (AMICO) fitting | `packages/noddi` holds the WebAssembly fit built from `exes/dwi`; the app needs no WebGPU. A Node command line over the same module is the next step of [the diffusion design](dwi-microstructure-design.md). |
 | `degibbs` | Gibbs-ringing removal (MRtrix mrdegibbs port) | `packages/degibbs` holds the WebAssembly port built from `exes/dwi/degibbs`; a Node command line over the same module follows, as for noddi. |
 | `sdc` | Reverse phase-encoding distortion correction (PyHySCO port) | `packages/sdc` holds the WebAssembly build of `exes/sdc`, which also builds the native `sdc` command line; its release packaging follows. |
+| `n4` | N4 bias-field correction (ANTs) with the MRtrix dwibiascorrect procedure | `packages/n4` holds ANTs N4BiasFieldCorrection in WebAssembly, separate from `packages/registration`; a Node command line over the same module follows, as for noddi. |
+| `dwidenoise` | Patch2Self denoising (DIPY 1.12.1 version 1 port) | `packages/dwidenoise` holds the WebAssembly port built from `exes/dwi/denoise`; a Node command line over the same module follows, as for noddi. |
 | `brain2print` | Segmentation to printable mesh | `apps/brain2print/src/mesh.js` has pure mesh validation. Extract the `src/main.js` pipeline with headless MindGrab and niimath meshing. |
 | `brain-extraction` | BET, MindGrab and SynthStrip brain extraction | Packaged in suite 0.4.20260915 with pinned models, the shared extraction adapters and an offline BET extraction/export check. |
 | `disconnectome` | Lesion-to-bundle disconnection scores | `packages/nii2tvx/bin/disconnectome.js` runs the app's WASM query core in Node and writes the app's TSV, byte-identical to native `exes/nii2tvx`; `exes/node-cli` packages it with both pinned TVX atlases for Linux x64, Windows x64 and macOS arm64. DICOM input and the tract display remain web-only. |
@@ -67,6 +69,7 @@ Paths in this table are relative to the repository root. Existing implementation
 | `surfannotate` | No default batch equivalent | Manual surface ROI drawing and vertex selection. Excluded from this rollout. |
 | `zarro` | No default batch equivalent | Interactive OME-Zarr exploration. Conversion or extraction would be a separately scoped command. |
 | `dicomview` | No default batch equivalent | Interactive DICOM browsing. Its batch steps already ship as command lines: dcm2niix for conversion and dicompare for protocol summaries and checks. |
+| `dcm2niix` | No default batch equivalent | Interactive BIDS curation: scan types, fieldmap targets and metadata are user decisions. Upstream dcm2niix already ships the converter command line. |
 
 ## Greedy release gates
 

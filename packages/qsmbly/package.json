@@ -1,7 +1,7 @@
 {
   "name": "@neurodesk/qsmbly",
   "version": "0.31.20261020",
-  "description": "QSMbly's portable command line: the pinned native QSMxT build of the web app's pipeline",
+  "description": "QSMbly's portable QSMxT command line, validated against the browser workflow",
   "type": "module",
   "license": "GPL-3.0-only",
   "engines": {

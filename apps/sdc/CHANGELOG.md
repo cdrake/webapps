@@ -10,6 +10,11 @@
 
 ### Patch Changes
 
+- 311cd3f: Reject nonfinite and constant-range images before field estimation. Restore the last committed image when a preview is cancelled, keep inactive output controls inert during work, and pin the published, checksummed example and native reference data.
+- Updated dependencies
+- Updated dependencies [311cd3f]
+  - @neurodesk/runtime-support@0.9.7
+  - @neurodesk/sdc@0.2.20261020
 - 14b5939: Exclude ME-ICA and SDC from the single-series application handoff menu. Their workflows require an echo bundle or an opposite-phase pair, so a lone converted image cannot supply their inputs.
 - Updated dependencies [c865c0c]
   - @neurodesk/webapp-components@0.17.1

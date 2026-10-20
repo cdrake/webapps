@@ -28,10 +28,23 @@ test('the CLI pins the same weights as the web app wherever both list a file', (
   assert.ok(shared >= 10, 'the app and CLI share the inversion and HD-BET weights');
 });
 
-test('QSMxT is pinned to the release built on the qsm-core tag the web app compiles', async () => {
+test('browser reference pins its exact engine and core, with a measured native release', async () => {
   const cargo = await readFile(new URL('../../../apps/qsmbly/rust-wasm/Cargo.toml', import.meta.url), 'utf8');
-  assert.match(cargo, new RegExp(`qsm-core = \\{ git = "https://github.com/astewartau/QSM.rs.git", tag = "${QSMXT.qsmCore}" \\}`));
-  assert.match(cargo, new RegExp(`qsmxt-config = \\{ git = "https://github.com/QSMxT/QSMxT.git", tag = "v${QSMXT.version}" \\}`));
+  const lock = await readFile(new URL('../../../apps/qsmbly/rust-wasm/Cargo.lock', import.meta.url), 'utf8');
+  const reference = JSON.parse(await readFile(new URL('../validation/browser-reference.json', import.meta.url), 'utf8'));
+  const engine = /qsmxt-engine = \{[^}]*rev = "([0-9a-f]{40})"/.exec(cargo)?.[1];
+  assert.match(engine ?? '', /^[0-9a-f]{40}$/);
+  const lockedCommit = (name) => {
+    const block = lock.split('[[package]]').find(entry => entry.includes(`name = "${name}"\n`));
+    const commit = /source = "git\+[^"\n]*#([0-9a-f]{40})"/.exec(block ?? '')?.[1];
+    assert.match(commit ?? '', /^[0-9a-f]{40}$/, name);
+    return commit;
+  };
+  assert.equal(reference.qsmxtEngineCommit, engine);
+  assert.equal(lockedCommit('qsmxt-engine'), engine);
+  assert.equal(reference.qsmCoreCommit, lockedCommit('qsm-core'));
+  assert.equal(reference.observed.nativeVersion, QSMXT.version);
+  assert.equal(reference.observed.nativeCore, QSMXT.qsmCore);
   assert.deepEqual(Object.keys(QSMXT.targets).sort(), ['linux-x64', 'macos-arm64', 'windows-x64']);
   const release = JSON.parse(await readFile(new URL('../release.json', import.meta.url), 'utf8'));
   for (const [platform, target] of Object.entries(QSMXT.targets)) {

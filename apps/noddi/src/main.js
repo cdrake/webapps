@@ -4,6 +4,7 @@ import NiiVueGPU, { SLICE_TYPE } from "@niivue/niivue";
 import { mountImagingWorkspace } from "@neurodesk/webapp-components/core/mount-imaging-workspace";
 import {
   createResultList,
+  createNiivueVolumePreview,
   bindFileDrop,
   createInfoDialog,
   createConsole,
@@ -27,7 +28,7 @@ import { parseBvalBvec } from "@neurodesk/dwi2trx/gradients";
 import { loadNoddi } from "@neurodesk/noddi";
 import wasmUrl from "@neurodesk/noddi/wasm?url";
 import { APP } from "./config.js";
-import { MAPS, bidsStem, mapName, maskIndices, maskName, meanVolumes, stackFrames } from "./pipeline.js";
+import { bidsStem, maskIndices, meanVolumes, outputEntries } from "@neurodesk/noddi/pipeline";
 import { fitVolume } from "./fit-pool.js";
 import examples from "../examples.json";
 
@@ -85,18 +86,16 @@ function status(message, error = false) {
 const results = createResultList({
   element: $("resultList"),
   onView: (_stage, result) => {
-    void showVolume(result.file, result.range).catch((error) => status(error.message, true));
+    void showVolume({ file: result.file, range: result.range }).catch((error) => status(error.message, true));
   },
   onDownload: (_stage, result) => downloadFile(result.file),
 });
 
-async function showVolume(file, range) {
-  await viewerReady;
-  // Without a range NiiVue windows the image from its own intensities.
-  const window = range ? { calMin: range[0], calMax: range[1] } : {};
-  await viewer.loadVolumes([{ url: file, name: file.name, colormap: "gray", ...window }]);
-  $("emptyState").hidden = true;
-}
+const showVolume = createNiivueVolumePreview({
+  viewer,
+  ready: viewerReady,
+  emptyState: $("emptyState"),
+});
 
 async function niftiFile(buffer, name) {
   const stream = new Blob([buffer]).stream().pipeThrough(new CompressionStream("gzip"));
@@ -147,7 +146,7 @@ async function loadFiles(filesPromise, signal) {
     controller.signal.throwIfAborted();
     const b0 = await niftiFile(createNiftiFromData(dwi.meanB0, dwi.buffer, { dims: dwi.dims }), `${bidsStem(dwi.name)}_desc-meanb0.nii.gz`);
     controller.signal.throwIfAborted();
-    await showVolume(b0);
+    await showVolume({ file: b0 }, { signal: controller.signal });
     controller.signal.throwIfAborted();
     input = dwi;
     mask = null;
@@ -211,6 +210,7 @@ async function loadMask(file, signal) {
 }
 
 function setBusy(busy) {
+  results.inert = busy;
   $("imageInput").disabled = busy;
   $("maskInput").disabled = busy;
   exampleControl?.setDisabled(busy);
@@ -227,7 +227,7 @@ async function fitModels(signal) {
   setBusy(true);
   clearOutputs();
   const withNoddi = $("fitNoddi").checked && !input.table.noddiError;
-  const weighted = $("tensorFit").value === "wls";
+  const tensorFit = $("tensorFit").value;
   progress.setCancellable(true);
   try {
     let brain = mask;
@@ -244,43 +244,35 @@ async function fitModels(signal) {
     }
     const indices = maskIndices(brain);
     if (!indices.length) throw new Error("The brain mask has no voxels. Supply a mask, or check the b0 volumes.");
-    progress.begin(`Fitting ${indices.length} voxels…`);
-    progress.setCancellable(true);
-    status(`Fitting ${withNoddi ? "tensor and NODDI" : "tensor"} to ${indices.length} voxels`);
     const fit = await fitVolume({
-      data: input.data,
-      voxels: input.voxels,
-      volumes: input.bvals.length,
-      indices,
-      bvals: input.bvals,
-      bvecs: input.bvecs,
-      weighted,
+      input,
+      mask: brain,
+      tensorFit,
       noddi: withNoddi,
       signal: controller.signal,
+      onStage: (stage) => {
+        const model = stage === "dtifit" ? "tensor with niimath dtifit" : tensorFit === "niimath-dtifit" ? "NODDI" : withNoddi ? "tensor and NODDI" : "tensor";
+        progress.begin(`Fitting ${model}…`);
+        progress.setCancellable(true);
+        status(`Fitting ${model} to ${indices.length} voxels`);
+      },
       onProgress: (fraction) => progress.setProgress(fraction),
     });
+    if (tensorFit === "niimath-dtifit") log.log(`niimath dtifit on ${input.table.dtiVolumes.length} of ${input.bvals.length} volumes`, "info");
     const stem = bidsStem(input.name);
     const dims = input.dims;
     const rows = {};
     const artifacts = [];
-    const add = async (stage, description, data, name, range, frames = 1) => {
-      const file = await niftiFile(createNiftiFromData(data, input.buffer, { dims: [...dims, frames] }), name);
+    for (const entry of outputEntries(fit, brain, stem)) {
+      const nifti = createNiftiFromData(entry.data, input.buffer, { dims: [...dims, entry.frames] });
+      const file = await niftiFile(nifti, entry.name);
       controller.signal.throwIfAborted();
-      rows[stage] = { description, file, range, viewable: frames === 1 };
-      artifacts.push({ role: stage, file });
-    };
-    for (const [model, maps] of [["tensor", fit.tensor], ["noddi", fit.noddi]]) {
-      if (!maps) continue;
-      for (const map of MAPS[model]) {
-        const stage = `${model}-${map.param}`;
-        const name = mapName(stem, model, map.param);
-        if (map.keys) await add(stage, map.label, stackFrames(maps, map.keys), name, undefined, 3);
-        else await add(stage, map.label, maps[map.key], name, rangeOf(model, map.param));
-      }
+      const range = entry.frames === 1 ? rangeOf(entry.model, entry.param) : undefined;
+      rows[entry.role] = { description: entry.label, file, range, viewable: entry.frames === 1 };
+      artifacts.push({ role: entry.role, file });
     }
-    await add("mask", "Brain mask", brain, maskName(stem), [0, 1]);
     const first = rows["noddi-icvf"] ?? rows["tensor-fa"];
-    await showVolume(first.file, first.range);
+    await showVolume({ file: first.file, range: first.range }, { signal: controller.signal });
     controller.signal.throwIfAborted();
     outputs = rows;
     results.render(rows);
@@ -289,7 +281,7 @@ async function fitModels(signal) {
     status(`Fitted ${indices.length} voxels · ${Object.keys(rows).length} maps`);
     return {
       artifacts,
-      provenance: { method: withNoddi ? "dti+noddi-amico" : "dti", tensorFit: weighted ? "wls" : "ols", maskVoxels: indices.length, mask: maskSource },
+      provenance: { method: withNoddi ? "dti+noddi-amico" : "dti", tensorFit, maskVoxels: indices.length, mask: maskSource },
     };
   } catch (error) {
     progress.reset();
@@ -301,9 +293,9 @@ async function fitModels(signal) {
   }
 }
 
-/** Display window per map: fractions on 0–1, diffusivities to 3e-3 mm²/s. */
+/** Display window per map: the mask and fractions on 0–1, diffusivities to 3e-3 mm²/s. */
 function rangeOf(model, param) {
-  if (model === "noddi" || param === "fa") return [0, 1];
+  if (model === "noddi" || param === "fa" || param === "mask") return [0, 1];
   if (param === "s0") return undefined;
   return [0, 3e-3];
 }
