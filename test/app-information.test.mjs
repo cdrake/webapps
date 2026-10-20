@@ -187,3 +187,15 @@ test('FLAMeS About explains ensemble memory and the single-fold option', async (
   window.document.querySelector('.nd-app-bar [data-neurodesk-shell-control="about"]').click();
   assert.match(window.document.querySelector('dialog[open]').textContent, /several gigabytes/);
 });
+
+test('every page carries the site catalog, so one app can open another with its data', () => {
+  const { catalog } = appInformationPayload(information, 'dicomview');
+  const offered = registry.apps.filter((app) => app.support_status !== 'retired' && app.handoff !== 'none');
+  assert.deepEqual(catalog.map(({ id }) => id), offered.map(({ id }) => id));
+  for (const entry of catalog) {
+    const app = registry.apps.find(({ id }) => id === entry.id);
+    assert.deepEqual(entry, { id: app.id, path: app.path, title: app.title, receives: app.handoff ?? 'nifti' });
+  }
+  assert.equal(catalog.find(({ id }) => id === 'dicompare').receives, 'dicom');
+  assert.ok(!catalog.some(({ id }) => id === 'zarro'), 'Zarro streams from URLs and takes no files');
+});
