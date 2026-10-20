@@ -16,10 +16,14 @@ export function readMatTransform(bytes) {
     if (type < 0 || type > 99 || type % 10 !== 0 || imaginary !== 0) throw new Error(`Unsupported MATLAB matrix type ${type}.`);
     const size = { 0: 8, 1: 4 }[Math.floor(type / 10)];
     if (!size) throw new Error(`Unsupported MATLAB precision in type ${type}.`);
-    const name = new TextDecoder("latin1").decode(bytes.subarray(offset + 20, offset + 20 + nameLength - 1));
+    if (nameLength < 1) throw new Error("Invalid MATLAB matrix name length.");
+    if (rows < 0 || columns < 0) throw new Error("Invalid MATLAB matrix dimensions.");
+    if (nameLength > bytes.byteLength - offset - 20) throw new Error("Truncated MATLAB matrix name.");
     const start = offset + 20 + nameLength;
+    if (bytes[start - 1] !== 0) throw new Error("Invalid MATLAB matrix name: expected a terminating NUL.");
+    const name = new TextDecoder("latin1").decode(bytes.subarray(offset + 20, start - 1));
     const count = rows * columns;
-    if (start + count * size > bytes.byteLength) throw new Error(`Truncated MATLAB matrix ${name}.`);
+    if (!Number.isSafeInteger(count) || count > Math.floor((bytes.byteLength - start) / size)) throw new Error(`Truncated MATLAB matrix ${name}.`);
     const values = [];
     for (let i = 0; i < count; i++) values.push(size === 8 ? view.getFloat64(start + 8 * i, true) : view.getFloat32(start + 4 * i, true));
     matrices.set(name, values);
