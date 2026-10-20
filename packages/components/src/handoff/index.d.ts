@@ -30,4 +30,3 @@ export interface HandoffTarget {
   receives: 'nifti' | 'dicom';
 }
 export function handoffTargets(document?: Document): HandoffTarget[];
-export function receiveHandoff(document?: Document): Promise<{ source: HandoffSource; files: File[] } | null>;

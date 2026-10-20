@@ -190,6 +190,27 @@ function suite(engine) {
       assert.deepEqual(await page.evaluate(() => window.keys()), [], 'the entry is gone');
     });
 
+    test('the shell waits for an app that binds its input after starting its viewer', async () => {
+      const { page } = await sentInTab(await fresh());
+      const result = await page.evaluate(async () => {
+        // The shell's record of bound change listeners (app-shell.js), and an input bound late.
+        const bound = new WeakSet();
+        window[Symbol.for('neurodesk.changeListeners')] = bound;
+        document.getElementById('scan').remove();
+        const input = Object.assign(document.createElement('input'), { type: 'file', multiple: true });
+        input.dataset.neurodeskInput = 'image';
+        document.body.append(input);
+        const late = [];
+        const received = window.receiveAsShell();
+        await new Promise((resolve) => { setTimeout(resolve, 600); });
+        const before = late.length;
+        input.addEventListener('change', () => late.push([...input.files].map((file) => file.name)));
+        bound.add(input);
+        return { names: await received, before, late };
+      });
+      assert.deepEqual(result, { names: ['scan.nii', 'scan.json'], before: 0, late: [['scan.nii', 'scan.json']] });
+    });
+
     test('the shell leaves a handoff to an app that takes it itself', async () => {
       const { page } = await sentInTab(await fresh());
       await page.evaluate(() => { document.body.dataset.neurodeskHandoffReceiver = ''; });

@@ -627,6 +627,34 @@ test('an app that reads DICOM receives the series files, before any conversion',
   expect(entry.files.map(({ name }) => name).sort()).toEqual(files.map(({ name }) => name).sort());
 });
 
+test('a DICOM send survives its series finishing conversion meanwhile', async ({ page }) => {
+  let releaseTarget;
+  const checked = new Promise((resolve) => {
+    page.context().route('**/dicompare/', async (route) => {
+      // Only the check of the target waits; the navigation that follows does not.
+      if (!releaseTarget) {
+        resolve();
+        await new Promise((go) => { releaseTarget = go; });
+      }
+      await route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>receiver</title>' }).catch(() => {});
+    });
+  });
+  // Hold dcm2niix's worker, so the conversion finishes only once the send is under way.
+  const heldWorkers = [];
+  await page.context().route('**/assets/worker.jpeg-*.js', (route) => { heldWorkers.push(route); });
+  await page.goto('./');
+  await page.locator('#dicomInput').setInputFiles(fixtureFiles({ series: 7, slices: 4 }));
+  await expect(handoffMenu(page).locator('option[value="dicompare"]')).toBeEnabled();
+  await sendTo(page, 'dicompare');
+  await checked;
+  await expect.poll(() => heldWorkers.length).toBeGreaterThan(0);
+  await page.context().unroute('**/assets/worker.jpeg-*.js');
+  for (const route of heldWorkers) await route.continue();
+  await expect(page.locator('#outputSelect option')).toHaveCount(1, { timeout: 60000 });
+  releaseTarget();
+  await page.waitForURL(/\/dicompare\/#handoff=[0-9a-f-]{36}$/);
+});
+
 test('a localizer whose frames lie in different planes shows each frame', async ({ page }) => {
   await page.goto('./');
   const { name, mimeType, buffer } = localizerFile();

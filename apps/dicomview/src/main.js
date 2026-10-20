@@ -446,9 +446,14 @@ $('handoffSelect').append(...targetOptions.values());
 $('handoffSelect').closest('.nd-field').hidden = !targets.length;
 
 let handoffCheck = 0;
+// What the send in flight carries: a DICOM send stays valid while its series' conversion finishes.
+let sending = null;
+const stillSending = ({ target, series, outputs, output }) => series === currentSeries()
+  && (target.receives === 'dicom' || (outputs === state.outputs && output === state.output));
+
 async function syncHandoff() {
   const check = ++handoffCheck;
-  jobs.get('handoff')?.controller.abort();
+  if (sending && !stillSending(sending)) jobs.get('handoff')?.controller.abort();
   const series = currentSeries();
   const output = state.outputs?.[state.output];
   $('handoffSelect').disabled = true;
@@ -483,6 +488,7 @@ $('handoffSelect').addEventListener('change', async () => {
   const what = target.receives === 'dicom' ? `${describeSeries(series)} (${files.length} DICOM file${files.length === 1 ? '' : 's'})` : files[0].name;
   const message = `Opening ${what} in ${target.title}`;
   const controller = begin('handoff', `${message}…`);
+  sending = { target, series, outputs: state.outputs, output: state.output };
   $('handoffSelect').disabled = true;
   try {
     await sendHandoff({ target: target.path, source: { app: APP.id, title: APP.title }, files, signal: controller.signal });
@@ -490,10 +496,12 @@ $('handoffSelect').addEventListener('change', async () => {
     // only if the back-forward cache brings this page back, or the menu stays disabled.
     window.addEventListener('pageshow', (event) => {
       if (!event.persisted) return;
+      sending = null;
       finish('handoff', controller, `Sent ${what} to ${target.title}`);
       void syncHandoff();
     }, { once: true });
   } catch (error) {
+    sending = null;
     finish('handoff', controller, message, { error });
     void syncHandoff();
   }

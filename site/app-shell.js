@@ -4,6 +4,19 @@ import { resolveShellAdapter } from './shell-adapters/index.js';
   const shellScript = document.querySelector('script[data-neurodesk-app-shell]');
   if (!shellScript) return;
 
+  // A page opened with a handoff notes where change listeners are bound, before any app script
+  // runs, so the receiver puts the files on an input only once its app handles them.
+  if (/[#&]handoff=/.test(window.location.hash)) {
+    const bound = new WeakSet();
+    window[Symbol.for('neurodesk.changeListeners')] = bound;
+    const add = window.EventTarget.prototype.addEventListener;
+    window.EventTarget.prototype.addEventListener = function addEventListener(type, listener, options) {
+      // The shell's own page drop listens in the capture phase; an app's handler does not.
+      if (type === 'change' && listener && !(options === true || options?.capture)) bound.add(this);
+      return add.call(this, type, listener, options);
+    };
+  }
+
   const metadata = {
     id: shellScript.dataset.appId,
     title: shellScript.dataset.appTitle,

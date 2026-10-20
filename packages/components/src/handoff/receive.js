@@ -34,6 +34,27 @@ function inputAppears(document) {
   });
 }
 
+// Whether a change on input reaches a handler of its app. Only known on a page the shell watched
+// from the start (app-shell.js); elsewhere the input is taken as handled.
+function handled(input) {
+  const window = input.ownerDocument.defaultView;
+  const bound = window[Symbol.for('neurodesk.changeListeners')];
+  if (!bound || input.onchange) return true;
+  for (let node = input; node; node = node.parentNode ?? node.host) {
+    if (bound.has(node)) return true;
+  }
+  return bound.has(window);
+}
+
+// Apps that bind their inputs only after starting a viewer show the input first; wait for the
+// handler, then deliver anyway rather than never.
+async function handlerBound(input, deadline) {
+  const window = input.ownerDocument.defaultView;
+  while (!handled(input) && Date.now() < deadline) {
+    await new Promise((resolve) => { window.setTimeout(resolve, 100); });
+  }
+}
+
 // Resolves with what was received, or null when the page carries no handoff for the shell.
 export async function receiveHandoff(document = globalThis.document) {
   if (!handoffId(document.location.hash)) return null;
@@ -42,11 +63,13 @@ export async function receiveHandoff(document = globalThis.document) {
   // must be in the served HTML: one an app renders after load is not seen.
   await loaded(window);
   if (document.querySelector('[data-neurodesk-handoff-receiver]')) return null;
+  const deadline = Date.now() + INPUT_WAIT_MS;
   const received = await takeHandoff({ document });
   if (!received) return null;
-  const primary = await inputAppears(document);
-  // A frame after load, so an app that binds its handlers once it has started does not miss the change.
+  await handlerBound(await inputAppears(document), deadline);
+  // A frame more, so an app that binds its handlers once it has started does not miss the change.
   await new Promise((resolve) => { window.requestAnimationFrame(() => resolve()); });
+  const primary = primaryInput(document) ?? await inputAppears(document);
   for (const [input, files] of routeFiles(received.files, classifiedInputs(document), primary)) {
     deliverFiles(input, files, { replace: true });
   }
