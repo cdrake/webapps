@@ -39,6 +39,34 @@ function checkName(name) {
   if (!/^[^/\0]+$/.test(name) || name === "." || name === "..") throw new Error(`Input names must be plain file names: ${JSON.stringify(name)}.`);
 }
 
+// ANTs aborts the kernel, rather than exiting non-zero, when an output prefix names a directory
+// that does not exist, so that mistake is refused here with a clear message.
+function checkOutputDirectories(FS, argv) {
+  argv.forEach((token, index) => {
+    if (token !== "--output" && token !== "-o") return;
+    const value = argv[index + 1] ?? "";
+    for (const piece of value.replace(/^\[|\]$/g, "").split(",")) {
+      const slash = piece.lastIndexOf("/");
+      if (slash <= 0) continue;
+      const parent = piece.slice(0, slash);
+      let exists = false;
+      try {
+        exists = FS.isDir(FS.stat(parent).mode);
+      } catch {
+        exists = false;
+      }
+      if (!exists) throw new Error(`The output directory ${JSON.stringify(parent)} does not exist: give output names without a directory.`);
+    }
+  });
+}
+
+function failure(message, runLog, { aborted = false, cause } = {}) {
+  const error = new Error(message, cause === undefined ? undefined : { cause });
+  error.log = runLog;
+  error.aborted = aborted;
+  return error;
+}
+
 function removeTree(FS, path) {
   for (const name of FS.readdir(path)) {
     if (name === "." || name === "..") continue;
@@ -91,10 +119,12 @@ export async function createHmcRegistration({ createModule, wasmBinary, onLog = 
      * @param {string[]} argv the antsRegistration arguments, without the program name
      * @param {Record<string, Uint8Array|ArrayBuffer>} inputs file name to bytes
      * @returns {{ outputs: Record<string, Uint8Array>, log: string[] }} every file the run wrote
+     * @throws {Error} with `log` (the run's log) and `aborted` (true when the kernel trapped; this
+     * instance then refuses later runs and a new one must be loaded)
      */
     run(argv, inputs = {}) {
       checkArguments(argv);
-      if (stopped) throw new Error(`The registration kernel stopped (${stopped}); load a new one.`);
+      if (stopped) throw failure(`The registration kernel stopped (${stopped}); load a new one.`, [], { aborted: true });
       for (const name of Object.keys(inputs)) checkName(name);
       const dir = `/run-${next++}`;
       lines = [];
@@ -103,14 +133,17 @@ export async function createHmcRegistration({ createModule, wasmBinary, onLog = 
       try {
         for (const [name, bytes] of Object.entries(inputs)) module.FS.writeFile(`${dir}/${name}`, bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes));
         module.FS.chdir(dir);
+        checkOutputDirectories(module.FS, argv);
         let code;
         try {
           code = callMain(argv);
         } catch (error) {
+          // The kernel trapped (for example on an input file that is not there). Its state is
+          // lost, so this instance refuses later runs; the log holds the cause.
           stopped = error?.message ?? String(error);
-          throw new Error(`antsRegistration aborted: ${stopped}`, { cause: error });
+          throw failure(`antsRegistration aborted (${stopped}): ${runLog.slice(-5).join(" ")}`, runLog, { aborted: true, cause: error });
         }
-        if (code !== 0) throw new Error(`antsRegistration failed (exit ${code}): ${runLog.slice(-5).join(" ")}`);
+        if (code !== 0) throw failure(`antsRegistration failed (exit ${code}): ${runLog.slice(-5).join(" ")}`, runLog);
         const outputs = {};
         for (const name of module.FS.readdir(dir)) {
           if (name === "." || name === ".." || Object.hasOwn(inputs, name)) continue;

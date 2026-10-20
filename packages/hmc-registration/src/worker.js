@@ -2,10 +2,11 @@
 //
 //   const worker = new Worker(new URL("@neurodesk/hmc-registration/worker", import.meta.url), { type: "module" });
 //   worker.postMessage({ id, argv, inputs });  // inputs: { "fixed.nii": Uint8Array, ... }
-//   worker.onmessage = ({ data }) => ...;      // { id, outputs, log } or { id, error }
+//   worker.onmessage = ({ data }) => ...;      // { id, outputs, log } or { id, error, log }
 //
 // A message may carry `kernel: { module, wasm }` URLs when a bundler moved the kernel files. The
 // kernel is loaded once, after its SHA-256 matches the pinned build, and serves every later run.
+// After a run aborts the kernel, the next message loads a new one.
 import { createHmcRegistration } from "./index.js";
 import { HMC_REGISTRATION_WASM_SHA256 } from "./pin.js";
 
@@ -39,6 +40,7 @@ self.onmessage = async ({ data }) => {
     const buffers = new Set(Object.values(outputs).map((bytes) => bytes.buffer));
     self.postMessage({ id, outputs, log }, [...buffers]);
   } catch (error) {
-    self.postMessage({ id, error: error?.message ?? String(error) });
+    if (error?.aborted) kernel = null;
+    self.postMessage({ id, error: error?.message ?? String(error), log: Array.isArray(error?.log) ? error.log : [] });
   }
 };

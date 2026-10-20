@@ -27,7 +27,7 @@ In a browser, run it in the module worker:
 ```js
 const worker = new Worker(new URL('@neurodesk/hmc-registration/worker', import.meta.url), { type: 'module' });
 worker.postMessage({ id: 1, argv, inputs: { 'fixed.nii': fixedBytes, 'moving.nii': movingBytes } });
-worker.onmessage = ({ data }) => { /* { id, outputs, log } or { id, error } */ };
+worker.onmessage = ({ data }) => { /* { id, outputs, log } or { id, error, log } */ };
 ```
 
 The kernel is linked with `-pthread`, so its memory is a `SharedArrayBuffer`: the page must be cross-origin isolated (COOP `same-origin`, COEP `require-corp`).
@@ -35,7 +35,11 @@ A message can carry `kernel: { module, wasm }` URLs when a bundler moved the ker
 
 `run(argv, inputs)` writes each input into a new directory of the virtual file system, runs `antsRegistration` there (argv names files relative to it), returns every file the run wrote, and removes the directory.
 A `.nii.gz` input is read as gzipped NIfTI; ANTs picks the reader by file name.
-A failed run throws with the end of the log and leaves the kernel usable; an aborted kernel refuses later runs.
+A failed run throws an error whose message ends with the last log lines; `error.log` holds the whole log.
+A run that exits non-zero leaves the kernel usable.
+Some mistakes, such as an input that argv names but `inputs` does not hold, make the kernel abort (trap) instead: the error then has `aborted: true`, and that instance refuses later runs, so load a new one.
+The worker does this itself: its next message loads a new kernel.
+`run` refuses an `--output` prefix whose directory does not exist before the kernel runs, as ANTs aborts on it.
 
 ## Rules
 

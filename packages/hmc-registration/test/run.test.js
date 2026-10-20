@@ -93,6 +93,49 @@ test("the kernel refuses every mode but 3D float", async () => {
   assertRecoversShift(readMatTransform(ants.run([...ARGV], await inputs()).outputs["out0GenericAffine.mat"]));
 });
 
+test("an output prefix in a missing directory is refused before the kernel runs", async () => {
+  const createModule = async () => {
+    const files = new Set(["/"]);
+    return {
+      callMain: () => assert.fail("the kernel must not run"),
+      FS: {
+        mkdir: (path) => files.add(path),
+        writeFile: () => {},
+        chdir: () => {},
+        readdir: () => [],
+        rmdir: () => {},
+        isDir: () => true,
+        stat: (path) => {
+          if (!files.has(path)) throw new Error("ENOENT");
+          return { mode: 0 };
+        },
+      },
+    };
+  };
+  const ants = await createHmcRegistration({ createModule });
+  const argv = ARGV.map((token) => (token === "[out]" ? "[sub/out]" : token));
+  const pair = await inputs();
+  assert.throws(() => ants.run(argv, pair), /output directory "sub" does not exist/);
+});
+
+test("an aborted run reports the log's cause and marks the kernel stopped", async () => {
+  const ants = await loadHmcRegistration();
+  const argv = ARGV.map((token) => token.replace("moving.nii,", "missing.nii,"));
+  const pair = await inputs();
+  let caught;
+  assert.throws(() => ants.run(argv, pair), (error) => {
+    caught = error;
+    return true;
+  });
+  assert.equal(caught.aborted, true);
+  assert.match(caught.message, /aborted.*missing\.nii does not exist/s);
+  assert.ok(caught.log.some((line) => line.includes("missing.nii does not exist")), caught.log.join("\n"));
+  assert.throws(() => ants.run([...ARGV], {}), (later) => later.aborted === true && /load a new one/.test(later.message));
+  // A new kernel runs normally.
+  const fresh = await loadHmcRegistration();
+  assertRecoversShift(readMatTransform(fresh.run([...ARGV], await inputs()).outputs["out0GenericAffine.mat"]));
+});
+
 test("a truncated or foreign .mat file is refused", () => {
   assert.throws(() => readMatTransform(new Uint8Array(10)), /Truncated/);
   assert.throws(() => readMatTransform(new Uint8Array(0)), /Not an ITK transform/);

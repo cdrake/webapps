@@ -104,3 +104,30 @@ test("the worker refuses a kernel whose bytes differ from the pinned build", asy
   const reply = await runInWorker([...ARGV], { wasm: "/tampered.wasm" });
   assert.match(reply.error, /checksum mismatch/);
 });
+
+test("after an aborted run the worker loads a new kernel and runs again", async () => {
+  const missing = ARGV.map((token) => token.replace("moving.nii,", "missing.nii,"));
+  const replies = await page.evaluate(async ({ argvs }) => {
+    const inputs = {};
+    for (const name of ["fixed.nii", "moving.nii"]) inputs[name] = new Uint8Array(await (await fetch(`/test/data/${name}`)).arrayBuffer());
+    const worker = new Worker("/src/worker.js", { type: "module" });
+    try {
+      const replies = [];
+      for (const [id, argv] of argvs.entries()) {
+        const reply = await new Promise((resolve, reject) => {
+          worker.onmessage = ({ data }) => resolve(data);
+          worker.onerror = (event) => reject(new Error(event.message));
+          worker.postMessage({ id, argv, inputs: { ...inputs } });
+        });
+        replies.push({ id: reply.id, error: reply.error, log: reply.log, outputs: Object.keys(reply.outputs ?? {}) });
+      }
+      return replies;
+    } finally {
+      worker.terminate();
+    }
+  }, { argvs: [missing, [...ARGV]] });
+  assert.match(replies[0].error, /aborted.*missing\.nii does not exist/s);
+  assert.ok(replies[0].log.some((line) => line.includes("missing.nii does not exist")), replies[0].log.join("\n"));
+  assert.equal(replies[1].error, undefined);
+  assert.deepEqual(replies[1].outputs, ["out0GenericAffine.mat"]);
+});
