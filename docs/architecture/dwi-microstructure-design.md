@@ -81,6 +81,7 @@ These rules are in the `gradients` crate with tests:
 | QSIPrep (SHORELine) | BSD-3-Clause | port for `hmc` |
 | MRtrix3 | MPL-2.0 | port for `dwidenoise` and `degibbs`; these crates stay MPL-2.0 per file |
 | ANTs | Apache-2.0 | already built to WebAssembly; add an N4 entry point |
+| sdcflows 2.17.1 | Apache-2.0 | port for `sdc` (SyN-SDC field fit); see the [SDC plan](dwi-sdc-plan.md) |
 | Synb0-DisCo code and weights | MIT | later, for `sdc` |
 | FSL (topup, eddy, dtifit) | FSL licence, no port | reference outputs only; topup is a clean-room implementation |
 
@@ -172,7 +173,7 @@ Status, 18 October 2026: the crates, the AMICO port and the `noddi` app are done
    - M3 and M5, NiFreeze trivial and GP end to end: [#449](https://github.com/neurodesk/webapps/issues/449), [#450](https://github.com/neurodesk/webapps/issues/450), [#447](https://github.com/neurodesk/webapps/issues/447), [#448](https://github.com/neurodesk/webapps/issues/448), [#451](https://github.com/neurodesk/webapps/issues/451), [#452](https://github.com/neurodesk/webapps/issues/452).
    - App and command line: [#453](https://github.com/neurodesk/webapps/issues/453), [#454](https://github.com/neurodesk/webapps/issues/454).
    - M4 and M6, SHORELine: [#455](https://github.com/neurodesk/webapps/issues/455), [#456](https://github.com/neurodesk/webapps/issues/456), [#457](https://github.com/neurodesk/webapps/issues/457), [#458](https://github.com/neurodesk/webapps/issues/458), [#459](https://github.com/neurodesk/webapps/issues/459); prototypes: [#479](https://github.com/neurodesk/webapps/issues/479), [#480](https://github.com/neurodesk/webapps/issues/480), [#481](https://github.com/neurodesk/webapps/issues/481).
-7. `sdc` with SyN-SDC: [#460](https://github.com/neurodesk/webapps/issues/460), [#461](https://github.com/neurodesk/webapps/issues/461), [#462](https://github.com/neurodesk/webapps/issues/462), [#463](https://github.com/neurodesk/webapps/issues/463), [#464](https://github.com/neurodesk/webapps/issues/464), [#465](https://github.com/neurodesk/webapps/issues/465), [#466](https://github.com/neurodesk/webapps/issues/466).
+7. `sdc` with SyN-SDC: [#460](https://github.com/neurodesk/webapps/issues/460), [#461](https://github.com/neurodesk/webapps/issues/461), [#462](https://github.com/neurodesk/webapps/issues/462), [#463](https://github.com/neurodesk/webapps/issues/463), [#464](https://github.com/neurodesk/webapps/issues/464), [#465](https://github.com/neurodesk/webapps/issues/465), [#466](https://github.com/neurodesk/webapps/issues/466). The [SDC port and validation plan](dwi-sdc-plan.md) gives the sdcflows 2.17.1 facts, the reference runs, the gate and the milestones.
 8. NODDI toolbox and nonlinear methods in `noddi`: [#424](https://github.com/neurodesk/webapps/issues/424), [#425](https://github.com/neurodesk/webapps/issues/425), [#426](https://github.com/neurodesk/webapps/issues/426), [#427](https://github.com/neurodesk/webapps/issues/427).
 9. Later: reverse-PE topup ([#471](https://github.com/neurodesk/webapps/issues/471), [#473](https://github.com/neurodesk/webapps/issues/473)), then Synb0-DisCo.
 
