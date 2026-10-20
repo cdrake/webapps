@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { lstat, mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import test, { before } from 'node:test';
 import { ESLint } from 'eslint';
+import { canaryDirectory as createCanaryDirectory, cleanupCanaries } from '../test-utils/lint-canaries.mjs';
 import config from '../eslint.config.js';
 import { assertCoverage, sourceInventory } from '../scripts/quality/lint-inventory.mjs';
 import { fingerprint, inspect, root } from '../scripts/lint.mjs';
@@ -19,32 +20,7 @@ import { preservedLintFilters } from '../scripts/lint-workspaces.mjs';
 
 const eslint = new ESLint({ cwd: root, overrideConfigFile: join(root, 'eslint.config.js') });
 
-// Each canary is removed in a finally block, which a killed run never reaches. Its
-// leftovers are untracked source that would fail every later lint, so remove them
-// first: only untracked mkdtemp directories whose marker names a process that has ended.
-const canaryMarker = '.lint-coverage-canary';
-const canaryName = /^(promise-canary|type-canary|lint-canary|lint-alias)-[A-Za-z0-9]{6}$/;
-async function canaryDirectory(prefix) {
-  const directory = await mkdtemp(join(root, prefix));
-  await writeFile(join(directory, canaryMarker), `${process.pid}\n`);
-  return directory;
-}
-const isRunning = (pid) => {
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (error) {
-    return error.code === 'EPERM';
-  }
-};
-async function isStaleCanary(parent, entry) {
-  const directory = join(root, parent, entry);
-  if (!canaryName.test(entry) || !(await lstat(directory)).isDirectory()) return false;
-  const owner = Number(await readFile(join(directory, canaryMarker), 'utf8').catch(() => ''));
-  if (!Number.isInteger(owner) || owner <= 0 || isRunning(owner)) return false;
-  const tracked = spawnSync('git', ['ls-files', '--', `${parent}${entry}`], { cwd: root, encoding: 'utf8' });
-  return tracked.status === 0 && tracked.stdout === '';
-}
+const canaryDirectory = (prefix) => createCanaryDirectory(root, prefix);
 const canaryParents = [
   ...typedPromiseProjects.map(sourceDirectory),
   'packages/components/src/',
@@ -52,17 +28,7 @@ const canaryParents = [
   'apps/brain2print/dist/',
   '.audit/',
 ];
-before(async () => {
-  for (const parent of canaryParents) {
-    const entries = await readdir(join(root, parent)).catch((error) => {
-      if (error.code === 'ENOENT') return [];
-      throw error;
-    });
-    for (const entry of entries) {
-      if (await isStaleCanary(parent, entry)) await rm(join(root, parent, entry), { recursive: true, force: true });
-    }
-  }
-});
+before(() => cleanupCanaries(root, canaryParents));
 
 test('every owned tracked source receives nonempty correctness rules', async () => {
   const files = sourceInventory(root);
