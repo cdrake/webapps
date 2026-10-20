@@ -1,5 +1,6 @@
 import { readVolume } from '@neurodesk/synthsr';
 import { writeOutputs } from '@neurodesk/brain-extraction/outputs';
+import mindgrabPackage from '@brainchop/mindgrab/package.json' with { type: 'json' };
 
 self.onmessage = async ({ data: job }) => {
   const onProgress = (value, message) => self.postMessage({ type: 'progress', value, message });
@@ -22,7 +23,7 @@ self.onmessage = async ({ data: job }) => {
         import('@neurodesk/runtime-support/mindgrab/backend'),
       ]);
       const { segment } = withBackendChoice(mindgrab);
-      result = await runMindgrab({ volume, backend: job.backend, segmenter: segment, assetPath: new URL('mindgrab/', job.assetBase).href, onProgress, onLog });
+      result = await runMindgrab({ volume, backend: job.backend, runtime: { segment, version: mindgrabPackage.version }, assetPath: new URL('mindgrab/', job.assetBase).href, onProgress, onLog });
     } else if (job.method === 'synthstrip') {
       const { extractSynthstrip } = await import('./synthstrip.js');
       result = await extractSynthstrip({ volume, onProgress });
