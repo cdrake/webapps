@@ -16,7 +16,7 @@ import { createNiftiFromData, decodeNiftiBuffer, downloadFile, readNiftiFrames, 
 import { registerAppAutomation } from "@neurodesk/webapp-components/automation";
 import { readDiffusionSeries, runDcm2niix } from "@neurodesk/runtime-support/dcm2niix-client";
 import { APP } from "./config.js";
-import { b0Frames, fieldSidecar, meanFrames, outputNames, selectPair, voxelSizes } from "./pipeline.js";
+import { b0Frames, fieldSidecar, meanFrames, outputNames, selectBidsPair, selectPair, voxelSizes } from "./pipeline.js";
 import { estimateField } from "./estimate.js";
 import examples from "../examples.json";
 
@@ -147,9 +147,9 @@ async function loadFiles(filesPromise, signal) {
   status("Reading images…");
   try {
     const files = await filesPromise;
-    const series = await readDiffusionSeries(files, { signal: controller.signal, anonymizeSidecar: true });
+    const bidsPair = await selectBidsPair(files);
+    const chosen = bidsPair ?? selectPair(await readDiffusionSeries(files, { signal: controller.signal, anonymizeSidecar: true }));
     controller.signal.throwIfAborted();
-    const chosen = selectPair(series);
     const inputs = [];
     for (const entry of chosen) inputs.push(await readInput(entry, controller.signal));
     const [first, second] = inputs;
@@ -157,8 +157,6 @@ async function loadFiles(filesPromise, signal) {
     if (first.dims.join() !== second.dims.join() || !sameNiftiGrid(first.buffer, second.buffer, 0.01)) {
       throw new Error(`The images are on different grids (${first.dims.join("×")} and ${second.dims.join("×")}); both must be in one space.`);
     }
-    const trt = Number(first.sidecar.TotalReadoutTime);
-    if (!(trt > 0)) throw new Error(`${first.name} has no TotalReadoutTime in its sidecar.`);
     const preview = await gzipFile(createNiftiFromData(Float32Array.from(first.mean), first.buffer, { dims: first.dims }), "image1_b0_mean.nii.gz");
     await showVolume(preview);
     controller.signal.throwIfAborted();

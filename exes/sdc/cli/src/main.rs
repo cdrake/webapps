@@ -225,9 +225,20 @@ fn run(args: &[String]) -> Result<(), String> {
     let pe2 = pe2
         .or_else(|| text(&meta2, "PhaseEncodingDirection"))
         .ok_or("image 2 has no PhaseEncodingDirection: give --pe2")?;
-    let trt = trt
-        .or_else(|| meta1.get("TotalReadoutTime").and_then(Value::as_f64))
-        .ok_or("image 1 has no TotalReadoutTime: give --trt")?;
+    let readout = |meta: &Value, image| {
+        let value = trt.or_else(|| meta.get("TotalReadoutTime").and_then(Value::as_f64));
+        value
+            .filter(|value| value.is_finite() && *value > 0.0)
+            .ok_or_else(|| {
+                format!("image {image} needs a finite positive TotalReadoutTime: give --trt")
+            })
+    };
+    let trt1 = readout(&meta1, 1)?;
+    let trt2 = readout(&meta2, 2)?;
+    if trt1 != trt2 {
+        return Err("the images need the same TotalReadoutTime: PyHySCO assumes equal and opposite displacements".into());
+    }
+    let trt = trt1;
     let (axis1, sign1) = direction(&pe1)?;
     let (axis2, sign2) = direction(&pe2)?;
     if axis1 != axis2 || sign1 == sign2 {

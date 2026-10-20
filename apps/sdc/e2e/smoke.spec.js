@@ -99,6 +99,57 @@ test("images on different grids are refused", async ({ page }) => {
   await expect(page.locator("#runButton")).toBeDisabled();
 });
 
+for (const readout of [undefined, 0, 0.1]) {
+  test(`the reverse image's readout ${readout ?? "missing"} is refused`, async ({ page }) => {
+    const files = syntheticPair();
+    const sidecar = files.find((file) => file.name.endsWith("PA_epi.json"));
+    const metadata = JSON.parse(sidecar.buffer);
+    if (readout === undefined) delete metadata.TotalReadoutTime;
+    else metadata.TotalReadoutTime = readout;
+    sidecar.buffer = Buffer.from(JSON.stringify(metadata));
+    await page.goto("/");
+    await page.locator("#imageInput").setInputFiles(files);
+    const message = readout === 0.1 ? /same TotalReadoutTime/ : /finite positive TotalReadoutTime/;
+    await expect(page.locator("#statusText")).toContainText(message);
+    await expect(page.locator("#runButton")).toBeDisabled();
+    await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(0);
+  });
+}
+
+test("a DWI plus IntendedFor AP/PA fieldmaps estimates the associated pair", async ({ page }) => {
+  const files = syntheticPair();
+  const ap = files.find((file) => file.name.endsWith("AP_dwi.nii.gz"));
+  const pa = files.find((file) => file.name.endsWith("PA_epi.json"));
+  const target = "bids::sub-01/dwi/sub-01_dir-AP_dwi.nii.gz";
+  pa.buffer = Buffer.from(JSON.stringify({ PhaseEncodingDirection: "j", TotalReadoutTime: TRT, IntendedFor: target }));
+  files.push({ ...ap, name: "sub-01_dir-AP_epi.nii.gz" });
+  files.push({ name: "sub-01_dir-AP_epi.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify({ PhaseEncodingDirection: "j-", TotalReadoutTime: TRT, IntendedFor: target })) });
+  await page.goto("/");
+  await page.locator("#imageInput").setInputFiles(files);
+  await expect(page.locator("#fileInfo")).toHaveText("Image 1: sub-01_dir-AP_epi.nii.gz · j- · b = 0 mean of 3/3");
+  await expect(page.locator("#pairInfo")).toHaveText("Image 2: sub-01_dir-PA_epi.nii.gz · j");
+  await page.locator("#runButton").click();
+  await expect(page.locator("#statusText")).toContainText("Field estimated", { timeout: 60000 });
+  const field = await volume(download(page, "Field map (Hz)"));
+  expect(field.dims).toEqual([8, 40, 4]);
+  expect(Math.abs(field.data[4 + 8 * (20 + 40)] + 1.5 / TRT)).toBeLessThan(0.1 * 1.5 / TRT);
+  const event = await download(page, "Field map sidecar");
+  const metadata = JSON.parse(readFileSync(await event.path(), "utf8"));
+  expect(metadata).toMatchObject({
+    Units: "Hz",
+    Sources: ["sub-01_dir-AP_epi.nii.gz", "sub-01_dir-PA_epi.nii.gz"],
+    TotalReadoutTime: TRT,
+  });
+});
+
+test("a reverse image from another subject is refused", async ({ page }) => {
+  const files = syntheticPair().map((file) => ({ ...file, name: file.name.replace("sub-01_dir-PA", "sub-02_dir-PA") }));
+  await page.goto("/");
+  await page.locator("#imageInput").setInputFiles(files);
+  await expect(page.locator("#statusText")).toContainText(/same subject/);
+  await expect(page.locator("#runButton")).toBeDisabled();
+});
+
 test("cancelling stops the estimate and permits another run", async ({ page }) => {
   await page.goto("/");
   await page.locator("#imageInput").setInputFiles(syntheticPair({ dims: [128, 128, 60] }));

@@ -20,6 +20,20 @@ test("pairs are refused unless the directions are opposite on one in-plane axis"
   assert.throws(() => selectPair([entry("a.nii.gz", "j"), entry("b.nii.gz", "j-"), entry("c.nii.gz", "j")]), /this selection has 3/);
 });
 
+test("both images need finite positive and equal readout times", () => {
+  const first = entry("sub-01_dir-AP_dwi.nii.gz", "j-");
+  const second = entry("sub-01_dir-PA_epi.nii.gz", "j");
+  for (const value of [undefined, null, 0, -0.04, Infinity, NaN, "0.04"]) {
+    second.sidecar.TotalReadoutTime = value;
+    assert.throws(() => selectPair([first, second]), /sub-01_dir-PA_epi.nii.gz.*finite positive TotalReadoutTime/);
+  }
+  second.sidecar.TotalReadoutTime = 0.08;
+  assert.throws(() => selectPair([first, second]), /same TotalReadoutTime/);
+  second.sidecar.TotalReadoutTime = 0.04;
+  first.sidecar.TotalReadoutTime = undefined;
+  assert.throws(() => selectPair([first, second]), /sub-01_dir-AP_dwi.nii.gz.*finite positive TotalReadoutTime/);
+});
+
 test("b = 0 volumes come from the bval, or are all volumes without one", () => {
   assert.deepEqual(b0Frames(null, 3), [0, 1, 2]);
   assert.deepEqual(b0Frames("0 5 1000 50 2000\n", 5), [0, 1, 3]);
