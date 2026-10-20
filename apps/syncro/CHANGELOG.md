@@ -28,8 +28,8 @@
   - @neurodesk/runtime-support@0.9.5
   - @neurodesk/webapp-components@0.17.1
   - @neurodesk/synthsr@0.6.20261020
-  - @neurodesk/synthstrip@0.1.5
-  - @neurodesk/brain-extraction@0.4.20261020
+  - @neurodesk/synthstrip@0.2.0
+  - @neurodesk/brain-extraction@0.5.20261020
   - @neurodesk/greedy@0.6.20261020
   - @neurodesk/syncro@0.7.20261020
 - Updated dependencies [14db080]

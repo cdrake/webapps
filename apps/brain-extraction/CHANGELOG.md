@@ -1,5 +1,17 @@
 # brain-extraction
 
+## 0.5.20261020
+
+### Minor Changes
+
+- Add SynthStrip no-CSF extraction to the browser and command line, with distinct output names and a checksum-pinned model included in offline bundles. Keep a completed no-CSF browser run in normal CI.
+
+### Patch Changes
+
+- Updated dependencies
+  - @neurodesk/synthstrip@0.2.0
+  - @neurodesk/brain-extraction@0.5.20261020
+
 ## 0.4.20261020
 
 ### Patch Changes

@@ -8,7 +8,7 @@
   - @neurodesk/runtime-support@0.9.5
   - @neurodesk/webapp-components@0.17.1
   - @neurodesk/synthsr@0.6.20261020
-  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/synthstrip@0.2.0
   - @neurodesk/white-matter-lesions@0.5.20261020
 - 14db080: DICOM View's "Open in White matter lesions" button is now an "Open in another webapp"
   menu that lists every app of the site from the registry. Most apps receive the converted
