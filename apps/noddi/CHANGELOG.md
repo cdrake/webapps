@@ -233,3 +233,8 @@
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/noddi@0.2.0
   - @neurodesk/dwi2trx@0.5.20261020
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.18.0
+  - @neurodesk/dwi2trx@0.5.20261020
+  - @neurodesk/runtime-support@0.8.2

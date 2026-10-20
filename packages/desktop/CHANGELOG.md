@@ -62,6 +62,15 @@
 
 - f2cfdd3: Share the checksum-verified ONNX Runtime asyncify binary in composite sites while keeping pthread modules inside each app's service-worker scope. This keeps the expanded catalog within its existing hosting budget.
 
+## 0.32.20261020
+
+### Patch Changes
+
+- Updated dependencies
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.18.0
+
 ## 0.32.20261018
 
 ### Patch Changes

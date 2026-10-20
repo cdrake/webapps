@@ -86,6 +86,11 @@
   - @neurodesk/browserqc@1.6.20261020
   - @neurodesk/runtime-support@0.8.1
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.18.0
+  - @neurodesk/browserqc@1.6.20261020
+  - @neurodesk/runtime-support@0.8.2
+
 ## 1.6.20261019
 
 ### Patch Changes

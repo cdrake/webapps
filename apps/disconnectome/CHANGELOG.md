@@ -73,6 +73,11 @@
   - @neurodesk/runtime-support@0.8.1
   - @neurodesk/nii2tvx@0.3.20261020
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.18.0
+  - @neurodesk/runtime-support@0.8.2
+  - @neurodesk/nii2tvx@0.3.20261020
+
 ## 0.3.20261019
 
 ### Patch Changes
