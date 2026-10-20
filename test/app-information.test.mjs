@@ -50,6 +50,7 @@ const REQUIRED_METHODS = {
   disconnectome: ['10.1038/s41467-022-32595-4', 'github.com/neurolabusc/nii2tvx', 'github.com/niivue/niivue'],
   lcmodel: ['10.1002/mrm.1910300604', '10.1002/mrm.26091', '10.1002/mrm.25094', '10.1002/mp.12375', '10.1002/(SICI)1099-1492(199810)11:6<266::AID-NBM530>3.0.CO;2-J', '10.1002/nbm.4618', '10.1002/mrm.24391', '10.1002/mrm.20901', '10.1002/jmri.24903', '10.1016/j.jneumeth.2020.108827', '10.1016/j.neuroimage.2026.122074', '10.1002/mrm.29418', '10.1016/j.jneumeth.2016.03.001'],
   greedy: ['sites.google.com/view/greedyreg/about', 'github.com/pyushkevich/greedy', 'arxiv.org/abs/2506.11860', '10.1016/j.jneumeth.2016.03.001'],
+  'me-ica': ['10.21105/joss.03669', '10.1016/j.neuroimage.2011.12.028', '10.1073/pnas.1301725110', '10.1002/hbm.20359', '10.1016/j.neuroimage.2015.02.052', '10.1109/72.761722'],
   fireants: ['10.1038/s41467-026-72508-3', 'arxiv.org/abs/2506.11860', '10.1016/j.jneumeth.2016.03.001'],
   nesvor: ['10.1016/j.jneumeth.2016.03.001', '10.1109/TMI.2023.3236216', '10.1007/978-3-031-16446-0_1', 'arxiv.org/abs/2103.13314', '10.1109/TMI.2010.2046908', 'github.com/niivue/niivue'],
   fastprep: ['10.1038/s41592-018-0235-4', '10.52294/001c.94384', '10.1016/j.neuroimage.2026.122074', '10.1126/sciadv.add3607', '10.1016/j.neuroimage.2010.07.033', 'sites.google.com/view/greedyreg/cite', 'github.com/pyushkevich/greedy', '10.1016/j.neuroimage.2004.07.068', '10.1002/hbm.460020402', 'cowles.yale.edu/sites/default/files/2023-05/s-0383.pdf'],

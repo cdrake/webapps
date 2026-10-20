@@ -778,3 +778,23 @@ apps:
       shared_runtime: false
       browser_test: true
       release: false
+  - id: me-ica
+    path: me-ica
+    title: ME-ICA
+    description: Multi-echo fMRI denoising with tedana's ME-ICA.
+    categories: [image-processing]
+    keywords: [multi-echo, fMRI, denoising, ICA, tedana, T2*, BOLD]
+    legacy_domain: null
+    runtime: vite-wasm
+    model_manifest: null
+    asset_manifest_schema: null
+    source: neurodesk/webapps@local
+    license: LGPL-2.1-only
+    maintainers: [neurodesk]
+    support_status: experimental
+    shell: imaging-workspace
+    ci:
+      toolchains: [node]
+      shared_runtime: false
+      browser_test: true
+      release: false
