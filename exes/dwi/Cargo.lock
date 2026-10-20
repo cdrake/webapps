@@ -60,10 +60,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "dwi-pe-field"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+]
+
+[[package]]
 name = "dwi-shore"
 version = "0.1.0"
 dependencies = [
  "serde_json",
+]
+
+[[package]]
+name = "dwi-slice-outliers"
+version = "0.1.0"
+dependencies = [
+ "dwi-shore",
 ]
 
 [[package]]
