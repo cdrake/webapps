@@ -6,6 +6,11 @@ on:
       - '.github/workflows/syncro-native.yml'
       - 'packages/syncro/**'
       - 'apps/syncro/**'
+      - 'models/syncro-tutorials.manifest.json'
+      - 'models/syncro.manifest.json'
+      - 'packages/registration/**'
+      - 'packages/synthsr/**'
+      - 'packages/synthstrip/**'
   push:
     branches: [main]
     paths:
@@ -14,6 +19,11 @@ on:
       - 'exes/node-cli/**'
       - 'packages/syncro/**'
       - 'apps/syncro/**'
+      - 'models/syncro-tutorials.manifest.json'
+      - 'models/syncro.manifest.json'
+      - 'packages/registration/**'
+      - 'packages/synthsr/**'
+      - 'packages/synthstrip/**'
   workflow_dispatch:
     inputs:
       sign_release:

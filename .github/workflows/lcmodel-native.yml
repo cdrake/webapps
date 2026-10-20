@@ -13,15 +13,23 @@ name: lcmodel-native
 on:
   pull_request:
     paths:
+      - 'packages/components/package.json'
+      - 'packages/node-drivers/package.json'
       - '.github/workflows/lcmodel-native.yml'
       - 'exes/lcmodel/**'
       - 'exes/fida/**'
       - 'packages/lcmodel/**'
       - 'models/lcmodel.manifest.json'
       - 'apps/lcmodel/**'
+      - 'packages/components/src/file-io/NiftiUtils.js'
+      - 'packages/node-drivers/src/dcm2niix.js'
+      - 'packages/node-drivers/src/mindgrab.js'
+      - 'packages/node-drivers/src/mindgrab-worker.js'
   push:
     branches: [main]
     paths:
+      - 'packages/components/package.json'
+      - 'packages/node-drivers/package.json'
       - '.github/workflows/lcmodel-native.yml'
       - '.github/workflows/node-cli-portable.yml'
       - 'exes/node-cli/**'
@@ -30,6 +38,10 @@ on:
       - 'packages/lcmodel/**'
       - 'models/lcmodel.manifest.json'
       - 'apps/lcmodel/**'
+      - 'packages/components/src/file-io/NiftiUtils.js'
+      - 'packages/node-drivers/src/dcm2niix.js'
+      - 'packages/node-drivers/src/mindgrab.js'
+      - 'packages/node-drivers/src/mindgrab-worker.js'
   workflow_dispatch:
     inputs:
       sign_release:

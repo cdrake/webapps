@@ -3,6 +3,7 @@ name: musclemap-native
 on:
   pull_request:
     paths:
+      - 'packages/components/package.json'
       - '.github/workflows/musclemap-native.yml'
       - 'packages/musclemap/**'
       - 'packages/components/src/file-io/**'
@@ -11,6 +12,7 @@ on:
   push:
     branches: [main]
     paths:
+      - 'packages/components/package.json'
       - '.github/workflows/musclemap-native.yml'
       - '.github/workflows/node-cli-portable.yml'
       - 'exes/node-cli/**'
