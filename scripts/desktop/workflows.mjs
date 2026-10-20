@@ -39,9 +39,9 @@ async function verifyLesionHandoff(page, filename) {
       }
     };
   });
-  const send = page.getByRole('button', { name: 'Open in White matter lesions', exact: true });
-  await expect(send).toBeEnabled({ timeout: 60000 });
-  await send.click();
+  const menu = page.getByRole('combobox', { name: 'Open in another webapp', exact: true });
+  await expect(menu.locator('option[value="white-matter-lesions"]')).toBeEnabled({ timeout: 60000 });
+  await menu.selectOption('white-matter-lesions');
   await page.waitForURL(/\/white-matter-lesions\/$/, { timeout: 60000 });
   const loaded = `Loaded ${filename} from DICOM View`;
   await expect(page.locator('#statusText')).toHaveText(loaded, { timeout: 60000 });

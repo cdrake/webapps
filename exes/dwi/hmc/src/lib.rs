@@ -20,7 +20,11 @@
 //! (little-endian single); ANTs writes in the machine's byte order, so big-endian files (1000,
 //! 1010) are read as well. Every coordinate is LPS, as in ITK.
 
+pub mod bvec;
 pub mod clip;
+pub mod motion;
+
+pub use bvec::{BvecRule, HmcGradients, rotate_gradients};
 
 use std::fmt;
 

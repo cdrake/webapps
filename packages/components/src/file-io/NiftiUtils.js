@@ -228,8 +228,8 @@ export function parseNiftiVolume(bufferLike, options = {}) {
 }
 
 /**
- * The parsed header of a NIfTI file (plain or gzipped), read from its first bytes: the whole
- * image is never loaded into memory.
+ * Read a NIfTI-1 header using a slice or a gzip stream stopped after the header.
+ * Without streaming support, gzip retains the full-buffer compatibility fallback.
  */
 export async function readNiftiHeader(file) {
   const head = await file.slice(0, 352).arrayBuffer();
