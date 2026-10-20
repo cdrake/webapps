@@ -74,11 +74,13 @@ antsRegistration --collapse-output-transforms 1 --dimensionality 3 --initialize-
   --winsorize-image-intensities [ 0.001, 0.998 ] --write-composite-transform 0
 ```
 
+On the 2 mm grid of Q68 (the port and the reference) the stages are `SyN[ 0.8, 6.0, 5.0 ]` and `SyN[ 0.8, 2.0, 0.25 ]`; `render_argv.py` records the exact strings.
+
 - The seed: sdcflows passes no `--random-seed`. ANTs then reads `ANTS_RANDOM_SEED`, else seed 0, which does not re-seed the sampler (`antsRegistrationTemplateHeader.h:61-77`; `itkantsRegistrationHelper.hxx:1975,2002-2005`; `antsRegistration.cxx:506-515`). The reference sets `ANTS_RANDOM_SEED`. The port always passes `--random-seed`.
 
 ### 2.3 Field map (`init_syn_sdc_wf`, continued)
 
-- `DisplacementsField2Fieldmap` takes the first forward transform (`syn.py:256,320-323`; `interfaces/fmap.py:160-208`, `demean=False`). `disp_to_fmap` (`transform.py:624-674`): flip x and y (ITK LPS to RAS), map mm to EPI voxels with the inverse EPI affine, keep the PE axis, divide by `TotalReadoutTime`, negative for a `-` direction. The output keeps the grid of the displacement field (the 0.8 mm grid).
+- `DisplacementsField2Fieldmap` takes the first forward transform (`syn.py:256,320-323`; `interfaces/fmap.py:160-208`, `demean=False`). `disp_to_fmap` (`transform.py:624-674`): flip x and y (ITK LPS to RAS), map mm to EPI voxels with the inverse EPI affine, keep the PE axis, divide by `TotalReadoutTime`, negative for a `-` direction. The output keeps the grid of the displacement field (the `sampling_ref` grid: 0.8 mm in stock sdcflows, 2 mm in the port, Q68).
 - `zooms_field`: `antsApplyTransforms --interpolation BSpline --transform identity -u float` to the EPI reference grid (`syn.py:261-264,297,324`).
 - `BSplineApprox` (`interfaces/bspline.py:128-283`; `syn.py:271-279,326`):
   - control spacing `DEFAULT_HF_ZOOMS_MM` = (16, 16, 10) mm (`bspline.py:51`); grid shape `extent // spacing + 3`, centred on the image (`bspline.py:540-565`). On the 116 × 116 × 69 EPI grid that is 17 × 17 × 16 = 4624 coefficients;
@@ -120,7 +122,7 @@ antsApplyTransforms --default-value 0 --float 0 --input anat_dil --interpolation
 antsApplyTransforms -u float --default-value 0 --float 0 --input field_Hz --interpolation BSpline --output field_Hz_trans --reference-image epi_ref --transform identity
 ```
 
-#461 adds the script that rendered these lines (`render_argv.py`, nipype with dummy files) to the reference folder. The WASM argv adds `--float 1` and `--random-seed` to `antsRegistration` only. `antsApplyTransforms --float 0` stays: it is a resampling precision flag, not the registration precision of Q53.
+#461 adds the script that rendered these lines (`render_argv.py`, nipype with dummy files) to the reference folder. Apart from the grid values of Q68, the WASM argv adds `--float 1` and `--random-seed` to `antsRegistration` only. `antsApplyTransforms --float 0` stays: it is a resampling precision flag, not the registration precision of Q53.
 
 ## 4. Deterministic ports and numerical risks
 
@@ -254,10 +256,10 @@ Estimates; #461 replaces them with measurements.
 | --- | --- | --- | --- |
 | 0.8 mm (stock, ds005134) | 289 × 289 × 171 = 14.3 M | 171 MB / 343 MB | SyN holds several fields and gradient images for two metric pairs |
 | 2 mm (debug path, the port's grid, Q68) | 116 × 116 × 69 = 0.93 M | 11 MB / 22 MB | |
-| slab, 0.8 mm | 166 × 229 × 24 = 0.91 M | 11 MB / 22 MB | |
+| slab, 2 mm (Q68) | 67 × 92 × 10 = 0.06 M | 0.7 MB / 1.5 MB | |
 
 - Anchor: SYNcro's WASM affine + SyN at 1 mm (182 × 218 × 182 = 7.2 M voxels) took 186 s and grew a 3.16 GB heap (`packages/syncro/validation/README.md:33`). If the heap scales with the voxel count, the stock grid needs about 6 GB. The WASM module has `MAXIMUM_MEMORY` 4 GiB (`packages/registration/CMakeLists.txt:35`; #444 copies it). The stock grid will probably not fit in the browser. The command line (#466) runs the same wasm32 module in Node, with the same 4 GiB limit (no `MEMORY64` build in the repository). Thus the port uses the 2 mm grid in both (Q68).
-- Time: the stock schedule runs 300 + 10 iterations at full resolution with no shrink. Estimate 20-90 min native double on one thread, and 1-3 times that in WASM. On the 2 mm grid, estimate 1-5 min.
+- Time: the stock schedule runs 300 + 10 iterations at full resolution with no shrink. Estimate 20-90 min native double on one thread, and 1-3 times that in WASM. On the 2 mm grid, estimate 1-5 min native, and 1-3 times that in WASM.
 - The B-spline fit: 0.93 M × 4624 sparse matrix with 64 entries for each row, about 0.5 GB in CSR float32 with indices. It runs in the Rust crate.
 - MindGrab: 2.6 GB peak for each call in Node (AGENTS.md, node drivers); the app runs it twice (mean b0, T1w).
 - The affine to MNI (Q59): the 1 mm template is 193 × 229 × 193 (8.5 M voxels). The affine schedule shrinks by 4 and 2 before the full-resolution level. Estimate well under 1 GB and under 1 min; #461 measures it. #461 also records the download size of the template.
@@ -313,7 +315,7 @@ This plan changes these acceptance criteria of the issues. The maintainer confir
    - `fmap_atlas_2_MNI152NLin2009cAsym_affine.mat` is part of sdcflows (Apache-2.0). It can be mirrored with the sdcflows licence notice.
    - MNI152NLin2009cAsym: TemplateFlow's `template_description.json` says "See LICENSE file"; the LICENSE (commit `15d7c02`) is the McConnell Brain Imaging Centre permission notice: use, copy, modify and distribute for any purpose without fee, with the copyright notice in all copies. **It can be mirrored** with that LICENSE file next to it. It is not the FSL MNI152 template, whose FSL terms are non-commercial.
    - ds005134 is CC0 (`dataset_description.json`).
-   - The three files are mirrored under `sdc/prior/` with their notices (#461).
+   **Decided (20 October 2026):** the atlas, the affine and the two template files (T1w and brain mask) are mirrored under `sdc/prior/` with their notices (#461).
 5. **Q61. Masks.**
    **Decided (20 October 2026):** MindGrab (`mindgrab`) of the mean b0 replaces `BrainExtraction` (Q52). MindGrab of the T1w gives `mask_anat`. The user can upload either. Both reference and port use the same masks, made with `@neurodesk/node-drivers/mindgrab` for the reference. The per-stage masks and the dilation stay as sdcflows sets them (section 2.2).
 6. **Q62. PE direction and readout time.**
@@ -328,7 +330,8 @@ This plan changes these acceptance criteria of the issues. The maintainer confir
    A T1w crop to the slab breaks the MNI step: an affine to MNI on a 20 mm crop is not reliable.
    **Decided (20 October 2026):** the example ships the full T1w (17 MB) with the slab, so the example runs every step, including the prior. A T1w crop to the slab with "no prior" is not used.
    The full T1w is the example's T1w. #461 adds it to the uploads of #374.
-9. **Q65. Runtime and memory.** Section 7. Replace after #461.
+9. **Q65. Runtime and memory.**
+   **Decided (20 October 2026):** the estimates of section 7; #461 replaces them with measurements.
 10. **Q66. The gate statistic.**
     **Decided (20 October 2026):** section 6.2. `d` is the median absolute difference in brain between the WASM field and the native double field at the same seed. `spread` is the largest median absolute difference between native seeds (three seeds, three pairs). The WASM field passes when `d ≤ max(spread, 0.05 Hz)` and `d < 0.5 Hz`. The deterministic parts keep fixed tolerances.
     The rule, the 0.05 Hz floor and the 0.5 Hz cap stay. The full-brain Node gate runs in a native workflow job (pull requests that touch the SDC code, nightly, manual). The slab Playwright test is untagged.
