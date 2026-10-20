@@ -33,7 +33,7 @@ PyHySCO took 4 s and 0.9 GB, its port is small, and its gap is small and stated 
 - Its field differs from topup's by 2.18 Hz (demeaned), against 1.43 Hz for DR-BUDDI.
 
 Thus `apps/sdc` ([#473](https://github.com/neurodesk/webapps/issues/473)) ships PyHySCO as its first method and default.
-DR-BUDDI is a follow-up issue that starts with a WebAssembly build, memory and timing check before the full port.
+DR-BUDDI is a follow-up issue ([#505](https://github.com/neurodesk/webapps/issues/505)) that starts with a WebAssembly build, memory and timing check before the full port.
 When DR-BUDDI is usable in the browser, it becomes the "closest to topup" option.
 FD-Net (5/6, 3.62 Hz) can be a third option only after the HCP data-use terms are checked.
 ANTs restricted SyN and 3dQwarp fail the gate on every subject.
@@ -247,19 +247,19 @@ But their fields differ from topup's in shape (mean r 0.73 and 0.35), and the mo
 
 A port passes when its browser field agrees with the native field of the same method on ds005134 sub-01: median absolute difference < 0.1 Hz in the brain.
 This applies to the CPU WebAssembly path and, separately, to the WebGPU path.
-The native fields come from the reference runs above; follow-up issue 1 pins them on Hugging Face.
+The native fields come from the reference runs above; follow-up issue [#504](https://github.com/neurodesk/webapps/issues/504) pins them on Hugging Face.
 The browser run must use the same mean AP and PA pair, so the app's preparation also needs a check against `prep.sh`.
 
 For DR-BUDDI, a port is not started until a WebAssembly build of the solver runs sub-01 inside the browser memory limit in an acceptable time.
 
 ## Follow-up issues
 
-1. **Pin the evaluation data on Hugging Face.** The prepared inputs, the native fields of every method and the metrics, under a pinned revision, so the port gate and these tables can be reproduced without OpenNeuro and `epic`. Needs #374.
-2. **DR-BUDDI in WebAssembly.** First a feasibility check: build the solver (not the bundled BET library) with the ITK WebAssembly toolchain of `packages/registration`, run sub-01 in a browser, and measure time and memory, also with fewer iterations or a coarser schedule. Port into `apps/sdc` only if that passes and the field still passes the gate.
-3. **WebGPU path for PyHySCO.** The Gauss-Newton and PCG steps as WebGPU kernels, held to the CPU field by the port gate.
-4. **ANTs restricted SyN.** It failed the gate on every subject with the SyN-SDC schedule. When SyN-SDC (#444, #462) is in `apps/sdc`, either find a reverse-PE schedule that passes the gate or keep ANTs for single-PE data only.
-5. **Synb0-DisCo front end.** Its `--notopup` output (a synthetic undistorted b0) as the second image for the chosen solver, for data without a reverse-PE b0. Needs its own check against topup with the same synthetic image.
-6. **fastprep PEPOLAR.** Use the `sdc` solver package in fastprep for reverse-PE field estimation.
+1. **Pin the evaluation data on Hugging Face** ([#504](https://github.com/neurodesk/webapps/issues/504)). The prepared inputs, the native fields of every method and the metrics, under a pinned revision, so the port gate and these tables can be reproduced without OpenNeuro and `epic`. Needs #374.
+2. **DR-BUDDI in WebAssembly** ([#505](https://github.com/neurodesk/webapps/issues/505)). First a feasibility check: build the solver (not the bundled BET library) with the ITK WebAssembly toolchain of `packages/registration`, run sub-01 in a browser, and measure time and memory, also with fewer iterations or a coarser schedule. Port into `apps/sdc` only if that passes and the field still passes the gate.
+3. **WebGPU path for PyHySCO** ([#506](https://github.com/neurodesk/webapps/issues/506)). The Gauss-Newton and PCG steps as WebGPU kernels, held to the CPU field by the port gate.
+4. **ANTs restricted SyN** ([#507](https://github.com/neurodesk/webapps/issues/507)). It failed the gate on every subject with the SyN-SDC schedule. When SyN-SDC (#444, #462) is in `apps/sdc`, either find a reverse-PE schedule that passes the gate or keep ANTs for single-PE data only.
+5. **Synb0-DisCo front end** ([#508](https://github.com/neurodesk/webapps/issues/508)). Its `--notopup` output (a synthetic undistorted b0) as the second image for the chosen solver, for data without a reverse-PE b0. Needs its own check against topup with the same synthetic image.
+6. **fastprep PEPOLAR** ([#509](https://github.com/neurodesk/webapps/issues/509)). Use the `sdc` solver package in fastprep for reverse-PE field estimation.
 
 ## Reproduce
 
@@ -285,4 +285,4 @@ scripts/gre.sh ds005134-sub-01 <magnitude1.nii.gz> <phasediff.nii.gz>
 | MindGrab | `@brainchop/mindgrab` 0.1.20260925, CPU, through `@neurodesk/node-drivers` |
 
 The runs used `epic` (32 cores, 123 GB, RTX 5080), with every method limited to 8 threads.
-The outputs are not on Hugging Face (follow-up issue 1).
+The outputs are not on Hugging Face yet ([#504](https://github.com/neurodesk/webapps/issues/504)).
