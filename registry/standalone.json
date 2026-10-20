@@ -387,35 +387,35 @@
         {
           "kind": "cli",
           "platform": "linux-x64",
-          "version": "0.7.20261017",
-          "url": "https://github.com/neurodesk/webapps/releases/download/calmar-v0.7.20261017/calmar-0.7.20261017-linux-x64.tar.gz",
-          "sha256": "c62f76b0abfc476f994c7388f5e2a70fe68c9e7623ffa9fa9732336ddbf16e1e",
-          "bytes": 263653405,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/calmar-v0.7.20261017/calmar-0.7.20261017-linux-x64.tar.gz.validation.txt",
+          "version": "0.7.20261020",
+          "url": "https://github.com/neurodesk/webapps/releases/download/calmar-v0.7.20261020/calmar-0.7.20261020-linux-x64.tar.gz",
+          "sha256": "4506aa7ada10cb91e56008c41dfad0bc88242e9bcbb7a4518b7277586936cc03",
+          "bytes": 263659614,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/calmar-v0.7.20261020/calmar-0.7.20261020-linux-x64.tar.gz.validation.txt",
           "modelsIncluded": true,
-          "command": "tar -xzf calmar-0.7.20261017-linux-x64.tar.gz\n./calmar-0.7.20261017-linux-x64/calmar prepare t1.nii.gz candidate-results"
+          "command": "tar -xzf calmar-0.7.20261020-linux-x64.tar.gz\n./calmar-0.7.20261020-linux-x64/calmar prepare t1.nii.gz candidate-results"
         },
         {
           "kind": "cli",
           "platform": "macos-arm64",
-          "version": "0.7.20261017",
-          "url": "https://github.com/neurodesk/webapps/releases/download/calmar-v0.7.20261017/calmar-0.7.20261017-macos-arm64.pkg",
-          "sha256": "31db239c99550936d1e1ac02340aede033e1cf029103d8a7fcec11a9cf7746dc",
-          "bytes": 265399072,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/calmar-v0.7.20261017/calmar-0.7.20261017-macos-arm64.pkg.validation.txt",
+          "version": "0.7.20261020",
+          "url": "https://github.com/neurodesk/webapps/releases/download/calmar-v0.7.20261020/calmar-0.7.20261020-macos-arm64.pkg",
+          "sha256": "ef1b3e3136241e961be52d08dd73572e0d1b0aab71fca266c4c261ce62f12c1c",
+          "bytes": 265415139,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/calmar-v0.7.20261020/calmar-0.7.20261020-macos-arm64.pkg.validation.txt",
           "modelsIncluded": true,
-          "command": "sudo installer -pkg calmar-0.7.20261017-macos-arm64.pkg -target /\ncalmar self-check\ncalmar prepare t1.nii.gz candidate-results"
+          "command": "sudo installer -pkg calmar-0.7.20261020-macos-arm64.pkg -target /\ncalmar self-check\ncalmar prepare t1.nii.gz candidate-results"
         },
         {
           "kind": "cli",
           "platform": "windows-x64",
-          "version": "0.7.20261017",
-          "url": "https://github.com/neurodesk/webapps/releases/download/calmar-v0.7.20261017/calmar-0.7.20261017-windows-x64.zip",
-          "sha256": "4a781c56bbca06fd7cb3128670e1482766d8d0348c9a8a530b3ad692b5b38eb9",
-          "bytes": 265381399,
-          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/calmar-v0.7.20261017/calmar-0.7.20261017-windows-x64.zip.validation.txt",
+          "version": "0.7.20261020",
+          "url": "https://github.com/neurodesk/webapps/releases/download/calmar-v0.7.20261020/calmar-0.7.20261020-windows-x64.zip",
+          "sha256": "26ff2881f9ea2a4c4614cca2216de36fa189e1d91a50619502b4e9d04fc7e33c",
+          "bytes": 265398757,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/calmar-v0.7.20261020/calmar-0.7.20261020-windows-x64.zip.validation.txt",
           "modelsIncluded": true,
-          "command": "Expand-Archive -Path .\\calmar-0.7.20261017-windows-x64.zip -DestinationPath .\n.\\calmar-0.7.20261017-windows-x64\\calmar.exe prepare t1.nii.gz candidate-results"
+          "command": "Expand-Archive -Path .\\calmar-0.7.20261020-windows-x64.zip -DestinationPath .\n.\\calmar-0.7.20261020-windows-x64\\calmar.exe prepare t1.nii.gz candidate-results"
         }
       ],
       "containers": []
