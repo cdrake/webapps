@@ -1467,6 +1467,12 @@ importers:
 
   packages/greedy: {}
 
+  packages/hmc-registration:
+    devDependencies:
+      '@playwright/test':
+        specifier: 1.64.0
+        version: 1.64.0
+
   packages/lcmodel:
     dependencies:
       '@brainchop/mindgrab':

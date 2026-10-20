@@ -1,0 +1,47 @@
+name: hmc-registration
+
+# @neurodesk/hmc-registration's module worker must register the committed test pair in Chromium as
+# it does in Node (pnpm test:packages runs the Node suite in ci.yml): recover the known rigid shift
+# and write native antsRegistration's .mat, byte for byte.
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/hmc-registration.yml'
+      - 'packages/hmc-registration/**'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/hmc-registration.yml'
+      - 'packages/hmc-registration/**'
+  workflow_dispatch:
+
+concurrency:
+  group: hmc-registration-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  browser-worker:
+    name: Browser worker registers the test pair
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install frozen dependencies
+        env:
+          ONNXRUNTIME_NODE_INSTALL: skip
+        run: pnpm install --frozen-lockfile
+      - name: Install browser
+        run: node node_modules/@playwright/test/cli.js install --with-deps chromium
+      - name: Run the module worker in Chromium
+        run: pnpm --filter @neurodesk/hmc-registration test:browser

@@ -1,0 +1,16 @@
+HMC registration library
+Copyright 2026 Neurodesk contributors
+
+wasm/hmc-registration.wasm is ANTs antsRegistration compiled to WebAssembly.
+Advanced Normalization Tools (ANTs), Apache-2.0, ANTsX contributors.
+https://github.com/ANTsX/ANTs
+ANTs source: 52bc0ab588102682587303d31c720de94e6ef6c1 (2.6.2), as packages/registration.
+ITK: Insight Software Consortium / NumFOCUS, Apache-2.0.
+Build toolchain: itkwasm/emscripten@sha256:d6c35290a9f1c5cfeb8168c18bbf64d78394cd111b6a19c6091921e98a3aaa1d
+
+The Neurodesk wrapper limits registration to scalar 3D float processing.
+Registration algorithms are ANTs code.
+
+Avants BB, Tustison NJ, Song G, et al. (2011). A reproducible evaluation of
+ANTs similarity metric performance in brain image registration. NeuroImage
+54(3):2033-2044.
