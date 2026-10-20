@@ -10,6 +10,11 @@ shift
 run=$ROOT/runs/$sub
 cd "$run"
 
+if [[ ! -d topup ]]; then
+  echo "Reference method topup is missing for $sub" >&2
+  exit 1
+fi
+
 if [[ ! -f calibration.json ]]; then
   (cd "$SCRIPTS" && py calibrate.py "$run")
 fi
@@ -28,7 +33,15 @@ fi
 
 for method in topup "$@"; do
   [[ -d $method ]] || continue
-  (cd "$SCRIPTS" && py fields.py "$run" "$method" && py evaluate.py "$run" "$method" > /dev/null)
+  if ! (cd "$SCRIPTS" && py fields.py "$run" "$method" && py evaluate.py "$run" "$method" > /dev/null); then
+    rm -f "$method/metrics.json"
+    if [[ $method == topup ]]; then
+      echo "Reference method topup failed for $sub" >&2
+      exit 1
+    fi
+    echo "Skipping failed method $method for $sub" >&2
+    continue
+  fi
   fsl flirt -in "$method/corrected_mean" -ref prep/t1w -dof 6 -cost bbr -wmseg prep/t1w_wmseg \
     -init mask/b0_to_t1w_init.mat -omat "$method/bbr.mat" -schedule /opt/fsl-6.0.7.23/etc/flirtsch/bbr.sch > /dev/null
   cost=$(fsl flirt -in "$method/corrected_mean" -ref prep/t1w -cost bbr -wmseg prep/t1w_wmseg \

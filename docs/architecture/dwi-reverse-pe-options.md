@@ -17,10 +17,12 @@ Thus the solver comes first and Synb0-DisCo is a later front end.
 
 ## Recommendation
 
-**By the rule: DR-BUDDI.**
-It is the only candidate that passes the image gate on all six subjects.
+**No candidate passes the required image gate on every subject.**
+Issue #471 requires T1w alignment no worse than topup's.
+DR-BUDDI is worse on sub-0001, sub-0003 and sub-0005, so it does not pass that rule.
 Its field is the closest to topup's: a mean demeaned Δfield of 1.43 Hz, the same as topup's own spread (topup with one b0 per side, 1.39 Hz).
-No cheaper port is within the 1.5 x margin: PyHySCO is at 1.52 x.
+Under the unaccepted wider limits below, it would be the only passing candidate.
+The proposed 1.5 x field margin is also unaccepted; PyHySCO is at 1.52 x.
 
 **What we build first: PyHySCO, then DR-BUDDI.**
 DR-BUDDI took 42 minutes and 5 GB natively with 8 threads.
@@ -32,10 +34,11 @@ PyHySCO took 4 s and 0.9 GB, its port is small, and its gap is small and stated 
 - Its T1w alignment is a little worse on two subjects: BBR 1.024 x (sub-0003, inside topup's own spread there) and 1.030 x (sub-0005, outside it).
 - Its field differs from topup's by 2.18 Hz (demeaned), against 1.43 Hz for DR-BUDDI.
 
-Thus `apps/sdc` ([#473](https://github.com/neurodesk/webapps/issues/473)) ships PyHySCO as its first method and default.
+Issue [#473](https://github.com/neurodesk/webapps/issues/473) schedules PyHySCO as the first method and default in `apps/sdc`.
+That implementation choice does not establish a pass under issue #471's image gate.
 DR-BUDDI is a follow-up issue ([#505](https://github.com/neurodesk/webapps/issues/505)) that starts with a WebAssembly build, memory and timing check before the full port.
 When DR-BUDDI is usable in the browser, it becomes the "closest to topup" option.
-FD-Net (5/6, 3.62 Hz) can be a third option only after the HCP data-use terms are checked.
+FD-Net (5/6 under the proposed spread limits, 3.62 Hz) can be a third option only after the HCP data-use terms are checked.
 ANTs restricted SyN and 3dQwarp fail the gate on every subject.
 
 ## Candidates
@@ -137,18 +140,22 @@ Thus the metrics compare fields, not each tool's resampler.
 
 The target is a field as close as possible to topup's.
 
-**Image gate.**
-A method passes if its image metrics are close to topup's or better, on every subject:
+**Required image gate, from issue #471.**
+A method must pass both checks on every subject:
 
 - **AP-PA agreement.**
   After correction, the mean absolute AP-PA difference in the brain, divided by the mean corrected b0 intensity, is at most 1.1 x topup's value.
 - **T1w alignment.**
-  The BBR cost of the corrected mean b0 against the T1w white matter (FSL `flirt -cost bbr`, one shared start) is at most 1.02 x topup's value.
+  The BBR cost of the corrected mean b0 against the T1w white matter (FSL `flirt -cost bbr`, one shared start) is no greater than topup's value.
 
-"Close" means within topup's own spread.
-On each subject the limit is the larger of the fixed value above and the ratio that topup with one b0 per side gets there.
-This change was made after phase 2 showed sub-0003, where topup with one b0 per side fails the fixed limits itself (AP-PA 1.23 x, BBR 1.065 x).
-The results show both forms.
+**Proposed alternatives, not accepted.**
+The first proposal allows BBR at most 1.02 x topup's value while keeping AP-PA at most 1.1 x.
+The second uses the larger of those limits and topup-single's ratio on each subject.
+It was proposed after phase 2 showed sub-0003, where topup with one b0 per side fails the proposed fixed limits itself (AP-PA 1.23 x, BBR 1.065 x).
+Both proposals loosen the issue's rule and need the issue owner's decision before they set acceptance.
+The results retain the counts under both proposals. They are not passes under the required gate.
+`aggregate.py` uses the required gate for acceptance and prints the proposed counts separately.
+A method with a missing subject result cannot pass every subject.
 
 **Ranking.**
 The methods are ranked by the median absolute difference of their field from topup's in the brain, after the median offset is removed (the demeaned Δfield).
@@ -160,8 +167,10 @@ Twice the difference between topup and topup with one b0 per side is a reference
 
 **Choice.**
 The licence is a hard filter.
-Among the methods that pass the image gate, the cheapest port wins if its mean demeaned Δfield over the six subjects is at most 1.5 x that of the closest method.
-Otherwise the closest method wins.
+Issue #471 chooses the cheapest port among the methods that pass its required image gate.
+No measured candidate qualifies on every subject.
+A proposed alternative adds a field margin: the cheapest passing port wins only if its mean demeaned Δfield is at most 1.5 x that of the closest method; otherwise the closest method wins.
+That extra selection rule is unaccepted.
 
 **Reported only:**
 
@@ -171,7 +180,8 @@ Otherwise the closest method wins.
 
 The brain mask is MindGrab on topup's corrected mean b0, the same for every method.
 
-The issue's original start value, a median absolute difference < 0.5 Hz, cannot be met: topup with one b0 per side already differs from full topup by 0.84 Hz on sub-01.
+Issue #471 treats a median absolute field difference of 0.5 Hz as a warning, not as the image gate.
+topup with one b0 per side differs from full topup by 0.84 Hz on sub-01.
 
 ### Conventions settled on sub-01
 
@@ -188,7 +198,7 @@ All times are native, with 8 threads; PyHySCO also ran once on the RTX 5080.
 
 ### Summary over six subjects
 
-| Method | Image gate, topup-spread limit | Image gate, fixed limits | Mean Δfield demeaned (Hz) | Mean Δfield (Hz) | Mean r | Mean time (s) | Max peak RAM (GB) |
+| Method | Proposed spread limits | Proposed fixed limits (AP-PA 1.1, BBR 1.02) | Mean Δfield demeaned (Hz) | Mean Δfield (Hz) | Mean r | Mean time (s) | Max peak RAM (GB) |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `topup` | 6/6 | 6/6 | 0 | 0 | 1 | 163 | 1.04 |
 | `topup`, one b0 per side | 6/6 | 5/6 | 1.39 | 1.43 | 0.992 | 40 | 0.26 |
@@ -217,6 +227,13 @@ AP-PA / BBR, each divided by topup's value.
 
 Every reverse-PE method agrees better between AP and PA than topup, because each one fits the mean pair directly.
 The T1w alignment separates them.
+Under issue #471's required rule, these T1w alignment results fail:
+
+- DR-BUDDI: sub-0001 (1.007), sub-0003 (1.009), sub-0005 (1.016).
+- PyHySCO: sub-01 (1.005), sub-0001 (1.011), sub-0002 (1.009), sub-0003 (1.024), sub-0005 (1.030).
+- FD-Net: sub-0001 (1.018), sub-0002 (1.009), sub-0003 (1.018), sub-0005 (1.034).
+
+The wider-limit counts do not establish a passing method under the required rule.
 
 ### Demeaned Δfield from topup (Hz), per subject
 
@@ -264,14 +281,32 @@ For DR-BUDDI, a port is not started until a WebAssembly build of the solver runs
 ## Reproduce
 
 The scripts are in [`dwi-reverse-pe-options/`](dwi-reverse-pe-options/).
-Set `ROOT` to a scratch directory, then:
+From the repository root, export `ROOT` as a scratch directory.
+The scripts need Apptainer, AWS CLI, the container images below, and the method environments under `ROOT` that `common.sh` and `methods.sh` name.
+Install the workspace dependencies first so the checked-in MindGrab driver can load its pinned package.
+Then run:
 
 ```bash
-scripts/fetch.sh "$ROOT"
-scripts/prep.sh <subject> <ap.nii.gz> <ap.bval|-> <pa.nii.gz> <pa.bval|-> <t1w.nii.gz>
-scripts/methods.sh <subject> <method>      # topup first, then the others
-scripts/post.sh <subject> <method>...
-scripts/gre.sh ds005134-sub-01 <magnitude1.nii.gz> <phasediff.nii.gz>
+export ROOT=/path/to/scratch/reverse-pe
+export SCRIPTS="$PWD/docs/architecture/dwi-reverse-pe-options"
+bash "$SCRIPTS/fetch.sh" "$ROOT"
+bash "$SCRIPTS/prep.sh" <subject> <ap.nii.gz> <ap.bval|-> <pa.nii.gz> <pa.bval|-> <t1w.nii.gz>
+bash "$SCRIPTS/methods.sh" <subject> <method>      # topup first, then the others
+bash "$SCRIPTS/post.sh" <subject> <method>...
+bash "$SCRIPTS/gre.sh" ds005134-sub-01 <magnitude1.nii.gz> <phasediff.nii.gz>
+bash "$SCRIPTS/post.sh" ds005134-sub-01 <method>...  # add the GRE metrics
+bash "$SCRIPTS/phase2.sh"                         # the other five subjects
+python3 "$SCRIPTS/aggregate.py" "$ROOT/runs"
+```
+
+`aggregate.py` requires all six subject summaries by default.
+An explicit subject list selects a subset for a preliminary report.
+A failed optional method does not stop `post.sh` from recording completed methods; it cannot pass the all-subject gate.
+A missing or failed topup baseline stops post-processing with an error.
+The script checks need no imaging tools:
+
+```bash
+python3 -m unittest discover -s docs/architecture/dwi-reverse-pe-options -p 'test_*.py'
 ```
 
 | Tool | Version |
@@ -283,6 +318,21 @@ scripts/gre.sh ds005134-sub-01 <magnitude1.nii.gz> <phasediff.nii.gz>
 | PyHySCO | 0.0.4, PyTorch 2.8.0 (CUDA 12.8) |
 | FD-Net | `2f5c37e`, TensorFlow 2.10.0 (CPU) |
 | MindGrab | `@brainchop/mindgrab` 0.1.20260925, CPU, through `@neurodesk/node-drivers` |
+
+These are verified published OCI artifacts for the three dated Neurodesk tags above:
+
+| Published artifact | OCI manifest digest |
+| --- | --- |
+| `vnmd/fsl_6.0.7.23:20261013` | `sha256:0748f16e5c0a0a75f27875da84076377843b8095f1ba5f41974578aac135d7de` |
+| `vnmd/ants_2.6.5:20261012` | `sha256:4f303bfd2be37a9514614d71065bfc11052e299f3a9cab52df28114d96061807` |
+| `vnmd/afni_26.3.04:20261015` | `sha256:a863229b68640435eb04e4ce63eca1b50bddc1c0431f0b728c5295169e7fe655` |
+
+The Docker Registry V2 manifest responses were checked on 20 October 2026; each response's SHA-256 equals its `Docker-Content-Digest`.
+Use the repository name with `@sha256:…` to identify the published artifact independently of its tag.
+The measured runs used the named CVMFS SIF files in `common.sh`.
+Their original bytes and SIF checksums remain unavailable.
+An OCI manifest digest is not a SIF checksum and does not prove the exact original environment.
+These published pins do not complete issue #471's original-environment evidence, and the measurements have not been rerun from them.
 
 The runs used `epic` (32 cores, 123 GB, RTX 5080), with every method limited to 8 threads.
 The outputs are not on Hugging Face yet ([#504](https://github.com/neurodesk/webapps/issues/504)).

@@ -42,5 +42,5 @@ timed() {
 }
 
 mindgrab_mask() {
-  PATH=$HOME/.pixi/envs/nodejs/bin:$PATH node "$ROOT/tools/mindgrab/mindgrab-mask.mjs" "$@"
+  node "$SCRIPTS/mindgrab-mask.mjs" "$@"
 }
