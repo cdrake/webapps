@@ -4,6 +4,12 @@
 
 ### Patch Changes
 
+- Updated dependencies [a36fde4]
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/vesselboost@0.6.20261020
 - Updated dependencies [ea2a6d2]
 - Updated dependencies [3f1d770]
 - Updated dependencies [d9718cd]
