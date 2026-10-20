@@ -34,9 +34,8 @@ async function dwi2trxFit(dwi, mask) {
 }
 
 test("FA and MD equal DWI2TRX's on a single-shell DWI, where the fit uses every volume", async () => {
-  // Three distinct eigenvalues along x, y and z: with two equal ones, the pinned niimath build
-  // gives a V1 up to 14 degrees from the first eigenvector, although its eigenvalues are right
-  // (https://github.com/rordenlab/niimath/issues/83).
+  // Three distinct eigenvalues along x, y and z; the repeated-eigenvalue cases below also
+  // exercise the repair for https://github.com/rordenlab/niimath/issues/83.
   const dwi = syntheticDwi({ shells: [1000], eigenvalues: [1.7e-3, 0.6e-3, 0.3e-3] });
   const input = appInput(dwi);
   assert.equal(input.volumes.length, input.bvals.length);
@@ -119,3 +118,54 @@ test("with a negative eigenvalue FA, MD, AD and RD are all zero", async () => {
   for (const key of ["FA", "MD", "AD", "RD"]) assert.equal(dtifit[key], 0, key);
   assert.ok(dtifit.S0 > 0);
 });
+
+for (const [name, options] of [
+  ["axial prolate", { eigenvalues: [1.7e-3, 0.3e-3, 0.3e-3] }],
+  ["oblique prolate", { direction: [1, -2, 3], eigenvalues: [1.7e-3, 0.3e-3, 0.3e-3] }],
+  ["nearly equal minor eigenvalues", { direction: [0.2, 0.9, -0.4], eigenvalues: [1.7e-3, 0.3e-3, 0.3e-3 * (1 - 1e-7)] }],
+]) {
+  test(`the actual niimath fit preserves the unique principal direction for ${name} tensors`, async () => {
+    const fits = await centreFits(options);
+    assertSameTensor(fits, name);
+    const direction = options.direction ?? [1, 0, 0];
+    const norm = Math.hypot(...direction);
+    for (const [axis, key] of ["V1x", "V1y", "V1z"].entries()) {
+      assert.ok(Math.abs(fits.dtifit[key] - direction[axis] / norm) < 1e-5, `${name} ${key} equals the analytic direction`);
+    }
+  });
+}
+
+for (const [name, eigenvalues] of [
+  ["prolate", [1.7e-3, 0.3e-3, 0.3e-3]],
+  ["oblate", [1.2e-3, 1.2e-3, 0.3e-3]],
+  ["isotropic", [1e-3, 1e-3, 1e-3]],
+]) {
+  test(`the actual niimath fit returns an orthonormal frame for ${name} tensors`, async () => {
+    const [image, bval, bvec] = syntheticDwi({ shells: [1000], direction: [1, -2, 3], eigenvalues }).files;
+    const maps = await fitTensor(runNiimath, { dwi: image.buffer, bval: bval.buffer, bvec: bvec.buffer, xflip: '0' });
+    const centre = 4 + 8 * (4 + 8 * 4);
+    const vectors = ["V1", "V2", "V3"].map((name) => {
+      const { data } = readNiftiFrames(gunzipSync(maps[name]));
+      return [0, 1, 2].map((axis) => data[centre + axis * 512]);
+    });
+    for (let i = 0; i < vectors.length; i += 1) {
+      assert.ok(Math.abs(Math.hypot(...vectors[i]) - 1) < 1e-6, `${name} V${i + 1} must be unit length`);
+      for (let j = 0; j < i; j += 1) {
+        const dot = vectors[i].reduce((sum, value, axis) => sum + value * vectors[j][axis], 0);
+        assert.ok(Math.abs(dot) < 1e-6, `${name} V${i + 1} and V${j + 1} must be orthogonal`);
+      }
+    }
+    if (name !== "isotropic") {
+      // For direction (1,-2,3), the fixture's third axis is (-13,-2,3).
+      const [vector, expected] = name === "prolate" ? [vectors[0], [1, -2, 3]] : [vectors[2], [-13, -2, 3]];
+      const dot = vector.reduce((sum, value, axis) => sum + value * expected[axis], 0) / Math.hypot(...expected);
+      assert.ok(Math.abs(Math.abs(dot) - 1) < 1e-6, `${name} keeps its unique analytic eigendirection`);
+    }
+    // The direction inside a repeated-eigenvalue subspace is not unique.
+    // Scalar diffusivities remain defined even for an isotropic tensor.
+    for (let i = 0; i < eigenvalues.length; i += 1) {
+      const { data } = readNiftiFrames(gunzipSync(maps[`L${i + 1}`]));
+      assert.ok(Math.abs(data[centre] - eigenvalues[i]) < 1e-8, `${name} L${i + 1}`);
+    }
+  });
+}

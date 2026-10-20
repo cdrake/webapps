@@ -34,15 +34,14 @@ WASM/WebGPU sandbox; see the size limit below.
 
 ## Vendored niimath
 
-`vendor/niimath` ships a locally-built niimath WASM with the `--dtifit` CLI
-mode enabled (`@niivue/niimath/niimath.js`, driven directly for multi-file FS
-staging + `callMain` — see `runNiimath` in `@neurodesk/dwi2trx/runner`). This is not yet part of
-the published `@niivue/niimath` package on npm, so `package.json` pins
-`@niivue/niimath` to `file:./vendor/niimath` instead of the registry version.
-Do not replace it with the registry package until a dtifit-enabled build
-lands upstream. To refresh the vendored build, rebuild niimath's WASM with
-`--dtifit` enabled and replace the contents of `vendor/niimath/dist/`; its
-`package.json` (license BSD-2-Clause) records the exports.
+`vendor/niimath` ships a pinned niimath WASM with the `--dtifit` CLI mode
+enabled (`@niivue/niimath/niimath.js`, driven directly for multi-file FS
+staging + `callMain` — see `runNiimath` in `@neurodesk/dwi2trx/runner`). DWI2TRX,
+its command line and NODDI share this file dependency. It includes upstream's
+repair for non-unit or inaccurate eigenvectors when two tensor eigenvalues
+are equal or nearly equal. See [the build provenance](vendor/niimath/README.md)
+for the exact source, SDK, flags and rebuild command. Upstream now also ships
+dtifit on npm; changing this file pin requires validating those same consumers.
 
 ## public/brainchop
 

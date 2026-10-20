@@ -1,6 +1,6 @@
 {
   "name": "@niivue/niimath",
-  "version": "1.2.0-dtifit.0",
+  "version": "1.2.0-dtifit.1",
   "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -13,7 +13,7 @@
     "./niimath.js": "./dist/niimath.js"
   },
   "license": "BSD-2-Clause",
-  "description": "dtifit-enabled WASM runtime vendored for dwi2trx.",
+  "description": "Pinned dtifit-enabled WASM runtime shared by DWI2TRX and NODDI.",
   "files": [
     "dist/"
   ]
