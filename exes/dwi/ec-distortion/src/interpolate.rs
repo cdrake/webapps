@@ -4,7 +4,12 @@
 /// The value and the derivative at position `t` of a line of `n` samples `f(0..n)`. Positions
 /// outside the line take the edge values.
 pub fn cubic(f: impl Fn(usize) -> f64, n: usize, t: f64) -> (f64, f64) {
-    let t = t.clamp(0.0, (n - 1) as f64);
+    if t < 0.0 {
+        return (f(0), 0.0);
+    }
+    if t > (n - 1) as f64 {
+        return (f(n - 1), 0.0);
+    }
     let i = t.floor();
     let s = t - i;
     let i = i as isize;
@@ -30,6 +35,20 @@ mod tests {
             let (v, d) = cubic(f, 8, t);
             assert!((v - (t * t - 3.0 * t + 1.0)).abs() < 1e-12, "{t}");
             assert!((d - (2.0 * t - 3.0)).abs() < 1e-12, "{t}");
+        }
+    }
+
+    #[test]
+    fn held_edges_have_zero_derivative() {
+        let f = |i: usize| [2.0, 5.0, -1.0, 4.0][i];
+        for t in [-3.0, -0.25, 3.25, 9.0] {
+            let (value, derivative) = cubic(f, 4, t);
+            let epsilon = 1e-4;
+            let finite_difference =
+                (cubic(f, 4, t + epsilon).0 - cubic(f, 4, t - epsilon).0) / (2.0 * epsilon);
+            assert_eq!(value, if t < 0.0 { 2.0 } else { 4.0 });
+            assert_eq!(finite_difference, 0.0);
+            assert_eq!(derivative, finite_difference, "position {t}");
         }
     }
 
