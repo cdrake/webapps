@@ -43,9 +43,9 @@ async function handoff(engine, isolationHeaders) {
     // The first visit may reload once for isolation; work in the page that stays.
     await page.waitForFunction(() => window.crossOriginIsolated && document.getElementById('dicomInput'));
     await page.locator('#dicomInput').setInputFiles(dicomSeries({ series: 7, slices: 12 }).map(({ name, mimeType, buffer }) => ({ name, mimeType, buffer })));
-    const send = page.getByRole('button', { name: 'Open in White matter lesions', exact: true });
-    await expect(send).toBeEnabled();
-    await send.click();
+    const menu = page.getByRole('combobox', { name: 'Open in another webapp', exact: true });
+    await expect(menu.locator('option[value="white-matter-lesions"]')).toBeEnabled();
+    await menu.selectOption('white-matter-lesions');
     await page.waitForURL(/\/white-matter-lesions\//);
     await expect(page.locator('#statusText')).toHaveText(LOADED);
     await expect(page.locator('#fileInfo')).toHaveText('series7_test_scan_7.nii · 16 × 16 × 12 voxels');
