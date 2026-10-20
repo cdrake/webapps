@@ -24,6 +24,10 @@
 
 ### Patch Changes
 
+- Record the injected MindGrab runtime's actual version in brain extraction provenance, including SYNcro's separately pinned build.
+- Updated dependencies
+  - @neurodesk/brain-extraction@0.4.20261020
+  - @neurodesk/syncro@0.7.20261020
 - 14b8248: MindGrab's automatic backend no longer runs WebGL2 on a software renderer (SwiftShader, llvmpipe), which returned a blank brain mask without WebGPU; the threaded CPU module runs instead. The choice and MindGrab's own output appear in the technical log.
 - Updated dependencies [ea2a6d2]
 - Updated dependencies [3f1d770]
