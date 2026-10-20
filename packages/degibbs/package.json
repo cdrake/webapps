@@ -8,11 +8,17 @@
   "engines": {
     "node": ">=22"
   },
+  "bin": {
+    "degibbs": "./bin/degibbs.js"
+  },
   "exports": {
     ".": "./src/wasm.js",
-    "./wasm": "./src/degibbs.wasm"
+    "./wasm": "./src/degibbs.wasm",
+    "./outputs": "./src/outputs.js",
+    "./node": "./src/node.js"
   },
   "files": [
+    "bin",
     "src",
     "LICENSE",
     "NOTICE",
@@ -22,7 +28,10 @@
     "build:wasm": "bash scripts/build-wasm.sh",
     "check:wasm": "bash scripts/build-wasm.sh --check",
     "test": "node --test test/*.test.js",
-    "lint": "node --check src/wasm.js"
+    "lint": "node --check src/wasm.js && node --check src/outputs.js && node --check src/node.js && node --check bin/degibbs.js"
+  },
+  "dependencies": {
+    "@neurodesk/webapp-components": "workspace:*"
   },
   "repository": {
     "type": "git",

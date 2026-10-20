@@ -80,7 +80,6 @@ const WITHOUT_COMMAND_LINE = {
   nesvor: 'needs CUDA; its standalone form is the neurodesk-compute server',
   dicomview: 'interactive DICOM browser: dcm2niix and dicompare already ship as command lines',
   dwidenoise: 'the dwidenoise command line follows its app, as noddi\'s does (docs/architecture/dwi-microstructure-design.md)',
-  degibbs: 'the degibbs command line follows its app, as noddi\'s does (docs/architecture/dwi-microstructure-design.md)',
   n4: 'the n4 command line follows its app, as noddi\'s does (docs/architecture/dwi-microstructure-design.md)',
   fastprep: 'exes/fastprep drives separately installed niimath, brainchop, greedy-rs, synthsr, topofit and glm; a bundled release waits on packaging those (TopoFit licence pending)',
   'me-ica': 'its meica CLI is released from niivue/meica-rs; no release is tagged yet',
