@@ -131,7 +131,7 @@ Crate `exes/dwi/sdc` and `sdc-wasm` (#463). The WebAssembly takes and returns Fl
 | Function | Source | Risk |
 | --- | --- | --- |
 | `disp_to_fmap` | `transform.py:624-674` | The input is ANTs' displacement in LPS; the inverse affine handles axis order and flips. Test all six PE directions on LAS and RAS grids. |
-| B-spline grid and weights | `bspline.py:540-565`, `transform.py:677-766` | `//` on float extent; the knot window `[1:-1]` of the scipy basis; the `|d| < 2` support. |
+| B-spline grid and weights | `bspline.py:540-565`, `transform.py:677-766` | `//` on float extent; the knot window `[1:-1]` of the scipy basis; the `\|d\| < 2` support. |
 | Ridge solve | `bspline.py:203-216`, sklearn `_ridge.py:86-156,867-878` (linear branch `138-145`) | `sparse_cg` stops at `rtol=1e-4`, in float32. An exact solve differs from it. To meet #463's 1e-4 Hz median, port scipy's `cg` (x₀ = 0, the same residual test, f32 operators). Also compute the exact solve in tests to know the CG error. |
 | Field evaluation | `transform.py:335-353` | Coefficients are written as float32 before the evaluation (`bspline.py:227`); copy that rounding. |
 | Unwarp of the DWI series | `transform.py:71-117,369-549` | Port scipy `spline_filter` and `map_coordinates` (order 3) with mode `constant`. Read scipy 1.18.1 for the prefilter boundary mode that `constant` uses before the port. `numpy.gradient` uses central differences inside and first-order differences at the edges (`edge_order=1`). |
@@ -229,7 +229,7 @@ Registration (WASM, `--float 1`). First replay the kept inputs of the double see
 - The WASM run passes when `d ≤ max(spread, 0.05 Hz)` **and** `d < 0.5 Hz`.
   - The floor of 0.05 Hz is necessary because only stage 1 samples at random, and convergence can stop a stage early. Thus the measured spread can be almost zero.
   - The design's start value, 0.5 Hz, stays as a cap. A large native spread cannot make the gate looser than the design.
-  - The limit increases with the spread and never decreases. A smaller spread never gives a looser gate.
+  - The uncapped threshold `max(spread, 0.05 Hz)` never decreases as the spread increases. The effective gate stays capped by `d < 0.5 Hz`, even when the spread exceeds 0.5 Hz.
   - This agrees with #462, which asks for "< 0.5 Hz and the seed-spread rule".
 - Also report the 95th percentile of the same differences, the native `--float 1` against double, and the difference of the pre-B-spline Hz field (more sensitive to the registration).
 - Report-only: the field against ds005134's GRE field map (`fmap/sub-01_run-001_phasediff`, magnitude 1 and 2), resampled to the EPI grid. This is an independent measure, not the reference of the port.
