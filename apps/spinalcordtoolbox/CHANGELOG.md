@@ -4,6 +4,9 @@
 
 ### Patch Changes
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/spinalcordtoolbox@0.9.20261020
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
@@ -11,6 +14,7 @@
 - Updated dependencies [c865c0c]
 
 - Updated dependencies [4b40da1]
+
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/spinalcordtoolbox@0.9.20261020
 
@@ -30,6 +34,7 @@
 - Updated dependencies [3329c39]
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/spinalcordtoolbox@0.9.20261020
 
@@ -80,21 +85,26 @@
 - Updated dependencies [ccb2970]
 
 - Updated dependencies [67a5a8f]
+
   - @neurodesk/webapp-components@0.14.4
   - @neurodesk/spinalcordtoolbox@0.9.20261018
 
 - Updated dependencies [7c0d201]
+
   - @neurodesk/webapp-components@0.16.2
   - @neurodesk/spinalcordtoolbox@0.9.20261018
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/spinalcordtoolbox@0.9.20261018
 
 - Updated dependencies [3329c39]
+
   - @neurodesk/webapp-components@0.16.0
 
 - Updated dependencies [b67e4e9]
+
   - @neurodesk/webapp-components@0.15.1
   - @neurodesk/spinalcordtoolbox@0.9.20261018
 
@@ -122,6 +132,7 @@
   - @neurodesk/spinalcordtoolbox@0.9.20261016
 
 - Updated dependencies [7443048]
+
   - @neurodesk/webapp-components@0.14.1
   - @neurodesk/spinalcordtoolbox@0.9.20261016
 
@@ -206,6 +217,7 @@
   - @neurodesk/webapp-components@0.12.2
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.12.1
 
 - Updated dependencies
@@ -247,6 +259,7 @@
   - @neurodesk/webapp-components@0.11.1
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.11.0
 
 - Updated dependencies [22aa4bf]
@@ -291,6 +304,7 @@
 - 0e90fbf: Add a Zoom control to the viewer toolbar. With Zoom ticked the mouse wheel zooms 2D views and right-drag pans them; untick it to scroll slices again at the same zoom, and use Fit to restore the full view.
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.9.0
 
 - Updated dependencies [ec85a09]
@@ -314,6 +328,7 @@
   - @neurodesk/webapp-components@0.7.0
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.6.2
 
 - Updated dependencies
@@ -338,6 +353,7 @@
 - Updated dependencies [93381e8]
 
 - Updated dependencies [93381e8]
+
   - @neurodesk/webapp-components@0.6.0
 
 - Updated dependencies
@@ -388,9 +404,11 @@
   - @neurodesk/webapp-components@0.4.3
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.4.2
 
 - Updated dependencies [4959500]
+
   - @neurodesk/webapp-components@0.4.4
 
 - Updated dependencies
@@ -438,9 +456,11 @@
   - @neurodesk/webapp-components@0.2.1
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.0
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.2
 
 - Updated dependencies
@@ -461,6 +481,7 @@
   - @neurodesk/webapp-components@0.1.5
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.1.4
 
 - Updated dependencies [4add8da]

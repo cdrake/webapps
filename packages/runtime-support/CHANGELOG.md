@@ -1,5 +1,13 @@
 # @neurodesk/runtime-support
 
+## 0.9.5
+
+### Patch Changes
+
+- Add helpers for the dcm2niix app. `runDcm2niix` takes a `timeoutMs` conversion deadline and terminates a stalled worker. `clearNiftiText` removes NIfTI header text and extensions and keeps geometry and voxels. Editable report fields share the workflow field styling, and clearing a workspace releases its automation output.
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.1
+
 ## 0.9.4
 
 ### Patch Changes
@@ -101,6 +109,7 @@
 - Updated dependencies [3329c39]
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/webapp-components@0.16.0
 
 - Updated dependencies [3329c39]

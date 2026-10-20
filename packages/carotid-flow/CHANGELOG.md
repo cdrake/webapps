@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.1
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
@@ -11,6 +13,7 @@
 - Updated dependencies [c865c0c]
 
 - Updated dependencies [4b40da1]
+
   - @neurodesk/webapp-components@0.17.0
 
 - Updated dependencies [3f1d770]
@@ -28,14 +31,13 @@
 - Updated dependencies [3329c39]
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/webapp-components@0.16.0
 
 - Updated dependencies [d9718cd]
   - @neurodesk/webapp-components@0.16.3
 
 ## 0.4.20261019
-
-
 
 ## 0.4.20261018
 
@@ -70,18 +72,23 @@
 - Updated dependencies [ccb2970]
 
 - Updated dependencies [67a5a8f]
+
   - @neurodesk/webapp-components@0.14.4
 
 - Updated dependencies [7c0d201]
+
   - @neurodesk/webapp-components@0.16.2
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/webapp-components@0.16.1
 
 - Updated dependencies [3329c39]
+
   - @neurodesk/webapp-components@0.16.0
 
 - Updated dependencies [b67e4e9]
+
   - @neurodesk/webapp-components@0.15.1
 
 - Updated dependencies [b68209b]
@@ -103,6 +110,7 @@
   - @neurodesk/webapp-components@0.14.2
 
 - Updated dependencies [7443048]
+
   - @neurodesk/webapp-components@0.14.1
 
 - Updated dependencies
@@ -144,6 +152,7 @@
   - @neurodesk/webapp-components@0.12.2
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.12.1
 
 - Updated dependencies
@@ -177,9 +186,11 @@
 - 56a9269: Decode unrescaled raw Siemens phase (0–4095, zero velocity at 2048) with the VENC and measure it with the velocity method; it previously went to the variability method with the VENC ignored. Without a VENC such a series still takes the variability method, as before, with a note that it looks like raw phase. A VENC beside an unsigned series that cannot be told apart from a speed image is refused. An amplitude and phase pair whose affine or voxel spacing differ is now refused instead of being combined voxel for voxel.
 
 - Updated dependencies [70f2770]
+
   - @neurodesk/webapp-components@0.10.2
 
 - Updated dependencies [22aa4bf]
+
   - @neurodesk/webapp-components@0.11.1
 
 - Updated dependencies

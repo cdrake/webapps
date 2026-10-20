@@ -4,6 +4,10 @@
 
 ### Patch Changes
 
+- Updated dependencies
+  - @neurodesk/runtime-support@0.9.5
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/nesvor@0.3.20261020
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
@@ -11,6 +15,7 @@
 - Updated dependencies [c865c0c]
 
 - Updated dependencies [4b40da1]
+
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/nesvor@0.3.20261020
   - @neurodesk/runtime-support@0.9.4
@@ -38,6 +43,7 @@
 - Updated dependencies [46935f7]
 
 - Updated dependencies [d1fa022]
+
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/nesvor@0.3.20261020
@@ -105,25 +111,30 @@
 - Updated dependencies [ccb2970]
 
 - Updated dependencies [67a5a8f]
+
   - @neurodesk/runtime-support@0.7.0
   - @neurodesk/webapp-components@0.14.4
   - @neurodesk/nesvor@0.3.20261018
 
 - Updated dependencies [7c0d201]
+
   - @neurodesk/webapp-components@0.16.2
   - @neurodesk/nesvor@0.3.20261018
   - @neurodesk/runtime-support@0.9.1
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/runtime-support@0.9.0
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/nesvor@0.3.20261018
 
 - Updated dependencies [3329c39]
+
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
 
 - Updated dependencies [b67e4e9]
+
   - @neurodesk/runtime-support@0.7.2
   - @neurodesk/webapp-components@0.15.1
   - @neurodesk/nesvor@0.3.20261018
@@ -153,6 +164,7 @@
   - @neurodesk/nesvor@0.3.20261016
 
 - Updated dependencies [7443048]
+
   - @neurodesk/webapp-components@0.14.1
   - @neurodesk/nesvor@0.3.20261016
   - @neurodesk/runtime-support@0.6.2
@@ -199,6 +211,7 @@
 - @neurodesk/nesvor@0.3.20261015
 
 - Updated dependencies [c74b26f]
+
   - @neurodesk/runtime-support@0.6.1
   - @neurodesk/nesvor@0.3.20261015
 
@@ -251,11 +264,13 @@
   - @neurodesk/runtime-support@0.4.2
 
 - Updated dependencies
+
   - @neurodesk/runtime-support@0.4.1
   - @neurodesk/webapp-components@0.12.1
   - @neurodesk/nesvor@0.3.20261010
 
 - Updated dependencies
+
   - @neurodesk/nesvor@0.3.20261010
 
 - Updated dependencies
@@ -293,10 +308,12 @@
   - @neurodesk/nesvor@0.3.20261007
 
 - Updated dependencies [70f2770]
+
   - @neurodesk/webapp-components@0.10.2
   - @neurodesk/nesvor@0.3.20261007
 
 - Updated dependencies [22aa4bf]
+
   - @neurodesk/webapp-components@0.11.1
   - @neurodesk/runtime-support@0.2.1
   - @neurodesk/nesvor@0.3.20261007
@@ -328,14 +345,17 @@
   - @neurodesk/nesvor@0.3.20261004
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.9.0
   - @neurodesk/nesvor@0.3.20261004
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.10.1
   - @neurodesk/nesvor@0.3.20261004
 
 - Updated dependencies [ec85a09]
+
   - @neurodesk/webapp-components@0.10.0
   - @neurodesk/nesvor@0.3.20261004
 
@@ -386,22 +406,28 @@
   - @neurodesk/nesvor@0.3.20260930
 
 - Publish the experimental NeSVoR browser reconstruction with WebGPU brain masking, motion correction, N4 preprocessing, deformation and reconstruction, plus optional Linux NVIDIA remote compute. WebGPU is the default, progress is logged throughout processing, and acquisition thickness remains editable without a confirmation checkbox. Hardware GPU performance and full-acquisition CUDA parity remain unverified.
+
   - @neurodesk/nesvor@0.3.20260930
 
 - Enable the shared cross-origin isolation fallback on static hosts such as GitHub Pages so N4 can use SharedArrayBuffer. Include NeSVoR in deployed isolation checks and verify its compute-server-first standalone download layout.
+
   - @neurodesk/nesvor@0.3.20260930
 
 - Register stack loading and viewer inspection with the shared automation contract. Opening stacks replaces prior inputs and waits for the viewer; reconstruction remains an interactive operation.
+
   - @neurodesk/nesvor@0.3.20260930
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.7.0
   - @neurodesk/nesvor@0.3.20260930
 
 - Discover a same-host compute server only after remote processing is selected. Browser mode no longer requests a nonexistent API from the static website.
+
   - @neurodesk/nesvor@0.3.20260930
 
 - Use a portable runtime cache when building NeSVoR outside the development workspace. Preserve ZARRo export progress and cancellation when volume loading completes after the export starts.
+
   - @neurodesk/nesvor@0.3.20260930
 
 - Updated dependencies
@@ -425,6 +451,7 @@
 - Default to WebGPU, report measured training batch and preprocessing progress in the live and downloaded logs, and move detailed sidebar explanations into accessible help tooltips.
 
 - Updated dependencies
+
   - @neurodesk/nesvor@0.3.20260924
 
 - Remove the mandatory slice-thickness confirmation. Allow reconstruction with inferred thicknesses, show a non-blocking spacing note, and retain editable values and numeric validation.
@@ -450,6 +477,7 @@
 - @neurodesk/nesvor@0.3.20260921
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.5.1
   - @neurodesk/nesvor@0.3.20260921
 
