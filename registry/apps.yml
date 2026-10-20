@@ -784,6 +784,7 @@ apps:
     description: Distortion correction from reverse phase-encoding b0.
     categories: [diffusion-imaging]
     keywords: [susceptibility distortion, topup, PyHySCO, reverse phase-encoding, diffusion MRI, field map, WebAssembly]
+    handoff: none
     legacy_domain: null
     runtime: vite-wasm
     model_manifest: null
@@ -805,6 +806,7 @@ apps:
     description: Multi-echo fMRI denoising with tedana's ME-ICA.
     categories: [image-processing]
     keywords: [multi-echo, fMRI, denoising, ICA, tedana, T2*, BOLD]
+    handoff: none
     legacy_domain: null
     runtime: vite-wasm
     model_manifest: null

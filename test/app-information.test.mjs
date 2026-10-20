@@ -200,4 +200,6 @@ test('every page carries the site catalog, so one app can open another with its 
   }
   assert.equal(catalog.find(({ id }) => id === 'dicompare').receives, 'dicom');
   assert.ok(!catalog.some(({ id }) => id === 'zarro'), 'Zarro streams from URLs and takes no files');
+  assert.ok(!catalog.some(({ id }) => id === 'me-ica'), 'ME-ICA needs an echo bundle, not a single image');
+  assert.ok(!catalog.some(({ id }) => id === 'sdc'), 'SDC needs an opposite-phase pair, not a single image');
 });
