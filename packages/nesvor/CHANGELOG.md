@@ -1,5 +1,15 @@
 # @neurodesk/nesvor
 
+## 0.3.20261020
+
+### Patch Changes
+
+- Updated dependencies [3f1d770]
+- Updated dependencies [d9718cd]
+- Updated dependencies [d1fa022]
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/synthsr@0.6.20261020
+
 ## 0.3.20261019
 
 ### Patch Changes

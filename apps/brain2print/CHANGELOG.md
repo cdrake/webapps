@@ -1,5 +1,18 @@
 # brain2print
 
+## 0.5.20261020
+
+### Patch Changes
+
+- 14b8248: MindGrab's automatic backend no longer runs WebGL2 on a software renderer (SwiftShader, llvmpipe), which returned a blank brain mask without WebGPU; the threaded CPU module runs instead. The choice and MindGrab's own output appear in the technical log.
+- Updated dependencies [3f1d770]
+- Updated dependencies [14b8248]
+- Updated dependencies [d9718cd]
+- Updated dependencies [d1fa022]
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/brain2print@0.5.20261020
+
 ## 0.5.20261019
 
 ### Patch Changes
