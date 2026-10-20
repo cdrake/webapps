@@ -1005,7 +1005,6 @@ apps:
     modalities: [mri]
     inputs: [nifti]
     hardware: cpu
-    handoff: none
     legacy_domain: null
     runtime: vite-wasm
     model_manifest: null
