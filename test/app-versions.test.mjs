@@ -120,6 +120,22 @@ test('a linked-package changeset releases the app, package and native versions t
   assert.deepEqual(await embeddedVersionMismatches(await workspacePackages(root), root), []);
 });
 
+test('an SDC pipeline release keeps the app and package on the same UTC version', async (t) => {
+  const { root, put, json } = await fixture(t);
+  await put('apps/sdc/package.json', JSON.stringify({
+    name: 'sdc', version: '0.1.20261019', private: true,
+    dependencies: { '@neurodesk/sdc': 'workspace:*' },
+  }));
+  await put('packages/sdc/package.json', JSON.stringify({
+    name: '@neurodesk/sdc', version: '0.1.0',
+  }));
+  await put('.changeset/sdc.md', '---\n"@neurodesk/sdc": patch\n---\n\nValidate reverse-pair metadata.\n');
+  await applyRelease(await planRelease(root, { date: '20261020' }));
+  assert.equal((await json('apps/sdc')).version, '0.1.20261020');
+  assert.equal((await json('packages/sdc')).version, '0.1.20261020');
+  assert.match(await readFile(join(root, 'packages/sdc/CHANGELOG.md'), 'utf8'), /Validate reverse-pair metadata/);
+});
+
 test('an app release leaves the desktop suite version unchanged', async (t) => {
   const { root, put, json } = await fixture(t);
   await put('packages/desktop/package.json', JSON.stringify({ name: '@neurodesk/desktop', version: '0.1.20260930', private: true }));
