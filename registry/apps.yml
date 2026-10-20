@@ -768,4 +768,4 @@ apps:
       toolchains: [node]
       shared_runtime: false
       browser_test: true
-      release: false
+      release: true
