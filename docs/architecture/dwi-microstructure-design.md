@@ -154,11 +154,10 @@ The tracking issue [#467](https://github.com/neurodesk/webapps/issues/467) lists
 1. `exes/dwi` workspace, `gradients` and `tensor` crates, BIDS folder reader.
 2. `noddi` with DTI and AMICO.
 
-Status, 18 October 2026: the crates, the AMICO port and the `noddi` app are done. The first app slice reads NIfTI with bval and bvec, or DICOM (`readDiffusionSeries`), masks with MindGrab on the mean b0 or a supplied mask, and fits in Web Workers. These parts of steps 1 and 2 remain open:
+Status, 19 October 2026: the crates, the AMICO port, the `noddi` app and its command line ([#423](https://github.com/neurodesk/webapps/issues/423)) are done. The first app slice reads NIfTI with bval and bvec, or DICOM (`readDiffusionSeries`), masks with MindGrab on the mean b0 or a supplied mask, and fits in Web Workers. These parts of steps 1 and 2 remain open:
 
 - the BIDS folder reader ([#410](https://github.com/neurodesk/webapps/issues/410), [#411](https://github.com/neurodesk/webapps/issues/411));
 - the niimath dtifit option (Q14 "allow both", [#422](https://github.com/neurodesk/webapps/issues/422));
-- the `noddi` command line ([#423](https://github.com/neurodesk/webapps/issues/423));
 - a CI workflow that runs the `exes/dwi` tests, `check:wasm` and `tests/oracle.rs` with a pinned oracle file (without it the oracle test skips, which the data-gated test rule forbids; [#418](https://github.com/neurodesk/webapps/issues/418));
 - the ds005134 example, after its upload to Hugging Face ([#421](https://github.com/neurodesk/webapps/issues/421));
 - a size limit for the input: `readNiftiFrames` holds the whole series as Float32, about 500 MB for a full-brain ds005134 DWI plus its decompressed data (dwi2trx's `input-limits.ts` is the pattern; the limit belongs in the shared package; [#412](https://github.com/neurodesk/webapps/issues/412));
@@ -179,7 +178,7 @@ Status, 18 October 2026: the crates, the AMICO port and the `noddi` app are done
 
 ## Deferred, and why
 
-- **Topup.** FSL's licence does not permit a port. A clean-room implementation from Andersson et al. 2003 is a large separate project.
+- **Topup.** FSL's licence does not permit a port. A clean-room implementation from Andersson et al. 2003 is a large separate project. [Reverse-PE options](dwi-reverse-pe-options.md) compares the alternatives: DR-BUDDI is the closest to topup, and PyHySCO is the first method that `apps/sdc` ships.
 - **Synb0-DisCo.** Its only use is as the second image for topup. It needs ConvTranspose3d and InstanceNorm3d kernels in `gpu-unet` and fp16 weights converted from the MIT `.pth` files. Its preprocessing uses N4 with WM scaling, MindGrab and EdgeReg. EdgeReg first needs a matrix output from niimath `-allineate`; greedy is the temporary replacement. Outputs are expected to be close to, not equal to, the original pipeline.
 - **Eddy-style slice outlier replacement, slice-to-volume motion and least-squares reconstruction of blip-up/down data.** NiFreeze and SHORELine do not have them. FSL eddy cannot be ported.
 - **Joint resampling across `hmc` and `sdc`.** It belongs to the pipeline specification.
