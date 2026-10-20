@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // DICOM View hands its converted image to White matter lesions, and through the shell's
-// receiver to Brain2Print, on the built composite site,
+// receiver to Carotid Flow, on the built composite site,
 // in every engine: once with isolation headers, as the hosted site sends them, and once
 // without, so each app's isolation service worker installs and reloads the page on its first
 // visit, the receiving page included. Pass engine names to limit the run.
@@ -87,16 +87,17 @@ async function handoff(engine, isolationHeaders) {
   }
 }
 
-// Brain2Print binds its input in its first module, which the build places before the shell's:
+// Carotid Flow binds its input in its first module, which the build places before the shell's:
 // the shell must deliver the handoff to that input as soon as the page is up, not after its 60 s
-// fallback. Timed at delivery, since headless Firefox in CI has no WebGL2 for the viewer.
+// fallback. Timed at delivery: headless Firefox in CI has no WebGL2, and an app that needs a
+// viewer to load keeps its input disabled there; Carotid Flow takes the series without one.
 async function shellHandoff(engine) {
   const site = await serveSite(siteDir, { isolationHeaders: true });
   const profile = await mkdtemp(join(tmpdir(), `handoff-shell-${engine}-`));
   const context = await { chromium, firefox, webkit }[engine].launchPersistentContext(profile, { args: launchArgs[engine] ?? [] });
   try {
     await context.addInitScript(() => {
-      if (!location.pathname.includes('/brain2print/')) return;
+      if (!location.pathname.includes('/carotid-flow/')) return;
       window.addEventListener('change', (event) => {
         const input = event.target;
         if (input.id === 'imageInput' && input.files?.length) window.delivered ??= { at: performance.now(), names: [...input.files].map((file) => file.name) };
@@ -106,13 +107,14 @@ async function shellHandoff(engine) {
     page.setDefaultTimeout(60000);
     await page.goto(`${site.origin}/dicomview/`);
     await page.waitForFunction(() => window.crossOriginIsolated && document.getElementById('dicomInput'));
-    await page.locator('#dicomInput').setInputFiles(dicomSeries({ series: 7, slices: 12 }).map(({ name, mimeType, buffer }) => ({ name, mimeType, buffer })));
+    const series = dicomSeries({ series: 7, slices: 12 });
+    await page.locator('#dicomInput').setInputFiles(series.map(({ name, mimeType, buffer }) => ({ name, mimeType, buffer })));
     const menu = page.getByRole('combobox', { name: 'Open in another webapp', exact: true });
-    await expect(menu.locator('option[value="brain2print"]')).toBeEnabled();
-    await menu.selectOption('brain2print');
-    await page.waitForURL(/\/brain2print\//);
+    await expect(menu.locator('option[value="carotid-flow"]')).toBeEnabled();
+    await menu.selectOption('carotid-flow');
+    await page.waitForURL(/\/carotid-flow\//);
     const delivered = await (await page.waitForFunction(() => window.delivered, null, { timeout: 60000 })).jsonValue();
-    assert.deepEqual(delivered.names, ['series7_test_scan_7.nii']);
+    assert.deepEqual(delivered.names.sort(), series.map(({ name }) => name).sort(), 'the series\' DICOM files');
     assert.ok(delivered.at < 20000, `delivered ${(delivered.at / 1000).toFixed(1)} s after the page started`);
     return delivered.at / 1000;
   } finally {
@@ -136,7 +138,7 @@ for (const engine of engines) {
   }
   try {
     const seconds = await shellHandoff(engine);
-    console.log(`PASS ${engine}, shell receiver: Brain2Print received the image ${seconds.toFixed(1)} s after its page started`);
+    console.log(`PASS ${engine}, shell receiver: Carotid Flow received the series ${seconds.toFixed(1)} s after its page started`);
   } catch (error) {
     failures.push(`${engine}, shell receiver: ${error.message}`);
     console.error(`FAIL ${engine}, shell receiver: ${error.message}`);
