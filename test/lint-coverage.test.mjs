@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { access, lstat, mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import test, { before } from 'node:test';
 import { ESLint } from 'eslint';
@@ -20,7 +20,22 @@ import { preservedLintFilters } from '../scripts/lint-workspaces.mjs';
 const eslint = new ESLint({ cwd: root, overrideConfigFile: join(root, 'eslint.config.js') });
 
 // Each canary is removed in a finally block, which a killed run never reaches. Its
-// leftovers are untracked source that would fail every later lint, so remove them first.
+// leftovers are untracked source that would fail every later lint, so remove them
+// first: only untracked mkdtemp directories that carry this test's marker.
+const canaryMarker = '.lint-coverage-canary';
+const canaryName = /^(promise-canary|type-canary|lint-canary|lint-alias)-[A-Za-z0-9]{6}$/;
+async function canaryDirectory(prefix) {
+  const directory = await mkdtemp(join(root, prefix));
+  await writeFile(join(directory, canaryMarker), '');
+  return directory;
+}
+async function isStaleCanary(parent, entry) {
+  const directory = join(root, parent, entry);
+  if (!canaryName.test(entry) || !(await lstat(directory)).isDirectory()) return false;
+  if (!(await access(join(directory, canaryMarker)).then(() => true, () => false))) return false;
+  const tracked = spawnSync('git', ['ls-files', '--', `${parent}${entry}`], { cwd: root, encoding: 'utf8' });
+  return tracked.status === 0 && tracked.stdout === '';
+}
 const canaryParents = [
   ...typedPromiseProjects.map(sourceDirectory),
   'packages/components/src/',
@@ -34,8 +49,8 @@ before(async () => {
       if (error.code === 'ENOENT') return [];
       throw error;
     });
-    for (const entry of entries.filter((name) => /^(promise-canary|type-canary|lint-canary|lint-alias)-/.test(name))) {
-      await rm(join(root, parent, entry), { recursive: true, force: true });
+    for (const entry of entries) {
+      if (await isStaleCanary(parent, entry)) await rm(join(root, parent, entry), { recursive: true, force: true });
     }
   }
 });
@@ -111,9 +126,9 @@ test('existing findings do not hide changed defective source', () => {
 });
 
 test('the root lint command rejects new untracked source in shared packages', async () => {
-  const directory = await mkdtemp(join(root, 'packages/components/src/lint-canary-'));
+  const directory = await canaryDirectory('packages/components/src/lint-canary-');
   await mkdir(join(root, '.audit'), { recursive: true });
-  const aliasDirectory = await mkdtemp(join(root, '.audit/lint-alias-'));
+  const aliasDirectory = await canaryDirectory('.audit/lint-alias-');
   const alias = join(aliasDirectory, 'repository');
   await symlink(root, alias, 'junction');
   try {
@@ -139,8 +154,8 @@ test('the root lint command rejects new untracked source in shared packages', as
 
 test('package lint rejects new source and skips generated files in its workspace', async () => {
   await mkdir(join(root, 'apps/brain2print/dist'), { recursive: true });
-  const source = await mkdtemp(join(root, 'apps/brain2print/src/lint-canary-'));
-  const generated = await mkdtemp(join(root, 'apps/brain2print/dist/lint-canary-'));
+  const source = await canaryDirectory('apps/brain2print/src/lint-canary-');
+  const generated = await canaryDirectory('apps/brain2print/dist/lint-canary-');
   try {
     await writeFile(join(generated, 'ignored.js'), 'missingGeneratedBinding();\n');
     const clean = spawnSync('pnpm', ['--filter', 'brain2print', 'lint'], { cwd: root, encoding: 'utf8' });
@@ -196,7 +211,7 @@ test('each typed project checks new source, async callbacks and ignored promises
   try {
     for (const project of typedPromiseProjects) {
       const sources = sourceDirectory(project);
-      const directory = await mkdtemp(join(root, sources, 'promise-canary-'));
+      const directory = await canaryDirectory(`${sources}promise-canary-`);
       directories.push(directory);
       for (const [name, source] of cases) await writeFile(join(directory, name), source);
       const results = await eslint.lintFiles(cases.map(([name]) => join(directory, name)));
@@ -230,7 +245,7 @@ test('each typed project checks new source, async callbacks and ignored promises
 test('a typed project that does not compile fails the gate instead of typing promises as any', async () => {
   for (const project of typedPromiseProjects) {
     const { tsconfig } = project;
-    const directory = await mkdtemp(join(root, sourceDirectory(project), 'type-canary-'));
+    const directory = await canaryDirectory(`${sourceDirectory(project)}type-canary-`);
     try {
       const file = join(directory, 'unresolved.ts');
       await writeFile(file, 'import { load } from "./missing-module.js";\nexport function run() { load(); }\n');
