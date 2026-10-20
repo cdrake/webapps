@@ -193,7 +193,7 @@ function suite(engine) {
     test('the shell waits for an app that binds its input after starting its viewer', async () => {
       const { page } = await sentInTab(await fresh());
       const result = await page.evaluate(async () => {
-        // The shell's record of bound change listeners (app-shell.js), and an input bound late.
+        // The shell's record of bound change listeners (site/theme.js), and an input bound late.
         const bound = new WeakSet();
         window[Symbol.for('neurodesk.changeListeners')] = bound;
         document.getElementById('scan').remove();

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// DICOM View hands its converted image to White matter lesions on the built composite site,
+// DICOM View hands its converted image to White matter lesions, and through the shell's
+// receiver to Brain2Print, on the built composite site,
 // in every engine: once with isolation headers, as the hosted site sends them, and once
 // without, so each app's isolation service worker installs and reloads the page on its first
 // visit, the receiving page included. Pass engine names to limit the run.
@@ -86,6 +87,32 @@ async function handoff(engine, isolationHeaders) {
   }
 }
 
+// Brain2Print binds its input in its first module, which the build places before the shell's:
+// the shell receives the handoff once that handler is bound, not after its 60 s fallback.
+async function shellHandoff(engine) {
+  const site = await serveSite(siteDir, { isolationHeaders: true });
+  const profile = await mkdtemp(join(tmpdir(), `handoff-shell-${engine}-`));
+  const context = await { chromium, firefox, webkit }[engine].launchPersistentContext(profile, { args: launchArgs[engine] ?? [] });
+  try {
+    const page = context.pages()[0] ?? await context.newPage();
+    page.setDefaultTimeout(60000);
+    await page.goto(`${site.origin}/dicomview/`);
+    await page.waitForFunction(() => window.crossOriginIsolated && document.getElementById('dicomInput'));
+    await page.locator('#dicomInput').setInputFiles(dicomSeries({ series: 7, slices: 12 }).map(({ name, mimeType, buffer }) => ({ name, mimeType, buffer })));
+    const menu = page.getByRole('combobox', { name: 'Open in another webapp', exact: true });
+    await expect(menu.locator('option[value="brain2print"]')).toBeEnabled();
+    await menu.selectOption('brain2print');
+    await page.waitForURL(/\/brain2print\//);
+    const arrived = Date.now();
+    await expect(page.locator('#statusText')).toHaveText('series7_test_scan_7.nii loaded', { timeout: 30000 });
+    return (Date.now() - arrived) / 1000;
+  } finally {
+    await context.close();
+    await site.close();
+    await rm(profile, { recursive: true, force: true });
+  }
+}
+
 const failures = [];
 for (const engine of engines) {
   for (const isolationHeaders of [true, false]) {
@@ -97,6 +124,13 @@ for (const engine of engines) {
       failures.push(`${label}: ${error.message}`);
       console.error(`FAIL ${label}: ${error.message}`);
     }
+  }
+  try {
+    const seconds = await shellHandoff(engine);
+    console.log(`PASS ${engine}, shell receiver: Brain2Print loaded the image ${seconds.toFixed(1)} s after opening`);
+  } catch (error) {
+    failures.push(`${engine}, shell receiver: ${error.message}`);
+    console.error(`FAIL ${engine}, shell receiver: ${error.message}`);
   }
 }
 if (failures.length) {

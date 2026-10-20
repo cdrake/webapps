@@ -35,7 +35,7 @@ function inputAppears(document) {
 }
 
 // Whether a change on input reaches a handler of its app. Only known on a page the shell watched
-// from the start (app-shell.js); elsewhere the input is taken as handled.
+// from the start (site/theme.js); elsewhere the input is taken as handled.
 function handled(input) {
   const window = input.ownerDocument.defaultView;
   const bound = window[Symbol.for('neurodesk.changeListeners')];
