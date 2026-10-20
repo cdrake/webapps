@@ -1,6 +1,6 @@
 // Input size limits for apps that hold a whole image in memory, so a large input is
 // refused with a message instead of crashing the tab.
-import { readNiftiFileHeader } from './NiftiUtils.js';
+import { readNiftiHeader } from './NiftiUtils.js';
 
 /** The browser/WASM address-space ceiling: 2 GB across one input. */
 export const MAX_INPUT_BYTES = 2_000_000_000;
@@ -51,10 +51,10 @@ export function decodedFloat32Bytes(header) {
 
 /**
  * Refuses a NIfTI file whose decoded Float32 image is above the limit, from its header
- * alone: a .nii.gz is decompressed only as far as the header. Returns the decoded size.
+ * alone. Gzip streaming stops after the header when supported. Returns the decoded size.
  */
 export async function assertNiftiDecodedSize(file, limitBytes = MAX_INPUT_BYTES) {
-  const bytes = decodedFloat32Bytes(await readNiftiFileHeader(file));
+  const bytes = decodedFloat32Bytes(await readNiftiHeader(file));
   if (bytes > limitBytes) throw new InputTooLargeError(bytes, limitBytes, { subject: 'Decoded image' });
   return bytes;
 }

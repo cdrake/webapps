@@ -9,7 +9,7 @@ import {
   decodedFloat32Bytes,
   formatBytes,
   parseNiftiHeader,
-  readNiftiFileHeader
+  readNiftiHeader
 } from '../src/file-io/index.js';
 
 const DATATYPES = { int16: [4, 16], float32: [16, 32] };
@@ -42,7 +42,7 @@ test('the decoded estimate multiplies every frame of a 4D or 5D image', () => {
 test('a .nii.gz header is read without decompressing the image', async () => {
   const file = new File([gzipSync(nifti([32, 32, 16, 8], { type: 'int16', dataBytes: 32 * 32 * 16 * 8 * 2 }))], 'dwi.nii.gz');
   file.arrayBuffer = () => assert.fail('the whole file was read');
-  const header = await readNiftiFileHeader(file);
+  const header = await readNiftiHeader(file);
   assert.deepEqual(header.dims.slice(0, 5), [4, 32, 32, 16, 8]);
   assert.equal(await assertNiftiDecodedSize(file), 32 * 32 * 16 * 8 * 4);
 });
