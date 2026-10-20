@@ -21,4 +21,5 @@ export function isExpired(entry: Pick<HandoffEntry, 'createdAt'>, now?: number):
 export function appPath(baseURI: string): string;
 export function sweepHandoffs(): Promise<void>;
 export function sendHandoff(options: { target: string; source: HandoffSource; files: File[]; document?: Document; signal?: AbortSignal }): Promise<void>;
-export function takeHandoff(options?: { document?: Document }): Promise<{ source: HandoffSource; files: File[] } | null>;
+export function copiesInPieces(userAgent: string): boolean;
+export function takeHandoff(options?: { document?: Document; signal?: AbortSignal }): Promise<{ source: HandoffSource; files: File[] } | null>;
