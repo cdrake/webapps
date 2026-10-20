@@ -68,6 +68,8 @@
 
 - Cancel a pending shell handoff when the user chooses files, drops another input or starts an example. Stop the stored-file copy and input wait so an older handoff cannot replace the newer choice or its status.
 
+- Serialize ME-ICA previews and restore the previous image, overlay, frame and display window when an import fails or is cancelled. Replacement echoes clear stale echo times, superseded imports cannot replace newer inputs, and automation cancellation stops the processing worker. The shared queue retains the existing single-volume preview adapter.
+
 ## 0.16.3
 
 ### Patch Changes
