@@ -337,18 +337,22 @@ test('Knip and Stryker remain independent of app, native and browser inputs', as
 });
 
 test('ESLint stays out of every app build, unit test and browser test', async () => {
-  // Only the lint runner, the shared config and the lint coverage test load it.
+  // Only the lint runner, the shared config and the lint coverage test load
+  // ESLint, and nothing else loads the runner or the config.
+  const workspace = await graph;
+  const catalog = reachableFrom(workspace, CATALOG);
   const loaders = new Set(['scripts/lint.mjs', 'eslint.config.js', 'test/lint-coverage.test.mjs']);
-  const imports = /(?:from\s*|import\s*\(\s*|require\(\s*)['"](?:eslint|@eslint\/js|globals)(?:\/[^'"]*)?['"]/;
+  const imports = /(?:from\s*|import\s*\(\s*|require\(\s*)['"](?:(?:eslint|@eslint\/js|globals)(?:\/[^'"]*)?|[^'"]*\/(?:lint\.mjs|eslint\.config\.js))['"]|['"](?:[^'"]*\/)?scripts\/lint\.mjs['"]/;
   const sources = execFileSync('git', ['ls-files', '-z'], { cwd: repoRoot, encoding: 'utf8' })
     .split('\0').filter(path => /\.(?:[cm]?[jt]sx?)$/.test(path));
   for (const path of sources) {
-    if (loaders.has(path)) continue;
+    // Workspace ESLint configs re-export the root one; only ESLint loads them.
+    if (loaders.has(path) || /(?:^|\/)eslint\.config\.m?js$/.test(path)) continue;
+    // Contract tests run in workspace-contracts, unless a per-app job runs them.
+    if (path.startsWith('test/') && !catalog.has(path)) continue;
     assert.doesNotMatch(await readFile(join(repoRoot, path), 'utf8'), imports, `${path} loads ESLint; revisit INDEPENDENT_ROOT_DEV_DEPENDENCIES`);
   }
   // The per-app jobs run each app's build, test:e2e and release test script.
-  const workspace = await graph;
-  const catalog = reachableFrom(workspace, CATALOG);
   for (const path of loaders) assert.ok(!catalog.has(path), `ci.yml's per-app jobs run ${path}`);
   const ci = parse(await readFile(join(repoRoot, '.github/workflows/ci.yml'), 'utf8'));
   for (const name of [...CATALOG_JOBS, 'composite-site']) {
@@ -362,7 +366,7 @@ test('ESLint stays out of every app build, unit test and browser test', async ()
       const name = pending.pop();
       if (seen.has(name) || !scripts[name]) continue;
       seen.add(name);
-      assert.doesNotMatch(scripts[name], /\beslint\b/, `${app.id} ${name} runs ESLint`);
+      assert.doesNotMatch(scripts[name], /\beslint\b|scripts\/lint\.mjs|eslint\.config/, `${app.id} ${name} runs ESLint or its runner`);
       for (const [, next] of scripts[name].matchAll(/\b(?:pnpm|npm)(?: run)? ([\w:-]+)/g)) pending.push(next);
     }
   }
