@@ -219,6 +219,117 @@ function suite(engine) {
       assert.deepEqual(await page.evaluate(() => window.receive()), { title: 'DICOM View', names: ['scan.nii', 'scan.json'] });
     });
 
+    for (const stage of ['copy', 'handler']) {
+      for (const action of ['pick', 'example', 'drop']) {
+        test(`a newer ${action} supersedes the shell handoff during ${stage}`, async () => {
+          const { page } = await sentInTab(await fresh());
+          const result = await page.evaluate(async ({ stage, action, pieced }) => {
+            const input = document.getElementById('scan');
+            const held = Promise.withResolvers();
+            const reached = Promise.withResolvers();
+            const bound = new WeakSet();
+            if (stage === 'handler') window[Symbol.for('neurodesk.changeListeners')] = bound;
+            else if (pieced) {
+              const read = Blob.prototype.arrayBuffer;
+              Blob.prototype.arrayBuffer = function () {
+                reached.resolve();
+                return held.promise.then(() => read.call(this));
+              };
+            } else {
+              const stream = Blob.prototype.stream;
+              Blob.prototype.stream = function () {
+                return stream.call(this).pipeThrough(new TransformStream({
+                  transform: (chunk, controller) => {
+                    reached.resolve();
+                    return held.promise.then(() => controller.enqueue(chunk));
+                  },
+                }));
+              };
+            }
+            const receiving = window.receiveAsShell();
+            if (stage === 'copy') await reached.promise;
+            else await new Promise((resolve) => { setTimeout(resolve, 600); });
+            const chosen = new File(['new input'], `${action}.nii`);
+            let finishDrop;
+            if (action === 'drop') {
+              const { bindPageDrop } = await import('/ui/pageDrop.js');
+              bindPageDrop(document);
+              const transfer = new DataTransfer();
+              transfer.items.add(chosen);
+              DataTransferItem.prototype.webkitGetAsEntry = () => ({
+                isFile: true,
+                file: (done) => { finishDrop = () => done(chosen); },
+              });
+              document.body.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: transfer }));
+            } else {
+              const transfer = new DataTransfer();
+              transfer.items.add(chosen);
+              input.files = transfer.files;
+              input.dispatchEvent(action === 'pick'
+                ? new Event('change', { bubbles: true })
+                : new CustomEvent('nd-example-status', { bubbles: true, detail: { state: 'loading' } }));
+            }
+            held.resolve();
+            bound.add(input);
+            const received = await receiving;
+            finishDrop?.();
+            await new Promise((resolve) => { setTimeout(resolve, 25); });
+            return { received, files: [...input.files].map((file) => file.name), changed: window.changed };
+          }, { stage, action, pieced: engine === 'webkit' });
+          assert.equal(result.received, null, 'the older handoff is withdrawn');
+          assert.deepEqual(result.files, [`${action}.nii`]);
+          assert.deepEqual(result.changed, action === 'example' ? [] : [[`${action}.nii`]], 'only the newer choice reaches the app');
+          assert.deepEqual(await page.evaluate(() => window.keys()), []);
+          assert.deepEqual(await page.evaluate(() => window.secrets()), []);
+        });
+      }
+    }
+
+    test('an example supersedes the shell while its input has not been created', async () => {
+      const { page } = await sentInTab(await fresh());
+      const result = await page.evaluate(async () => {
+        document.getElementById('scan').remove();
+        const observing = Promise.withResolvers();
+        const observers = new Set();
+        const Native = window.MutationObserver;
+        window.MutationObserver = class extends Native {
+          observe(...args) {
+            observers.add(this);
+            observing.resolve();
+            return super.observe(...args);
+          }
+          disconnect() {
+            observers.delete(this);
+            return super.disconnect();
+          }
+        };
+        const receiving = window.receiveAsShell();
+        await observing.promise;
+        document.body.dispatchEvent(new CustomEvent('nd-example-status', { bubbles: true, detail: { state: 'loading' } }));
+        return { received: await receiving, observers: observers.size, changed: window.changed };
+      });
+      assert.deepEqual(result, { received: null, observers: 0, changed: [] });
+      assert.deepEqual(await page.evaluate(() => window.keys()), []);
+    });
+
+    test('an unrelated setting change does not withdraw the shell handoff', async () => {
+      const { page } = await sentInTab(await fresh());
+      const result = await page.evaluate(async () => {
+        const bound = new WeakSet();
+        window[Symbol.for('neurodesk.changeListeners')] = bound;
+        const receiving = window.receiveAsShell();
+        await new Promise((resolve) => { setTimeout(resolve, 200); });
+        const setting = document.createElement('select');
+        document.body.append(setting);
+        setting.dispatchEvent(new Event('change', { bubbles: true }));
+        document.body.dispatchEvent(new Event('drop', { bubbles: true }));
+        bound.add(document.getElementById('scan'));
+        return receiving;
+      });
+      assert.deepEqual(result, ['scan.nii', 'scan.json']);
+      assert.deepEqual(await page.evaluate(() => window.changed), [['scan.nii', 'scan.json']]);
+    });
+
     test('a taken image of several megabytes stays readable in a new worker after its entry is gone', async () => {
       const sender = await open(await fresh(), `/${SENDER}/`);
       const size = 8 * 1024 * 1024;
