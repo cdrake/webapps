@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { after, describe, test } from 'node:test';
+import { after, afterEach, describe, test as nodeTest } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import playwright from '@playwright/test';
 import { serveSite } from '../../../test-utils/serve-site.mjs';
@@ -15,6 +15,8 @@ const SENDER = 'dicomview';
 const RECEIVER = 'white-matter-lesions';
 const MINUTE = 60 * 1000;
 const GONE = 'The image sent from DICOM View is no longer available. Send it again.';
+// A test whose page never settles fails after a minute instead of hanging the run.
+const test = (name, options, fn) => (fn ? nodeTest(name, { timeout: MINUTE, ...options }, fn) : nodeTest(name, { timeout: MINUTE }, options));
 
 const fixture = `<!doctype html>
 <meta charset="utf-8">
@@ -120,16 +122,30 @@ async function sentInTab(context, hash = (value) => value) {
 
 const receiveError = (page, fail) => page.evaluate((shouldFail) => window.receive(shouldFail).then(() => null, (error) => error.message), fail);
 
-for (const engine of engines) {
-  describe(engine, () => {
-    let context;
-    after(async () => { await context?.close(); });
+// The engines run side by side; each engine's tests run one at a time.
+describe('handoff', { concurrency: true }, () => {
+  for (const engine of engines) suite(engine);
+});
 
-    // A profile on disk, as a normal window has: WebKit's ephemeral sessions, like Safari's
-    // private windows, refuse Blobs in IndexedDB (the last test covers that).
+function suite(engine) {
+  describe(engine, { concurrency: 1 }, () => {
+    let browser;
+    let context;
+    // Closing the context also ends the evaluations of a test that timed out.
+    afterEach(async () => { await context?.close(); });
+    after(async () => { await browser?.close(); });
+
+    // A fresh context in one browser, or a profile on disk where the test restarts the browser
+    // and in WebKit, whose ephemeral sessions, like Safari's private windows, refuse Blobs in
+    // IndexedDB (the last test covers that).
     async function fresh(profile) {
       await context?.close();
-      context = await playwright[engine].launchPersistentContext(profile ?? await mkdtemp(join(root, 'profile-')));
+      if (profile || engine === 'webkit') {
+        context = await playwright[engine].launchPersistentContext(profile ?? await mkdtemp(join(root, 'profile-')));
+      } else {
+        browser ??= await playwright[engine].launch();
+        context = await browser.newContext();
+      }
       return context;
     }
 
@@ -480,23 +496,18 @@ for (const engine of engines) {
 
     // An in-memory profile, as a private window or the desktop app's session has.
     test('a private window hands the image over, or, in WebKit, says it cannot and stays put', async () => {
-      await context?.close();
-      context = null;
-      const browser = await playwright[engine].launch();
-      try {
-        const sender = await open(await browser.newContext(), `/${SENDER}/`);
-        const outcome = await sender.evaluate(() => window.send().then((url) => url, (error) => error.message));
-        if (engine === 'webkit') {
-          assert.equal(outcome, 'This browser cannot pass the image on. Download the image instead.');
-          assert.equal(await sender.evaluate(() => window.assigned), undefined);
-          assert.deepEqual(await sender.evaluate(() => window.secrets()), []);
-        } else {
-          await visit(sender, outcome);
-          assert.deepEqual(await sender.evaluate(() => window.receive()), { title: 'DICOM View', names: ['scan.nii', 'scan.json'] });
-          assert.deepEqual(await sender.evaluate(() => window.keys()), []);
-        }
-      } finally {
-        await browser.close();
+      browser ??= await playwright[engine].launch();
+      context = await browser.newContext();
+      const sender = await open(context, `/${SENDER}/`);
+      const outcome = await sender.evaluate(() => window.send().then((url) => url, (error) => error.message));
+      if (engine === 'webkit') {
+        assert.equal(outcome, 'This browser cannot pass the image on. Download the image instead.');
+        assert.equal(await sender.evaluate(() => window.assigned), undefined);
+        assert.deepEqual(await sender.evaluate(() => window.secrets()), []);
+      } else {
+        await visit(sender, outcome);
+        assert.deepEqual(await sender.evaluate(() => window.receive()), { title: 'DICOM View', names: ['scan.nii', 'scan.json'] });
+        assert.deepEqual(await sender.evaluate(() => window.keys()), []);
       }
     });
   });
