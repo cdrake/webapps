@@ -311,6 +311,53 @@ test('reachability follows edges transitively from any node and stops at cycles'
   assert.deepEqual([...reachableFrom(cyclic, 'a')].sort(), ['a', 'b', 'c']);
 });
 
+test('root source references ignore only parsed whole-line // comments', async () => {
+  const sources = {
+    // Exercise the first line, later lines, spaces and tabs independently.
+    'line-comments.mjs': [
+      '// packages/runtime/index.mjs',
+      '  // registry/data.json',
+      '\t// scripts/helper.mjs',
+      ' \t // packages/runtime/index.mjs',
+      'export {};',
+    ].join('\n'),
+    'directive.ts': '/// <reference path="../packages/runtime/index.mjs" />\n',
+    'jsdoc.mjs': '/** @type {import("../packages/runtime/index.mjs").Value} */\nexport {};\n',
+    'block.mjs': '/*\n// packages/runtime/index.mjs\n*/\n',
+    'block-close.mjs': '/*\n// */ export { value } from "../packages/runtime/index.mjs";\n',
+    'inline.mjs': 'export {}; // packages/runtime/index.mjs\n',
+    'template.mjs': 'export const path = `\n// packages/runtime/index.mjs\n`;\n',
+    'continued-string.mjs': "export const path = '\\\n// packages/runtime/index.mjs';\n",
+    'unparsed.mjs': 'const invalid = ;\n// packages/runtime/index.mjs\n',
+    // An angle assertion parses as TypeScript, but not as JavaScript.
+    'type-assertion.mjs': 'const value = <string>input;\n// packages/runtime/index.mjs\n',
+    'type-assertion.ts': 'const value = <string>input;\n// packages/runtime/index.mjs\n',
+    // In a module, await needs an operand and may await a regular expression.
+    'await-identifier.mjs': 'await;\n// packages/runtime/index.mjs\n',
+    'await-regex.mjs': 'await /fixture/;\n// packages/runtime/index.mjs\n',
+    'commented-import.mjs': "import { value } from\n// Read the workspace package.\n'@nd/runtime';\n",
+  };
+  const root = await fixture({
+    'package.json': json({ scripts: {} }),
+    '.github/workflows/ci.yml': stringify(jobs(Object.fromEntries(['composite-site', ...CATALOG_JOBS].map((name) => [name, ['echo fixture']])))),
+    'apps/alpha/main.js': Object.keys(sources).map((name) => `import '../../scripts/${name}';`).join('\n'),
+    'packages/runtime/package.json': json({ name: '@nd/runtime' }),
+    'packages/runtime/index.mjs': 'export const value = 1;\n',
+    'registry/data.json': '{}\n',
+    'scripts/helper.mjs': 'export {};\n',
+    ...Object.fromEntries(Object.entries(sources).map(([name, source]) => [`scripts/${name}`, source])),
+  });
+  const graph = await loadConservativeWorkspaceGraph(root);
+  const strippedReferences = new Set(['line-comments.mjs', 'type-assertion.ts', 'await-regex.mjs']);
+  for (const name of Object.keys(sources)) {
+    const file = `scripts/${name}`;
+    const expected = strippedReferences.has(name) ? []
+      : [name === 'commented-import.mjs' ? 'packages/runtime' : 'packages/runtime/index.mjs'];
+    assert.deepEqual([...graph.edges.get(file)].sort(), expected, name);
+    assert.deepEqual([...reachableFrom(graph, file)].sort(), [...expected, file].sort(), name);
+  }
+});
+
 test('a missing or step-less CI job is a configuration error naming the job', async () => {
   const root = await fixture({ 'package.json': ROOT_PACKAGE });
   const variants = [['missing', undefined], ['empty', { steps: [] }], ['not a list', { steps: { run: 'x' } }], ['reusable', { uses: './reusable.yml' }]];

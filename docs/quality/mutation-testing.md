@@ -30,7 +30,7 @@ plans releases with Changesets on a workspace; `test/app-versions.test.mjs`
 keeps covering that part. The two Carotid Flow modules share one suite of small
 in-memory NIfTI files. `packages/carotid-flow/test/node.test.js` runs the command
 line on the phantom and is not part of this run. The workspace graph's suite
-builds one fixture tree with a case for each path rule; `test/app-plan.test.mjs`
+builds small fixture trees for path rules and comment parsing; `test/app-plan.test.mjs`
 reads the whole repository and stays out of the run.
 `test/mutation-quality.test.mjs`
 fails when a range no longer covers exactly its functions or the name pattern
@@ -114,6 +114,32 @@ minutes locally; add a module only with its own completed run and a measured
 cost.
 
 ## Results and reviewed survivors
+
+The 2026-10-20 workspace-graph comment fixtures cover whole-line comments,
+preserved directives, block/JSDoc and inline comments, comment-looking string
+and template lines, and parser-rejected source. Paired JavaScript/TypeScript
+and top-level-await cases keep parsing sensitive to the filename and module
+mode. A comment between `from` and a bare workspace specifier must leave
+whitespace, not text that hides the import.
+
+The module-only run on main assessed 393 mutants: 351 killed, 8 timed out and
+34 survived. With the fixtures it kills 368, with the same 8 timeouts and 17
+survivors (95.67% detected). Neither run has uncovered mutants or compile or
+runtime errors. Comment parsing previously had coverage only in
+`test/app-plan.test.mjs`, outside this module's sandbox. Production graph
+behavior, CI selection and scientific gates are unchanged. Rerun with
+`MUTATION_MODULE=workspace-graph pnpm exec stryker run
+stryker.config.mjs`.
+
+The three remaining comment-parsing mutants are equivalent:
+
+- `workspace-graph.mjs:44`, dropping `$` from `LINE_COMMENT`: the greedy `.*`
+  already ends at the line terminator or end of the input.
+- `workspace-graph.mjs:79`, removing the `Line` filter or making it always true:
+  the extra block-comment ranges start at `/*`, never at the `//` offset checked
+  by the replacement callback.
+
+The other 14 workspace-graph survivors are the previously reviewed cases below.
 
 The 2026-10-17 package-metadata correction assesses 195 lockfile-analyzer mutants,
 with 178 killed, 7 timed out and 10 survivors. No mutants are uncovered or have
