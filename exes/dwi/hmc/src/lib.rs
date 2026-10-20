@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Head-motion correction for diffusion series.
 //!
+//! [`clip`] is NiFreeze's intensity clip before registration, ported with its in-place quirk.
+//!
 //! The first part is [`ItkAffine`]: the ITK MATLAB transform file that `antsRegistration` writes
 //! (`*0GenericAffine.mat`). This is original code written from the file format, not a port. The
 //! layout was read from ITK 5.4's `itkMatlabTransformIO.cxx` and VNL's `vnl_matlab_write.cxx`, and
@@ -17,6 +19,8 @@
 //! NUL), the NUL-terminated name and the values. The type is 0 (little-endian double) or 10
 //! (little-endian single); ANTs writes in the machine's byte order, so big-endian files (1000,
 //! 1010) are read as well. Every coordinate is LPS, as in ITK.
+
+pub mod clip;
 
 use std::fmt;
 
