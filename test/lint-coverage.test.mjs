@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { access, lstat, mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { lstat, mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import test, { before } from 'node:test';
 import { ESLint } from 'eslint';
@@ -21,18 +21,27 @@ const eslint = new ESLint({ cwd: root, overrideConfigFile: join(root, 'eslint.co
 
 // Each canary is removed in a finally block, which a killed run never reaches. Its
 // leftovers are untracked source that would fail every later lint, so remove them
-// first: only untracked mkdtemp directories that carry this test's marker.
+// first: only untracked mkdtemp directories whose marker names a process that has ended.
 const canaryMarker = '.lint-coverage-canary';
 const canaryName = /^(promise-canary|type-canary|lint-canary|lint-alias)-[A-Za-z0-9]{6}$/;
 async function canaryDirectory(prefix) {
   const directory = await mkdtemp(join(root, prefix));
-  await writeFile(join(directory, canaryMarker), '');
+  await writeFile(join(directory, canaryMarker), `${process.pid}\n`);
   return directory;
 }
+const isRunning = (pid) => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error.code === 'EPERM';
+  }
+};
 async function isStaleCanary(parent, entry) {
   const directory = join(root, parent, entry);
   if (!canaryName.test(entry) || !(await lstat(directory)).isDirectory()) return false;
-  if (!(await access(join(directory, canaryMarker)).then(() => true, () => false))) return false;
+  const owner = Number(await readFile(join(directory, canaryMarker), 'utf8').catch(() => ''));
+  if (!Number.isInteger(owner) || owner <= 0 || isRunning(owner)) return false;
   const tracked = spawnSync('git', ['ls-files', '--', `${parent}${entry}`], { cwd: root, encoding: 'utf8' });
   return tracked.status === 0 && tracked.stdout === '';
 }
