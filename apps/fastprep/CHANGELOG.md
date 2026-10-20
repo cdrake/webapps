@@ -5,6 +5,11 @@
 ### Patch Changes
 
 - Updated dependencies
+  - @neurodesk/webapp-components@0.17.2
+  - @neurodesk/runtime-support@0.9.6
+  - @neurodesk/synthsr@0.6.20261020
+  - @neurodesk/greedy@0.6.20261020
+- Updated dependencies
   - @neurodesk/runtime-support@0.9.5
   - @neurodesk/webapp-components@0.17.1
   - @neurodesk/synthsr@0.6.20261020
@@ -12,8 +17,6 @@
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
-
-- Updated dependencies [c865c0c]
 
 - Updated dependencies [4b40da1]
 
@@ -59,6 +62,8 @@
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/synthsr@0.6.20261020
   - @neurodesk/greedy@0.6.20261020
+
+- Updated dependencies [c865c0c]
 
 - Updated dependencies [d1fa022]
   - @neurodesk/webapp-components@0.16.3
@@ -193,6 +198,7 @@
   - @neurodesk/greedy@0.5.20261018
 
 - Updated dependencies [67a5a8f]
+
   - @neurodesk/runtime-support@0.7.0
   - @neurodesk/webapp-components@0.14.4
   - @neurodesk/synthsr@0.6.20261018

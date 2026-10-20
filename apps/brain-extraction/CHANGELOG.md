@@ -16,6 +16,16 @@
 
 ### Patch Changes
 
+- NiiVue moves to 1.0.0-rc.26 in Brain Extraction, Carotid Flow, SYNcro, SynthSeg, White Matter Lesions, and, through the shared FreeBrowse viewer, Spinal Cord Toolbox, DICOM View and TopoFit. From rc.25, NiiVue places a loaded drawing on the right voxels of a sagittal or otherwise permuted image (niivue/mono#251), so the mask editor no longer probes and reverses NiiVue's load on opening a mask. Opening a mask for editing now takes one load instead of up to five on such images. MuscleMap, SeedSeg and VesselBoost run NiiVue 0.68, which already loaded drawings correctly; they pick up the simpler editor.
+
+  From rc.22 NiiVue renders with WebGL2 by default, so the five apps that pinned rc.11 or rc.14 draw their viewer with WebGL2 even where WebGPU is available; segmentation and other processing keep their own WebGPU backends.
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.2
+  - @neurodesk/runtime-support@0.9.6
+  - @neurodesk/synthsr@0.6.20261020
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/brain-extraction@0.4.20261020
 - Updated dependencies
   - @neurodesk/runtime-support@0.9.5
   - @neurodesk/webapp-components@0.17.1
@@ -25,8 +35,6 @@
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
-
-- Updated dependencies [c865c0c]
 
 - Updated dependencies [4b40da1]
 
@@ -75,6 +83,8 @@
   - @neurodesk/synthsr@0.6.20261020
   - @neurodesk/synthstrip@0.1.5
   - @neurodesk/brain-extraction@0.4.20261020
+
+- Updated dependencies [c865c0c]
 
 - Updated dependencies [657c330]
 
@@ -192,6 +202,7 @@
   - @neurodesk/brain-extraction@0.4.20261018
 
 - Updated dependencies [b68209b]
+
   - @neurodesk/webapp-components@0.15.0
   - @neurodesk/runtime-support@0.7.1
   - @neurodesk/synthsr@0.6.20261018
@@ -237,6 +248,7 @@
   - @neurodesk/brain-extraction@0.4.20261016
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.14.2
   - @neurodesk/runtime-support@0.6.3
   - @neurodesk/synthsr@0.6.20261016
@@ -294,6 +306,7 @@
   - @neurodesk/brain-extraction@0.4.20261015
 
 - Updated dependencies [dcc74e7]
+
   - @neurodesk/runtime-support@0.6.0
   - @neurodesk/webapp-components@0.14.0
   - @neurodesk/synthsr@0.6.20261015
@@ -349,6 +362,7 @@
   - @neurodesk/synthstrip@0.1.5
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.12.2
   - @neurodesk/runtime-support@0.4.2
   - @neurodesk/synthsr@0.6.20261010
@@ -415,6 +429,7 @@
   - @neurodesk/brain-extraction@0.1.23
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.11.0
   - @neurodesk/runtime-support@0.2.0
   - @neurodesk/synthsr@0.6.20261007
@@ -485,6 +500,7 @@
   - @neurodesk/brain-extraction@0.1.17
 
 - Updated dependencies [257192b]
+
   - @neurodesk/synthsr@0.6.20261004
   - @neurodesk/synthstrip@0.1.1
   - @neurodesk/runtime-support@0.1.3
@@ -518,6 +534,7 @@
   - @neurodesk/brain-extraction@0.1.12
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.7.0
   - @neurodesk/synthsr@0.5.20260930
   - @neurodesk/brain-extraction@0.1.13
@@ -547,6 +564,7 @@
   - @neurodesk/brain-extraction@0.1.10
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.6.1
   - @neurodesk/synthsr@0.5.20260928
   - @neurodesk/brain-extraction@0.1.11
@@ -624,6 +642,7 @@
   - @neurodesk/brain-extraction@0.1.6
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.4.3
   - @neurodesk/synthsr@0.4.20260920
   - @neurodesk/brain-extraction@0.1.5
@@ -653,6 +672,7 @@
   - @neurodesk/brain-extraction@0.1.2
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.3.1
 
 ## 0.1.20260916

@@ -5,13 +5,14 @@
 ### Patch Changes
 
 - Updated dependencies
+  - @neurodesk/webapp-components@0.17.2
+  - @neurodesk/synthsr@0.6.20261020
+- Updated dependencies
   - @neurodesk/webapp-components@0.17.1
   - @neurodesk/synthsr@0.6.20261020
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
-
-- Updated dependencies [c865c0c]
 
 - Updated dependencies [4b40da1]
 
@@ -39,6 +40,8 @@
 
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/synthsr@0.6.20261020
+
+- Updated dependencies [c865c0c]
 
 - Updated dependencies [d1fa022]
   - @neurodesk/webapp-components@0.16.3
@@ -112,6 +115,7 @@
   - @neurodesk/synthsr@0.6.20261018
 
 - Updated dependencies [b68209b]
+
   - @neurodesk/webapp-components@0.15.0
   - @neurodesk/synthsr@0.6.20261018
 
@@ -138,6 +142,7 @@
   - @neurodesk/synthsr@0.6.20261016
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.14.2
   - @neurodesk/synthsr@0.6.20261016
 
@@ -159,6 +164,7 @@
   - @neurodesk/synthsr@0.6.20261015
 
 - Updated dependencies [dcc74e7]
+
   - @neurodesk/webapp-components@0.14.0
   - @neurodesk/synthsr@0.6.20261015
 

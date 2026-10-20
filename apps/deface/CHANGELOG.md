@@ -5,14 +5,16 @@
 ### Patch Changes
 
 - Updated dependencies
+  - @neurodesk/webapp-components@0.17.2
+  - @neurodesk/runtime-support@0.9.6
+  - @neurodesk/deface@1.4.20261020
+- Updated dependencies
   - @neurodesk/runtime-support@0.9.5
   - @neurodesk/webapp-components@0.17.1
   - @neurodesk/deface@1.4.20261020
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
-
-- Updated dependencies [c865c0c]
 
 - Updated dependencies [4b40da1]
 
@@ -62,6 +64,8 @@
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/deface@1.4.20261020
+
+- Updated dependencies [c865c0c]
 
 - Updated dependencies [d1fa022]
   - @neurodesk/webapp-components@0.16.3
@@ -182,6 +186,7 @@
   - @neurodesk/deface@1.4.20261018
 
 - Updated dependencies [b68209b]
+
   - @neurodesk/webapp-components@0.15.0
   - @neurodesk/runtime-support@0.7.1
   - @neurodesk/deface@1.4.20261018
@@ -212,6 +217,7 @@
   - @neurodesk/runtime-support@0.6.2
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.14.2
   - @neurodesk/runtime-support@0.6.3
   - @neurodesk/deface@1.4.20261016
@@ -274,6 +280,7 @@
   - @neurodesk/deface@1.4.20261015
 
 - Updated dependencies [a1a9b25]
+
   - @neurodesk/deface@1.4.20261015
 
 ## 1.3.20261014
@@ -316,6 +323,7 @@
   - @neurodesk/webapp-components@0.12.1
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.12.2
   - @neurodesk/runtime-support@0.4.2
 
@@ -355,6 +363,7 @@
   - @neurodesk/runtime-support@0.2.1
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.11.0
   - @neurodesk/runtime-support@0.2.0
 
@@ -389,6 +398,7 @@
   - @neurodesk/webapp-components@0.10.0
 
 - Updated dependencies [257192b]
+
   - @neurodesk/runtime-support@0.1.3
 
 ## 1.3.20261003
@@ -413,6 +423,7 @@
   - @neurodesk/webapp-components@0.6.2
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.7.0
 
 ## 1.3.20260928
@@ -436,6 +447,7 @@
   - @neurodesk/webapp-components@0.6.0
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.6.1
 
 ### Minor Changes
@@ -493,6 +505,7 @@
   - @neurodesk/webapp-components@0.4.4
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.4.3
 
 ## 1.2.20260918
@@ -539,6 +552,7 @@
   - @neurodesk/webapp-components@0.2.2
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.1
 
 ### Minor Changes
@@ -561,6 +575,7 @@
   - @neurodesk/webapp-components@0.1.4
 
 - Updated dependencies [4add8da]
+
   - @neurodesk/webapp-components@0.1.5
   - @neurodesk/runtime-support@0.1.2
 

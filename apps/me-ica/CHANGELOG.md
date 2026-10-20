@@ -9,6 +9,8 @@
 ### Patch Changes
 
 - Updated dependencies
+  - @neurodesk/webapp-components@0.17.2
+- Updated dependencies
   - @neurodesk/webapp-components@0.17.1
 - Exclude ME-ICA from single-image handoffs because processing requires the multi-echo image bundle and timing metadata.
 

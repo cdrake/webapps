@@ -5,6 +5,8 @@
 ### Patch Changes
 
 - Updated dependencies
+  - @neurodesk/runtime-support@0.9.6
+- Updated dependencies
   - @neurodesk/runtime-support@0.9.5
 - @neurodesk/runtime-support@0.9.4
 
@@ -77,6 +79,7 @@
   - @neurodesk/runtime-support@0.7.2
 
 - Updated dependencies [b68209b]
+
   - @neurodesk/runtime-support@0.7.1
 
 ## 1.4.20261017
@@ -96,6 +99,7 @@
 - @neurodesk/runtime-support@0.6.2
 
 - Updated dependencies
+
   - @neurodesk/runtime-support@0.6.3
 
 ## 1.4.20261015
@@ -125,4 +129,5 @@
   - @neurodesk/runtime-support@0.6.0
 
 - Updated dependencies [c74b26f]
+
   - @neurodesk/runtime-support@0.6.1

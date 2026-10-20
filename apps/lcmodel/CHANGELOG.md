@@ -5,14 +5,16 @@
 ### Patch Changes
 
 - Updated dependencies
+  - @neurodesk/webapp-components@0.17.2
+  - @neurodesk/runtime-support@0.9.6
+  - @neurodesk/lcmodel@0.8.20261020
+- Updated dependencies
   - @neurodesk/runtime-support@0.9.5
   - @neurodesk/webapp-components@0.17.1
   - @neurodesk/lcmodel@0.8.20261020
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
-
-- Updated dependencies [c865c0c]
 
 - Updated dependencies [4b40da1]
 
@@ -47,6 +49,8 @@
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/lcmodel@0.8.20261020
+
+- Updated dependencies [c865c0c]
 
 - Updated dependencies [d1fa022]
   - @neurodesk/webapp-components@0.16.3
@@ -140,6 +144,7 @@
   - @neurodesk/lcmodel@0.8.20261018
 
 - Updated dependencies [b68209b]
+
   - @neurodesk/webapp-components@0.15.0
   - @neurodesk/runtime-support@0.7.1
   - @neurodesk/lcmodel@0.8.20261018
@@ -172,6 +177,7 @@
   - @neurodesk/runtime-support@0.6.2
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.14.2
   - @neurodesk/runtime-support@0.6.3
   - @neurodesk/lcmodel@0.8.20261016
@@ -227,6 +233,7 @@
   - @neurodesk/lcmodel@0.8.20261015
 
 - Updated dependencies [e59305a]
+
   - @neurodesk/lcmodel@0.8.20261015
 
 ## 0.8.20261014
@@ -277,6 +284,7 @@
   - @neurodesk/lcmodel@0.8.20261013
 
 - 36d64d0: Reject imports that mix LCModel RAW and vendor spectra before replacing the current session or fit. Continue allowing RAW spectra with anatomical images.
+
   - @neurodesk/lcmodel@0.8.20261013
 
 ## 0.8.20261012
@@ -316,6 +324,7 @@
   - @neurodesk/lcmodel@0.8.20261012
 
 - Updated dependencies
+
   - @neurodesk/lcmodel@0.8.20261012
   - @neurodesk/webapp-components@0.12.3
   - @neurodesk/runtime-support@0.4.3
@@ -366,6 +375,7 @@
   - @neurodesk/lcmodel@0.7.20261012
 
 - Updated dependencies [8321cb9]
+
   - @neurodesk/lcmodel@0.7.20261012
 
 ## 0.7.20261010
@@ -389,6 +399,7 @@
   - @neurodesk/webapp-components@0.12.1
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.12.2
   - @neurodesk/runtime-support@0.4.2
   - @neurodesk/lcmodel@0.7.20261010
@@ -458,6 +469,7 @@
   - @neurodesk/runtime-support@0.2.0
 
 - Updated dependencies
+
   - @neurodesk/lcmodel@0.3.2
 
 ## 0.5.20261005
@@ -497,6 +509,7 @@
   - @neurodesk/webapp-components@0.10.0
 
 - Updated dependencies [257192b]
+
   - @neurodesk/runtime-support@0.1.3
 
 ## 0.5.20261003

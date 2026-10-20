@@ -4,14 +4,19 @@
 
 ### Patch Changes
 
+- NiiVue moves to 1.0.0-rc.26 in Brain Extraction, Carotid Flow, SYNcro, SynthSeg, White Matter Lesions, and, through the shared FreeBrowse viewer, Spinal Cord Toolbox, DICOM View and TopoFit. From rc.25, NiiVue places a loaded drawing on the right voxels of a sagittal or otherwise permuted image (niivue/mono#251), so the mask editor no longer probes and reverses NiiVue's load on opening a mask. Opening a mask for editing now takes one load instead of up to five on such images. MuscleMap, SeedSeg and VesselBoost run NiiVue 0.68, which already loaded drawings correctly; they pick up the simpler editor.
+
+  From rc.22 NiiVue renders with WebGL2 by default, so the five apps that pinned rc.11 or rc.14 draw their viewer with WebGL2 even where WebGPU is available; segmentation and other processing keep their own WebGPU backends.
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.2
+  - @neurodesk/musclemap@1.5.20261020
 - Updated dependencies
   - @neurodesk/webapp-components@0.17.1
   - @neurodesk/musclemap@1.5.20261020
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
-
-- Updated dependencies [c865c0c]
 
 - Updated dependencies [4b40da1]
 
@@ -37,6 +42,8 @@
 
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/musclemap@1.5.20261020
+
+- Updated dependencies [c865c0c]
 
 - Updated dependencies [d9718cd]
   - @neurodesk/webapp-components@0.16.3
@@ -103,6 +110,7 @@
   - @neurodesk/musclemap@1.5.20261018
 
 - Updated dependencies [b68209b]
+
   - @neurodesk/webapp-components@0.15.0
   - @neurodesk/musclemap@1.5.20261018
 
@@ -131,6 +139,7 @@
   - @neurodesk/musclemap@1.5.20261016
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.14.2
   - @neurodesk/musclemap@1.5.20261016
 
@@ -220,6 +229,7 @@
   - @neurodesk/musclemap@1.5.20261010
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.12.2
   - @neurodesk/musclemap@1.5.20261010
 
@@ -238,6 +248,7 @@
   - @neurodesk/webapp-components@0.1.4
 
 - Updated dependencies [4add8da]
+
   - @neurodesk/webapp-components@0.1.5
 
 ## 1.5.20260910
@@ -291,6 +302,7 @@
   - @neurodesk/webapp-components@0.11.1
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.11.0
 
 ## 1.4.20261004
@@ -320,6 +332,7 @@
   - @neurodesk/webapp-components@0.10.1
 
 - Updated dependencies [ec85a09]
+
   - @neurodesk/webapp-components@0.10.0
 
 ## 1.4.20261003
@@ -344,6 +357,7 @@
   - @neurodesk/webapp-components@0.6.2
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.7.0
 
 ## 1.4.20260928
@@ -377,6 +391,7 @@
   - @neurodesk/webapp-components@0.6.1
 
 - Updated dependencies [93381e8]
+
   - @neurodesk/webapp-components@0.6.0
 
 ### Minor Changes
@@ -427,6 +442,7 @@
   - @neurodesk/webapp-components@0.4.4
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.4.3
 
 ## 1.4.20260918
@@ -450,6 +466,7 @@
   - @neurodesk/webapp-components@0.3.1
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.4.1
 
 ## 1.4.20260916
@@ -490,6 +507,7 @@
   - @neurodesk/webapp-components@0.2.1
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.0
 
 ### Minor Changes

@@ -5,13 +5,14 @@
 ### Patch Changes
 
 - Updated dependencies
+  - @neurodesk/webapp-components@0.17.2
+  - @neurodesk/dicom2vid@0.5.20261020
+- Updated dependencies
   - @neurodesk/webapp-components@0.17.1
   - @neurodesk/dicom2vid@0.5.20261020
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
-
-- Updated dependencies [c865c0c]
 
 - Updated dependencies [4b40da1]
 
@@ -37,6 +38,8 @@
 
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/dicom2vid@0.5.20261020
+
+- Updated dependencies [c865c0c]
 
 - Updated dependencies [d9718cd]
   - @neurodesk/webapp-components@0.16.3
@@ -105,6 +108,7 @@
   - @neurodesk/dicom2vid@0.5.20261018
 
 - Updated dependencies [b68209b]
+
   - @neurodesk/webapp-components@0.15.0
   - @neurodesk/dicom2vid@0.5.20261018
 
@@ -131,6 +135,7 @@
   - @neurodesk/dicom2vid@0.5.20261016
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.14.2
   - @neurodesk/dicom2vid@0.5.20261016
 

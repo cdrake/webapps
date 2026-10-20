@@ -14,6 +14,8 @@
 - @neurodesk/synthsr@0.6.20261020
 - @neurodesk/synthstrip@0.1.5
 - @neurodesk/synthsr@0.6.20261020
+- @neurodesk/synthstrip@0.1.5
+- @neurodesk/synthsr@0.6.20261020
 
 - @neurodesk/synthstrip@0.1.5
 

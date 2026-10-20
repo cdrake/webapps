@@ -5,13 +5,14 @@
 ### Patch Changes
 
 - Updated dependencies
+  - @neurodesk/webapp-components@0.17.2
+  - @neurodesk/easy-mp2rage@0.8.20261020
+- Updated dependencies
   - @neurodesk/webapp-components@0.17.1
   - @neurodesk/easy-mp2rage@0.8.20261020
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
-
-- Updated dependencies [c865c0c]
 
 - Updated dependencies [4b40da1]
 
@@ -37,6 +38,8 @@
 
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/easy-mp2rage@0.8.20261020
+
+- Updated dependencies [c865c0c]
 
 - Updated dependencies [d9718cd]
   - @neurodesk/webapp-components@0.16.3
@@ -103,6 +106,7 @@
   - @neurodesk/easy-mp2rage@0.8.20261018
 
 - Updated dependencies [b68209b]
+
   - @neurodesk/webapp-components@0.15.0
   - @neurodesk/easy-mp2rage@0.8.20261018
 
@@ -129,6 +133,7 @@
   - @neurodesk/easy-mp2rage@0.8.20261016
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.14.2
   - @neurodesk/easy-mp2rage@0.8.20261016
 
@@ -194,6 +199,7 @@
   - @neurodesk/easy-mp2rage@0.8.20261010
 
 - Declare workspace dependencies without expanding SYNcro portable runtime installations. Mark dicompare type imports explicitly and separate the unchanged NeSVoR reference validator from worker orchestration to remove dependency cycles.
+
   - @neurodesk/easy-mp2rage@0.8.20261010
 
 ## 0.7.20261010

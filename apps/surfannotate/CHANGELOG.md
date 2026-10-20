@@ -5,12 +5,12 @@
 ### Patch Changes
 
 - Updated dependencies
+  - @neurodesk/webapp-components@0.17.2
+- Updated dependencies
   - @neurodesk/webapp-components@0.17.1
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
-
-- Updated dependencies [c865c0c]
 
 - Updated dependencies [4b40da1]
 
@@ -33,6 +33,8 @@
 - Updated dependencies [46935f7]
 
   - @neurodesk/webapp-components@0.16.0
+
+- Updated dependencies [c865c0c]
 
 - Updated dependencies [d9718cd]
   - @neurodesk/webapp-components@0.16.3
@@ -90,6 +92,7 @@
   - @neurodesk/webapp-components@0.15.1
 
 - Updated dependencies [b68209b]
+
   - @neurodesk/webapp-components@0.15.0
 
 ## 0.6.20261017
@@ -112,6 +115,7 @@
   - @neurodesk/webapp-components@0.14.1
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.14.2
 
 ## 0.6.20261015
@@ -169,6 +173,7 @@
   - @neurodesk/webapp-components@0.12.1
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.12.2
 
 ## 0.6.20261009
@@ -201,6 +206,7 @@
   - @neurodesk/webapp-components@0.11.1
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.11.0
 
 ## 0.6.20261004
@@ -226,6 +232,7 @@
   - @neurodesk/webapp-components@0.10.1
 
 - Updated dependencies [ec85a09]
+
   - @neurodesk/webapp-components@0.10.0
 
 ## 0.6.20261003
@@ -250,6 +257,7 @@
   - @neurodesk/webapp-components@0.6.2
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.7.0
 
 ## 0.6.20260928
@@ -273,6 +281,7 @@
   - @neurodesk/webapp-components@0.6.0
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.6.1
 
 ### Minor Changes
@@ -328,6 +337,7 @@
   - @neurodesk/webapp-components@0.4.4
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.4.3
 
 ## 0.5.20260918
@@ -380,6 +390,7 @@
   - @neurodesk/webapp-components@0.2.2
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.1
 
 ### Minor Changes
@@ -401,6 +412,7 @@
   - @neurodesk/webapp-components@0.1.4
 
 - Updated dependencies [4add8da]
+
   - @neurodesk/webapp-components@0.1.5
 
 ## 0.3.20260910

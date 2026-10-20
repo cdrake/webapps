@@ -25,14 +25,12 @@
 ### Patch Changes
 
 - Updated dependencies
-  - @neurodesk/runtime-support@0.9.5
-  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/webapp-components@0.17.2
+  - @neurodesk/runtime-support@0.9.6
   - @neurodesk/greedy@0.6.20261020
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
-
-- Updated dependencies [c865c0c]
 
 - Updated dependencies [4b40da1]
 
@@ -72,9 +70,28 @@
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/greedy@0.6.20261020
 
+- Updated dependencies [c865c0c]
+
 - Updated dependencies [d1fa022]
+
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/greedy@0.6.20261020
+
+- Updated dependencies
+  - @neurodesk/runtime-support@0.9.5
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/greedy@0.6.20261020
+- Updated dependencies [14db080]
+
+- Updated dependencies [4b40da1]
+
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/runtime-support@0.9.4
+  - @neurodesk/greedy@0.6.20261020
+
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/runtime-support@0.8.0
   - @neurodesk/greedy@0.6.20261020
 
 ## 0.6.20261019
@@ -150,13 +167,26 @@
   - @neurodesk/greedy@0.6.20261018
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/runtime-support@0.9.0
   - @neurodesk/webapp-components@0.16.1
+  - @neurodesk/greedy@0.6.20261018
+
+- Updated dependencies [3329c39]
+
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/runtime-support@0.8.0
   - @neurodesk/greedy@0.6.20261018
 
 ## 0.5.20261018
 
 ### Patch Changes
+
+- Updated dependencies [b67e4e9]
+
+  - @neurodesk/runtime-support@0.7.2
+  - @neurodesk/webapp-components@0.15.1
+  - @neurodesk/greedy@0.5.20261018
 
 - Updated dependencies [b68209b]
 
@@ -178,21 +208,20 @@
   - @neurodesk/webapp-components@0.14.4
   - @neurodesk/greedy@0.5.20261018
 
-- Updated dependencies [b67e4e9]
-
-  - @neurodesk/runtime-support@0.7.2
-  - @neurodesk/webapp-components@0.15.1
-  - @neurodesk/greedy@0.5.20261018
-
 - Updated dependencies [b68209b]
 
   - @neurodesk/webapp-components@0.15.0
   - @neurodesk/runtime-support@0.7.1
   - @neurodesk/greedy@0.5.20261018
 
-- Updated dependencies [67a5a8f]
   - @neurodesk/runtime-support@0.7.0
   - @neurodesk/webapp-components@0.14.4
+  - @neurodesk/greedy@0.5.20261018
+
+- Updated dependencies [b67e4e9]
+
+  - @neurodesk/runtime-support@0.7.2
+  - @neurodesk/webapp-components@0.15.1
   - @neurodesk/greedy@0.5.20261018
 
 ## 0.5.20261017
@@ -221,8 +250,15 @@
   - @neurodesk/greedy@0.5.20261016
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.14.2
   - @neurodesk/runtime-support@0.6.3
+  - @neurodesk/greedy@0.5.20261016
+
+- Updated dependencies [7443048]
+
+  - @neurodesk/webapp-components@0.14.1
+  - @neurodesk/runtime-support@0.6.2
   - @neurodesk/greedy@0.5.20261016
 
 ## 0.5.20261015
@@ -260,7 +296,14 @@
   - @neurodesk/greedy@0.5.20261015
 
 - Updated dependencies [c74b26f]
+
   - @neurodesk/runtime-support@0.6.1
+  - @neurodesk/greedy@0.5.20261015
+
+- Updated dependencies [dcc74e7]
+
+  - @neurodesk/runtime-support@0.6.0
+  - @neurodesk/webapp-components@0.14.0
   - @neurodesk/greedy@0.5.20261015
 
 ## 0.5.20261014
@@ -300,6 +343,7 @@
 - @neurodesk/greedy@0.5.20261012
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.12.3
   - @neurodesk/runtime-support@0.4.3
   - @neurodesk/greedy@0.5.20261012
@@ -321,8 +365,13 @@
   - @neurodesk/greedy@0.4.20261010
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.12.2
   - @neurodesk/runtime-support@0.4.2
+  - @neurodesk/greedy@0.4.20261010
+
+  - @neurodesk/runtime-support@0.4.1
+  - @neurodesk/webapp-components@0.12.1
   - @neurodesk/greedy@0.4.20261010
 
 ## 0.4.20261009
@@ -368,8 +417,14 @@
   - @neurodesk/greedy@0.4.20261007
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.11.0
   - @neurodesk/runtime-support@0.2.0
+  - @neurodesk/greedy@0.4.20261007
+
+- Updated dependencies [70f2770]
+
+  - @neurodesk/webapp-components@0.10.2
   - @neurodesk/greedy@0.4.20261007
 
 ## 0.4.20261004
@@ -409,7 +464,11 @@
   - @neurodesk/greedy@0.4.20261004
 
 - Updated dependencies [257192b]
+
   - @neurodesk/runtime-support@0.1.3
+  - @neurodesk/greedy@0.4.20261004
+
+  - @neurodesk/webapp-components@0.9.0
   - @neurodesk/greedy@0.4.20261004
 
 ## 0.4.20261003
@@ -436,8 +495,10 @@
   - @neurodesk/webapp-components@0.6.2
   - @neurodesk/greedy@0.4.20260930
 
-- Updated dependencies
   - @neurodesk/webapp-components@0.7.0
+  - @neurodesk/greedy@0.4.20260930
+
+  - @neurodesk/webapp-components@0.6.2
   - @neurodesk/greedy@0.4.20260930
 
 ## 0.4.20260928
@@ -462,8 +523,10 @@
   - @neurodesk/webapp-components@0.6.0
   - @neurodesk/greedy@0.4.20260928
 
-- Updated dependencies
   - @neurodesk/webapp-components@0.6.1
+  - @neurodesk/greedy@0.4.20260928
+
+  - @neurodesk/webapp-components@0.6.0
   - @neurodesk/greedy@0.4.20260928
 
 ### Minor Changes
@@ -536,8 +599,11 @@
   - @neurodesk/webapp-components@0.4.3
   - @neurodesk/greedy@0.3.20260920
 
-- Updated dependencies
   - @neurodesk/webapp-components@0.4.2
+  - @neurodesk/greedy@0.3.20260920
+
+- e1adeb4: Add rigid-body affine registration with `-dof 6` and stream scalar 4-D series when reslicing, preserving temporal metadata.
+
   - @neurodesk/greedy@0.3.20260920
 
 ## 0.3.20260918
@@ -594,12 +660,14 @@
   - @neurodesk/webapp-components@0.2.2
   - @neurodesk/greedy@0.3.20260915
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.2.1
   - @neurodesk/greedy@0.3.20260915
 
 - Reject out-of-field registration trial coordinates before integer conversion, preventing a threaded WebAssembly crash during SYNcro normalization. Include complete desktop and HPC release packaging with offline workflow gates.
+
+  - @neurodesk/greedy@0.3.20260915
+
+  - @neurodesk/webapp-components@0.2.0
   - @neurodesk/greedy@0.3.20260915
 
 ### Minor Changes
@@ -627,7 +695,8 @@
   - @neurodesk/greedy@0.2.20260914
 
 - Allow the isolated Apple signing job to look up draft releases before notarization.
-  - @neurodesk/greedy@0.2.20260914
+
+- Updated dependencies
 
 ### Minor Changes
 
@@ -655,9 +724,15 @@
   - @neurodesk/greedy@0.1.20260914
 
 - Updated dependencies [4add8da]
+
   - @neurodesk/greedy@0.1.20260914
   - @neurodesk/webapp-components@0.1.5
   - @neurodesk/runtime-support@0.1.2
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.1.4
+  - @neurodesk/greedy@0.1.20260914
 
 ## 0.1.20260911
 
@@ -676,7 +751,10 @@
   - @neurodesk/greedy@0.1.20260911
 
 - Updated dependencies [dc50e56]
+
   - @neurodesk/greedy@0.1.20260911
+
+- Updated dependencies
 
 ### Minor Changes
 
