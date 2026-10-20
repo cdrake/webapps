@@ -1,5 +1,30 @@
 # white-matter-lesions
 
+## 0.5.20261020
+
+### Patch Changes
+
+- 3f1d770: `takeHandoff` takes a `signal`: an abort stops the copy out of storage instead of
+  letting it run on in the background, and rejects with the signal's reason. White
+  matter lesions passes its load job's signal, so the footer × ends the copy of an
+  image sent from another app. `copiesInPieces` is exported and pinned to the user
+  agents Playwright's engines report.
+- d9718cd: White matter lesions reads only the NIfTI header when an image is chosen. It used to copy the whole image into memory to read its dimensions, which added a second copy of a 1 GB FLAIR to the load. The shared `readNiftiHeader(file)` reads the first bytes of a plain or gzipped file, and `describeNiftiFile` is built on it.
+- Updated dependencies [ea2a6d2]
+- Updated dependencies [3f1d770]
+- Updated dependencies [14b8248]
+- Updated dependencies [d9718cd]
+- Updated dependencies [c1a4dda]
+- Updated dependencies [1f4aecd]
+- Updated dependencies [3329c39]
+- Updated dependencies [46935f7]
+- Updated dependencies [d1fa022]
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/runtime-support@0.8.0
+  - @neurodesk/synthsr@0.6.20261020
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/white-matter-lesions@0.5.20261020
+
 ## 0.5.20261018
 
 ### Minor Changes
