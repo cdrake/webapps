@@ -1,6 +1,6 @@
 {
   "name": "sdc",
-  "version": "0.0.20261020",
+  "version": "0.2.20261020",
   "private": true,
   "license": "GPL-3.0-or-later",
   "type": "module",
