@@ -24,11 +24,16 @@
 
 ### Patch Changes
 
+- Updated dependencies [a36fde4]
+  - @neurodesk/webapp-components@0.18.0
+  - @neurodesk/ants@0.5.20261020
+  - @neurodesk/runtime-support@0.9.5
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
 
 - Updated dependencies [c865c0c]
+
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/ants@0.5.20261020
   - @neurodesk/runtime-support@0.9.4
@@ -56,6 +61,7 @@
 - Updated dependencies [46935f7]
 
 - Updated dependencies [d1fa022]
+
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/ants@0.5.20261020
@@ -72,6 +78,7 @@
 - Updated dependencies [af2e8db]
 
 - Updated dependencies [b3404ec]
+
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/ants@0.5.20261019
   - @neurodesk/runtime-support@0.9.3
@@ -105,11 +112,13 @@
 ### Patch Changes
 
 - Updated dependencies [7c0d201]
+
   - @neurodesk/webapp-components@0.16.2
   - @neurodesk/ants@0.5.20261018
   - @neurodesk/runtime-support@0.9.1
 
 - ac01831: These apps no longer refuse to start in a browser without WebGPU. NiiVue falls back to WebGL2 when WebGPU is absent, and MindGrab falls back to WebGL2 or the threaded CPU, so the viewers, defacing, registration, brain extraction, quality control and meshing now run in browsers such as Firefox on Linux. When the browser offers neither WebGPU nor WebGL2, the app says that the image viewer cannot start.
+
   - @neurodesk/ants@0.5.20261018
 
 - 46935f7: Serialize example imports and file replacements so a cancelled image rollback finishes before the next load. Restore the primary picker when file actions are disabled and stream compressed NIfTI headers for image summaries. Tighten the ANTs example checks so "not brain extracted" cannot pass as "brain extracted".
@@ -117,6 +126,7 @@
 - Updated dependencies
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/runtime-support@0.9.0
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/ants@0.5.20261018
@@ -157,11 +167,13 @@
 - Updated dependencies [ccb2970]
 
 - Updated dependencies [67a5a8f]
+
   - @neurodesk/runtime-support@0.7.0
   - @neurodesk/webapp-components@0.14.4
   - @neurodesk/ants@0.4.20261018
 
 - Updated dependencies [b67e4e9]
+
   - @neurodesk/runtime-support@0.7.2
   - @neurodesk/webapp-components@0.15.1
   - @neurodesk/ants@0.4.20261018
@@ -191,6 +203,7 @@
   - @neurodesk/ants@0.4.20261016
 
 - Updated dependencies [7443048]
+
   - @neurodesk/webapp-components@0.14.1
   - @neurodesk/ants@0.4.20261016
   - @neurodesk/runtime-support@0.6.2
@@ -229,6 +242,7 @@
 - Updated dependencies [dd65e6a]
 
 - Updated dependencies [dcc74e7]
+
   - @neurodesk/runtime-support@0.6.0
   - @neurodesk/webapp-components@0.14.0
   - @neurodesk/ants@0.4.20261015
@@ -276,6 +290,7 @@
   - @neurodesk/ants@0.4.20261010
 
 - Updated dependencies
+
   - @neurodesk/runtime-support@0.4.1
   - @neurodesk/ants@0.4.20261010
   - @neurodesk/webapp-components@0.12.1
@@ -320,9 +335,11 @@
   - @neurodesk/runtime-support@0.2.0
 
 - Updated dependencies [70f2770]
+
   - @neurodesk/webapp-components@0.10.2
 
 - Updated dependencies [22aa4bf]
+
   - @neurodesk/webapp-components@0.11.1
   - @neurodesk/runtime-support@0.2.1
 
@@ -349,12 +366,15 @@
   - @neurodesk/runtime-support@0.1.3
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.9.0
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.10.1
 
 - Updated dependencies [ec85a09]
+
   - @neurodesk/webapp-components@0.10.0
 
 - Updated dependencies [257192b]
@@ -372,6 +392,7 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.6.2
 
 - Updated dependencies
@@ -392,6 +413,7 @@
 - Updated dependencies [93381e8]
 
 - Updated dependencies [93381e8]
+
   - @neurodesk/webapp-components@0.6.0
 
 - Updated dependencies
@@ -436,9 +458,11 @@
 - efd8af3: Show the Example control before the file picker in every app, replace the registration apps' stale "Loading the default images" empty state, give FireANTs a CPU time budget and progress messages, ship BrowserQC's CPU MindGrab bundle with a longer segmentation budget, select CPU processing in SynthSR and brain extraction when no WebGPU adapter exists, start MuscleMap at 50 % overlap without WebGPU, and run VesselBoost's hosted example workflow in its browser tests.
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.4.2
 
 - Updated dependencies [4959500]
+
   - @neurodesk/webapp-components@0.4.4
 
 - Updated dependencies
@@ -472,9 +496,11 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.0
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.2
 
 - Updated dependencies

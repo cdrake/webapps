@@ -1,5 +1,12 @@
 # @neurodesk/runtime-support
 
+## 0.9.5
+
+### Patch Changes
+
+- Updated dependencies [a36fde4]
+  - @neurodesk/webapp-components@0.18.0
+
 ## 0.9.4
 
 ### Patch Changes
@@ -16,6 +23,7 @@
 - Updated dependencies [af2e8db]
 
 - Updated dependencies [b3404ec]
+
   - @neurodesk/webapp-components@0.16.3
 
 - 14b8248: MindGrab's automatic backend no longer runs WebGL2 on a software renderer (SwiftShader, llvmpipe), which returned a blank brain mask without WebGPU; the threaded CPU module runs instead. The choice and MindGrab's own output appear in the technical log.
@@ -102,6 +110,7 @@
 - Updated dependencies [3329c39]
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/webapp-components@0.16.0
 
 - Updated dependencies [3329c39]

@@ -1,5 +1,22 @@
 # dwi2trx
 
+## 0.6.20261020
+
+### Patch Changes
+
+- ccea86e: NODDI has a third tensor fit, niimath dtifit, in Advanced settings beside weighted least squares (the default) and ordinary least squares. It is FSL dtifit's default linear fit in the dtifit-enabled niimath build that DWI2TRX uses, and it runs in a Web Worker on the same volumes as the other fits: the b0 volumes and the shells up to b = 1200 s/mm². Its FA and MD are equal to DWI2TRX's fit of the same volumes, unit gradients and mask. niimath dtifit writes no AD or RD map, so AD is its first eigenvalue and RD is the mean of the second and third; where niimath sets MD to zero for a negative eigenvalue, AD and RD are zero too. The app gives niimath unit bvecs and runs it with `-xflip 0`, and the direction map gets the sign rule of the other fits, so FA, MD, AD, RD, S0 and the direction agree with the ordinary least squares fit on the same data. The maps keep their BIDS names, the provenance records `tensorFit: "niimath-dtifit"`, and the automation `tensorFit` parameter accepts `niimath-dtifit`. With NODDI selected, the NODDI fit runs after it.
+
+  `@neurodesk/dwi2trx/runner` exports `runNiimath`, the browser's niimath runner on one cached module of the vendored dtifit build. The DWI2TRX tensor worker now imports it from the package instead of an app copy. `fitTensor` takes an optional `xflip` (`'0'`, `'1'` or `'auto'`), which goes to dtifit as `-xflip`; without it the argv does not change.
+
+- d0df450: Rebuild the shared, file-pinned dtifit runtime from niimath cc26582a250c411b5c3c3c05c91dfd58f66be089 with Emscripten 6.0.13 so equal or nearly equal tensor eigenvalues retain unit, orthogonal directions. Record the source, toolchain, flags and licenses and cover the actual runtime with degenerate-tensor regressions. Re-record the production browser reference for V1–V3 because the repaired eigensolver changes the vectors and may reverse their arbitrary signs; scalar maps, tensor coefficients, the mask and every header remain byte identical.
+- Updated dependencies [a36fde4]
+- Updated dependencies [ccea86e]
+- Updated dependencies [d0df450]
+- Updated dependencies
+  - @neurodesk/webapp-components@0.18.0
+  - @neurodesk/dwi2trx@0.6.20261020
+  - @neurodesk/runtime-support@0.9.5
+
 ## 0.5.20261020
 
 ### Patch Changes
@@ -9,6 +26,7 @@
 - Updated dependencies [03261d0]
 
 - Updated dependencies [c865c0c]
+
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/dwi2trx@0.5.20261020
   - @neurodesk/runtime-support@0.9.4
@@ -30,6 +48,7 @@
 - Updated dependencies [46935f7]
 
 - Updated dependencies [d1fa022]
+
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/dwi2trx@0.5.20261020
@@ -46,6 +65,7 @@
 - Updated dependencies [af2e8db]
 
 - Updated dependencies [b3404ec]
+
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/dwi2trx@0.5.20261019
   - @neurodesk/runtime-support@0.9.3
@@ -104,25 +124,30 @@
 - Updated dependencies [ccb2970]
 
 - Updated dependencies [67a5a8f]
+
   - @neurodesk/runtime-support@0.7.0
   - @neurodesk/webapp-components@0.14.4
   - @neurodesk/dwi2trx@0.5.20261018
 
 - Updated dependencies [7c0d201]
+
   - @neurodesk/webapp-components@0.16.2
   - @neurodesk/dwi2trx@0.5.20261018
   - @neurodesk/runtime-support@0.9.1
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/runtime-support@0.9.0
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/dwi2trx@0.5.20261018
 
 - Updated dependencies [3329c39]
+
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
 
 - Updated dependencies [b67e4e9]
+
   - @neurodesk/runtime-support@0.7.2
   - @neurodesk/webapp-components@0.15.1
   - @neurodesk/dwi2trx@0.5.20261018
@@ -162,6 +187,7 @@
   typed `./file-io/download` export, so TypeScript apps can import them without `allowJs`.
 
 - Updated dependencies [7443048]
+
   - @neurodesk/webapp-components@0.14.1
   - @neurodesk/dwi2trx@0.5.20261016
   - @neurodesk/runtime-support@0.6.2
@@ -200,6 +226,7 @@
 - Updated dependencies [dd65e6a]
 
 - Updated dependencies [dcc74e7]
+
   - @neurodesk/runtime-support@0.6.0
   - @neurodesk/webapp-components@0.14.0
   - @neurodesk/dwi2trx@0.5.20261015
@@ -241,6 +268,7 @@
   - @neurodesk/dwi2trx@0.5.20261010
 
 - Updated dependencies
+
   - @neurodesk/runtime-support@0.4.1
   - @neurodesk/dwi2trx@0.5.20261010
   - @neurodesk/webapp-components@0.12.1
@@ -284,9 +312,11 @@
   - @neurodesk/runtime-support@0.2.0
 
 - Updated dependencies [70f2770]
+
   - @neurodesk/webapp-components@0.10.2
 
 - Updated dependencies [22aa4bf]
+
   - @neurodesk/webapp-components@0.11.1
   - @neurodesk/runtime-support@0.2.1
 
@@ -313,12 +343,15 @@
   - @neurodesk/runtime-support@0.1.3
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.9.0
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.10.1
 
 - Updated dependencies [ec85a09]
+
   - @neurodesk/webapp-components@0.10.0
 
 - Updated dependencies [257192b]
@@ -336,6 +369,7 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.6.2
 
 - Updated dependencies
@@ -356,6 +390,7 @@
 - Updated dependencies [93381e8]
 
 - Updated dependencies [93381e8]
+
   - @neurodesk/webapp-components@0.6.0
 
 - Updated dependencies
@@ -398,9 +433,11 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.4.2
 
 - Updated dependencies [4959500]
+
   - @neurodesk/webapp-components@0.4.4
 
 - Updated dependencies
@@ -434,9 +471,11 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.0
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.2
 
 - Updated dependencies
@@ -451,6 +490,7 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.1.4
 
 - Updated dependencies [3cd773f]

@@ -24,11 +24,16 @@
 
 ### Patch Changes
 
+- Updated dependencies [a36fde4]
+  - @neurodesk/webapp-components@0.18.0
+  - @neurodesk/runtime-support@0.9.5
+  - @neurodesk/greedy@0.6.20261020
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
 
 - Updated dependencies [c865c0c]
+
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/runtime-support@0.9.4
   - @neurodesk/greedy@0.6.20261020
@@ -54,6 +59,7 @@
 - Updated dependencies [46935f7]
 
 - Updated dependencies [d1fa022]
+
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/greedy@0.6.20261020
@@ -70,6 +76,7 @@
 - Updated dependencies [af2e8db]
 
 - Updated dependencies [b3404ec]
+
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
   - @neurodesk/greedy@0.6.20261019
@@ -103,16 +110,19 @@
 ### Patch Changes
 
 - Updated dependencies [7c0d201]
+
   - @neurodesk/webapp-components@0.16.2
   - @neurodesk/runtime-support@0.9.1
   - @neurodesk/greedy@0.6.20261018
 
 - ac01831: These apps no longer refuse to start in a browser without WebGPU. NiiVue falls back to WebGL2 when WebGPU is absent, and MindGrab falls back to WebGL2 or the threaded CPU, so the viewers, defacing, registration, brain extraction, quality control and meshing now run in browsers such as Firefox on Linux. When the browser offers neither WebGPU nor WebGL2, the app says that the image viewer cannot start.
+
   - @neurodesk/greedy@0.6.20261018
 
 - Updated dependencies
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/runtime-support@0.9.0
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/greedy@0.6.20261018
@@ -153,11 +163,13 @@
 - Updated dependencies [ccb2970]
 
 - Updated dependencies [67a5a8f]
+
   - @neurodesk/runtime-support@0.7.0
   - @neurodesk/webapp-components@0.14.4
   - @neurodesk/greedy@0.5.20261018
 
 - Updated dependencies [b67e4e9]
+
   - @neurodesk/runtime-support@0.7.2
   - @neurodesk/webapp-components@0.15.1
   - @neurodesk/greedy@0.5.20261018
@@ -187,6 +199,7 @@
   - @neurodesk/greedy@0.5.20261016
 
 - Updated dependencies [7443048]
+
   - @neurodesk/webapp-components@0.14.1
   - @neurodesk/runtime-support@0.6.2
   - @neurodesk/greedy@0.5.20261016
@@ -225,6 +238,7 @@
 - Updated dependencies [dd65e6a]
 
 - Updated dependencies [dcc74e7]
+
   - @neurodesk/runtime-support@0.6.0
   - @neurodesk/webapp-components@0.14.0
   - @neurodesk/greedy@0.5.20261015
@@ -285,6 +299,7 @@
   - @neurodesk/greedy@0.4.20261010
 
 - Updated dependencies
+
   - @neurodesk/runtime-support@0.4.1
   - @neurodesk/webapp-components@0.12.1
   - @neurodesk/greedy@0.4.20261010
@@ -326,10 +341,12 @@
   - @neurodesk/greedy@0.4.20261007
 
 - Updated dependencies [70f2770]
+
   - @neurodesk/webapp-components@0.10.2
   - @neurodesk/greedy@0.4.20261007
 
 - Updated dependencies [22aa4bf]
+
   - @neurodesk/webapp-components@0.11.1
   - @neurodesk/runtime-support@0.2.1
   - @neurodesk/greedy@0.4.20261007
@@ -361,14 +378,17 @@
   - @neurodesk/greedy@0.4.20261004
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.9.0
   - @neurodesk/greedy@0.4.20261004
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.10.1
   - @neurodesk/greedy@0.4.20261004
 
 - Updated dependencies [ec85a09]
+
   - @neurodesk/webapp-components@0.10.0
   - @neurodesk/greedy@0.4.20261004
 
@@ -389,6 +409,7 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.6.2
   - @neurodesk/greedy@0.4.20260930
 
@@ -411,6 +432,7 @@
 - Updated dependencies [93381e8]
 
 - Updated dependencies [93381e8]
+
   - @neurodesk/webapp-components@0.6.0
   - @neurodesk/greedy@0.4.20260928
 
@@ -458,13 +480,16 @@
 ### Patch Changes
 
 - e1adeb4: Add rigid-body affine registration with `-dof 6` and stream scalar 4-D series when reslicing, preserving temporal metadata.
+
   - @neurodesk/greedy@0.3.20260920
 
 - Updated dependencies [4959500]
+
   - @neurodesk/webapp-components@0.4.4
   - @neurodesk/greedy@0.3.20260920
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.4.3
   - @neurodesk/greedy@0.3.20260920
 
@@ -505,14 +530,17 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.0
   - @neurodesk/greedy@0.3.20260915
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.2
   - @neurodesk/greedy@0.3.20260915
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.1
   - @neurodesk/greedy@0.3.20260915
 
@@ -528,9 +556,11 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/greedy@0.2.20260914
 
 - Write native release checksums with LF line endings on every platform so Linux and macOS uploaders can verify Windows archives.
+
   - @neurodesk/greedy@0.2.20260914
 
 - Allow the isolated Apple signing job to look up draft releases before notarization.
@@ -545,6 +575,7 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.1.4
   - @neurodesk/greedy@0.1.20260914
 
@@ -564,6 +595,7 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/greedy@0.1.20260911
 
 - dc50e56: Normalize NIfTI spatial units to millimetres and preserve scaled integer intensities when writing registered images. Isolate registration workers so cancelled input reads cannot affect a subsequent run.

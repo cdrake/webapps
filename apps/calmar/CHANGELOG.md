@@ -4,11 +4,15 @@
 
 ### Patch Changes
 
+- Updated dependencies [a36fde4]
+  - @neurodesk/webapp-components@0.18.0
+  - @neurodesk/calmar@0.7.20261020
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
 
 - Updated dependencies [c865c0c]
+
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/calmar@0.7.20261020
 
@@ -23,6 +27,7 @@
 - Updated dependencies [3329c39]
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/calmar@0.7.20261020
 
@@ -78,21 +83,26 @@
 - Updated dependencies [ccb2970]
 
 - Updated dependencies [67a5a8f]
+
   - @neurodesk/webapp-components@0.14.4
   - @neurodesk/calmar@0.7.20261018
 
 - Updated dependencies [7c0d201]
+
   - @neurodesk/webapp-components@0.16.2
   - @neurodesk/calmar@0.7.20261018
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/calmar@0.7.20261018
 
 - Updated dependencies [3329c39]
+
   - @neurodesk/webapp-components@0.16.0
 
 - Updated dependencies [b67e4e9]
+
   - @neurodesk/webapp-components@0.15.1
   - @neurodesk/calmar@0.7.20261018
 
@@ -135,6 +145,7 @@
 - 311a3fa: Use the shared info icon, so help icons stay round on phones instead of stretching to the 44 px touch height, and keep the Run analysis icon inside the sidebar.
 
 - Updated dependencies [7443048]
+
   - @neurodesk/webapp-components@0.14.1
   - @neurodesk/calmar@0.6.20261016
 
@@ -221,6 +232,7 @@
 - Updated dependencies [c6e4804]
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.12.2
   - @neurodesk/calmar@0.6.20261010
 
@@ -256,9 +268,11 @@
 - 70f2770: Space the technical log's Copy and Clear buttons apart by grouping them in the shared `nd-console-actions` row; they had run together as "CopyClear". Remove the unused legacy `.console-clear` styles.
 
 - Updated dependencies [70f2770]
+
   - @neurodesk/webapp-components@0.10.2
 
 - Updated dependencies [22aa4bf]
+
   - @neurodesk/webapp-components@0.11.1
 
 - Updated dependencies
@@ -279,9 +293,11 @@
   - @neurodesk/webapp-components@0.10.0
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.9.0
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.10.1
 
 - Updated dependencies [ec85a09]
@@ -299,6 +315,7 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.6.2
 
 - Updated dependencies
@@ -321,6 +338,7 @@
 - Updated dependencies [93381e8]
 
 - Updated dependencies [93381e8]
+
   - @neurodesk/webapp-components@0.6.0
 
 - Updated dependencies
@@ -363,9 +381,11 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.4.2
 
 - Updated dependencies [4959500]
+
   - @neurodesk/webapp-components@0.4.4
 
 - Updated dependencies
@@ -388,6 +408,7 @@
   - @neurodesk/webapp-components@0.4.0
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.3.1
 
 - Load only the structural T1 in the stroke example so Run analysis computes the lesion mask for review before network mapping.
@@ -409,9 +430,11 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.0
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.2
 
 - Updated dependencies
@@ -430,6 +453,7 @@
   Keep anatomical surfaces in 3-Plane view and give registration sphere files the FreeSurfer parser extension for display. Remove the repeated sidebar warning and single-option contrast selector. Suppress consecutive duplicate technical-log messages across apps, including QSMbly and CALMaR, and report model-download progress when its percentage changes.
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.1.4
 
 - Updated dependencies [3cd773f]

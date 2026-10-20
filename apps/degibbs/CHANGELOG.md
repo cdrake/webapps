@@ -1,5 +1,19 @@
 # degibbs
 
+## 0.3.20261020
+
+### Minor Changes
+
+- 2fadf41: Add a portable `degibbs` command line for Linux, Windows and macOS. It runs the app's `degibbs.wasm` with the `mrdegibbs` options (`--nshifts`, `--min-w`, `--max-w`) and slice axes from the sidecar's `SliceEncodingDirection` (or `--axes`), and writes the app's downloads: the corrected image, the passed-through bval and bvec, and the sidecar. The output names and sidecar now live in `@neurodesk/degibbs/outputs`, shared by the app and the command line. Its release check runs the pinned example and holds every output to the web app's recorded download: the image by its decompressed bytes, the other files byte for byte. `@neurodesk/degibbs` now shares the app's version.
+
+### Patch Changes
+
+- Updated dependencies [a36fde4]
+- Updated dependencies [2fadf41]
+  - @neurodesk/webapp-components@0.18.0
+  - @neurodesk/degibbs@0.3.20261020
+  - @neurodesk/runtime-support@0.9.5
+
 ## 0.2.20261020
 
 ### Patch Changes
@@ -9,6 +23,7 @@
 - Updated dependencies [03261d0]
 
 - Updated dependencies [c865c0c]
+
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/runtime-support@0.9.4
   - @neurodesk/degibbs@0.2.20261020
@@ -31,6 +46,7 @@
 - Updated dependencies [af2e8db]
 
 - Updated dependencies [b3404ec]
+
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
   - @neurodesk/degibbs@0.2.20261019
@@ -54,6 +70,7 @@
 - 7c0d201: Restore the last committed image after cancelled or failed viewer loads. Share queued volume previews across NODDI, Degibbs, N4 and Dwidenoise, retaining source files and calibrated map ranges while rollback finishes before controls unlock.
 
 - Updated dependencies [7c0d201]
+
   - @neurodesk/webapp-components@0.16.2
   - @neurodesk/runtime-support@0.9.1
   - @neurodesk/degibbs@0.2.20261018
@@ -61,6 +78,7 @@
 - Updated dependencies
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/runtime-support@0.9.0
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/degibbs@0.2.20261018

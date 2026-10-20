@@ -4,11 +4,16 @@
 
 ### Patch Changes
 
+- Updated dependencies [a36fde4]
+  - @neurodesk/webapp-components@0.18.0
+  - @neurodesk/runtime-support@0.9.5
+  - @neurodesk/topofit@0.15.20261020
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
 
 - Updated dependencies [c865c0c]
+
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/runtime-support@0.9.4
   - @neurodesk/topofit@0.15.20261020
@@ -30,6 +35,7 @@
 - Updated dependencies [46935f7]
 
 - Updated dependencies [d1fa022]
+
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/topofit@0.15.20261020
@@ -46,6 +52,7 @@
 - Updated dependencies [af2e8db]
 
 - Updated dependencies [b3404ec]
+
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
   - @neurodesk/topofit@0.15.20261019
@@ -108,25 +115,30 @@
 - Updated dependencies [ccb2970]
 
 - Updated dependencies [67a5a8f]
+
   - @neurodesk/runtime-support@0.7.0
   - @neurodesk/webapp-components@0.14.4
   - @neurodesk/topofit@0.15.20261018
 
 - Updated dependencies [7c0d201]
+
   - @neurodesk/webapp-components@0.16.2
   - @neurodesk/runtime-support@0.9.1
   - @neurodesk/topofit@0.15.20261018
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/runtime-support@0.9.0
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/topofit@0.15.20261018
 
 - Updated dependencies [3329c39]
+
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
 
 - Updated dependencies [b67e4e9]
+
   - @neurodesk/runtime-support@0.7.2
   - @neurodesk/webapp-components@0.15.1
   - @neurodesk/topofit@0.15.20261018
@@ -158,6 +170,7 @@
   - @neurodesk/topofit@0.15.20261016
 
 - Updated dependencies [7443048]
+
   - @neurodesk/webapp-components@0.14.1
   - @neurodesk/runtime-support@0.6.2
   - @neurodesk/topofit@0.15.20261016
@@ -196,6 +209,7 @@
 - Updated dependencies [dd65e6a]
 
 - Updated dependencies [dcc74e7]
+
   - @neurodesk/runtime-support@0.6.0
   - @neurodesk/webapp-components@0.14.0
   - @neurodesk/topofit@0.15.20261015
@@ -237,6 +251,7 @@
   - @neurodesk/topofit@0.15.20261010
 
 - Updated dependencies
+
   - @neurodesk/runtime-support@0.4.1
   - @neurodesk/webapp-components@0.12.1
   - @neurodesk/topofit@0.15.20261010
@@ -307,6 +322,7 @@
 - Updated dependencies [70f2770]
 
 - Updated dependencies [6be20aa]
+
   - @neurodesk/webapp-components@0.10.2
   - @neurodesk/topofit@0.13.20261007
 
@@ -346,14 +362,17 @@
   - @neurodesk/topofit@0.12.20261004
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.9.0
   - @neurodesk/topofit@0.12.20261004
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.10.1
   - @neurodesk/topofit@0.12.20261004
 
 - Updated dependencies [ec85a09]
+
   - @neurodesk/webapp-components@0.10.0
   - @neurodesk/topofit@0.12.20261004
 
@@ -374,6 +393,7 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.6.2
   - @neurodesk/topofit@0.12.20260930
 
@@ -396,6 +416,7 @@
 - Updated dependencies [93381e8]
 
 - Updated dependencies [93381e8]
+
   - @neurodesk/webapp-components@0.6.0
   - @neurodesk/topofit@0.12.20260928
 
@@ -501,6 +522,7 @@
   STL export uses the shared busy and cancellation controls so replacement input cannot receive stale downloads.
 
 - Updated dependencies [a213c53]
+
   - @neurodesk/topofit@0.7.20260920
 
 - Style dialog inputs with the shared field controls and give them 44 px touch targets and 16 px text on phones. Verify TopoFit's STL settings at desktop and phone widths.
@@ -558,10 +580,12 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.0
   - @neurodesk/topofit@0.7.20260915
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.2
   - @neurodesk/topofit@0.7.20260915
 
@@ -591,6 +615,7 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/topofit@0.5.20260914
 
 - 3cd773f: Greedy and EdgeReg show all three viewer panels on phones. TopoFit conforms axis-aligned and oblique scans through the pinned npm niimath WebAssembly worker. SYNcro now matches the native three-input workflow, offers four checksum-pinned tutorials, defaults to MindGrab and Greedy with SynthStrip and ANTs alternatives, uses niimath for lesion and masking operations, and switches one NiiVue viewer between images with automatic lesion overlays. SynthSR lets adapter limits govern its largest activation buffer, so validated 256×256×192 scans and larger volumes on capable GPUs are attempted while other shared U-Net callers retain their existing limit. Add the standalone ANTS registration demo.

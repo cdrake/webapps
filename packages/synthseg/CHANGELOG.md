@@ -4,11 +4,14 @@
 
 ### Patch Changes
 
+- Updated dependencies [a36fde4]
+  - @neurodesk/webapp-components@0.18.0
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
 
 - Updated dependencies [c865c0c]
+
   - @neurodesk/webapp-components@0.17.0
 
 - Updated dependencies [ea2a6d2]
@@ -22,6 +25,7 @@
 - Updated dependencies [3329c39]
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/webapp-components@0.16.0
 
 - Updated dependencies [d9718cd]
@@ -69,18 +73,23 @@
 - Updated dependencies [ccb2970]
 
 - Updated dependencies [67a5a8f]
+
   - @neurodesk/webapp-components@0.14.4
 
 - Updated dependencies [7c0d201]
+
   - @neurodesk/webapp-components@0.16.2
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/webapp-components@0.16.1
 
 - Updated dependencies [3329c39]
+
   - @neurodesk/webapp-components@0.16.0
 
 - Updated dependencies [b67e4e9]
+
   - @neurodesk/webapp-components@0.15.1
 
 - Updated dependencies [b68209b]
@@ -108,6 +117,7 @@
 - 6ec972a: Pin the IXI and AHEAD volume norms to neurocontainers commit 347cf6fb, the merge of the 7 T reference into main. The files are byte-identical to the previous pin, so every report is unchanged; only the population data version shown in the report and About changes.
 
 - Updated dependencies [7443048]
+
   - @neurodesk/webapp-components@0.14.1
 
 - Updated dependencies
@@ -217,6 +227,7 @@
   - @neurodesk/webapp-components@0.12.2
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.12.1
 
 - Updated dependencies
@@ -246,6 +257,7 @@
   - @neurodesk/runtime-support@0.2.1
 
 - Updated dependencies
+
   - @neurodesk/runtime-support@0.2.0
 
 - Updated dependencies [22aa4bf]
@@ -273,43 +285,23 @@
 
 ## 0.5.20261003
 
-
-
 ## 0.5.20260930
-
-
 
 ## 0.5.20260928
 
-
-
 ## 0.4.20260928
-
-
 
 ## 0.3.20260924
 
-
-
 ## 0.3.20260923
-
-
 
 ## 0.3.20260920
 
-
-
 ## 0.3.20260918
-
-
 
 ## 0.3.20260916
 
-
-
 ## 0.3.20260915
-
-
 
 ## 0.2.20260914
 
