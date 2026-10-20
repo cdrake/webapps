@@ -1,5 +1,11 @@
 # @neurodesk/hmc-registration
 
+## 0.1.1
+
+### Patch Changes
+
+- Reject absolute output paths and parent-directory traversal before running ANTs so every output stays inside its private run directory. A rejected run leaves the same kernel usable for the next registration.
+
 ## 0.1.0
 
 ### Minor Changes

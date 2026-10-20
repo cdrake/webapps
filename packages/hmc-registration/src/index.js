@@ -46,6 +46,9 @@ function checkOutputDirectories(FS, argv) {
     if (token !== "--output" && token !== "-o") return;
     const value = argv[index + 1] ?? "";
     for (const piece of value.replace(/^\[|\]$/g, "").split(",")) {
+      if (piece.startsWith("/") || piece.split("/").includes("..") || piece.includes("\0")) {
+        throw new Error(`Output paths must stay inside the private run directory: ${JSON.stringify(piece)}.`);
+      }
       const slash = piece.lastIndexOf("/");
       if (slash <= 0) continue;
       const parent = piece.slice(0, slash);

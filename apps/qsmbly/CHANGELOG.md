@@ -4,11 +4,16 @@
 
 ### Patch Changes
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.2
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.1
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
 
 - Updated dependencies [4b40da1]
+
   - @neurodesk/webapp-components@0.17.0
 
 - Updated dependencies [3f1d770]
@@ -26,6 +31,7 @@
 - Updated dependencies [3329c39]
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/webapp-components@0.16.0
 
 - Updated dependencies [c865c0c]
@@ -38,9 +44,11 @@
 ### Patch Changes
 
 - Updated dependencies [7c0d201]
+
   - @neurodesk/webapp-components@0.16.2
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/webapp-components@0.16.1
 
 - Updated dependencies [ea2a6d2]
@@ -48,12 +56,15 @@
 - Updated dependencies [0511cd7]
 
 - Updated dependencies [3329c39]
+
   - @neurodesk/webapp-components@0.16.0
 
 - Updated dependencies [b67e4e9]
+
   - @neurodesk/webapp-components@0.15.1
 
 - Updated dependencies [b68209b]
+
   - @neurodesk/webapp-components@0.15.0
 
 - 45ae49a: Remove verified dead code from the unused-code report (#256): dicompare's unused technical-log helpers, QSMbly's duplicate `QsmEchoViewer` export and Deface's unused `@neurodesk/webapp-components` devDependency. The calmar and SCT task tests now import the modules they check by literal path.
@@ -63,6 +74,7 @@
 - Updated dependencies [ccb2970]
 
 - Updated dependencies [67a5a8f]
+
   - @neurodesk/webapp-components@0.14.4
 
 - Updated dependencies [7c0d201]
@@ -99,9 +111,11 @@
 - Persist checksum-verified model and example caches across browser restarts. Bind runtime caches to each document’s checksum manifest to avoid reusing bytes from a different deployment.
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.14.2
 
 - Updated dependencies [7443048]
+
   - @neurodesk/webapp-components@0.14.1
 
 - Updated dependencies
@@ -193,6 +207,7 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.12.1
 
 - Show the complete registry citation list through the shared Cite dialog, include the single-step TGV paper, and check upstream DOI coverage during sync.
@@ -235,14 +250,17 @@
   @niivue/dcm2niix 1.3.20260724, which converts enhanced multi-echo DICOM into one image per echo.
 
 - Updated dependencies [22aa4bf]
+
   - @neurodesk/webapp-components@0.11.1
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.11.0
 
 - 70f2770: Space the technical log's Copy and Clear buttons apart by grouping them in the shared `nd-console-actions` row; they had run together as "CopyClear". Remove the unused legacy `.console-clear` styles.
 
 - Updated dependencies [70f2770]
+
   - @neurodesk/webapp-components@0.10.2
 
 - Updated dependencies [22aa4bf]
@@ -258,14 +276,17 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.10.1
 
 - Updated dependencies [0204fe1]
 
 - Updated dependencies [ec85a09]
+
   - @neurodesk/webapp-components@0.10.0
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.9.0
 
 - Updated dependencies
@@ -290,9 +311,11 @@
 - Updated dependencies
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.7.0
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.6.2
 
 - Updated dependencies
@@ -308,6 +331,7 @@
   Resolve QSM voxel-dependent defaults for supplied masks before reconstruction, so generated-mask and supplied-mask runs produce the same output. Add complete Mac scientific validation commands and evidence checks. The SynthSeg GPU buffer ceiling remains unchanged.
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.6.1
 
 - 93381e8: Remove the static bottom bar (version, privacy sentence, duplicate More Apps and GitHub links) from the six inference-workspace apps. The shared app bar already shows the version and links, and Privacy has its own dialog. The unused `.app-footer` and `.nd-app-footer` rules leave the shared stylesheets and the hosted theme.
@@ -321,6 +345,7 @@
 - Updated dependencies [93381e8]
 
 - Updated dependencies [93381e8]
+
   - @neurodesk/webapp-components@0.6.0
 
 - Updated dependencies
@@ -374,12 +399,15 @@
 ### Patch Changes
 
 - Updated dependencies [4959500]
+
   - @neurodesk/webapp-components@0.4.4
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.4.3
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.4.2
 
 - Updated dependencies [4959500]
@@ -432,12 +460,15 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.2
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.1
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.0
 
 - Updated dependencies
@@ -459,6 +490,7 @@
 - Updated dependencies [3cd773f]
 
 - Updated dependencies [4add8da]
+
   - @neurodesk/webapp-components@0.1.5
 
 - Add optional TopoFit mid-surface normals and flat cortical patches, matching OpenRecon's atlas eligibility, geodesic search, plane-fit criteria and local ribbon geometry. Export native-grid patch-and-normal QC, individual patch surfaces, paired geometry JSON, normals CSV and measurements; support hemisphere, radius, count, quality and native-grid ROI settings. Pin the fsaverage atlas on Hugging Face. Compare the geometry with OpenRecon on both full-resolution validation hemispheres.
@@ -466,6 +498,7 @@
   Keep anatomical surfaces in 3-Plane view and give registration sphere files the FreeSurfer parser extension for display. Remove the repeated sidebar warning and single-option contrast selector. Suppress consecutive duplicate technical-log messages across apps, including QSMbly and CALMaR, and report model-download progress when its percentage changes.
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.1.4
 
 - Updated dependencies [4add8da]

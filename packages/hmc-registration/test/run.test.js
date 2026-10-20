@@ -118,6 +118,20 @@ test("an output prefix in a missing directory is refused before the kernel runs"
   assert.throws(() => ants.run(argv, pair), /output directory "sub" does not exist/);
 });
 
+test("output paths cannot escape the private run directory", async () => {
+  const ants = await loadHmcRegistration();
+  const pair = await inputs();
+  for (const output of ["[../out]", "[/out]", "[/tmp/out]", "[out,../warped.nii]", "[out,warped.nii,/inverse.nii]"]) {
+    for (const flag of ["--output", "-o"]) {
+      const argv = ARGV.map((token) => token === "[out]" ? output : token === "--output" ? flag : token);
+      assert.throws(() => ants.run(argv, pair), /private run directory/, `${flag} ${output}`);
+    }
+  }
+  const { outputs } = ants.run([...ARGV], pair);
+  assert.deepEqual(Object.keys(outputs), ["out0GenericAffine.mat"]);
+  assert.equal(sha256(outputs["out0GenericAffine.mat"]), NATIVE_MAT_SHA256);
+});
+
 test("an aborted run reports the log's cause and marks the kernel stopped", async () => {
   const ants = await loadHmcRegistration();
   const argv = ARGV.map((token) => token.replace("moving.nii,", "missing.nii,"));

@@ -4,6 +4,10 @@
 
 ### Patch Changes
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.2
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.1
 - 14db080: DICOM View's "Open in White matter lesions" button is now an "Open in another webapp"
   menu that lists every app of the site from the registry. Most apps receive the converted
   NIfTI image; apps the registry marks `handoff: dicom` (dicompare, QSMbly, dwi2trx, NODDI,
@@ -31,6 +35,7 @@
 - Updated dependencies [03261d0]
 
 - Updated dependencies [4b40da1]
+
   - @neurodesk/webapp-components@0.17.0
 
 - Updated dependencies [3f1d770]
@@ -48,6 +53,7 @@
 - Updated dependencies [3329c39]
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/webapp-components@0.16.0
 
 - Updated dependencies [c865c0c]
@@ -60,9 +66,11 @@
 ### Patch Changes
 
 - Updated dependencies [7c0d201]
+
   - @neurodesk/webapp-components@0.16.2
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/webapp-components@0.16.1
 
 - Updated dependencies [ea2a6d2]
@@ -70,12 +78,15 @@
 - Updated dependencies [0511cd7]
 
 - Updated dependencies [3329c39]
+
   - @neurodesk/webapp-components@0.16.0
 
 - Updated dependencies [b67e4e9]
+
   - @neurodesk/webapp-components@0.15.1
 
 - Updated dependencies [b68209b]
+
   - @neurodesk/webapp-components@0.15.0
 
 - 6e46e80: Restore schema catalog and detail URLs on direct entry and reload on the composite GitHub Pages site, including browser-local schema IDs and external schema query URLs.
@@ -87,6 +98,7 @@
 - Updated dependencies [ccb2970]
 
 - Updated dependencies [67a5a8f]
+
   - @neurodesk/webapp-components@0.14.4
 
 - Updated dependencies [7c0d201]
@@ -149,9 +161,11 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.14.2
 
 - Updated dependencies [7443048]
+
   - @neurodesk/webapp-components@0.14.1
 
 - Updated dependencies
@@ -199,11 +213,13 @@
 - Preserve original operation failures while draining GPU error scopes and reject failed DICOM field fallback tasks without hanging. Resolve correctness findings with switch scopes, safe own-property checks, equivalent regular expressions and documented optional cleanup/cache behavior. Surface actionable release, filesystem and schema preload failures; retain scientific literals and arithmetic.
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.12.2
 
 - Declare workspace dependencies without expanding SYNcro portable runtime installations. Mark dicompare type imports explicitly and separate the unchanged NeSVoR reference validator from worker orchestration to remove dependency cycles.
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.12.1
 
 - Updated dependencies
@@ -236,12 +252,15 @@
   - The worker rejects requests after five minutes of silence and recovers from a crashed worker; dialogs share one accessible modal with focus trapping; tooltips render above sticky table headers.
 
 - Updated dependencies [22aa4bf]
+
   - @neurodesk/webapp-components@0.11.1
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.11.0
 
 - Updated dependencies [70f2770]
+
   - @neurodesk/webapp-components@0.10.2
 
 - Updated dependencies [22aa4bf]
@@ -257,14 +276,17 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.10.1
 
 - Updated dependencies [0204fe1]
 
 - Updated dependencies [ec85a09]
+
   - @neurodesk/webapp-components@0.10.0
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.9.0
 
 - Updated dependencies
@@ -289,9 +311,11 @@
 - Updated dependencies
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.7.0
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.6.2
 
 - Updated dependencies
@@ -311,6 +335,7 @@
 - ccece98: Keep populated reference and test-data controls from overlapping on narrow screens.
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.6.1
 
 - 93381e8: Every app now opens on its workspace and shows live status only in the bottom bar: a short message, a progress bar, elapsed time and a cancel × that appears while a run can be cancelled. Start pages, landing overlays and welcome modals are gone, and their copy moved to About. Every app has a technical log below the viewer that starts collapsed. Sidebar help longer than 90 characters moved into info tooltips or About, and each sidebar has one primary action. `ProgressManager` now drives the design-system footer, including the elapsed counter and the cancel button.
@@ -322,6 +347,7 @@
 - Updated dependencies [93381e8]
 
 - Updated dependencies [93381e8]
+
   - @neurodesk/webapp-components@0.6.0
 
 - Updated dependencies
@@ -365,12 +391,15 @@
 ### Patch Changes
 
 - Updated dependencies [4959500]
+
   - @neurodesk/webapp-components@0.4.4
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.4.3
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.4.2
 
 - Updated dependencies [4959500]

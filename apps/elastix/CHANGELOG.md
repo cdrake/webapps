@@ -24,11 +24,16 @@
 
 ### Patch Changes
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.2
+  - @neurodesk/runtime-support@0.9.6
+  - @neurodesk/elastix@0.5.20261020
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
 
 - Updated dependencies [4b40da1]
+
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/elastix@0.5.20261020
   - @neurodesk/runtime-support@0.9.4
@@ -56,6 +61,7 @@
 - Updated dependencies [46935f7]
 
 - Updated dependencies [d1fa022]
+
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/elastix@0.5.20261020
@@ -63,8 +69,25 @@
 - Updated dependencies [c865c0c]
 
 - Updated dependencies [d1fa022]
+
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/elastix@0.5.20261020
+
+- Updated dependencies
+  - @neurodesk/runtime-support@0.9.5
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/elastix@0.5.20261020
+- Updated dependencies [14db080]
+
+- Updated dependencies [4b40da1]
+
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/elastix@0.5.20261020
+  - @neurodesk/runtime-support@0.9.4
+
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/runtime-support@0.8.0
   - @neurodesk/elastix@0.5.20261020
 
 ## 0.5.20261019
@@ -100,6 +123,7 @@
 ### Patch Changes
 
 - Updated dependencies [7c0d201]
+
   - @neurodesk/webapp-components@0.16.2
   - @neurodesk/elastix@0.5.20261018
   - @neurodesk/runtime-support@0.9.1
@@ -107,6 +131,7 @@
 - Updated dependencies
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/runtime-support@0.9.0
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/elastix@0.5.20261018
@@ -118,6 +143,7 @@
 - Updated dependencies [a07f659]
 
 - Updated dependencies [3329c39]
+
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/elastix@0.5.20261018
@@ -134,16 +160,24 @@
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/elastix@0.5.20261018
 
+- Updated dependencies [3329c39]
+
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/runtime-support@0.8.0
+  - @neurodesk/elastix@0.5.20261018
+
 ## 0.4.20261018
 
 ### Patch Changes
 
 - Updated dependencies [b67e4e9]
+
   - @neurodesk/runtime-support@0.7.2
   - @neurodesk/webapp-components@0.15.1
   - @neurodesk/elastix@0.4.20261018
 
 - Updated dependencies [b68209b]
+
   - @neurodesk/webapp-components@0.15.0
   - @neurodesk/runtime-support@0.7.1
   - @neurodesk/elastix@0.4.20261018
@@ -157,6 +191,7 @@
 - Updated dependencies [ccb2970]
 
 - Updated dependencies [67a5a8f]
+
   - @neurodesk/runtime-support@0.7.0
   - @neurodesk/webapp-components@0.14.4
   - @neurodesk/elastix@0.4.20261018
@@ -167,10 +202,14 @@
   - @neurodesk/runtime-support@0.7.1
   - @neurodesk/elastix@0.4.20261018
 
-- Updated dependencies [67a5a8f]
-
   - @neurodesk/runtime-support@0.7.0
   - @neurodesk/webapp-components@0.14.4
+  - @neurodesk/elastix@0.4.20261018
+
+- Updated dependencies [b67e4e9]
+
+  - @neurodesk/runtime-support@0.7.2
+  - @neurodesk/webapp-components@0.15.1
   - @neurodesk/elastix@0.4.20261018
 
 ## 0.4.20261017
@@ -186,25 +225,31 @@
   Require a local TiffData element for directory association. Metadata-only Images cannot supply another Image's calibration, even when their plane counts match the file. Preserve mapping defaults for an existing empty TiffData element and verified reduced-resolution SubIFDs.
 
 - Updated dependencies [d7d3420]
+
   - @neurodesk/elastix@0.4.20261017
 
 - Refuse OME-TIFF export when the selected TIFF Image's original physical sizes are unknown or its Plane positions cannot be preserved. Keep schema-default micrometer units for known sizes and normalize supported length symbols, including pm and Å. Preserve required CLI outputs after optional TIFF encoder or partial-write failures, and cover cancellation during compression.
 
 - Updated dependencies
+
   - @neurodesk/elastix@0.4.20261017
 
 - Updated dependencies [d7d3420]
 
   - @neurodesk/elastix@0.4.20261017
 
+- Updated dependencies
+
 ## 0.3.20261017
 
 ### Patch Changes
 
 - Updated dependencies [b0797ba]
+
   - @neurodesk/elastix@0.3.20261017
 
 - Updated dependencies [b547d52]
+
   - @neurodesk/webapp-components@0.14.3
   - @neurodesk/elastix@0.3.20261017
   - @neurodesk/runtime-support@0.6.4
@@ -213,16 +258,24 @@
 
   - @neurodesk/elastix@0.3.20261017
 
+- Updated dependencies [b547d52]
+
+  - @neurodesk/webapp-components@0.14.3
+  - @neurodesk/elastix@0.3.20261017
+  - @neurodesk/runtime-support@0.6.4
+
 ## 0.3.20261016
 
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.14.2
   - @neurodesk/runtime-support@0.6.3
   - @neurodesk/elastix@0.3.20261016
 
 - Updated dependencies [7443048]
+
   - @neurodesk/webapp-components@0.14.1
   - @neurodesk/elastix@0.3.20261016
   - @neurodesk/runtime-support@0.6.2
@@ -233,11 +286,18 @@
   - @neurodesk/runtime-support@0.6.3
   - @neurodesk/elastix@0.3.20261016
 
+- Updated dependencies [7443048]
+
+  - @neurodesk/webapp-components@0.14.1
+  - @neurodesk/elastix@0.3.20261016
+  - @neurodesk/runtime-support@0.6.2
+
 ## 0.3.20261015
 
 ### Patch Changes
 
 - Updated dependencies [c74b26f]
+
   - @neurodesk/runtime-support@0.6.1
   - @neurodesk/elastix@0.3.20261015
 
@@ -261,6 +321,7 @@
 - Updated dependencies [dd65e6a]
 
 - Updated dependencies [dcc74e7]
+
   - @neurodesk/runtime-support@0.6.0
   - @neurodesk/webapp-components@0.14.0
   - @neurodesk/elastix@0.3.20261015
@@ -268,6 +329,12 @@
 - Updated dependencies [c74b26f]
 
   - @neurodesk/runtime-support@0.6.1
+  - @neurodesk/elastix@0.3.20261015
+
+- Updated dependencies [dcc74e7]
+
+  - @neurodesk/runtime-support@0.6.0
+  - @neurodesk/webapp-components@0.14.0
   - @neurodesk/elastix@0.3.20261015
 
 ## 0.3.20261014
@@ -306,10 +373,12 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.12.2
   - @neurodesk/runtime-support@0.4.2
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.12.1
   - @neurodesk/runtime-support@0.4.1
 
@@ -317,6 +386,9 @@
 
   - @neurodesk/webapp-components@0.12.2
   - @neurodesk/runtime-support@0.4.2
+
+  - @neurodesk/webapp-components@0.12.1
+  - @neurodesk/runtime-support@0.4.1
 
 ## 0.1.20261010
 

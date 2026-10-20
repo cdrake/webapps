@@ -4,11 +4,16 @@
 
 ### Patch Changes
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.2
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.1
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
 
 - Updated dependencies [4b40da1]
+
   - @neurodesk/webapp-components@0.17.0
 
 - Updated dependencies [3f1d770]
@@ -26,6 +31,7 @@
 - Updated dependencies [3329c39]
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/webapp-components@0.16.0
 
 - Updated dependencies [c865c0c]
@@ -38,9 +44,11 @@
 ### Patch Changes
 
 - Updated dependencies [7c0d201]
+
   - @neurodesk/webapp-components@0.16.2
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/webapp-components@0.16.1
 
 - Updated dependencies [ea2a6d2]
@@ -48,12 +56,15 @@
 - Updated dependencies [0511cd7]
 
 - Updated dependencies [3329c39]
+
   - @neurodesk/webapp-components@0.16.0
 
 - Updated dependencies [b67e4e9]
+
   - @neurodesk/webapp-components@0.15.1
 
 - Updated dependencies [b68209b]
+
   - @neurodesk/webapp-components@0.15.0
 
 - Updated dependencies [2ae93ae]
@@ -61,6 +72,7 @@
 - Updated dependencies [ccb2970]
 
 - Updated dependencies [67a5a8f]
+
   - @neurodesk/webapp-components@0.14.4
 
 - Updated dependencies [7c0d201]
@@ -95,9 +107,11 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.14.2
 
 - Updated dependencies [7443048]
+
   - @neurodesk/webapp-components@0.14.1
 
 - Updated dependencies
@@ -151,9 +165,11 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.12.2
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.12.1
 
 - Updated dependencies
@@ -174,12 +190,15 @@
 ### Patch Changes
 
 - Updated dependencies [22aa4bf]
+
   - @neurodesk/webapp-components@0.11.1
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.11.0
 
 - Updated dependencies [70f2770]
+
   - @neurodesk/webapp-components@0.10.2
 
 - Updated dependencies [22aa4bf]
@@ -195,14 +214,17 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.10.1
 
 - Updated dependencies [0204fe1]
 
 - Updated dependencies [ec85a09]
+
   - @neurodesk/webapp-components@0.10.0
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.9.0
 
 - Updated dependencies
@@ -227,9 +249,11 @@
 - Updated dependencies
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.7.0
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.6.2
 
 - Updated dependencies
@@ -241,6 +265,7 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.6.1
 
 - 93381e8: Every app now opens on its workspace and shows live status only in the bottom bar: a short message, a progress bar, elapsed time and a cancel × that appears while a run can be cancelled. Start pages, landing overlays and welcome modals are gone, and their copy moved to About. Every app has a technical log below the viewer that starts collapsed. Sidebar help longer than 90 characters moved into info tooltips or About, and each sidebar has one primary action. `ProgressManager` now drives the design-system footer, including the elapsed counter and the cancel button.
@@ -252,6 +277,7 @@
 - Updated dependencies [93381e8]
 
 - Updated dependencies [93381e8]
+
   - @neurodesk/webapp-components@0.6.0
 
 - Updated dependencies
@@ -295,12 +321,15 @@
 ### Patch Changes
 
 - Updated dependencies [4959500]
+
   - @neurodesk/webapp-components@0.4.4
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.4.3
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.4.2
 
 - Updated dependencies [4959500]
@@ -345,12 +374,15 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.2
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.1
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.0
 
 - Updated dependencies
@@ -372,9 +404,11 @@
 - Updated dependencies [3cd773f]
 
 - Updated dependencies [4add8da]
+
   - @neurodesk/webapp-components@0.1.5
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.1.4
 
 - Updated dependencies [4add8da]

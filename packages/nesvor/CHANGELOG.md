@@ -4,11 +4,18 @@
 
 ### Patch Changes
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.2
+  - @neurodesk/synthsr@0.6.20261020
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/synthsr@0.6.20261020
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
 
 - Updated dependencies [4b40da1]
+
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/synthsr@0.6.20261020
 
@@ -30,6 +37,7 @@
 - Updated dependencies [46935f7]
 
 - Updated dependencies [d1fa022]
+
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/synthsr@0.6.20261020
 
@@ -51,10 +59,12 @@
 ### Patch Changes
 
 - Updated dependencies [7c0d201]
+
   - @neurodesk/webapp-components@0.16.2
   - @neurodesk/synthsr@0.6.20261018
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/synthsr@0.6.20261018
 
@@ -63,13 +73,16 @@
 - Updated dependencies [0511cd7]
 
 - Updated dependencies [3329c39]
+
   - @neurodesk/webapp-components@0.16.0
 
 - Updated dependencies [b67e4e9]
+
   - @neurodesk/webapp-components@0.15.1
   - @neurodesk/synthsr@0.6.20261018
 
 - Updated dependencies [b68209b]
+
   - @neurodesk/webapp-components@0.15.0
   - @neurodesk/synthsr@0.6.20261018
 
@@ -78,6 +91,7 @@
 - Updated dependencies [ccb2970]
 
 - Updated dependencies [67a5a8f]
+
   - @neurodesk/webapp-components@0.14.4
   - @neurodesk/synthsr@0.6.20261018
 
@@ -118,10 +132,12 @@
 ### Patch Changes
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.14.2
   - @neurodesk/synthsr@0.6.20261016
 
 - Updated dependencies [7443048]
+
   - @neurodesk/webapp-components@0.14.1
   - @neurodesk/synthsr@0.6.20261016
 
@@ -139,10 +155,12 @@
 - Updated dependencies [dd65e6a]
 
 - Updated dependencies [dcc74e7]
+
   - @neurodesk/webapp-components@0.14.0
   - @neurodesk/synthsr@0.6.20261015
 
 - Updated dependencies [84d192a]
+
   - @neurodesk/synthsr@0.6.20261015
 
 - Updated dependencies [dcc74e7]
@@ -180,23 +198,13 @@
 
 ## 0.3.20261009
 
-
-
 ## 0.3.20261007
-
-
 
 ## 0.3.20261004
 
-
-
 ## 0.3.20261003
 
-
-
 ## 0.3.20260930
-
-
 
 ## 0.3.20260924
 
