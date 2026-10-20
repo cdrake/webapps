@@ -82,6 +82,7 @@ const WITHOUT_COMMAND_LINE = {
   sdc: 'exes/sdc builds the sdc command line on the same core; its release packaging follows the app (#473)',
   noddi: 'the noddi command line is the next step of docs/architecture/dwi-microstructure-design.md; the app ships first',
   fastprep: 'exes/fastprep drives separately installed niimath, brainchop, greedy-rs, synthsr, topofit and glm; a bundled release waits on packaging those (TopoFit licence pending)',
+  'me-ica': 'its meica CLI is released from niivue/meica-rs; no release is tagged yet',
 };
 
 test('every app ships its own command line or states why it cannot', async () => {
