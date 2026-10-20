@@ -25,6 +25,12 @@
 ### Patch Changes
 
 - Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - @neurodesk/webapp-components@0.18.0
+  - @neurodesk/runtime-support@0.8.2
+  - @neurodesk/fireants@0.4.20261020
+- Updated dependencies
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/runtime-support@0.8.1
   - @neurodesk/fireants@0.4.20261020

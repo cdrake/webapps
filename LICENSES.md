@@ -20,6 +20,9 @@ for each app are recorded in `registry/apps.yml`.
 - `packages/degibbs`: MPL-2.0 (`packages/degibbs/LICENSE`), as the MRtrix3 `mrdegibbs` source it ports;
   attribution in `packages/degibbs/NOTICE`. It holds the degibbs WebAssembly module and command line
 - `packages/niimath`: BSD-2-Clause (`packages/niimath/LICENSE`); niimath attribution in `packages/niimath/NOTICE`
+- `apps/me-ica`: LGPL-2.1-only, as the `@niivue/meica` package it ships (LGPL-2.1-only, from
+  https://github.com/niivue/meica-rs; a port of tedana, LGPL-2.1, and mapca and GIFT, GPL-2.0,
+  whose developers permitted the LGPL-2.1)
 - `apps/dicom2vid`: BSD-3-Clause (`apps/dicom2vid/LICENSE`)
 - `packages/dicom2vid`: BSD-3-Clause (`packages/dicom2vid/LICENSE`); the shared
   dicom2vid pipeline and its command line. The vendored muxers are MIT and the

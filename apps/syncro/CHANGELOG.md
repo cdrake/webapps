@@ -24,6 +24,16 @@
 
 ### Patch Changes
 
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - @neurodesk/webapp-components@0.18.0
+  - @neurodesk/runtime-support@0.8.2
+  - @neurodesk/synthsr@0.6.20261020
+  - @neurodesk/synthstrip@0.1.5
+  - @neurodesk/brain-extraction@0.4.20261020
+  - @neurodesk/greedy@0.6.20261020
+  - @neurodesk/syncro@0.7.20261020
 - Record the injected MindGrab runtime's actual version in brain extraction provenance, including SYNcro's separately pinned build.
 - Updated dependencies
 - Updated dependencies
