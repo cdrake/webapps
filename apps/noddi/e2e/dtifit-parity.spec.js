@@ -26,6 +26,7 @@ for (const noddi of [false, true]) {
       expect(cli.provenance.tensorFit).toBe("niimath-dtifit");
       expect(cli.files).toHaveLength(noddi ? 11 : 7);
       const downloaded = new Set();
+      const names = new Set();
       // Chromium permits ten scripted downloads in one tab, so eleven outputs take two runs.
       while (downloaded.size < cli.files.length) {
         const page = await context.newPage();
@@ -48,9 +49,11 @@ for (const noddi of [false, true]) {
           const [browserBytes, cliBytes] = await Promise.all([readFile(await download.path()), readFile(join(cli.output, download.suggestedFilename()))]);
           expect(gunzipSync(browserBytes).equals(gunzipSync(cliBytes)), role).toBe(true);
           downloaded.add(role);
+          names.add(download.suggestedFilename());
         }
         await page.close();
       }
+      expect([...names].sort()).toEqual([...cli.files].sort());
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
