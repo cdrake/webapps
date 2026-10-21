@@ -1192,10 +1192,11 @@ test('the shell and its tests read only their own app entry of the standalone ca
     'test-utils/standalone-dialog.mjs': 'checks catalog.apps[id]',
     // A comment saying the shell renders the dialog.
     'apps/disconnectome/src/main.js': 'names it in a comment',
+    'apps/disconnectome/e2e/smoke.spec.js': 'names it in a comment',
   };
   const reached = new Set(registry.apps.flatMap((app) => [...reachableFrom(workspace, `apps/${app.id}`)]));
   for (const file of filesNaming(String.raw`standalone\.json`)) {
-    if (file.startsWith('apps/') ? /\/(?:e2e|test)\//.test(file) : !reached.has(file) && file !== 'site/app-shell.js') continue;
+    if (!file.startsWith('apps/') && !reached.has(file) && file !== 'site/app-shell.js') continue;
     assert.ok(Object.hasOwn(readers, file), `${file} reads the standalone catalog; check it reads only its own entry, then list it`);
   }
   for (const [file, pattern] of [['site/app-shell.js', /catalog\.(?!apps\[metadata\.id\])/], ['test-utils/standalone-dialog.mjs', /catalog\.(?!apps\[id\])/]]) {
