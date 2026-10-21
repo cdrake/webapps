@@ -12,6 +12,7 @@ on:
       - 'packages/noddi/**'
       - 'packages/degibbs/**'
       - 'packages/dwidenoise/**'
+      - 'packages/hmc-registration/**'
       - 'packages/components/src/file-io/NiftiUtils.js'
       - 'packages/dwi2trx/src/gradients.js'
       - 'packages/dwi2trx/src/node-runner.js'
@@ -31,6 +32,7 @@ on:
       - 'packages/noddi/**'
       - 'packages/degibbs/**'
       - 'packages/dwidenoise/**'
+      - 'packages/hmc-registration/**'
       - 'packages/components/src/file-io/NiftiUtils.js'
       - 'packages/dwi2trx/src/gradients.js'
       - 'packages/dwi2trx/src/node-runner.js'
@@ -69,7 +71,8 @@ jobs:
 
   # The hmc tests against NiFreeze's and QSIPrep's runs on ds005577 sub-107 (hmc/reference/ on
   # Hugging Face, pinned by exes/dwi/hmc/validation/reference.manifest.json). The job fetches
-  # only the subsets that tests read (115 MB of 439 MB), and HMC_REQUIRE_REFERENCE turns each
+  # only the subsets that tests read (195 MB of 439 MB), replays NiFreeze's registrations through
+  # the WebAssembly kernel for tests/q53_replay.rs, and HMC_REQUIRE_REFERENCE turns each
   # missing-data skip into a failure. When a test starts to read another subset, add it to the
   # fetch line and to the cache key (the cache saves only on a key miss).
   hmc-reference:
@@ -86,9 +89,16 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/hmc-reference
-          key: hmc-reference-${{ hashFiles('exes/dwi/hmc/validation/reference.manifest.json') }}-decomposition-clip-gp
+          key: hmc-reference-${{ hashFiles('exes/dwi/hmc/validation/reference.manifest.json') }}-decomposition-clip-gp-nifreeze-replay
       - name: Fetch the reference subsets (sha256-checked)
-        run: python3 exes/dwi/hmc/validation/fetch_reference.py "$HOME/hmc-reference" decomposition clip gp >> "$GITHUB_ENV"
+        run: python3 exes/dwi/hmc/validation/fetch_reference.py "$HOME/hmc-reference" decomposition clip gp nifreeze-replay >> "$GITHUB_ENV"
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+      - name: Replay NiFreeze's registrations through the WebAssembly kernel
+        run: |
+          node packages/hmc-registration/validation/nifreeze-replay.mjs "$HMC_REFERENCE" "$RUNNER_TEMP/q53-replay"
+          echo "HMC_WASM_REPLAY=$RUNNER_TEMP/q53-replay" >> "$GITHUB_ENV"
       - name: Test on the reference data, release build
         working-directory: exes/dwi
         env:
