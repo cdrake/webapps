@@ -7,10 +7,13 @@ import { readNiftiFrames } from "@neurodesk/webapp-components/file-io";
 import { fitTensor } from "@neurodesk/dwi2trx";
 import { parseBvalBvec } from "@neurodesk/dwi2trx/gradients";
 import { runNiimath } from "@neurodesk/dwi2trx/runner";
-import { gradientText } from "@neurodesk/noddi/pipeline";
+import { MAPS, bidsStem, gradientText, mapName, maskName } from "@neurodesk/noddi/pipeline";
 import { oversizedHeaderDwi, syntheticDwi, syntheticMask } from "./fixtures.mjs";
 
 const examples = JSON.parse(readFileSync(new URL("../examples.json", import.meta.url), "utf8"));
+const slab = examples.find((example) => example.id === "ds005134-slab");
+const singleShell = examples.find((example) => example.id === "single-shell");
+// The failure, retry and read-cancel tests use the first example, the multi-shell slab.
 const dwiUrl = examples[0].files.find((file) => file.role === "image").url;
 
 /** Loads the series and a mask of every voxel: the synthetic cube is too small for MindGrab. */
@@ -263,40 +266,97 @@ test("mask reading blocks fitting, cancels without a late mask and permits retry
   await expect(page.locator("#maskInfo")).toContainText("512 voxels");
 });
 
-for (const example of examples) {
-  test(`example ${example.id} fits the tensor, refuses NODDI and downloads FA`, async ({ page }) => {
-    test.setTimeout(180000);
-    await page.goto("/");
-    await page.locator("select[data-neurodesk-example]").selectOption(example.id);
-    await expect(page.locator("#fileInfo")).toContainText("dwi.nii.gz", { timeout: 120000 });
-    await expect(page.locator("#fileInfo")).toContainText("20×b2500");
-    await expect(page.locator("#fitNoddi")).toBeDisabled();
-    await expect(page.locator("#noddiNote")).toBeVisible();
-    await page.locator("#runButton").click();
-    await expect(page.locator("#statusText")).toContainText("Fitted", { timeout: 120000 });
-    await expect(page.locator("#technicalLog")).toContainText(/MindGrab .+ brain mask on (cpu|webgpu|webgl2)/);
-    await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(7);
+test("the multi-shell slab example fits the tensor and NODDI and downloads every map", async ({ page }) => {
+  // MindGrab and the NODDI fit of about 46 000 voxels took 2 minutes on 8 cores.
+  test.setTimeout(600000);
+  expect(examples[0].id).toBe(slab.id);
+  await page.goto("/");
+  await page.locator("select[data-neurodesk-example]").selectOption(slab.id);
+  await expect(page.locator("#fileInfo")).toContainText("sub-01_dir-AP_desc-slab_dwi.nii.gz", { timeout: 120000 });
+  await expect(page.locator("#fileInfo")).toContainText("13×b0, 12×b500, 48×b1000, 64×b2000");
+  await expect(page.locator("#fitNoddi")).toBeEnabled();
+  await expect(page.locator("#fitNoddi")).toBeChecked();
+  await expect(page.locator("#noddiNote")).toBeHidden();
+  await page.locator("#runButton").click();
+  await expect(page.locator("#statusText")).toContainText(/Fitted \d+ voxels · 11 maps/, { timeout: 540000 });
+  await expect(page.locator("#technicalLog")).toContainText(/MindGrab .+ brain mask on (cpu|webgpu|webgl2)/);
+  await expect(page.locator("#technicalLog")).toContainText("Fitting tensor and NODDI");
+  const rows = page.locator("#resultList .nd-volume-toggle");
+  const labels = [...MAPS.tensor, ...MAPS.noddi].map((map) => map.label);
+  await expect(rows).toHaveCount(labels.length + 1);
+  for (const label of [...labels, "Brain mask"]) {
+    await expect(rows.filter({ hasText: new RegExp(`^View${label}Download$`) })).toHaveCount(1);
+  }
+  const stem = bidsStem(slab.files.find((file) => file.role === "image").name);
+  const download = async (label, name) => {
     const event = page.waitForEvent("download");
-    await page.locator("#resultList .nd-volume-toggle").first().getByRole("button", { name: "Download" }).click();
-    const download = await event;
-    expect(download.suggestedFilename()).toBe("dwi_model-tensor_param-fa_dwimap.nii.gz");
-    const fa = await readDownload(download);
-    const inMask = Array.from(fa.data).filter((value) => value > 0);
-    expect(inMask.length).toBeGreaterThan(1000);
-    // As FSL dtifit, FA is not clipped: a voxel with a negative eigenvalue (at the mask edge) can
-    // exceed 1. A brain's FA is mostly between 0.1 and 0.6.
-    const sorted = inMask.sort((a, b) => a - b);
-    const median = sorted[sorted.length >> 1];
-    expect(median).toBeGreaterThan(0.1);
-    expect(median).toBeLessThan(0.6);
-    expect(sorted.filter((value) => value > 1).length / sorted.length).toBeLessThan(0.01);
-  });
-}
+    await rows.filter({ hasText: new RegExp(`^View${label}Download$`) }).getByRole("button", { name: "Download" }).click();
+    const file = await event;
+    expect(file.suggestedFilename()).toBe(name);
+    return readDownload(file);
+  };
+  const mask = await download("Brain mask", maskName(stem));
+  expect(Array.from(mask.dims).slice(0, 3)).toEqual([67, 92, 10]);
+  const inMask = Array.from(mask.data, (value) => value > 0);
+  const brain = inMask.filter(Boolean).length;
+  // MindGrab kept 45 965 of the slab's 61 640 voxels; the slab is the bounding box of a bet mask.
+  expect(brain).toBeGreaterThan(30000);
+  expect(brain).toBeLessThan(inMask.length);
+  const masked = (map) => Array.from(map.data.subarray(0, inMask.length)).filter((_, i) => inMask[i]);
+  const median = (values) => values.sort((a, b) => a - b)[values.length >> 1];
+  const fa = masked(await download("FA", mapName(stem, "tensor", "fa")));
+  expect(median(fa)).toBeGreaterThan(0.1);
+  expect(median(fa)).toBeLessThan(0.6);
+  // The NODDI fractions and ODI are bounded by the model. The measured medians in the mask are
+  // ICVF 0.50 and ODI 0.37; ISOVF is 0 in a third of the mask.
+  for (const [label, param, low, high] of [["ICVF", "icvf", 0.3, 0.7], ["ODI", "odi", 0.2, 0.6], ["ISOVF", "isovf", 0, 0.4]]) {
+    const values = masked(await download(label, mapName(stem, "noddi", param)));
+    expect(values.every((value) => value >= 0 && value <= 1), label).toBe(true);
+    expect(median(values), label).toBeGreaterThanOrEqual(low);
+    expect(median(values), label).toBeLessThan(high);
+  }
+  const direction = await download("NODDI direction", mapName(stem, "noddi", "direction"));
+  expect(direction.frames).toBe(3);
+  const voxels = inMask.length;
+  const norms = inMask.flatMap((brainVoxel, i) => (brainVoxel
+    ? [Math.hypot(direction.data[i], direction.data[voxels + i], direction.data[2 * voxels + i])]
+    : []));
+  expect(norms.filter((norm) => Math.abs(norm - 1) < 1e-4).length / norms.length).toBeGreaterThan(0.99);
+});
+
+test("the single-shell example fits the tensor, refuses NODDI and downloads FA", async ({ page }) => {
+  test.setTimeout(180000);
+  await page.goto("/");
+  await page.locator("select[data-neurodesk-example]").selectOption(singleShell.id);
+  await expect(page.locator("#fileInfo")).toContainText("dwi.nii.gz", { timeout: 120000 });
+  await expect(page.locator("#fileInfo")).toContainText("20×b2500");
+  await expect(page.locator("#fitNoddi")).toBeDisabled();
+  await expect(page.locator("#noddiNote")).toBeVisible();
+  await page.locator("#runButton").click();
+  await expect(page.locator("#statusText")).toContainText("Fitted", { timeout: 120000 });
+  await expect(page.locator("#technicalLog")).toContainText(/MindGrab .+ brain mask on (cpu|webgpu|webgl2)/);
+  await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(7);
+  const event = page.waitForEvent("download");
+  await page.locator("#resultList .nd-volume-toggle").first().getByRole("button", { name: "Download" }).click();
+  const download = await event;
+  expect(download.suggestedFilename()).toBe("dwi_model-tensor_param-fa_dwimap.nii.gz");
+  const fa = await readDownload(download);
+  const inMask = Array.from(fa.data).filter((value) => value > 0);
+  expect(inMask.length).toBeGreaterThan(1000);
+  // As FSL dtifit, FA is not clipped: a voxel with a negative eigenvalue (at the mask edge) can
+  // exceed 1. A brain's FA is mostly between 0.1 and 0.6.
+  const sorted = inMask.sort((a, b) => a - b);
+  const median = sorted[sorted.length >> 1];
+  expect(median).toBeGreaterThan(0.1);
+  expect(median).toBeLessThan(0.6);
+  expect(sorted.filter((value) => value > 1).length / sorted.length).toBeLessThan(0.01);
+});
 
 test("cancelling default MindGrab extraction permits a complete retry", async ({ page }) => {
   test.setTimeout(180000);
   await page.goto("/");
-  await page.locator("select[data-neurodesk-example]").selectOption(examples[0].id);
+  // The single-shell example keeps the retry's fit short; the slab test runs MindGrab to the end.
+  await page.locator("select[data-neurodesk-example]").selectOption(singleShell.id);
   await expect(page.locator("#runButton")).toBeEnabled({ timeout: 120000 });
   const started = page.waitForEvent("worker");
   await page.locator("#runButton").click();
@@ -404,7 +464,7 @@ test("the automation operation fits with niimath dtifit and NODDI, and names the
 
 test("example with niimath dtifit downloads FA and MD equal to DWI2TRX's fit of the same gradients and mask", async ({ page, request }) => {
   test.setTimeout(240000);
-  const example = examples[0];
+  const example = singleShell;
   await page.goto("/");
   await page.locator("select[data-neurodesk-example]").selectOption(example.id);
   await expect(page.locator("#runButton")).toBeEnabled({ timeout: 120000 });

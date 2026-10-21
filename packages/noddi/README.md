@@ -84,8 +84,8 @@ The files go to standard output and the settings that produced them, as one JSON
 The example gets the command line's CPU MindGrab mask through the app's mask input, so the comparison isolates the fit.
 `validation/cli-check.mjs` runs a command line, or an extracted archive with `--executable`, on the same cases and requires each file to equal the web app's once decompressed.
 Rerecord the reference after changing `exes/dwi`, the pipeline or MindGrab.
-The example is dwi2trx's single-shell DWI, which covers the tensor fit, the NODDI refusal and the MindGrab mask; the phantom covers NODDI.
-Move the check to the ds005134 slab when it becomes the app's example (#421).
+The example is the app's first: the ds005134 sub-01 multi-shell slab, which covers the MindGrab mask, the tensor fit and NODDI on real data; the phantom covers `--no-mask` and the OLS tensor.
+The app's second example, dwi2trx's single-shell DWI, covers the NODDI refusal in the browser tests.
 
 ### Citation
 

@@ -3,10 +3,11 @@
 // the MindGrab mask the command line computes on the CPU (mask) and what the built web app
 // downloaded for each case (browser).
 //
-// The app's pinned example has one shell, so it covers the tensor fit, the NODDI refusal and the
-// MindGrab mask; the two-shell phantom (src/phantom.js) covers NODDI (AMICO) and --no-mask. The
-// example's mask comes from the command line's CPU MindGrab and reaches the app through its mask
-// input, since the app's own MindGrab prefers a GPU: this isolates the fit.
+// The app's first pinned example, the ds005134 multi-shell slab, covers the MindGrab mask, the
+// tensor fit and NODDI (AMICO) on real data; the two-shell phantom (src/phantom.js) covers
+// --no-mask and the OLS tensor. The example's mask comes from the command line's CPU MindGrab and
+// reaches the app through its mask input, since the app's own MindGrab prefers a GPU: this
+// isolates the fit.
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';

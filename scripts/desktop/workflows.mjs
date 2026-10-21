@@ -448,24 +448,24 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     await page.locator('#runButton').click();
     await expect(page.locator('#statusText')).toHaveText('Bias field corrected', { timeout: 600000 });
     const image = nifti(await download('#resultList .nd-volume-toggle:nth-child(1) .nd-download-btn'));
-    assert.equal(image.filename, 'dwi_desc-n4.nii.gz');
+    assert.equal(image.filename, 'sub-01_dir-AP_desc-n4_dwi.nii.gz');
     return image;
   }
   if (id === 'dwidenoise') {
     await expect(page.locator('#runButton')).toBeEnabled({ timeout: 60000 });
     await page.locator('#runButton').click();
-    await expect(page.locator('#statusText')).toHaveText('Denoised 21 volumes', { timeout: 600000 });
+    await expect(page.locator('#statusText')).toHaveText('Denoised 137 volumes', { timeout: 600000 });
     const image = nifti(await download('#resultList .nd-volume-toggle:nth-child(1) .nd-download-btn'));
-    assert.equal(image.filename, 'dwi_desc-denoised.nii.gz');
+    assert.equal(image.filename, 'sub-01_dir-AP_desc-denoised_dwi.nii.gz');
     return image;
   }
   if (id === 'noddi') {
-    // The single-shell example fits the tensor only; FA is the first result row.
+    // The ds005134 slab fits the tensor and NODDI (11 maps); FA is the first result row.
     await expect(page.locator('#runButton')).toBeEnabled({ timeout: 60000 });
     await page.locator('#runButton').click();
-    await expect(page.locator('#statusText')).toContainText('Fitted', { timeout: 600000 });
+    await expect(page.locator('#statusText')).toContainText('· 11 maps', { timeout: 600000 });
     const fa = nifti(await download('#resultList .nd-volume-toggle:nth-child(1) .nd-download-btn'));
-    assert.equal(fa.filename, 'dwi_model-tensor_param-fa_dwimap.nii.gz');
+    assert.equal(fa.filename, 'sub-01_dir-AP_desc-slab_model-tensor_param-fa_dwimap.nii.gz');
     return fa;
   }
   if (id === 'carotid-flow') {
