@@ -26,10 +26,13 @@ import os
 import shutil
 import sys
 import time
+import urllib.error
 import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 MANIFEST = os.path.join(HERE, "reference.manifest.json")
+ATTEMPTS = 8
+THREADS = 4
 
 
 def sha256(path):
@@ -53,7 +56,7 @@ def fetch(base, dest, entry):
     if verified(path, entry):
         return False
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    for attempt in range(1, 6):
+    for attempt in range(1, ATTEMPTS + 1):
         try:
             with (
                 urllib.request.urlopen(base + entry["path"], timeout=120) as r,
@@ -62,10 +65,18 @@ def fetch(base, dest, entry):
                 shutil.copyfileobj(r, f, 1 << 22)
             break
         except OSError as e:
-            if attempt == 5:
+            if attempt == ATTEMPTS:
                 raise
-            print(f"  {entry['path']}: retrying ({e})", file=sys.stderr, flush=True)
-            time.sleep(5 * attempt)
+            # Hugging Face answers 429 after a few thousand requests: wait as long as it asks.
+            wait = 5 * attempt
+            if isinstance(e, urllib.error.HTTPError) and e.code == 429:
+                wait = max(wait, int(e.headers.get("Retry-After") or 60))
+            print(
+                f"  {entry['path']}: retrying in {wait} s ({e})",
+                file=sys.stderr,
+                flush=True,
+            )
+            time.sleep(wait)
     if not verified(path + ".part", entry):
         sys.exit(f"{entry['path']}: size or sha256 does not match the manifest")
     os.replace(path + ".part", path)
@@ -101,7 +112,7 @@ def main(dest, names):
         file=sys.stderr,
         flush=True,
     )
-    with concurrent.futures.ThreadPoolExecutor(8) as pool:
+    with concurrent.futures.ThreadPoolExecutor(THREADS) as pool:
         fetched = sum(pool.map(lambda e: fetch(manifest["base"], dest, e), files))
     print(
         f"{dest}: {fetched} downloaded, {len(files) - fetched} already verified",
