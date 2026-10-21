@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/degibbs-native.yml'
       - 'packages/degibbs/**'
+      - 'packages/components/package.json'
       - 'packages/components/src/file-io/**'
       - 'apps/degibbs/**'
   push:
@@ -14,6 +15,7 @@ on:
       - '.github/workflows/node-cli-portable.yml'
       - 'exes/node-cli/**'
       - 'packages/degibbs/**'
+      - 'packages/components/package.json'
       - 'packages/components/src/file-io/**'
       - 'apps/degibbs/**'
   workflow_dispatch:

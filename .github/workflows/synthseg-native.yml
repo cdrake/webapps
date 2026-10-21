@@ -3,12 +3,15 @@ name: synthseg-native
 on:
   pull_request:
     paths:
+      - 'packages/components/package.json'
       - '.github/workflows/synthseg-native.yml'
       - 'exes/synthseg/**'
       - 'exes/nifti/**'
       - 'exes/native-publish/**'
       - 'test-utils/native-nifti/**'
       - 'packages/synthseg/**'
+      - 'packages/components/src/automation/**'
+      - 'packages/components/src/file-io/**'
   workflow_dispatch:
     inputs:
       sign_release:

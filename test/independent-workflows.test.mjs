@@ -5,6 +5,8 @@ import { runInNewContext } from 'node:vm';
 import YAML from 'yaml';
 import { loadAppsRegistry } from '../scripts/lib/apps-registry.mjs';
 import { createAppPlan } from '../scripts/lib/app-plan.mjs';
+import { commandLineClosure } from '../scripts/lib/module-closure.mjs';
+import { repoRoot } from '../scripts/lib/apps-registry.mjs';
 
 async function workflow(name) {
   return YAML.parse(await readFile(new URL(`../.github/workflows/${name}.yml`, import.meta.url), 'utf8'));
@@ -366,4 +368,41 @@ test('Brain2Print browser CPU parity skips optional CUDA installation', async ()
   const install = job.steps.find(step => step.run === 'pnpm install --frozen-lockfile');
   assert.equal(install.env.ONNXRUNTIME_NODE_INSTALL, 'skip');
   assert.ok(job.steps.some(step => step.run === 'node packages/brain2print/validation/browser-reference.mjs --check'));
+});
+
+// GitHub's `paths` glob: `**` crosses directories, `*` does not.
+const pathGlob = (pattern) => new RegExp(`^${pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*\*\/?/g, '\u0000').replace(/\*/g, '[^/]*').replaceAll('\u0000', '.*')}$`);
+
+test('a native or CLI workflow runs when a file its command line imports changes', async () => {
+  const files = (await readdir(new URL('../.github/workflows/', import.meta.url))).filter((name) => name.endsWith('.yml')).sort();
+  const gaps = [];
+  for (const file of files) {
+    const flow = await workflow(file.slice(0, -'.yml'.length));
+    for (const event of ['pull_request', 'push']) {
+      const filters = flow.on?.[event]?.paths;
+      if (!Array.isArray(filters)) continue;
+      const patterns = filters.filter((filter) => !filter.startsWith('!')).map(pathGlob);
+      // A workflow owns the packages it filters on whole.
+      const owned = filters.map((filter) => filter.match(/^((?:packages|exes)\/[^/*]+)\/\*\*$/)?.[1]).filter(Boolean);
+      for (const directory of owned) {
+        if (!await access(new URL(`../${directory}/package.json`, import.meta.url)).then(() => true, () => false)) continue;
+        for (const path of commandLineClosure(repoRoot, directory)) {
+          if (!patterns.some((pattern) => pattern.test(path))) gaps.push(`${file} ${event}: ${directory} imports ${path}`);
+        }
+      }
+    }
+  }
+  assert.deepEqual(gaps, []);
+});
+
+test('the command-line closure follows workspace exports and relative imports', () => {
+  const syncro = commandLineClosure(repoRoot, 'packages/syncro');
+  for (const path of ['packages/registration/src/node.js', 'packages/synthstrip/src/index.js', 'packages/synthsr/src/pipeline.js']) assert.ok(syncro.includes(path), path);
+  assert.ok(syncro.every((path) => !path.startsWith('packages/syncro/')));
+  const lcmodel = commandLineClosure(repoRoot, 'packages/lcmodel');
+  assert.ok(lcmodel.includes('packages/node-drivers/src/dcm2niix.js'));
+  // A worker loaded through new URL(..., import.meta.url).
+  assert.ok(lcmodel.includes('packages/node-drivers/src/mindgrab-worker.js'));
+  // An asset named without ./ is relative to the module too.
+  assert.ok(commandLineClosure(repoRoot, 'packages/deface').includes('packages/runtime-support/src/niimath/niimath.wasm'));
 });

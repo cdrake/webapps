@@ -3,15 +3,18 @@ name: vesselboost-native
 on:
   pull_request:
     paths:
+      - 'packages/components/package.json'
       - '.github/workflows/vesselboost-native.yml'
       - 'packages/vesselboost/**'
       - 'packages/components/src/worker/**'
       - 'packages/components/src/volume/**'
       - 'packages/components/src/file-io/**'
       - 'apps/vesselboost/**'
+      - 'packages/components/src/inference/workerProtocol.js'
   push:
     branches: [main]
     paths:
+      - 'packages/components/package.json'
       - '.github/workflows/vesselboost-native.yml'
       - '.github/workflows/node-cli-portable.yml'
       - 'exes/node-cli/**'
@@ -20,6 +23,7 @@ on:
       - 'packages/components/src/volume/**'
       - 'packages/components/src/file-io/**'
       - 'apps/vesselboost/**'
+      - 'packages/components/src/inference/workerProtocol.js'
   workflow_dispatch:
     inputs:
       sign_release:

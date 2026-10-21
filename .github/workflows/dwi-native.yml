@@ -3,21 +3,41 @@ name: dwi-native
 on:
   pull_request:
     paths:
+      - 'packages/components/package.json'
+      - 'packages/dwi2trx/package.json'
+      - 'packages/node-drivers/package.json'
       - '.github/workflows/dwi-native.yml'
       - '.github/actions/setup-wasm-opt/**'
       - 'exes/dwi/**'
       - 'packages/noddi/**'
       - 'packages/degibbs/**'
       - 'packages/dwidenoise/**'
+      - 'packages/components/src/file-io/NiftiUtils.js'
+      - 'packages/dwi2trx/src/gradients.js'
+      - 'packages/dwi2trx/src/node-runner.js'
+      - 'packages/dwi2trx/src/tensor.js'
+      - 'packages/node-drivers/src/mindgrab.js'
+      - 'packages/node-drivers/src/mindgrab-worker.js'
+      - 'packages/node-drivers/src/niimath.js'
   push:
     branches: [main]
     paths:
+      - 'packages/components/package.json'
+      - 'packages/dwi2trx/package.json'
+      - 'packages/node-drivers/package.json'
       - '.github/workflows/dwi-native.yml'
       - '.github/actions/setup-wasm-opt/**'
       - 'exes/dwi/**'
       - 'packages/noddi/**'
       - 'packages/degibbs/**'
       - 'packages/dwidenoise/**'
+      - 'packages/components/src/file-io/NiftiUtils.js'
+      - 'packages/dwi2trx/src/gradients.js'
+      - 'packages/dwi2trx/src/node-runner.js'
+      - 'packages/dwi2trx/src/tensor.js'
+      - 'packages/node-drivers/src/mindgrab.js'
+      - 'packages/node-drivers/src/mindgrab-worker.js'
+      - 'packages/node-drivers/src/niimath.js'
   workflow_dispatch:
 
 concurrency:
