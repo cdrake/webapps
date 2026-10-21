@@ -70,7 +70,8 @@ jobs:
   # The hmc tests against NiFreeze's and QSIPrep's runs on ds005577 sub-107 (hmc/reference/ on
   # Hugging Face, pinned by exes/dwi/hmc/validation/reference.manifest.json). The job fetches
   # only the subsets that tests read (115 MB of 439 MB), and HMC_REQUIRE_REFERENCE turns each
-  # missing-data skip into a failure. Add a subset here when a test starts to read it.
+  # missing-data skip into a failure. When a test starts to read another subset, add it to the
+  # fetch line and to the cache key (the cache saves only on a key miss).
   hmc-reference:
     name: exes/dwi tests on the pinned hmc reference data
     runs-on: ubuntu-24.04
