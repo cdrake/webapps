@@ -58,7 +58,7 @@ The tests pin that file's SHA-256.
 On NiFreeze's own registrations (#446, `validation/nifreeze-replay.mjs`, held to `exes/dwi/hmc/validation/q53-replay.json` in the `dwi-native` workflow), the module writes the same transform as native `--float 1` for 98 of 101 runs; GP volumes 31, 52 and 88 differ by at most 0.03 mm.
 A run takes about 0.5 s in Node.
 
-One instance aborts on its 27th run, whatever the input, so load a new one before that (the replay loads one every 20 runs).
+One instance aborts on its 27th run, whatever the input ([#537](https://github.com/neurodesk/webapps/issues/537)), so load a new one before that (the replay loads one every 20 runs).
 `src/main.cxx` registers ITK's IO factories in every `main()`, and ITK does not drop duplicate statically linked factories; that is the likely cause.
 
 ## Tests

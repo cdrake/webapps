@@ -23,7 +23,7 @@ const HOST = "/var/tmp/dwi-hmc/runs/";
 const SEED = "1234";
 const GP_VOLUMES = 90;
 const B0_VOLUMES = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
-// One kernel instance aborts on its 27th run, whatever the input (it registers ITK's IO
+// One kernel instance aborts on its 27th run, whatever the input (#537; it registers ITK's IO
 // factories again in every main(), and ITK does not drop duplicate static factories). Load a
 // new one before that.
 const RUNS_PER_KERNEL = 20;
