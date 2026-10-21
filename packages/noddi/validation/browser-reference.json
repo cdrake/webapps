@@ -1,14 +1,15 @@
 {
   "inputs": {
     "example": {
-      "dwi.nii.gz": "9007c69e6f93b94fd57bf427415a7b4bd2c0822a6b5ee334cb561b8a6ebcd50f",
-      "dwi.bval": "5b7b0b81f43794445d5b12fb227a5f4ed838c9df384d9a639d47d18fb067118b",
-      "dwi.bvec": "709d68fced5a626dc8496cd0d2950efe18d29187f6aa028bd05551c69e0f6376"
+      "sub-01_dir-AP_desc-slab_dwi.nii.gz": "1e7c8461d9bfc3c80633f930dc1df16d892a6bfd5e15db4c5a2be9d021e48d00",
+      "sub-01_dir-AP_desc-slab_dwi.bval": "5f990dc6bfeb61653df62e49437d1e71c1a4e4d487c478c7dd7571307566ff19",
+      "sub-01_dir-AP_desc-slab_dwi.bvec": "7141cc17a90f78c29dbdc1218755081d51c93988d139886fcb9871d9e3fdfd6d",
+      "sub-01_dir-AP_desc-slab_dwi.json": "ee4aea62833b98301faedafd2633662e54c9dfd33ac40fb1bf1d03caf5c3b757"
     },
     "phantom": {
       "sub-phantom_dwi.nii": "d4b93a1d23289b7ca9918c12da1a7fd7cbdd22e3f995e27eab8e48f5eae9a09d",
       "sub-phantom_dwi.bval": "d3fe99a00a57b3aaa9a0af168dc537cc48d162a62a21d0a13e1a2f76d4cab5fb",
-      "sub-phantom_dwi.bvec": "98df914a683af55f2c3b6e508ce86ea7094078e5b858242dea34c855351a91f1"
+      "sub-phantom_dwi.bvec": "9562ebc3e58dce3c8a0186e5e9859aa5092bcd519ffef19d5fa99858da2f5215"
     }
   },
   "mask": {
@@ -18,15 +19,15 @@
       "version": "0.1.20260925",
       "backend": "cpu"
     },
-    "name": "dwi_desc-brain_mask.nii.gz",
-    "decompressedSha256": "5e10ea425004791fadf7ee16120e096cc8e0367ac0ac02bb5b324dd4b38bc965",
+    "name": "sub-01_dir-AP_desc-slab_desc-brain_mask.nii.gz",
+    "decompressedSha256": "094853ac9434743da18e02bb1247de27371f237a9505181051394d54d756dd97",
     "nonFinite": 0,
-    "nonzero": 48259,
-    "mean": 0.23869796612852168
+    "nonzero": 45965,
+    "mean": 0.7457008436080467
   },
   "browser": {
     "path": "apps/noddi/e2e/reference.spec.js: the app's fit automation with the mask input, fitting workers, built assets",
-    "app": "noddi 0.0.20261018",
+    "app": "noddi 0.4.20261020",
     "browser": "Chromium 156.0.8078.4",
     "cases": {
       "example": {
@@ -35,82 +36,110 @@
           "tensorFit": "wls"
         },
         "provenance": {
-          "method": "dti",
+          "method": "dti+noddi-amico",
           "tensorFit": "wls",
-          "maskVoxels": 48259,
+          "maskVoxels": 45965,
           "mask": "supplied",
           "inputConversions": {
             "image": {
               "converter": null,
               "candidates": [
                 {
-                  "filename": "dwi.nii.gz",
-                  "sha256": "9ecb22510ffab7fdcb534158b7652449e1d9f010b91fb3f3971622fbed339cb9",
+                  "filename": "sub-01_dir-AP_desc-slab_dwi.nii.gz",
+                  "sha256": "dc59325d09b3cb7535cd9e45405ec1586779603922e169161201c8eae9d95e62",
                   "dimensions": [
-                    72,
-                    72,
-                    39,
-                    21
+                    67,
+                    92,
+                    10,
+                    137
                   ],
                   "metadata": {}
                 }
               ],
               "selected": [
-                "9ecb22510ffab7fdcb534158b7652449e1d9f010b91fb3f3971622fbed339cb9"
+                "dc59325d09b3cb7535cd9e45405ec1586779603922e169161201c8eae9d95e62"
               ]
             }
           }
         },
-        "seconds": 1,
+        "seconds": 85,
         "outputs": {
           "tensor-fa": {
-            "name": "dwi_model-tensor_param-fa_dwimap.nii.gz",
-            "decompressedSha256": "0f2b74157be74605b4a0ff2b42a60cce51e98bfed3bf130c6d85ef6dc31c4638",
+            "name": "sub-01_dir-AP_desc-slab_model-tensor_param-fa_dwimap.nii.gz",
+            "decompressedSha256": "0ac7e7e94746cde7eafcab1ecdb60992ee8655e1d9de9177bd2a816eb21c3fff",
             "nonFinite": 0,
-            "nonzero": 48259,
-            "mean": 0.06065842882503538
+            "nonzero": 45965,
+            "mean": 0.22137270904273657
           },
           "tensor-md": {
-            "name": "dwi_model-tensor_param-md_dwimap.nii.gz",
-            "decompressedSha256": "9bba0f0948b8199aa52632fd5ee3c408cc149e757cd4d3a689915b44985aa2f8",
+            "name": "sub-01_dir-AP_desc-slab_model-tensor_param-md_dwimap.nii.gz",
+            "decompressedSha256": "22cb72a4a92c3cd8fa1a12d729799c6fb0195fdb432bc7856a43e8cede9f70fb",
             "nonFinite": 0,
-            "nonzero": 48259,
-            "mean": 0.0001708167645615621
+            "nonzero": 45965,
+            "mean": 0.0007037383610620385
           },
           "tensor-ad": {
-            "name": "dwi_model-tensor_param-ad_dwimap.nii.gz",
-            "decompressedSha256": "c4c54ed6ee137d488a7362fcbc4ae092200bdaf6e66090706675e737384b5df0",
+            "name": "sub-01_dir-AP_desc-slab_model-tensor_param-ad_dwimap.nii.gz",
+            "decompressedSha256": "9f881a3cc59dc8e77045f9cc2f20972bd3fb817d0bb6db71137d722dcca94e6c",
             "nonFinite": 0,
-            "nonzero": 48259,
-            "mean": 0.00021595352168294325
+            "nonzero": 45965,
+            "mean": 0.000908198834681607
           },
           "tensor-rd": {
-            "name": "dwi_model-tensor_param-rd_dwimap.nii.gz",
-            "decompressedSha256": "47778b096d5f3d9132810afd1facad0d321d977966c08d6724341ad8371ec7b9",
+            "name": "sub-01_dir-AP_desc-slab_model-tensor_param-rd_dwimap.nii.gz",
+            "decompressedSha256": "6cc5ea29b185cd47c9aeb82de0a2585f82c29f17e1e4547168f311e7a90eaeea",
             "nonFinite": 0,
-            "nonzero": 48259,
-            "mean": 0.0001482483859449413
+            "nonzero": 45965,
+            "mean": 0.0006015081243061463
           },
           "tensor-s0": {
-            "name": "dwi_model-tensor_param-s0_dwimap.nii.gz",
-            "decompressedSha256": "93529ee298f31ae7a30faeb4b1476ae6acc0a45844e0b1d415f7222a9d849c5f",
+            "name": "sub-01_dir-AP_desc-slab_model-tensor_param-s0_dwimap.nii.gz",
+            "decompressedSha256": "81f8d9f6ca7b56f29866918b7ecb2dfa892cdccf3c3abfb87f9ca27374cc51a8",
             "nonFinite": 0,
-            "nonzero": 48259,
-            "mean": 123.15252552231719
+            "nonzero": 45965,
+            "mean": 113.72390650149524
           },
           "tensor-direction": {
-            "name": "dwi_model-tensor_param-direction_dwimap.nii.gz",
-            "decompressedSha256": "94e57d1b7b38e816fe372653f36abf2cb53e67880e41a153105db22ed3a1e6a2",
+            "name": "sub-01_dir-AP_desc-slab_model-tensor_param-direction_dwimap.nii.gz",
+            "decompressedSha256": "5c2661b1a4f99fad27498c1e09c70294a27f015518ad7fa6c091fa0019ed2792",
             "nonFinite": 0,
-            "nonzero": 144777,
-            "mean": 0.06409991351870327
+            "nonzero": 137895,
+            "mean": 0.20622687362380906
+          },
+          "noddi-icvf": {
+            "name": "sub-01_dir-AP_desc-slab_model-noddi_param-icvf_dwimap.nii.gz",
+            "decompressedSha256": "43d1ea6f40b4e10433ced26adde033b5d0ce5b6c3411ce43454f7fee776a2a45",
+            "nonFinite": 0,
+            "nonzero": 44839,
+            "mean": 0.40128864092035565
+          },
+          "noddi-isovf": {
+            "name": "sub-01_dir-AP_desc-slab_model-noddi_param-isovf_dwimap.nii.gz",
+            "decompressedSha256": "e56ede59f35812904d8df43b8d18d83909f83b01655d45d53202703444463fbe",
+            "nonFinite": 0,
+            "nonzero": 31785,
+            "mean": 0.1367359551654299
+          },
+          "noddi-odi": {
+            "name": "sub-01_dir-AP_desc-slab_model-noddi_param-odi_dwimap.nii.gz",
+            "decompressedSha256": "e782c528f857aeb179f74365d6d4feece0c7b519bbca54078e1c6196e11016d5",
+            "nonFinite": 0,
+            "nonzero": 45965,
+            "mean": 0.2808489751989973
+          },
+          "noddi-direction": {
+            "name": "sub-01_dir-AP_desc-slab_model-noddi_param-direction_dwimap.nii.gz",
+            "decompressedSha256": "1b5e8d6cee7888880e2a1471341a26e136842574ab84f919bec3b791989ee833",
+            "nonFinite": 0,
+            "nonzero": 137895,
+            "mean": 0.206434511276705
           },
           "mask": {
-            "name": "dwi_desc-brain_mask.nii.gz",
-            "decompressedSha256": "5e10ea425004791fadf7ee16120e096cc8e0367ac0ac02bb5b324dd4b38bc965",
+            "name": "sub-01_dir-AP_desc-slab_desc-brain_mask.nii.gz",
+            "decompressedSha256": "094853ac9434743da18e02bb1247de27371f237a9505181051394d54d756dd97",
             "nonFinite": 0,
-            "nonzero": 48259,
-            "mean": 0.23869796612852168
+            "nonzero": 45965,
+            "mean": 0.7457008436080467
           }
         }
       },
