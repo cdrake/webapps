@@ -76,8 +76,6 @@ jobs:
     name: exes/dwi tests on the pinned hmc reference data
     runs-on: ubuntu-24.04
     timeout-minutes: 30
-    env:
-      DATA: ${{ github.workspace }}/../hmc-reference
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -87,10 +85,10 @@ jobs:
       - name: Cache the reference downloads
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
-          path: ${{ github.workspace }}/../hmc-reference
+          path: ~/hmc-reference
           key: hmc-reference-${{ hashFiles('exes/dwi/hmc/validation/reference.manifest.json') }}-decomposition-clip-gp
       - name: Fetch the reference subsets (sha256-checked)
-        run: python3 exes/dwi/hmc/validation/fetch_reference.py "$DATA" decomposition clip gp >> "$GITHUB_ENV"
+        run: python3 exes/dwi/hmc/validation/fetch_reference.py "$HOME/hmc-reference" decomposition clip gp >> "$GITHUB_ENV"
       - name: Test on the reference data, release build
         working-directory: exes/dwi
         env:
