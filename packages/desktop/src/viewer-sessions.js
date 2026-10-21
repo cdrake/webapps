@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
-const commands = new Set(['viewers.list', 'viewers.state', 'viewers.crosshair', 'viewers.tab', 'viewers.regions']);
+const commands = new Set(['viewers.list', 'viewers.state', 'viewers.crosshair', 'viewers.tab', 'viewers.regions',
+  'viewers.volumes', 'viewers.display', 'viewers.screenshot']);
 
 export function createViewerSessions({ maximum = 4, timeoutMs = 30000 } = {}) {
   const sessions = new Map();
