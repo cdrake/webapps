@@ -9,7 +9,7 @@
     "phantom": {
       "sub-phantom_dwi.nii": "d4b93a1d23289b7ca9918c12da1a7fd7cbdd22e3f995e27eab8e48f5eae9a09d",
       "sub-phantom_dwi.bval": "d3fe99a00a57b3aaa9a0af168dc537cc48d162a62a21d0a13e1a2f76d4cab5fb",
-      "sub-phantom_dwi.bvec": "9562ebc3e58dce3c8a0186e5e9859aa5092bcd519ffef19d5fa99858da2f5215"
+      "sub-phantom_dwi.bvec": "98df914a683af55f2c3b6e508ce86ea7094078e5b858242dea34c855351a91f1"
     }
   },
   "mask": {
