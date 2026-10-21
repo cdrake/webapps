@@ -1,13 +1,24 @@
-// antsRegistration for WebAssembly: argv as the ANTs command line takes it, NIfTI images,
-// MATLAB and text transforms, one ITK thread so results do not depend on the host.
+// ANTs for WebAssembly: argv as the ANTs command lines take them, NIfTI images, MATLAB and text
+// transforms, one ITK thread so results do not depend on the host.
+//
+// The first argument selects the program:
+//   AverageImages ...           ANTs AverageImages (Examples/AverageImages.cxx)
+//   AverageAffineTransform ...  ANTs AverageAffineTransform (Examples/AverageAffineTransform.cxx)
+//   --apply ...                 resampling through transforms (src/apply.cxx)
+//   anything else               antsRegistration
+#include <algorithm>
 #include <iostream>
 #include <string>
 #include <vector>
+#include "AverageAffineTransform.h"
+#include "AverageImages.h"
 #include "antsRegistration.h"
 #include "itkMatlabTransformIOFactory.h"
 #include "itkMultiThreaderBase.h"
 #include "itkNiftiImageIOFactory.h"
 #include "itkTxtTransformIOFactory.h"
+
+int applyTransforms(int argc, char* argv[]);
 
 int main(int argc, char* argv[]) {
   itk::NiftiImageIOFactory::RegisterOneFactory();
@@ -16,6 +27,12 @@ int main(int argc, char* argv[]) {
   itk::MultiThreaderBase::SetGlobalDefaultNumberOfThreads(1);
   itk::MultiThreaderBase::SetGlobalDefaultThreader(itk::MultiThreaderBase::ThreaderEnum::Platform);
   try {
+    const std::string program = argc > 1 ? argv[1] : "";
+    // The ANTs entry points take the arguments without the program name, as their command lines do.
+    const std::vector<std::string> rest(argv + std::min(argc, 2), argv + argc);
+    if (program == "--apply") return applyTransforms(argc, argv);
+    if (program == "AverageImages") return ants::AverageImages(rest, nullptr);
+    if (program == "AverageAffineTransform") return ants::AverageAffineTransform(rest, nullptr);
     return ants::antsRegistration(std::vector<std::string>(argv + 1, argv + argc), nullptr);
   } catch (const std::exception& e) {
     std::cerr << e.what() << std::endl;
