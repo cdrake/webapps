@@ -50,7 +50,6 @@ self.onmessage = async ({ data }) => {
     post({ log: `Loading tools (${threads} threads)…` });
     const niimath = (await import(/* @vite-ignore */ `${base}niimath/niimath.js`)).default;
     const greedy = await loadGreedy(`${base}greedy-wasm/greedy_rs_wasm.js`, threads);
-    const meica = await loadMeica({ threads: 1, baseUrl: `${base}meica/` });
     const tpl = await Promise.all(TEMPLATES.map(async (a) => [
       a.filename.slice("templates/".length),
       new Uint8Array(await fetchAsset(fastprepManifest, a)),
@@ -64,7 +63,7 @@ self.onmessage = async ({ data }) => {
         mindgrabOptions: { backend: "auto", worker: false, timeoutMs: 900_000, onLog: (line) => post({ log: line }) },
         greedy,
         synthsr,
-        meica,
+        meica: () => loadMeica({ threads: 1, baseUrl: `${base}meica/` }), // loaded on the first multi-echo run
       },
       options: { omp: threads, nprocs: threads, ...options },
       onLog: (line) => post({ log: line }),

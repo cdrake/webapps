@@ -145,7 +145,7 @@ test('meica --denoise: the rejected column is removed, dummies pass through, gzi
   files.put('/o/bold.nii', new Uint8Array(v.buffer));
   files.put('/w/mix.tsv', new TextEncoder().encode('ICA_00\n-1.5\n-0.5\n0.5\n1.5\n'));
   files.put('/w/metrics.tsv', new TextEncoder().encode('Component\tclassification\nICA_00\trejected\n'));
-  const run = meicaDriver(await loadMeica({ threads: 1 }));
+  const run = meicaDriver(() => loadMeica({ threads: 1 })); // the lazy form the app worker passes
   const out = '/o/den.nii.gz';
   await run(['meica', '--denoise', '/o/bold.nii', '--mixing', '/w/mix.tsv', '--metrics', '/w/metrics.tsv', '--dummy-scans', '1', '-o', out], { files });
   const raw = await files.bytes(out);

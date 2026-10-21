@@ -179,14 +179,16 @@ export function glmDriver(glm) {
 }
 
 /**
- * meica (tedana's ME-ICA) through @niivue/meica's single-threaded WASM `api`: the classification call
+ * meica (tedana's ME-ICA) through @niivue/meica's single-threaded WASM: `meica` is its module, or a function that
+ * loads it (so single-echo sessions never fetch it). The classification call
  * (`-d ECHO... -e TE... --mask M --dummy-scans N --tree T [--external TSV] --n-threads K --quiet --out-dir D`, files
  * written under D with meica's names) and `--denoise BOLD --mixing TSV --metrics TSV --dummy-scans N -o OUT`.
  */
-export function meicaDriver(api) {
+export function meicaDriver(meica) {
   const known = ['-d', '-e', '--mask', '--dummy-scans', '--tree', '--external', '--n-threads', '--quiet', '--out-dir',
     '--denoise', '--mixing', '--metrics', '-o'];
   return async (argv, { files }) => {
+    const api = typeof meica === 'function' ? await meica() : meica;
     const opts = new Map(); // flag -> values up to the next flag (-d and -e take several)
     for (let i = 1; i < argv.length;) {
       if (!known.includes(argv[i])) throw new Error(`meica: ${argv[i]} is not supported in the browser`);
