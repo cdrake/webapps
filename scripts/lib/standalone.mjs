@@ -3,8 +3,13 @@ import { join } from 'node:path';
 import { repoRoot, loadAppsRegistry } from './apps-registry.mjs';
 
 export async function loadStandalone(registry, root = repoRoot) {
-  const value = JSON.parse(await readFile(join(root, 'registry/standalone.json'), 'utf8'));
-  if (value.schema_version !== 1) throw new Error('Unsupported standalone catalog');
+  return validateStandalone(JSON.parse(await readFile(join(root, 'registry/standalone.json'), 'utf8')), registry);
+}
+
+// Every themed app build runs this check on the whole catalog, so the CI
+// planner runs it too before scoping a catalog change to the entries changed.
+export function validateStandalone(value, registry) {
+  if (value?.schema_version !== 1) throw new Error('Unsupported standalone catalog');
   const actual = Object.keys(value.apps).sort();
   const expected = registry.apps.map(app => app.id).sort();
   if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error('Standalone catalog must cover every registered app exactly once');

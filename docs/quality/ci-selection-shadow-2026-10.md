@@ -210,7 +210,25 @@ Replayed over the last 70 merged pull requests plus #240–#247 (78 in all), wit
 - `app-tests` jobs: 1490 before, 1450 after; `browser-e2e`: 1532 before, 1492 after; macOS GPU: 296 before, 291 after;
 - changed rows: #314 (31 → 11 apps, oracle 3), #311 (31 → 12, oracle 0) and #321 (30 → 29, oracle 1).
 
-`registry/standalone.json` (#292) remains open.
+**Follow-up (`registry/standalone.json`).** The catalog is a real input of every themed app: `stageStandaloneAssets`
+validates all of it and copies it into each dist. The shell, though, renders only the app's own entry
+(`catalog.apps[metadata.id]`), and so does the shared dialog check. The planner now:
+
+- runs the same validation (`validateStandalone`) on the head catalog, and selects every app if it fails;
+- selects every app if any field other than `apps` and `suite` changed;
+- otherwise selects the apps whose entries changed, plus the site build. The desktop `suite` reaches only the catalog
+  page.
+
+A contract lists every reader the per-app jobs reach. It also checks that the shell and the dialog helper read only
+their own entry.
+
+Replay over the 201 commits on main since 2026-10-01 that touched the file, most of them
+`chore(standalone): publish …` pushes. It used today's workspace graph and each commit's own registry:
+
+- app selections: 6391 before (the full catalog every time), 530 after;
+- 180 commits select only the app whose downloads were published;
+- 5 desktop-suite publishes select only the site build;
+- 7 still fall back for other files.
 
 **Follow-up (`.gitattributes`).** A root `.gitattributes` change used to select the full catalog. Now the planner asks
 git which files' attributes differ between the merge base and head: `git check-attr -a --source=<rev>` for every file in

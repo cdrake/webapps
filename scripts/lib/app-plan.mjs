@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { parse } from 'yaml';
 import { LockfileAnalysisError, lockfileImpact } from './lockfile-impact.mjs';
 import { CATALOG, INDEPENDENT_CONFIG, SITE, reachableFrom } from './workspace-graph.mjs';
+import { validateStandalone } from './standalone.mjs';
 
 const NON_CODE_PREFIXES = ['docs/', '.changeset/'];
 // Self-contained packages outside apps/ with their own CI job (the homepage
@@ -27,6 +28,7 @@ const MODEL_MANIFEST = /^models\/([^/]+)\.manifest\.json$/;
 const NON_CODE_FILES = new Set(['README.md', 'LICENSES.md']);
 const LOCKFILE = 'pnpm-lock.yaml';
 const REGISTRY = 'registry/apps.yml';
+const STANDALONE = 'registry/standalone.json';
 // Root tools no per-app or composite-site job executes: Knip and Stryker run
 // in the unused-code and mutation workflows, ESLint (scripts/lint.mjs,
 // eslint.config.js) in workspace-contracts and code-quality on every pull
@@ -61,6 +63,26 @@ function analyseLockfile(manifest) {
 
 // The app entries a registry/apps.yml change touched, or why the change is
 // shared: every app build embeds the site section's analytics id.
+// The app entries a registry/standalone.json change touched, whether the
+// suite (read only by the catalog page and the desktop bundle) changed, or why
+// the change is shared. Every themed app build copies the file and validates
+// all of it, but the shell renders only the app's own entry, so a valid head
+// catalog reaches only the apps whose entries changed.
+function standaloneImpact({ before, after }, registry) {
+  let old;
+  let now;
+  try {
+    [old, now] = [JSON.parse(before), JSON.parse(after)];
+    validateStandalone(now, registry);
+  } catch (error) {
+    return { shared: `it is not a valid catalog at head (${error.message}), and every themed app build validates it` };
+  }
+  const field = [...new Set([...Object.keys(old ?? {}), ...Object.keys(now)])].find((key) => key !== 'apps' && key !== 'suite' && !same(old?.[key], now[key]));
+  if (field) return { shared: `its ${field} field changed` };
+  const ids = [...new Set([...Object.keys(old?.apps ?? {}), ...Object.keys(now.apps)])];
+  return { changed: ids.filter((id) => !same(old?.apps?.[id], now.apps[id])), suite: !same(old?.suite, now.suite) };
+}
+
 function registryImpact({ before, after }) {
   let old;
   let now;
@@ -227,6 +249,18 @@ export function selectAffectedApps(registry, changedPaths = [], graph = null, ma
       for (const reason of touched.site) siteBuild(`${path}: ${reason}`);
       continue;
     }
+    if (path === STANDALONE && manifests.get(path)) {
+      const impact = standaloneImpact(manifests.get(path), registry);
+      if (impact.shared) {
+        shared(`${path}: ${impact.shared}`);
+        continue;
+      }
+      siteBuild(`${path}: the composite site serves the catalog${impact.suite ? ' and its desktop suite' : ''}`);
+      for (const id of impact.changed) {
+        if (appIds.has(id)) select(id, `${path}: the ${id} entry changed`);
+      }
+      continue;
+    }
     if (path === REGISTRY) {
       const impact = manifests.get(path) ? registryImpact(manifests.get(path)) : { shared: 'the base or head registry is unavailable' };
       if (impact.shared) {
@@ -325,7 +359,7 @@ export function changedPathsFromGit({ base, head = 'HEAD', cwd }) {
   }
 }
 
-const MANIFEST = /^(?:(?:packages|apps|exes)\/[^/]+\/)?package\.json$|^registry\/(?:offline-assets\.lock\.json|apps\.yml)$|^pnpm-lock\.yaml$|^\.gitattributes$/;
+const MANIFEST = /^(?:(?:packages|apps|exes)\/[^/]+\/)?package\.json$|^registry\/(?:offline-assets\.lock\.json|apps\.yml|standalone\.json)$|^pnpm-lock\.yaml$|^\.gitattributes$/;
 
 // The text of each changed manifest and the lockfile for root manifest edits,
 // at the merge base (changedPathsFromGit diffs from there) and at head. A manifest

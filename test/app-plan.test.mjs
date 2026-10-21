@@ -773,7 +773,7 @@ async function plannerFixture(t) {
   for (const path of ['scripts/lib', 'registry', '.github/workflows']) {
     await mkdir(join(root, path), { recursive: true });
   }
-  for (const path of ['scripts/app-plan.mjs', 'scripts/lib/app-plan.mjs', 'scripts/lib/lockfile-impact.mjs', 'scripts/lib/workspace-graph.mjs', 'scripts/lib/apps-registry.mjs', 'scripts/lib/tested-base.mjs', 'registry/apps.yml']) {
+  for (const path of ['scripts/app-plan.mjs', 'scripts/lib/app-plan.mjs', 'scripts/lib/lockfile-impact.mjs', 'scripts/lib/workspace-graph.mjs', 'scripts/lib/apps-registry.mjs', 'scripts/lib/tested-base.mjs', 'scripts/lib/standalone.mjs', 'registry/apps.yml']) {
     await copyFile(join(repoRoot, path), join(root, path));
   }
   await writeFile(join(root, 'package.json'), JSON.stringify({ type: 'module', scripts: {} }));
@@ -1142,5 +1142,63 @@ test('a runtime manifest change selects the apps that stage its files and the si
     for (const user of registry.apps.filter((candidate) => reaches(candidate, owner))) {
       assert.ok(selected.has(user.id), `${file} reads the runtime manifest, and ${user.id} reaches ${owner} but is not selected`);
     }
+  }
+});
+
+test('a standalone catalog change selects the apps whose entries changed', async () => {
+  const registry = await loadAppsRegistry();
+  const workspace = await graph;
+  const text = await readFile(join(repoRoot, 'registry/standalone.json'), 'utf8');
+  const edit = (change) => {
+    const value = JSON.parse(text);
+    change(value);
+    return `${JSON.stringify(value, null, 2)}\n`;
+  };
+  const plan = (after) => createAppPlan(registry, ['registry/standalone.json'], workspace, new Map([['registry/standalone.json', { before: text, after }]]));
+  const republished = plan(edit((value) => {
+    value.apps.lcmodel.downloads[0].sha256 = 'f'.repeat(64);
+  }));
+  assert.deepEqual(republished.selected.map((app) => app.id), ['lcmodel']);
+  assert.equal(republished.site, true);
+  assert.deepEqual(republished.reasons.apps.lcmodel, ['registry/standalone.json: the lcmodel entry changed']);
+  const suite = plan(edit((value) => {
+    value.suite.downloads[0].version = '9.9.9';
+  }));
+  assert.deepEqual(suite.selected, []);
+  assert.equal(suite.site, true);
+  // Every themed build validates the whole catalog, so an invalid entry breaks every app.
+  const invalid = plan(edit((value) => {
+    value.apps.lcmodel.downloads[0].sha256 = 'not-a-checksum';
+  }));
+  assert.equal(invalid.allApps, true);
+  assert.match(invalid.reasons.fallback, /not a valid catalog at head \(lcmodel: download must have a checksum\)/);
+  const repository = plan(edit((value) => {
+    value.repository = 'https://github.com/example/fork';
+  }));
+  assert.match(repository.reasons.fallback, /its repository field changed/);
+  // Without both texts the change follows the graph: every themed app reaches the file.
+  assert.ok(createAppPlan(registry, ['registry/standalone.json'], workspace).selected.length > 1);
+});
+
+test('the shell and its tests read only their own app entry of the standalone catalog', async () => {
+  const workspace = await graph;
+  const registry = await loadAppsRegistry();
+  // Readers the per-app jobs reach, and what each does with the catalog.
+  const readers = {
+    'scripts/lib/standalone.mjs': 'validates the whole catalog, then copies it',
+    'scripts/lib/vite-app-config.mjs': 'links it in the dev shell',
+    'scripts/dev-server.mjs': 'serves it to static apps',
+    'site/app-shell.js': 'renders catalog.apps[metadata.id]',
+    'test-utils/standalone-dialog.mjs': 'checks catalog.apps[id]',
+    // A comment saying the shell renders the dialog.
+    'apps/disconnectome/src/main.js': 'names it in a comment',
+  };
+  const reached = new Set(registry.apps.flatMap((app) => [...reachableFrom(workspace, `apps/${app.id}`)]));
+  for (const file of filesNaming(String.raw`standalone\.json`)) {
+    if (file.startsWith('apps/') ? /\/(?:e2e|test)\//.test(file) : !reached.has(file) && file !== 'site/app-shell.js') continue;
+    assert.ok(Object.hasOwn(readers, file), `${file} reads the standalone catalog; check it reads only its own entry, then list it`);
+  }
+  for (const [file, pattern] of [['site/app-shell.js', /catalog\.(?!apps\[metadata\.id\])/], ['test-utils/standalone-dialog.mjs', /catalog\.(?!apps\[id\])/]]) {
+    assert.doesNotMatch(await readFile(join(repoRoot, file), 'utf8'), pattern, `${file} reads more than its own entry`);
   }
 });
