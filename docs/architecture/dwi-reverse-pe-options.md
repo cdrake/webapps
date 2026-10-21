@@ -215,6 +215,7 @@ The PyHySCO GPU run gives the same field as the CPU run.
 ### Image gate ratios to topup, per subject
 
 AP-PA / BBR, each divided by topup's value.
+The BBR ratios divide the costs as `aggregate.py` prints them (4 significant digits); from the exact costs four of them differ by 0.001 (`sdc/reverse-pe-options/README.md`). The gate uses the exact costs.
 
 | Subject | `topup`, one b0 per side | DR-BUDDI | PyHySCO | FD-Net |
 | --- | --- | --- | --- | --- |
@@ -264,14 +265,14 @@ But their fields differ from topup's in shape (mean r 0.73 and 0.35), and the mo
 
 A port passes when its browser field agrees with the native field of the same method on ds005134 sub-01: median absolute difference < 0.1 Hz in the brain.
 This applies to the CPU WebAssembly path and, separately, to the WebGPU path.
-The native fields come from the reference runs above; follow-up issue [#504](https://github.com/neurodesk/webapps/issues/504) pins them on Hugging Face.
+The native fields come from the reference runs above. They are pinned on Hugging Face ([#504](https://github.com/neurodesk/webapps/issues/504)): `<subject>/<method>/field_hz.nii.gz` under `sdc/reverse-pe-options/` (see "Pinned results").
 The browser run must use the same mean AP and PA pair, so the app's preparation also needs a check against `prep.sh`.
 
 For DR-BUDDI, a port is not started until a WebAssembly build of the solver runs sub-01 inside the browser memory limit in an acceptable time.
 
 ## Follow-up issues
 
-1. **Pin the evaluation data on Hugging Face** ([#504](https://github.com/neurodesk/webapps/issues/504)). The prepared inputs, the native fields of every method and the metrics, under a pinned revision, so the port gate and these tables can be reproduced without OpenNeuro and `epic`. Needs #374.
+1. **Pin the evaluation data on Hugging Face** ([#504](https://github.com/neurodesk/webapps/issues/504)). Done: see "Pinned results".
 2. **DR-BUDDI in WebAssembly** ([#505](https://github.com/neurodesk/webapps/issues/505)). First a feasibility check: build the solver (not the bundled BET library) with the ITK WebAssembly toolchain of `packages/registration`, run sub-01 in a browser, and measure time and memory, also with fewer iterations or a coarser schedule. Port into `apps/sdc` only if that passes and the field still passes the gate.
 3. **WebGPU path for PyHySCO** ([#506](https://github.com/neurodesk/webapps/issues/506)). The Gauss-Newton and PCG steps as WebGPU kernels, held to the CPU field by the port gate.
 4. **ANTs restricted SyN** ([#507](https://github.com/neurodesk/webapps/issues/507)). It failed the gate on every subject with the SyN-SDC schedule. When SyN-SDC (#444, #462) is in `apps/sdc`, either find a reverse-PE schedule that passes the gate or keep ANTs for single-PE data only.
@@ -303,6 +304,19 @@ python3 "$SCRIPTS/aggregate.py" "$ROOT/runs"
 An explicit subject list selects a subset for a preliminary report.
 A failed optional method does not stop `post.sh` from recording completed methods; it cannot pass the all-subject gate.
 A missing or failed topup baseline stops post-processing with an error.
+### Pinned results
+
+The prepared inputs (AP mean, PA mean and its alignment to the AP mean, b0 mask, T1w white-matter segmentation), every method's field in Hz and every `metrics.json` and `summary.json` are on the Hugging Face dataset `neurodeskorg/webapps`, `sdc/reverse-pe-options/`, at commit `d9f25191` (167 files, 268 MB, CC0 sources).
+`results.manifest.json` pins each file's size and SHA-256, and the folder's `README.md` describes each file.
+The tables above come back without OpenNeuro, the containers or `epic`:
+
+```bash
+python3 "$SCRIPTS/fetch_results.py" /path/to/results    # or name subjects to fetch only them
+python3 "$SCRIPTS/aggregate.py" /path/to/results
+```
+
+After a new upload, `fetch_results.py --pin <40-hex commit>` rewrites the manifest.
+
 The script checks need no imaging tools:
 
 ```bash
@@ -335,4 +349,4 @@ An OCI manifest digest is not a SIF checksum and does not prove the exact origin
 These published pins do not complete issue #471's original-environment evidence, and the measurements have not been rerun from them.
 
 The runs used `epic` (32 cores, 123 GB, RTX 5080), with every method limited to 8 threads.
-The outputs are not on Hugging Face yet ([#504](https://github.com/neurodesk/webapps/issues/504)).
+The prepared inputs, every method's field and the metrics are on Hugging Face ("Pinned results").
