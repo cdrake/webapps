@@ -1,5 +1,6 @@
 //! Compares the port with AMICO 1.5.4 voxel by voxel. AMICO_ORACLE names an oracle.json that
-//! tools/oracle.py wrote; without it the test is skipped.
+//! tools/oracle.py wrote; without it the test is skipped, or fails when DWI_REQUIRE_ORACLE=1
+//! (CI). `validation/fetch_oracle.py` fetches the pinned oracle.
 
 use dwi_amico::{Dictionary, N_WM};
 use serde_json::Value;
@@ -30,6 +31,10 @@ fn percentile(mut v: Vec<f64>, p: f64) -> f64 {
 #[test]
 fn matches_amico_154() {
     let Ok(path) = std::env::var("AMICO_ORACLE") else {
+        assert!(
+            std::env::var("DWI_REQUIRE_ORACLE").as_deref() != Ok("1"),
+            "DWI_REQUIRE_ORACLE=1 but AMICO_ORACLE is not set"
+        );
         eprintln!("AMICO_ORACLE is not set; skipping");
         return;
     };
