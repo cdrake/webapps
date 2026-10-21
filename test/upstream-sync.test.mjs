@@ -210,6 +210,54 @@ test('BrowserQC merges science changes while preserving shared UI, assets and it
   }
 });
 
+test('QSMbly imports its engine while retaining the shared workspace and input owner', () => {
+  const root = mkdtempSync(join(process.env.TMPDIR || tmpdir(), 'qsmbly-sync-test-'));
+  try {
+    const upstream = join(root, 'upstream');
+    const app = join(root, 'app');
+    mkdirSync(upstream);
+    execFileSync('git', ['init', '-q', upstream]);
+    const config = JSON.parse(readFileSync(new URL('../apps/qsmbly/upstream.json', import.meta.url), 'utf8'));
+    const index = '<div id="citationsModal"><a href="https://doi.org/10.1/qsm">QSM</a></div>\n';
+    const base = commit(upstream, {
+      'index.html': index,
+      'rust-wasm/src/lib.rs': lines('old bindings'),
+      'js/controllers/FileIOController.js': lines('upstream inputs'),
+    });
+    const target = commit(upstream, {
+      'rust-wasm/src/lib.rs': lines('engine bindings'),
+      'rust-wasm/src/engine.rs': lines('QSMxT engine'),
+      'js/controllers/FileIOController.js': lines('upstream inputs with sidecars'),
+      'next.html': lines('alternate shell'),
+      'css/next.css': lines('alternate palette'),
+      'js/next/components/App.js': lines('alternate controls'),
+      'js/next/engine/worker.js': lines('alternate UI worker'),
+      'vendor/preact/preact.module.js': lines('preview framework'),
+      'tests/e2e/run.spec.js': lines('preview tests'),
+    });
+    write(app, {
+      'index.html': lines('canonical shared workspace'),
+      'rust-wasm/src/lib.rs': lines('old bindings'),
+      'js/controllers/QsmInputSet.js': lines('shared input adapter'),
+    });
+    const report = mergeUpstream({ upstream, base, target, appDir: app, config });
+    const read = path => readFileSync(join(app, path), 'utf8');
+    assert.equal(read('rust-wasm/src/lib.rs'), lines('engine bindings'));
+    assert.equal(read('rust-wasm/src/engine.rs'), lines('QSMxT engine'));
+    assert.equal(read('index.html'), lines('canonical shared workspace'));
+    assert.equal(read('js/controllers/QsmInputSet.js'), lines('shared input adapter'));
+    assert.equal(existsSync(join(app, 'js/controllers/FileIOController.js')), false);
+    assert.equal(report.find(item => item.path === 'js/controllers/FileIOController.js').status, 'dropped');
+    for (const item of report.filter(item => item.status === 'ignored')) {
+      assert.equal(existsSync(join(app, item.path)), false, item.path);
+    }
+    assert.equal(report.filter(item => item.status === 'ignored').length, 6);
+    assert.equal(JSON.parse(read('upstream-citations.json')).commit, target);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('sync records target citations even when the local upstream modal was removed', () => {
   const root = mkdtempSync(join(process.env.TMPDIR || tmpdir(), 'upstream-citations-test-'));
   try {

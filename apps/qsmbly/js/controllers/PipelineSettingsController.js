@@ -198,7 +198,6 @@ export class PipelineSettingsController {
     this._setEl('resharpMaxIter', RESHARP_DEFAULTS.max_iter);
     this._setEl('harperellaRadius', HARPERELLA_DEFAULTS.radius);
     this._setEl('harperellaMaxIter', HARPERELLA_DEFAULTS.max_iter);
-    this._setEl('iharperellaRadius', HARPERELLA_DEFAULTS.radius);
     this._setEl('iharperellaMaxIter', HARPERELLA_DEFAULTS.max_iter);
 
     // Dipole inversion
@@ -424,7 +423,7 @@ export class PipelineSettingsController {
       },
       b0_weight_type: this._getEl('b0_weight_type') || 'phase_snr',
       linearFit: {
-        // estimate_offset is not exposed: qsmxt-config's LinearFitConfig carries only the
+        // estimate_offset is not exposed: qsmxt-engine's LinearFitConfig carries only the
         // percentile, and its bridge pins estimate_offset to qsm-core's default (true).
         reliability_threshold_percentile: parseFloat(this._getEl('linear_fit_reliability_percentile'))
       },
@@ -467,7 +466,6 @@ export class PipelineSettingsController {
         tol: 1e-6
       },
       iharperella: {
-        radius: parseFloat(this._getEl('iharperellaRadius')),
         max_iter: parseInt(this._getEl('iharperellaMaxIter')),
         tol: 1e-6
       },
@@ -912,7 +910,6 @@ export class PipelineSettingsController {
 
     // iHARPERELLA settings
     if (settings.iharperella) {
-      this._setEl('iharperellaRadius', settings.iharperella.radius);
       this._setEl('iharperellaMaxIter', settings.iharperella.max_iter);
     }
 

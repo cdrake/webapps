@@ -62,23 +62,6 @@ async function check(id, workflow) {
   finally { await page.close(); }
 }
 try {
-  await check('dcm2niix', async page => {
-    await page.locator('#subject').fill('subject01');
-    await page.locator('#session').fill('baseline');
-    await page.locator('#taskSection > summary').tap();
-    await page.locator('#taskSection > summary').tap();
-    await expect(page.locator('#subject')).toHaveValue('subject01');
-    await expect(page.locator('#session')).toHaveValue('baseline');
-    await page.locator('#imageInput').setInputFiles(dicomSeries());
-    await expect(page.locator('#seriesRows tr')).toHaveCount(1, { timeout: 120000 });
-    await page.locator('#seriesRows select').selectOption('T1w');
-    await page.locator('#seriesRows input[type=checkbox]').check();
-    await page.locator('#privacy').selectOption('omit');
-    const pending = page.waitForEvent('download');
-    await page.locator('#runButton').tap();
-    await pending;
-    await expect(page.locator('#statusText')).toHaveText('BIDS dataset ready');
-  });
   await check('me-ica', async page => {
     await page.locator('#advancedSettings > summary').tap();
     await page.locator('#seed').fill('17');
@@ -99,6 +82,23 @@ try {
     await page.locator('#advancedSettings > summary').tap();
     await expect(page.locator('#seed')).toHaveValue('17');
     await expect(page.locator('#tedpca')).toHaveValue('kic');
+  });
+  await check('dcm2niix', async page => {
+    await page.locator('#subject').fill('subject01');
+    await page.locator('#session').fill('baseline');
+    await page.locator('#taskSection > summary').tap();
+    await page.locator('#taskSection > summary').tap();
+    await expect(page.locator('#subject')).toHaveValue('subject01');
+    await expect(page.locator('#session')).toHaveValue('baseline');
+    await page.locator('#imageInput').setInputFiles(dicomSeries());
+    await expect(page.locator('#seriesRows tr')).toHaveCount(1, { timeout: 120000 });
+    await page.locator('#seriesRows select').selectOption('T1w');
+    await page.locator('#seriesRows input[type=checkbox]').check();
+    await page.locator('#privacy').selectOption('omit');
+    const pending = page.waitForEvent('download');
+    await page.locator('#runButton').tap();
+    await pending;
+    await expect(page.locator('#statusText')).toHaveText('BIDS dataset ready');
   });
   await check('lcmodel', async page => {
     await page.locator('#waterSection > summary').tap();
@@ -121,6 +121,17 @@ try {
     await expect(page.locator('#fWm')).toHaveValue('0.3');
     await expect(page.locator('#fCsf')).toHaveValue('0.1');
     await expect(page.locator('#viewerNotice')).toBeHidden();
+  });
+  await check('noddi', async page => {
+    const settings = page.locator('#advancedSettings > summary');
+    await expect(page.locator('#tensorFit')).toBeHidden();
+    await settings.tap();
+    await expect(page.locator('#tensorFit')).toHaveValue('wls');
+    await page.locator('#tensorFit').selectOption('niimath-dtifit');
+    await settings.tap();
+    await expect(page.locator('#tensorFit')).toBeHidden();
+    await settings.tap();
+    await expect(page.locator('#tensorFit')).toHaveValue('niimath-dtifit');
   });
   await check('seedseg', async page => {
     const settings = page.locator('#seedseg-section-2 [data-disclosure-toggle]');
@@ -440,6 +451,28 @@ try {
     await expect(page.locator('#tensorFit')).toBeHidden();
     await advanced.tap();
     await expect(page.locator('#tensorFit')).toHaveValue('ols');
+    await expect(page.locator('#outputSection')).not.toHaveAttribute('open', '');
+  });
+  await check('sdc', async page => {
+    await expect(page.locator('#statusText')).toHaveText('Drag and drop files', { timeout: 60000 });
+    await expect(page.locator('#technicalLog')).toHaveClass(/collapsed/);
+    const sidecar = (name, direction) => ({ name, mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ PhaseEncodingDirection: direction, TotalReadoutTime: 0.04 })) });
+    await page.locator('#imageInput').setInputFiles([
+      ...dwiSeries('sub-01_dir-AP_dwi'),
+      sidecar('sub-01_dir-AP_dwi.json', 'j-'),
+      nifti('sub-01_dir-PA_epi.nii'),
+      sidecar('sub-01_dir-PA_epi.json', 'j'),
+    ]);
+    await expect(page.locator('#fileInfo')).toHaveText('Image 1: sub-01_dir-AP_dwi.nii · j- · b = 0 mean of 1/13');
+    await expect(page.locator('#runButton')).toBeEnabled();
+    // The field reference chosen after loading must survive closing the section.
+    await page.locator('#reference').selectOption({ label: 'sub-01_dir-PA_epi.nii' });
+    const task = page.locator('#taskSection > summary');
+    await task.tap();
+    await expect(page.locator('#reference')).toBeHidden();
+    await task.tap();
+    await expect(page.locator('#reference')).toHaveValue('0');
+    await expect(page.locator('#fileInfo')).toHaveText('Image 1: sub-01_dir-PA_epi.nii · j');
     await expect(page.locator('#outputSection')).not.toHaveAttribute('open', '');
   });
 } finally { await browser.close(); await site.close(); }

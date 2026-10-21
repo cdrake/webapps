@@ -4,41 +4,36 @@
 
 ### Patch Changes
 
-- NiiVue moves to 1.0.0-rc.26 in Brain Extraction, Carotid Flow, SYNcro, SynthSeg, White Matter Lesions, and, through the shared FreeBrowse viewer, Spinal Cord Toolbox, DICOM View and TopoFit. From rc.25, NiiVue places a loaded drawing on the right voxels of a sagittal or otherwise permuted image (niivue/mono#251), so the mask editor no longer probes and reverses NiiVue's load on opening a mask. Opening a mask for editing now takes one load instead of up to five on such images. MuscleMap, SeedSeg and VesselBoost run NiiVue 0.68, which already loaded drawings correctly; they pick up the simpler editor.
-
-  From rc.22 NiiVue renders with WebGL2 by default, so the five apps that pinned rc.11 or rc.14 draw their viewer with WebGL2 even where WebGPU is available; segmentation and other processing keep their own WebGPU backends.
-
 - Updated dependencies
-  - @neurodesk/webapp-components@0.17.2
-  - @neurodesk/runtime-support@0.9.6
+  - @neurodesk/runtime-support@0.9.7
   - @neurodesk/carotid-flow@0.4.20261020
-- Updated dependencies
-  - @neurodesk/runtime-support@0.9.5
+- Updated dependencies [c865c0c]
   - @neurodesk/webapp-components@0.17.1
   - @neurodesk/carotid-flow@0.4.20261020
+  - @neurodesk/runtime-support@0.8.2
+- Updated dependencies [a36fde4]
+
+  - @neurodesk/webapp-components@0.18.0
+  - @neurodesk/carotid-flow@0.4.20261020
+  - @neurodesk/runtime-support@0.9.5
+
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
 
-- Updated dependencies [4b40da1]
+- Updated dependencies [c865c0c]
 
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/carotid-flow@0.4.20261020
   - @neurodesk/runtime-support@0.9.4
+
+- Updated dependencies [ea2a6d2]
 
 - Updated dependencies [3f1d770]
 
 - Updated dependencies [14b8248]
 
 - Updated dependencies [d9718cd]
-
-- Updated dependencies [d1fa022]
-
-  - @neurodesk/webapp-components@0.16.3
-  - @neurodesk/runtime-support@0.9.3
-  - @neurodesk/carotid-flow@0.4.20261020
-
-- Updated dependencies [ea2a6d2]
 
 - Updated dependencies [c1a4dda]
 
@@ -54,16 +49,77 @@
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/carotid-flow@0.4.20261020
 
-- Updated dependencies [c865c0c]
-
 - Updated dependencies [d1fa022]
+
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
   - @neurodesk/carotid-flow@0.4.20261020
 
+- Updated dependencies [d1fa022]
+
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/runtime-support@0.8.0
+  - @neurodesk/carotid-flow@0.4.20261020
+
+- Updated dependencies [4b40da1]
+
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/carotid-flow@0.4.20261020
+  - @neurodesk/runtime-support@0.9.4
+
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/carotid-flow@0.4.20261020
+
+- Updated dependencies [a36fde4]
+
+- Updated dependencies
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/carotid-flow@0.4.20261020
+  - @neurodesk/runtime-support@0.8.1
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.18.0
+  - @neurodesk/carotid-flow@0.4.20261020
+  - @neurodesk/runtime-support@0.8.2
+
+- Updated dependencies
+  - @neurodesk/runtime-support@0.9.5
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/carotid-flow@0.4.20261020
+- Updated dependencies [14db080]
+
+- Updated dependencies [4b40da1]
+
+- NiiVue moves to 1.0.0-rc.26 in Brain Extraction, Carotid Flow, SYNcro, SynthSeg, White Matter Lesions, and, through the shared FreeBrowse viewer, Spinal Cord Toolbox, DICOM View and TopoFit. From rc.25, NiiVue places a loaded drawing on the right voxels of a sagittal or otherwise permuted image (niivue/mono#251), so the mask editor no longer probes and reverses NiiVue's load on opening a mask. Opening a mask for editing now takes one load instead of up to five on such images. MuscleMap, SeedSeg and VesselBoost run NiiVue 0.68, which already loaded drawings correctly; they pick up the simpler editor.
+
+  From rc.22 NiiVue renders with WebGL2 by default, so the five apps that pinned rc.11 or rc.14 draw their viewer with WebGL2 even where WebGPU is available; segmentation and other processing keep their own WebGPU backends.
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.2
+  - @neurodesk/runtime-support@0.9.6
+  - @neurodesk/carotid-flow@0.4.20261020
+- Updated dependencies
+  - @neurodesk/runtime-support@0.9.5
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/carotid-flow@0.4.20261020
+- Updated dependencies [14db080]
+
 ## 0.4.20261019
 
 ### Patch Changes
+
+- Updated dependencies [af2e8db]
+
+- Updated dependencies [b3404ec]
+
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/carotid-flow@0.4.20261019
+  - @neurodesk/runtime-support@0.9.3
 
 - Updated dependencies [da2584b]
   - @neurodesk/runtime-support@0.9.2
@@ -118,6 +174,16 @@
 
 - Updated dependencies [ccb2970]
 
+  - @neurodesk/runtime-support@0.7.0
+  - @neurodesk/webapp-components@0.14.4
+  - @neurodesk/carotid-flow@0.4.20261018
+
+- Updated dependencies [b68209b]
+
+  - @neurodesk/webapp-components@0.15.0
+  - @neurodesk/runtime-support@0.7.1
+  - @neurodesk/carotid-flow@0.4.20261018
+
 - Updated dependencies [67a5a8f]
 
   - @neurodesk/runtime-support@0.7.0
@@ -142,15 +208,8 @@
   - @neurodesk/runtime-support@0.8.0
 
 - Updated dependencies [b67e4e9]
-
   - @neurodesk/runtime-support@0.7.2
   - @neurodesk/webapp-components@0.15.1
-  - @neurodesk/carotid-flow@0.4.20261018
-
-- Updated dependencies [b68209b]
-
-  - @neurodesk/webapp-components@0.15.0
-  - @neurodesk/runtime-support@0.7.1
   - @neurodesk/carotid-flow@0.4.20261018
 
 ## 0.4.20261017
@@ -183,6 +242,11 @@
   - @neurodesk/webapp-components@0.14.2
   - @neurodesk/runtime-support@0.6.3
   - @neurodesk/carotid-flow@0.4.20261016
+
+- Updated dependencies [7443048]
+  - @neurodesk/webapp-components@0.14.1
+  - @neurodesk/carotid-flow@0.4.20261016
+  - @neurodesk/runtime-support@0.6.2
 
 ## 0.4.20261015
 
@@ -223,6 +287,11 @@
   - @neurodesk/runtime-support@0.6.1
   - @neurodesk/carotid-flow@0.4.20261015
 
+- Updated dependencies [dcc74e7]
+  - @neurodesk/runtime-support@0.6.0
+  - @neurodesk/webapp-components@0.14.0
+  - @neurodesk/carotid-flow@0.4.20261015
+
 ## 0.4.20261014
 
 ### Patch Changes
@@ -255,8 +324,6 @@
   - @neurodesk/runtime-support@0.4.2
   - @neurodesk/carotid-flow@0.4.20261010
 
-- Updated dependencies
-
   - @neurodesk/runtime-support@0.4.1
   - @neurodesk/carotid-flow@0.4.20261010
   - @neurodesk/webapp-components@0.12.1
@@ -266,6 +333,11 @@
   - @neurodesk/webapp-components@0.12.2
   - @neurodesk/runtime-support@0.4.2
   - @neurodesk/carotid-flow@0.4.20261010
+
+- Updated dependencies
+  - @neurodesk/runtime-support@0.4.1
+  - @neurodesk/carotid-flow@0.4.20261010
+  - @neurodesk/webapp-components@0.12.1
 
 ## 0.4.20261009
 
@@ -309,17 +381,21 @@
   - @neurodesk/carotid-flow@0.4.20261007
   - @neurodesk/webapp-components@0.10.2
 
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.11.0
+  - @neurodesk/runtime-support@0.2.0
+  - @neurodesk/carotid-flow@0.4.20261007
+
 - Updated dependencies [22aa4bf]
 
   - @neurodesk/webapp-components@0.11.1
   - @neurodesk/runtime-support@0.2.1
   - @neurodesk/carotid-flow@0.4.20261007
 
-- Updated dependencies
-
-  - @neurodesk/webapp-components@0.11.0
-  - @neurodesk/runtime-support@0.2.0
+- Updated dependencies [70f2770]
   - @neurodesk/carotid-flow@0.4.20261007
+  - @neurodesk/webapp-components@0.10.2
 
 ## 0.3.20261004
 
@@ -341,9 +417,11 @@
 
   - @neurodesk/runtime-support@0.1.3
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.9.0
+
+- Updated dependencies [257192b]
+
+  - @neurodesk/runtime-support@0.1.3
 
 - Updated dependencies
 
@@ -353,9 +431,8 @@
 
   - @neurodesk/webapp-components@0.10.0
 
-- Updated dependencies [257192b]
-
-  - @neurodesk/runtime-support@0.1.3
+- Updated dependencies
+  - @neurodesk/webapp-components@0.9.0
 
 ## 0.3.20261003
 
@@ -376,6 +453,8 @@
 
 - Updated dependencies
 
+  - @neurodesk/webapp-components@0.6.2
+
 - Updated dependencies
 
   - @neurodesk/webapp-components@0.7.0
@@ -384,17 +463,11 @@
 
   - @neurodesk/webapp-components@0.6.2
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.7.0
 
 ## 0.2.20260928
 
 ### Patch Changes
-
-- Updated dependencies
-
-  - @neurodesk/webapp-components@0.6.1
 
 - 93381e8: Every app now opens on its workspace and shows live status only in the bottom bar: a short message, a progress bar, elapsed time and a cancel × that appears while a run can be cancelled. Start pages, landing overlays and welcome modals are gone, and their copy moved to About. Every app has a technical log below the viewer that starts collapsed. Sidebar help longer than 90 characters moved into info tooltips or About, and each sidebar has one primary action. `ProgressManager` now drives the design-system footer, including the elapsed counter and the cancel button.
 
@@ -404,11 +477,15 @@
 
 - Updated dependencies [93381e8]
 
-- Updated dependencies [93381e8]
-
   - @neurodesk/webapp-components@0.6.0
 
 - Updated dependencies
+
+  - @neurodesk/webapp-components@0.6.1
+
+- Updated dependencies [93381e8]
+
+  - @neurodesk/webapp-components@0.6.0
 
   - @neurodesk/webapp-components@0.6.1
 

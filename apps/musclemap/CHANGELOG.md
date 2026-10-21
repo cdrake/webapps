@@ -4,33 +4,25 @@
 
 ### Patch Changes
 
-- NiiVue moves to 1.0.0-rc.26 in Brain Extraction, Carotid Flow, SYNcro, SynthSeg, White Matter Lesions, and, through the shared FreeBrowse viewer, Spinal Cord Toolbox, DICOM View and TopoFit. From rc.25, NiiVue places a loaded drawing on the right voxels of a sagittal or otherwise permuted image (niivue/mono#251), so the mask editor no longer probes and reverses NiiVue's load on opening a mask. Opening a mask for editing now takes one load instead of up to five on such images. MuscleMap, SeedSeg and VesselBoost run NiiVue 0.68, which already loaded drawings correctly; they pick up the simpler editor.
-
-  From rc.22 NiiVue renders with WebGL2 by default, so the five apps that pinned rc.11 or rc.14 draw their viewer with WebGL2 even where WebGPU is available; segmentation and other processing keep their own WebGPU backends.
-
-- Updated dependencies
-  - @neurodesk/webapp-components@0.17.2
-  - @neurodesk/musclemap@1.5.20261020
-- Updated dependencies
+- Updated dependencies [c865c0c]
   - @neurodesk/webapp-components@0.17.1
   - @neurodesk/musclemap@1.5.20261020
+- Updated dependencies [a36fde4]
+  - @neurodesk/webapp-components@0.18.0
+  - @neurodesk/musclemap@1.5.20261020
+
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
 
-- Updated dependencies [4b40da1]
+- Updated dependencies [c865c0c]
 
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/musclemap@1.5.20261020
 
-- Updated dependencies [3f1d770]
-
-- Updated dependencies [d9718cd]
-
-  - @neurodesk/webapp-components@0.16.3
-  - @neurodesk/musclemap@1.5.20261020
-
 - Updated dependencies [ea2a6d2]
+
+- Updated dependencies [3f1d770]
 
 - Updated dependencies [d9718cd]
 
@@ -43,11 +35,61 @@
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/musclemap@1.5.20261020
 
-- Updated dependencies [c865c0c]
-
 - Updated dependencies [d9718cd]
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/musclemap@1.5.20261020
+
+- Updated dependencies [46935f7]
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/musclemap@1.5.20261020
+
+- Updated dependencies [4b40da1]
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/musclemap@1.5.20261020
+
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/musclemap@1.5.20261020
+
+- Updated dependencies [a36fde4]
+
+- Updated dependencies
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/musclemap@1.5.20261020
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.18.0
+  - @neurodesk/musclemap@1.5.20261020
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/musclemap@1.5.20261020
+- Updated dependencies [14db080]
+
+- Updated dependencies [4b40da1]
+
+- NiiVue moves to 1.0.0-rc.26 in Brain Extraction, Carotid Flow, SYNcro, SynthSeg, White Matter Lesions, and, through the shared FreeBrowse viewer, Spinal Cord Toolbox, DICOM View and TopoFit. From rc.25, NiiVue places a loaded drawing on the right voxels of a sagittal or otherwise permuted image (niivue/mono#251), so the mask editor no longer probes and reverses NiiVue's load on opening a mask. Opening a mask for editing now takes one load instead of up to five on such images. MuscleMap, SeedSeg and VesselBoost run NiiVue 0.68, which already loaded drawings correctly; they pick up the simpler editor.
+
+  From rc.22 NiiVue renders with WebGL2 by default, so the five apps that pinned rc.11 or rc.14 draw their viewer with WebGL2 even where WebGPU is available; segmentation and other processing keep their own WebGPU backends.
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.2
+  - @neurodesk/musclemap@1.5.20261020
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/musclemap@1.5.20261020
+- Updated dependencies [14db080]
+
+## 1.5.20261019
+
+### Patch Changes
+
+- Updated dependencies [af2e8db]
+
+- Updated dependencies [b3404ec]
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/musclemap@1.5.20261019
 
 ## 1.5.20261018
 
@@ -90,28 +132,27 @@
   - @neurodesk/webapp-components@0.14.4
   - @neurodesk/musclemap@1.5.20261018
 
-- Updated dependencies [7c0d201]
+- Updated dependencies [b68209b]
+  - @neurodesk/webapp-components@0.15.0
+  - @neurodesk/musclemap@1.5.20261018
 
+- Updated dependencies [67a5a8f]
+  - @neurodesk/webapp-components@0.14.4
+  - @neurodesk/musclemap@1.5.20261018
+
+- Updated dependencies [7c0d201]
   - @neurodesk/webapp-components@0.16.2
   - @neurodesk/musclemap@1.5.20261018
 
 - Updated dependencies [46935f7]
-
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/musclemap@1.5.20261018
 
 - Updated dependencies [3329c39]
-
   - @neurodesk/webapp-components@0.16.0
 
 - Updated dependencies [b67e4e9]
-
   - @neurodesk/webapp-components@0.15.1
-  - @neurodesk/musclemap@1.5.20261018
-
-- Updated dependencies [b68209b]
-
-  - @neurodesk/webapp-components@0.15.0
   - @neurodesk/musclemap@1.5.20261018
 
 ## 1.5.20261017
@@ -139,8 +180,11 @@
   - @neurodesk/musclemap@1.5.20261016
 
 - Updated dependencies
-
   - @neurodesk/webapp-components@0.14.2
+  - @neurodesk/musclemap@1.5.20261016
+
+- Updated dependencies [7443048]
+  - @neurodesk/webapp-components@0.14.1
   - @neurodesk/musclemap@1.5.20261016
 
 ## 1.5.20261015
@@ -229,22 +273,26 @@
   - @neurodesk/musclemap@1.5.20261010
 
 - Updated dependencies
-
   - @neurodesk/webapp-components@0.12.2
+  - @neurodesk/musclemap@1.5.20261010
+
+- Updated dependencies [98eb502]
   - @neurodesk/musclemap@1.5.20261010
 
 ## 1.5.20260914
 
 ### Patch Changes
 
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.1.4
+
 - Updated dependencies [3cd773f]
 
 - Updated dependencies [4add8da]
-
   - @neurodesk/webapp-components@0.1.5
 
 - Updated dependencies
-
   - @neurodesk/webapp-components@0.1.4
 
 - Updated dependencies [4add8da]
@@ -297,13 +345,14 @@
 
   - @neurodesk/webapp-components@0.10.2
 
-- Updated dependencies [22aa4bf]
+- Updated dependencies
+  - @neurodesk/webapp-components@0.11.0
 
+- Updated dependencies [22aa4bf]
   - @neurodesk/webapp-components@0.11.1
 
-- Updated dependencies
-
-  - @neurodesk/webapp-components@0.11.0
+- Updated dependencies [70f2770]
+  - @neurodesk/webapp-components@0.10.2
 
 ## 1.4.20261004
 
@@ -323,17 +372,16 @@
 
 - Match upstream positive foreground cropping, MONAI and PyTorch grid arithmetic, and integer temporary-chunk storage with MONAI float64 decoding. Keep the per-label Dice gate and add upstream-derived regression fixtures, checksummed public full-volume references, browser parity CI, and explicit WebGPU execution evidence. Retain provenance for failed comparisons, prevent stale passing reports, and use portable CI scratch directories. Document the isolated inference-runtime boundary differences.
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.9.0
 
-- Updated dependencies
+- Updated dependencies [ec85a09]
+  - @neurodesk/webapp-components@0.10.0
 
+- Updated dependencies
   - @neurodesk/webapp-components@0.10.1
 
-- Updated dependencies [ec85a09]
-
-  - @neurodesk/webapp-components@0.10.0
+- Updated dependencies
+  - @neurodesk/webapp-components@0.9.0
 
 ## 1.4.20261003
 
@@ -348,15 +396,13 @@
 
 - Updated dependencies
 
-- Updated dependencies
-
-  - @neurodesk/webapp-components@0.7.0
-
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.6.2
 
 - Updated dependencies
+  - @neurodesk/webapp-components@0.7.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.6.2
 
   - @neurodesk/webapp-components@0.7.0
 
@@ -366,6 +412,8 @@
 
 - Updated dependencies
 
+  - @neurodesk/webapp-components@0.5.0
+
   - @neurodesk/webapp-components@0.6.1
 
 - 93381e8: Remove the static bottom bar (version, privacy sentence, duplicate More Apps and GitHub links) from the six inference-workspace apps. The shared app bar already shows the version and links, and Privacy has its own dialog. The unused `.app-footer` and `.nd-app-footer` rules leave the shared stylesheets and the hosted theme.
@@ -374,23 +422,16 @@
 
   The shared example selector shows one short line once an example loads; the description and expected result moved to a tooltip beside the Example label. NiiMath gained the shared layout tabs and About dialog and no longer ships app CSS.
 
-- Updated dependencies
-
 - Updated dependencies [93381e8]
 
 - Updated dependencies [93381e8]
-
   - @neurodesk/webapp-components@0.6.0
 
 - Updated dependencies
-
-  - @neurodesk/webapp-components@0.5.0
-
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.6.1
 
-- Updated dependencies [93381e8]
+- Updated dependencies
+  - @neurodesk/webapp-components@0.5.0
 
   - @neurodesk/webapp-components@0.6.0
 
@@ -423,14 +464,6 @@
 
 ### Patch Changes
 
-- Updated dependencies [4959500]
-
-  - @neurodesk/webapp-components@0.4.4
-
-- Updated dependencies
-
-  - @neurodesk/webapp-components@0.4.3
-
 - efd8af3: Show the Example control before the file picker in every app, replace the registration apps' stale "Loading the default images" empty state, give FireANTs a CPU time budget and progress messages, ship BrowserQC's CPU MindGrab bundle with a longer segmentation budget, select CPU processing in SynthSR and brain extraction when no WebGPU adapter exists, start MuscleMap at 50 % overlap without WebGPU, and run VesselBoost's hosted example workflow in its browser tests.
 
 - Updated dependencies
@@ -442,6 +475,13 @@
   - @neurodesk/webapp-components@0.4.4
 
 - Updated dependencies
+  - @neurodesk/webapp-components@0.4.3
+
+- Updated dependencies [4959500]
+  - @neurodesk/webapp-components@0.4.4
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.4.2
 
   - @neurodesk/webapp-components@0.4.3
 
@@ -449,23 +489,21 @@
 
 ### Patch Changes
 
-- Clarify that each input's image type describes the uploaded file. Rename View to Preview file and the per-file checkbox to Include in segmentation.
-
-- Updated dependencies
-
-  - @neurodesk/webapp-components@0.4.1
-
 - Replace shared UI builders with light-DOM custom elements for consoles, file fields, result lists, viewer toolbars and example selectors. Migrate app callers, isolate control IDs and upload scopes, and preserve state while cleaning up listeners and cancelled downloads across component removal.
 
 - Updated dependencies
 
   - @neurodesk/webapp-components@0.4.0
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.3.1
 
+- Clarify that each input's image type describes the uploaded file. Rename View to Preview file and the per-file checkbox to Include in segmentation.
+
 - Updated dependencies
+  - @neurodesk/webapp-components@0.4.1
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.3.1
 
   - @neurodesk/webapp-components@0.4.1
 
@@ -482,18 +520,6 @@
 
 ### Patch Changes
 
-- Updated dependencies
-
-  - @neurodesk/webapp-components@0.2.2
-
-- Updated dependencies
-
-  - @neurodesk/webapp-components@0.2.1
-
-- Updated dependencies
-
-  - @neurodesk/webapp-components@0.2.0
-
 - Add Run offline instructions through the shared Standalone action, linking the MuscleMap 1.4 Neurodesk container on Zenodo with its checksum, setup guidance and copyable CPU segmentation command.
 
 - Restore the 1.4 model release series after the catalog-wide release incorrectly advanced it to 1.5. Pin the series in the release planner so webapp and shared dependency changes only advance the UTC date. Synchronize the application and generated model catalog versions.
@@ -502,11 +528,16 @@
 
   - @neurodesk/webapp-components@0.2.2
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.2.1
 
 - Updated dependencies
+  - @neurodesk/webapp-components@0.2.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.2
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.2.1
 
   - @neurodesk/webapp-components@0.2.0
 

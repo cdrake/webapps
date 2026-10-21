@@ -32,6 +32,7 @@ export const LINKED_PACKAGES = Object.freeze({
   '@neurodesk/musclemap': 'musclemap',
   '@neurodesk/n4': 'n4',
   '@neurodesk/niimath': 'niimath',
+  '@neurodesk/sdc': 'sdc',
   '@neurodesk/noddi': 'noddi',
   '@neurodesk/seedseg': 'seedseg',
   '@neurodesk/spinalcordtoolbox': 'spinalcordtoolbox',
@@ -186,6 +187,12 @@ export function mergeSameVersionSections(text, version) {
  * version registers a site here; test/app-versions.test.mjs checks they agree.
  */
 export const EMBEDDED_VERSION_SITES = Object.freeze({
+  brain2print: [
+    { file: 'apps/brain2print/src/config.js', pattern: /(version: ")[^"]+(")/, replace: '$1{version}$2' },
+  ],
+  nesvor: [
+    { file: 'apps/nesvor/src/config.js', pattern: /(version: ")[^"]+(")/, replace: '$1{version}$2' },
+  ],
   dwidenoise: [
     { file: 'apps/dwidenoise/src/config.js', pattern: /(version: ")[^"]+(")/, replace: '$1{version}$2' },
   ],
@@ -242,6 +249,7 @@ export const EMBEDDED_VERSION_SITES = Object.freeze({
     { file: 'apps/synthseg/src/inference-worker.js', pattern: /(app: 'SynthSeg web )[^']+(')/, replace: '$1{version}$2' },
   ],
   synthsr: [
+    { file: 'apps/synthsr/src/inference-worker.js', pattern: /(app: 'SynthSR web )[^']+(')/, replace: '$1{version}$2' },
     { file: 'exes/synthsr/Cargo.toml', pattern: /(^\[package\][\s\S]*?^version = ")[^"]+(")/m, replace: '$1{version}$2' },
     { file: 'exes/synthsr/Cargo.lock', pattern: /(name = "synthsr"\nversion = ")[^"]+(")/, replace: '$1{version}$2' },
   ],

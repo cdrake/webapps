@@ -3,5 +3,4 @@
 export const APP = Object.freeze({
   id: "white-matter-lesions",
   title: "White matter lesions",
-  version: "0.0.0",
 });

@@ -1,19 +1,63 @@
 // Spreads the masked voxels over fitting workers, chunk by chunk, and collects the maps. The web
 // app's Web Workers and the command line's worker threads run the same chunks through the same
 // handler (fit-worker.js), so both fit every voxel with the same inputs.
-import { CHUNK_VOXELS, chunks, emptyMaps, gatherChunk, scatterChunk } from "./pipeline.js";
+import { CHUNK_VOXELS, chunks, emptyMaps, gatherChunk, isEveryVolume, maskIndices, scatterChunk } from "./pipeline.js";
 
 /**
- * Fits the tensor (and NODDI when `noddi`) to every voxel in `indices`.
+ * Fits the selected tensor backend and optional NODDI on the same input and mask in both hosts.
+ * `dtifit(input, signal)` runs the shared dtifit preparation on the host's niimath runtime;
+ * `spawn` and `workers` select the host's chunk workers. `onStage` reports dtifit or chunk fitting.
+ */
+export async function fitVolume({ input, mask, tensorFit = "wls", noddi, dtifit, signal, onStage, onProgress, spawn, workers }) {
+  signal?.throwIfAborted();
+  const indices = maskIndices(mask);
+  const niimath = tensorFit === "niimath-dtifit";
+  let tensor = null;
+  if (niimath) {
+    onStage?.("dtifit");
+    const volumes = input.table.dtiVolumes;
+    tensor = await dtifit({
+      buffer: input.buffer,
+      data: isEveryVolume(volumes, input.bvals.length) ? null : input.data,
+      dims: input.dims,
+      bvals: input.bvals,
+      bvecs: input.bvecs,
+      volumes,
+      mask,
+    }, signal);
+    signal?.throwIfAborted();
+  }
+  if (niimath && !noddi) return { tensor, noddi: null };
+  onStage?.("chunks");
+  const maps = await fitChunks({
+    data: input.data,
+    voxels: input.voxels,
+    volumes: input.bvals.length,
+    indices,
+    bvals: input.bvals,
+    bvecs: input.bvecs,
+    weighted: tensorFit === "wls",
+    tensor: !niimath,
+    noddi,
+    signal,
+    onProgress,
+    spawn,
+    workers,
+  });
+  return { tensor: tensor ?? maps.tensor, noddi: maps.noddi };
+}
+
+/**
+ * Fits the tensor (unless `tensor` is false) and optional NODDI to every voxel in `indices`.
  * @param spawn returns a new worker running fit-worker.js's handler: an object with
  *   `postMessage(message, transfer)`, `terminate()` and assignable `onmessage({ data })` and
  *   `onerror({ message })`, as a Web Worker has
  * @param workers how many workers to start at most
- * @returns {Promise<{ tensor: Record<string, Float32Array>, noddi: Record<string, Float32Array> | null }>}
+ * @returns {Promise<{ tensor: Record<string, Float32Array> | null, noddi: Record<string, Float32Array> | null }>}
  */
-export function fitVolume({ data, voxels, volumes, indices, bvals, bvecs, weighted, noddi, signal, onProgress, spawn, workers: count }) {
+function fitChunks({ data, voxels, volumes, indices, bvals, bvecs, weighted, tensor = true, noddi, signal, onProgress, spawn, workers: count }) {
   const work = chunks(indices, CHUNK_VOXELS);
-  const tensorMaps = emptyMaps("tensor", voxels);
+  const tensorMaps = tensor ? emptyMaps("tensor", voxels) : null;
   const noddiMaps = noddi ? emptyMaps("noddi", voxels) : null;
   const workers = [];
   return new Promise((resolve, reject) => {
@@ -46,14 +90,14 @@ export function fitVolume({ data, voxels, volumes, indices, bvals, bvecs, weight
         if (message.type === "error") return finish(new Error(message.message));
         if (message.type === "ready") return send(worker);
         if (message.type !== "done") return;
-        scatterChunk(tensorMaps, message.tensor, work[message.id]);
+        if (tensorMaps && message.tensor) scatterChunk(tensorMaps, message.tensor, work[message.id]);
         if (noddiMaps && message.noddi) scatterChunk(noddiMaps, message.noddi, work[message.id]);
         done++;
         onProgress?.(done / work.length);
         if (done === work.length) finish();
         else send(worker);
       };
-      worker.postMessage({ type: "init", bvals, bvecs, weighted, noddi });
+      worker.postMessage({ type: "init", bvals, bvecs, weighted, tensor, noddi });
     }
   });
 }

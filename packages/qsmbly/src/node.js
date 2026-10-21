@@ -160,7 +160,7 @@ export function qsmxtVersion(executable = qsmxtExecutable()) {
   if (result.error) throw new Error(`Cannot start QSMxT at ${executable}: ${result.error.message}`);
   if (result.status !== 0) throw new Error(`QSMxT --version failed: ${result.stderr}`);
   const version = /^qsmxt (\S+)$/m.exec(result.stdout)?.[1];
-  const core = /^qsm-core: (\S+)/m.exec(result.stdout)?.[1];
+  const core = /^(?:qsm-core|QSM\.rs \(qsm-core\)): (\S+)/m.exec(result.stdout)?.[1];
   const deepLearning = /^deep-learning models: (\S+)$/m.exec(result.stdout)?.[1];
   return { version, qsmCore: core, deepLearning: deepLearning === 'enabled' };
 }

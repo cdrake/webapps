@@ -49,7 +49,9 @@ const DERIVED = {
     keys: ['sdf_sigma1_stage1', 'sdf_sigma2_stage1', 'sdf_sigma1_stage2', 'sdf_sigma2_stage2',
       'sdf_spatial_radius', 'sdf_lower_lim', 'sdf_curv_constant', 'vasc_sphere_radius',
       'frangi_scale_min', 'frangi_scale_max', 'frangi_scale_ratio', 'frangi_c',
-      'ilsqr_tol', 'ilsqr_max_iter', 'inversion_algorithm:inversion'],
+      'ilsqr_max_iter', 'inversion_algorithm:inversion'],
+    // QSMART's iLSQR tolerance is iLSQR's (qsmxt-engine has no QSMART field for it).
+    extras: { ilsqr_tol: 'number' },
   },
   ROMEO_DEFAULTS: {
     from: 'ROMEO_DEFAULTS',
@@ -58,11 +60,6 @@ const DERIVED = {
   },
   MCPC3DS_DEFAULTS: { from: 'MCPC3DS_DEFAULTS', keys: ['sigma'] },
   LINEAR_FIT_DEFAULTS: { from: 'LINEAR_FIT_DEFAULTS', keys: ['estimate_offset', 'reliability_threshold_percentile'] },
-  HOMOGENEITY_DEFAULTS: { from: 'HOMOGENEITY_DEFAULTS', keys: ['sigmaMm:sigma_mm', 'nbox'] },
-  SIGNAL_ERODE_DEFAULTS: {
-    from: 'SIGNAL_ERODE_DEFAULTS',
-    keys: ['bias_sigma', 'depth_cap', 'global_erosions', 'min_component', 'threshold'],
-  },
   TIKHONOV_DEFAULTS: { from: 'TIKHONOV_DEFAULTS', keys: ['lambda', 'reg'] },
   DL_TILING_DEFAULTS: {
     from: 'DL_TILING_DEFAULTS',
@@ -91,7 +88,7 @@ const splitKey = (k) => {
   return [jsKey, genKey];
 };
 
-// A generated value is whatever serde_json emits for a qsmxt-config field.
+// A generated value is whatever serde_json emits for a qsmxt-engine field.
 const isJsonScalarOrArray = (v) =>
   ['number', 'boolean', 'string'].includes(typeof v) ||
   (Array.isArray(v) && v.every(x => ['number', 'string'].includes(typeof x)));
@@ -158,6 +155,10 @@ describe('Config Module', () => {
       for (const [key, type] of Object.entries(DERIVED[name].extras || {})) {
         expect(typeof Config[name][key]).toBe(type);
       }
+    });
+
+    test("QSMART's iLSQR tolerance defaults to iLSQR's", () => {
+      expect(Config.QSMART_DEFAULTS.ilsqr_tol).toEqual(Generated.ILSQR_DEFAULTS.tol);
     });
 
     test('every exported *_DEFAULTS built from qsm-defaults.js is covered above', () => {

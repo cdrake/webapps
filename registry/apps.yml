@@ -151,15 +151,15 @@ apps:
     modalities: [mri]
     inputs: [dicom, nifti]
     hardware: cpu
-    handoff: dicom
     legacy_domain: qsmbly.neurodesk.org
     runtime: rust-wasm
     model_manifest: models/qsmbly.manifest.json
     asset_manifest_schema: scientific-assets-v1
-    source: astewartau/qsmbly@d2afebc1b590d5cb016d0ade8782e9f25a44e7ac
+    source: astewartau/qsmbly@cf88ee361e315c48d867156fd9b6de5599dc62cd
     license: MIT
     maintainers: [astewartau]
     support_status: active
+    handoff: dicom
     shell: static-html
     app_scoped_runtime_families: [dcm2niix]
     ci:
@@ -202,7 +202,6 @@ apps:
     modalities: [mri]
     inputs: [dicom]
     hardware: cpu
-    handoff: dicom
     legacy_domain: dicompare.neurodesk.org
     runtime: react-vite
     model_manifest: null
@@ -211,6 +210,7 @@ apps:
     license: NOASSERTION
     maintainers: [astewartau]
     support_status: active
+    handoff: dicom
     shell: react
     ci:
       toolchains: [node]
@@ -351,7 +351,6 @@ apps:
     modalities: [surface]
     inputs: [freesurfer, gifti, mesh]
     hardware: cpu
-    handoff: none
     legacy_domain: null
     runtime: vite-webgpu
     model_manifest: null
@@ -360,6 +359,7 @@ apps:
     license: MIT
     maintainers: [felenitaribeiro]
     support_status: active
+    handoff: none
     shell: imaging-workspace
     ci:
       toolchains: [node]
@@ -376,7 +376,6 @@ apps:
     modalities: [microscopy]
     inputs: [ome-zarr]
     hardware: cpu
-    handoff: none
     legacy_domain: null
     runtime: vite-webgpu
     model_manifest: null
@@ -385,6 +384,7 @@ apps:
     license: BSD-2-Clause
     maintainers: [neurodesk]
     support_status: active
+    handoff: none
     shell: imaging-workspace
     ci:
       toolchains: [node]
@@ -480,7 +480,6 @@ apps:
     modalities: [mri]
     inputs: [dicom, nifti]
     hardware: webgpu-required
-    handoff: dicom
     legacy_domain: null
     runtime: vite-webgpu
     model_manifest: null
@@ -489,6 +488,7 @@ apps:
     license: NOASSERTION
     maintainers: [neurodesk]
     support_status: active
+    handoff: dicom
     shell: imaging-workspace
     ci:
       toolchains: [node]
@@ -704,7 +704,6 @@ apps:
     modalities: [mri]
     inputs: [dicom, nifti]
     hardware: cpu
-    handoff: dicom
     legacy_domain: null
     runtime: react-vite
     model_manifest: null
@@ -713,6 +712,7 @@ apps:
     license: NOASSERTION
     maintainers: [neurodesk]
     support_status: experimental
+    handoff: dicom
     shell: imaging-workspace
     ci:
       toolchains: [node]
@@ -729,7 +729,6 @@ apps:
     modalities: [mrs]
     inputs: [dicom, nifti, mrs-raw]
     hardware: cpu
-    handoff: none
     legacy_domain: null
     runtime: vite-wasm
     model_manifest: models/lcmodel.manifest.json
@@ -738,6 +737,7 @@ apps:
     license: BSD-3-Clause
     maintainers: [neurodesk]
     support_status: experimental
+    handoff: none
     shell: imaging-workspace
     ci:
       toolchains: [node, rust-wasm]
@@ -854,7 +854,6 @@ apps:
     modalities: [mri]
     inputs: [nifti]
     hardware: webgpu-optional
-    handoff: none
     legacy_domain: null
     runtime: vite-webgpu
     model_manifest: null
@@ -863,6 +862,7 @@ apps:
     license: Apache-2.0
     maintainers: [neurodesk]
     support_status: experimental
+    handoff: none
     shell: imaging-workspace
     app_scoped_runtime_families: [ort-web-asyncify]
     ci:
@@ -881,7 +881,6 @@ apps:
     modalities: [mri]
     inputs: [dicom, nifti]
     hardware: webgpu-optional
-    handoff: dicom
     legacy_domain: null
     runtime: vite-wasm
     model_manifest: null
@@ -890,6 +889,7 @@ apps:
     license: Apache-2.0 AND BSD-3-Clause
     maintainers: [neurodesk]
     support_status: experimental
+    handoff: dicom
     shell: imaging-workspace
     ci:
       toolchains: [node]
@@ -919,7 +919,7 @@ apps:
       toolchains: [node]
       shared_runtime: false
       browser_test: true
-      release: false
+      release: true
 
   - id: n4
     path: n4
@@ -956,7 +956,6 @@ apps:
     modalities: [mri]
     inputs: [dicom]
     hardware: cpu
-    handoff: dicom
     legacy_domain: null
     runtime: vite-wasm
     model_manifest: null
@@ -965,6 +964,7 @@ apps:
     license: MIT
     maintainers: [neurodesk]
     support_status: experimental
+    handoff: dicom
     shell: imaging-workspace
     ci:
       toolchains: [node]
@@ -995,6 +995,31 @@ apps:
       shared_runtime: false
       browser_test: true
       release: false
+  - id: sdc
+    path: sdc
+    title: SDC
+    description: Distortion correction from reverse phase-encoding b0.
+    categories: [diffusion-imaging]
+    keywords: [susceptibility distortion, topup, PyHySCO, reverse phase-encoding, diffusion MRI, field map, WebAssembly]
+    anatomy: [brain]
+    modalities: [mri]
+    inputs: [dicom, nifti]
+    hardware: cpu
+    handoff: none
+    legacy_domain: null
+    runtime: vite-wasm
+    model_manifest: null
+    asset_manifest_schema: null
+    source: neurodesk/webapps@local
+    license: GPL-3.0-or-later
+    maintainers: [neurodesk]
+    support_status: experimental
+    shell: imaging-workspace
+    ci:
+      toolchains: [node]
+      shared_runtime: false
+      browser_test: true
+      release: false
 
   - id: me-ica
     path: me-ica
@@ -1006,7 +1031,6 @@ apps:
     modalities: [mri]
     inputs: [nifti]
     hardware: cpu
-    handoff: none
     legacy_domain: null
     runtime: vite-wasm
     model_manifest: null
@@ -1015,6 +1039,7 @@ apps:
     license: LGPL-2.1-only
     maintainers: [neurodesk]
     support_status: experimental
+    handoff: none
     shell: imaging-workspace
     ci:
       toolchains: [node]

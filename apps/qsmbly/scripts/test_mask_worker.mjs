@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { MaskController } from '../js/controllers/MaskController.js';
 import { WorkerSession } from '../../../packages/components/src/worker/WorkerSession.js';
+import { syntheticNifti } from '../../../test-utils/nifti-fixture.mjs';
 
 for (const operation of ['applyMaskOps', 'hdBet']) {
   for (const fails of [false, true]) {
@@ -49,10 +50,13 @@ for (const operation of ['applyMaskOps', 'hdBet']) {
 for (const operation of ['biasCorrection', 'voxelQuality']) {
   for (const fails of [false, true]) {
     test(`${operation} uses the session channel and releases its response listener (${fails ? 'failure' : 'success'})`, async () => {
+      let sentInput;
       const nativeWorker = {
         postMessage(message, transfer) {
-          structuredClone(message, { transfer });
           assert.equal(message.type, operation);
+          sentInput = operation === 'biasCorrection' ? message.data.magnitude : message.data.phase;
+          assert.deepEqual(Array.from(sentInput), [1]);
+          structuredClone(message, { transfer });
           queueMicrotask(() => this.onmessage({ data: {
             type: operation,
             ...(fails ? { error: 'Scientific kernel failed' } : { result: new Float64Array([1, 2]) }),
@@ -65,21 +69,18 @@ for (const operation of ['biasCorrection', 'voxelQuality']) {
         initializeWorker: async () => session.start(),
         setProgress() {},
       });
-      const header = new ArrayBuffer(352);
-      const view = new DataView(header);
-      for (const offset of [42, 44, 46]) view.setInt16(offset, 1, true);
-      controller.magnitudeFileBytes = header;
+      const file = new File([syntheticNifti({ dims: [1, 1, 1], value: () => 1, gzip: false })], 'phase.nii');
+      controller.magnitudeFileBytes = await file.arrayBuffer();
       const input = new Float64Array([1]);
-      controller.readNiftiData = async () => input;
-      controller.readNiftiHeader = async () => header;
       const promise = operation === 'biasCorrection'
         ? controller.applyBiasCorrection(input)
-        : controller.computeVoxelQualityMap([{ file: {} }], [], [4]);
+        : controller.computeVoxelQualityMap([{ file }], [], [4]);
       if (fails) await assert.rejects(promise, /Scientific kernel failed/);
       else assert.deepEqual(Array.from(await promise), [1, 2]);
       assert.equal(session.listeners.size, 0);
       // The input moves to the worker rather than being copied (astewartau/qsmbly#140).
-      assert.equal(input.byteLength, 0);
+      assert.equal(sentInput.byteLength, 0);
+      if (operation === 'biasCorrection') assert.equal(sentInput, input);
     });
   }
 }

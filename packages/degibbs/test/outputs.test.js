@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { derivativeSidecar, outputNames, splitName } from "../src/pipeline.js";
+import { derivativeSidecar, outputNames, splitName } from "../src/outputs.js";
 
 test("derivative names keep the BIDS suffix and add desc-degibbs", () => {
   assert.deepEqual(splitName("sub-01_dir-AP_dwi.nii.gz"), ["sub-01_dir-AP", "dwi"]);

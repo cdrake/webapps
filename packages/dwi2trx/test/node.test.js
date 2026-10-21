@@ -187,7 +187,7 @@ test('self-check fits the phantom tensor with the vendored dtifit build', () => 
   const run = dwi2trx(['self-check']);
   assert.equal(run.status, 0, run.stderr);
   const report = JSON.parse(run.stdout);
-  assert.equal(report.niimath, '1.2.0-dtifit.0');
+  assert.equal(report.niimath, '1.2.0-dtifit.1');
   assert.equal(report.mindgrab, '0.1.20260925');
   assert.equal(report.phantomFa, 0.603);
 });

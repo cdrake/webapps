@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 2,
+  "app": "sdc",
+  "title": "SDC",
+  "description": "Susceptibility field from a reverse phase-encoding b = 0 pair (PyHySCO 0.0.4 port).",
+  "defaultOperation": "pyhysco",
+  "operations": {
+    "pyhysco": {
+      "title": "Estimate field",
+      "description": "Average each input's b = 0 volumes and estimate the field in Hz on the first image's grid.",
+      "mode": "batch",
+      "inputs": {
+        "images": {
+          "source": "files",
+          "type": "neuro:volume",
+          "formats": [
+            "nifti",
+            "dicom"
+          ],
+          "description": "Two images with opposite phase-encoding directions, in one space, with JSON sidecars giving PhaseEncodingDirection and TotalReadoutTime",
+          "minimum": 2
+        },
+        "bval": {
+          "source": "files",
+          "type": "neuro:gradients",
+          "formats": [
+            "bval",
+            "bvals"
+          ],
+          "description": "Optional b-values of a DWI series; only volumes with b ≤ 50 are used",
+          "minimum": 0,
+          "maximum": 2
+        }
+      },
+      "parameters": {},
+      "artifacts": {
+        "field": {
+          "type": "neuro:volume",
+          "mediaType": "application/gzip",
+          "space": "input",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "sidecar": {
+          "type": "neuro:metadata",
+          "mediaType": "application/json",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "corrected1": {
+          "type": "neuro:volume",
+          "mediaType": "application/gzip",
+          "space": "input",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "corrected2": {
+          "type": "neuro:volume",
+          "mediaType": "application/gzip",
+          "space": "input",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    }
+  }
+}

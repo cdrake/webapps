@@ -97,7 +97,7 @@ test('inputs and options are checked before any work', async (t) => {
   const directory = await scratch(t);
   const input = await phantomFiles(directory);
   await assert.rejects(fit({ ...input, output: join(directory, 'a'), noMask: true, maskFile: input.dwi }), /not both/);
-  await assert.rejects(fit({ ...input, output: join(directory, 'b'), noMask: true, tensorFit: 'nls' }), /wls or ols/);
+  await assert.rejects(fit({ ...input, output: join(directory, 'b'), noMask: true, tensorFit: 'nls' }), /wls, ols or niimath-dtifit/);
   await assert.rejects(fit({ ...input, output: join(directory, 'c'), noMask: true, threads: 0 }), /positive whole number/);
   await assert.rejects(fit({ ...input, output: directory, noMask: true }), /not empty/);
   const short = join(directory, 'short.bval');
@@ -123,6 +123,23 @@ test('the command line prints the written files and its settings', async (t) => 
   assert.match(refused.stderr, /not both/);
   const help = spawnSync(process.execPath, [BIN, '--help'], { encoding: 'utf8' });
   assert.match(help.stdout, /^Usage: noddi/);
+});
+
+test('the command line selects niimath dtifit and preserves the NODDI maps', async (t) => {
+  const directory = await scratch(t);
+  const input = await phantomFiles(directory, 4);
+  const baseline = await fit({ ...input, output: join(directory, 'wls'), noMask: true, threads: 1 });
+  const output = join(directory, 'niimath');
+  const run = spawnSync(process.execPath, [BIN, input.dwi, input.bval, input.bvec, output, '--no-mask', '--tensor-fit', 'niimath-dtifit', '--threads', '1'], { encoding: 'utf8' });
+  assert.equal(run.status, 0, run.stderr);
+  assert.deepEqual(run.stdout.trim().split('\n'), NAMES.map((name) => join(output, name)));
+  const provenance = JSON.parse(run.stderr.trim().split('\n').at(-1));
+  assert.equal(provenance.tensorFit, 'niimath-dtifit');
+  assert.equal(provenance.method, 'dti+noddi-amico');
+  for (const name of NAMES.filter((name) => name.includes('noddi') || name.includes('mask'))) {
+    const [actual, expected] = await Promise.all([readFile(join(output, name)), readFile(join(baseline.output, name))]);
+    assert.deepEqual(gunzipSync(actual), gunzipSync(expected), name);
+  }
 });
 
 test('self-check fits the phantom in this runtime', async () => {

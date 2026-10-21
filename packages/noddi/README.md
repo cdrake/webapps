@@ -35,7 +35,8 @@ The web app and the command line run one fit from this package:
 | Module | Content |
 | --- | --- |
 | `src/pipeline.js` | Mean b0, mask indices, BIDS output names and maps |
-| `src/fit-pool.js` | Splits the masked voxels into 2048-voxel chunks and spreads them over workers |
+| `src/fit-pool.js` | Selects the tensor backend and spreads masked voxels over fitting workers |
+| `src/dtifit.js` | Shared niimath inputs, selected volumes and output conversion |
 | `src/fit-worker.js` | The worker handler: tensor and AMICO on one chunk |
 | `src/node.js`, `src/node-worker.js` | The command line: files, MindGrab on the CPU, `worker_threads` |
 
@@ -66,6 +67,7 @@ noddi dwi.nii.gz dwi.bval dwi.bvec results
 noddi dwi.nii.gz dwi.bval dwi.bvec results --mask brain_mask.nii.gz
 noddi dwi.nii.gz dwi.bval dwi.bvec results --no-mask --threads 8
 noddi dwi.nii.gz dwi.bval dwi.bvec results --no-noddi --tensor-fit ols
+noddi dwi.nii.gz dwi.bval dwi.bvec results --tensor-fit niimath-dtifit
 noddi self-check
 ```
 
@@ -99,6 +101,10 @@ Daducci A, Canales-Rodriguez EJ, Zhang H, Dyrby TB, Alexander DC, Thiran JP. Acc
 - NODDI needs two or more shells.
 
 ## Tensor fit
+
+`--tensor-fit` selects `wls` (the default), `ols` or `niimath-dtifit`, as in the browser.
+The niimath option runs DWI2TRX's corrected vendored dtifit build; the package injects a fresh Node module through `@neurodesk/dwi2trx/node-runner`, while the browser uses a cancellable worker.
+Both hosts use the same tensor volumes and map conversion. NODDI runs afterward when selected.
 
 The weighted fit uses the squared observed signal as weights, as FSL `dtifit -w` does.
 On the dwi2trx example, the FA and MD maps equal FSL 6.0.7.23 `dtifit -w` in the median voxel (FA difference 1.5e-8).

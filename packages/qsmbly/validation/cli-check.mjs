@@ -1,7 +1,5 @@
 // Run the web app's example through the command line, with the qsmxt command the app exports for
 // it, and hold the χ map to the browser's (browser-reference.json) within the recorded tolerance.
-// `replay` in the reference lists where the export does not yet describe the app's run, and how
-// this check makes QSMxT compute what the app computed.
 //   node packages/qsmbly/validation/cli-check.mjs [--executable PATH] [--output DIR]
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -29,7 +27,6 @@ function splitCommand(text) {
 
 const exported = splitCommand(reference.command);
 assert.deepEqual(exported.slice(0, 3), ['qsmxt', 'run', '<bids_dir>'], reference.command);
-const { phaseSidecar = {}, arguments: extra = [] } = reference.replay ?? {};
 
 const work = values.output ? resolve(values.output) : await mkdtemp(join(tmpdir(), 'qsmbly-cli-check-'));
 await mkdir(work, { recursive: true });
@@ -66,8 +63,8 @@ try {
   const output = join(work, 'out');
   await rm(bids, { recursive: true, force: true });
   await rm(output, { recursive: true, force: true });
-  const { subject, session } = await stageBids(await pinnedExample(), bids, { phaseSidecar });
-  const args = ['run', bids, output, ...exported.slice(3), ...extra];
+  const { subject, session } = await stageBids(await pinnedExample(), bids);
+  const args = ['run', bids, output, ...exported.slice(3)];
   console.log(`qsmbly ${args.join(' ')}`);
   const started = Date.now();
   // Every hosted native weight is verified locally before this process starts.
@@ -87,7 +84,7 @@ try {
   };
   const anat = join(derivatives, subject, session, 'anat');
   const chi = await find(anat, '_Chimap.nii');
-  const mask = await find(anat, '_mask.nii');
+  const mask = await find(anat, '_run-1_mask.nii');
   const support = await find(join(derivatives, 'workflow', subject, session, 'run-1', 'bgremove'), '_bgmask.nii');
   const measurement = measure({ dims: chi.dims, chi: chi.data, mask: mask.data, support: support.data });
   const metrics = compare(reference.measurement, measurement);

@@ -22,15 +22,16 @@ const REQUIRED_METHODS = {
   dcm2niix: ['10.1016/j.jneumeth.2016.03.001', '10.1038/sdata.2016.44', '10.1038/s41597-021-01064-w', '10.7937/TCIA.9YTJ-5Q73'],
   'brain-extraction': ['10.1002/hbm.10062', 'arxiv.org/abs/2506.11860', '10.1016/j.neuroimage.2022.119474', 'github.com/niivue/niivue'],
   dwi2trx: ['10.1016/S0006-3495(94)80775-1', 'github.com/dipy/GPUStreamlines', 'PMC5381389', 'brainder.org/2025/05/05/15656/'],
+  sdc: ['arxiv.org/abs/2403.10706', '10.1088/0031-9155/57/18/5715', '10.1016/j.jneumeth.2016.03.001', 'github.com/niivue/niivue'],
   dwidenoise: ['arxiv.org/abs/2011.01355', '10.3389/fninf.2014.00008', '10.1016/j.jneumeth.2016.03.001', 'github.com/niivue/niivue'],
   degibbs: ['10.1002/mrm.26054', '10.1016/j.neuroimage.2019.116137', '10.1016/j.jneumeth.2016.03.001', 'github.com/niivue/niivue'],
   n4: ['10.1109/TMI.2010.2046908', '10.1016/j.neuroimage.2010.09.025', '10.1016/j.neuroimage.2019.116137', 'arxiv.org/abs/2506.11860', '10.21105/joss.05098', '10.1016/j.jneumeth.2016.03.001', 'github.com/niivue/niivue'],
-  noddi: ['10.1016/S0006-3495(94)80775-1', '10.1016/j.neuroimage.2012.03.072', '10.1016/j.neuroimage.2014.10.026', 'arxiv.org/abs/2506.11860', '10.21105/joss.05098', '10.1016/j.jneumeth.2016.03.001', 'github.com/niivue/niivue'],
+  noddi: ['10.1016/S0006-3495(94)80775-1', '10.52294/001c.94384', '10.1016/j.neuroimage.2004.07.051', '10.1016/j.neuroimage.2012.03.072', '10.1016/j.neuroimage.2014.10.026', 'arxiv.org/abs/2506.11860', '10.21105/joss.05098', '10.1016/j.jneumeth.2016.03.001', 'github.com/niivue/niivue'],
   musclemap: ['10.3390/jimaging10110262', 'arxiv.org/abs/2211.02701', '10.1016/j.jneumeth.2016.03.001'],
   vesselboost: ['10.52294/001c.123217', '10.1109/TMI.2010.2046908', '10.1109/TMI.2007.906087', '10.1109/ICCV.1998.710815', '10.1002/hbm.10062', '10.1016/j.neuroimage.2022.119474'],
   spinalcordtoolbox: ['10.1016/j.neuroimage.2016.10.009', '10.1016/j.media.2025.103473', '10.1038/s41592-020-01008-z', 'arxiv.org/abs/2407.17265', '10.1177/13524585261427333', 'github.com/neuropoly/totalspineseg', '10.1002/ana.24932', '10.1038/s41393-020-00561-w'],
   calmar: ['10.1093/brain/awv228', '10.1016/j.neuroimage.2022.119474', 'SynthStroke', 'arxiv.org/abs/2403.19425', '10.1038/s41592-020-01008-z', '10.1038/s41597-022-01875-5', '10.1109/TMI.2021.3116879', '10.1016/j.neuroimage.2010.07.033', '10.1152/jn.00338.2011', '10.1093/cercor/bhx179', '10.1038/s41467-018-03399-2', '10.1038/nmeth.1635'],
-  qsmbly: ['10.1002/nbm.3570', '10.1002/nbm.4461', '10.1016/j.neuroimage.2018.06.030', '10.1016/j.neuroimage.2020.116579', '10.1016/j.neuroimage.2019.116389', '10.1002/mp.17747', '10.1007/978-3-030-59713-9_13', '10.1016/j.neuroimage.2021.118376', '10.1016/j.neuroimage.2019.116064', '10.1016/j.neuroimage.2022.119729', '10.1002/hbm.24750', '10.1002/mrm.29722', '10.1002/hbm.10062', '10.1016/j.neuroimage.2024.120769', '10.1002/mrm.28563', '10.1002/mrm.26963', '10.1002/mrm.23000', '10.1002/nbm.1670', '10.1002/mrm.22135', '10.1002/mrm.22816', '10.1016/j.neuroimage.2015.02.041', '10.1016/j.neuroimage.2020.117701', '10.1016/j.jneumeth.2016.03.001'],
+  qsmbly: ['10.1002/mrm.29048', '10.1016/j.neuroimage.2021.118175', '10.1002/nbm.3570', '10.1002/nbm.4461', '10.1016/j.neuroimage.2018.06.030', '10.1016/j.neuroimage.2020.116579', '10.1016/j.neuroimage.2019.116389', '10.1002/mp.17747', '10.1007/978-3-030-59713-9_13', '10.1016/j.neuroimage.2021.118376', '10.1016/j.neuroimage.2019.116064', '10.1016/j.neuroimage.2022.119729', '10.1002/hbm.24750', '10.1002/mrm.29722', '10.1002/hbm.10062', '10.1016/j.neuroimage.2024.120769', '10.1002/mrm.28563', '10.1002/mrm.26963', '10.1002/mrm.23000', '10.1002/nbm.1670', '10.1002/mrm.22135', '10.1002/mrm.22816', '10.1016/j.neuroimage.2015.02.041', '10.1016/j.neuroimage.2020.117701', '10.1016/j.jneumeth.2016.03.001'],
   seedseg: ['10.1101/2023.10.26.564293', '10.1007/978-3-319-46723-8_49', '10.1016/j.jneumeth.2016.03.001'],
   dicompare: ['github.com/astewartau/dicompare', 'pyodide.org', '10.1016/j.jneumeth.2016.03.001'],
   dicomview: ['10.1016/j.jneumeth.2016.03.001', 'github.com/niivue/niivue', 'github.com/astewartau/dicompare', 'pyodide.org'],
@@ -203,6 +204,7 @@ test('every page carries the site catalog, so one app can open another with its 
   assert.equal(catalog.find(({ id }) => id === 'dicompare').receives, 'dicom');
   assert.ok(!catalog.some(({ id }) => id === 'zarro'), 'Zarro streams from URLs and takes no files');
   assert.ok(!catalog.some(({ id }) => id === 'me-ica'), 'ME-ICA needs an echo bundle, not a single image');
+  assert.ok(!catalog.some(({ id }) => id === 'sdc'), 'SDC needs an opposite-phase pair, not a single image');
 });
 
 test('DICOM handoff Privacy discloses unchanged scanner headers', () => {

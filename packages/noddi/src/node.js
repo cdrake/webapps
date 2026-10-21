@@ -7,11 +7,13 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { Worker } from 'node:worker_threads';
 import { gzipSync } from 'node:zlib';
 import { parseBvalBvec } from '@neurodesk/dwi2trx/gradients';
+import { runNiimath } from '@neurodesk/dwi2trx/node-runner';
 import { loadMindgrabCpu } from '@neurodesk/node-drivers/mindgrab';
 import { createNiftiFromData, decodeNiftiBuffer, isValidNifti1, readNiftiFrames, sameNiftiGrid } from '@neurodesk/webapp-components/file-io/nifti';
 import packageJson from '../package.json' with { type: 'json' };
 import { fitVolume } from './fit-pool.js';
-import { bidsStem, maskIndices, meanVolumes, outputEntries } from './pipeline.js';
+import { TENSOR_FITS, bidsStem, maskIndices, meanVolumes, outputEntries } from './pipeline.js';
+import { fitDtifit } from './dtifit.js';
 import { multiShellPhantom, phantomTissue } from './phantom.js';
 import { loadNoddi } from './wasm.js';
 
@@ -116,13 +118,13 @@ async function mindgrabMask(input) {
  * MindGrab's of the mean b0 unless `maskFile` gives one on the DWI grid or `noMask` fits every
  * voxel.
  * @param options.noddi false for the tensor maps only
- * @param options.tensorFit "wls" (default) or "ols"
+ * @param options.tensorFit "wls" (default), "ols" or "niimath-dtifit"
  * @param options.threads worker threads, default one per core
  */
 export async function fit({ dwi, bval, bvec, output, maskFile, noMask = false, noddi = true, tensorFit = 'wls', threads, onProgress = () => {} } = {}) {
   if (!dwi || !bval || !bvec || !output) throw new Error('A diffusion image, its bval and bvec files and an output directory are required.');
   if (maskFile !== undefined && noMask) throw new Error('Give a mask file or no mask, not both.');
-  if (!['wls', 'ols'].includes(tensorFit)) throw new Error('--tensor-fit is wls or ols.');
+  if (!TENSOR_FITS.includes(tensorFit)) throw new Error('--tensor-fit is wls, ols or niimath-dtifit.');
   const workers = threadCount(threads);
   const destination = resolve(output);
   await assertNewOutput(destination);
@@ -155,13 +157,10 @@ export async function fit({ dwi, bval, bvec, output, maskFile, noMask = false, n
   const started = performance.now();
   let reported = 0;
   const maps = await fitVolume({
-    data: input.data,
-    voxels: input.voxels,
-    volumes: input.bvals.length,
-    indices,
-    bvals: input.bvals,
-    bvecs: input.bvecs,
-    weighted: tensorFit === 'wls',
+    input,
+    mask: brain,
+    tensorFit,
+    dtifit: (selected) => fitDtifit(runNiimath, selected),
     noddi: withNoddi,
     spawn: spawnThread,
     workers,
@@ -206,7 +205,10 @@ export async function checkInstallation() {
   const { bvals, bvecs } = parseBvalBvec(phantom.bval, phantom.bvec);
   const frames = readNiftiFrames(phantom.nifti.buffer);
   const indices = Uint32Array.from(phantom.inside);
-  const maps = await fitVolume({ data: frames.data, voxels: phantom.voxels, volumes: bvals.length, indices, bvals, bvecs, weighted: true, noddi: !api.describe(bvals, bvecs).noddiError, spawn: spawnThread, workers: 2 });
+  const table = api.describe(bvals, bvecs);
+  const mask = new Uint8Array(phantom.voxels);
+  for (const voxel of indices) mask[voxel] = 1;
+  const maps = await fitVolume({ input: { data: frames.data, voxels: phantom.voxels, bvals, bvecs, table }, mask, noddi: !table.noddiError, spawn: spawnThread, workers: 2 });
   if (!maps.noddi) throw new Error('NODDI refused the two-shell phantom.');
   let worstDirection = 1;
   let worstIcvf = 0;

@@ -14,8 +14,11 @@ on:
       - 'packages/dwidenoise/**'
       - 'packages/components/src/file-io/NiftiUtils.js'
       - 'packages/dwi2trx/src/gradients.js'
+      - 'packages/dwi2trx/src/node-runner.js'
+      - 'packages/dwi2trx/src/tensor.js'
       - 'packages/node-drivers/src/mindgrab.js'
       - 'packages/node-drivers/src/mindgrab-worker.js'
+      - 'packages/node-drivers/src/niimath.js'
   push:
     branches: [main]
     paths:
@@ -30,8 +33,11 @@ on:
       - 'packages/dwidenoise/**'
       - 'packages/components/src/file-io/NiftiUtils.js'
       - 'packages/dwi2trx/src/gradients.js'
+      - 'packages/dwi2trx/src/node-runner.js'
+      - 'packages/dwi2trx/src/tensor.js'
       - 'packages/node-drivers/src/mindgrab.js'
       - 'packages/node-drivers/src/mindgrab-worker.js'
+      - 'packages/node-drivers/src/niimath.js'
   workflow_dispatch:
 
 concurrency:
@@ -84,7 +90,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - name: Install package test dependencies
-        run: pnpm install --frozen-lockfile --ignore-scripts --filter @neurodesk/noddi... --filter @neurodesk/degibbs...
+        run: pnpm install --frozen-lockfile --ignore-scripts --filter @neurodesk/noddi... --filter @neurodesk/degibbs... --filter @neurodesk/dwidenoise...
       - name: noddi package tests on the committed module
         working-directory: packages/noddi
         run: node --test test/*.test.js

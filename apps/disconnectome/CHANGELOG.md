@@ -5,36 +5,35 @@
 ### Patch Changes
 
 - Updated dependencies
-  - @neurodesk/webapp-components@0.17.2
-  - @neurodesk/runtime-support@0.9.6
+  - @neurodesk/runtime-support@0.9.7
   - @neurodesk/nii2tvx@0.3.20261020
-- Updated dependencies
-  - @neurodesk/runtime-support@0.9.5
+- Updated dependencies [c865c0c]
   - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/runtime-support@0.8.2
   - @neurodesk/nii2tvx@0.3.20261020
+- Updated dependencies [a36fde4]
+
+  - @neurodesk/webapp-components@0.18.0
+  - @neurodesk/runtime-support@0.9.5
+  - @neurodesk/nii2tvx@0.3.20261020
+
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
 
-- Updated dependencies [4b40da1]
+- Updated dependencies [c865c0c]
 
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/runtime-support@0.9.4
   - @neurodesk/nii2tvx@0.3.20261020
+
+- Updated dependencies [ea2a6d2]
 
 - Updated dependencies [3f1d770]
 
 - Updated dependencies [14b8248]
 
 - Updated dependencies [d9718cd]
-
-- Updated dependencies [d1fa022]
-
-  - @neurodesk/webapp-components@0.16.3
-  - @neurodesk/runtime-support@0.9.3
-  - @neurodesk/nii2tvx@0.3.20261020
-
-- Updated dependencies [ea2a6d2]
 
 - Updated dependencies [c1a4dda]
 
@@ -50,16 +49,73 @@
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/nii2tvx@0.3.20261020
 
-- Updated dependencies [c865c0c]
-
 - Updated dependencies [d1fa022]
+
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
   - @neurodesk/nii2tvx@0.3.20261020
 
+- Updated dependencies [d1fa022]
+
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/runtime-support@0.8.0
+  - @neurodesk/nii2tvx@0.3.20261020
+
+- Updated dependencies [4b40da1]
+
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/runtime-support@0.9.4
+  - @neurodesk/nii2tvx@0.3.20261020
+
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/nii2tvx@0.3.20261020
+
+- Updated dependencies [a36fde4]
+
+- Updated dependencies
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/runtime-support@0.8.1
+  - @neurodesk/nii2tvx@0.3.20261020
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.18.0
+  - @neurodesk/runtime-support@0.8.2
+  - @neurodesk/nii2tvx@0.3.20261020
+
+- Updated dependencies
+  - @neurodesk/runtime-support@0.9.5
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/nii2tvx@0.3.20261020
+- Updated dependencies [14db080]
+
+- Updated dependencies [4b40da1]
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.2
+  - @neurodesk/runtime-support@0.9.6
+  - @neurodesk/nii2tvx@0.3.20261020
+- Updated dependencies
+  - @neurodesk/runtime-support@0.9.5
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/nii2tvx@0.3.20261020
+- Updated dependencies [14db080]
+
 ## 0.3.20261019
 
 ### Patch Changes
+
+- Updated dependencies [af2e8db]
+
+- Updated dependencies [b3404ec]
+
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/nii2tvx@0.3.20261019
 
 - Updated dependencies [da2584b]
   - @neurodesk/runtime-support@0.9.2
@@ -114,6 +170,16 @@
 
 - Updated dependencies [ccb2970]
 
+  - @neurodesk/runtime-support@0.7.0
+  - @neurodesk/webapp-components@0.14.4
+  - @neurodesk/nii2tvx@0.3.20261018
+
+- Updated dependencies [b68209b]
+
+  - @neurodesk/webapp-components@0.15.0
+  - @neurodesk/runtime-support@0.7.1
+  - @neurodesk/nii2tvx@0.3.20261018
+
 - Updated dependencies [67a5a8f]
 
   - @neurodesk/runtime-support@0.7.0
@@ -138,15 +204,8 @@
   - @neurodesk/runtime-support@0.8.0
 
 - Updated dependencies [b67e4e9]
-
   - @neurodesk/runtime-support@0.7.2
   - @neurodesk/webapp-components@0.15.1
-  - @neurodesk/nii2tvx@0.3.20261018
-
-- Updated dependencies [b68209b]
-
-  - @neurodesk/webapp-components@0.15.0
-  - @neurodesk/runtime-support@0.7.1
   - @neurodesk/nii2tvx@0.3.20261018
 
 ## 0.3.20261017
@@ -180,6 +239,11 @@
 
   - @neurodesk/webapp-components@0.14.2
   - @neurodesk/runtime-support@0.6.3
+  - @neurodesk/nii2tvx@0.3.20261016
+
+- Updated dependencies [7443048]
+  - @neurodesk/webapp-components@0.14.1
+  - @neurodesk/runtime-support@0.6.2
   - @neurodesk/nii2tvx@0.3.20261016
 
 ## 0.3.20261015
@@ -221,6 +285,11 @@
   - @neurodesk/runtime-support@0.6.1
   - @neurodesk/nii2tvx@0.3.20261015
 
+- Updated dependencies [dcc74e7]
+  - @neurodesk/runtime-support@0.6.0
+  - @neurodesk/webapp-components@0.14.0
+  - @neurodesk/nii2tvx@0.3.20261015
+
 ## 0.3.20261014
 
 ### Patch Changes
@@ -253,8 +322,6 @@
   - @neurodesk/runtime-support@0.4.2
   - @neurodesk/nii2tvx@0.3.20261010
 
-- Updated dependencies
-
   - @neurodesk/runtime-support@0.4.1
   - @neurodesk/webapp-components@0.12.1
   - @neurodesk/nii2tvx@0.3.20261010
@@ -263,6 +330,11 @@
 
   - @neurodesk/webapp-components@0.12.2
   - @neurodesk/runtime-support@0.4.2
+  - @neurodesk/nii2tvx@0.3.20261010
+
+- Updated dependencies
+  - @neurodesk/runtime-support@0.4.1
+  - @neurodesk/webapp-components@0.12.1
   - @neurodesk/nii2tvx@0.3.20261010
 
 ## 0.3.20261009
@@ -305,16 +377,20 @@
   - @neurodesk/webapp-components@0.10.2
   - @neurodesk/nii2tvx@0.3.20261007
 
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.11.0
+  - @neurodesk/runtime-support@0.2.0
+  - @neurodesk/nii2tvx@0.3.20261007
+
 - Updated dependencies [22aa4bf]
 
   - @neurodesk/webapp-components@0.11.1
   - @neurodesk/runtime-support@0.2.1
   - @neurodesk/nii2tvx@0.3.20261007
 
-- Updated dependencies
-
-  - @neurodesk/webapp-components@0.11.0
-  - @neurodesk/runtime-support@0.2.0
+- Updated dependencies [f075aab]
+  - @neurodesk/webapp-components@0.10.2
   - @neurodesk/nii2tvx@0.3.20261007
 
 ## 0.2.20261004
@@ -338,9 +414,12 @@
   - @neurodesk/runtime-support@0.1.3
   - @neurodesk/nii2tvx@0.2.20261004
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.9.0
+  - @neurodesk/nii2tvx@0.2.20261004
+
+- Updated dependencies [257192b]
+
+  - @neurodesk/runtime-support@0.1.3
   - @neurodesk/nii2tvx@0.2.20261004
 
 - Updated dependencies
@@ -353,9 +432,8 @@
   - @neurodesk/webapp-components@0.10.0
   - @neurodesk/nii2tvx@0.2.20261004
 
-- Updated dependencies [257192b]
-
-  - @neurodesk/runtime-support@0.1.3
+- Updated dependencies
+  - @neurodesk/webapp-components@0.9.0
   - @neurodesk/nii2tvx@0.2.20261004
 
 ## 0.2.20261003
@@ -372,6 +450,9 @@
 
 - Updated dependencies
 
+  - @neurodesk/webapp-components@0.6.2
+  - @neurodesk/nii2tvx@0.2.20260930
+
 - Updated dependencies
 
   - @neurodesk/webapp-components@0.7.0
@@ -382,19 +463,12 @@
   - @neurodesk/webapp-components@0.6.2
   - @neurodesk/nii2tvx@0.2.20260930
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.7.0
   - @neurodesk/nii2tvx@0.2.20260930
 
 ## 0.2.20260928
 
 ### Patch Changes
-
-- Updated dependencies
-
-  - @neurodesk/webapp-components@0.6.1
-  - @neurodesk/nii2tvx@0.2.20260928
 
 - 93381e8: Every app now opens on its workspace and shows live status only in the bottom bar: a short message, a progress bar, elapsed time and a cancel × that appears while a run can be cancelled. Start pages, landing overlays and welcome modals are gone, and their copy moved to About. Every app has a technical log below the viewer that starts collapsed. Sidebar help longer than 90 characters moved into info tooltips or About, and each sidebar has one primary action. `ProgressManager` now drives the design-system footer, including the elapsed counter and the cancel button.
 
@@ -404,12 +478,18 @@
 
 - Updated dependencies [93381e8]
 
-- Updated dependencies [93381e8]
-
   - @neurodesk/webapp-components@0.6.0
   - @neurodesk/nii2tvx@0.2.20260928
 
 - Updated dependencies
+
+  - @neurodesk/webapp-components@0.6.1
+  - @neurodesk/nii2tvx@0.2.20260928
+
+- Updated dependencies [93381e8]
+
+  - @neurodesk/webapp-components@0.6.0
+  - @neurodesk/nii2tvx@0.2.20260928
 
   - @neurodesk/webapp-components@0.6.1
   - @neurodesk/nii2tvx@0.2.20260928
@@ -440,12 +520,6 @@
 
 ### Patch Changes
 
-- Disconnectome gains the shared Support action along with every other webapp. It
-  merged after the release that recorded the action for the other 25 apps, so this
-  notes it against the same release date.
-
-  - @neurodesk/nii2tvx@0.1.20260923
-
 - c8a0be2: New app: Disconnectome scores which white-matter bundles a lesion disconnects, intersecting the lesion with a population tractography atlas in WebAssembly and drawing the damaged bundles coloured by a viridis ramp over their damage. Two atlases are selectable, the 65-bundle ENIGMA Symmetric atlas by default and the 87-bundle HCP1065 atlas; each downloadable TSV is byte-identical to the nii2tvx command-line tool for that atlas.
 
 - Convert DICOM anatomy through the shared importer and preserve the previous inputs when an example is cancelled. Complete the offline atlas inventory. Reject truncated tract files and invalid TCK headers, honor TCK data offsets, and report allocation failures without corrupting WebAssembly memory. Add native, browser, and offline regression checks.
@@ -461,3 +535,11 @@
   notes it against the same release date.
 
   - @neurodesk/nii2tvx@0.1.20260923
+
+- Updated dependencies
+
+  - @neurodesk/nii2tvx@0.1.20260923
+
+- Disconnectome gains the shared Support action along with every other webapp. It
+  merged after the release that recorded the action for the other 25 apps, so this
+  notes it against the same release date.

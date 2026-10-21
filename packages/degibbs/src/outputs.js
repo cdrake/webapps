@@ -1,4 +1,5 @@
-// DOM-free steps of the degibbs workflow: input pairing and BIDS derivative names.
+// BIDS derivative names and the sidecar of the degibbs outputs, shared by the web app and the
+// command line so both write the same files.
 
 /** The BIDS stem and suffix of an image name: sub-01_dwi.nii.gz gives ["sub-01", "dwi"]. */
 export function splitName(fileName) {

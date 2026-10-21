@@ -1591,6 +1591,13 @@
       "assets": [],
       "downloads": [],
       "containers": []
+    },
+    "sdc": {
+      "desktop": true,
+      "profile": "interactive",
+      "assets": [],
+      "downloads": [],
+      "containers": []
     }
   }
 }

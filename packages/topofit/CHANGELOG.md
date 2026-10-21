@@ -4,25 +4,23 @@
 
 ### Patch Changes
 
-- Updated dependencies
-  - @neurodesk/webapp-components@0.17.2
-- Updated dependencies
+- Updated dependencies [c865c0c]
   - @neurodesk/webapp-components@0.17.1
+- Updated dependencies [a36fde4]
+
+  - @neurodesk/webapp-components@0.18.0
+
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
 
-- Updated dependencies [4b40da1]
+- Updated dependencies [c865c0c]
 
   - @neurodesk/webapp-components@0.17.0
 
-- Updated dependencies [3f1d770]
-
-- Updated dependencies [d9718cd]
-
-  - @neurodesk/webapp-components@0.16.3
-
 - Updated dependencies [ea2a6d2]
+
+- Updated dependencies [3f1d770]
 
 - Updated dependencies [d9718cd]
 
@@ -34,12 +32,52 @@
 
   - @neurodesk/webapp-components@0.16.0
 
-- Updated dependencies [c865c0c]
-
 - Updated dependencies [d9718cd]
+
   - @neurodesk/webapp-components@0.16.3
 
+- Updated dependencies [46935f7]
+
+  - @neurodesk/webapp-components@0.16.0
+
+- Updated dependencies [4b40da1]
+
+  - @neurodesk/webapp-components@0.17.0
+
+  - @neurodesk/webapp-components@0.16.3
+
+- Updated dependencies [a36fde4]
+
+- Updated dependencies
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.17.0
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.18.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.1
+- Updated dependencies [14db080]
+
+- Updated dependencies [4b40da1]
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.2
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.1
+- Updated dependencies [14db080]
+
 ## 0.15.20261019
+
+### Patch Changes
+
+- Updated dependencies [af2e8db]
+
+- Updated dependencies [b3404ec]
+  - @neurodesk/webapp-components@0.16.3
 
 ## 0.15.20261018
 
@@ -77,6 +115,14 @@
 
   - @neurodesk/webapp-components@0.14.4
 
+- Updated dependencies [b68209b]
+
+  - @neurodesk/webapp-components@0.15.0
+
+- Updated dependencies [67a5a8f]
+
+  - @neurodesk/webapp-components@0.14.4
+
 - Updated dependencies [7c0d201]
 
   - @neurodesk/webapp-components@0.16.2
@@ -90,12 +136,7 @@
   - @neurodesk/webapp-components@0.16.0
 
 - Updated dependencies [b67e4e9]
-
   - @neurodesk/webapp-components@0.15.1
-
-- Updated dependencies [b68209b]
-
-  - @neurodesk/webapp-components@0.15.0
 
 ## 0.15.20261017
 
@@ -119,6 +160,9 @@
 - Updated dependencies
 
   - @neurodesk/webapp-components@0.14.2
+
+- Updated dependencies [7443048]
+  - @neurodesk/webapp-components@0.14.1
 
 ## 0.15.20261015
 
@@ -155,13 +199,14 @@
 
   - @neurodesk/webapp-components@0.12.2
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.12.1
 
 - Updated dependencies
 
   - @neurodesk/webapp-components@0.12.2
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.12.1
 
 ## 0.15.20261009
 
@@ -208,17 +253,18 @@
 
 - Restore upstream-compatible cubic preprocessing for cortical reconstruction. Preserve oblique rotation and shear, bypass identity 1 mm grids, and require passing numerical evidence when activating model releases. The production comparison improves mean anatomical vertex distance from 0.795–1.564 mm to 0.046–0.068 mm, below the 0.25 mm gate.
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.9.0
+
+- Updated dependencies [ec85a09]
+
+  - @neurodesk/webapp-components@0.10.0
 
 - Updated dependencies
 
   - @neurodesk/webapp-components@0.10.1
 
-- Updated dependencies [ec85a09]
-
-  - @neurodesk/webapp-components@0.10.0
+- Updated dependencies
+  - @neurodesk/webapp-components@0.9.0
 
 ## 0.12.20261003
 
@@ -233,6 +279,8 @@
 
 - Updated dependencies
 
+  - @neurodesk/webapp-components@0.6.2
+
 - Updated dependencies
 
   - @neurodesk/webapp-components@0.7.0
@@ -240,8 +288,6 @@
 - Updated dependencies
 
   - @neurodesk/webapp-components@0.6.2
-
-- Updated dependencies
 
   - @neurodesk/webapp-components@0.7.0
 
@@ -251,17 +297,17 @@
 
 - Updated dependencies
 
-  - @neurodesk/webapp-components@0.6.1
-
-- Updated dependencies
-
-- Updated dependencies [93381e8]
-
 - Updated dependencies [93381e8]
 
   - @neurodesk/webapp-components@0.6.0
 
 - Updated dependencies
+
+  - @neurodesk/webapp-components@0.6.1
+
+- Updated dependencies [93381e8]
+
+  - @neurodesk/webapp-components@0.6.0
 
   - @neurodesk/webapp-components@0.6.1
 
@@ -317,13 +363,13 @@
 
 ### Patch Changes
 
-- Updated dependencies
-
-  - @neurodesk/webapp-components@0.4.2
-
 - a213c53: Export cortical surfaces as printable STL from TopoFit: a dialog sets the triangle fraction to keep (10 to 100%, default 25) and Humphrey smoothing iterations (0 to 20, default 0), niimath simplifies and smooths each surface, and the app writes a binary STL per surface.
 
   STL export uses the shared busy and cancellation controls so replacement input cannot receive stale downloads.
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.4.2
 
 - Updated dependencies
 
@@ -362,6 +408,8 @@
 
 - Updated dependencies
 
+  - @neurodesk/webapp-components@0.2.0
+
   - @neurodesk/webapp-components@0.2.2
 
 - Updated dependencies
@@ -370,13 +418,11 @@
 
 - Updated dependencies
 
-  - @neurodesk/webapp-components@0.2.0
-
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.2.2
 
 - Updated dependencies
+
+  - @neurodesk/webapp-components@0.2.0
 
   - @neurodesk/webapp-components@0.2.1
 

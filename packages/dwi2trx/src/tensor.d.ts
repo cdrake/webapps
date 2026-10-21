@@ -18,5 +18,5 @@ export function assertMaskOnGrid(dwi: Uint8Array, mask: Uint8Array): Promise<voi
 export function extractB0<Bytes extends Uint8Array>(run: NiimathRun<Bytes>, options: { dwi: Uint8Array; bvalText: string }): Promise<Bytes>;
 export function fitTensor<Bytes extends Uint8Array>(
   run: NiimathRun<Bytes>,
-  options: { dwi: Uint8Array; bval: Uint8Array; bvec: Uint8Array; mask?: Uint8Array },
+  options: { dwi: Uint8Array; bval: Uint8Array; bvec: Uint8Array; mask?: Uint8Array; xflip?: '0' | '1' | 'auto' },
 ): Promise<Record<TensorMap, Bytes>>;

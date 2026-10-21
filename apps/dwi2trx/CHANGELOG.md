@@ -1,42 +1,94 @@
 # dwi2trx
 
-## 0.5.20261020
+## 0.6.20261020
 
 ### Patch Changes
 
 - Updated dependencies
-  - @neurodesk/webapp-components@0.17.2
-  - @neurodesk/runtime-support@0.9.6
-  - @neurodesk/dwi2trx@0.5.20261020
+  - @neurodesk/runtime-support@0.9.7
+  - @neurodesk/dwi2trx@0.6.20261020
+- Keep Brain2Print's exported application version synchronized with its dated package release. Remove DWI2TRX's unused app-local version placeholder.
+
+  - @neurodesk/dwi2trx@0.6.20261020
+
+- ccea86e: NODDI has a third tensor fit, niimath dtifit, in Advanced settings beside weighted least squares (the default) and ordinary least squares. It is FSL dtifit's default linear fit in the dtifit-enabled niimath build that DWI2TRX uses, and it runs in a Web Worker on the same volumes as the other fits: the b0 volumes and the shells up to b = 1200 s/mm². Its FA and MD are equal to DWI2TRX's fit of the same volumes, unit gradients and mask. niimath dtifit writes no AD or RD map, so AD is its first eigenvalue and RD is the mean of the second and third; where niimath sets MD to zero for a negative eigenvalue, AD and RD are zero too. The app gives niimath unit bvecs and runs it with `-xflip 0`, and the direction map gets the sign rule of the other fits, so FA, MD, AD, RD, S0 and the direction agree with the ordinary least squares fit on the same data. The maps keep their BIDS names, the provenance records `tensorFit: "niimath-dtifit"`, and the automation `tensorFit` parameter accepts `niimath-dtifit`. With NODDI selected, the NODDI fit runs after it.
+
+  `@neurodesk/dwi2trx/runner` exports `runNiimath`, the browser's niimath runner on one cached module of the vendored dtifit build. The DWI2TRX tensor worker now imports it from the package instead of an app copy. `fitTensor` takes an optional `xflip` (`'0'`, `'1'` or `'auto'`), which goes to dtifit as `-xflip`; without it the argv does not change.
+
+- d0df450: Rebuild the shared, file-pinned dtifit runtime from niimath cc26582a250c411b5c3c3c05c91dfd58f66be089 with Emscripten 6.0.13 so equal or nearly equal tensor eigenvalues retain unit, orthogonal directions. Record the source, toolchain, flags and licenses and cover the actual runtime with degenerate-tensor regressions. Re-record the production browser reference for V1–V3 because the repaired eigensolver changes the vectors and may reverse their arbitrary signs; scalar maps, tensor coefficients, the mask and every header remain byte identical.
+
+- Updated dependencies [a36fde4]
+
+- Updated dependencies [ccea86e]
+
+- Updated dependencies [d0df450]
+
 - Updated dependencies
+
+  - @neurodesk/webapp-components@0.18.0
+  - @neurodesk/dwi2trx@0.6.20261020
   - @neurodesk/runtime-support@0.9.5
+
+- The input size limit moves from dwi2trx to `@neurodesk/webapp-components/file-io/input-limits` (`MAX_INPUT_BYTES`, `InputTooLargeError`, `formatBytes`, `assertInputSize`). It adds `decodedFloat32Bytes`, the size of the Float32 array an image decodes to (voxels × frames × 4), and `assertNiftiDecodedSize`, which refuses a NIfTI above the 2 GB limit from its header alone; `readNiftiHeader` stops gzip streaming after the header when supported. dwi2trx imports the shared module. NODDI and Degibbs refuse a DWI whose decoded image is above the limit before reading it, and the status bar names the size and the limit.
+
+- Updated dependencies
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/dwi2trx@0.6.20261020
+  - @neurodesk/runtime-support@0.8.1
+
+- Updated dependencies
+  - @neurodesk/dwi2trx@0.6.20261020
+
+## 0.5.20261020
+
+### Patch Changes
+
+- Updated dependencies [c865c0c]
   - @neurodesk/webapp-components@0.17.1
   - @neurodesk/dwi2trx@0.5.20261020
-- 4b40da1: The input size limit moves from dwi2trx to `@neurodesk/webapp-components/file-io/input-limits` (`MAX_INPUT_BYTES`, `InputTooLargeError`, `formatBytes`, `assertInputSize`). It adds `decodedFloat32Bytes`, the size of the Float32 array an image decodes to (voxels × frames × 4), and `assertNiftiDecodedSize`, which refuses a NIfTI above the 2 GB limit from its header alone; `readNiftiHeader` stops gzip streaming after the header when supported. dwi2trx imports the shared module. NODDI and Degibbs refuse a DWI whose decoded image is above the limit before reading it, and the status bar names the size and the limit.
+  - @neurodesk/runtime-support@0.8.2
+- The input size limit moves from dwi2trx to `@neurodesk/webapp-components/file-io/input-limits` (`MAX_INPUT_BYTES`, `InputTooLargeError`, `formatBytes`, `assertInputSize`). It adds `decodedFloat32Bytes`, the size of the Float32 array an image decodes to (voxels × frames × 4), and `assertNiftiDecodedSize`, which refuses a NIfTI above the 2 GB limit from its header alone; `readNiftiHeader` stops gzip streaming after the header when supported. dwi2trx imports the shared module. NODDI and Degibbs refuse a DWI whose decoded image is above the limit before reading it, and the status bar names the size and the limit.
+- Updated dependencies [a36fde4]
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/dwi2trx@0.5.20261020
+  - @neurodesk/runtime-support@0.8.1
+- Updated dependencies [ea2a6d2]
+- Updated dependencies [3f1d770]
+- Updated dependencies [14b8248]
+- Updated dependencies [d9718cd]
+- Updated dependencies [c1a4dda]
+- Updated dependencies [1f4aecd]
+- Updated dependencies [3329c39]
+- Updated dependencies [46935f7]
+- Updated dependencies [d1fa022]
+
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/runtime-support@0.8.0
+  - @neurodesk/dwi2trx@0.5.20261020
 
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
 
-- Updated dependencies [4b40da1]
+- Updated dependencies [c865c0c]
 
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/dwi2trx@0.5.20261020
   - @neurodesk/runtime-support@0.9.4
+
+- Updated dependencies [ea2a6d2]
 
 - Updated dependencies [3f1d770]
 
 - Updated dependencies [14b8248]
 
 - Updated dependencies [d9718cd]
-
-- Updated dependencies [d1fa022]
-
-  - @neurodesk/webapp-components@0.16.3
-  - @neurodesk/runtime-support@0.9.3
-  - @neurodesk/dwi2trx@0.5.20261020
-
-- Updated dependencies [ea2a6d2]
 
 - Updated dependencies [c1a4dda]
 
@@ -52,16 +104,77 @@
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/dwi2trx@0.5.20261020
 
-- Updated dependencies [c865c0c]
-
 - Updated dependencies [d1fa022]
+
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
   - @neurodesk/dwi2trx@0.5.20261020
 
+- Updated dependencies [d1fa022]
+
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/runtime-support@0.8.0
+  - @neurodesk/dwi2trx@0.5.20261020
+
+- 4b40da1: The input size limit moves from dwi2trx to `@neurodesk/webapp-components/file-io/input-limits` (`MAX_INPUT_BYTES`, `InputTooLargeError`, `formatBytes`, `assertInputSize`). It adds `decodedFloat32Bytes`, the size of the Float32 array an image decodes to (voxels × frames × 4), and `assertNiftiDecodedSize`, which refuses a NIfTI above the 2 GB limit from its header alone; `readNiftiHeader` stops gzip streaming after the header when supported. dwi2trx imports the shared module. NODDI and Degibbs refuse a DWI whose decoded image is above the limit before reading it, and the status bar names the size and the limit.
+
+- Updated dependencies [4b40da1]
+
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/dwi2trx@0.5.20261020
+  - @neurodesk/runtime-support@0.9.4
+
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/dwi2trx@0.5.20261020
+
+- The input size limit moves from dwi2trx to `@neurodesk/webapp-components/file-io/input-limits` (`MAX_INPUT_BYTES`, `InputTooLargeError`, `formatBytes`, `assertInputSize`). It adds `decodedFloat32Bytes`, the size of the Float32 array an image decodes to (voxels × frames × 4), and `assertNiftiDecodedSize`, which refuses a NIfTI above the 2 GB limit from its header alone; `readNiftiHeader` stops gzip streaming after the header when supported. dwi2trx imports the shared module. NODDI and Degibbs refuse a DWI whose decoded image is above the limit before reading it, and the status bar names the size and the limit.
+
+- Updated dependencies [a36fde4]
+
+- Updated dependencies
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/dwi2trx@0.5.20261020
+  - @neurodesk/runtime-support@0.8.1
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.18.0
+  - @neurodesk/dwi2trx@0.5.20261020
+  - @neurodesk/runtime-support@0.8.2
+
+- Updated dependencies
+  - @neurodesk/runtime-support@0.9.5
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/dwi2trx@0.5.20261020
+- 4b40da1: The input size limit moves from dwi2trx to `@neurodesk/webapp-components/file-io/input-limits` (`MAX_INPUT_BYTES`, `InputTooLargeError`, `formatBytes`, `assertInputSize`). It adds `decodedFloat32Bytes`, the size of the Float32 array an image decodes to (voxels × frames × 4), and `assertNiftiDecodedSize`, which refuses a NIfTI above the 2 GB limit from its header alone; `readNiftiHeader` stops gzip streaming after the header when supported. dwi2trx imports the shared module. NODDI and Degibbs refuse a DWI whose decoded image is above the limit before reading it, and the status bar names the size and the limit.
+
+- Updated dependencies [4b40da1]
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.2
+  - @neurodesk/runtime-support@0.9.6
+  - @neurodesk/dwi2trx@0.5.20261020
+- Updated dependencies
+  - @neurodesk/runtime-support@0.9.5
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/dwi2trx@0.5.20261020
+- 4b40da1: The input size limit moves from dwi2trx to `@neurodesk/webapp-components/file-io/input-limits` (`MAX_INPUT_BYTES`, `InputTooLargeError`, `formatBytes`, `assertInputSize`). It adds `decodedFloat32Bytes`, the size of the Float32 array an image decodes to (voxels × frames × 4), and `assertNiftiDecodedSize`, which refuses a NIfTI above the 2 GB limit from its header alone; `readNiftiHeader` stops gzip streaming after the header when supported. dwi2trx imports the shared module. NODDI and Degibbs refuse a DWI whose decoded image is above the limit before reading it, and the status bar names the size and the limit.
+
 ## 0.5.20261019
 
 ### Patch Changes
+
+- Updated dependencies [af2e8db]
+
+- Updated dependencies [b3404ec]
+
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/dwi2trx@0.5.20261019
+  - @neurodesk/runtime-support@0.9.3
 
 - Updated dependencies [da2584b]
   - @neurodesk/runtime-support@0.9.2
@@ -70,6 +183,20 @@
 ## 0.5.20261018
 
 ### Patch Changes
+
+- Updated dependencies [b68209b]
+  - @neurodesk/webapp-components@0.15.0
+  - @neurodesk/runtime-support@0.7.1
+  - @neurodesk/dwi2trx@0.5.20261018
+- Updated dependencies [67a5a8f]
+- Updated dependencies [b8b37d6]
+- Updated dependencies [2ae93ae]
+- Updated dependencies [ccb2970]
+- Updated dependencies [67a5a8f]
+
+  - @neurodesk/runtime-support@0.7.0
+  - @neurodesk/webapp-components@0.14.4
+  - @neurodesk/dwi2trx@0.5.20261018
 
 - Updated dependencies [7c0d201]
 
@@ -116,6 +243,16 @@
 
 - Updated dependencies [ccb2970]
 
+  - @neurodesk/runtime-support@0.7.0
+  - @neurodesk/webapp-components@0.14.4
+  - @neurodesk/dwi2trx@0.5.20261018
+
+- Updated dependencies [b68209b]
+
+  - @neurodesk/webapp-components@0.15.0
+  - @neurodesk/runtime-support@0.7.1
+  - @neurodesk/dwi2trx@0.5.20261018
+
 - Updated dependencies [67a5a8f]
 
   - @neurodesk/runtime-support@0.7.0
@@ -140,15 +277,8 @@
   - @neurodesk/runtime-support@0.8.0
 
 - Updated dependencies [b67e4e9]
-
   - @neurodesk/runtime-support@0.7.2
   - @neurodesk/webapp-components@0.15.1
-  - @neurodesk/dwi2trx@0.5.20261018
-
-- Updated dependencies [b68209b]
-
-  - @neurodesk/webapp-components@0.15.0
-  - @neurodesk/runtime-support@0.7.1
   - @neurodesk/dwi2trx@0.5.20261018
 
 ## 0.5.20261017
@@ -165,11 +295,9 @@
 ### Patch Changes
 
 - Updated dependencies
-
   - @neurodesk/webapp-components@0.14.2
   - @neurodesk/runtime-support@0.6.3
   - @neurodesk/dwi2trx@0.5.20261016
-
 - 7443048: Failures of actions started from the interface (fiber colour, display mode, FA floor,
   the vector previews and generator, loading files) now appear in the status bar and the
   technical log instead of being lost as unhandled rejections. A tensor fit or tracking
@@ -192,15 +320,31 @@
   - @neurodesk/runtime-support@0.6.3
   - @neurodesk/dwi2trx@0.5.20261016
 
+- 7443048: Failures of actions started from the interface (fiber colour, display mode, FA floor,
+  the vector previews and generator, loading files) now appear in the status bar and the
+  technical log instead of being lost as unhandled rejections. A tensor fit or tracking
+  run whose input was replaced is logged without overwriting the newer input's status.
+  Files chosen while the viewer is still starting no longer fail with
+  "Cannot access … before initialization". Tensor maps and streamlines are unchanged.
+
+- Updated dependencies [7443048]
+
+  - @neurodesk/webapp-components@0.14.1
+  - @neurodesk/dwi2trx@0.5.20261016
+  - @neurodesk/runtime-support@0.6.2
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.14.2
+  - @neurodesk/runtime-support@0.6.3
+  - @neurodesk/dwi2trx@0.5.20261016
+
 ## 0.5.20261015
 
 ### Patch Changes
 
 - Updated dependencies [c74b26f]
-
   - @neurodesk/runtime-support@0.6.1
   - @neurodesk/dwi2trx@0.5.20261015
-
 - dd65e6a: Visual refresh: Inter, neutral greys with the Neurodesk logo green for action,
   focus and selection only, a compact 48px app bar, sentence-case section titles
   and a quieter status bar. The example menu is now the input control: examples,
@@ -217,6 +361,27 @@
   restore loaded examples.
 
 - Updated dependencies [0569da8]
+- Updated dependencies [dd65e6a]
+- Updated dependencies [dcc74e7]
+
+  - @neurodesk/runtime-support@0.6.0
+  - @neurodesk/webapp-components@0.14.0
+  - @neurodesk/dwi2trx@0.5.20261015
+
+- Updated dependencies [c74b26f]
+
+  - @neurodesk/runtime-support@0.6.1
+  - @neurodesk/dwi2trx@0.5.20261015
+
+- dd65e6a: Visual refresh: Inter, neutral greys with the Neurodesk logo green for action,
+  focus and selection only, a compact 48px app bar, sentence-case section titles
+  and a quieter status bar. The example menu is now the input control: examples,
+  then Choose files… and Choose folder…. The whole window, the viewer included,
+  accepts dropped files; a drop mid-session replaces the inputs with Undo in the
+  status bar. Before any input the status reads "Drag and drop files". MuscleMap
+  drops its separate drop box and Add File(s) button.
+
+- Updated dependencies [0569da8]
 
 - Updated dependencies [dd65e6a]
 
@@ -231,9 +396,22 @@
   - @neurodesk/runtime-support@0.6.1
   - @neurodesk/dwi2trx@0.5.20261015
 
+- Updated dependencies [dcc74e7]
+  - @neurodesk/runtime-support@0.6.0
+  - @neurodesk/webapp-components@0.14.0
+  - @neurodesk/dwi2trx@0.5.20261015
+
 ## 0.5.20261014
 
 ### Patch Changes
+
+- Updated dependencies [27c9549]
+- Updated dependencies [850e642]
+- Updated dependencies [ad92e2f]
+
+  - @neurodesk/runtime-support@0.5.0
+  - @neurodesk/webapp-components@0.13.0
+  - @neurodesk/dwi2trx@0.5.20261014
 
 - Updated dependencies [27c9549]
 
@@ -258,11 +436,9 @@
 ### Patch Changes
 
 - Updated dependencies
-
   - @neurodesk/webapp-components@0.12.2
   - @neurodesk/runtime-support@0.4.2
   - @neurodesk/dwi2trx@0.5.20261010
-
 - Updated dependencies
 
   - @neurodesk/runtime-support@0.4.1
@@ -275,6 +451,21 @@
   - @neurodesk/runtime-support@0.4.2
   - @neurodesk/dwi2trx@0.5.20261010
 
+  - @neurodesk/runtime-support@0.4.1
+  - @neurodesk/dwi2trx@0.5.20261010
+  - @neurodesk/webapp-components@0.12.1
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.12.2
+  - @neurodesk/runtime-support@0.4.2
+  - @neurodesk/dwi2trx@0.5.20261010
+
+- Updated dependencies
+  - @neurodesk/runtime-support@0.4.1
+  - @neurodesk/dwi2trx@0.5.20261010
+  - @neurodesk/webapp-components@0.12.1
+
 ## 0.5.20261009
 
 ### Minor Changes
@@ -282,6 +473,15 @@
 - 18697e2: Add the `dwi2trx` command line for the tensor fit: `dwi2trx DWI BVAL BVEC OUTPUT_DIR [--mask FILE | --no-mask]` runs the web app's MindGrab brain mask (on the CPU) and `niimath --dtifit` with the same vendored WebAssembly build, and writes all eleven dtifit maps under the web app's download names. Tractography is not included, because it needs WebGPU with subgroups. The fit now lives in `@neurodesk/dwi2trx`, which the web app imports. The app moves to MindGrab 0.1.20260925. Its `fit` and `tractography` automation operations accept an optional brain `mask` input and return every dtifit map. Portable archives for Linux x64 and Windows x64 and a signed macOS installer run offline. Their release check fits the pinned example and requires every map to match the web app's own download voxel for voxel.
 
 ### Patch Changes
+
+- Updated dependencies [66bf9e9]
+- Updated dependencies [501ea0c]
+- Updated dependencies [18697e2]
+- Updated dependencies [64ffefa]
+
+  - @neurodesk/webapp-components@0.12.0
+  - @neurodesk/dwi2trx@0.5.20261009
+  - @neurodesk/runtime-support@0.3.0
 
 - Updated dependencies [66bf9e9]
 
@@ -299,15 +499,11 @@
 ### Patch Changes
 
 - Updated dependencies [22aa4bf]
-
   - @neurodesk/webapp-components@0.11.1
   - @neurodesk/runtime-support@0.2.1
-
 - Updated dependencies
-
   - @neurodesk/webapp-components@0.11.0
   - @neurodesk/runtime-support@0.2.0
-
 - Updated dependencies [70f2770]
 
   - @neurodesk/webapp-components@0.10.2
@@ -322,9 +518,37 @@
   - @neurodesk/webapp-components@0.11.0
   - @neurodesk/runtime-support@0.2.0
 
+- Updated dependencies [70f2770]
+
+  - @neurodesk/webapp-components@0.10.2
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.11.0
+  - @neurodesk/runtime-support@0.2.0
+
+- Updated dependencies [22aa4bf]
+
+  - @neurodesk/webapp-components@0.11.1
+  - @neurodesk/runtime-support@0.2.1
+
+- Updated dependencies [70f2770]
+  - @neurodesk/webapp-components@0.10.2
+
 ## 0.4.20261004
 
 ### Patch Changes
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.10.1
+- Updated dependencies [0204fe1]
+- Updated dependencies [ec85a09]
+  - @neurodesk/webapp-components@0.10.0
+- Updated dependencies [257192b]
+  - @neurodesk/runtime-support@0.1.3
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.9.0
 
 - Updated dependencies
 
@@ -340,9 +564,11 @@
 
   - @neurodesk/runtime-support@0.1.3
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.9.0
+
+- Updated dependencies [257192b]
+
+  - @neurodesk/runtime-support@0.1.3
 
 - Updated dependencies
 
@@ -352,9 +578,8 @@
 
   - @neurodesk/webapp-components@0.10.0
 
-- Updated dependencies [257192b]
-
-  - @neurodesk/runtime-support@0.1.3
+- Updated dependencies
+  - @neurodesk/webapp-components@0.9.0
 
 ## 0.4.20261003
 
@@ -368,7 +593,6 @@
 ### Patch Changes
 
 - Updated dependencies
-
 - Updated dependencies
 
   - @neurodesk/webapp-components@0.7.0
@@ -378,6 +602,12 @@
   - @neurodesk/webapp-components@0.6.2
 
 - Updated dependencies
+
+  - @neurodesk/webapp-components@0.6.2
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.7.0
 
   - @neurodesk/webapp-components@0.7.0
 
@@ -394,14 +624,20 @@
   The shared example selector shows one short line once an example loads; the description and expected result moved to a tooltip beside the Example label. NiiMath gained the shared layout tabs and About dialog and no longer ships app CSS.
 
 - Updated dependencies
-
 - Updated dependencies [93381e8]
-
 - Updated dependencies [93381e8]
 
   - @neurodesk/webapp-components@0.6.0
 
 - Updated dependencies
+
+- Updated dependencies [93381e8]
+
+  - @neurodesk/webapp-components@0.6.0
+
+- Updated dependencies [93381e8]
+
+  - @neurodesk/webapp-components@0.6.0
 
   - @neurodesk/webapp-components@0.6.1
 
@@ -453,11 +689,13 @@
 
   - @neurodesk/webapp-components@0.4.2
 
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.4.2
+
 - Updated dependencies [4959500]
 
   - @neurodesk/webapp-components@0.4.4
-
-- Updated dependencies
 
   - @neurodesk/webapp-components@0.4.3
 
@@ -471,6 +709,11 @@
   - @neurodesk/webapp-components@0.4.1
 
 - Replace shared UI builders with light-DOM custom elements for consoles, file fields, result lists, viewer toolbars and example selectors. Migrate app callers, isolate control IDs and upload scopes, and preserve state while cleaning up listeners and cancelled downloads across component removal.
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.4.0
+
+- Replace shared UI builders with light-DOM custom elements for consoles, file fields, result lists, viewer toolbars and example selectors. Migrate app callers, isolate control IDs and upload scopes, and preserve state while cleaning up listeners and cancelled downloads across component removal.
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.4.0
@@ -478,6 +721,11 @@
 ## 0.3.20260916
 
 ### Patch Changes
+
+- Standardize example selection across the app catalog with complete scientific input bundles, shared cancellation and retry, and explicit processing. Add missing examples, curate existing datasets, fix QSMbly retry and TopoFit cancellation, and require example manifests and browser coverage for every app and the generator.
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.3.0
 
 - Standardize example selection across the app catalog with complete scientific input bundles, shared cancellation and retry, and explicit processing. Add missing examples, curate existing datasets, fix QSMbly retry and TopoFit cancellation, and require example manifests and browser coverage for every app and the generator.
 
@@ -502,9 +750,9 @@
 
 - Updated dependencies
 
-  - @neurodesk/webapp-components@0.2.2
+  - @neurodesk/webapp-components@0.2.0
 
-- Updated dependencies
+  - @neurodesk/webapp-components@0.2.2
 
   - @neurodesk/webapp-components@0.2.1
 
@@ -517,7 +765,6 @@
 ### Patch Changes
 
 - Updated dependencies [3cd773f]
-
 - Updated dependencies [4add8da]
 
   - @neurodesk/webapp-components@0.1.5
@@ -527,6 +774,17 @@
 
   - @neurodesk/webapp-components@0.1.4
 
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.1.4
+
+- Updated dependencies [3cd773f]
+
+- Updated dependencies [4add8da]
+
+  - @neurodesk/webapp-components@0.1.5
+  - @neurodesk/runtime-support@0.1.2
+
 - Updated dependencies [4add8da]
 
   - @neurodesk/webapp-components@0.1.5
@@ -535,6 +793,9 @@
 ## 0.2.20260910
 
 ### Minor Changes
+
+- Release the complete application catalog after integrating BrowserQC, dwi2trx and SynthSeg. Preserve shared interface behavior and publish bundles with synchronized date versions.
+- 8a8499b: Add diffusion tensor fitting and tractography, update BrowserQC segmentation, and unify development and production interfaces. Reject malformed QC reports and keep DICOM sidecars attached to their scans.
 
 - Release the complete application catalog after integrating BrowserQC, dwi2trx and SynthSeg. Preserve shared interface behavior and publish bundles with synchronized date versions.
 

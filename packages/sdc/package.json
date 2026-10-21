@@ -1,0 +1,32 @@
+{
+  "name": "@neurodesk/sdc",
+  "version": "0.2.20261020",
+  "description": "Reverse phase-encoding susceptibility distortion correction (PyHySCO port) for browsers and the command line",
+  "type": "module",
+  "private": true,
+  "license": "GPL-3.0-or-later",
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": "./src/wasm.js",
+    "./wasm": "./src/sdc.wasm"
+  },
+  "files": [
+    "src",
+    "LICENSE",
+    "NOTICE",
+    "README.md"
+  ],
+  "scripts": {
+    "build:wasm": "bash scripts/build-wasm.sh",
+    "check:wasm": "bash scripts/build-wasm.sh --check",
+    "test": "node --test test/*.test.js",
+    "lint": "node --check src/wasm.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neurodesk/webapps.git",
+    "directory": "packages/sdc"
+  }
+}

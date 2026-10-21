@@ -4,25 +4,22 @@
 
 ### Patch Changes
 
-- Updated dependencies
-  - @neurodesk/webapp-components@0.17.2
-- Updated dependencies
+- Updated dependencies [c865c0c]
   - @neurodesk/webapp-components@0.17.1
+- Updated dependencies [a36fde4]
+  - @neurodesk/webapp-components@0.18.0
+
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
 
-- Updated dependencies [4b40da1]
+- Updated dependencies [c865c0c]
 
   - @neurodesk/webapp-components@0.17.0
 
-- Updated dependencies [3f1d770]
-
-- Updated dependencies [d9718cd]
-
-  - @neurodesk/webapp-components@0.16.3
-
 - Updated dependencies [ea2a6d2]
+
+- Updated dependencies [3f1d770]
 
 - Updated dependencies [d9718cd]
 
@@ -34,10 +31,53 @@
 
   - @neurodesk/webapp-components@0.16.0
 
-- Updated dependencies [c865c0c]
-
 - Updated dependencies [d9718cd]
   - @neurodesk/webapp-components@0.16.3
+
+- Updated dependencies [46935f7]
+  - @neurodesk/webapp-components@0.16.0
+
+- Updated dependencies [4b40da1]
+  - @neurodesk/webapp-components@0.17.0
+
+  - @neurodesk/webapp-components@0.16.3
+
+- Updated dependencies [a36fde4]
+
+- Updated dependencies
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.18.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.1
+- Updated dependencies [14db080]
+
+- Updated dependencies [4b40da1]
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.2
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.1
+- Updated dependencies [14db080]
+
+## 0.31.20261019
+
+### Patch Changes
+
+- Updated dependencies [af2e8db]
+
+- Updated dependencies [b3404ec]
+  - @neurodesk/webapp-components@0.16.3
+
+- 521ae0d: Adopt upstream QSMxT's shared engine for magnitude/phase QSM, multi-echo CLEAR-SWI and T2*/R2* mapping. Its V-SHARP default omits deconvolution and its B0 direction follows the image affine; these intentionally change the previous browser map.
+
+  Preserve the Neurodesk workspace, shared examples, cancellation and field-map paths. Repair phase-sidecar and worker interoperability, validate echo grids and mixed-endian inputs, retain magnitude-only relaxometry through QSMxT's ARLO implementation, and report exact loaded dependency commits.
+
+  Pin the portable native command to the checksum-verified QSMxT 10.0.0 release. Validate the exact exported real-brain reconstruction command against the new browser with unchanged numerical tolerances and no B0 replay override. Keep the separate upstream Preact preview outside the monorepo app.
 
 ## 0.31.20261018
 
@@ -77,25 +117,23 @@
 
   - @neurodesk/webapp-components@0.14.4
 
-- Updated dependencies [7c0d201]
+- Updated dependencies [b68209b]
+  - @neurodesk/webapp-components@0.15.0
 
+- Updated dependencies [67a5a8f]
+  - @neurodesk/webapp-components@0.14.4
+
+- Updated dependencies [7c0d201]
   - @neurodesk/webapp-components@0.16.2
 
 - Updated dependencies [46935f7]
-
   - @neurodesk/webapp-components@0.16.1
 
 - Updated dependencies [3329c39]
-
   - @neurodesk/webapp-components@0.16.0
 
 - Updated dependencies [b67e4e9]
-
   - @neurodesk/webapp-components@0.15.1
-
-- Updated dependencies [b68209b]
-
-  - @neurodesk/webapp-components@0.15.0
 
 ## 0.31.20261017
 
@@ -119,8 +157,10 @@
   - @neurodesk/webapp-components@0.14.1
 
 - Updated dependencies
-
   - @neurodesk/webapp-components@0.14.2
+
+- Updated dependencies [7443048]
+  - @neurodesk/webapp-components@0.14.1
 
 ## 0.31.20261015
 
@@ -213,7 +253,6 @@
 - Show the complete registry citation list through the shared Cite dialog, include the single-step TGV paper, and check upstream DOI coverage during sync.
 
 - Updated dependencies
-
   - @neurodesk/webapp-components@0.12.1
 
 ## 0.29.20261009
@@ -263,13 +302,14 @@
 
   - @neurodesk/webapp-components@0.10.2
 
-- Updated dependencies [22aa4bf]
+- Updated dependencies
+  - @neurodesk/webapp-components@0.11.0
 
+- Updated dependencies [22aa4bf]
   - @neurodesk/webapp-components@0.11.1
 
-- Updated dependencies
-
-  - @neurodesk/webapp-components@0.11.0
+- Updated dependencies [70f2770]
+  - @neurodesk/webapp-components@0.10.2
 
 ## 0.29.20261004
 
@@ -285,17 +325,16 @@
 
   - @neurodesk/webapp-components@0.10.0
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.9.0
 
-- Updated dependencies
+- Updated dependencies [ec85a09]
+  - @neurodesk/webapp-components@0.10.0
 
+- Updated dependencies
   - @neurodesk/webapp-components@0.10.1
 
-- Updated dependencies [ec85a09]
-
-  - @neurodesk/webapp-components@0.10.0
+- Updated dependencies
+  - @neurodesk/webapp-components@0.9.0
 
 ## 0.29.20261003
 
@@ -310,29 +349,19 @@
 
 - Updated dependencies
 
-- Updated dependencies
-
-  - @neurodesk/webapp-components@0.7.0
-
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.6.2
 
 - Updated dependencies
+  - @neurodesk/webapp-components@0.7.0
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.6.2
 
   - @neurodesk/webapp-components@0.7.0
 
 ## 0.29.20260928
 
 ### Patch Changes
-
-- Use portable underscore MCP tool names, explicit input cardinality, and declared SynthSeg browser geometry limits for preflight validation. Preserve duplicate DICOM filenames during conversion, release viewer sessions when their windows close, and prevent cancellation/retry races.
-
-  Resolve QSM voxel-dependent defaults for supplied masks before reconstruction, so generated-mask and supplied-mask runs produce the same output. Add complete Mac scientific validation commands and evidence checks. The SynthSeg GPU buffer ceiling remains unchanged.
-
-- Updated dependencies
-
-  - @neurodesk/webapp-components@0.6.1
 
 - 93381e8: Remove the static bottom bar (version, privacy sentence, duplicate More Apps and GitHub links) from the six inference-workspace apps. The shared app bar already shows the version and links, and Privacy has its own dialog. The unused `.app-footer` and `.nd-app-footer` rules leave the shared stylesheets and the hosted theme.
 
@@ -344,11 +373,17 @@
 
 - Updated dependencies [93381e8]
 
-- Updated dependencies [93381e8]
-
   - @neurodesk/webapp-components@0.6.0
 
+- Use portable underscore MCP tool names, explicit input cardinality, and declared SynthSeg browser geometry limits for preflight validation. Preserve duplicate DICOM filenames during conversion, release viewer sessions when their windows close, and prevent cancellation/retry races.
+
+  Resolve QSM voxel-dependent defaults for supplied masks before reconstruction, so generated-mask and supplied-mask runs produce the same output. Add complete Mac scientific validation commands and evidence checks. The SynthSeg GPU buffer ceiling remains unchanged.
+
 - Updated dependencies
+  - @neurodesk/webapp-components@0.6.1
+
+- Updated dependencies [93381e8]
+  - @neurodesk/webapp-components@0.6.0
 
   - @neurodesk/webapp-components@0.6.1
 
@@ -398,14 +433,6 @@
 
 ### Patch Changes
 
-- Updated dependencies [4959500]
-
-  - @neurodesk/webapp-components@0.4.4
-
-- Updated dependencies
-
-  - @neurodesk/webapp-components@0.4.3
-
 - Updated dependencies
 
   - @neurodesk/webapp-components@0.4.2
@@ -415,6 +442,13 @@
   - @neurodesk/webapp-components@0.4.4
 
 - Updated dependencies
+  - @neurodesk/webapp-components@0.4.3
+
+- Updated dependencies [4959500]
+  - @neurodesk/webapp-components@0.4.4
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.4.2
 
   - @neurodesk/webapp-components@0.4.3
 
@@ -461,21 +495,18 @@
 
 - Updated dependencies
 
+  - @neurodesk/webapp-components@0.2.0
+
   - @neurodesk/webapp-components@0.2.2
 
 - Updated dependencies
-
   - @neurodesk/webapp-components@0.2.1
 
 - Updated dependencies
-
-  - @neurodesk/webapp-components@0.2.0
-
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.2.2
 
 - Updated dependencies
+  - @neurodesk/webapp-components@0.2.0
 
   - @neurodesk/webapp-components@0.2.1
 
@@ -487,18 +518,20 @@
 
 ### Patch Changes
 
-- Updated dependencies [3cd773f]
-
-- Updated dependencies [4add8da]
-
-  - @neurodesk/webapp-components@0.1.5
-
 - Add optional TopoFit mid-surface normals and flat cortical patches, matching OpenRecon's atlas eligibility, geodesic search, plane-fit criteria and local ribbon geometry. Export native-grid patch-and-normal QC, individual patch surfaces, paired geometry JSON, normals CSV and measurements; support hemisphere, radius, count, quality and native-grid ROI settings. Pin the fsaverage atlas on Hugging Face. Compare the geometry with OpenRecon on both full-resolution validation hemispheres.
 
   Keep anatomical surfaces in 3-Plane view and give registration sphere files the FreeSurfer parser extension for display. Remove the repeated sidebar warning and single-option contrast selector. Suppress consecutive duplicate technical-log messages across apps, including QSMbly and CALMaR, and report model-download progress when its percentage changes.
 
 - Updated dependencies
 
+  - @neurodesk/webapp-components@0.1.4
+
+- Updated dependencies [3cd773f]
+
+- Updated dependencies [4add8da]
+  - @neurodesk/webapp-components@0.1.5
+
+- Updated dependencies
   - @neurodesk/webapp-components@0.1.4
 
 - Updated dependencies [4add8da]

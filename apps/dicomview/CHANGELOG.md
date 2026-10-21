@@ -26,7 +26,71 @@
   DICOM View opens series in the ACS layout, without the 3D render, with FreeBrowse's
   panel closed.
 
+- DICOM View's "Open in White matter lesions" button is now an "Open in another webapp"
+  menu that lists every app of the site from the registry. Most apps receive the converted
+  NIfTI image; apps the registry marks `handoff: dicom` (dicompare, QSMbly, dwi2trx, NODDI,
+  Carotid Flow) receive the series' DICOM files, and `handoff: none` keeps an app that cannot
+  use a single series (Zarro, FastPrep, SurfAnnotate, LCModel) out of the menu. The shared shell
+  receives a handoff for every app the way a page drop opens files, through the app's own
+  inputs; dicompare opens the files as reference acquisitions, and White matter lesions
+  keeps its own receiver.
+
 ### Patch Changes
+
+- The FreeBrowse viewer's eye button now hides a volume through NiiVue's own `visible` flag, which NiiVue draws from 1.0.0-rc.24, instead of a shim that set the volume's opacity to 0. A hidden volume keeps its opacity, so the Opacity slider shows the real value while it is hidden. Spinal Cord Toolbox's Results eye buttons hide a stage the same way, keeping its opacity, so either eye can show what the other hid, in the main viewer and in Compare. TopoFit's 3D anatomy clip and its patch QC result follow the flag: hiding the QC volume with FreeBrowse's eye clears its measurements as before.
+- Updated dependencies
+  - @neurodesk/runtime-support@0.9.7
+- Updated dependencies [c865c0c]
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/runtime-support@0.8.2
+  - @neurodesk/dicom2vid@0.5.20261020
+- Updated dependencies [a36fde4]
+
+  - @neurodesk/webapp-components@0.18.0
+  - @neurodesk/runtime-support@0.9.5
+  - @neurodesk/dicom2vid@0.5.20261020
+
+- Updated dependencies [14db080]
+
+- Updated dependencies [03261d0]
+
+- Updated dependencies [c865c0c]
+
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/dicom2vid@0.5.20261020
+  - @neurodesk/runtime-support@0.9.4
+
+- Updated dependencies [c865c0c]
+
+- Updated dependencies [4b40da1]
+
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/dicom2vid@0.5.20261020
+  - @neurodesk/runtime-support@0.9.4
+
+- Keep the generic handoff Privacy disclosure when integrating the catalog: DICOM targets receive the original scanner headers, and no image is uploaded.
+
+- Updated dependencies [a36fde4]
+
+- Updated dependencies
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/dicom2vid@0.5.20261020
+  - @neurodesk/runtime-support@0.8.1
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.18.0
+  - @neurodesk/dicom2vid@0.5.20261020
+  - @neurodesk/runtime-support@0.8.2
+
+- Updated dependencies
+  - @neurodesk/runtime-support@0.9.5
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/dicom2vid@0.5.20261020
+- Keep the generic handoff Privacy disclosure when integrating the catalog: DICOM targets receive the original scanner headers, and no image is uploaded.
 
 - NiiVue moves to 1.0.0-rc.26 in Brain Extraction, Carotid Flow, SYNcro, SynthSeg, White Matter Lesions, and, through the shared FreeBrowse viewer, Spinal Cord Toolbox, DICOM View and TopoFit. From rc.25, NiiVue places a loaded drawing on the right voxels of a sagittal or otherwise permuted image (niivue/mono#251), so the mask editor no longer probes and reverses NiiVue's load on opening a mask. Opening a mask for editing now takes one load instead of up to five on such images. MuscleMap, SeedSeg and VesselBoost run NiiVue 0.68, which already loaded drawings correctly; they pick up the simpler editor.
 
@@ -38,43 +102,25 @@
   - @neurodesk/dicom2vid@0.5.20261020
 - Updated dependencies [14db080]
 
-- Updated dependencies [03261d0]
-
 - Updated dependencies [4b40da1]
 
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/dicom2vid@0.5.20261020
   - @neurodesk/runtime-support@0.9.4
 
-- Keep the generic handoff Privacy disclosure when integrating the catalog: DICOM targets receive the original scanner headers, and no image is uploaded.
-
-- Updated dependencies [c865c0c]
-
-- Updated dependencies
-  - @neurodesk/runtime-support@0.9.5
-  - @neurodesk/webapp-components@0.17.1
-  - @neurodesk/dicom2vid@0.5.20261020
-- Keep the generic handoff Privacy disclosure when integrating the catalog: DICOM targets receive the original scanner headers, and no image is uploaded.
-
 ## 0.3.20261020
 
 ### Patch Changes
+
+- 894b3a1: The Open in White matter lesions check reads a gzipped NIfTI's header through the shared streaming decoder instead of a fixed 64 KB prefix, so a valid `.nii.gz` whose header lies past the first 64 KB of compressed data is no longer refused as uncheckable.
+
+- Updated dependencies [ea2a6d2]
 
 - Updated dependencies [3f1d770]
 
 - Updated dependencies [14b8248]
 
 - Updated dependencies [d9718cd]
-
-- Updated dependencies [d1fa022]
-
-  - @neurodesk/webapp-components@0.16.3
-  - @neurodesk/runtime-support@0.9.3
-  - @neurodesk/dicom2vid@0.5.20261020
-
-- 894b3a1: The Open in White matter lesions check reads a gzipped NIfTI's header through the shared streaming decoder instead of a fixed 64 KB prefix, so a valid `.nii.gz` whose header lies past the first 64 KB of compressed data is no longer refused as uncheckable.
-
-- Updated dependencies [ea2a6d2]
 
 - Updated dependencies [c1a4dda]
 
@@ -90,18 +136,38 @@
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/dicom2vid@0.5.20261020
 
+- Updated dependencies [d1fa022]
+
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/dicom2vid@0.5.20261020
+
+- Updated dependencies [d1fa022]
+
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/dicom2vid@0.5.20261020
 
-- Updated dependencies [d1fa022]
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/dicom2vid@0.5.20261020
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/runtime-support@0.8.1
   - @neurodesk/dicom2vid@0.5.20261020
 
 ## 0.3.20261019
 
 ### Patch Changes
+
+- Updated dependencies [af2e8db]
+
+- Updated dependencies [b3404ec]
+
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/dicom2vid@0.5.20261019
 
 - 894b3a1: The Open in White matter lesions check reads a gzipped NIfTI's header through the shared streaming decoder instead of a fixed 64 KB prefix, so a valid `.nii.gz` whose header lies past the first 64 KB of compressed data is no longer refused as uncheckable.
 
@@ -159,6 +225,18 @@
   - @neurodesk/runtime-support@0.7.1
   - @neurodesk/dicom2vid@0.5.20261018
 
+- Updated dependencies [b67e4e9]
+
+  - @neurodesk/runtime-support@0.7.2
+  - @neurodesk/webapp-components@0.15.1
+  - @neurodesk/dicom2vid@0.5.20261018
+
+- Updated dependencies [b68209b]
+
+  - @neurodesk/webapp-components@0.15.0
+  - @neurodesk/runtime-support@0.7.1
+  - @neurodesk/dicom2vid@0.5.20261018
+
 - Updated dependencies [7c0d201]
 
   - @neurodesk/webapp-components@0.16.2
@@ -172,21 +250,8 @@
   - @neurodesk/dicom2vid@0.5.20261018
 
 - Updated dependencies [3329c39]
-
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/runtime-support@0.8.0
-
-- Updated dependencies [b67e4e9]
-
-  - @neurodesk/runtime-support@0.7.2
-  - @neurodesk/webapp-components@0.15.1
-  - @neurodesk/dicom2vid@0.5.20261018
-
-- Updated dependencies [b68209b]
-
-  - @neurodesk/webapp-components@0.15.0
-  - @neurodesk/runtime-support@0.7.1
-  - @neurodesk/dicom2vid@0.5.20261018
 
 ## 0.2.20261018
 

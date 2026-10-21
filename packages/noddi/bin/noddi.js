@@ -27,7 +27,7 @@ Options:
   --mask FILE         Use this brain mask (on the diffusion grid) instead of MindGrab
   --no-mask           Fit every voxel, without a brain mask
   --no-noddi          Fit the tensor only
-  --tensor-fit TYPE   wls (weighted least squares, default) or ols
+  --tensor-fit TYPE   wls (weighted least squares, default), ols or niimath-dtifit
   --threads N         Worker threads for the fit (default: one per core)
   -h, --help          Show this help
 

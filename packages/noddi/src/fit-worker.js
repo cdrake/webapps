@@ -1,6 +1,6 @@
 // One fitting worker's message handler, shared by the web app's Web Worker and the command line's
 // worker thread: loads the noddi WebAssembly once, then fits chunks of masked voxels.
-// Messages in: { type: "init", bvals, bvecs, weighted, noddi } then { type: "fit", id, data, voxels }.
+// Messages in: { type: "init", bvals, bvecs, weighted, tensor, noddi } then { type: "fit", id, data, voxels }.
 // Messages out: { type: "ready" }, { type: "done", id, tensor, noddi } or { type: "error", message }.
 import { loadNoddi } from "./wasm.js";
 
@@ -28,7 +28,7 @@ export function fitWorkerHandler(wasm, post) {
       }
       if (message.type === "fit") {
         const { bvals, bvecs, weighted } = settings;
-        const tensor = api.dtiFit(message.data, message.voxels, bvals, bvecs, { weighted });
+        const tensor = settings.tensor === false ? null : api.dtiFit(message.data, message.voxels, bvals, bvecs, { weighted });
         const noddi = model ? model.fit(message.data, message.voxels) : null;
         post({ type: "done", id: message.id, tensor, noddi }, [...transferables(tensor), ...transferables(noddi)]);
       }

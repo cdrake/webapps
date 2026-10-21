@@ -11,6 +11,9 @@
 
 ### Patch Changes
 
+- Updated dependencies [a36fde4]
+  - @neurodesk/webapp-components@0.18.0
+
 - Updated dependencies
   - @neurodesk/webapp-components@0.17.1
 
@@ -22,11 +25,26 @@
 
 - Updated dependencies [03261d0]
 
+- Updated dependencies [c865c0c]
+  - @neurodesk/webapp-components@0.17.0
+
+- Updated dependencies [c865c0c]
+
+- Updated dependencies [4b40da1]
+  - @neurodesk/webapp-components@0.17.0
+
 - Updated dependencies [4b40da1]
 
   - @neurodesk/webapp-components@0.17.0
 
-- Updated dependencies [c865c0c]
+## 0.35.20261019
+
+### Patch Changes
+
+- Updated dependencies [af2e8db]
+
+- Updated dependencies [b3404ec]
+  - @neurodesk/webapp-components@0.16.3
 
 ## 0.34.20261020
 
@@ -58,12 +76,41 @@
 
 - f2cfdd3: Share the checksum-verified ONNX Runtime asyncify binary in composite sites while keeping pthread modules inside each app's service-worker scope. This keeps the expanded catalog within its existing hosting budget.
 
+## 0.32.20261020
+
+### Patch Changes
+
+- Updated dependencies [c865c0c]
+  - @neurodesk/webapp-components@0.17.1
+
+- Updated dependencies
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.18.0
+
 ## 0.32.20261018
 
 ### Patch Changes
 
 - Updated dependencies [46935f7]
   - @neurodesk/webapp-components@0.16.1
+
+## 0.31.20261020
+
+### Patch Changes
+
+- Updated dependencies [a36fde4]
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.0
+
+- Updated dependencies [a36fde4]
+
+- Updated dependencies
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.0
 
 ## 0.31.20261018
 
@@ -78,16 +125,27 @@
   - @neurodesk/webapp-components@0.16.0
 
 - Updated dependencies [b67e4e9]
-
   - @neurodesk/webapp-components@0.15.1
 
 - Updated dependencies [3329c39]
-
   - @neurodesk/webapp-components@0.16.0
+
+- Updated dependencies [b67e4e9]
+
+  - @neurodesk/webapp-components@0.15.1
 
 ## 0.30.20261020
 
 ### Patch Changes
+
+- 2d3e637: The macOS release retries Apple stapling when `xcrun stapler` fails on a transient transport error (`NSURLErrorDomain` connection lost, timed out, offline or cannot connect, or stapler code 68), up to four attempts with a 15 s, 30 s, 60 s backoff, each retry logged. `@electron/notarize` staples once and never retries, so one dropped connection to api.apple-cloudkit.com failed the nightly desktop release. The app is notarized once; a notarization failure, a certificate-trust error or an invalid signature still fails at once.
+- Updated dependencies [ea2a6d2]
+- Updated dependencies [3f1d770]
+- Updated dependencies [d9718cd]
+- Updated dependencies [c1a4dda]
+- Updated dependencies [3329c39]
+- Updated dependencies [46935f7]
+  - @neurodesk/webapp-components@0.16.0
 
 - 2d3e637: The macOS release retries Apple stapling when `xcrun stapler` fails on a transient transport error (`NSURLErrorDomain` connection lost, timed out, offline or cannot connect, or stapler code 68), up to four attempts with a 15 s, 30 s, 60 s backoff, each retry logged. `@electron/notarize` staples once and never retries, so one dropped connection to api.apple-cloudkit.com failed the nightly desktop release. The app is notarized once; a notarization failure, a certificate-trust error or an invalid signature still fails at once.
 
@@ -116,6 +174,11 @@
 ### Patch Changes
 
 - Updated dependencies [2ae93ae]
+- Updated dependencies [ccb2970]
+- Updated dependencies [67a5a8f]
+  - @neurodesk/webapp-components@0.14.4
+
+- Updated dependencies [2ae93ae]
 
 - Updated dependencies [ccb2970]
 
@@ -125,6 +188,10 @@
 ## 0.29.20261017
 
 ### Patch Changes
+
+- b243e7b: Include the shared Inter font and its licence in offline suite and single-app bundles so the composite theme loads without a missing font request.
+- Updated dependencies [b547d52]
+  - @neurodesk/webapp-components@0.14.3
 
 - b243e7b: Include the shared Inter font and its licence in offline suite and single-app bundles so the composite theme loads without a missing font request.
 
@@ -150,6 +217,10 @@
 ### Patch Changes
 
 - Updated dependencies [dd65e6a]
+- Updated dependencies [dcc74e7]
+  - @neurodesk/webapp-components@0.14.0
+
+- Updated dependencies [dd65e6a]
 
 - Updated dependencies [dcc74e7]
   - @neurodesk/webapp-components@0.14.0
@@ -157,6 +228,11 @@
 ## 0.28.20261014
 
 ### Patch Changes
+
+- Updated dependencies [27c9549]
+- Updated dependencies [850e642]
+- Updated dependencies [ad92e2f]
+  - @neurodesk/webapp-components@0.13.0
 
 - Updated dependencies [27c9549]
 
@@ -199,6 +275,12 @@
 ### Patch Changes
 
 - 501ea0c: Pin every offline source to an immutable URL so a host redeploy can no longer fail the nightly checksum check. CALMAR assets move to fixed Hugging Face and GitHub commits, QSMbly loads Inter from versioned font files, and the unused QSMbly OSF multi-echo files and NiiVue demo images (NiiMath, SynthSR) leave the bundle. `test/offline-asset-pins.test.mjs` rejects unpinned sources.
+- 3adf140: Write the models pack without GNU tar. The archive is now produced in Node as a plain USTAR stream, so it builds on macOS and Windows as well as Linux and stays byte-identical for the same models. Its checksum differs from packs written by GNU tar, so the next release uploads the pack once more.
+- Updated dependencies [66bf9e9]
+- Updated dependencies [501ea0c]
+  - @neurodesk/webapp-components@0.12.0
+
+- 501ea0c: Pin every offline source to an immutable URL so a host redeploy can no longer fail the nightly checksum check. CALMAR assets move to fixed Hugging Face and GitHub commits, QSMbly loads Inter from versioned font files, and the unused QSMbly OSF multi-echo files and NiiVue demo images (NiiMath, SynthSR) leave the bundle. `test/offline-asset-pins.test.mjs` rejects unpinned sources.
 
 - 3adf140: Write the models pack without GNU tar. The archive is now produced in Node as a plain USTAR stream, so it builds on macOS and Windows as well as Linux and stays byte-identical for the same models. Its checksum differs from packs written by GNU tar, so the next release uploads the pack once more.
 
@@ -226,6 +308,10 @@
 ### Patch Changes
 
 - c040105: Build the bundle's dicompare worker from this repository instead of downloading it from dicompare.neurodesk.org, whose redeploys failed the nightly build, and fix SeedSeg's offline asset list, which still named NiiVue 0.44.0. Offline asset verification now fails when an app's locked asset list differs from its sources.
+- Updated dependencies [70f2770]
+  - @neurodesk/webapp-components@0.10.2
+
+- c040105: Build the bundle's dicompare worker from this repository instead of downloading it from dicompare.neurodesk.org, whose redeploys failed the nightly build, and fix SeedSeg's offline asset list, which still named NiiVue 0.44.0. Offline asset verification now fails when an app's locked asset list differs from its sources.
 
 - Updated dependencies [70f2770]
   - @neurodesk/webapp-components@0.10.2
@@ -240,6 +326,10 @@
 ## 0.23.20261004
 
 ### Patch Changes
+
+- Updated dependencies [0204fe1]
+- Updated dependencies [ec85a09]
+  - @neurodesk/webapp-components@0.10.0
 
 - Updated dependencies [0204fe1]
 
@@ -268,6 +358,10 @@
 ### Patch Changes
 
 - Share operation parameter schemas across browser and desktop automation. Both callers now use the same defaults, enum values, bounds, recursive arrays, decimal multiples and safe integer rules. Preserve MCP parameter metadata and bundle the validator for native ESM development, standalone releases and the composite catalog.
+- Updated dependencies
+  - @neurodesk/webapp-components@0.8.0
+
+- Share operation parameter schemas across browser and desktop automation. Both callers now use the same defaults, enum values, bounds, recursive arrays, decimal multiples and safe integer rules. Preserve MCP parameter metadata and bundle the validator for native ESM development, standalone releases and the composite catalog.
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.8.0
@@ -287,6 +381,10 @@
 ## 0.18.20260930
 
 ### Patch Changes
+
+- Updated dependencies
+- Updated dependencies
+  - @neurodesk/webapp-components@0.7.0
 
 - Updated dependencies
 
@@ -320,6 +418,11 @@
   Add bounded desktop viewer sessions and MCP controls using public viewer APIs. Native SynthSeg now reports per-label counts and physical volumes. Include real-model CPU checks and a Mac runner for Metal, WebGPU and buffer-planning evidence without raising the validated SynthSeg limit.
 
 ### Patch Changes
+
+- Updated dependencies
+- Updated dependencies [93381e8]
+- Updated dependencies [93381e8]
+  - @neurodesk/webapp-components@0.6.0
 
 - Updated dependencies
 

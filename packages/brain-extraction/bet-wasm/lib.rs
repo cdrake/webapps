@@ -39,6 +39,7 @@ pub extern "C" fn bet(
         gradient_threshold,
         iterations,
         subdivisions,
+        voxel_scale: 1.0,
     };
     let mask = qsm_core::bet::run_bet(image, &grid, &params, |current, total| unsafe {
         progress(current as u32, total as u32)

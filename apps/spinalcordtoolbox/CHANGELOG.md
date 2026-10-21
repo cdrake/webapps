@@ -4,33 +4,28 @@
 
 ### Patch Changes
 
-- NiiVue moves to 1.0.0-rc.26 in Brain Extraction, Carotid Flow, SYNcro, SynthSeg, White Matter Lesions, and, through the shared FreeBrowse viewer, Spinal Cord Toolbox, DICOM View and TopoFit. From rc.25, NiiVue places a loaded drawing on the right voxels of a sagittal or otherwise permuted image (niivue/mono#251), so the mask editor no longer probes and reverses NiiVue's load on opening a mask. Opening a mask for editing now takes one load instead of up to five on such images. MuscleMap, SeedSeg and VesselBoost run NiiVue 0.68, which already loaded drawings correctly; they pick up the simpler editor.
-
-  From rc.22 NiiVue renders with WebGL2 by default, so the five apps that pinned rc.11 or rc.14 draw their viewer with WebGL2 even where WebGPU is available; segmentation and other processing keep their own WebGPU backends.
-
-- Updated dependencies
-  - @neurodesk/webapp-components@0.17.2
+- The FreeBrowse viewer's eye button now hides a volume through NiiVue's own `visible` flag, which NiiVue draws from 1.0.0-rc.24, instead of a shim that set the volume's opacity to 0. A hidden volume keeps its opacity, so the Opacity slider shows the real value while it is hidden. Spinal Cord Toolbox's Results eye buttons hide a stage the same way, keeping its opacity, so either eye can show what the other hid, in the main viewer and in Compare. TopoFit's 3D anatomy clip and its patch QC result follow the flag: hiding the QC volume with FreeBrowse's eye clears its measurements as before.
   - @neurodesk/spinalcordtoolbox@0.9.20261020
-- Updated dependencies
+- Updated dependencies [c865c0c]
   - @neurodesk/webapp-components@0.17.1
   - @neurodesk/spinalcordtoolbox@0.9.20261020
+- Updated dependencies [a36fde4]
+
+  - @neurodesk/webapp-components@0.18.0
+  - @neurodesk/spinalcordtoolbox@0.9.20261020
+
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
 
-- Updated dependencies [4b40da1]
+- Updated dependencies [c865c0c]
 
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/spinalcordtoolbox@0.9.20261020
 
-- Updated dependencies [3f1d770]
-
-- Updated dependencies [d9718cd]
-
-  - @neurodesk/webapp-components@0.16.3
-  - @neurodesk/spinalcordtoolbox@0.9.20261020
-
 - Updated dependencies [ea2a6d2]
+
+- Updated dependencies [3f1d770]
 
 - Updated dependencies [d9718cd]
 
@@ -43,11 +38,66 @@
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/spinalcordtoolbox@0.9.20261020
 
-- Updated dependencies [c865c0c]
-
 - Updated dependencies [d9718cd]
+
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/spinalcordtoolbox@0.9.20261020
+
+- Updated dependencies [46935f7]
+
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/spinalcordtoolbox@0.9.20261020
+
+- Updated dependencies [4b40da1]
+
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/spinalcordtoolbox@0.9.20261020
+
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/spinalcordtoolbox@0.9.20261020
+
+- Updated dependencies [a36fde4]
+
+- Updated dependencies
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/spinalcordtoolbox@0.9.20261020
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.18.0
+  - @neurodesk/spinalcordtoolbox@0.9.20261020
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/spinalcordtoolbox@0.9.20261020
+- Updated dependencies [14db080]
+
+- Updated dependencies [4b40da1]
+
+- NiiVue moves to 1.0.0-rc.26 in Brain Extraction, Carotid Flow, SYNcro, SynthSeg, White Matter Lesions, and, through the shared FreeBrowse viewer, Spinal Cord Toolbox, DICOM View and TopoFit. From rc.25, NiiVue places a loaded drawing on the right voxels of a sagittal or otherwise permuted image (niivue/mono#251), so the mask editor no longer probes and reverses NiiVue's load on opening a mask. Opening a mask for editing now takes one load instead of up to five on such images. MuscleMap, SeedSeg and VesselBoost run NiiVue 0.68, which already loaded drawings correctly; they pick up the simpler editor.
+
+  From rc.22 NiiVue renders with WebGL2 by default, so the five apps that pinned rc.11 or rc.14 draw their viewer with WebGL2 even where WebGPU is available; segmentation and other processing keep their own WebGPU backends.
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.2
+  - @neurodesk/spinalcordtoolbox@0.9.20261020
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/spinalcordtoolbox@0.9.20261020
+- Updated dependencies [14db080]
+
+## 0.9.20261019
+
+### Patch Changes
+
+- Updated dependencies [af2e8db]
+
+- Updated dependencies [b3404ec]
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/spinalcordtoolbox@0.9.20261019
 
 ## 0.9.20261018
 
@@ -96,6 +146,16 @@
   - @neurodesk/webapp-components@0.14.4
   - @neurodesk/spinalcordtoolbox@0.9.20261018
 
+- Updated dependencies [b68209b]
+
+  - @neurodesk/webapp-components@0.15.0
+  - @neurodesk/spinalcordtoolbox@0.9.20261018
+
+- Updated dependencies [67a5a8f]
+
+  - @neurodesk/webapp-components@0.14.4
+  - @neurodesk/spinalcordtoolbox@0.9.20261018
+
 - Updated dependencies [7c0d201]
 
   - @neurodesk/webapp-components@0.16.2
@@ -111,13 +171,7 @@
   - @neurodesk/webapp-components@0.16.0
 
 - Updated dependencies [b67e4e9]
-
   - @neurodesk/webapp-components@0.15.1
-  - @neurodesk/spinalcordtoolbox@0.9.20261018
-
-- Updated dependencies [b68209b]
-
-  - @neurodesk/webapp-components@0.15.0
   - @neurodesk/spinalcordtoolbox@0.9.20261018
 
 ## 0.9.20261017
@@ -147,6 +201,10 @@
 - Updated dependencies
 
   - @neurodesk/webapp-components@0.14.2
+  - @neurodesk/spinalcordtoolbox@0.9.20261016
+
+- Updated dependencies [7443048]
+  - @neurodesk/webapp-components@0.14.1
   - @neurodesk/spinalcordtoolbox@0.9.20261016
 
 ## 0.9.20261015
@@ -225,13 +283,14 @@
 
   - @neurodesk/webapp-components@0.12.2
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.12.1
 
 - Updated dependencies
 
   - @neurodesk/webapp-components@0.12.2
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.12.1
 
 ## 0.8.20261009
 
@@ -276,6 +335,9 @@
 
   - @neurodesk/webapp-components@0.11.1
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.11.0
+
 ## 0.6.20261007
 
 ### Patch Changes
@@ -302,6 +364,14 @@
 
 ### Patch Changes
 
+- Give the viewer Zoom and Fit controls 44-pixel touch targets through the shared workspace stylesheet.
+
+- 0e90fbf: Add a Zoom control to the viewer toolbar. With Zoom ticked the mouse wheel zooms 2D views and right-drag pans them; untick it to scroll slices again at the same zoom, and use Fit to restore the full view.
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.9.0
+
 - a928230: Correct segmentation and label results by hand before downloading them. Every mask and label-map row in Results (cord, lesion, TotalSpineSeg labels and disc markers) now has an Edit button that opens the shared mask editor under the viewer toolbar, with the input image as the base. Apply replaces the result with the edited uint8 NIfTI under the same file name and labels the row `(edited)`; Download then returns the edit. Cancel, a new run, Clear results, a new input or hiding the edited overlay discard unapplied strokes. Lesion statistics and automation reports keep the values the pipeline computed.
 
 - Updated dependencies [0204fe1]
@@ -309,10 +379,6 @@
 - Updated dependencies [ec85a09]
 
   - @neurodesk/webapp-components@0.10.0
-
-- Give the viewer Zoom and Fit controls 44-pixel touch targets through the shared workspace stylesheet.
-
-- 0e90fbf: Add a Zoom control to the viewer toolbar. With Zoom ticked the mouse wheel zooms 2D views and right-drag pans them; untick it to scroll slices again at the same zoom, and use Fit to restore the full view.
 
 - Updated dependencies
 
@@ -335,6 +401,8 @@
 
 - Updated dependencies
 
+  - @neurodesk/webapp-components@0.6.2
+
 - Updated dependencies
 
   - @neurodesk/webapp-components@0.7.0
@@ -343,17 +411,11 @@
 
   - @neurodesk/webapp-components@0.6.2
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.7.0
 
 ## 0.5.20260928
 
 ### Patch Changes
-
-- Updated dependencies
-
-  - @neurodesk/webapp-components@0.6.1
 
 - 93381e8: Remove the static bottom bar (version, privacy sentence, duplicate More Apps and GitHub links) from the six inference-workspace apps. The shared app bar already shows the version and links, and Privacy has its own dialog. The unused `.app-footer` and `.nd-app-footer` rules leave the shared stylesheets and the hosted theme.
 
@@ -365,11 +427,15 @@
 
 - Updated dependencies [93381e8]
 
-- Updated dependencies [93381e8]
-
   - @neurodesk/webapp-components@0.6.0
 
 - Updated dependencies
+
+  - @neurodesk/webapp-components@0.6.1
+
+- Updated dependencies [93381e8]
+
+  - @neurodesk/webapp-components@0.6.0
 
   - @neurodesk/webapp-components@0.6.1
 
@@ -409,14 +475,6 @@
 
 ### Patch Changes
 
-- Updated dependencies [4959500]
-
-  - @neurodesk/webapp-components@0.4.4
-
-- Updated dependencies
-
-  - @neurodesk/webapp-components@0.4.3
-
 - Updated dependencies
 
   - @neurodesk/webapp-components@0.4.2
@@ -426,6 +484,16 @@
   - @neurodesk/webapp-components@0.4.4
 
 - Updated dependencies
+
+  - @neurodesk/webapp-components@0.4.3
+
+- Updated dependencies [4959500]
+
+  - @neurodesk/webapp-components@0.4.4
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.4.2
 
   - @neurodesk/webapp-components@0.4.3
 
@@ -464,6 +532,8 @@
 
 - Updated dependencies
 
+  - @neurodesk/webapp-components@0.2.0
+
   - @neurodesk/webapp-components@0.2.2
 
 - Updated dependencies
@@ -472,13 +542,11 @@
 
 - Updated dependencies
 
-  - @neurodesk/webapp-components@0.2.0
-
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.2.2
 
 - Updated dependencies
+
+  - @neurodesk/webapp-components@0.2.0
 
   - @neurodesk/webapp-components@0.2.1
 
@@ -489,6 +557,10 @@
 ## 0.2.20260914
 
 ### Patch Changes
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.1.4
 
 - Updated dependencies [3cd773f]
 

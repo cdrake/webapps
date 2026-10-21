@@ -1,5 +1,41 @@
 # @neurodesk/noddi
 
+## 0.4.20261020
+
+### Minor Changes
+
+- 5312f0e: NODDI has a portable command line. `noddi DWI BVAL BVEC OUTPUT_DIR` runs the web app's fit in Node: a MindGrab brain mask of the mean b0 on the CPU (`--mask FILE` or `--no-mask` instead), the tensor fit and, with two or more shells, NODDI (AMICO), on worker threads (`--threads N`). The fit, its chunking and its output names move into `@neurodesk/noddi`, which the app imports, so both write the same files. Release archives for Linux x64, Windows x64 and macOS arm64 are checked against the web app's own downloads of the example and a two-shell phantom.
+
+- Keep tensor backend selection in NODDI's shared fitting pipeline. The command line accepts
+  `--tensor-fit niimath-dtifit` and uses the same corrected vendored runtime, volume selection,
+  map conversion and optional NODDI fit as the browser. Weighted least squares remains the default.
+
+### Patch Changes
+
+- @neurodesk/dwi2trx@0.6.20261020
+- @neurodesk/dwi2trx@0.6.20261020
+
+- Updated dependencies [a36fde4]
+
+- Updated dependencies [ccea86e]
+
+- Updated dependencies [d0df450]
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.18.0
+  - @neurodesk/dwi2trx@0.6.20261020
+
+- Updated dependencies
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/dwi2trx@0.6.20261020
+
+- Updated dependencies
+  - @neurodesk/dwi2trx@0.6.20261020
+
 ## 0.3.20261020
 
 ### Minor Changes

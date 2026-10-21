@@ -10,44 +10,37 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 default = ["console_error_panic_hook"]
-simd = ["qsm-core/simd"]
-onnx = ["qsm-core/onnx", "dep:getrandom"]
+simd = ["qsmxt-engine/simd"]
+# qsmxt-engine's `onnx` also enables getrandom's browser-crypto backend on wasm32.
+onnx = ["qsmxt-engine/onnx"]
 # Multithreading via wasm threads (SharedArrayBuffer + Web Worker pool). Turns on qsm-core's
-# rayon paths (all classical algorithms) and the tiled-DL parallel tile loop. Requires a
+# rayon paths (all classical algorithms, via qsmxt-engine) and the tiled-DL parallel tile loop. Requires a
 # threaded build (nightly + -Z build-std + target-feature=+atomics,+bulk-memory) and a
 # cross-origin-isolated page (COOP/COEP). See build.sh and the coi service worker.
-parallel = ["qsm-core/parallel", "dep:wasm-bindgen-rayon"]
+parallel = ["qsmxt-engine/parallel", "dep:wasm-bindgen-rayon"]
 # Route the bindings' console_log! diagnostics to the browser console. Off by default, so
 # release bundles carry no logging strings or JS calls; enable it when debugging a build.
 debug-log = []
 
 [dependencies]
-# Core QSM algorithms. `parallel` (rayon) is enabled via our own `parallel` feature for
-# threaded wasm builds; plain builds stay single-threaded.
-qsm-core = { git = "https://github.com/astewartau/QSM.rs.git", tag = "v0.38.0" }
-
-# Pipeline configuration, command generation, methods text.
-# qsmxt-config's canonical home is the QSMxT/QSMxT workspace (the old
-# astewartau/qsmxt.rs repo is being retired).
-qsmxt-config = { git = "https://github.com/QSMxT/QSMxT.git", tag = "v9.22.0" }
+# The only pin on the QSM stack. qsmxt-engine (pipeline configuration, command generation, methods
+# text) re-exports qsm-core (`qsmxt_engine::qsm_core`) and forwards its `simd`/`onnx`/`parallel`
+# features, so qsmbly always runs the same qsm-core QSMxT was built and tested against.
+# Pinned by commit on QSMxT main until a QSMxT release includes QSMxT/QSMxT#331; then it moves to a
+# release tag, which the bump-qsmxt-engine workflow maintains.
+qsmxt-engine = { git = "https://github.com/QSMxT/QSMxT.git", rev = "9fe168be40f67056c198f0df64734c486f137cac" }
 
 # WASM bindings
-# getrandom (pulled by tract-onnx) needs an explicit browser-crypto backend on wasm32. Since
-# qsm-core v0.31.0 (tract 0.23) that is getrandom 0.4's "wasm_js" feature, not 0.2's "js".
-getrandom = { version = "0.4", features = ["wasm_js"], optional = true }
 wasm-bindgen = "0.2"
 # Rayon threadpool for wasm (spawns Web Workers); only linked with the `parallel` feature.
 wasm-bindgen-rayon = { version = "1.2", optional = true }
 js-sys = "0.3"
-serde_json = "1"
+# `float_roundtrip`: a grid read back from an engine's record (JSON) is the grid it recorded, to
+# the last bit; without it a parsed float can be one ulp off, and a restored run resamples onto a
+# slightly different grid.
+serde_json = { version = "1", features = ["float_roundtrip"] }
+log = "0.4"
 console_error_panic_hook = { version = "0.1", optional = true }
-
-# RS2-Net rodent brain extraction (qsm_core::bet::rs2_net) is in review upstream
-# (astewartau/QSM.rs#126). Until it is released, take qsm-core — for us *and* for qsmxt-config,
-# which pins the same v0.38.0 — from v0.38.0 plus that one commit, so the crate graph still has a
-# single qsm-core. Once released: bump the tag above (and qsmxt-config's) and drop this patch.
-[patch."https://github.com/astewartau/QSM.rs.git"]
-qsm-core = { git = "https://github.com/stebo85/QSM.rs.git", rev = "30df24f8e2c4892bacf6e1be8c4c85ae1d772dd4" }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"

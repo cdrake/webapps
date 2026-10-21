@@ -32,11 +32,12 @@
             <div class="nd-section-content">
               <div class="nd-field">
                 <label for="tensorFit">Tensor fit
-                  <span class="nd-info-icon" tabindex="0" aria-label="About the tensor fit">i<span class="nd-info-tooltip">Weighted least squares weights each sample by its squared signal, as FSL dtifit -w does.</span></span>
+                  <span class="nd-info-icon" tabindex="0" aria-label="About the tensor fit">i<span class="nd-info-tooltip">Weighted least squares weights each sample by its squared signal, as FSL dtifit -w does. niimath dtifit is FSL dtifit's default linear fit, as DWI2TRX uses it. All three fit the same volumes.</span></span>
                 </label>
                 <select id="tensorFit">
                   <option value="wls" selected>Weighted least squares</option>
                   <option value="ols">Ordinary least squares</option>
+                  <option value="niimath-dtifit">niimath dtifit</option>
                 </select>
               </div>
               <div class="nd-field">
@@ -84,7 +85,7 @@
     </footer>
 
     <template id="aboutContent">
-      <p>NODDI fits diffusion tensor and NODDI maps to diffusion MRI in this browser. The tensor fit gives FA, MD, AD, RD, S0 and the principal direction from the b0 volumes and the shells up to b = 1200 s/mm² (the lowest shell when none is that low). NODDI, fitted with AMICO, gives the intra-cellular volume fraction (ICVF), the isotropic volume fraction (ISOVF) and the orientation dispersion index (ODI). It needs two or more shells. The NODDI fit is a port of AMICO 1.5.4 and agrees with it to a median of 1e-4 in white matter; AMICO 1.5.4 rounds each fibre direction to its 1° lookup table and this port does not. Outputs use the BIDS diffusion derivative names. Fit corrected data: this app does not denoise or correct motion, eddy currents or distortion.</p>
+      <p>NODDI fits diffusion tensor and NODDI maps to diffusion MRI in this browser. The tensor fit gives FA, MD, AD, RD, S0 and the principal direction from the b0 volumes and the shells up to b = 1200 s/mm² (the lowest shell when none is that low). The tensor fit is weighted least squares (the default), ordinary least squares, or niimath dtifit, which is FSL dtifit's default linear fit as DWI2TRX runs it. niimath dtifit writes no AD or RD map: AD is its first eigenvalue and RD is the mean of the second and third. Where a fit has a negative eigenvalue, niimath sets FA and MD to zero, and the app also sets AD and RD to zero. The app gives niimath unit bvecs, and the direction map has the same axes and sign as the other two fits. A sample of zero or less takes the lowest positive sample of its voxel in the other two fits; niimath uses its own lower limit, so these voxels can have different values. NODDI, fitted with AMICO, gives the intra-cellular volume fraction (ICVF), the isotropic volume fraction (ISOVF) and the orientation dispersion index (ODI). It needs two or more shells. The NODDI fit is a port of AMICO 1.5.4 and agrees with it to a median of 1e-4 in white matter; AMICO 1.5.4 rounds each fibre direction to its 1° lookup table and this port does not. Outputs use the BIDS diffusion derivative names. Fit corrected data: this app does not denoise or correct motion, eddy currents or distortion.</p>
     </template>
     <template id="privacyContent"><p>Images are processed locally in this browser and are never uploaded.</p></template>
 

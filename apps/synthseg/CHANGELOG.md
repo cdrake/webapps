@@ -4,41 +4,36 @@
 
 ### Patch Changes
 
-- NiiVue moves to 1.0.0-rc.26 in Brain Extraction, Carotid Flow, SYNcro, SynthSeg, White Matter Lesions, and, through the shared FreeBrowse viewer, Spinal Cord Toolbox, DICOM View and TopoFit. From rc.25, NiiVue places a loaded drawing on the right voxels of a sagittal or otherwise permuted image (niivue/mono#251), so the mask editor no longer probes and reverses NiiVue's load on opening a mask. Opening a mask for editing now takes one load instead of up to five on such images. MuscleMap, SeedSeg and VesselBoost run NiiVue 0.68, which already loaded drawings correctly; they pick up the simpler editor.
-
-  From rc.22 NiiVue renders with WebGL2 by default, so the five apps that pinned rc.11 or rc.14 draw their viewer with WebGL2 even where WebGPU is available; segmentation and other processing keep their own WebGPU backends.
-
 - Updated dependencies
-  - @neurodesk/webapp-components@0.17.2
-  - @neurodesk/runtime-support@0.9.6
+  - @neurodesk/runtime-support@0.9.7
   - @neurodesk/synthseg@0.11.20261020
-- Updated dependencies
-  - @neurodesk/runtime-support@0.9.5
+- Updated dependencies [c865c0c]
   - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/runtime-support@0.8.2
   - @neurodesk/synthseg@0.11.20261020
+- Updated dependencies [a36fde4]
+
+  - @neurodesk/webapp-components@0.18.0
+  - @neurodesk/runtime-support@0.9.5
+  - @neurodesk/synthseg@0.11.20261020
+
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
 
-- Updated dependencies [4b40da1]
+- Updated dependencies [c865c0c]
 
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/runtime-support@0.9.4
   - @neurodesk/synthseg@0.11.20261020
+
+- Updated dependencies [ea2a6d2]
 
 - Updated dependencies [3f1d770]
 
 - Updated dependencies [14b8248]
 
 - Updated dependencies [d9718cd]
-
-- Updated dependencies [d1fa022]
-
-  - @neurodesk/webapp-components@0.16.3
-  - @neurodesk/runtime-support@0.9.3
-  - @neurodesk/synthseg@0.11.20261020
-
-- Updated dependencies [ea2a6d2]
 
 - Updated dependencies [c1a4dda]
 
@@ -54,16 +49,77 @@
   - @neurodesk/runtime-support@0.8.0
   - @neurodesk/synthseg@0.11.20261020
 
-- Updated dependencies [c865c0c]
-
 - Updated dependencies [d1fa022]
+
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/runtime-support@0.9.3
   - @neurodesk/synthseg@0.11.20261020
 
+- Updated dependencies [d1fa022]
+
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/runtime-support@0.8.0
+  - @neurodesk/synthseg@0.11.20261020
+
+- Updated dependencies [4b40da1]
+
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/runtime-support@0.9.4
+  - @neurodesk/synthseg@0.11.20261020
+
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/synthseg@0.11.20261020
+
+- Updated dependencies [a36fde4]
+
+- Updated dependencies
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/runtime-support@0.8.1
+  - @neurodesk/synthseg@0.11.20261020
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.18.0
+  - @neurodesk/runtime-support@0.8.2
+  - @neurodesk/synthseg@0.11.20261020
+
+- Updated dependencies
+  - @neurodesk/runtime-support@0.9.5
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/synthseg@0.11.20261020
+- Updated dependencies [14db080]
+
+- Updated dependencies [4b40da1]
+
+- NiiVue moves to 1.0.0-rc.26 in Brain Extraction, Carotid Flow, SYNcro, SynthSeg, White Matter Lesions, and, through the shared FreeBrowse viewer, Spinal Cord Toolbox, DICOM View and TopoFit. From rc.25, NiiVue places a loaded drawing on the right voxels of a sagittal or otherwise permuted image (niivue/mono#251), so the mask editor no longer probes and reverses NiiVue's load on opening a mask. Opening a mask for editing now takes one load instead of up to five on such images. MuscleMap, SeedSeg and VesselBoost run NiiVue 0.68, which already loaded drawings correctly; they pick up the simpler editor.
+
+  From rc.22 NiiVue renders with WebGL2 by default, so the five apps that pinned rc.11 or rc.14 draw their viewer with WebGL2 even where WebGPU is available; segmentation and other processing keep their own WebGPU backends.
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.2
+  - @neurodesk/runtime-support@0.9.6
+  - @neurodesk/synthseg@0.11.20261020
+- Updated dependencies
+  - @neurodesk/runtime-support@0.9.5
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/synthseg@0.11.20261020
+- Updated dependencies [14db080]
+
 ## 0.11.20261019
 
 ### Patch Changes
+
+- Updated dependencies [af2e8db]
+
+- Updated dependencies [b3404ec]
+
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/runtime-support@0.9.3
+  - @neurodesk/synthseg@0.11.20261019
 
 - Updated dependencies [da2584b]
   - @neurodesk/runtime-support@0.9.2
@@ -118,6 +174,16 @@
 
 - Updated dependencies [ccb2970]
 
+  - @neurodesk/runtime-support@0.7.0
+  - @neurodesk/webapp-components@0.14.4
+  - @neurodesk/synthseg@0.11.20261018
+
+- Updated dependencies [b68209b]
+
+  - @neurodesk/webapp-components@0.15.0
+  - @neurodesk/runtime-support@0.7.1
+  - @neurodesk/synthseg@0.11.20261018
+
 - Updated dependencies [67a5a8f]
 
   - @neurodesk/runtime-support@0.7.0
@@ -142,15 +208,8 @@
   - @neurodesk/runtime-support@0.8.0
 
 - Updated dependencies [b67e4e9]
-
   - @neurodesk/runtime-support@0.7.2
   - @neurodesk/webapp-components@0.15.1
-  - @neurodesk/synthseg@0.11.20261018
-
-- Updated dependencies [b68209b]
-
-  - @neurodesk/webapp-components@0.15.0
-  - @neurodesk/runtime-support@0.7.1
   - @neurodesk/synthseg@0.11.20261018
 
 ## 0.11.20261017
@@ -198,6 +257,11 @@
   - @neurodesk/runtime-support@0.6.3
   - @neurodesk/synthseg@0.10.20261016
 
+- Updated dependencies [6ec972a]
+  - @neurodesk/webapp-components@0.14.1
+  - @neurodesk/synthseg@0.10.20261016
+  - @neurodesk/runtime-support@0.6.2
+
 ## 0.10.20261015
 
 ### Minor Changes
@@ -223,6 +287,10 @@
 
 - Clarify that the volume report records the DICOM-derived scanner field strength and reference choice alongside age and sex. The Privacy dialog and README now describe these fields accurately; the original sidecar is not included in the downloaded report.
 
+  - @neurodesk/synthseg@0.10.20261015
+
+- Updated dependencies [03beb9e]
+  - @neurodesk/runtime-support@0.6.1
   - @neurodesk/synthseg@0.10.20261015
 
 ## 0.9.20261015
@@ -350,8 +418,6 @@
   - @neurodesk/runtime-support@0.4.2
   - @neurodesk/synthseg@0.6.20261010
 
-- Updated dependencies
-
   - @neurodesk/runtime-support@0.4.1
   - @neurodesk/webapp-components@0.12.1
   - @neurodesk/synthseg@0.6.20261010
@@ -360,6 +426,11 @@
 
   - @neurodesk/webapp-components@0.12.2
   - @neurodesk/runtime-support@0.4.2
+  - @neurodesk/synthseg@0.6.20261010
+
+- Updated dependencies
+  - @neurodesk/runtime-support@0.4.1
+  - @neurodesk/webapp-components@0.12.1
   - @neurodesk/synthseg@0.6.20261010
 
 ## 0.6.20261009
@@ -404,16 +475,20 @@
   - @neurodesk/webapp-components@0.10.2
   - @neurodesk/synthseg@0.5.20261007
 
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.11.0
+  - @neurodesk/runtime-support@0.2.0
+  - @neurodesk/synthseg@0.5.20261007
+
 - Updated dependencies [22aa4bf]
 
   - @neurodesk/synthseg@0.5.20261007
   - @neurodesk/webapp-components@0.11.1
   - @neurodesk/runtime-support@0.2.1
 
-- Updated dependencies
-
-  - @neurodesk/webapp-components@0.11.0
-  - @neurodesk/runtime-support@0.2.0
+- Updated dependencies [70f2770]
+  - @neurodesk/webapp-components@0.10.2
   - @neurodesk/synthseg@0.5.20261007
 
 ## 0.5.20261005
@@ -435,8 +510,6 @@
 - Updated dependencies
 
   - @neurodesk/synthseg@0.5.20261004
-
-- Updated dependencies
 
   - @neurodesk/webapp-components@0.10.1
   - @neurodesk/synthseg@0.5.20261004
@@ -461,9 +534,12 @@
 
 - Share SynthSR and SynthSeg worker model acquisition through fetchModel. Verify cached and downloaded weights before use, reject oversized streams early, and replace corrupt cached weights within the same run. Preserve SynthSR local model files, pinned hashes, progress allocation and worker cancellation. Restore app-specific connection and recovery guidance when model requests fail.
 
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.9.0
+  - @neurodesk/synthseg@0.5.20261004
+
+- Updated dependencies [257192b]
+
+  - @neurodesk/runtime-support@0.1.3
   - @neurodesk/synthseg@0.5.20261004
 
 - Updated dependencies
@@ -480,9 +556,8 @@
   - @neurodesk/webapp-components@0.10.0
   - @neurodesk/synthseg@0.5.20261004
 
-- Updated dependencies [257192b]
-
-  - @neurodesk/runtime-support@0.1.3
+- Updated dependencies
+  - @neurodesk/webapp-components@0.9.0
   - @neurodesk/synthseg@0.5.20261004
 
 ## 0.5.20261003
@@ -497,13 +572,6 @@
 
 ### Patch Changes
 
-- Updated dependencies
-
-- Updated dependencies
-
-  - @neurodesk/webapp-components@0.7.0
-  - @neurodesk/synthseg@0.5.20260930
-
 - 3fb0b87: One click on the labels Download button saved the file twice: the result list's download callback and a second `saveBtn.onclick` handler both fired. The button now downloads once, and batch jobs no longer fail with "Duplicate output".
 
 - Updated dependencies
@@ -516,9 +584,24 @@
   - @neurodesk/webapp-components@0.7.0
   - @neurodesk/synthseg@0.5.20260930
 
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.6.2
+  - @neurodesk/synthseg@0.5.20260930
+
+  - @neurodesk/webapp-components@0.7.0
+  - @neurodesk/synthseg@0.5.20260930
+
 ## 0.5.20260928
 
 ### Patch Changes
+
+- Updated dependencies
+
+- Updated dependencies [93381e8]
+
+  - @neurodesk/webapp-components@0.6.0
+  - @neurodesk/synthseg@0.5.20260928
 
 - Use portable underscore MCP tool names, explicit input cardinality, and declared SynthSeg browser geometry limits for preflight validation. Preserve duplicate DICOM filenames during conversion, release viewer sessions when their windows close, and prevent cancellation/retry races.
 
@@ -531,16 +614,10 @@
   - @neurodesk/webapp-components@0.6.1
   - @neurodesk/synthseg@0.5.20260928
 
-- Updated dependencies
-
-- Updated dependencies [93381e8]
-
 - Updated dependencies [93381e8]
 
   - @neurodesk/webapp-components@0.6.0
   - @neurodesk/synthseg@0.5.20260928
-
-- Updated dependencies
 
   - @neurodesk/webapp-components@0.6.1
   - @neurodesk/synthseg@0.5.20260928
@@ -588,16 +665,6 @@
 
 ### Patch Changes
 
-- Updated dependencies [4959500]
-
-  - @neurodesk/webapp-components@0.4.4
-  - @neurodesk/synthseg@0.3.20260920
-
-- Updated dependencies
-
-  - @neurodesk/webapp-components@0.4.3
-  - @neurodesk/synthseg@0.3.20260920
-
 - efd8af3: Show the Example control before the file picker in every app, replace the registration apps' stale "Loading the default images" empty state, give FireANTs a CPU time budget and progress messages, ship BrowserQC's CPU MindGrab bundle with a longer segmentation budget, select CPU processing in SynthSR and brain extraction when no WebGPU adapter exists, start MuscleMap at 50 % overlap without WebGPU, and run VesselBoost's hosted example workflow in its browser tests.
 
 - Updated dependencies
@@ -611,6 +678,19 @@
   - @neurodesk/synthseg@0.3.20260920
 
 - Updated dependencies
+
+  - @neurodesk/webapp-components@0.4.3
+  - @neurodesk/synthseg@0.3.20260920
+
+- Updated dependencies [4959500]
+
+  - @neurodesk/webapp-components@0.4.4
+  - @neurodesk/synthseg@0.3.20260920
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.4.2
+  - @neurodesk/synthseg@0.3.20260920
 
   - @neurodesk/webapp-components@0.4.3
   - @neurodesk/synthseg@0.3.20260920
@@ -647,6 +727,9 @@
 
 - Updated dependencies
 
+  - @neurodesk/webapp-components@0.2.0
+  - @neurodesk/synthseg@0.3.20260915
+
   - @neurodesk/webapp-components@0.2.2
   - @neurodesk/synthseg@0.3.20260915
 
@@ -657,15 +740,13 @@
 
 - Updated dependencies
 
-  - @neurodesk/webapp-components@0.2.0
-  - @neurodesk/synthseg@0.3.20260915
-
-- Updated dependencies
-
   - @neurodesk/webapp-components@0.2.2
   - @neurodesk/synthseg@0.3.20260915
 
 - Updated dependencies
+
+  - @neurodesk/webapp-components@0.2.0
+  - @neurodesk/synthseg@0.3.20260915
 
   - @neurodesk/webapp-components@0.2.1
   - @neurodesk/synthseg@0.3.20260915
@@ -677,6 +758,11 @@
 ## 0.2.20260914
 
 ### Patch Changes
+
+- Updated dependencies
+
+  - @neurodesk/webapp-components@0.1.4
+  - @neurodesk/synthseg@0.2.20260914
 
 - Updated dependencies [3cd773f]
 

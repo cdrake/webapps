@@ -4,29 +4,25 @@
 
 ### Patch Changes
 
-- Updated dependencies
-  - @neurodesk/webapp-components@0.17.2
-  - @neurodesk/dicom2vid@0.5.20261020
-- Updated dependencies
+- Updated dependencies [c865c0c]
   - @neurodesk/webapp-components@0.17.1
   - @neurodesk/dicom2vid@0.5.20261020
+- Updated dependencies [a36fde4]
+  - @neurodesk/webapp-components@0.18.0
+  - @neurodesk/dicom2vid@0.5.20261020
+
 - Updated dependencies [14db080]
 
 - Updated dependencies [03261d0]
 
-- Updated dependencies [4b40da1]
+- Updated dependencies [c865c0c]
 
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/dicom2vid@0.5.20261020
 
-- Updated dependencies [3f1d770]
-
-- Updated dependencies [d9718cd]
-
-  - @neurodesk/webapp-components@0.16.3
-  - @neurodesk/dicom2vid@0.5.20261020
-
 - Updated dependencies [ea2a6d2]
+
+- Updated dependencies [3f1d770]
 
 - Updated dependencies [d9718cd]
 
@@ -39,11 +35,57 @@
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/dicom2vid@0.5.20261020
 
-- Updated dependencies [c865c0c]
-
 - Updated dependencies [d9718cd]
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/dicom2vid@0.5.20261020
+
+- Updated dependencies [46935f7]
+  - @neurodesk/webapp-components@0.16.0
+  - @neurodesk/dicom2vid@0.5.20261020
+
+- Updated dependencies [4b40da1]
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/dicom2vid@0.5.20261020
+
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/dicom2vid@0.5.20261020
+
+- Updated dependencies [a36fde4]
+
+- Updated dependencies
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.0
+  - @neurodesk/dicom2vid@0.5.20261020
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.18.0
+  - @neurodesk/dicom2vid@0.5.20261020
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/dicom2vid@0.5.20261020
+- Updated dependencies [14db080]
+
+- Updated dependencies [4b40da1]
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.2
+  - @neurodesk/dicom2vid@0.5.20261020
+- Updated dependencies
+  - @neurodesk/webapp-components@0.17.1
+  - @neurodesk/dicom2vid@0.5.20261020
+- Updated dependencies [14db080]
+
+## 0.5.20261019
+
+### Patch Changes
+
+- Updated dependencies [af2e8db]
+
+- Updated dependencies [b3404ec]
+  - @neurodesk/webapp-components@0.16.3
+  - @neurodesk/dicom2vid@0.5.20261019
 
 ## 0.5.20261018
 
@@ -83,33 +125,30 @@
 
 - Updated dependencies [ccb2970]
 
-- Updated dependencies [67a5a8f]
+  - @neurodesk/dicom2vid@0.5.20261018
+  - @neurodesk/webapp-components@0.14.4
 
+- Updated dependencies [b68209b]
+  - @neurodesk/webapp-components@0.15.0
+  - @neurodesk/dicom2vid@0.5.20261018
+
+- Updated dependencies [67a5a8f]
   - @neurodesk/dicom2vid@0.5.20261018
   - @neurodesk/webapp-components@0.14.4
 
 - Updated dependencies [7c0d201]
-
   - @neurodesk/webapp-components@0.16.2
   - @neurodesk/dicom2vid@0.5.20261018
 
 - Updated dependencies [46935f7]
-
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/dicom2vid@0.5.20261018
 
 - Updated dependencies [3329c39]
-
   - @neurodesk/webapp-components@0.16.0
 
 - Updated dependencies [b67e4e9]
-
   - @neurodesk/webapp-components@0.15.1
-  - @neurodesk/dicom2vid@0.5.20261018
-
-- Updated dependencies [b68209b]
-
-  - @neurodesk/webapp-components@0.15.0
   - @neurodesk/dicom2vid@0.5.20261018
 
 ## 0.5.20261017
@@ -135,8 +174,11 @@
   - @neurodesk/dicom2vid@0.5.20261016
 
 - Updated dependencies
-
   - @neurodesk/webapp-components@0.14.2
+  - @neurodesk/dicom2vid@0.5.20261016
+
+- Updated dependencies [7443048]
+  - @neurodesk/webapp-components@0.14.1
   - @neurodesk/dicom2vid@0.5.20261016
 
 ## 0.5.20261015
@@ -213,11 +255,11 @@
 
 ### Patch Changes
 
-- Publish the current automation contract and JSON Schema at both static build URLs, including clean builds without a prior development session. Refresh cached builds when the shared automation contract or browser adapter changes.
-
 - 93381e8: Every app now opens on its workspace and shows live status only in the bottom bar: a short message, a progress bar, elapsed time and a cancel × that appears while a run can be cancelled. Start pages, landing overlays and welcome modals are gone, and their copy moved to About. Every app has a technical log below the viewer that starts collapsed. Sidebar help longer than 90 characters moved into info tooltips or About, and each sidebar has one primary action. `ProgressManager` now drives the design-system footer, including the elapsed counter and the cancel button.
 
   The shared example selector shows one short line once an example loads; the description and expected result moved to a tooltip beside the Example label. NiiMath gained the shared layout tabs and About dialog and no longer ships app CSS.
+
+- Publish the current automation contract and JSON Schema at both static build URLs, including clean builds without a prior development session. Refresh cached builds when the shared automation contract or browser adapter changes.
 
 ### Minor Changes
 

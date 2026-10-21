@@ -259,10 +259,21 @@ apps:
     packages:
       - { name: QSMbly (upstream), url: https://github.com/astewartau/qsmbly, role: upstream browser application by Ashley Stewart }
       - { name: QSM.rs (Rust → WebAssembly), url: https://github.com/astewartau/QSM.rs, role: all QSM algorithms }
+      - { name: QSMxT, url: https://github.com/QSMxT/QSMxT, role: pipeline execution, configuration and command generation }
       - { name: NiiVue, url: https://github.com/niivue/niivue, role: image viewer }
       - { name: dcm2niix (WebAssembly), url: https://github.com/rordenlab/dcm2niix, role: DICOM to NIfTI conversion }
       - { name: dicompare, url: https://github.com/astewartau/dicompare, role: acquisition protocol validation report }
     citations:
+      - group: Pipeline
+        title: QSMxT
+        reference: "Stewart AW, Robinson SD, O'Brien K, et al. QSMxT: Robust masking and artifact reduction for quantitative susceptibility mapping. Magnetic Resonance in Medicine. 2022;87(3):1289–1300."
+        doi: 10.1002/mrm.29048
+        code: https://github.com/QSMxT/QSMxT
+      - group: Susceptibility-weighted imaging
+        title: CLEAR-SWI
+        reference: "Eckstein K, et al. Improved susceptibility weighted imaging at ultra-high field using bipolar multi-echo acquisition and optimized image processing: CLEAR-SWI. NeuroImage. 2021;237:118175."
+        doi: 10.1016/j.neuroimage.2021.118175
+        code: https://github.com/korbinian90/CLEARSWI.jl
       - group: Dipole inversion
         title: xQSM
         reference: "Gao et al., NMR Biomed 2021; doi:10.1002/nbm.4461"
@@ -1102,9 +1113,9 @@ apps:
         doi: 10.1098/rstb.2001.0915
   brain-extraction:
     packages:
-    - name: QSMbly Rust BET
-      url: https://github.com/neurodesk/webapps/tree/main/apps/qsmbly
-      role: brain extraction on the CPU
+    - name: QSM.rs BET
+      url: https://github.com/astewartau/QSM.rs/tree/8a3afda3716a859d93f1d41f1c8993335cc80c57
+      role: compact brain extraction kernel shared by browser and command line
     - name: MindGrab (brainchop)
       url: https://github.com/neuroneural/brainchop
       role: default brain extraction
@@ -1491,6 +1502,9 @@ apps:
       - name: MindGrab (brainchop)
         url: https://github.com/neuroneural/brainchop
         role: default brain extraction from the mean b0 on the GPU or CPU
+      - name: niimath (WebAssembly)
+        url: https://github.com/rordenlab/niimath
+        role: optional tensor fit with niimath dtifit, as DWI2TRX runs it
       - name: NiiVue
         url: https://github.com/niivue/niivue
         role: image viewer
@@ -1512,6 +1526,19 @@ apps:
         reference: Basser PJ, Mattiello J, LeBihan D. MR diffusion tensor spectroscopy
           and imaging. Biophysical Journal. 1994;66(1):259–267.
         doi: 10.1016/S0006-3495(94)80775-1
+      - group: Diffusion tensor fitting
+        title: niimath
+        reference: "Rorden C, Webster M, Drake C, et al. niimath and fslmaths:
+          replication as a method to enhance testing and improve tool quality.
+          Aperture Neuro. 2024;4."
+        doi: 10.52294/001c.94384
+        code: https://github.com/rordenlab/niimath
+      - group: Diffusion tensor fitting
+        title: FSL (dtifit)
+        reference: "Smith SM, Jenkinson M, Woolrich MW, et al. Advances in functional
+          and structural MR image analysis and implementation as FSL. NeuroImage.
+          2004;23 Suppl 1:S208–S219."
+        doi: 10.1016/j.neuroimage.2004.07.051
       - group: NODDI
         title: NODDI
         reference: "Zhang H, Schneider T, Wheeler-Kingshott CA, Alexander DC. NODDI:
@@ -1559,6 +1586,41 @@ apps:
           framework for medical image processing and visualisation. NeuroImage. 2019;202:116137."
         doi: 10.1016/j.neuroimage.2019.116137
         code: https://github.com/MRtrix3/mrtrix3
+      - group: DICOM conversion
+        title: dcm2niix
+        reference: "Li X, Morgan PS, Ashburner J, Smith J, Rorden C. The first step for
+          neuroimaging data analysis: DICOM to NIfTI conversion. Journal of
+          Neuroscience Methods. 2016;264:47–56."
+        doi: 10.1016/j.jneumeth.2016.03.001
+      - group: Visualization
+        title: NiiVue
+        reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
+        url: https://github.com/niivue/niivue
+
+  sdc:
+    packages:
+      - name: PyHySCO 0.0.4 (Rust and WebAssembly port)
+        url: https://github.com/EmoryMLIP/PyHySCO
+        role: susceptibility field estimation, ported under the GPL-3.0
+      - name: NiiVue
+        url: https://github.com/niivue/niivue
+        role: image viewer
+      - name: dcm2niix (WebAssembly)
+        url: https://github.com/rordenlab/dcm2niix
+        role: DICOM to NIfTI conversion
+    citations:
+      - group: Distortion correction
+        title: PyHySCO
+        reference: "Julian A, Ruthotto L. PyHySCO: GPU-enabled susceptibility artifact distortion
+          correction in seconds. arXiv:2403.10706. 2024."
+        url: https://arxiv.org/abs/2403.10706
+        code: https://github.com/EmoryMLIP/PyHySCO
+      - group: Distortion correction
+        title: Hyperelastic susceptibility artifact correction
+        reference: "Ruthotto L, Kugel H, Olesch J, Fischer B, Modersitzki J, Burger M, Wolters CH.
+          Diffeomorphic susceptibility artifact correction of diffusion-weighted magnetic resonance
+          images. Physics in Medicine and Biology. 2012;57(18):5715–5731."
+        doi: 10.1088/0031-9155/57/18/5715
       - group: DICOM conversion
         title: dcm2niix
         reference: "Li X, Morgan PS, Ashburner J, Smith J, Rorden C. The first step for

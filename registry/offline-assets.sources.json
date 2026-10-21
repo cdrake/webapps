@@ -4941,6 +4941,44 @@
         "bytes": 38818,
         "kind": "example"
       }
+    ],
+    "sdc": [
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fb07794f511b12bfeb891c361abc33e575a23f6/sdc/examples/ds005134-sub-01-slab/sub-01_dir-AP_dwi.nii.gz",
+        "sha256": "b1ed9b214f5d20d010d1a50a040084a2248889b9456e16e7996ee5ffbc78f26a",
+        "bytes": 1623822,
+        "kind": "example"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fb07794f511b12bfeb891c361abc33e575a23f6/sdc/examples/ds005134-sub-01-slab/sub-01_dir-AP_dwi.json",
+        "sha256": "093c4f9b57f3825e6f9e7cc13a26bd5b40d7bb53027953ddce16abd408881511",
+        "bytes": 251,
+        "kind": "example"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fb07794f511b12bfeb891c361abc33e575a23f6/sdc/examples/ds005134-sub-01-slab/sub-01_dir-AP_dwi.bval",
+        "sha256": "8aa1e8cbff07c844f1f45457d311d49f44d27dc019866cb182dc71777ed1e8d6",
+        "bytes": 26,
+        "kind": "example"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fb07794f511b12bfeb891c361abc33e575a23f6/sdc/examples/ds005134-sub-01-slab/sub-01_dir-AP_dwi.bvec",
+        "sha256": "f49ca5b1e83f6f6c5ce1e93eea5c56618290ab1933f4d55d435b2e7b8ae139c3",
+        "bytes": 78,
+        "kind": "example"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fb07794f511b12bfeb891c361abc33e575a23f6/sdc/examples/ds005134-sub-01-slab/sub-01_dir-PA_epi.nii.gz",
+        "sha256": "423bdeae51ee987c0f3df9756bc404fa5d4d1da4a9cd97009bceeceb389a83e3",
+        "bytes": 995290,
+        "kind": "example"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/0fb07794f511b12bfeb891c361abc33e575a23f6/sdc/examples/ds005134-sub-01-slab/sub-01_dir-PA_epi.json",
+        "sha256": "9190a0427dfab8dc7ead4d606d29bb6e19807ca54531851143d20bdcf058bf1a",
+        "bytes": 250,
+        "kind": "example"
+      }
     ]
   },
   "exclusions": [],
