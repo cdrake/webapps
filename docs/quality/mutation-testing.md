@@ -23,7 +23,7 @@ network.
 | `scripts/lib/workspace-graph.mjs` | Which directories and root files each app and CI job reaches, and so which apps a change tests; a missed reference skips the tests that would catch the change | `test/workspace-graph.test.mjs` |
 | `packages/lcmodel/src/tissue.js` | LCModel's tissue- and alpha-corrected concentrations, the relaxation times behind them, when the correction applies, and its two downloads; the app and the `lcmodel` command line both use it | `packages/lcmodel/test/tissue.test.js` |
 | `packages/lcmodel/src/lcmodel-io.js:1-321` (all but `fillGaps`) | The control file every LCModel fit runs with, and how the app reads LCModel's .COORD and .TABLE files back: the concentrations, QC summary, curves, diagnostics and stop messages users see and download | `packages/lcmodel/test/lcmodel-io.test.js` |
-| `packages/lcmodel/src/voxel.js` | Which T1 voxels the spectroscopy voxel covers and the GM, WM and CSF fractions behind every tissue-corrected concentration | `packages/lcmodel/test/voxel.test.js`, without its 64³ oblique-volume test |
+| `packages/lcmodel/src/voxel.js` | Which T1 voxels the spectroscopy voxel covers and the GM, WM and CSF fractions behind every tissue-corrected concentration | `packages/lcmodel/test/voxel.test.js`, without its two large-grid tests |
 
 `formatG` is mutated by line range because the rest of `index.js` drives the
 WebAssembly module. Its command selects the two `printf` tests by name; the rest
@@ -34,10 +34,12 @@ keeps covering that part. `fillGaps`, the last function in `lcmodel-io.js`, stay
 instrumenting its Fourier sums made each run of the suite take 4.4 s instead of
 0.25 s, about 20 minutes for the module. `test/mutation-quality.test.mjs` fails
 when the range stops ending at `presentRows` or another function follows it.
-The voxel suite runs with `--test-skip-pattern=oblique`. Instrumented, its
-64³ oblique-volume test takes 3 s on every run. A rotated box on a small rotated
-grid, compared voxel by voxel with a direct count, covers the same code.
-`test/mutation-quality.test.mjs` fails when the pattern skips any other test.
+The voxel suite skips its oblique-volume test on a 64³ grid and its
+grid-orientation test (`--test-skip-pattern=oblique --test-skip-pattern=oriented`).
+Instrumented, the two make every run take seconds, and the module took 175 s on
+the hosted runner. A rotated box on a small rotated grid covers the same code:
+it must match a direct count, sub-point for sub-point, voxel by voxel.
+`test/mutation-quality.test.mjs` fails when the patterns skip any other test.
 The two Carotid Flow modules share one suite of small
 in-memory NIfTI files. `packages/carotid-flow/test/node.test.js` runs the command
 line on the phantom and is not part of this run. The workspace graph's suite
@@ -108,7 +110,7 @@ Measured locally on 2026-10-15 (two workers, `Done in` from each module's log):
 | Full run, nine Stryker runs (2026-10-22, hosted runner) | 1511 | - | 335 s step |
 | LCModel `lcmodel-io.js:1-321` (2026-10-22) | 506 | 0.25 s | 75 s locally, 51 s hosted |
 | Full run, ten Stryker runs (2026-10-22, hosted runner) | 2017 | - | 268 s step |
-| LCModel `voxel.js` (2026-10-22) | 502 | 0.66 s instrumented | 150 s locally |
+| LCModel `voxel.js` (2026-10-22) | 502 | 0.25 s instrumented | 80-91 s locally |
 | PR smoke (`tableName`) | 2 | 0.13 s | 6 s wall |
 
 On 2026-10-16 the two Carotid Flow modules added 39 and 42 mutants, each with a
@@ -154,10 +156,18 @@ box or the no-tissue refusal. The suite now:
   count of sub-points mapped into the box
 - covers boxes hanging over three edges, overlapping maps, NaN outside the box
   and both refusals
+- checks that with the default five samples a sub-point on a face counts as
+  inside, which gives a voxel centred on a face 3/5 of its weight
 
-It kills 483, and 6 time out, each a loop that never ends. Rerun with
+That rule biases boxes whose faces fall on voxel centres. An axis-aligned 20 mm
+box centred on a voxel counts 20.2 mm a side, 3 % more volume, and its face
+layers outweigh the interior. An even default sample count would put no
+sub-point on such a face. That change would move shipped tissue fractions and
+the recorded browser references, so it is a separate decision (#550).
+
+It kills 486, and 6 time out, each a loop that never ends. Rerun with
 `MUTATION_MODULE=lcmodel-voxel pnpm exec stryker run stryker.config.mjs`. All
-13 survivors are equivalent:
+10 survivors are equivalent:
 
 - `voxel.js:14`, `new Array(16)` to `new Array()`: all 16 entries are assigned.
 - `:32`, `< 1e-12` to `<= 1e-12`: changes only a determinant of exactly 1e-12.
@@ -165,8 +175,6 @@ It kills 483, and 6 time out, each a loop that never ends. Rerun with
 - `:78` (three) and `:81`, starting the bounding box at the opposite infinity
   or taking a fourth corner coordinate: the bounds only limit the scan, and the
   clamping to the image keeps every covered voxel inside it.
-- `:108` (three), `<= 0.5` to `< 0.5`: changes only a sub-point that falls
-  exactly on a face of the box.
 - `:135`, the default `unlabelled` option as `""`: any value other than
   `exclude` counts the unlabelled remainder as CSF.
 - `:140`, reading one weight past the end: it is `undefined` and skipped.

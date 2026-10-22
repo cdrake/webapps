@@ -80,6 +80,16 @@ test("tissue the maps leave out counts as CSF unless excluded", () => {
 
 const near = (actual, expected, label, tolerance = 1e-12) => assert.ok(Math.abs(actual - expected) <= tolerance * Math.max(1, Math.abs(expected)), `${label}: ${actual} vs ${expected}`);
 
+test("with the default five samples a sub-point on a face of the box counts as inside", () => {
+  // Faces at voxel centres x, y, z = 8 and 12: the middle sub-point of those voxels lies on a face.
+  const { weights, volumeMm3 } = voxelWeights(box([4, 4, 4], [10, 10, 10]), { affine: identity, dims: [20, 20, 20] });
+  const at = (x, y, z) => weights[x + 20 * (y + 20 * z)];
+  for (const [x, y, z] of [[8, 10, 10], [12, 10, 10], [10, 8, 10], [10, 12, 10], [10, 10, 8], [10, 10, 12]]) near(at(x, y, z), 0.6, `${x},${y},${z}`, 1e-7);
+  near(at(8, 8, 8), 0.216, "corner", 1e-7);
+  // 4.2 mm a side: each face layer counts 3 of its 5 sub-points.
+  near(volumeMm3, 4.2 ** 3, "volume", 1e-6);
+});
+
 test("a general 4x4 matrix inverts from both sides", () => {
   // Every entry non-zero, so each cofactor term counts.
   const a = [[2, 1, 0.5, 3], [0.3, -1.5, 0.7, -2], [1.1, 0.4, 2.5, 4], [0.2, -0.6, 0.9, 1.7]];
@@ -120,11 +130,11 @@ test("a rotated box on a rotated 2 mm grid weights every voxel by its share insi
   const place = (r, scale, centre) => [0, 1, 2].map((i) => [...[0, 1, 2].map((j) => r[i][j] * scale[j]), centre[i]]).concat([[0, 0, 0, 1]]);
   const voxel = place(rotation(0.5, 0.3), [9, 11, 7], [15.3, 14.7, 16.1]);
   const grid = { affine: place(rotation(-0.2, 0.15), [2, 2, 2], [-3.1, 1.7, -2.3]), dims: [16, 16, 16] };
-  const result = voxelWeights(voxel, grid, { samples: 4 });
-  const counted = countedWeights(voxel, grid, 4);
+  const result = voxelWeights(voxel, grid, { samples: 3 });
+  const counted = countedWeights(voxel, grid, 3);
   let differ = 0;
-  for (let i = 0; i < counted.length; i += 1) differ += Math.abs(result.weights[i] - counted[i]) * 64;
-  assert.ok(differ <= 2, `${differ} sub-points differ from a direct count`);
+  for (let i = 0; i < counted.length; i += 1) differ += Math.abs(result.weights[i] - counted[i]) * 27;
+  assert.equal(differ, 0, `${differ} sub-points differ from a direct count`);
   assert.equal(result.count, counted.filter((w) => w > 0).length);
   near(result.volumeMm3, counted.reduce((a, b) => a + b, 0) * 8, "volume", 1e-6);
   near(result.nominalMm3, 9 * 11 * 7, "nominal", 1e-9);
