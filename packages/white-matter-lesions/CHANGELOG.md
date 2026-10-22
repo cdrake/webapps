@@ -1,5 +1,7 @@
 # @neurodesk/white-matter-lesions
 
+## 0.5.20261022
+
 ## 0.5.20261020
 
 ### Patch Changes

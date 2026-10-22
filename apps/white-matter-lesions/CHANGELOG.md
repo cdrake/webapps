@@ -1,5 +1,12 @@
 # white-matter-lesions
 
+## 0.5.20261022
+
+### Patch Changes
+
+- Update NiiVue to 1.0.0-rc.33. On an oblique FLAIR, the parts of the crosshair arms that the tilted slice hides are now drawn faintly instead of disappearing. The viewer draws in world space only: rc.33 drops the unused image-space option `isPositionInMM`.
+  - @neurodesk/white-matter-lesions@0.5.20261022
+
 ## 0.5.20261020
 
 ### Patch Changes
