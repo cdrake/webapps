@@ -2,6 +2,7 @@ import { getPackages } from '@manypkg/get-packages';
 import { readFileSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { SHELL_COMPONENTS } from './scripts/lib/standalone.mjs';
 import { htmlEntries, projectExclusions, publishedSourceEntries, validateLiteralEntries, validateProjectExclusions } from './scripts/lib/unused-code-config.mjs';
 
 const root = dirname(fileURLToPath(import.meta.url));
@@ -39,6 +40,10 @@ workspaces['packages/runtime-support'].entry.push('src/niimath/worker.js', 'src/
 workspaces['packages/components'].entry.push('web/js/showcase.js', 'templates/*/main.js');
 workspaces['packages/desktop'].entry.push('src/main.js', 'neuroflow/runtime/neurodesk.mjs');
 workspaces['apps/dicompare'].entry.push('electron/main.ts');
+// The app shell imports these shared modules from their staged copies by URL.
+workspaces['packages/components'].entry.push(...SHELL_COMPONENTS.filter((name) => name.endsWith('.js')).map((name) => `src/${name}`));
+// fastprep's Rust report inlines this script with include_str!.
+workspaces['.'].entry.push('exes/fastprep/core/src/assets/sdc.js');
 workspaces['site/easter-eggs/vessel-surfer-leaderboard'].entry.push('src/worker.js');
 // The reverse-PE validation shell invokes this checked-in Node command by filename.
 workspaces['.'].entry.push('docs/architecture/dwi-reverse-pe-options/mindgrab-mask.mjs');
