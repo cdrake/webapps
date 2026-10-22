@@ -114,7 +114,9 @@ fitting, both as Rust ports compiled to WebAssembly (`packages/lcmodel`).
   MindMap's 256³ grid (0.8 mm isotropic, GE's 512 x 512 matrices) goes to the
   CPU module, and a failed GPU run is retried there.
   `@neurodesk/lcmodel/voxel` samples the oblique voxel box on the T1 grid (6 x 6 x 6 points
-  per T1 voxel, an even count so no point lies on a face through a voxel centre) for Osprey-style fractions; the Voxel view draws it on the T1.
+  per T1 voxel). Samples on box faces contribute half weight per axis; edge and
+  corner weights are products. These weights give Osprey-style fractions; the
+  Voxel view draws the box on the T1.
   `src/tissue.js` is Osprey's `quantTiss`/`quantAlpha` (Gasparovic 2006, Harris
   2015) on LCModel's water-scaled output, tested against Osprey's own code in
   Octave. Fractions can also be typed in. Bruker and .RAW carry no voxel

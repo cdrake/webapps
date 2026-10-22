@@ -93,13 +93,63 @@ test("a box whose faces pass through voxel centres gives each face layer half it
   assert.equal(volumeMm3, nominalMm3);
 });
 
-test("an axis-aligned box keeps its exact volume wherever its faces fall", () => {
-  // Faces on voxel boundaries (a 5 mm box, or 4 mm shifted by half a voxel),
-  // on voxel centres, and between them.
-  for (const samples of [undefined, 4]) {
-    for (const [size, shift] of [[5, 0], [4, 0.5], [4, 0], [2, 0], [4, 0.3], [3, 0.2]]) {
-      const { volumeMm3, nominalMm3 } = voxelWeights(box([size, size, size], [6 + shift, 6 - shift, 6 + shift]), { affine: identity, dims: [12, 12, 12] }, { samples });
+test("whole-voxel axis-aligned boxes keep their volume across translated sampling grids", () => {
+  for (const samples of [undefined, 4, 5, 6]) {
+    // The reported six-sample regression: a 4 mm box measured 72.33796 mm³.
+    const regression = voxelWeights(box([4, 4, 4], [6.25, 6.25, 6.25]), { affine: identity, dims: [12, 12, 12] }, { samples });
+    near(regression.volumeMm3, 64, `${samples} samples, quarter-voxel regression`, 1e-9);
+    // Smaller boxes exercise the same centre, boundary and sample-aligned faces.
+    for (const [size, shift] of [[3, 0], [2, 0.5], [2, 0], [2, 0.3], [3, 0.2], [2, 0.25], [2, -0.25], [2, 1 / 12], [2, -1 / 12]]) {
+      const { volumeMm3, nominalMm3 } = voxelWeights(box([size, size, size], [4 + shift, 4 - shift, 4 + shift]), { affine: identity, dims: [8, 8, 8] }, { samples });
       near(volumeMm3, nominalMm3, `${samples} samples, ${size} mm shifted ${shift}`, 1e-9);
+    }
+  }
+});
+
+test("sub-points on box faces, edges and corners get symmetric tie weights", () => {
+  const result = voxelWeights(box([1, 2, 2], [1.5, 1, 1]), { affine: identity, dims: [4, 4, 4] }, { samples: 1 });
+  const at = (x, y, z) => result.weights[x + 4 * (y + 4 * z)];
+  assert.equal(at(1, 1, 1), 0.5);
+  assert.equal(at(2, 1, 1), 0.5);
+  assert.equal(at(1, 0, 1), 0.25);
+  assert.equal(at(2, 2, 2), 0.125);
+  assert.equal(at(3, 1, 1), 0);
+  assert.equal(result.volumeMm3, 4);
+});
+
+test("face roundoff is symmetric without snapping points beyond the tolerance", () => {
+  // Normalized box coordinates use a 1e-10 tie band. A 1e-8 displacement
+  // is a geometric change, while 1e-12 on either side is roundoff at a face.
+  for (const sign of [-1, 1]) {
+    for (const [delta, expected] of [[0, 0.5], [-1e-12, 0.5], [1e-12, 0.5], [-1e-8, 1], [1e-8, 0]]) {
+      const result = voxelWeights(box([1, 1, 1], [sign * (0.5 + delta), 0, 0]), { affine: identity, dims: [1, 1, 1] }, { samples: 1 });
+      assert.equal(result.weights[0], expected, `face ${sign}, displacement ${delta}`);
+    }
+  }
+});
+
+test("face ties preserve weights on mirrored, permuted and jointly rotated grids", () => {
+  const grids = [
+    identity,
+    [[-1, 0, 0, 7], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
+    [[0, 0, 1, 0], [1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1]],
+  ];
+  const angle = 0.37;
+  const rotation = [[Math.cos(angle), -Math.sin(angle), 0, 0], [Math.sin(angle), Math.cos(angle), 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]];
+  const voxel = box([2, 2, 2], [4.25, 3.75, 4.25]);
+  for (const samples of [5, 6]) {
+    const baseline = voxelWeights(voxel, { affine: identity, dims: [8, 8, 8] }, { samples });
+    near(baseline.volumeMm3, 8, `${samples} samples`, 1e-9);
+    for (const offset of [-100, 100]) {
+      const placement = rotation.map((row, r) => row.map((v, c) => c === 3 && r < 3 ? offset * (r + 1) : v));
+      for (const affine of grids) {
+        const result = voxelWeights(multiply4(placement, voxel), { affine: multiply4(placement, affine), dims: [8, 8, 8] }, { samples });
+        near(result.volumeMm3, 8, `${samples} samples, translation ${offset}`, 1e-9);
+        for (let z = 0; z < 8; z += 1) for (let y = 0; y < 8; y += 1) for (let x = 0; x < 8; x += 1) {
+          const [i, j, k] = apply4(affine, [x, y, z]);
+          assert.equal(result.weights[x + 8 * (y + 8 * z)], baseline.weights[i + 8 * (j + 8 * k)]);
+        }
+      }
     }
   }
 });

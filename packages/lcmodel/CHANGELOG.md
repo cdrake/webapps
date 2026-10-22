@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- e4ed5fc: Correct spectroscopy voxel boundary weights when measuring tissue fractions on a T1 image. Use a 6 x 6 x 6 sampling grid and symmetric quadrature weights of one half per face axis, one quarter on edges and one eighth on corners. This removes the old five-sample centre-plane bias and prevents moving it to other offsets when switching to six samples. A normalized-coordinate tolerance of 1e-10 absorbs affine roundoff; arbitrary oblique geometry still has finite-sampling error. The T1 browser reference includes the new weights and retains the corrected water calibration.
+- Correct tissue and alpha concentrations by undoing LCModel's water and metabolite attenuation factors in the proper direction. Tissue correction now uses the fitted MEGA-PRESS water attenuation of 0.43 instead of the standard 0.7. With standard defaults, corrected concentrations increase by 1/0.49; the underlying LCModel fits are unchanged.
 - Updated dependencies [d32b485]
   - @neurodesk/webapp-components@0.19.0
 

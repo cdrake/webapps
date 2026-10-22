@@ -111,7 +111,8 @@ Measured locally on 2026-10-15 (two workers, `Done in` from each module's log):
 | Full run, nine Stryker runs (2026-10-22, hosted runner) | 1511 | - | 335 s step |
 | LCModel `lcmodel-io.js:1-321` (2026-10-22) | 506 | 0.25 s | 75 s locally, 51 s hosted |
 | Full run, ten Stryker runs (2026-10-22, hosted runner) | 2017 | - | 268 s step |
-| LCModel `voxel.js` (2026-10-22) | 502 | 0.25 s instrumented | 80-91 s locally, 113 s hosted |
+| LCModel `voxel.js` (2026-10-22, initial) | 502 | 0.25 s instrumented | 80-91 s locally, 113 s hosted |
+| LCModel `voxel.js` boundary weights (2026-10-22, local) | 500 | 2.067 s instrumented | 409 s |
 | Full run, eleven Stryker runs (2026-10-22, hosted runner) | 2519 | - | 523 s step |
 | PR smoke (`tableName`) | 2 | 0.13 s | 6 s wall |
 
@@ -165,38 +166,55 @@ box or the no-tissue refusal. The suite now:
   and both refusals
 - checks that a box whose faces pass through voxel centres gives each face
   layer half its weight, and that axis-aligned boxes keep their exact volume
-  with faces on voxel boundaries, on centres and between them
+  with faces on voxel boundaries, on centres and between them, including
+  sample-aligned quarter-voxel offsets, mirrored/permuted grids and joint rotations
+- checks symmetric face, edge and corner tie weights, inverse-affine roundoff
+  on either side of a face and geometric perturbations beyond the tolerance
 
 The first version of this suite pinned the old default of five samples, whose
 middle sub-point lay on such faces and gave a face layer 3/5 of its weight: a
 20 mm box measured 20.2 mm a side. #550 changed the default to six, an even
-count that puts no sub-point on a voxel's centre planes or boundaries.
+count that avoids centre-plane sub-points. Review found that changing the count
+alone moves the bias to other offsets: a 4 mm box shifted by a quarter voxel
+measured 72.33796 mm³ instead of 64 mm³. Boundary points now contribute symmetric
+quadrature weights of 1/2 per face axis, or 1/4 on edges and 1/8 on corners.
+A 1e-10 tolerance in normalized box coordinates absorbs affine roundoff, at most
+1e-8 mm for a 100 mm box. Other oblique and nonintegral geometry retains ordinary
+finite-sampling error; these weights do not compute exact polyhedral intersections.
 
-With six samples it kills 483, and 6 time out, each a loop that never ends.
-Rerun with `MUTATION_MODULE=lcmodel-voxel pnpm exec stryker run stryker.config.mjs`
-(2 min 24 s locally on 2026-10-22). Nine of the 13 survivors
-are equivalent for the supported inputs; one is a retained coverage gap at a
-near-singular determinant boundary, and three are an untested tie rule:
+The original six-sample run killed 483 mutants and timed out on 6 loops that
+never end. It left 13 survivors, including three untested inclusive-face tie
+mutations. The symmetric boundary rule and its regressions supersede that run.
+The final run killed 482 of 500 mutants, timed out on 6 loops that never end,
+and left 12 survivors, with no uncovered mutants or errors. It used two workers
+and took 409 seconds locally on 2026-10-22, with a 2.067-second instrumented
+baseline and no concurrent heavy validation. Rerun with
+`MUTATION_MODULE=lcmodel-voxel pnpm exec stryker run stryker.config.mjs`.
+The repeated translated and transformed cases use compact grids while retaining
+the exact 4 mm quarter-voxel regression and every boundary/transform condition.
+The same three large-grid tests remain excluded from the mutation command.
+
+Ten survivors are equivalent for the supported inputs; two numerical boundaries
+remain coverage gaps:
 
 - `voxel.js:21`, `new Array(16)` to `new Array()`: all 16 entries are assigned.
-- `:39`, `< 1e-12` to `<= 1e-12`: not equivalent. At a determinant of exactly
-  1e-12, the original returns an inverse and the mutant throws. The suite does
-  not cover this near-singular boundary; its coverage remains incomplete here.
+- `:39`, `< 1e-12` to `<= 1e-12`: at a determinant of exactly 1e-12 the
+  original returns an inverse and the mutant throws. This retained
+  near-singular boundary is not tested.
 - `:56`, not cutting rows to four columns: NIfTI affine rows have four.
-- `:85` (three) and `:88`, starting the bounding box at the opposite infinity
-  or taking a fourth corner coordinate: the bounds only limit the scan, and the
-  clamping to the image keeps every covered voxel inside it.
-- `:142`, the default `unlabelled` option as `""`: any value other than
+- `:75`, `<= FACE_ROUNDOFF` to `< FACE_ROUNDOFF`: the suite checks exact
+  faces, roundoff on both sides and points beyond the band, but does not pin
+  equality at the numerical band limit. Retained without an equivalence claim.
+- `:76`, `distance < 0` to `distance <= 0`: the face-band branch already
+  returns one half when the distance is zero.
+- `:95` (three), starting the upper bound at positive infinity, and `:98`,
+  taking a fourth corner coordinate: these only expand the scan bounds, and
+  clamping to the image still visits every covered voxel.
+- `:154`, the default `unlabelled` option as `""`: any value other than
   `exclude` counts the unlabelled remainder as CSF.
-- `:147`, reading one weight past the end: it is `undefined` and skipped.
-- `:160`, `all > w` to `all >= w`: when the maps add up exactly to the box, the
-  scale is 1 either way.
-- `:115` (three), `<= 0.5` to `< 0.5` on one axis of the inside test: not
-  equivalent. They differ only for a sub-point exactly on a face. With the even
-  default no sub-point lies on the faces whole-millimetre geometry produces, and
-  where a face does meet a sub-point, rounding in the inverse affine already
-  decides the tie. Pinning either rule would test that rounding, so it stays
-  untested.
+- `:159`, reading one weight past the end: it is `undefined` and skipped.
+- `:172`, `all > w` to `all >= w`: when the maps add up exactly to the box,
+  the scale is 1 either way.
 
 On 2026-10-22 LCModel's control file and output parsing joined the run with 506
 mutants. The suite fitted nothing new, but it only matched a few control lines
@@ -253,19 +271,24 @@ first run killed 252 and left 175 alive: most relaxation-table entries, the
 LCModel name aliases, the field-strength limits, the zero-sum and timing
 refusals, every reason `correctionFor` gives, the CSV columns and quoting, and
 both downloads. The suite now holds every entry of both tables to Osprey's
-`lookUpRelaxTimes`, copied verbatim, and covers the rest by behavior. It kills
-425; no mutant timed out. Rerun with `MUTATION_MODULE=lcmodel-tissue pnpm exec
-stryker run stryker.config.mjs`. The two survivors:
+`lookUpRelaxTimes`, copied verbatim, and covers the rest by behavior. That
+initial expanded suite killed 425; no mutant timed out. Rerun with `MUTATION_MODULE=lcmodel-tissue pnpm exec
+stryker run stryker.config.mjs`. The initial two survivors:
 
 - `tissue.js:197`, `x == null` to `false` in the CSV number format: for `null`
   and `undefined`, `!Number.isFinite(x)` is already true, so the cell stays
   empty. Equivalent.
-- `tissue.js:160`, `wconc * attmet` to `wconc / attmet`: it differs only when
-  `options.lcmodel` sets ATTMET to something other than 1, and the only caller,
-  `correctionFor`, never sets it. Equivalent for the app and the command line.
-  Writing this run's tests showed that the line inverts ATTH2O and ATTMET
-  against LCModel's own scaling (#545), so a test for a non-default ATTMET
-  waits for that fix.
+- `tissue.js:160`, `wconc * attmet` to `wconc / attmet`: the original suite
+  used only ATTMET = 1. Writing the tests exposed the inverted attenuation
+  factors in the implementation ([#545](https://github.com/neurodesk/webapps/issues/545)).
+
+The #545 correction adds independent ATTH2O, ATTMET and WCONC scaling checks
+for both tissue and alpha concentrations. It also corrects the pure-white-matter
+expectation and uses the fitted MEGA-PRESS ATTH2O of 0.43. A second run on
+2026-10-22 killed 427 of 428 mutants, with no timeouts or uncovered mutants.
+The only survivor is the redundant null check described above. The ATTMET
+mutation is now killed; it was a coverage gap in the exported correction
+function, not an equivalent mutation across its supported inputs.
 
 The 2026-10-20 workspace-graph comment fixtures cover whole-line comments,
 preserved directives, block/JSDoc and inline comments, comment-looking string

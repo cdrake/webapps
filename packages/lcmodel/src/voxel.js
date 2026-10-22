@@ -10,10 +10,10 @@
 //
 // n is even by default. The sub-points sit at the midpoints of n equal slices,
 // so with an even n none lies on a voxel's centre planes or its boundaries.
-// A box of whole millimetres on a 1 mm grid has its faces on exactly those
-// planes. With an odd n the middle sub-point lies on such a face and rounding
-// in the inverse affine decides whether it counts: a face layer could get 3/5
-// of its weight instead of 1/2, and a 20 mm box measure 20.2 mm a side.
+// Grid-aligned boxes can have faces on those planes. Other placements can
+// still put a sub-point on a face, so boundary samples use symmetric quadrature
+// weights: half on a face, a quarter on an edge and an eighth on a corner.
+// Oblique and nonintegral geometry still has finite-sampling error.
 
 /** 4x4 row-major inverse (general, by cofactors). */
 export function invert4(m) {
@@ -66,11 +66,21 @@ export function boxVolume(voxelAffine) {
   );
 }
 
+// Coordinates span one whole box. A 1e-10 band absorbs inverse-affine
+// roundoff at faces, at most 1e-8 mm for a 100 mm box. These are quadrature
+// tie weights, not exact intersection fractions of oblique sample cells.
+const FACE_ROUNDOFF = 1e-10;
+const sampleAxisWeight = (coordinate) => {
+  const distance = Math.abs(coordinate) - 0.5;
+  if (Math.abs(distance) <= FACE_ROUNDOFF) return 0.5;
+  return distance < 0 ? 1 : 0;
+};
+
 /**
  * Weight of every image voxel inside the MRS box, 0..1.
  * @param {number[][]} voxelAffine  MRS voxel, 1x1x1 index space to RAS mm
  * @param {{affine: number[][], dims: number[]}} image  structural image grid
- * @param {{samples?: number}} [options]  sub-samples per axis (default 6; keep it even)
+ * @param {{samples?: number}} [options]  sub-samples per axis (default 6)
  * @returns {{weights: Float32Array, count: number, volumeMm3: number, nominalMm3: number}}
  */
 export function voxelWeights(voxelAffine, image, { samples = 6 } = {}) {
@@ -112,7 +122,9 @@ export function voxelWeights(voxelAffine, image, { samples = 6 } = {}) {
             const by = c[1] + ey[1] * dy + ez[1] * dz;
             const bz = c[2] + ey[2] * dy + ez[2] * dz;
             for (const dx of offsets) {
-              if (Math.abs(bx + ex[0] * dx) <= 0.5 && Math.abs(by + ex[1] * dx) <= 0.5 && Math.abs(bz + ex[2] * dx) <= 0.5) inside += 1;
+              inside += sampleAxisWeight(bx + ex[0] * dx)
+                * sampleAxisWeight(by + ex[1] * dx)
+                * sampleAxisWeight(bz + ex[2] * dx);
             }
           }
         }

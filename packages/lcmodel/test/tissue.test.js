@@ -3,21 +3,23 @@ import assert from "node:assert/strict";
 import { correctConcentrations, correctedCsv, correctionFor, metaboliteRelaxation, normalizeFractions, fieldKey, tissueTexts } from "../src/tissue.js";
 
 // Osprey's own quantTiss and quantAlpha (OspreyQuantify.m at 98b2e354,
-// extracted verbatim) run in GNU Octave 8 on these inputs, LCModel output
-// entering as Osprey reads it: amplMets = concentration, amplWater =
-// WCONC * ATTMET / ATTH2O = 35880 / 0.7.
+// lines 723-803, 972-1067 and lookUpRelaxTimes 1073-1171, extracted verbatim)
+// run in GNU Octave 11.1. LCModel's water_scale and area_met_norm (basis.rs;
+// LCModel manual section 10.2.1) imply amplWater = WCONC * ATTH2O / ATTMET
+// = 35880 * 0.7. This intentionally differs from Osprey's LCModel import,
+// which inverts the attenuation factors. Osprey's own fits use ATTH2O = 1.
 const NAMES = ["NAA", "Cr", "GPC", "mI", "Glu", "GABA", "Gln", "Glx", "tNAA", "Lac", "Unknown", "GABAplus"];
 const CONC = [10.5, 8.2, 1.9, 6.3, 9.1, 1.2, 3.3, 12.4, 12.0, 0.4, 1.0, 1.5];
 const FRACTIONS = { gm: 0.6, wm: 0.27, csf: 0.13 };
 const OSPREY = {
-  "3T TR 2000 TE 35": [10.8781998894, 9.28201685121, 1.89627117475, 6.30854885747, 10.4127103596, 1.59115641724, 3.7335645983, 14.0997762462, 12.6215878899, 0.459075030654, 1.10365972799, 1.65548959198],
-  "3T TR 3000/10000 TE 68/30": [14.7504242303, 14.0343995575, 2.72991513499, 9.39895158016, 16.8283491749, 2.84118508222, 5.85335496311, 22.429602041, 17.9025457935, 0.729497371355, 1.69027567186, 2.53541350779],
-  "7T TR 2000 TE 35": [8.49231870315, 7.23941480588, 1.36424826839, 4.6539571989, 7.72515981276, 0.9985120404, 2.85144795723, 10.6183827198, 8.66008451753, 0.285193845521, 0.774069724043, 1.16110458606],
+  "3T TR 2000 TE 35": [22.2004079376, 18.9428915331, 3.86994117295, 12.874589505, 21.2504293053, 3.24725799436, 7.61951958838, 28.7750535636, 25.7583426324, 0.936887817661, 2.25236679181, 3.37855018771],
+  "3T TR 3000/10000 TE 68/30": [30.1029065924, 28.64163175, 5.57125537752, 19.1815338371, 34.3435697447, 5.79833690249, 11.9456223737, 45.7746980429, 36.5358077418, 1.48877014562, 3.44954218747, 5.17431328121],
+  "7T TR 2000 TE 35": [17.3312626595, 14.7743159304, 2.78418013957, 9.49787183449, 15.7656322709, 2.03777967428, 5.81928154537, 21.6701688159, 17.6736418725, 0.582028256165, 1.5797341307, 2.36960119605],
 };
 const rows = NAMES.map((name, k) => ({ name, concentration: CONC[k] }));
 
 function closeTo(actual, expected, label) {
-  assert.ok(Math.abs(actual - expected) <= 1e-9 * Math.max(1, Math.abs(expected)), `${label}: ${actual} vs Osprey ${expected}`);
+  assert.ok(Math.abs(actual - expected) <= 1e-9 * Math.max(1, Math.abs(expected)), `${label}: ${actual} vs expected ${expected}`);
 }
 
 test("Gasparovic correction reproduces Osprey's quantTiss", () => {
@@ -34,7 +36,7 @@ test("Gasparovic correction reproduces Osprey's quantTiss", () => {
 
 test("alpha correction reproduces Osprey's quantAlpha for GABA and Glx", () => {
   // quantAlpha at 3 T, TR 2000 ms, TE 68 ms: GABA, Glu, Gln, Glx.
-  const expected = { GABA: 1.50337793145, Glu: 8.8002969464, Gln: 3.07935263674, Glx: 11.7648775617 };
+  const expected = { GABA: 3.06811822745, Glu: 17.9597896865, Gln: 6.2843931362, Glx: 24.0099542075 };
   const result = correctConcentrations(rows, { fractions: FRACTIONS, fieldT: 3, metabolite: { teMs: 68, trMs: 2000 }, water: { teMs: 68, trMs: 2000 }, alpha: true });
   for (const [name, value] of Object.entries(expected)) closeTo(result.rows.find((r) => r.name === name).alphaCorrected, value, name);
   assert.equal(result.rows.find((r) => r.name === "NAA").alphaCorrected, undefined);
@@ -73,7 +75,31 @@ test("pure white matter with no relaxation leaves LCModel's water scaling (bar i
     metaboliteRelaxation: false,
   }).rows[0];
   const rw = (1 - Math.exp(-2 / 0.832)) * Math.exp(-0.035 / 0.0792);
-  closeTo(r.corrected, (10 * 0.7) / 35880 * 55510 * rw, "NAA");
+  closeTo(r.corrected, 10 / (35880 * 0.7) * 55510 * rw, "NAA");
+});
+
+test("undoing LCModel water scaling is inverse in ATTH2O and proportional in ATTMET", () => {
+  const options = {
+    fractions: FRACTIONS,
+    fieldT: 3,
+    metabolite: { teMs: 68, trMs: 2000 },
+    water: { teMs: 30, trMs: 10000 },
+    alpha: true,
+  };
+  const input = [{ name: "GABA", concentration: 2 }];
+  const baseline = correctConcentrations(input, options).rows[0];
+  const cases = [
+    [{ atth2o: 0.35 }, 2],
+    [{ attmet: 0.5 }, 0.5],
+    [{ wconc: 17940 }, 2],
+    [{ atth2o: 0.35, attmet: 0.5 }, 1],
+  ];
+  for (const [lcmodel, factor] of cases) {
+    const actual = correctConcentrations(input, { ...options, lcmodel }).rows[0];
+    for (const key of ["corrected", "alphaCorrected"]) {
+      closeTo(actual[key], baseline[key] * factor, `${key} with ${JSON.stringify(lcmodel)}`);
+    }
+  }
 });
 
 test("fractions are normalised and checked", () => {
@@ -97,7 +123,7 @@ test("the CSV holds both values, the fractions and the constants", () => {
   const cells = line.split(",");
   assert.equal(cells[0], "NAA+NAAG");
   assert.equal(cells[1], "12");
-  assert.equal(cells[4], "12.6216");
+  assert.equal(cells[4], "25.7583");
   assert.deepEqual(cells.slice(5, 8), ["0.6", "0.27", "0.13"]);
   assert.ok(header.includes("WCONC (mM)") && line.includes("35880"));
 });
@@ -295,11 +321,27 @@ test("a fit is corrected only with fractions, a water reference and a supported 
   const explicit = { fractions: FRACTIONS, fieldT: 2.89, metabolite: { teMs: 68, trMs: 3000 }, water: { teMs: 30, trMs: 10000 } };
   assert.deepEqual(correctionFor(rows, options), correctConcentrations(rows, { ...explicit, metaboliteRelaxation: true, alpha: false }));
   const edited = correctionFor(rows, { ...options, edited: true, metaboliteRelaxation: false });
-  assert.deepEqual(edited, correctConcentrations(rows, { ...explicit, metaboliteRelaxation: false, alpha: true }));
+  assert.deepEqual(edited, correctConcentrations(rows, { ...explicit, metaboliteRelaxation: false, alpha: true, lcmodel: { atth2o: 0.43 } }));
   // Without its own water timing the water scan is taken to match the metabolite scan.
   const { fieldT, teMs, trMs } = header;
   const sameWater = correctConcentrations(rows, { ...explicit, water: explicit.metabolite, metaboliteRelaxation: true, alpha: false });
   assert.deepEqual(correctionFor(rows, { ...options, header: { fieldT, teMs, trMs } }), sameWater);
+});
+
+test("MEGA-PRESS tissue and alpha correction undo the fitted 0.43 water attenuation", () => {
+  // The shared pipeline fits edited data with sptype='mega-press-3'.
+  // Native LCModel's preset uses ATTH2O = 0.43 (control.rs), not 0.7.
+  // Osprey quantTiss/quantAlpha, rerun with amplWater = 35880 * 0.43.
+  const result = correctionFor([{ name: "GABA", concentration: 1.2 }], {
+    fractions: FRACTIONS,
+    header: { fieldT: 3, teMs: 68, trMs: 2000 },
+    waterScaled: true,
+    edited: true,
+    metaboliteRelaxation: true,
+  });
+  assert.equal(result.constants.lcmodel.atth2o, 0.43);
+  closeTo(result.rows[0].corrected, 5.70465439344, "MEGA-PRESS GABA");
+  closeTo(result.rows[0].alphaCorrected, 4.99461106795, "MEGA-PRESS alpha GABA");
 });
 
 test("the downloads are the corrected table and every input behind it", () => {
