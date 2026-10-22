@@ -67,6 +67,34 @@ jobs:
         working-directory: exes/dwi
         run: cargo +1.98.0 fmt --all --check
 
+  # The hmc tests against NiFreeze's and QSIPrep's runs on ds005577 sub-107 (hmc/reference/ on
+  # Hugging Face, pinned by exes/dwi/hmc/validation/reference.manifest.json). The job fetches
+  # only the subsets that tests read (115 MB of 439 MB), and HMC_REQUIRE_REFERENCE turns each
+  # missing-data skip into a failure. When a test starts to read another subset, add it to the
+  # fetch line and to the cache key (the cache saves only on a key miss).
+  hmc-reference:
+    name: exes/dwi tests on the pinned hmc reference data
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install 1.98.0 --profile minimal
+      - name: Cache the reference downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ~/hmc-reference
+          key: hmc-reference-${{ hashFiles('exes/dwi/hmc/validation/reference.manifest.json') }}-decomposition-clip-gp
+      - name: Fetch the reference subsets (sha256-checked)
+        run: python3 exes/dwi/hmc/validation/fetch_reference.py "$HOME/hmc-reference" decomposition clip gp >> "$GITHUB_ENV"
+      - name: Test on the reference data, release build
+        working-directory: exes/dwi
+        env:
+          HMC_REQUIRE_REFERENCE: '1'
+        run: cargo +1.98.0 test --release --workspace --locked -- --nocapture
+
   wasm-source:
     name: committed WASM modules equal a rebuild from source
     runs-on: ubuntu-24.04

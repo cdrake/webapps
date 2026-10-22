@@ -153,7 +153,7 @@ Replace the WASM numbers with the milestone M3 benchmark.
 
 ## 7. Milestones
 
-1. M0: reference runs, kept intermediates and masks, pinned on Hugging Face. Status: NiFreeze runs done; QSIPrep r1 and the repeats e1-e3 done; `hmc/reference/` is uploaded at dataset revision `a4ba04733c316430add7e9f8467887a1a47b6e65` ([#409](https://github.com/neurodesk/webapps/issues/409); section 9).
+1. M0: reference runs, kept intermediates and masks, pinned on Hugging Face. Status: NiFreeze runs done; QSIPrep r1 and the repeats e1-e3 done; `hmc/reference/` is uploaded at dataset revision `a4ba04733c316430add7e9f8467887a1a47b6e65` and pinned by `exes/dwi/hmc/validation/reference.manifest.json` ([#409](https://github.com/neurodesk/webapps/issues/409), [#438](https://github.com/neurodesk/webapps/issues/438); section 9).
 2. M1: `hmc` motion decomposition, bvec rotation and TSV, tested with the reference `.mat` files.
 3. M2: `hmc-registration` with generic argv, `--float 1` only (no 3DDouble, Q53). Replay the reference inputs and apply Q53's per-volume, per-axis seed-spread rule for GP. Report its failures. The shell-maximum alternatives and the SHORELine gate in section 5 await an issue-owner decision.
 4. M3: NiFreeze `trivial` end to end, Node CLI, benchmark.
@@ -182,7 +182,7 @@ Replace the WASM numbers with the milestone M3 benchmark.
 
 ## 9. M0 results
 
-Measured 18-19 October 2026. Data: Hugging Face dataset `neurodeskorg/webapps`, path `hmc/reference/`, revision `a4ba04733c316430add7e9f8467887a1a47b6e65` (uploaded 21 October 2026, [#409](https://github.com/neurodesk/webapps/issues/409); 3513 files with NiFreeze, QSIPrep r1 and e1-e3; a fresh download passes `sha256sum -c SHA256SUMS`). Its README gives the commands, versions, patches and the purpose of each file. Use that path in the M1-M5 manifests.
+Measured 18-19 October 2026. Data: Hugging Face dataset `neurodeskorg/webapps`, path `hmc/reference/`, revision `a4ba04733c316430add7e9f8467887a1a47b6e65` (uploaded 21 October 2026, [#409](https://github.com/neurodesk/webapps/issues/409); 3513 files with NiFreeze, QSIPrep r1 and e1-e3; a fresh download passes `sha256sum -c SHA256SUMS`). Tests fetch subsets of it with `exes/dwi/hmc/validation/fetch_reference.py`. Its README gives the commands, versions, patches and the purpose of each file. Add the files that M1-M5 tests read to a subset of that manifest.
 
 ### Input and environment
 
