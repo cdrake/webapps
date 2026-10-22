@@ -22,13 +22,18 @@ network.
 | `packages/carotid-flow/src/outputs.js` | The names and bytes of Carotid Flow's downloads and the command line's files, and the measurements automation reports | `packages/carotid-flow/test/series-outputs.test.js` |
 | `scripts/lib/workspace-graph.mjs` | Which directories and root files each app and CI job reaches, and so which apps a change tests; a missed reference skips the tests that would catch the change | `test/workspace-graph.test.mjs` |
 | `packages/lcmodel/src/tissue.js` | LCModel's tissue- and alpha-corrected concentrations, the relaxation times behind them, when the correction applies, and its two downloads; the app and the `lcmodel` command line both use it | `packages/lcmodel/test/tissue.test.js` |
+| `packages/lcmodel/src/lcmodel-io.js:1-321` (all but `fillGaps`) | The control file every LCModel fit runs with, and how the app reads LCModel's .COORD and .TABLE files back: the concentrations, QC summary, curves, diagnostics and stop messages users see and download | `packages/lcmodel/test/lcmodel-io.test.js` |
 
 `formatG` is mutated by line range because the rest of `index.js` drives the
 WebAssembly module. Its command selects the two `printf` tests by name; the rest
 of `parity.test.js` needs a native build and is not part of this run. The
 date-version range likewise leaves out the rest of `app-versions.mjs`, which
 plans releases with Changesets on a workspace; `test/app-versions.test.mjs`
-keeps covering that part. The two Carotid Flow modules share one suite of small
+keeps covering that part. `fillGaps`, the last function in `lcmodel-io.js`, stays outside its range:
+instrumenting its Fourier sums made each run of the suite take 4.4 s instead of
+0.25 s, about 20 minutes for the module. `test/mutation-quality.test.mjs` fails
+when the range stops ending at `presentRows` or another function follows it.
+The two Carotid Flow modules share one suite of small
 in-memory NIfTI files. `packages/carotid-flow/test/node.test.js` runs the command
 line on the phantom and is not part of this run. The workspace graph's suite
 builds small fixture trees for path rules and comment parsing; `test/app-plan.test.mjs`
@@ -96,6 +101,7 @@ Measured locally on 2026-10-15 (two workers, `Done in` from each module's log):
 | Full run, eight Stryker runs (2026-10-17, hosted runner) | 1013 | - | 179 s step |
 | LCModel `tissue.js` (2026-10-22) | 427 | 0.14 s | 32 s |
 | Full run, nine Stryker runs (2026-10-22, hosted runner) | 1511 | - | 335 s step |
+| LCModel `lcmodel-io.js:1-321` (2026-10-22) | 506 | 0.25 s | 75 s |
 | PR smoke (`tableName`) | 2 | 0.13 s | 6 s wall |
 
 On 2026-10-16 the two Carotid Flow modules added 39 and 42 mutants, each with a
@@ -122,6 +128,54 @@ minutes locally; add a module only with its own completed run and a measured
 cost.
 
 ## Results and reviewed survivors
+
+On 2026-10-22 LCModel's control file and output parsing joined the run with 506
+mutants. The suite fitted nothing new, but it only matched a few control lines
+and read two real .COORD files that never exercise LCModel's edge formats. The
+first run killed 301, 1 timed out and 204 survived. Untested parts included:
+- every line of the control file
+- the refusals and the TE and title rules
+- the metabolite curves
+- the diagnostic table
+- negative shifts, three-digit phases and four-digit S/N, where LCModel's
+  Fortran fields leave no blank
+- cut files
+- the gap threshold
+- `parseTable`'s count field
+- the CSV quoting
+- `lcmodelError`
+- the exact diagnostic explanations
+
+The suite now holds two whole control files and a synthetic .COORD written in
+`finout.rs`'s formats. It kills 473, and 2 time out, each a gap-scan loop that
+never ends. Rerun with `MUTATION_MODULE=lcmodel-io pnpm exec stryker run
+stryker.config.mjs`. All 31 survivors are equivalent for the files LCModel
+writes:
+
+- `lcmodel-io.js:145`, reading a line untrimmed or splitting on single blanks:
+  the empty tokens either produces are skipped.
+- `:157`, `:194`, `:198`, `:200`, `:202`, `:210` and `:254`, dropping a `^`
+  anchor: each pattern can match the line's leading blanks, so the leftmost
+  match already starts at the line start; `$$CONC` only starts a line.
+- `:157`, one blank before the metabolite name; `:210`, one blank before a
+  curve's name; `:290`, one blank between a diagnostic's level and routine: the
+  formats write exactly one there (`1X, A6` for curves, `(I4, 1X, A9, 1X, A6,
+  I3)` in ERRTBL, and one blank between ratio and name in the table).
+- `:172`, `:173` and `:256`, other fallback values for a missing header or
+  count: they yield the same `null` or `0`.
+- `:175`, the three table-bound mutants (start one line early, read one line
+  past the count, or read to the end): the line before the rows is the column
+  header and every later line lacks a finite number followed by an `N%` column.
+- `:198`, a one-digit misc-table count: the misc table has six lines.
+- `:226`, one extra (NaN) step in the gap scan: on a uniform axis with a few
+  gaps the median spacing does not move.
+- `:237`, joining misc lines without a newline: no summary pattern spans two
+  lines, and every number ends at a blank or a letter.
+- `:243` to `:247`, single blanks in the summary patterns: F5591, F5593 and
+  F5595 fix those blanks, and the F6.3 FWHM field leaves one below 10 ppm.
+- `:278`, two optional-chaining removals: the chain has already short-circuited
+  on a missing table, and `split` always returns a first element.
+- `:299`, an unanchored `info` test: no other ERRTBL level contains "info".
 
 On 2026-10-22 LCModel's tissue correction joined the run with 427 mutants. Its
 suite already compared the corrected values with Osprey's `quantTiss` and
