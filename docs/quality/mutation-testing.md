@@ -110,7 +110,8 @@ Measured locally on 2026-10-15 (two workers, `Done in` from each module's log):
 | Full run, nine Stryker runs (2026-10-22, hosted runner) | 1511 | - | 335 s step |
 | LCModel `lcmodel-io.js:1-321` (2026-10-22) | 506 | 0.25 s | 75 s locally, 51 s hosted |
 | Full run, ten Stryker runs (2026-10-22, hosted runner) | 2017 | - | 268 s step |
-| LCModel `voxel.js` (2026-10-22) | 502 | 0.25 s instrumented | 80-91 s locally |
+| LCModel `voxel.js` (2026-10-22) | 502 | 0.25 s instrumented | 80-91 s locally, 113 s hosted |
+| Full run, eleven Stryker runs (2026-10-22, hosted runner) | 2519 | - | 523 s step |
 | PR smoke (`tableName`) | 2 | 0.13 s | 6 s wall |
 
 On 2026-10-16 the two Carotid Flow modules added 39 and 42 mutants, each with a
@@ -137,6 +138,10 @@ about a minute between runs, mostly in the workspace graph (116 to 182 s on
 2026-10-22). With ten modules it takes 268 to about 410 s, so a new module
 needs its own hosted measurement and must keep the step under about 450 s.
 Otherwise the job timeout or the module list has to change first.
+With `voxel.js` the eleven modules took 523 s on 2026-10-22, with the workspace
+graph at 178 s. That is over the 450 s line, so this module needs the job
+timeout raised, or the full run split across jobs, before it can join the
+scheduled run.
 
 ## Results and reviewed survivors
 
