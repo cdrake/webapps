@@ -25,7 +25,7 @@ function assertUniqueReleaseAgePackages(exclusions) {
   for (const exclusion of exclusions) {
     const version = exclusion.indexOf('@', 1);
     const name = version < 0 ? exclusion : exclusion.slice(0, version);
-    if (/[*?\[\]{}!]/.test(name)) continue;
+    if (/[*?[\]{}!]/.test(name)) continue;
     if (seen.has(name)) duplicates.add(name);
     seen.add(name);
   }
