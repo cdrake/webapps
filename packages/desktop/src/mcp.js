@@ -22,15 +22,29 @@ const viewer = session.extend({ viewerId: app });
 const readOnly = { readOnlyHint: true, idempotentHint: true, openWorldHint: false };
 const startsRun = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false };
 
+const volumeDisplay = z.strictObject({
+  index: z.number().int().min(0),
+  colormap: z.string().min(1).optional(),
+  opacity: z.number().min(0).max(1).optional(),
+  calMin: z.number().finite().optional(),
+  calMax: z.number().finite().optional(),
+  visible: z.boolean().optional(),
+});
+
 function result(value) {
   return { content: [{ type: 'text', text: JSON.stringify(value) }], structuredContent: value };
 }
 
-function registerTool(server, name, description, inputSchema, annotations, handler) {
+// Images travel as MCP image content so clients can show them; the JSON keeps only their size.
+function imageResult({ data, mimeType, ...value }) {
+  return { content: [{ type: 'image', data, mimeType }, { type: 'text', text: JSON.stringify(value) }], structuredContent: value };
+}
+
+function registerTool(server, name, description, inputSchema, annotations, handler, format = result) {
   if (!/^[a-zA-Z0-9_-]{1,64}$/.test(name)) throw new Error(`Tool name is not portable across clients: ${name}`);
   server.registerTool(name, { description, inputSchema, annotations }, async args => {
     try {
-      return result(await handler(args));
+      return format(await handler(args));
     } catch (error) {
       return {
         isError: true,
@@ -68,12 +82,18 @@ export async function createMcpServer(service, { version }) {
     }), true],
     ['tab', 'Select an application tab by its reported ID.', viewer.extend({ tabId: z.string().min(1) }), true],
     ['regions', 'Read the regions exposed by the application viewer.', viewer, false],
+    ['volumes', 'List the volumes loaded in a NiiVue viewer with their colormap, display range, opacity and dimensions.', viewer, false],
+    ['display', 'Set the slice type and per-volume colormap, display range (calMin, calMax), opacity or visibility. Returns the resulting state and volumes.', viewer.extend({
+      sliceType: z.enum(['axial', 'coronal', 'sagittal', 'multiplanar', 'render']).optional(),
+      volumes: z.array(volumeDisplay).optional(),
+    }), true],
+    ['screenshot', 'Capture the viewer as a PNG image exactly as it is displayed.', viewer, false],
   ]) {
     registerTool(server, `viewers_${name}`, description, schema, mutates ? { ...startsRun, idempotentHint: true } : readOnly,
       async ({ sessionId, ...args }) => {
         const value = await service.viewerCommand(sessionId, `viewers.${name}`, args);
-        return name === 'list' ? { viewers: value } : name === 'regions' ? { regions: value } : value;
-      });
+        return name === 'list' ? { viewers: value } : name === 'regions' ? { regions: value } : name === 'volumes' ? { volumes: value } : value;
+      }, name === 'screenshot' ? imageResult : result);
   }
 
   for (const contract of await service.listApps()) {

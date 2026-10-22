@@ -139,7 +139,31 @@ Move a supported crosshair with `viewers_crosshair`:
 
 Coordinates are world millimetres. The result reports the viewer's actual
 snapped position. Controls use public viewer APIs; older viewer versions may
-not support a crosshair. Commands are serialized per session. A command that
+not support a crosshair.
+
+NiiVue viewers also report `volumes`, `display` and `screenshot` capabilities.
+`viewers_volumes` lists each loaded volume's index, name, colormap, display
+range (`calMin`, `calMax`), opacity, visibility and dimensions. `viewers_display`
+changes the slice type and per-volume display, addressed by reported `index`:
+
+```json
+{
+  "sessionId": "<session ID>",
+  "viewerId": "main",
+  "sliceType": "axial",
+  "volumes": [{ "index": 1, "colormap": "hot", "calMin": 0.2, "calMax": 1, "opacity": 0.6 }]
+}
+```
+
+`sliceType` is `axial`, `coronal`, `sagittal`, `multiplanar` or `render`. A
+volume update may also set `visible`. The whole request is validated before
+any change is applied, and the result reports the resulting state and volumes.
+Display control needs NiiVue 1.0; viewers on NiiVue 0.x list volumes only.
+`viewers_screenshot` redraws the viewer and returns the window's pixels as an
+MCP PNG image, with its size in the structured result. It shows only what the
+viewer displays; it is not an export of image data.
+
+Commands are serialized per session. A command that
 exceeds 30 seconds closes that session. URL access and local directory mounts
 are scoped to the requesting window and supplied source tree.
 

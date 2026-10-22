@@ -174,9 +174,16 @@ try {
           session = {
             close,
             closedSignal: windowClosed.signal,
-            command(command, args, { signal: commandSignal }) {
+            async command(command, args, { signal: commandSignal }) {
               if (target.isDestroyed()) throw new Error('Viewer window is closed');
-              return browserDispatcher(target.webContents, { signal: commandSignal }).call(command, args);
+              const page = browserDispatcher(target.webContents, { signal: commandSignal });
+              if (command !== 'viewers.screenshot') return page.call(command, args);
+              // Capture the composited window: WebGL and WebGPU canvases need not keep their drawing buffer.
+              const rect = await page.call('viewers.canvas', args);
+              const image = await page.bounded(target.webContents.capturePage(rect));
+              const { width, height } = image.getSize();
+              if (!width || !height) throw new Error('The viewer screenshot is empty');
+              return { mimeType: 'image/png', width, height, data: image.toPNG().toString('base64') };
             },
           };
         }
