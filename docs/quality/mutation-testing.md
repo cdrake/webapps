@@ -95,12 +95,18 @@ Measured locally on 2026-10-15 (two workers, `Done in` from each module's log):
 | `workspace-graph.mjs` (2026-10-17, hosted runner) | 371 | 0.6 s | 84 s |
 | Full run, eight Stryker runs (2026-10-17, hosted runner) | 1013 | - | 179 s step |
 | LCModel `tissue.js` (2026-10-22) | 427 | 0.14 s | 32 s |
+| Full run, nine Stryker runs (2026-10-22, hosted runner) | 1511 | - | 335 s step |
 | PR smoke (`tableName`) | 2 | 0.13 s | 6 s wall |
 
 On 2026-10-16 the two Carotid Flow modules added 39 and 42 mutants, each with a
 0.23 s baseline: `series.js` took 9 s and `outputs.js` 14 s. The full run of
 seven modules, 642 mutants, took 221 s wall on a host with a load average of 22
 on 8 cores, where the five earlier modules alone took 179 s.
+
+On 2026-10-22 the hosted runner took 335 s for the nine modules, 31 s of it
+for `tissue.js`. The workspace graph, now 393 mutants with the comment fixtures,
+took 182 s of that, up from 84 s on 2026-10-17. The 10-minute job timeout still
+leaves about four minutes.
 
 On 2026-10-17 the workspace graph added 371 mutants. Its suite writes a fixture
 tree of about 150 files, two of them 1 MiB, for every mutant. On the hosted
