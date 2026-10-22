@@ -116,6 +116,47 @@ user starts nv-mcp's `startServer` locally with
 user turns on a "Connect an agent" control, shows that it is connected, and
 can disconnect.
 
+### Loading new sources
+
+Each viewer window can read only what its run was given. That means the URLs
+in the run's inputs and anything under them, the files the main process read
+for the page, and directories mounted for a directory input. Browser
+permission prompts are always denied. So `load_volume`, `add_overlay` and
+`load_mesh` fail for any other URL, and a local path never works.
+
+The desktop adds an approval step, so a source can be granted while the
+session is open:
+
+1. **Request.** The bridge checks the URL or path of every loading call before
+   forwarding it. If the source is already granted to the window, the call
+   proceeds unchanged. Otherwise the bridge asks for it. A
+   `sessions_grant { sessionId, url | path }` tool makes the same request
+   ahead of time, for agents that want to batch approvals.
+2. **Consent.** The desktop shows a dialog attached to that viewer window. It
+   names the agent's request, the file or URL, and the session's app, and
+   offers **Allow** and **Deny**. The person at the viewer approves, not the
+   agent client. MCP elicitation is not used, because client support varies
+   and the client may not be the person viewing the data. If there is no
+   answer before the session's 30 second command limit, the request is
+   denied, and the tool error says so.
+3. **Grant.**
+   - **URL:** the URL is appended to the window's source grants.
+     `createSourceGrants().add` currently replaces a window's list, so it
+     gains an append form.
+   - **Local path:** the file is resolved with `realpath` and served on its
+     own through a one-time token on the local server, as directory inputs
+     are. The forwarded call's argument is rewritten to that URL.
+4. **Lifetime.** A grant belongs to the session. It is revoked, and a local
+   file unmounted, when the session closes for any reason. Grants are never
+   shared between windows and are not remembered across sessions.
+
+Denials and approvals are recorded in the session's run record, so a report
+can show which sources an agent added after the run.
+
+In the hosted web apps the page cannot read local paths at all. There, the
+same request appears as an in-page prompt with a file picker, and the
+selected `File` is loaded directly.
+
 ### Later options
 
 A hosted relay on Cloudflare Workers with a Durable Object per pairing would
@@ -130,26 +171,29 @@ page handlers above can be registered there once browsers support it.
 ## Phases
 
 1. Desktop proof of concept: nv-mcp core tools over retained sessions.
-2. Hosted page client behind an opt-in control, with a documented local server.
-3. Alias then deprecate the overlapping `viewers_*` tools.
-4. Decide on a hosted relay separately.
+2. Approved source loading on the desktop: consent dialog, appended grants,
+   and single-file mounts.
+3. Hosted page client behind an opt-in control, with a documented local server.
+4. Alias then deprecate the overlapping `viewers_*` tools.
+5. Decide on a hosted relay separately.
 
 ## Open questions
 
 - **Viewer identity.** nv-mcp addresses a tab. Some apps register more than
   one viewer per page. The proof of concept drives the `main` viewer, or the
   first NiiVue viewer. Upstream could accept a viewer argument instead.
-- **URL loading.** `load_volume`, `add_overlay`, `load_mesh` and similar tools
-  fetch URLs from the page. The desktop scopes each window's network access to
-  the sources granted for its run, so these calls fail for other URLs. Decide
-  whether agents may widen that grant.
+- **Approval scope.** [Loading new sources](#loading-new-sources) asks once
+  per file or URL. Decide whether **Allow** may also cover a directory or a
+  URL prefix for the rest of the session, and whether an unattended run, such
+  as a desktop job or CI, may pre-approve sources through a configuration
+  setting.
 - **Duplicate MCP SDK.** nv-mcp depends on `@modelcontextprotocol/sdk` 1.x.
   The desktop also installs it beside 2.1. Ask upstream to make it a peer
   dependency or move to 2.x.
 - **Prerelease tags.** npm's `latest` tag is `1.0.0-rc.1` and the tested code
   is `next`, `1.0.0-rc.7`. Pin the exact version.
 - **Local network access.** Browsers increasingly ask before a public page
-  opens `ws://127.0.0.1`. Test Chrome, Firefox and Safari before phase 2.
+  opens `ws://127.0.0.1`. Test Chrome, Firefox and Safari before phase 3.
 - **Atlas regions.** Apps expose regions through `viewers_regions` today.
   Mapping them onto nv-mcp's `atlas` hook needs an adapter per app.
 
