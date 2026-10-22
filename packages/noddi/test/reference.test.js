@@ -31,5 +31,8 @@ test('the recorded reference covers every case, NODDI included', async () => {
   assert.deepEqual(Object.keys(reference.browser.cases), CASES.map((testCase) => testCase.id));
   assert.equal(reference.browser.cases.phantom.provenance.method, 'dti+noddi-amico');
   assert.equal(Object.keys(reference.browser.cases.phantom.outputs).length, 11);
-  assert.equal(reference.browser.cases.example.provenance.method, 'dti');
+  // The example is the ds005134 multi-shell slab: NODDI runs on real data with the MindGrab mask.
+  assert.equal(reference.browser.cases.example.provenance.method, 'dti+noddi-amico');
+  assert.equal(Object.keys(reference.browser.cases.example.outputs).length, 11);
+  assert.ok(Object.keys(reference.inputs.example).includes('sub-01_dir-AP_desc-slab_dwi.nii.gz'));
 });
