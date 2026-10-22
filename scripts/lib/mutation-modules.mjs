@@ -60,6 +60,13 @@ export const modules = [
     files: ['test/workspace-graph.test.mjs'],
     command: 'node --test test/workspace-graph.test.mjs',
   },
+  {
+    id: 'lcmodel-tissue',
+    file: 'packages/lcmodel/src/tissue.js',
+    mutate: 'packages/lcmodel/src/tissue.js',
+    files: ['packages/lcmodel/package.json', 'packages/lcmodel/test/tissue.test.js'],
+    command: 'node --test packages/lcmodel/test/tissue.test.js',
+  },
 ];
 
 // The PR canary: tableName, a small naming function in the first module.

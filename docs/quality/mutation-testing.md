@@ -21,6 +21,7 @@ network.
 | `packages/carotid-flow/src/series.js` | The frames, grid and header Carotid Flow measures, and which amplitude and phase pairs it refuses; the app and the `carotid-flow` command line both read through it | `packages/carotid-flow/test/series-outputs.test.js` |
 | `packages/carotid-flow/src/outputs.js` | The names and bytes of Carotid Flow's downloads and the command line's files, and the measurements automation reports | `packages/carotid-flow/test/series-outputs.test.js` |
 | `scripts/lib/workspace-graph.mjs` | Which directories and root files each app and CI job reaches, and so which apps a change tests; a missed reference skips the tests that would catch the change | `test/workspace-graph.test.mjs` |
+| `packages/lcmodel/src/tissue.js` | LCModel's tissue- and alpha-corrected concentrations, the relaxation times behind them, when the correction applies, and its two downloads; the app and the `lcmodel` command line both use it | `packages/lcmodel/test/tissue.test.js` |
 
 `formatG` is mutated by line range because the rest of `index.js` drives the
 WebAssembly module. Its command selects the two `printf` tests by name; the rest
@@ -93,6 +94,7 @@ Measured locally on 2026-10-15 (two workers, `Done in` from each module's log):
 | Full run, seven Stryker runs (2026-10-16, loaded host) | 642 | - | 221 s wall |
 | `workspace-graph.mjs` (2026-10-17, hosted runner) | 371 | 0.6 s | 84 s |
 | Full run, eight Stryker runs (2026-10-17, hosted runner) | 1013 | - | 179 s step |
+| LCModel `tissue.js` (2026-10-22) | 427 | 0.14 s | 32 s |
 | PR smoke (`tableName`) | 2 | 0.13 s | 6 s wall |
 
 On 2026-10-16 the two Carotid Flow modules added 39 and 42 mutants, each with a
@@ -114,6 +116,27 @@ minutes locally; add a module only with its own completed run and a measured
 cost.
 
 ## Results and reviewed survivors
+
+On 2026-10-22 LCModel's tissue correction joined the run with 427 mutants. Its
+suite already compared the corrected values with Osprey's `quantTiss` and
+`quantAlpha` run in Octave, but only for the twelve metabolites it fitted. The
+first run killed 252 and left 175 alive: most relaxation-table entries, the
+LCModel name aliases, the field-strength limits, the zero-sum and timing
+refusals, every reason `correctionFor` gives, the CSV columns and quoting, and
+both downloads. The suite now holds every entry of both tables to Osprey's
+`lookUpRelaxTimes`, copied verbatim, and covers the rest by behavior. It kills
+425; no mutant timed out. Rerun with `MUTATION_MODULE=lcmodel-tissue pnpm exec
+stryker run stryker.config.mjs`. The two survivors:
+
+- `tissue.js:197`, `x == null` to `false` in the CSV number format: for `null`
+  and `undefined`, `!Number.isFinite(x)` is already true, so the cell stays
+  empty. Equivalent.
+- `tissue.js:160`, `wconc * attmet` to `wconc / attmet`: it differs only when
+  `options.lcmodel` sets ATTMET to something other than 1, and the only caller,
+  `correctionFor`, never sets it. Equivalent for the app and the command line.
+  Writing this run's tests showed that the line inverts ATTH2O and ATTMET
+  against LCModel's own scaling (#545), so a test for a non-default ATTMET
+  waits for that fix.
 
 The 2026-10-20 workspace-graph comment fixtures cover whole-line comments,
 preserved directives, block/JSDoc and inline comments, comment-looking string
