@@ -266,7 +266,29 @@ try {
   assert.equal(tab.tabs.find(entry => entry.id === 'mask').active, true);
   const regions = viewers[0].capabilities.regions
     ? await client.tool('viewers_regions', { sessionId, viewerId: viewers[0].id }) : { supported: false };
-  summary.viewer = { viewers, position, regions };
+  assert.deepEqual([viewers[0].capabilities.volumes, viewers[0].capabilities.display, viewers[0].capabilities.screenshot], [true, true, true]);
+  const { volumes } = await client.tool('viewers_volumes', { sessionId, viewerId: viewers[0].id });
+  assert.ok(volumes.length > 0);
+  async function screenshot() {
+    const shot = await client.call('tools/call', { name: 'viewers_screenshot', arguments: { sessionId, viewerId: viewers[0].id } });
+    assert.notEqual(shot.isError, true, JSON.stringify(shot.content));
+    const [image] = shot.content;
+    assert.equal(image.type, 'image');
+    assert.equal(image.mimeType, 'image/png');
+    const png = Buffer.from(image.data, 'base64');
+    assert.equal(png.subarray(1, 4).toString('latin1'), 'PNG');
+    assert.deepEqual([png.readUInt32BE(16), png.readUInt32BE(20)], [shot.structuredContent.width, shot.structuredContent.height]);
+    assert.ok(shot.structuredContent.width > 0 && shot.structuredContent.height > 0);
+    return { ...shot.structuredContent, sha256: hash(png) };
+  }
+  const before = await screenshot();
+  const display = await client.tool('viewers_display', { sessionId, viewerId: viewers[0].id, sliceType: 'axial',
+    volumes: [{ index: 0, colormap: 'hot', calMin: volumes[0].calMin, calMax: volumes[0].calMax }] });
+  assert.equal(display.sliceType, 'axial');
+  assert.equal(display.volumes[0].colormap, 'hot');
+  const after = await screenshot();
+  assert.notEqual(after.sha256, before.sha256, 'the screenshot must show the display change, not a stale frame');
+  summary.viewer = { viewers, position, regions, volumes, display: { sliceType: display.sliceType }, screenshots: [before, after] };
   const eofRun = await client.tool('run_brain_extraction', request);
   summary.exit = await client.end();
   const afterEof = JSON.parse(await readFile(join(scratch, 'runs', eofRun.id, 'run.json'), 'utf8'));

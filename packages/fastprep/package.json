@@ -1,6 +1,6 @@
 {
   "name": "@neurodesk/fastprep",
-  "version": "0.1.20261017",
+  "version": "0.1.20261018",
   "private": true,
   "description": "fastprep fMRI preprocessing in the browser: the Rust orchestration core (WASM) driving niimath, MindGrab, Greedy, SynthSR and glm workers",
   "type": "module",
@@ -32,5 +32,8 @@
     "type": "git",
     "url": "https://github.com/neurodesk/webapps.git",
     "directory": "packages/fastprep"
+  },
+  "dependencies": {
+    "@niivue/meica": "0.1.20261021"
   }
 }

@@ -52,6 +52,7 @@
     "nifreeze-replay": {
       "patterns": [
         "input/sub-107_dir-AP_dwi.nii.gz",
+        "input/input-facts.json",
         "input/sub-107_dir-AP_dwi.bval",
         "input/sub-107_dir-AP_dwi.bvec",
         "nifreeze-gp/work/sample_*",
@@ -64,8 +65,8 @@
         "q53-b0/*",
         "compare/q53-seed-rule.json"
       ],
-      "files": 1312,
-      "bytes": 189481758
+      "files": 1313,
+      "bytes": 189483176
     },
     "shore": {
       "patterns": [
