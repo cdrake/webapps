@@ -21,7 +21,6 @@ minimumReleaseAgeExclude:
   - '@niivue/meica@0.1.20261018'
   - '@fireants/fireants@0.1.20260913'
   - '@brainchop/mindgrab@0.1.20260923'
-  - '@niivue/niivue@1.0.0-rc.14'
   - '@fideus-labs/ngff-zarr@0.38.0'
   - '@fideus-labs/fiff@0.8.2'
   - '@niivue/niimath@1.4.20261016'
