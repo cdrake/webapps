@@ -104,7 +104,7 @@ test('glm --meica-qc: text inputs in, JSON out; an empty events path means no ta
   await assert.rejects(run(['glm', '--meica-qc', '/w/mix.tsv'], { files }), /expects/);
 });
 
-test('meica: the classification call maps onto runMeica; files land under --out-dir', async () => {
+test('meica: the classification call maps onto runMeica; files land under --out-dir', async (t) => {
   const files = new Files();
   const enc = (s) => new TextEncoder().encode(s);
   for (const p of ['/w/e1.nii.gz', '/w/e2.nii.gz', '/w/e3.nii.gz', '/o/mask.nii.gz']) files.put(p, enc(p));
@@ -129,6 +129,20 @@ test('meica: the classification call maps onto runMeica; files land under --out-
   assert.deepEqual(seen.at(-1)[1], { tree: 'motion_f', dummy_scans: 1, external: 'trans_x\n0\n', tes: [15.2, 35.32, 55.42] });
   assert.ok(files.has('/w/meica_motion_f/desc-tedana_metrics.tsv'));
   await assert.rejects(meicaDriver(api)(['meica', '--moco'], { files }), /not supported/);
+  for (const [extra, error] of [
+    [['--quiet', '--not-supported'], /--not-supported.*not supported/],
+    [['--quiet', 'extra'], /extra.*not supported/],
+    [['--tree', 'motion_f', 'extra'], /extra.*not supported/],
+    [['-d', '/w/e1.nii.gz', '--not-supported'], /--not-supported.*not supported/],
+    [['--tree'], /--tree needs 1 value/],
+    [['--tree', '--quiet'], /--tree needs 1 value/],
+    [['-e', '--quiet'], /-e needs at least 1 value/],
+    [['-d'], /-d needs at least 1 value/],
+  ]) {
+    await t.test(`rejects ${extra.join(' ')}`, async () => {
+      await assert.rejects(meicaDriver(api)([...argv, ...extra], { files }), error);
+    });
+  }
 });
 
 test('meica --denoise: the rejected column is removed, dummies pass through, gzip follows the name', async () => {

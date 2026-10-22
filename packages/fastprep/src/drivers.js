@@ -185,18 +185,29 @@ export function glmDriver(glm) {
  * written under D with meica's names) and `--denoise BOLD --mixing TSV --metrics TSV --dummy-scans N -o OUT`.
  */
 export function meicaDriver(meica) {
-  const known = ['-d', '-e', '--mask', '--dummy-scans', '--tree', '--external', '--n-threads', '--quiet', '--out-dir',
-    '--denoise', '--mixing', '--metrics', '-o'];
+  const arity = {
+    '-d': null, '-e': null, '--mask': 1, '--dummy-scans': 1, '--tree': 1, '--external': 1, '--n-threads': 1,
+    '--quiet': 0, '--out-dir': 1, '--denoise': 1, '--mixing': 1, '--metrics': 1, '-o': 1,
+  };
   return async (argv, { files }) => {
-    const api = typeof meica === 'function' ? await meica() : meica;
-    const opts = new Map(); // flag -> values up to the next flag (-d and -e take several)
+    const opts = new Map();
     for (let i = 1; i < argv.length;) {
-      if (!known.includes(argv[i])) throw new Error(`meica: ${argv[i]} is not supported in the browser`);
+      const flag = argv[i];
+      if (!Object.hasOwn(arity, flag)) throw new Error(`meica: ${flag} is not supported in the browser`);
       let j = i + 1;
-      while (j < argv.length && !known.includes(argv[j])) j++;
-      opts.set(argv[i], argv.slice(i + 1, j));
+      if (arity[flag] === null) {
+        while (j < argv.length && !argv[j].startsWith('-')) j++;
+        if (j === i + 1) throw new Error(`meica: ${flag} needs at least 1 value`);
+      } else {
+        j += arity[flag];
+        if (j > argv.length || argv.slice(i + 1, j).some(value => value.startsWith('-'))) {
+          throw new Error(`meica: ${flag} needs ${arity[flag]} value(s)`);
+        }
+      }
+      opts.set(flag, argv.slice(i + 1, j));
       i = j;
     }
+    const api = typeof meica === 'function' ? await meica() : meica;
     const one = (k) => opts.get(k)?.[0];
     const dummyScans = Number(one('--dummy-scans'));
     if (opts.has('--denoise')) {
