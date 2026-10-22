@@ -93,7 +93,11 @@ For these three programs `run` refuses, before the kernel runs, an input that ar
 Native `antsRegistration` built from ANTs 52bc0ab (SuperBuild, Release, `ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1`) and this module, in Node and in a Chromium worker, write the same `out0GenericAffine.mat`, byte for byte, with the argv in `test/expected.mjs` (seed 1234).
 Its translation is (−2.994, 2.008, 4.007) mm LPS, the shift within 0.01 mm.
 The tests pin that file's SHA-256.
-The replay of NiFreeze's own registration commands against native double precision is #446.
+On NiFreeze's own registrations (#446, `validation/nifreeze-replay.mjs`, held to `exes/dwi/hmc/validation/q53-replay.json` in the `dwi-native` workflow), the module writes the same transform as native `--float 1` for 98 of 101 runs; GP volumes 31, 52 and 88 differ by at most 0.03 mm.
+A run takes about 0.5 s in Node.
+
+One instance aborts on its 27th run, whatever the input ([#537](https://github.com/neurodesk/webapps/issues/537)), so load a new one before that (the replay loads one every 20 runs).
+`src/main.cxx` registers ITK's IO factories in every `main()`, and ITK does not drop duplicate statically linked factories; that is the likely cause.
 
 `validation/native-reference.sh` runs the SHORELine steps with native ANTs 52bc0ab on the same pair: registrations with seeds 1234 and 4321, `AverageAffineTransform` of the two, `antsApplyTransforms -u float` with each interpolator, `HammingWindowedSinc` through the inverse average, and `AverageImages` with normalize 0 and 1.
 Native `AverageImages` and `AverageAffineTransform` come from the same configuration as the native `antsRegistration` (the `ANTS-build` cache options, with `ANTS_BUILD_AverageImages` and `ANTS_BUILD_AverageAffineTransform` on).
