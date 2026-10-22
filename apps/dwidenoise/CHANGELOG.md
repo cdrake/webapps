@@ -4,6 +4,10 @@
 
 ### Patch Changes
 
+- Updated dependencies [d32b485]
+  - @neurodesk/webapp-components@0.19.0
+  - @neurodesk/runtime-support@0.9.8
+  - @neurodesk/dwidenoise@0.2.20261022
 - Add the ds005134 sub-01 multi-shell slab (CC0, 137 volumes, with its acquisition sidecar) as the first example. It is the data of the Patch2Self check against DIPY. The single-shell DWI stays as the second example.
   - @neurodesk/dwidenoise@0.2.20261022
 

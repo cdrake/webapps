@@ -4,6 +4,11 @@
 
 ### Patch Changes
 
+- Updated dependencies [d32b485]
+  - @neurodesk/webapp-components@0.19.0
+  - @neurodesk/runtime-support@0.9.8
+  - @neurodesk/synthsr@0.6.20261022
+  - @neurodesk/greedy@0.6.20261022
 - c93ed0b: Denoise runs with three or more echoes with ME-ICA (meica, a Rust port of tedana): components are classified on the motion- and distortion-corrected echoes and the rejected ones regressed from each preprocessed series (`desc-denoised`). The report adds a Multi-echo ICA section and runs the task GLM on both series. Adds a pinned multi-echo example.
 
   Reject undeclared ME-ICA browser options, extra scalar values and missing option values.

@@ -1,5 +1,14 @@
 # greedy
 
+## 0.6.20261022
+
+### Patch Changes
+
+- Updated dependencies [d32b485]
+  - @neurodesk/webapp-components@0.19.0
+  - @neurodesk/runtime-support@0.9.8
+  - @neurodesk/greedy@0.6.20261022
+
 ## 0.6.20261020
 
 ### Minor Changes
