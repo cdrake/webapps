@@ -144,14 +144,17 @@ export async function correctHeadMotion({
   signal?.throwIfAborted();
 
   onProgress?.({ stage: "write", done: 0, total: 1 });
+  signal?.throwIfAborted();
   const names = outputNames(fileName);
   const grid = { shape: dims.slice(0, 3), affine };
   const motion = hmc.motionParams(transforms, grid);
   const gradients = hmc.rotateGradients(method, bvals, bvecs, transforms, affine);
   const encoder = new TextEncoder();
   const image = new Uint8Array(createNiftiFromData(corrected, headerBytes, { dims: [...dims.slice(0, 3), frames] }));
+  const compressed = await runtime.gzip(image);
+  signal?.throwIfAborted();
   const files = {
-    [names.image]: new Uint8Array(await runtime.gzip(image)),
+    [names.image]: new Uint8Array(compressed),
     [names.bval]: encoder.encode(gradients.bval),
     [names.bvec]: encoder.encode(gradients.bvec),
     [names.motion]: encoder.encode(hmc.motionTsv(transforms, grid, { columns: COLUMNS[method] })),
