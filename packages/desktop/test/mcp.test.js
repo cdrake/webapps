@@ -101,7 +101,7 @@ test('stdio initializes and discovers strict contract-derived tools and resource
   assert.ok(initialized.capabilities.resources);
   const listed = await client.request('tools/list');
   const tools = new Map(listed.result.tools.map(tool => [tool.name, tool]));
-  assert.deepEqual([...tools.keys()].sort(), ['apps_describe', 'apps_list', 'apps_validate', 'run_brain_extraction', 'run_synthseg', 'runs_cancel', 'runs_get', 'runs_start', 'sessions_close', 'sessions_list', 'viewers_crosshair', 'viewers_list', 'viewers_regions', 'viewers_state', 'viewers_tab']);
+  assert.deepEqual([...tools.keys()].sort(), ['apps_describe', 'apps_list', 'apps_validate', 'run_brain_extraction', 'run_synthseg', 'runs_cancel', 'runs_get', 'runs_start', 'sessions_close', 'sessions_list', 'viewers_crosshair', 'viewers_display', 'viewers_list', 'viewers_regions', 'viewers_screenshot', 'viewers_state', 'viewers_tab', 'viewers_volumes']);
   const synthseg = tools.get('run_synthseg').inputSchema;
   assert.equal(synthseg.additionalProperties, false);
   assert.equal(synthseg.properties.inputs.additionalProperties, false);
@@ -121,6 +121,31 @@ test('stdio initializes and discovers strict contract-derived tools and resource
   ]);
   assert.deepEqual((await client.request('resources/list')).result.resources, []);
   assert.equal((await client.end()).code, 0);
+});
+
+test('viewer tools return screenshots as image content and validate display updates', { timeout: 10000 }, async t => {
+  const client = connect(t);
+  await client.initialize();
+  const tools = new Map((await client.request('tools/list')).result.tools.map(tool => [tool.name, tool]));
+  assert.equal(tools.get('viewers_screenshot').annotations.readOnlyHint, true);
+  assert.equal(tools.get('viewers_display').annotations.readOnlyHint, false);
+  assert.deepEqual(tools.get('viewers_display').inputSchema.properties.sliceType.enum, ['axial', 'coronal', 'sagittal', 'multiplanar', 'render']);
+  const shot = await client.tool('viewers_screenshot', { sessionId: 'session-1', viewerId: 'main' });
+  assert.notEqual(shot.result.isError, true, JSON.stringify(shot.result));
+  assert.deepEqual(shot.result.content[0], { type: 'image', mimeType: 'image/png', data: Buffer.from('fixture png').toString('base64') });
+  assert.deepEqual(JSON.parse(shot.result.content[1].text), { width: 2, height: 1 });
+  assert.deepEqual(shot.result.structuredContent, { width: 2, height: 1 });
+  assert.equal(value(await client.tool('viewers_volumes', { sessionId: 'session-1', viewerId: 'main' })).volumes[0].name, 'T1.nii.gz');
+  const display = { sliceType: 'axial', volumes: [{ index: 0, colormap: 'hot', calMin: 10, calMax: 200, opacity: 0.5 }] };
+  assert.deepEqual(value(await client.tool('viewers_display', { sessionId: 'session-1', viewerId: 'main', ...display })),
+    { command: 'viewers.display', args: { viewerId: 'main', ...display } });
+  for (const invalid of [{ sliceType: 'oblique' }, { volumes: [{ index: -1 }] }, { volumes: [{ index: 0, opacity: 2 }] }, { volumes: [{ index: 0, gamma: 2 }] }]) {
+    const response = await client.tool('viewers_display', { sessionId: 'session-1', viewerId: 'main', ...invalid });
+    assert.ok(response.error || response.result.isError, JSON.stringify(invalid));
+  }
+  const closed = await client.tool('viewers_screenshot', { sessionId: 'missing', viewerId: 'main' });
+  assert.equal(closed.result.isError, true);
+  assert.match(closed.result.content[0].text, /closed viewer session/);
 });
 
 test('validation rejects invalid metadata and missing files while preserving omitted CT', { timeout: 10000 }, async t => {

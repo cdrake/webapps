@@ -1,5 +1,6 @@
 // Runs the module worker (src/worker.js) in Chromium on the committed test pair: run(argv) must
-// recover the known rigid shift and write native ANTs's bytes, as it does in Node.
+// recover the known rigid shift and write native ANTs's bytes, as it does in Node, and
+// AverageImages, AverageAffineTransform and --apply must write native ANTs's bytes too.
 //
 //   pnpm --filter @neurodesk/hmc-registration test:browser
 //
@@ -14,7 +15,7 @@ import { extname, join, normalize, sep } from "node:path";
 import { after, before, test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { readMatTransform } from "../src/mat.js";
-import { ARGV, NATIVE_MAT_SHA256, assertRecoversShift } from "../test/expected.mjs";
+import { ARGV, NATIVE_MAT_SEED_4321_SHA256, NATIVE_MAT_SHA256, NATIVE_SHA256, assertRecoversShift, runNativeReferenceSteps } from "../test/expected.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".wasm": "application/wasm" };
@@ -130,4 +131,37 @@ test("after an aborted run the worker loads a new kernel and runs again", async 
   assert.ok(replies[0].log.some((line) => line.includes("missing.nii does not exist")), replies[0].log.join("\n"));
   assert.equal(replies[1].error, undefined);
   assert.deepEqual(replies[1].outputs, ["out0GenericAffine.mat"]);
+});
+
+// Tolerance 0, as in test/programs.test.js: every file must be native ANTs's bytes.
+test("in one worker, AverageAffineTransform, --apply and AverageImages write native ANTs's bytes", async () => {
+  await page.evaluate(() => {
+    self.hmcWorker = new Worker("/src/worker.js", { type: "module" });
+    self.hmcNext = 0;
+  });
+  try {
+    // Each run goes to the same worker; bytes cross the page boundary as plain arrays.
+    const run = async (argv, inputs) => {
+      const plain = Object.fromEntries(Object.entries(inputs).map(([name, bytes]) => [name, Array.from(bytes)]));
+      const reply = await page.evaluate(({ argv, plain }) => new Promise((resolve, reject) => {
+        const inputs = Object.fromEntries(Object.entries(plain).map(([name, values]) => [name, Uint8Array.from(values)]));
+        self.hmcWorker.onmessage = ({ data }) => {
+          const outputs = Object.fromEntries(Object.entries(data.outputs ?? {}).map(([name, bytes]) => [name, Array.from(bytes)]));
+          resolve({ ...data, outputs });
+        };
+        self.hmcWorker.onerror = (event) => reject(new Error(event.message));
+        self.hmcWorker.postMessage({ id: self.hmcNext++, argv, inputs });
+      }), { argv, plain });
+      if (reply.error) throw new Error(reply.error);
+      return Object.fromEntries(Object.entries(reply.outputs).map(([name, values]) => [name, Uint8Array.from(values)]));
+    };
+    const pair = { fixed: await readFile(join(root, "test/data/fixed.nii")), moving: await readFile(join(root, "test/data/moving.nii")) };
+    const files = await runNativeReferenceSteps(run, pair);
+    const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
+    assert.equal(sha256(files["seed12340GenericAffine.mat"]), NATIVE_MAT_SHA256);
+    assert.equal(sha256(files["seed43210GenericAffine.mat"]), NATIVE_MAT_SEED_4321_SHA256);
+    for (const [name, expected] of Object.entries(NATIVE_SHA256)) assert.equal(sha256(files[name]), expected, name);
+  } finally {
+    await page.evaluate(() => self.hmcWorker.terminate());
+  }
 });
