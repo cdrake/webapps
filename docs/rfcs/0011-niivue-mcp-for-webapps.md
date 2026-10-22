@@ -109,12 +109,32 @@ The MCP server calls `registerCoreTools` next to its own tools. The
 ### Hosted web apps
 
 The same page handlers answer nv-mcp's `AgentClient` over a WebSocket. The
-user starts nv-mcp's `startServer` locally with
-`allowedOrigins: ['https://webapps.neurodesk.org']`, or a small
-`neurodesk-mcp` command that wraps it, and registers
-`http://127.0.0.1:4242/mcp` with their agent. The page connects only when the
-user turns on a "Connect an agent" control, shows that it is connected, and
-can disconnect.
+user runs `neurodesk-mcp` from `packages/agent-server` and registers
+`http://127.0.0.1:4242/mcp` with their agent. The page connects only after the
+user chooses **Connect an agent**, shows whether it is connected, and can
+disconnect.
+
+- **Why a Node server.** nv-mcp's `startServer` runs only on Bun. The
+  `neurodesk-mcp` command serves nv-mcp's `Bridge` and `buildServer` over
+  `node:http` and `ws` with the same checks. `/mcp` is stateless and protected
+  against DNS rebinding. `/app` accepts pages on loopback names and on
+  `https://webapps.neurodesk.org`, and `--allow-origin` adds others. It listens
+  on `127.0.0.1` only.
+- **Why its own package.** People using the hosted apps should not need
+  Electron, and the desktop already serves the same tools itself. The package
+  is private until the RFC settles its name and how it is installed.
+- **Opt-in.** While this is a preview, an app shows the control only when its
+  address has `?agent`, or `?agent=<port>` for a server on another port.
+  Brain Extraction is the only app wired so far.
+- **Browsers.** Chrome asks the user to allow local network access the first
+  time a page connects. Firefox connects without asking. Safari blocks the
+  connection as mixed content and offers no prompt, so it is unsupported: its
+  users need the desktop app, Chrome or Firefox. The page cannot tell a denied
+  prompt from a server that is not running, so the waiting message names both.
+- **Loading.** A hosted page has no approval step. `load_volume` and the other
+  loading tools fetch whatever the page can read under CORS, as any script on
+  the page could, and a local path never works. The server's instructions say
+  so.
 
 ### Loading new sources
 
@@ -194,8 +214,20 @@ page handlers above can be registered there once browsers support it.
   dependency or move to 2.x.
 - **Prerelease tags.** npm's `latest` tag is `1.0.0-rc.1` and the tested code
   is `next`, `1.0.0-rc.7`. Pin the exact version.
-- **Local network access.** Browsers increasingly ask before a public page
-  opens `ws://127.0.0.1`. Test Chrome, Firefox and Safari before phase 3.
+- **Local network access.** Tested with Playwright on macOS, a page on
+  `https://webapps.neurodesk.org` opening `ws://127.0.0.1`:
+  - Chromium 156 and Chrome 155 fail with
+    `ERR_BLOCKED_BY_LOCAL_NETWORK_ACCESS_CHECKS` until the
+    `local-network-access` permission is granted, which a person does at the
+    prompt. The server then sees the page's own origin. Headed Chrome 155
+    reports the permission as `prompt` and holds the socket open until the
+    person decides, where headless fails at once.
+  - Firefox 157 connects without a prompt.
+  - WebKit 27.2 blocks the socket as mixed content, with no permission to grant.
+
+  nv-mcp's README says an HTTPS page cannot open `ws://127.0.0.1` at all,
+  which is out of date for Chrome and Firefox. Still open: whether Chrome's
+  prompt wording is clear enough, and whether a later Safari adds a prompt.
 - **Atlas regions.** Apps expose regions through `viewers_regions` today.
   Mapping them onto nv-mcp's `atlas` hook needs an adapter per app.
 
@@ -269,3 +301,18 @@ Phase 1 runs on branch `feat/nv-mcp-bridge` against `@niivue/nv-mcp`
   `closed` session events. The bridge attaches a tab only once a run has
   succeeded, and detaches it when the session closes for any reason: a
   `sessions_close` call, a command timeout, the window closing, or shutdown.
+- **Hosted page.** Phase 3 is in the same branch.
+  - `packages/agent-server` tests drive a fake page through `/mcp` with the
+    MCP SDK client. They check that a page on another origin is refused with
+    403, and that `/` and `/mcp` refuse a foreign `Host`.
+  - `packages/agent-server/validation/browser-smoke.mjs` serves the built
+    Brain Extraction app at its hosted address in each Playwright browser,
+    opens an image, and clicks **Connect an agent**. An MCP client then calls
+    `list_tabs`, `set_view`, `go_to_point` and `screenshot`. Chromium 156
+    (with the permission granted) and Firefox 157 pass, and their screenshots
+    show the axial slice. WebKit 27.2 stays waiting, as expected.
+  - nv-mcp's own servers default to port 4242 too, so a NiiVue page's dev
+    server can hold it. `neurodesk-mcp --port` and `?agent=<port>` move both
+    ends.
+  - The browser handlers' lazy chunk grows to 124 KB, 39 KB gzipped, with
+    `AgentClient`. Brain Extraction's main chunk grows by 2 KB.

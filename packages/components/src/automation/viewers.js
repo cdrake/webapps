@@ -42,15 +42,15 @@ export function createNiivueAdapter(nv, { tabs, regions } = {}) {
   const display = layers && typeof nv.setVolume === 'function' && typeof nv.sliceType === 'number';
   // nv-mcp answers its tool vocabulary from the live scene; it is loaded only when an agent first calls it.
   let agent;
+  const nvMcp = () => agent ??= import('@niivue/nv-mcp/browser').then(({ coreHandlers, sceneState }) => {
+    const host = { view: nv };
+    return { handlers: coreHandlers(host), state: () => sceneState(host) };
+  }).catch(error => {
+    agent = undefined;
+    throw error;
+  });
   const niivue = async (method, params = {}) => {
-    agent ??= import('@niivue/nv-mcp/browser').then(({ coreHandlers, sceneState }) => {
-      const host = { view: nv };
-      return { handlers: coreHandlers(host), state: () => sceneState(host) };
-    }).catch(error => {
-      agent = undefined;
-      throw error;
-    });
-    const { handlers, state } = await agent;
+    const { handlers, state } = await nvMcp();
     // Results cross a JSON wire to the MCP server, so they are returned as that wire would carry them.
     const wire = value => (value === undefined ? undefined : JSON.parse(JSON.stringify(value)));
     if (method === undefined) return { state: wire(state()) };
@@ -97,7 +97,7 @@ export function createNiivueAdapter(nv, { tabs, regions } = {}) {
       }
       nv.setCrosshairPos([...value]);
     } }),
-    ...(display && { niivue }),
+    ...(display && { niivue, nvMcp }),
     ...(tabs && { tabs }),
     ...(regions && { regions }),
   };
@@ -122,6 +122,11 @@ export function createViewerRegistry() {
         volumes: typeof adapter.volumes === 'function', display: typeof adapter.setDisplay === 'function', screenshot: typeof adapter.canvas === 'function',
         niivue: typeof adapter.niivue === 'function',
       } }));
+    },
+    /** The viewer an agent drives: `main` when it answers nv-mcp, otherwise the first that does. */
+    niivue() {
+      const entries = [...viewers].filter(([, adapter]) => typeof adapter.nvMcp === 'function');
+      return (entries.find(([id]) => id === 'main') ?? entries[0])?.[1] ?? null;
     },
     async dispatch(command, request) {
       if (command === 'viewers.list') return this.list();

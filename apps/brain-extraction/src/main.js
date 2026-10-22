@@ -10,7 +10,7 @@ import { outputNames } from '@neurodesk/brain-extraction/outputs';
 import examples from '../examples.json';
 import { editedResult, extractionOutputs } from './outputs.js';
 import appPackage from '../package.json';
-import { createRunState, registerAppAutomation, createNiivueAdapter } from '@neurodesk/webapp-components/automation';
+import { createAgentControl, createRunState, registerAppAutomation, createNiivueAdapter } from '@neurodesk/webapp-components/automation';
 
 const $ = id => document.getElementById(id);
 mountImagingWorkspace({
@@ -385,6 +385,10 @@ const automation = registerAppAutomation({
     },
   },
 });
+// An agent on this computer may drive the viewer through neurodesk-mcp; opt in with ?agent, or ?agent=<port> for a
+// server not on the default port, while this is a preview.
+const agentParam = new URLSearchParams(location.search).get('agent');
+if (agentParam !== null) toolbar.after(createAgentControl(automation.agentConnection({ port: Number(agentParam) || undefined })));
 function cancel() {
   exampleControl.cancel();
   if (state.phase === 'idle') return;
