@@ -8,7 +8,7 @@ export const APP = Object.freeze({
 // The vendored NeuroFlow validator (vendor/neuroflow/README.md).
 export const VALIDATOR = Object.freeze({
   source: "cdrake/neuroflow",
-  commit: "d3708b4031e4fa7d1686f41e1df7c2ec27f107e5",
+  commit: "255548d47cc35ed3a54c30f534ef3f1b1f67eac3",
   sha256: "dbf3df39ebb2aa52b7908c81aee8a157be88a2918bec031b8527dacedae92b25",
 });
 

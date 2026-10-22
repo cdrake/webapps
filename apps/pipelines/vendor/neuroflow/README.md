@@ -7,7 +7,7 @@ The page uses `validate_workflow_with_tools_json`: the same workflow validator
 
 | | |
 |---|---|
-| Source | `cdrake/neuroflow` commit `d3708b4031e4fa7d1686f41e1df7c2ec27f107e5` (cdrake/neuroflow#18) |
+| Source | `cdrake/neuroflow` commit `255548d47cc35ed3a54c30f534ef3f1b1f67eac3` (`main`, the merge of cdrake/neuroflow#18) |
 | Build | `wasm-pack build crates/neuroflow-wasm --release --target web --out-name neuroflow` |
 | Toolchain | Rust 1.99.0, wasm-pack 0.13.1 |
 | `neuroflow_bg.wasm` sha256 | `dbf3df39ebb2aa52b7908c81aee8a157be88a2918bec031b8527dacedae92b25` |
