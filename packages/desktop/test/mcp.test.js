@@ -101,7 +101,8 @@ test('stdio initializes and discovers strict contract-derived tools and resource
   assert.ok(initialized.capabilities.resources);
   const listed = await client.request('tools/list');
   const tools = new Map(listed.result.tools.map(tool => [tool.name, tool]));
-  assert.deepEqual([...tools.keys()].sort(), ['apps_describe', 'apps_list', 'apps_validate', 'run_brain_extraction', 'run_synthseg', 'runs_cancel', 'runs_get', 'runs_start', 'sessions_close', 'sessions_list', 'viewers_crosshair', 'viewers_display', 'viewers_list', 'viewers_regions', 'viewers_screenshot', 'viewers_state', 'viewers_tab', 'viewers_volumes']);
+  assert.deepEqual([...tools.keys()].filter(name => /^(apps|runs?|sessions|viewers)_/.test(name)).sort(), ['apps_describe', 'apps_list', 'apps_validate', 'run_brain_extraction', 'run_synthseg', 'runs_cancel', 'runs_get', 'runs_start', 'sessions_close', 'sessions_list', 'viewers_crosshair', 'viewers_display', 'viewers_list', 'viewers_regions', 'viewers_screenshot', 'viewers_state', 'viewers_tab', 'viewers_volumes']);
+  for (const name of ['list_tabs', 'use_tab', 'where_am_i', 'go_to_point', 'set_view', 'set_volume', 'screenshot']) assert.ok(tools.has(name), name);
   const synthseg = tools.get('run_synthseg').inputSchema;
   assert.equal(synthseg.additionalProperties, false);
   assert.equal(synthseg.properties.inputs.additionalProperties, false);
@@ -146,6 +147,29 @@ test('viewer tools return screenshots as image content and validate display upda
   const closed = await client.tool('viewers_screenshot', { sessionId: 'missing', viewerId: 'main' });
   assert.equal(closed.result.isError, true);
   assert.match(closed.result.content[0].text, /closed viewer session/);
+});
+
+test('nv-mcp tools reach a retained NiiVue viewer through its session', { timeout: 10000 }, async t => {
+  const client = connect(t);
+  await client.initialize();
+  const text = response => response.result.content.filter(part => part.type === 'text').map(part => part.text).join('\n');
+  const tabs = await client.tool('list_tabs');
+  assert.notEqual(tabs.result.isError, true, JSON.stringify(tabs.result));
+  assert.match(text(tabs), /session-1/);
+  const moved = await client.tool('go_to_point', { mm: [10, -20, 30] });
+  assert.notEqual(moved.result.isError, true, JSON.stringify(moved.result));
+  assert.deepEqual(JSON.parse(text(moved).slice(text(moved).indexOf('{'))), { viewerId: 'main', method: 'go_to_point', params: { mm: [10, -20, 30] } });
+  const shot = await client.tool('screenshot', {});
+  assert.notEqual(shot.result.isError, true, JSON.stringify(shot.result));
+  assert.deepEqual(shot.result.content.find(part => part.type === 'image'),
+    { type: 'image', mimeType: 'image/png', data: Buffer.from('fixture png').toString('base64') });
+  const rejected = await client.tool('go_to_point', { bogus: 1 });
+  assert.ok(rejected.error || rejected.result.isError);
+  const refused = await client.tool('go_to_point', { mm: [666, 0, 0] });
+  assert.equal(refused.result.isError, true);
+  assert.match(text(refused), /The page refused/);
+  await client.tool('sessions_close', { sessionId: 'session-1' });
+  assert.doesNotMatch(text(await client.tool('list_tabs')), /session-1/);
 });
 
 test('validation rejects invalid metadata and missing files while preserving omitted CT', { timeout: 10000 }, async t => {

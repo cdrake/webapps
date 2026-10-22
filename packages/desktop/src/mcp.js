@@ -1,7 +1,9 @@
 import { McpServer, ResourceTemplate } from '@modelcontextprotocol/server';
 import { serveStdio, StdioServerTransport } from '@modelcontextprotocol/server/stdio';
+import { registerCoreTools, toolContext } from '@niivue/nv-mcp/server';
 import * as z from 'zod/v4';
 import { requestSchema } from './contracts.js';
+import { createNiivueBridge } from './niivue-bridge.js';
 
 const app = z.string().regex(/^[a-z][a-z0-9-]*$/);
 const run = z.strictObject({ runId: z.string().min(1) });
@@ -54,7 +56,7 @@ function registerTool(server, name, description, inputSchema, annotations, handl
   });
 }
 
-export async function createMcpServer(service, { version }) {
+export async function createMcpServer(service, { version, niivue }) {
   const server = new McpServer({ name: 'neurodesk-webapps', version });
   registerTool(server, 'apps_list', 'List installed applications and their automation contracts.',
     z.strictObject({}), readOnly, async () => ({ apps: await service.listApps() }));
@@ -110,6 +112,9 @@ export async function createMcpServer(service, { version }) {
     }
   }
 
+  // nv-mcp's NiiVue tools, answered by retained viewers through the bridge; each session is one nv-mcp tab.
+  if (niivue) registerCoreTools(server, toolContext(niivue.bridge));
+
   for (const resource of [
     { name: 'run-report', template: 'neurodesk://runs/{runId}/report', pattern: /^neurodesk:\/\/runs\/[^/]+\/report$/, mimeType: 'application/json' },
     { name: 'run-artifact', template: 'neurodesk://runs/{runId}/artifacts/{artifactId}', pattern: /^neurodesk:\/\/runs\/[^/]+\/artifacts\/[^/]+$/ },
@@ -124,12 +129,16 @@ export async function createMcpServer(service, { version }) {
 
 export function serveMcp(service, options) {
   const transport = new StdioServerTransport();
-  const handle = serveStdio(() => createMcpServer(service, options), {
+  const niivue = createNiivueBridge(service);
+  const handle = serveStdio(() => createMcpServer(service, { ...options, niivue }), {
     transport,
     onerror: error => console.error(`MCP: ${error.message}`),
   });
   let closing;
-  const closeService = () => closing ??= Promise.resolve().then(() => service.close());
+  const closeService = () => closing ??= Promise.resolve().then(() => {
+    niivue.close();
+    return service.close();
+  });
   const onclose = transport.onclose;
   transport.onclose = () => {
     onclose();

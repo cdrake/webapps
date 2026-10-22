@@ -167,6 +167,21 @@ Commands are serialized per session. A command that
 exceeds 30 seconds closes that session. URL access and local directory mounts
 are scoped to the requesting window and supplied source tree.
 
+### NiiVue agent tools
+
+The server also registers the core tools of
+[`@niivue/nv-mcp`](https://www.npmjs.com/package/@niivue/nv-mcp), including
+`list_tabs`, `use_tab`, `where_am_i`, `go_to_point`, `set_view`, `set_volume`
+and `screenshot`. When a retained session's viewer reports the `niivue`
+capability, it appears as a tab named by its `sessionId`. These tools act on
+that session's `main` viewer, or on its first NiiVue viewer, through the same
+session queue and 30 second limit. A tab leaves the list when its session
+closes.
+
+`screenshot` returns the same window capture as `viewers_screenshot`, so it
+ignores nv-mcp's size arguments. Tools that load URLs, such as `load_volume`,
+can reach only the sources granted to the run.
+
 ## Select native SynthSeg
 
 Set `NEURODESK_SYNTHSEG_BIN` to an installed executable's absolute path, then

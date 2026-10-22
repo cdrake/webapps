@@ -289,6 +289,35 @@ try {
   const after = await screenshot();
   assert.notEqual(after.sha256, before.sha256, 'the screenshot must show the display change, not a stale frame');
   summary.viewer = { viewers, position, regions, volumes, display: { sliceType: display.sliceType }, screenshots: [before, after] };
+
+  // nv-mcp's tools reach the same retained viewer as a tab named by its session ID.
+  assert.equal(viewers[0].capabilities.niivue, true);
+  async function niivue(name, args = {}) {
+    const response = await client.call('tools/call', { name, arguments: args });
+    assert.notEqual(response.isError, true, `${name}: ${JSON.stringify(response.content)}`);
+    const text = response.content.find(part => part.type === 'text')?.text ?? '';
+    return { response, text, json: text.includes('{') ? JSON.parse(text.slice(text.indexOf('{'))) : null };
+  }
+  const findMm = value => (value && typeof value === 'object'
+    ? (Array.isArray(value.mm) && value.mm.length === 3 ? value.mm : Object.values(value).map(findMm).find(Boolean)) : undefined);
+  const tabs = await niivue('list_tabs');
+  assert.match(tabs.text, new RegExp(sessionId));
+  const target = mm.map(value => value + 2);
+  await niivue('go_to_point', { mm: target });
+  const here = await niivue('where_am_i');
+  const reported = findMm(here.json);
+  assert.ok(reported, here.text);
+  // NiiVue snaps the crosshair to the nearest voxel centre.
+  reported.forEach((value, axis) => assert.ok(Math.abs(value - target[axis]) <= 1, `${value} vs ${target[axis]}`));
+  await niivue('set_view', { slice: 'coronal' });
+  const shot = await niivue('screenshot');
+  const image = shot.response.content.find(part => part.type === 'image');
+  assert.equal(image?.mimeType, 'image/png');
+  const png = Buffer.from(image.data, 'base64');
+  assert.equal(png.subarray(1, 4).toString('latin1'), 'PNG');
+  const nvShot = { width: png.readUInt32BE(16), height: png.readUInt32BE(20), sha256: hash(png) };
+  assert.notEqual(nvShot.sha256, after.sha256, 'the nv-mcp screenshot must show the coronal view');
+  summary.niivue = { tabs: tabs.text, target, reported, screenshot: nvShot };
   const eofRun = await client.tool('run_brain_extraction', request);
   summary.exit = await client.end();
   const afterEof = JSON.parse(await readFile(join(scratch, 'runs', eofRun.id, 'run.json'), 'utf8'));

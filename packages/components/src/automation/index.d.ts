@@ -30,6 +30,8 @@ export type ViewerAdapter = {
   setDisplay?(display: ViewerDisplay): void | Promise<void>;
   canvas?(): HTMLCanvasElement | null;
   frame?(): void | Promise<void>;
+  /** Answers an nv-mcp tool call from the scene; without a method, returns only the scene state. */
+  niivue?(method?: string, params?: Record<string, unknown>): Promise<{ result?: unknown; state: object }>;
 };
 export type AutomationHandle = {
   ready: Promise<object>;

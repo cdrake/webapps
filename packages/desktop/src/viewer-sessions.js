@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto';
 
 const commands = new Set(['viewers.list', 'viewers.state', 'viewers.crosshair', 'viewers.tab', 'viewers.regions',
-  'viewers.volumes', 'viewers.display', 'viewers.screenshot']);
+  'viewers.volumes', 'viewers.display', 'viewers.screenshot', 'viewers.niivue']);
 
-export function createViewerSessions({ maximum = 4, timeoutMs = 30000 } = {}) {
+export function createViewerSessions({ maximum = 4, timeoutMs = 30000, onRelease } = {}) {
   const sessions = new Map();
   const lookup = id => {
     const session = sessions.get(id);
@@ -15,6 +15,7 @@ export function createViewerSessions({ maximum = 4, timeoutMs = 30000 } = {}) {
     session.closed = true;
     sessions.delete(session.id);
     session.controller.abort(new Error('Viewer session closed'));
+    onRelease?.(session.id);
   }
   async function close(id) {
     const session = sessions.get(id);

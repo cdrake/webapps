@@ -24,7 +24,11 @@ export async function loadAutomationContracts(root, bundle) {
 export function createAutomationService({ contracts, outputRoot, execute, nativeBinary, sessionOptions }) {
   const catalog = new Map(contracts.map(entry => [entry.contract.app, entry]));
   const runs = new Map();
-  const viewers = createViewerSessions(sessionOptions);
+  const sessionWatchers = new Set();
+  const notifySessions = event => {
+    for (const watcher of sessionWatchers) watcher(event);
+  };
+  const viewers = createViewerSessions({ ...sessionOptions, onRelease: id => notifySessions({ type: 'closed', id }) });
   let closed = false;
   let active;
   const lookup = app => {
@@ -137,6 +141,7 @@ export function createAutomationService({ contracts, outputRoot, execute, native
             report: { ...report, executionId: id, engine: request.engine, contractSha256: sha256, outputDirectory },
             ...(sessionInfo && { session: sessionInfo }),
           };
+          if (sessionInfo) notifySessions({ type: 'ready', session: sessionInfo });
         } catch (error) {
           if (sessionInfo) await viewers.close(sessionInfo.id);
           else if (retained) await retained.close();
@@ -170,6 +175,11 @@ export function createAutomationService({ contracts, outputRoot, execute, native
     async listSessions() { return viewers.list(); },
     async viewerCommand(sessionId, command, args) { return viewers.command(sessionId, command, args); },
     async closeSession(sessionId) { return viewers.close(sessionId); },
+    /** Calls `watcher` with `{ type: 'ready', session }` once a retained viewer accepts commands and `{ type: 'closed', id }` when it goes. */
+    watchSessions(watcher) {
+      sessionWatchers.add(watcher);
+      return () => sessionWatchers.delete(watcher);
+    },
     async cancel(id) {
       const run = runFor(id);
       if (run.snapshot.state === 'running') {
