@@ -270,11 +270,11 @@ Measured by #461 (21-22 October 2026) with native ANTs 52bc0ab on one thread, AM
 | Grid | Voxels | SyN `antsRegistration` (double / `--float 1`) | Whole run (double / float) |
 | --- | --- | --- | --- |
 | 0.8 mm (stock, ds005134) | 289 × 289 × 171 = 14.3 M | 5242-5412 s, 13.10 GB / 4595 s, 6.97 GB | 5641-5807 s / 4973 s |
-| 2 mm (debug path, the port's grid, Q68) | 116 × 116 × 69 = 0.93 M | 73-97 s, 0.96 GB / 60 s, 0.54 GB | 459-490 s / 320 s |
+| 2 mm (debug path, the port's grid, Q68) | 116 × 116 × 69 = 0.93 M | 73-97 s, 0.96-0.98 GB / 60 s, 0.54 GB | 459-490 s / 320 s |
 | slab, 2 mm (Q68) | 67 × 92 × 10 = 0.06 M | 6.5-7.2 s, 0.09 GB / 3.2 s, 0.07 GB | 77-80 s / 74 s |
 
 - The 0.8 mm `--float 1` SyN alone had a max RSS of 6.97 GB. That is above the 3.5 GB limit of Q68 option (a), so the stock grid does not fit the 4 GiB wasm32 heap. The field difference test of Q68 reopens the decision (section 9, Q68), but memory alone excludes option (a).
-- On the 2 mm grid SyN is not the longest step. `epi2anat` (the EPI-to-anat affine on the 0.8 mm T1w grid) took 190-307 s and 0.66 / 1.25 GB (float / double), and `DenoiseImage` of the 0.8 mm T1w took 27-30 s and 0.79 GB. These two steps work on the T1w grid, not on the SyN grid.
+- On the 2 mm grid SyN is not the longest step. `epi2anat` (the EPI-to-anat affine on the 0.8 mm T1w grid) took 190-314 s and 0.66 / 1.25 GB (float / double), and `DenoiseImage` of the 0.8 mm T1w took 27-30 s and 0.79 GB. These two steps work on the T1w grid, not on the SyN grid.
 - The affine to MNI (Q59): `affine.json` with the 1 mm template brain fixed (193 × 229 × 193) and the T1w brain moving took 885 s and 1.37 GB in double on one thread. The estimate (under 1 min) was wrong: the Rigid stage runs up to 1000 iterations at shrink 4 and the Affine stage 100 iterations at full resolution. With the 0.8 mm T1w fixed (21.3 M voxels) it took 1847 s. The browser cost of this step, and of `epi2anat`, must be measured in #462 and #464.
 - The template download is 13 844 613 bytes (T1w 13 685 075, brain mask 159 538); the atlas and its affine are 5 801 693 bytes (`sdc/prior/`).
 - MindGrab (Node driver, CPU, 32 threads): 14-15 s and 2.75-3.08 GB for each call (mean b0, slab mean b0, T1w).
