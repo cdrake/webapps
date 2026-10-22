@@ -98,6 +98,12 @@ const service = {
     if (run.snapshot.state === 'running') run.snapshot.state = 'cancelled';
     return run.snapshot;
   },
+  async viewerCommand(sessionId, command, args) {
+    if (sessionId !== 'session-1') throw new Error(`Unknown or closed viewer session: ${sessionId}`);
+    if (command === 'viewers.screenshot') return { mimeType: 'image/png', width: 2, height: 1, data: Buffer.from('fixture png').toString('base64') };
+    if (command === 'viewers.volumes') return [{ index: 0, name: 'T1.nii.gz', colormap: 'gray', calMin: 0, calMax: 900, opacity: 1, visible: true, dims: [3, 4, 5, 6] }];
+    return { command, args };
+  },
   async listResources() {
     return [...resources.values()].map(({ uri, mimeType }) => ({ uri, mimeType, name: uri.split('/').at(-1) }));
   },
