@@ -50,7 +50,7 @@ The kernel is linked with `-pthread`: the page must be cross-origin isolated.
 - The NIfTI inputs of a volume are made when a worker is free, and moved (transferred) to it.
 - Cancellation: the pool checks the `AbortSignal` before it sends each run. An abort terminates every worker at once, the run in progress included, and frees their memory; `correctHeadMotion` rejects with the signal's reason (`AbortError`).
 - Progress: `onProgress({ stage, volume, done, total })` after each registration (`register`) and each resampling (`resample`) of a volume, then `write` (`done` 0, then 1).
-- A volume's result depends only on its inputs and argv (the kernel uses one thread and a fixed `--random-seed`), and the results are put in volume order. The tests show that 1 and 4 workers write the same bytes.
+- A volume's result depends only on its inputs and argv, and the results are put in volume order. The kernel uses one ITK thread, and it refuses an `antsRegistration` argv without `--random-seed`. The package does not set the seed: give the same `--random-seed` in `argv` to get the same bytes with any worker count. The tests (seed 1234) show that 1 and 4 workers write the same bytes.
 
 ## Outputs
 
@@ -99,7 +99,7 @@ NiFreeze also casts the output back to the input type; this package writes float
 pnpm --filter @neurodesk/hmc test
 ```
 
-`test/pipeline.test.js` runs the pool on worker threads with the real kernel on a synthetic series (`test/synthetic.js`): 32³, 2 mm, six volumes (two b0 volumes, four with known translations up to 5.4 mm and one 4° rotation), sampled from a formula after each motion. The registration argv is not NiFreeze's: mean squares on every voxel, which finds this motion to 0.06 mm and 0.06°.
+`test/pipeline.test.js` runs the pool on worker threads with the real kernel on a synthetic series (`test/synthetic.js`): 32³, 2 mm, six volumes (two b0 volumes, three moved DWI volumes with known shifts up to 5.4 mm and one 4° rotation, and one DWI volume that does not move), sampled from a formula after each motion. The registration argv is not NiFreeze's: mean squares on every voxel, which finds this motion to 0.06 mm and 0.06°.
 The test checks the transforms (0.1 mm, 0.1°), the names, the columns, the b0 volumes, byte-identical outputs with 1 and 4 workers, and that a cancel stops the pool within one volume with every worker thread ended.
 
 ## Rebuild the module
