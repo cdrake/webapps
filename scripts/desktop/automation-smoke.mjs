@@ -60,6 +60,9 @@ function connect(bundle) {
     NEURODESK_BUNDLE: bundle,
     NEURODESK_USER_DATA: join(scratch, 'profile'),
     NEURODESK_SOFTWARE_RENDERING: process.env.NEURODESK_SOFTWARE_RENDERING || '1',
+    // Run outputs are pre-approved for agent loading; no one is there to approve anything else.
+    NEURODESK_APPROVED_SOURCES: join(scratch, 'runs'),
+    NEURODESK_SOURCE_APPROVAL: 'deny',
   };
   delete env.ELECTRON_RUN_AS_NODE;
   delete env.NEURODESK_MODELS_DIR;
@@ -317,7 +320,18 @@ try {
   assert.equal(png.subarray(1, 4).toString('latin1'), 'PNG');
   const nvShot = { width: png.readUInt32BE(16), height: png.readUInt32BE(20), sha256: hash(png) };
   assert.notEqual(nvShot.sha256, after.sha256, 'the nv-mcp screenshot must show the coronal view');
-  summary.niivue = { tabs: tabs.text, target, reported, screenshot: nvShot };
+  const maskPath = join(scratch, 'runs', started.id, 'outputs', report.artifacts.mask.filename);
+  const layers = async () => (await client.tool('viewers_volumes', { sessionId, viewerId: viewers[0].id })).volumes.length;
+  const layerCount = await layers();
+  await niivue('add_overlay', { url: maskPath, colormap: 'red', opacity: 0.4 });
+  assert.equal(await layers(), layerCount + 1, 'a pre-approved local file loads as an overlay');
+  // A file outside the approved directory is refused without a dialog.
+  const refusedLoad = await client.call('tools/call', { name: 'add_overlay', arguments: { url: fixture } });
+  assert.equal(refusedLoad.isError, true, JSON.stringify(refusedLoad.content));
+  assert.match(refusedLoad.content[0].text, /not approved in advance/);
+  assert.equal(await layers(), layerCount + 1);
+  summary.niivue = { tabs: tabs.text, target, reported, screenshot: nvShot,
+    sources: { approvedOverlay: report.artifacts.mask.filename, unapproved: refusedLoad.content[0].text } };
   const eofRun = await client.tool('run_brain_extraction', request);
   summary.exit = await client.end();
   const afterEof = JSON.parse(await readFile(join(scratch, 'runs', eofRun.id, 'run.json'), 'utf8'));

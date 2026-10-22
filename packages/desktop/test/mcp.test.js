@@ -165,6 +165,17 @@ test('nv-mcp tools reach a retained NiiVue viewer through its session', { timeou
     { type: 'image', mimeType: 'image/png', data: Buffer.from('fixture png').toString('base64') });
   const rejected = await client.tool('go_to_point', { bogus: 1 });
   assert.ok(rejected.error || rejected.result.isError);
+  const forwarded = async args => {
+    const response = await client.tool('load_volume', args);
+    assert.notEqual(response.result.isError, true, JSON.stringify(response.result));
+    return JSON.parse(text(response).slice(text(response).indexOf('{'))).params.url;
+  };
+  assert.equal(await forwarded({ url: '/data/sub-01/T2.nii.gz' }), 'http://127.0.0.1:1/_local/token/T2.nii.gz');
+  assert.equal(await forwarded({ url: 'https://example.org/T2.nii.gz' }), 'https://example.org/T2.nii.gz');
+  assert.equal(await forwarded({ url: 'T1.nii.gz' }), 'T1.nii.gz');
+  const denied = await client.tool('load_volume', { url: 'https://example.org/denied.nii.gz' });
+  assert.equal(denied.result.isError, true);
+  assert.match(text(denied), /was denied/);
   const refused = await client.tool('go_to_point', { mm: [666, 0, 0] });
   assert.equal(refused.result.isError, true);
   assert.match(text(refused), /The page refused/);

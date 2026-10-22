@@ -116,6 +116,10 @@ const service = {
     queueMicrotask(() => watcher({ type: 'ready', session: { id: 'session-1', app: 'brain-extraction', runId: 'run-0' } }));
     return () => {};
   },
+  async grantSource(sessionId, { path, url }) {
+    if (url?.includes('denied')) throw new Error(`Loading ${url} was denied.`);
+    return { url: url ?? `http://127.0.0.1:1/_local/token/${path.split('/').at(-1)}` };
+  },
   async closeSession(id) {
     sessionWatcher?.({ type: 'closed', id });
     return { id, closed: true };

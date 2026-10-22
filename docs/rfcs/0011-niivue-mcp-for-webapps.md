@@ -186,7 +186,9 @@ page handlers above can be registered there once browsers support it.
   per file or URL. Decide whether **Allow** may also cover a directory or a
   URL prefix for the rest of the session, and whether an unattended run, such
   as a desktop job or CI, may pre-approve sources through a configuration
-  setting.
+  setting. The proof of concept pre-approves through
+  `NEURODESK_APPROVED_SOURCES` and can refuse instead of asking through
+  `NEURODESK_SOURCE_APPROVAL=deny`. The **Allow** scope is still open.
 - **Duplicate MCP SDK.** nv-mcp depends on `@modelcontextprotocol/sdk` 1.x.
   The desktop also installs it beside 2.1. Ask upstream to make it a peer
   dependency or move to 2.x.
@@ -231,9 +233,28 @@ Phase 1 runs on branch `feat/nv-mcp-bridge` against `@niivue/nv-mcp`
     `@modelcontextprotocol/sdk` 1.x, including express, hono, cors and jose.
     Only the desktop ships them. Making the SDK a peer dependency upstream
     would remove them.
-- **Timeouts.** The bridge timeout is 35 s, above the session's 30 s
-  command limit. A stalled page is reported by the session, which also closes
-  it, before nv-mcp's own timer fires.
+- **Source approval.** Phase 2 is in the same branch.
+  - The bridge finds every `url` argument in a call. An absolute path, a
+    `file:` URL or an http(s) URL outside the window's grants is approved
+    first, then rewritten to the granted address. Relative URLs pass through.
+  - Approval comes from `NEURODESK_APPROVED_SOURCES`, a comma-separated list
+    of absolute directories and http(s) URL prefixes, or from an
+    **Allow**/**Deny** dialog on the viewer window. The dialog waits 30 s and
+    then denies. `NEURODESK_SOURCE_APPROVAL=deny` refuses at once instead of
+    asking.
+  - An approved URL is appended to the window's grants. An approved file is
+    served alone through a token URL on the local server, which checks that
+    its real path has not changed. Both end with the session.
+  - The smoke pre-approves its runs directory and sets `deny`. `add_overlay`
+    of the run's BET mask by path adds a volume. `add_overlay` of the input
+    fixture by path fails with the deny error and adds nothing. An earlier
+    run with the dialog loaded the fixture after a person clicked **Allow**.
+    **Deny** and the timeout were not tried by hand.
+  - Not built yet: the `sessions_grant` tool, and recording approvals and
+    denials in the run record.
+- **Timeouts.** The bridge timeout is 65 s: a 30 s approval wait plus the
+  session's 30 s command limit. A stalled page is reported by the session,
+  which also closes it, before nv-mcp's own timer fires.
 - **Screenshot.** The desktop answers nv-mcp's `screenshot` with a window
   capture, so its size and format arguments are ignored. Honouring them means
   scaling the capture in the main process.

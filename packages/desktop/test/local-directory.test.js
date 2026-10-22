@@ -22,3 +22,20 @@ test('local datasets require an explicit grant and cannot escape through symlink
   if (process.platform !== 'win32') assert.equal((await fetch(`${url}/outside`)).status, 404);
   assert.equal((await fetch(`${url}/.zattrs`, { method: 'PUT', body: '{}' })).status, 405);
 });
+
+test('a granted file is served alone under its own name', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'offline-file-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await writeFile(join(root, 'T2.nii.gz'), 'volume');
+  await writeFile(join(root, 'private.txt'), 'not granted');
+  const server = await startOfflineServer(root);
+  t.after(() => new Promise(resolve => server.server.close(resolve)));
+  const url = await server.mountFile(join(root, 'T2.nii.gz'));
+  assert.match(url, /\/_local\/[0-9a-f-]+\/T2\.nii\.gz$/);
+  assert.equal(await (await fetch(url)).text(), 'volume');
+  assert.equal((await fetch(url.replace('T2.nii.gz', 'private.txt'))).status, 404);
+  assert.equal((await fetch(url.replace('/T2.nii.gz', ''))).status, 404);
+  await assert.rejects(server.mountFile(root), /Choose a file/);
+  server.unmount(url);
+  assert.equal((await fetch(url)).status, 404);
+});

@@ -62,6 +62,12 @@ export function createViewerSessions({ maximum = 4, timeoutMs = 30000, onRelease
       session.queue = result.catch(() => {});
       return result;
     },
+    /** Asks the viewer's window to approve a source; not queued, since a person may take a while to answer. */
+    async grantSource(id, source) {
+      const session = lookup(id);
+      if (!session.adapter.grantSource) throw new Error('This viewer cannot load sources beyond its run inputs');
+      return session.adapter.grantSource(source, { signal: session.controller.signal });
+    },
     close,
     async closeAll() {
       await Promise.allSettled([...sessions.keys()].map(close));

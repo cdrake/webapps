@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { app, BrowserWindow, dialog, net, session, Menu } from 'electron';
-import { appendFile, mkdir } from 'node:fs/promises';
+import { appendFile, mkdir, realpath, stat } from 'node:fs/promises';
 import { join, resolve, basename, isAbsolute } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { canonicalUrl, loadBundle, verifyBundle } from './bundle.js';
@@ -12,6 +12,7 @@ import { generateJob, operationFor } from './contracts.js';
 import { runNativeSynthseg } from './native.js';
 import { browserDispatcher, runBrowserOperation } from './browser-automation.js';
 import { createSourceGrants } from './source-grants.js';
+import { parseApprovedSources } from './source-approval.js';
 import { completeBrowserArtifacts } from './artifact-completion.js';
 
 const root = process.env.NEURODESK_BUNDLE || (app.isPackaged ? join(process.resourcesPath, 'offline') : resolve('resources'));
@@ -34,6 +35,30 @@ const argument = name => {
   const index = process.argv.indexOf(name);
   return index < 0 ? undefined : process.argv[index + 1];
 };
+const approvalTimeoutMs = 30000;
+// Unattended setups, where no one can answer a dialog, set this to deny so unapproved sources fail at once.
+const sourceApproval = process.env.NEURODESK_SOURCE_APPROVAL || 'ask';
+if (!['ask', 'deny'].includes(sourceApproval)) throw new Error('NEURODESK_SOURCE_APPROVAL must be ask or deny');
+
+/** Asks the person at a viewer window whether an agent may load a source its run was not given. */
+async function approveSource(target, { app: title, source, signal }) {
+  if (sourceApproval === 'deny') throw new Error(`Loading ${source} was not approved in advance, and this desktop does not ask (NEURODESK_SOURCE_APPROVAL=deny).`);
+  const timeout = AbortSignal.timeout(approvalTimeoutMs);
+  target.show();
+  const { response } = await dialog.showMessageBox(target, {
+    type: 'question',
+    buttons: ['Deny', 'Allow'],
+    defaultId: 0,
+    cancelId: 0,
+    noLink: true,
+    message: `An agent asks to load a file into ${title}.`,
+    detail: `${source}\n\nAllow loads it into this viewer only, until the viewer closes.`,
+    signal: AbortSignal.any([signal, timeout]),
+  });
+  if (response === 1) return;
+  if (timeout.aborted) throw new Error(`No one approved loading ${source} within ${approvalTimeoutMs / 1000} seconds.`);
+  throw new Error(`Loading ${source} was denied.`);
+}
 
 app.whenReady().then(async () => {
 try {
@@ -75,6 +100,7 @@ try {
   // Compute origins permit job traffic; automation input grants permit GET/HEAD only.
   const computeOrigins = parseComputeOrigins(process.env.NEURODESK_COMPUTE_ORIGINS);
   const computeRequest = url => computeOrigins.has(url.origin);
+  const approvedSources = parseApprovedSources(process.env.NEURODESK_APPROVED_SOURCES);
   offlineSession.webRequest.onBeforeRequest((details, callback) => {
     const url = new URL(details.url);
     const localRequest = url.origin === local.origin;
@@ -132,14 +158,14 @@ try {
     const close = () => {
       sourceGrants.remove(contentsId);
       blockedByWindow.delete(contentsId);
-      for (const url of mounts.splice(0)) local.unmountDirectory(url);
+      for (const url of mounts.splice(0)) local.unmount(url);
       if (!target.isDestroyed()) target.destroy();
     };
     target.once('closed', () => {
       windowClosed.abort();
       sourceGrants.remove(contentsId);
       blockedByWindow.delete(contentsId);
-      for (const url of mounts.splice(0)) local.unmountDirectory(url);
+      for (const url of mounts.splice(0)) local.unmount(url);
     });
     signal.addEventListener('abort', close, { once: true });
     try {
@@ -168,6 +194,7 @@ try {
           })
           : await runJob(target.webContents, generateJob(contract, request), { artifacts, signal: completionSignal, onProgress });
         let session;
+        const grantedFiles = new Map();
         if (request.retainViewer) {
           const dispatch = browserDispatcher(target.webContents, { signal: completionSignal });
           if (!(await dispatch.call('viewers.list')).length) throw new Error('The app did not register a viewer to retain');
@@ -184,6 +211,25 @@ try {
               const { width, height } = image.getSize();
               if (!width || !height) throw new Error('The viewer screenshot is empty');
               return { mimeType: 'image/png', width, height, data: image.toPNG().toString('base64') };
+            },
+            async grantSource({ path, url }, { signal: sessionSignal }) {
+              if (target.isDestroyed()) throw new Error('Viewer window is closed');
+              if (url && (new URL(url).origin === local.origin || sourceGrants.permits(contentsId, url))) return { url };
+              const file = path && await realpath(path).catch(() => { throw new Error(`No such file: ${path}`); });
+              if (file && !(await stat(file)).isFile()) throw new Error(`Not a file: ${path}`);
+              if (file && grantedFiles.has(file)) return { url: grantedFiles.get(file) };
+              if (!(await approvedSources.permits({ file, url }))) {
+                await approveSource(target, { app: contract.title ?? contract.app, source: file ?? url, signal: sessionSignal });
+              }
+              if (target.isDestroyed()) throw new Error('Viewer window is closed');
+              if (url) {
+                sourceGrants.extend(contentsId, [url]);
+                return { url };
+              }
+              const mounted = await local.mountFile(file);
+              mounts.push(mounted);
+              grantedFiles.set(file, mounted);
+              return { url: mounted };
             },
           };
         }

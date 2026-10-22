@@ -175,6 +175,7 @@ export function createAutomationService({ contracts, outputRoot, execute, native
     async listSessions() { return viewers.list(); },
     async viewerCommand(sessionId, command, args) { return viewers.command(sessionId, command, args); },
     async closeSession(sessionId) { return viewers.close(sessionId); },
+    async grantSource(sessionId, source) { return viewers.grantSource(sessionId, source); },
     /** Calls `watcher` with `{ type: 'ready', session }` once a retained viewer accepts commands and `{ type: 'closed', id }` when it goes. */
     watchSessions(watcher) {
       sessionWatchers.add(watcher);

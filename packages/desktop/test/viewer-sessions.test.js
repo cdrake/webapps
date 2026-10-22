@@ -126,3 +126,32 @@ test('remote input grants are restricted to one window and the supplied source t
   grants.remove(12);
   assert.equal(grants.permitsAny('https://data.example/scan.zarr/0'), false);
 });
+
+test('approved sources extend one window without crossing to another', () => {
+  const grants = createSourceGrants();
+  grants.add(12, ['https://data.example/scan.zarr']);
+  grants.extend(12, ['https://other.example/T2.nii.gz']);
+  grants.extend(13, ['https://third.example/T1.nii.gz']);
+  assert.equal(grants.permits(12, 'https://data.example/scan.zarr/0'), true);
+  assert.equal(grants.permits(12, 'https://other.example/T2.nii.gz'), true);
+  assert.equal(grants.permits(12, 'https://third.example/T1.nii.gz'), false);
+  assert.throws(() => grants.extend(12, ['file:///etc/passwd']), /Invalid remote input URL/);
+});
+
+test('source approval goes to the session window outside the command queue', async () => {
+  const sessions = createViewerSessions();
+  let release;
+  const adapter = {
+    command: () => new Promise(resolve => { release = resolve; }),
+    async grantSource(source, { signal }) { return { url: source.url, aborted: signal.aborted }; },
+    close() {},
+  };
+  const session = sessions.add({ app: 'viewer', runId: 'run', adapter });
+  const pending = sessions.command(session.id, 'viewers.state');
+  assert.deepEqual(await sessions.grantSource(session.id, { url: 'https://data.example/T2.nii.gz' }),
+    { url: 'https://data.example/T2.nii.gz', aborted: false });
+  release('done');
+  assert.equal(await pending, 'done');
+  const plain = sessions.add({ app: 'viewer', runId: 'run', adapter: { command() {}, close() {} } });
+  await assert.rejects(sessions.grantSource(plain.id, { path: '/data/T2.nii.gz' }), /cannot load sources/);
+});

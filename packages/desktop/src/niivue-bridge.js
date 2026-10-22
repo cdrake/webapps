@@ -1,7 +1,9 @@
 import { Bridge } from '@niivue/nv-mcp/server';
+import { grantSources, sourceOf } from './source-approval.js';
 
-// Above the session's own 30 s command limit, so a stalled page is reported by the session, which also closes it.
-const callTimeoutMs = 35000;
+// Above a 30 s approval wait plus the session's own 30 s command limit, so a stalled page is reported by the
+// session, which also closes it.
+const callTimeoutMs = 65000;
 
 /**
  * Presents each retained NiiVue viewer to nv-mcp's bridge as a tab named by its session ID. nv-mcp's tools then reach
@@ -24,7 +26,12 @@ export function createNiivueBridge(service, { log = message => console.error(mes
         const { state } = await service.viewerCommand(sessionId, 'viewers.niivue', { viewerId });
         response = { id, result, state };
       } else {
-        const { result, state } = await service.viewerCommand(sessionId, 'viewers.niivue', { viewerId, method, params });
+        // A source the run was not given is loaded only once a person approves it, and then by the address granted.
+        const granted = await grantSources(params ?? {}, async value => {
+          const source = sourceOf(value);
+          return source ? (await service.grantSource(sessionId, source)).url : value;
+        });
+        const { result, state } = await service.viewerCommand(sessionId, 'viewers.niivue', { viewerId, method, params: granted });
         response = { id, result, state };
       }
     } catch (error) {

@@ -179,8 +179,23 @@ session queue and 30 second limit. A tab leaves the list when its session
 closes.
 
 `screenshot` returns the same window capture as `viewers_screenshot`, so it
-ignores nv-mcp's size arguments. Tools that load URLs, such as `load_volume`,
-can reach only the sources granted to the run.
+ignores nv-mcp's size arguments.
+
+Tools that load a `url`, such as `load_volume` and `add_overlay`, can reach
+the sources granted to the run. They also accept an absolute local path, a
+`file:` URL or another http(s) URL once it is approved. The desktop shows an
+**Allow**/**Deny** dialog on the viewer window and denies after 30 seconds
+without an answer. An approved URL is added to the window's grants. An
+approved file is served on its own through the local server. Approvals last
+until the session closes.
+
+| Variable | Effect |
+| --- | --- |
+| `NEURODESK_APPROVED_SOURCES` | Comma-separated absolute directories and http(s) URL prefixes approved without a dialog. |
+| `NEURODESK_SOURCE_APPROVAL` | `ask` (default) shows the dialog. `deny` refuses any other source at once, for unattended runs. |
+
+These calls can wait up to 65 seconds: the approval wait plus the 30 second
+command limit.
 
 ## Select native SynthSeg
 
