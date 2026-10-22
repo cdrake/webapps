@@ -1,0 +1,165 @@
+#!/usr/bin/env python3
+"""Write a manifest of the sdc data on Hugging Face (sdc/reference/ or sdc/prior/).
+
+    python3 exes/dwi/sdc/validation/make_manifest.py reference|prior REVISION
+
+REVISION is the 40-hex commit of neurodeskorg/webapps that holds the folder. The output is
+reference.manifest.json or prior.manifest.json beside this script. Each file's sha256 comes
+from the folder's own SHA256SUMS at that commit (and, for SHA256SUMS itself, from the
+downloaded bytes). Each file's size comes from the Hugging Face tree API at the same commit.
+The subsets are SUBSETS below; a pattern is an fnmatch glob relative to the folder in which
+`*` also crosses `/`. A pattern that matches no file is an error, so a typo or a re-pin
+that drops files fails here. Standard library only.
+"""
+
+import fnmatch
+import hashlib
+import json
+import os
+import re
+import sys
+import urllib.request
+
+REPOSITORY = "neurodeskorg/webapps"
+HERE = os.path.dirname(os.path.abspath(__file__))
+REF = "runs/full-2mm-s1234-double-affine/"
+
+# What each later issue needs (plan docs/architecture/dwi-sdc-plan.md, section 6). Keep
+# the patterns to `*` only.
+SUBSETS = {
+    "reference": {
+        # The inputs of the full-brain gate (Q67), the masks and the Q59 transforms.
+        "inputs": ["input/*", "mask/*", "std2anat/*"],
+        # #463: the deterministic ports against the double seed-1234 2 mm run, and the
+        # DWI unwarp with jacobian=True from its coefficients.
+        "reference-run": ["input/*", "mask/*", "std2anat/affine/*", REF + "*"],
+        # #462: the seed spread and the native float run of the Q66 gate, end to end and
+        # SyN-only (the replays on the seed-1234 preprocessing outputs).
+        "gate": [
+            "input/*",
+            "mask/*",
+            "std2anat/affine/*",
+            "runs/full-2mm-s*-double-affine/*",
+            "runs/full-2mm-s1234-float-affine/*",
+            "runs/full-2mm-synreplay-*/*",
+            "compare/*",
+        ],
+        # The same seed run twice (byte-identical outputs).
+        "determinism": ["runs/*-repeat/*"],
+        # Q68: the stock 0.8 mm grid.
+        "grid-0.8mm": ["runs/full-0.8mm-*/*"],
+        # Q59 and Q69.
+        "prior-variants": [
+            "std2anat/*",
+            "runs/full-2mm-s1234-double-syn/*",
+            "runs/full-2mm-s1234-double-none/*",
+        ],
+        "sloppy": ["runs/full-2mm-s1234-double-affine-sloppy/*"],
+        # #464/#465: the slab with the full T1w.
+        "slab": [
+            "input/sub-01_run-001_T1w.*",
+            "mask/slab/*",
+            "mask/sub-01_run-001_desc-mindgrab_mask.nii.gz",
+            "std2anat/affine/*",
+            "runs/slab-*/*",
+        ],
+        "gre": ["gre/*"],
+        "docs": ["README.md", "index.json", "compare/*", "env/*", "scripts/*"],
+    },
+    "prior": {
+        "prior": ["*"],
+    },
+}
+
+
+def get(url):
+    with urllib.request.urlopen(url, timeout=120) as r:
+        return r.read(), r.headers.get("Link")
+
+
+def tree_sizes(revision, root):
+    """Every file under root at revision and its size, following the API's pages."""
+    url = f"https://huggingface.co/api/datasets/{REPOSITORY}/tree/{revision}/{root}?recursive=true"
+    sizes = {}
+    while url:
+        body, link = get(url)
+        for item in json.loads(body):
+            if item["type"] == "file":
+                sizes[item["path"][len(root) + 1 :]] = item["size"]
+        match = re.search(r'<([^>]+)>;\s*rel="next"', link or "")
+        url = match.group(1) if match else None
+    return sizes
+
+
+def matches(pattern, paths):
+    if re.search(r"[?\[\]{}]", pattern):
+        sys.exit(f"{pattern}: use only `*` in subset patterns")
+    hit = [p for p in paths if fnmatch.fnmatchcase(p, pattern)]
+    if not hit:
+        sys.exit(f"{pattern}: matches no file at this revision")
+    return hit
+
+
+def main(folder, revision):
+    if folder not in SUBSETS:
+        sys.exit("folder is reference or prior")
+    if not re.fullmatch(r"[0-9a-f]{40}", revision):
+        sys.exit("REVISION must be a full 40-hex commit")
+    root = f"sdc/{folder}"
+    base = f"https://huggingface.co/datasets/{REPOSITORY}/resolve/{revision}/{root}/"
+    sums_bytes, _ = get(base + "SHA256SUMS")
+    sums = {}
+    for line in sums_bytes.decode().splitlines():
+        digest, path = line.split(None, 1)
+        sums[path.lstrip("*").removeprefix("./")] = digest
+    sums["SHA256SUMS"] = hashlib.sha256(sums_bytes).hexdigest()
+    sizes = tree_sizes(revision, root)
+    if set(sizes) != set(sums):
+        sys.exit(
+            f"SHA256SUMS and the tree differ: {sorted(set(sizes) ^ set(sums))[:10]}"
+        )
+    paths = sorted(sizes)
+    subsets = {}
+    for name, patterns in SUBSETS[folder].items():
+        files = sorted({p for pattern in patterns for p in matches(pattern, paths)})
+        subsets[name] = {
+            "patterns": patterns,
+            "files": len(files),
+            "bytes": sum(sizes[p] for p in files),
+        }
+    description = {
+        "reference": "Native SyN-SDC reference runs (sdc/reference/, README.md there) for the sdc port "
+        "(plan docs/architecture/dwi-sdc-plan.md). Fetch subsets with fetch_reference.py; "
+        "regenerate with make_manifest.py.",
+        "prior": "The SyN-SDC prior (sdc/prior/, README.md there): sdcflows' distortion atlas, its "
+        "affine to MNI152NLin2009cAsym and the 1 mm template T1w and brain mask, with their notices. "
+        "Fetch with fetch_reference.py --folder prior; regenerate with make_manifest.py.",
+    }[folder]
+    manifest = {
+        "description": description,
+        "repository": REPOSITORY,
+        "revision": revision,
+        "base": base,
+        "subsets": subsets,
+        "files": [{"path": p, "bytes": sizes[p], "sha256": sums[p]} for p in paths],
+    }
+    # One file per line keeps a re-pin reviewable as a line diff.
+    head = json.dumps({k: v for k, v in manifest.items() if k != "files"}, indent=2)
+    lines = ",\n".join(
+        "    " + json.dumps(entry, separators=(", ", ": "))
+        for entry in manifest["files"]
+    )
+    out = os.path.join(HERE, f"{folder}.manifest.json")
+    with open(out, "w") as f:
+        f.write(head[:-2] + ',\n  "files": [\n' + lines + "\n  ]\n}\n")
+    for name, s in subsets.items():
+        print(f"{name}: {s['files']} files, {s['bytes'] / 1e6:.1f} MB")
+    print(
+        f"{out}: {len(paths)} files, {sum(sizes.values()) / 1e6:.1f} MB at {revision[:12]}"
+    )
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        sys.exit(__doc__)
+    main(sys.argv[1], sys.argv[2])
