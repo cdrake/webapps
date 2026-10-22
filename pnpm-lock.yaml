@@ -1522,6 +1522,15 @@ importers:
 
   packages/greedy: {}
 
+  packages/hmc:
+    dependencies:
+      '@neurodesk/hmc-registration':
+        specifier: workspace:*
+        version: link:../hmc-registration
+      '@neurodesk/webapp-components':
+        specifier: workspace:*
+        version: link:../components
+
   packages/hmc-registration:
     devDependencies:
       '@playwright/test':
