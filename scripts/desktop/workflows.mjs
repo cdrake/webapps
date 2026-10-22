@@ -447,7 +447,7 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     await expect(page.locator('#runButton')).toBeEnabled({ timeout: 60000 });
     await page.locator('#runButton').click();
     await expect(page.locator('#statusText')).toHaveText('Bias field corrected', { timeout: 600000 });
-    const image = nifti(await download('#resultList .nd-volume-toggle:nth-child(1) .nd-download-btn'));
+    const image = nifti(await download('#resultList .nd-volume-toggle:has-text("Corrected image") .nd-download-btn'));
     assert.equal(image.filename, 'sub-01_dir-AP_desc-n4_dwi.nii.gz');
     return image;
   }

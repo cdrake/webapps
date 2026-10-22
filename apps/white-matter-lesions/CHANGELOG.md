@@ -5,6 +5,11 @@
 ### Patch Changes
 
 - Update NiiVue to 1.0.0-rc.33. On an oblique FLAIR, the parts of the crosshair arms that the tilted slice hides are now drawn faintly instead of disappearing. The viewer draws in world space only: rc.33 drops the unused image-space option `isPositionInMM`.
+- Updated dependencies [d32b485]
+  - @neurodesk/webapp-components@0.19.0
+  - @neurodesk/runtime-support@0.9.8
+  - @neurodesk/synthsr@0.6.20261022
+  - @neurodesk/synthstrip@0.2.0
   - @neurodesk/white-matter-lesions@0.5.20261022
 
 ## 0.5.20261020
