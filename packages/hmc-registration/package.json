@@ -1,7 +1,7 @@
 {
   "name": "@neurodesk/hmc-registration",
-  "version": "0.1.1",
-  "description": "ANTs antsRegistration (3D float) in WebAssembly with a generic run(argv), for DWI head-motion correction",
+  "version": "0.2.0",
+  "description": "ANTs antsRegistration (3D float), AverageImages, AverageAffineTransform and an antsApplyTransforms-style --apply in WebAssembly with a generic run(argv), for DWI head-motion correction",
   "type": "module",
   "private": true,
   "license": "Apache-2.0",
