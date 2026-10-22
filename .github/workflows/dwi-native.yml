@@ -131,9 +131,14 @@ jobs:
         working-directory: packages/dwidenoise
         run: node --test test/*.test.js
       # The N4 module is a Docker ITK-Wasm build (scripts/build.sh, up to 8 GB), so this job does
-      # not rebuild it; #437 adds that check. These tests pin its SHA-256 and test the procedure.
+      # not rebuild it; #437 adds that check. These tests pin its SHA-256, test the procedure and
+      # hold its bias field to native ANTs 2.6.5 N4 on the pinned slab reference, exactly.
+      - name: Fetch the N4 native reference (sha256-checked)
+        run: node packages/n4/validation/fetch-reference.mjs "$RUNNER_TEMP/n4-reference" >> "$GITHUB_ENV"
       - name: n4 package tests on the committed module
         working-directory: packages/n4
+        env:
+          N4_REQUIRE_REFERENCE: '1'
         run: node --test test/*.test.js
 
   # The AMICO 1.5.4 and DIPY Patch2Self oracle tests on the pinned Hugging Face data
