@@ -39,5 +39,7 @@ test("the twix voxel matches Osprey's own mask of it", { skip: !(anat && existsS
   assert.ok(dice(exact.weights) > 0.94, `Dice ${dice(exact.weights)}`);
   const shifted = mask.affine.map((row, r) => Array.from(row).map((v, c) => (c === 3 && r < 3 ? v + [-0.5, -0.5, 0.5][r] : v)));
   const asOsprey = voxelWeights(twixVoxel, { affine: shifted, dims: mask.dims });
+  // The shift puts the box's faces near voxel centres, so its face layers weigh
+  // about 1/2 and fall either side of the 0.5 threshold: Dice 0.993.
   assert.ok(dice(asOsprey.weights) > 0.99, `Dice with Osprey's shift ${dice(asOsprey.weights)}`);
 });
