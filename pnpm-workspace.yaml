@@ -18,13 +18,13 @@ allowBuilds:
 minimumReleaseAgeExclude:
   - '@dipy/gpu-streamlines@0.1.0'
   - '@niivue/niimath@1.4.20260909'
-  - '@niivue/meica@0.1.20261018'
   - '@fireants/fireants@0.1.20260913'
   - '@brainchop/mindgrab@0.1.20260923'
   - '@fideus-labs/ngff-zarr@0.38.0'
   - '@fideus-labs/fiff@0.8.2'
   - '@niivue/niimath@1.4.20261016'
   - '@niivue/niivue@1.0.0-rc.33'
+  - '@niivue/meica@0.1.20261021'
 overrides:
   '@playwright/test': 1.64.0
   playwright: 1.64.0

@@ -1,6 +1,7 @@
 // Tool drivers: each accepts exactly the command line the fastprep core emits (as in work/commands.sh) and runs it
 // on the matching browser runtime over in-memory files. Unknown options fail rather than being ignored.
 
+import { denoiseMeica, runMeica } from '@niivue/meica';
 import { encodeFor, gunzip, parent } from './files.js';
 
 const text = (s) => new TextEncoder().encode(s);
@@ -150,10 +151,17 @@ export function synthsrDriver(synthesize) {
   };
 }
 
-/** glm --task-analysis through the glm WASM module. */
+/** glm --task-analysis and --meica-qc through the glm WASM module. */
 export function glmDriver(glm) {
   const arity = { '--task-analysis': 0, '--summary': 1, '--fwhm': 1 };
   return async (argv, { files }) => {
+    if (argv[1] === '--meica-qc') {
+      if (argv.length !== 8) throw new Error('glm: --meica-qc expects MIXING METRICS CONFOUNDS EVENTS SIDECAR OUT');
+      const [mixing, metrics, conf, events, side, out] = argv.slice(2);
+      const read = (p) => files.text(p);
+      files.put(out, text(glm.meica_qc(await read(mixing), await read(metrics), await read(conf), events ? await read(events) : '', await read(side))));
+      return { code: 0, stdout: '', stderr: '' };
+    }
     const a = parse(argv, arity);
     if (!a.has('--task-analysis') || a.pos.length !== 7) throw new Error('glm: only --task-analysis is supported in the browser');
     const [bold, conf, events, ...maps] = a.pos;
@@ -170,8 +178,60 @@ export function glmDriver(glm) {
   };
 }
 
+/**
+ * meica (tedana's ME-ICA) through @niivue/meica's single-threaded WASM: `meica` is its module, or a function that
+ * loads it (so single-echo sessions never fetch it). The classification call
+ * (`-d ECHO... -e TE... --mask M --dummy-scans N --tree T [--external TSV] --n-threads K --quiet --out-dir D`, files
+ * written under D with meica's names) and `--denoise BOLD --mixing TSV --metrics TSV --dummy-scans N -o OUT`.
+ */
+export function meicaDriver(meica) {
+  const arity = {
+    '-d': null, '-e': null, '--mask': 1, '--dummy-scans': 1, '--tree': 1, '--external': 1, '--n-threads': 1,
+    '--quiet': 0, '--out-dir': 1, '--denoise': 1, '--mixing': 1, '--metrics': 1, '-o': 1,
+  };
+  return async (argv, { files }) => {
+    const opts = new Map();
+    for (let i = 1; i < argv.length;) {
+      const flag = argv[i];
+      if (!Object.hasOwn(arity, flag)) throw new Error(`meica: ${flag} is not supported in the browser`);
+      let j = i + 1;
+      if (arity[flag] === null) {
+        while (j < argv.length && !argv[j].startsWith('-')) j++;
+        if (j === i + 1) throw new Error(`meica: ${flag} needs at least 1 value`);
+      } else {
+        j += arity[flag];
+        if (j > argv.length || argv.slice(i + 1, j).some(value => value.startsWith('-'))) {
+          throw new Error(`meica: ${flag} needs ${arity[flag]} value(s)`);
+        }
+      }
+      opts.set(flag, argv.slice(i + 1, j));
+      i = j;
+    }
+    const api = typeof meica === 'function' ? await meica() : meica;
+    const one = (k) => opts.get(k)?.[0];
+    const dummyScans = Number(one('--dummy-scans'));
+    if (opts.has('--denoise')) {
+      const out = one('-o');
+      files.put(out, denoiseMeica({
+        api, bold: await files.bytes(one('--denoise')), mixing: await files.text(one('--mixing')),
+        metrics: await files.text(one('--metrics')), dummyScans, gzip: out.endsWith('.gz'),
+      }));
+      return { code: 0, stdout: '', stderr: '' };
+    }
+    const tree = one('--tree');
+    const options = { tree: files.has(tree) ? await files.text(tree) : tree, dummy_scans: dummyScans };
+    if (opts.has('--external')) options.external = await files.text(one('--external'));
+    const echoes = [];
+    for (const p of opts.get('-d')) echoes.push({ name: p, bytes: await files.bytes(p) });
+    const mask = opts.has('--mask') ? await files.bytes(one('--mask')) : undefined;
+    const { files: outs } = runMeica({ api, echoes, tes: opts.get('-e').map(Number), options, mask });
+    for (const { name, bytes } of outs) files.put(`${one('--out-dir')}/${name}`, bytes);
+    return { code: 0, stdout: '', stderr: '' };
+  };
+}
+
 /** Driver table keyed by the tool names in the core's commands. */
-export function drivers({ niimath, mindgrab, mindgrabOptions, greedy, synthsr, glm }) {
+export function drivers({ niimath, mindgrab, mindgrabOptions, greedy, synthsr, glm, meica }) {
   const brainchop = mindgrabDriver(mindgrab, mindgrabOptions);
   return {
     niimath: niimathDriver(niimath),
@@ -180,5 +240,6 @@ export function drivers({ niimath, mindgrab, mindgrabOptions, greedy, synthsr, g
     'greedy-rs': greedyDriver(greedy),
     synthsr: synthsrDriver(synthsr),
     glm: glmDriver(glm),
+    ...(meica && { meica: meicaDriver(meica) }),
   };
 }
