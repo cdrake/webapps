@@ -26,6 +26,12 @@ function recordingRuntime(workers) {
     workers,
     spawn: () => {
       const worker = spawnRegistrationThread();
+      const post = worker.postMessage;
+      worker.sent = 0;
+      worker.postMessage = (message, transfer) => {
+        worker.sent++;
+        post(message, transfer);
+      };
       spawned.push(worker);
       return worker;
     },
@@ -178,6 +184,9 @@ test("a cancel stops the pool within one volume and leaves no worker running", a
   // Nothing was reported after the abort: the volume in flight did not finish.
   assert.equal(events.filter((e) => e.aborted).length, 0);
   assert.equal(events.length, 1);
+  // The worker had received the second volume's registration when the abort came: a run in
+  // progress was terminated, and no third run was sent.
+  assert.equal(spawned[0]?.sent, 2);
   assert.equal(spawned.length, 1);
   await Promise.all(spawned.map((worker) => worker.exited));
   assert.ok(spawned.every((worker) => !worker.running));
