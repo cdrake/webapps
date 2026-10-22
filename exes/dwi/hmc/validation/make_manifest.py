@@ -64,6 +64,7 @@ SUBSETS = {
     ],
     "nifreeze-replay": [
         "input/sub-107_dir-AP_dwi.nii.gz",
+        "input/input-facts.json",
         *INPUT_GRADIENTS,
         "nifreeze-gp/work/sample_*",
         "nifreeze-gp/work/predicted_*",

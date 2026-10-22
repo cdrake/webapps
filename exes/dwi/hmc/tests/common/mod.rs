@@ -1,8 +1,57 @@
-//! The NIfTI reader shared by the data-gated reference tests.
+//! Helpers shared by the data-gated reference tests. Each test file uses a part of them.
+#![allow(dead_code)]
 
 use flate2::read::GzDecoder;
 use std::io::Read;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+
+/// The reference folder (`HMC_REFERENCE`) when it holds `subset`, else `None`.
+///
+/// Without `HMC_REFERENCE` the caller skips, unless `HMC_REQUIRE_REFERENCE` is set: then it is a
+/// failure. A folder whose `HMC_REFERENCE_SUBSETS` (as `fetch_reference.py` prints it) does not
+/// name `subset` is skipped: the CI job fetches only the subsets that its tests read.
+pub fn reference(subset: &str) -> Option<PathBuf> {
+    let Ok(root) = std::env::var("HMC_REFERENCE") else {
+        if std::env::var_os("HMC_REQUIRE_REFERENCE").is_some() {
+            panic!("HMC_REFERENCE is not set, but HMC_REQUIRE_REFERENCE is set");
+        }
+        eprintln!("HMC_REFERENCE is not set; this {subset} check does not run");
+        return None;
+    };
+    if let Ok(list) = std::env::var("HMC_REFERENCE_SUBSETS") {
+        if list != "all" && !list.split(',').any(|s| s.trim() == subset) {
+            eprintln!("HMC_REFERENCE_SUBSETS does not name {subset}; this check does not run");
+            return None;
+        }
+    }
+    Some(PathBuf::from(root))
+}
+
+/// A shell command as words, with each bracket group joined into one word and its spaces
+/// removed: `Rigid[ 12.0 ]` is one word, `Rigid[12.0]`.
+pub fn bracket_words(command: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut depth = 0i32;
+    let mut word = String::new();
+    for c in command.chars() {
+        match c {
+            '[' => depth += 1,
+            ']' => depth -= 1,
+            _ => {}
+        }
+        if c.is_whitespace() {
+            if depth == 0 && !word.is_empty() {
+                out.push(std::mem::take(&mut word));
+            }
+        } else {
+            word.push(c);
+        }
+    }
+    if !word.is_empty() {
+        out.push(word);
+    }
+    out
+}
 
 /// A NIfTI-1 image: the grid, the data type code and the raw little-endian values.
 pub struct Nifti {

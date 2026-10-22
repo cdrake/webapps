@@ -3,6 +3,8 @@
 //!
 //! [`clip`] is NiFreeze's intensity clip before registration, ported with its in-place quirk.
 //!
+//! [`registration`] builds NiFreeze's `antsRegistration` arguments for one volume.
+//!
 //! [`gp_model`] is NiFreeze's GP DWI model: the leave-one-out fit and prediction of each
 //! diffusion-weighted volume, with its data mask, on the `dwi-gp` crate.
 //!
@@ -27,6 +29,7 @@ pub mod bvec;
 pub mod clip;
 pub mod gp_model;
 pub mod motion;
+pub mod registration;
 
 pub use bvec::{BvecRule, HmcGradients, rotate_gradients};
 

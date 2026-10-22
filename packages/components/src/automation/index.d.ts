@@ -14,11 +14,22 @@ export type ViewerTab = { id: string; label?: string; active?: boolean };
 export type ViewerTabs = { list(): ViewerTab[]; select(id: string): void | Promise<void> };
 export type ViewerRegions = { list(): readonly unknown[] | Promise<readonly unknown[]> };
 export type CrosshairPosition = { frame: 'mm'; value: [number, number, number] };
+export type ViewerSliceType = 'axial' | 'coronal' | 'sagittal' | 'multiplanar' | 'render';
+export type ViewerVolume = {
+  index: number; name: string | null; colormap: string | null; calMin: number | null; calMax: number | null;
+  opacity: number | null; visible: boolean; dims: number[];
+};
+export type ViewerVolumeDisplay = { index: number; colormap?: string; opacity?: number; calMin?: number; calMax?: number; visible?: boolean };
+export type ViewerDisplay = { sliceType?: ViewerSliceType; volumes?: ViewerVolumeDisplay[] };
 export type ViewerAdapter = {
   state(): object | Promise<object>;
   setCrosshair?(position: CrosshairPosition): void | Promise<void>;
   tabs?: ViewerTabs;
   regions?: ViewerRegions;
+  volumes?(): ViewerVolume[] | Promise<ViewerVolume[]>;
+  setDisplay?(display: ViewerDisplay): void | Promise<void>;
+  canvas?(): HTMLCanvasElement | null;
+  frame?(): void | Promise<void>;
 };
 export type AutomationHandle = {
   ready: Promise<object>;
@@ -43,6 +54,11 @@ export function createNiivueAdapter(controller: {
   getCrosshairPos?(): [number, number, number];
   setCrosshairPos?(position: [number, number, number]): void;
   createExtensionContext?(): { on(type: 'locationChange', callback: (event: { detail: { mm?: ArrayLike<number>; values?: unknown[] } }) => void): unknown };
+  volumes?: readonly object[];
+  setVolume?(index: number, options: object): Promise<void>;
+  sliceType?: number;
+  canvas?: HTMLCanvasElement | null;
+  drawScene?(): void;
 }, options?: { tabs?: ViewerTabs; regions?: ViewerRegions }): ViewerAdapter;
 export function createDicomConverter(options: { moduleUrl: string; timeoutMs?: number }): DicomConverter;
 export function summarizeLabels(image: { data: ArrayLike<number>; dims: number[]; header: { affine: ArrayLike<number>[]; xyztUnits: number } }, lookup: { I: number[]; labels: string[] }): {
