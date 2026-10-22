@@ -1,5 +1,11 @@
 # @neurodesk/webapp-components
 
+## 0.19.0
+
+### Minor Changes
+
+- d32b485: Add NiiVue viewer tools to the desktop MCP server: `viewers_volumes` lists loaded volumes and their display settings, `viewers_display` sets slice type and per-volume colormap, display range, opacity and visibility, and `viewers_screenshot` returns the redrawn viewer as an MCP PNG image captured from the window.
+
 ## 0.18.0
 
 ### Minor Changes

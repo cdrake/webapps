@@ -1,5 +1,11 @@
 # @neurodesk/deface
 
+## 1.4.20261022
+
+### Patch Changes
+
+- @neurodesk/runtime-support@0.9.8
+
 ## 1.4.20261020
 
 ### Patch Changes
