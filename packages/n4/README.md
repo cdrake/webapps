@@ -19,7 +19,15 @@ Run it in a worker: N4 is synchronous.
 
 ## Parity
 
-On the mean b0 and `bet` mask of the ds005134 sub-01 example slab (44 521 mask voxels, field 0.97-2.02), the module's bias field equals native ANTs 2.6.5 `N4BiasFieldCorrection` (Neurodesk container, one thread) exactly: correlation 1, maximum relative difference 0. It took 1.9 s in Node.
+On the mean b0 of the ds005134 sub-01 example slab, weighted by the app's default MindGrab mask (45 965 voxels), the module's bias field and corrected image equal native ANTs 2.6.5 `N4BiasFieldCorrection` (Neurodesk container `ants_2.6.5_20261012`, one thread, dwibiascorrect's options) byte for byte. It takes about 3 s in Node.
+The reference is pinned on Hugging Face (`n4/validation/ds005134-sub-01-slab/`, its README gives every command) by `validation/reference.json`; `test/native-reference.test.js` checks the exact equality in the `dwi-native` workflow:
+
+```sh
+export $(node validation/fetch-reference.mjs /var/tmp/n4-reference)
+N4_REQUIRE_REFERENCE=1 node --test test/*.test.js
+```
+
+An earlier hand check with an FSL `bet -f 0.3` mask (44 521 voxels) was also exact.
 
 ## Rebuild
 

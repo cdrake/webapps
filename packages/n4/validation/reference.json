@@ -1,0 +1,26 @@
+{
+  "description": "Native ANTs 2.6.5 N4BiasFieldCorrection on the ds005134 slab mean b0 with the MindGrab mask (README.md in the folder). Fetch with fetch-reference.mjs.",
+  "base": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/5c224669930eef653ea42e1dc40c7449930e29bd/n4/validation/ds005134-sub-01-slab/",
+  "files": [
+    {
+      "name": "meanb0.nii.gz",
+      "bytes": 129879,
+      "sha256": "c3b343f348f11b54c3004587b54648ec63653fc85a5532f7a40a4e49edcf99c7"
+    },
+    {
+      "name": "mindgrab_mask.nii.gz",
+      "bytes": 1476,
+      "sha256": "b7b0996f69b61ee708cb234b1333d65292034db2fecf31009cae34551392f42b"
+    },
+    {
+      "name": "native_bias.nii.gz",
+      "bytes": 208139,
+      "sha256": "b6d67aad8a523b98e57970a2f05e0208c318961db1549c36cca4fa51cd588716"
+    },
+    {
+      "name": "native_corrected.nii.gz",
+      "bytes": 222418,
+      "sha256": "6ab1f7ba759598733b8edbaf7484463962d64ee7e8a8b15f93a3be810fc71e3b"
+    }
+  ]
+}
