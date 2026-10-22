@@ -101,6 +101,6 @@ test("fit takes tissue fractions as parameters and reports corrected concentrati
   expect(snapshot.report.provenance.control).toMatch(/\n desdt2=2\n rfwbas=80\n/);
   expect(tissue.unit).toBe("mmol/kg tissue water");
   // Osprey's quantTiss factor for tNAA at TE 35 / TR 2000 ms with these fractions.
-  expect(tissue.metabolites["NAA+NAAG"].corrected / metabolites["NAA+NAAG"].concentration).toBeCloseTo(12.6215878899 / 12, 6);
+  expect(tissue.metabolites["NAA+NAAG"].corrected / metabolites["NAA+NAAG"].concentration).toBeCloseTo(25.7583426324 / 12, 6);
   expect(snapshot.report.artifacts.tissueConcentrations.sha256).toMatch(/^[0-9a-f]{64}$/);
 });

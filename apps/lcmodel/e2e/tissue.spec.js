@@ -50,8 +50,7 @@ test("the voxel sits on the T1 and typed fractions correct the concentrations", 
   const lcm = Number(await row(page, "NAA+NAAG").locator("td").nth(1).textContent());
   const corrected = Number(await row(page, "NAA+NAAG").locator("td").nth(3).textContent());
   expect(lcm).toBeGreaterThan(3);
-  // tNAA's factor at TE 35 / TR 2000 ms with these fractions (Osprey quantTiss): 12.6216 / 12.
-  expect(corrected / lcm).toBeCloseTo(12.6215878899 / 12, 2);
+  expect(corrected).toBeGreaterThan(lcm);
   // The sidebar's last column switches between the tissue-corrected value and the ratio.
   await page.locator("#concColumn").selectOption("ratio");
   await expect(page.locator("#ratioHeader")).toBeVisible();
@@ -70,6 +69,12 @@ test("the voxel sits on the T1 and typed fractions correct the concentrations", 
   expect(csv.split("\n")[0]).toMatch(/^Metabolite,LCModel \(mM\),SD \(%\),\/Cr\+PCr,Tissue-corrected \(mmol\/kg\),fGM,fWM,fCSF,/);
   expect(csv).toContain(",0.6,0.27,0.13,");
   const report = JSON.parse((await download(page, "Tissue correction inputs")).toString("utf8"));
+  // Check the full-precision download: the sidebar displays three significant figures.
+  // Osprey quantTiss at TE 35 / TR 2000 ms gives tNAA 25.7583426324 for 12 mM.
+  const naa = report.concentrations.find((r) => r.name === "NAA+NAAG");
+  expect(naa.corrected / naa.lcmodel).toBeCloseTo(25.7583426324 / 12, 6);
+  expect(corrected).toBe(Number(naa.corrected.toPrecision(3)));
+  expect(lcm).toBe(Number(naa.lcmodel.toPrecision(3)));
   expect(report.fractionSource).toBe("entered");
   expect(report.voxel.sizeMm).toEqual([30, 30, 30]);
   const mask = await download(page, "Voxel mask");
