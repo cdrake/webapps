@@ -7,7 +7,8 @@
 // LCModel scales to water as if the voxel were pure white matter:
 //   c_LCM = (S_M / S_W) * WCONC * ATTH2O / ATTMET
 // with WCONC = 35880 mM, ATTH2O = 0.7, ATTMET = 1 (its defaults). The ratio
-// S_M / S_W is recovered and rescaled with the voxel's own water:
+// S_M / S_W = c_LCM * ATTMET / (WCONC * ATTH2O) is recovered and
+// rescaled with the voxel's own water:
 //   c = (S_M / S_W) * 55510 * sum_t(m_t * Rw_t) / R_M / (1 - m_CSF)   [mmol/kg]
 // m_t are molal water fractions, f_t * [W]_t / sum(f * [W]) with the water
 // content of each tissue (Ernst et al. 1993: 0.78, 0.65 and 0.97 of pure
@@ -15,6 +16,9 @@
 // tissue t and R_M the metabolite's, with T1/T2 averaged over GM and WM.
 
 export const LCMODEL_WATER = Object.freeze({ wconc: 35880, atth2o: 0.7, attmet: 1 });
+// The shared pipeline uses sptype='mega-press-3' for every edited fit.
+// Match that preset's calibration (exes/lcmodel/src/control.rs).
+const LCMODEL_EDITED_WATER = Object.freeze({ ...LCMODEL_WATER, atth2o: 0.43 });
 
 /** Water concentration per tissue and of pure water, mmol/kg (Osprey). */
 export const WATER_CONCENTRATION = Object.freeze({ gm: 43300, wm: 36080, csf: 53840, pure: 55510 });
@@ -157,7 +161,8 @@ export function correctConcentrations(rows, options) {
   const waterSum = f.gm * W.gm + f.wm * W.wm + f.csf * W.csf;
   const molal = { gm: (f.gm * W.gm) / waterSum, wm: (f.wm * W.wm) / waterSum, csf: (f.csf * W.csf) / waterSum };
   const rw = Object.fromEntries(["gm", "wm", "csf"].map((t) => [t, attenuation(trW, teW, water[t].t1, water[t].t2)]));
-  const scale = lcm.atth2o / (lcm.wconc * lcm.attmet);
+  // Undo LCModel's calibration before applying the voxel-specific water term.
+  const scale = lcm.attmet / (lcm.wconc * lcm.atth2o);
   // GABA+MM3co is GABA+ under the co-edited macromolecule model (lcmodel-io.js).
   const alphaNames = new Set(["GABA", "Glu", "Gln", "Glx", "Glu+Gln", "GABA+", "GABAplus", "GABA+MM3co"]);
   const out = rows.map((row) => {
@@ -271,6 +276,7 @@ export function correctionFor(rows, { fractions, header, waterScaled, edited, me
       water: { teMs: header.waterTeMs ?? header.teMs, trMs: header.waterTrMs ?? header.trMs },
       metaboliteRelaxation,
       alpha: edited,
+      lcmodel: edited ? LCMODEL_EDITED_WATER : LCMODEL_WATER,
     });
   } catch (error) {
     return { reason: error.message };

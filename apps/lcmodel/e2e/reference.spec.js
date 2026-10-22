@@ -39,6 +39,14 @@ for (const entry of CASES) {
     const seconds = Math.round((performance.now() - started) / 100) / 10;
     const snapshot = await dispatch(page, "snapshot");
     expect(snapshot.state, JSON.stringify(snapshot.error)).toBe("succeeded");
+    if (entry.id === "philips-megapress-tissue") {
+      // Pinned Osprey quantTiss/quantAlpha with amplWater = 35880 * 0.43,
+      // GABA 1.2 mM, TE 68 ms, TR 2000 ms and this case's fractions.
+      expect(snapshot.report.provenance.control).toContain("sptype='mega-press-3'");
+      const { tissue, metabolites } = snapshot.report.measurements;
+      expect(tissue.metabolites.GABA.corrected / metabolites.GABA.concentration).toBeCloseTo(5.70465439344 / 1.2, 6);
+      expect(tissue.metabolites.GABA.alphaCorrected / metabolites.GABA.concentration).toBeCloseTo(4.99461106795 / 1.2, 6);
+    }
     const downloads = new Map();
     for (const artifactId of Object.keys(snapshot.report.artifacts)) {
       // Pace the fourteen T1 outputs so Chromium accepts every download.

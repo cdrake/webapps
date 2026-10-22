@@ -4,6 +4,7 @@
 
 ### Patch Changes
 
+- Correct tissue and alpha concentrations by undoing LCModel's water and metabolite attenuation factors in the proper direction. Tissue correction now uses the fitted MEGA-PRESS water attenuation of 0.43 instead of the standard 0.7. With standard defaults, corrected concentrations increase by 1/0.49; the underlying LCModel fits are unchanged.
 - Updated dependencies [d32b485]
   - @neurodesk/webapp-components@0.19.0
   - @neurodesk/lcmodel@0.8.20261022

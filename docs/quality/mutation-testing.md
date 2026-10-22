@@ -245,19 +245,24 @@ first run killed 252 and left 175 alive: most relaxation-table entries, the
 LCModel name aliases, the field-strength limits, the zero-sum and timing
 refusals, every reason `correctionFor` gives, the CSV columns and quoting, and
 both downloads. The suite now holds every entry of both tables to Osprey's
-`lookUpRelaxTimes`, copied verbatim, and covers the rest by behavior. It kills
-425; no mutant timed out. Rerun with `MUTATION_MODULE=lcmodel-tissue pnpm exec
-stryker run stryker.config.mjs`. The two survivors:
+`lookUpRelaxTimes`, copied verbatim, and covers the rest by behavior. That
+initial expanded suite killed 425; no mutant timed out. Rerun with `MUTATION_MODULE=lcmodel-tissue pnpm exec
+stryker run stryker.config.mjs`. The initial two survivors:
 
 - `tissue.js:197`, `x == null` to `false` in the CSV number format: for `null`
   and `undefined`, `!Number.isFinite(x)` is already true, so the cell stays
   empty. Equivalent.
-- `tissue.js:160`, `wconc * attmet` to `wconc / attmet`: it differs only when
-  `options.lcmodel` sets ATTMET to something other than 1, and the only caller,
-  `correctionFor`, never sets it. Equivalent for the app and the command line.
-  Writing this run's tests showed that the line inverts ATTH2O and ATTMET
-  against LCModel's own scaling (#545), so a test for a non-default ATTMET
-  waits for that fix.
+- `tissue.js:160`, `wconc * attmet` to `wconc / attmet`: the original suite
+  used only ATTMET = 1. Writing the tests exposed the inverted attenuation
+  factors in the implementation ([#545](https://github.com/neurodesk/webapps/issues/545)).
+
+The #545 correction adds independent ATTH2O, ATTMET and WCONC scaling checks
+for both tissue and alpha concentrations. It also corrects the pure-white-matter
+expectation and uses the fitted MEGA-PRESS ATTH2O of 0.43. A second run on
+2026-10-22 killed 427 of 428 mutants, with no timeouts or uncovered mutants.
+The only survivor is the redundant null check described above. The ATTMET
+mutation is now killed; it was a coverage gap in the exported correction
+function, not an equivalent mutation across its supported inputs.
 
 The 2026-10-20 workspace-graph comment fixtures cover whole-line comments,
 preserved directives, block/JSDoc and inline comments, comment-looking string

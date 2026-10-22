@@ -37,6 +37,7 @@ export const CASES = Object.freeze([
   { id: "siemens-special", example: "siemens-special", operation: "fit", parameters: {} },
   { id: "siemens-megapress", example: "siemens-megapress", operation: "fit", parameters: {} },
   { id: "philips-megapress", example: "philips-megapress", operation: "fit", parameters: {} },
+  { id: "philips-megapress-tissue", example: "philips-megapress", operation: "fit", parameters: { fractionGM: 0.6, fractionWM: 0.27, fractionCSF: 0.13 } },
   { id: "philips-megapress-none", example: "philips-megapress", operation: "fit", parameters: { macromoleculeModel: "none" } },
   { id: "philips-megapress-unedited", example: "philips-megapress", operation: "fit", parameters: { edited: false } },
   { id: "philips-press-group", example: "philips-press-group", operation: "fit-group", parameters: {} },
