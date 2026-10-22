@@ -1,5 +1,13 @@
 # seedseg
 
+## 0.6.20261022
+
+### Patch Changes
+
+- Updated dependencies [d32b485]
+  - @neurodesk/webapp-components@0.19.0
+  - @neurodesk/seedseg@0.6.20261022
+
 ## 0.6.20261020
 
 ### Patch Changes
@@ -8,6 +16,7 @@
   - @neurodesk/webapp-components@0.17.1
   - @neurodesk/seedseg@0.6.20261020
 - Updated dependencies [a36fde4]
+
   - @neurodesk/webapp-components@0.18.0
   - @neurodesk/seedseg@0.6.20261020
 
@@ -36,14 +45,17 @@
   - @neurodesk/seedseg@0.6.20261020
 
 - Updated dependencies [d9718cd]
+
   - @neurodesk/webapp-components@0.16.3
   - @neurodesk/seedseg@0.6.20261020
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/webapp-components@0.16.0
   - @neurodesk/seedseg@0.6.20261020
 
 - Updated dependencies [4b40da1]
+
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/seedseg@0.6.20261020
 
@@ -55,10 +67,12 @@
 - Updated dependencies
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.17.0
   - @neurodesk/seedseg@0.6.20261020
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.18.0
   - @neurodesk/seedseg@0.6.20261020
 
@@ -133,22 +147,27 @@
   - @neurodesk/seedseg@0.6.20261018
 
 - Updated dependencies [b68209b]
+
   - @neurodesk/webapp-components@0.15.0
   - @neurodesk/seedseg@0.6.20261018
 
 - Updated dependencies [67a5a8f]
+
   - @neurodesk/webapp-components@0.14.4
   - @neurodesk/seedseg@0.6.20261018
 
 - Updated dependencies [7c0d201]
+
   - @neurodesk/webapp-components@0.16.2
   - @neurodesk/seedseg@0.6.20261018
 
 - Updated dependencies [46935f7]
+
   - @neurodesk/webapp-components@0.16.1
   - @neurodesk/seedseg@0.6.20261018
 
 - Updated dependencies [3329c39]
+
   - @neurodesk/webapp-components@0.16.0
 
 - Updated dependencies [b67e4e9]
@@ -180,6 +199,7 @@
   - @neurodesk/seedseg@0.6.20261016
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.14.2
   - @neurodesk/seedseg@0.6.20261016
 
@@ -251,6 +271,7 @@
   - @neurodesk/seedseg@0.6.20261010
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.12.2
   - @neurodesk/seedseg@0.6.20261010
 
@@ -292,9 +313,11 @@
   - @neurodesk/webapp-components@0.10.2
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.11.0
 
 - Updated dependencies [22aa4bf]
+
   - @neurodesk/webapp-components@0.11.1
 
 - Updated dependencies [70f2770]
@@ -319,9 +342,11 @@
   - @neurodesk/webapp-components@0.9.0
 
 - Updated dependencies [ec85a09]
+
   - @neurodesk/webapp-components@0.10.0
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.10.1
 
 - Updated dependencies
@@ -343,9 +368,11 @@
   - @neurodesk/webapp-components@0.6.2
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.7.0
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.6.2
 
   - @neurodesk/webapp-components@0.7.0
@@ -367,9 +394,11 @@
   - @neurodesk/webapp-components@0.6.0
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.6.1
 
 - Updated dependencies [93381e8]
+
   - @neurodesk/webapp-components@0.6.0
 
   - @neurodesk/webapp-components@0.6.1
@@ -419,12 +448,15 @@
   - @neurodesk/webapp-components@0.4.4
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.4.3
 
 - Updated dependencies [4959500]
+
   - @neurodesk/webapp-components@0.4.4
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.4.2
 
   - @neurodesk/webapp-components@0.4.3
@@ -450,9 +482,11 @@
 - Remove the unsuitable synthetic example and its selector from SeedSeg. Load scans through the file picker or drag and drop.
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.4.1
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.3.1
 
   - @neurodesk/webapp-components@0.4.1
@@ -479,12 +513,15 @@
   - @neurodesk/webapp-components@0.2.2
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.1
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.2
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.2.0
 
   - @neurodesk/webapp-components@0.2.1
@@ -504,9 +541,11 @@
 - Updated dependencies [3cd773f]
 
 - Updated dependencies [4add8da]
+
   - @neurodesk/webapp-components@0.1.5
 
 - Updated dependencies
+
   - @neurodesk/webapp-components@0.1.4
 
 - Updated dependencies [4add8da]
