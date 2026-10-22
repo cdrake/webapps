@@ -214,22 +214,24 @@ try {
             },
             async grantSource({ path, url }, { signal: sessionSignal }) {
               if (target.isDestroyed()) throw new Error('Viewer window is closed');
-              if (url && (new URL(url).origin === local.origin || sourceGrants.permits(contentsId, url))) return { url };
+              if (url && (new URL(url).origin === local.origin || sourceGrants.permits(contentsId, url))) return { url, approval: 'existing' };
               const file = path && await realpath(path).catch(() => { throw new Error(`No such file: ${path}`); });
               if (file && !(await stat(file)).isFile()) throw new Error(`Not a file: ${path}`);
-              if (file && grantedFiles.has(file)) return { url: grantedFiles.get(file) };
+              if (file && grantedFiles.has(file)) return { url: grantedFiles.get(file), approval: 'existing' };
+              let approval = 'configured';
               if (!(await approvedSources.permits({ file, url }))) {
                 await approveSource(target, { app: contract.title ?? contract.app, source: file ?? url, signal: sessionSignal });
+                approval = 'person';
               }
               if (target.isDestroyed()) throw new Error('Viewer window is closed');
               if (url) {
                 sourceGrants.extend(contentsId, [url]);
-                return { url };
+                return { url, approval };
               }
               const mounted = await local.mountFile(file);
               mounts.push(mounted);
               grantedFiles.set(file, mounted);
-              return { url: mounted };
+              return { url: mounted, approval };
             },
           };
         }

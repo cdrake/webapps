@@ -330,8 +330,16 @@ try {
   assert.equal(refusedLoad.isError, true, JSON.stringify(refusedLoad.content));
   assert.match(refusedLoad.content[0].text, /not approved in advance/);
   assert.equal(await layers(), layerCount + 1);
+  const regrant = await client.tool('sessions_grant', { sessionId, path: maskPath });
+  assert.equal(regrant.approval, 'existing', 'a file approved once is not approved again');
+  assert.ok(regrant.grantedUrl.startsWith('http://127.0.0.1:'), regrant.grantedUrl);
+  const refusedGrant = await client.call('tools/call', { name: 'sessions_grant', arguments: { sessionId, path: fixture } });
+  assert.equal(refusedGrant.isError, true, JSON.stringify(refusedGrant.content));
+  const record = JSON.parse(await readFile(join(scratch, 'runs', started.id, 'run.json'), 'utf8'));
+  assert.deepEqual(record.sources.map(({ path, outcome, approval }) => [path, outcome, approval]),
+    [[maskPath, 'approved', 'configured'], [fixture, 'refused', undefined], [fixture, 'refused', undefined]]);
   summary.niivue = { tabs: tabs.text, target, reported, screenshot: nvShot,
-    sources: { approvedOverlay: report.artifacts.mask.filename, unapproved: refusedLoad.content[0].text } };
+    sources: { approvedOverlay: report.artifacts.mask.filename, unapproved: refusedLoad.content[0].text, record: record.sources } };
   const eofRun = await client.tool('run_brain_extraction', request);
   summary.exit = await client.end();
   const afterEof = JSON.parse(await readFile(join(scratch, 'runs', eofRun.id, 'run.json'), 'utf8'));

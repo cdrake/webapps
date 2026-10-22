@@ -250,8 +250,15 @@ Phase 1 runs on branch `feat/nv-mcp-bridge` against `@niivue/nv-mcp`
     fixture by path fails with the deny error and adds nothing. An earlier
     run with the dialog loaded the fixture after a person clicked **Allow**.
     **Deny** and the timeout were not tried by hand.
-  - Not built yet: the `sessions_grant` tool, and recording approvals and
-    denials in the run record.
+  - `sessions_grant { sessionId, path | url }` approves a source ahead of
+    time and returns its `grantedUrl` and how it was approved: by a `person`,
+    by `configured` pre-approval, or `existing`.
+  - Each new approval and each refusal is appended to `sources` in the run
+    record (`run.json` and `runs_get`), and stays after the session closes.
+    Sources the session could already load are not recorded.
+  - The smoke checks that a second `sessions_grant` of the mask returns
+    `existing`, and that refusing the fixture by `sessions_grant` fails. It
+    also checks that `run.json` lists the mask approval and both refusals.
 - **Timeouts.** The bridge timeout is 65 s: a 30 s approval wait plus the
   session's 30 s command limit. A stalled page is reported by the session,
   which also closes it, before nv-mcp's own timer fires.

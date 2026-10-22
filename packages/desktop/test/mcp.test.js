@@ -101,7 +101,7 @@ test('stdio initializes and discovers strict contract-derived tools and resource
   assert.ok(initialized.capabilities.resources);
   const listed = await client.request('tools/list');
   const tools = new Map(listed.result.tools.map(tool => [tool.name, tool]));
-  assert.deepEqual([...tools.keys()].filter(name => /^(apps|runs?|sessions|viewers)_/.test(name)).sort(), ['apps_describe', 'apps_list', 'apps_validate', 'run_brain_extraction', 'run_synthseg', 'runs_cancel', 'runs_get', 'runs_start', 'sessions_close', 'sessions_list', 'viewers_crosshair', 'viewers_display', 'viewers_list', 'viewers_regions', 'viewers_screenshot', 'viewers_state', 'viewers_tab', 'viewers_volumes']);
+  assert.deepEqual([...tools.keys()].filter(name => /^(apps|runs?|sessions|viewers)_/.test(name)).sort(), ['apps_describe', 'apps_list', 'apps_validate', 'run_brain_extraction', 'run_synthseg', 'runs_cancel', 'runs_get', 'runs_start', 'sessions_close', 'sessions_grant', 'sessions_list', 'viewers_crosshair', 'viewers_display', 'viewers_list', 'viewers_regions', 'viewers_screenshot', 'viewers_state', 'viewers_tab', 'viewers_volumes']);
   for (const name of ['list_tabs', 'use_tab', 'where_am_i', 'go_to_point', 'set_view', 'set_volume', 'screenshot']) assert.ok(tools.has(name), name);
   const synthseg = tools.get('run_synthseg').inputSchema;
   assert.equal(synthseg.additionalProperties, false);
@@ -176,6 +176,19 @@ test('nv-mcp tools reach a retained NiiVue viewer through its session', { timeou
   const denied = await client.tool('load_volume', { url: 'https://example.org/denied.nii.gz' });
   assert.equal(denied.result.isError, true);
   assert.match(text(denied), /was denied/);
+  assert.deepEqual(value(await client.tool('sessions_grant', { sessionId: 'session-1', path: '/data/sub-01/T2.nii.gz' })), {
+    sessionId: 'session-1', path: '/data/sub-01/T2.nii.gz', grantedUrl: 'http://127.0.0.1:1/_local/token/T2.nii.gz', approval: 'person',
+  });
+  for (const args of [
+    { sessionId: 'session-1' },
+    { sessionId: 'session-1', path: 'relative.nii' },
+    { sessionId: 'session-1', path: '/data/T2.nii', url: 'https://example.org/T2.nii' },
+    { sessionId: 'session-1', url: 'ftp://example.org/T2.nii' },
+    { sessionId: 'session-1', url: 'https://example.org/denied.nii.gz' },
+  ]) {
+    const response = await client.tool('sessions_grant', args);
+    assert.ok(response.error || response.result.isError, JSON.stringify(args));
+  }
   const refused = await client.tool('go_to_point', { mm: [666, 0, 0] });
   assert.equal(refused.result.isError, true);
   assert.match(text(refused), /The page refused/);

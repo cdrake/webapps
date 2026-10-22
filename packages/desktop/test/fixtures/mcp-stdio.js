@@ -118,7 +118,7 @@ const service = {
   },
   async grantSource(sessionId, { path, url }) {
     if (url?.includes('denied')) throw new Error(`Loading ${url} was denied.`);
-    return { url: url ?? `http://127.0.0.1:1/_local/token/${path.split('/').at(-1)}` };
+    return { url: url ?? `http://127.0.0.1:1/_local/token/${path.split('/').at(-1)}`, approval: 'person' };
   },
   async closeSession(id) {
     sessionWatcher?.({ type: 'closed', id });

@@ -189,6 +189,20 @@ without an answer. An approved URL is added to the window's grants. An
 approved file is served on its own through the local server. Approvals last
 until the session closes.
 
+To approve a source ahead of time, call
+`sessions_grant { sessionId, path }` or `sessions_grant { sessionId, url }`.
+A path must be absolute. The result's `grantedUrl` is the address to load the
+source by. `approval` says how it was approved:
+
+- `person`: someone clicked **Allow**.
+- `configured`: it is listed in `NEURODESK_APPROVED_SOURCES`.
+- `existing`: the session could already load it.
+
+The run's `run.json`, and `runs_get`, list each new approval and each refusal
+under `sources`, with `requestedAt`, the `path` or `url`, an `outcome` of
+`approved` or `refused`, and the `approval` and `grantedUrl` or the `reason`.
+Sources the session could already load are not listed.
+
 | Variable | Effect |
 | --- | --- |
 | `NEURODESK_APPROVED_SOURCES` | Comma-separated absolute directories and http(s) URL prefixes approved without a dialog. |

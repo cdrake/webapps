@@ -65,7 +65,15 @@ export function createAutomationService({ contracts, outputRoot, execute, native
     }
     return request;
   };
-  const persist = run => writeFile(join(run.directory, 'run.json'), `${JSON.stringify(run.snapshot, null, 2)}\n`);
+  // Writes one at a time, so a later source approval cannot be overwritten by an earlier, slower save.
+  const persist = run => run.saving = (run.saving ?? Promise.resolve()).catch(() => {})
+    .then(() => writeFile(join(run.directory, 'run.json'), `${JSON.stringify(run.snapshot, null, 2)}\n`));
+  const recordSource = async (sessionId, entry) => {
+    const run = [...runs.values()].find(candidate => candidate.snapshot.session?.id === sessionId);
+    if (!run) return;
+    run.snapshot.sources = [...run.snapshot.sources ?? [], entry];
+    await persist(run).catch(error => console.error(`Could not save run record: ${error.message}`));
+  };
   return {
     async listApps() {
       return [...catalog.values()].map(({ contract, sha256 }) => ({
@@ -175,7 +183,24 @@ export function createAutomationService({ contracts, outputRoot, execute, native
     async listSessions() { return viewers.list(); },
     async viewerCommand(sessionId, command, args) { return viewers.command(sessionId, command, args); },
     async closeSession(sessionId) { return viewers.close(sessionId); },
-    async grantSource(sessionId, source) { return viewers.grantSource(sessionId, source); },
+    /**
+     * Grants a session a source its run was not given, recording each new approval and each refusal in the run record.
+     * Sources the session can already load are returned without a record.
+     */
+    async grantSource(sessionId, source) {
+      const requestedAt = new Date().toISOString();
+      let granted;
+      try {
+        granted = await viewers.grantSource(sessionId, source);
+      } catch (error) {
+        await recordSource(sessionId, { ...source, requestedAt, outcome: 'refused', reason: String(error?.message ?? error) });
+        throw error;
+      }
+      if (granted.approval !== 'existing') {
+        await recordSource(sessionId, { ...source, requestedAt, outcome: 'approved', approval: granted.approval, grantedUrl: granted.url });
+      }
+      return granted;
+    },
     /** Calls `watcher` with `{ type: 'ready', session }` once a retained viewer accepts commands and `{ type: 'closed', id }` when it goes. */
     watchSessions(watcher) {
       sessionWatchers.add(watcher);
