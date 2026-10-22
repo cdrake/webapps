@@ -101,7 +101,8 @@ Measured locally on 2026-10-15 (two workers, `Done in` from each module's log):
 | Full run, eight Stryker runs (2026-10-17, hosted runner) | 1013 | - | 179 s step |
 | LCModel `tissue.js` (2026-10-22) | 427 | 0.14 s | 32 s |
 | Full run, nine Stryker runs (2026-10-22, hosted runner) | 1511 | - | 335 s step |
-| LCModel `lcmodel-io.js:1-321` (2026-10-22) | 506 | 0.25 s | 75 s |
+| LCModel `lcmodel-io.js:1-321` (2026-10-22) | 506 | 0.25 s | 75 s locally, 51 s hosted |
+| Full run, ten Stryker runs (2026-10-22, hosted runner) | 2017 | - | 268 s step |
 | PR smoke (`tableName`) | 2 | 0.13 s | 6 s wall |
 
 On 2026-10-16 the two Carotid Flow modules added 39 and 42 mutants, each with a
