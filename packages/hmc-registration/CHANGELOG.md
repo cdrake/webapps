@@ -1,5 +1,13 @@
 # @neurodesk/hmc-registration
 
+## 0.2.0
+
+### Minor Changes
+
+- ed57be4: Add ANTs `AverageImages` and `AverageAffineTransform`, and an antsApplyTransforms-style `--apply` with Linear, NearestNeighbor, BSpline, HammingWindowedSinc and LanczosWindowedSinc interpolation. `argv[0]` selects the program in `run(argv)` and in the worker. Each program writes the same bytes as native ANTs 52bc0ab on the test set. The `antsRegistration` output does not change.
+
+  Apply multiple transforms in ANTs command-line order, with the last transform acting first. Test noncommuting transforms and inverse composition.
+
 ## 0.1.1
 
 ### Patch Changes

@@ -18,8 +18,12 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${ANTS_SOURCE_DIR}/Examples ${ANTS_SOURCE_DIR}/Examples/include
   ${ANTS_SOURCE_DIR}/Utilities ${ANTS_SOURCE_DIR}/ImageRegistration
   ${ANTS_SOURCE_DIR}/Tensor ${ANTS_SOURCE_DIR}/Temporary)
-# Only the 3D float implementation is compiled; src/unsupported.cxx refuses every other mode.
-add_executable(hmc-registration src/main.cxx src/unsupported.cxx
+# Only the 3D float implementation of antsRegistration is compiled; src/unsupported.cxx refuses
+# every other mode. AverageImages and AverageAffineTransform are ANTs's own sources, unchanged;
+# src/apply.cxx is the --apply resampler.
+add_executable(hmc-registration src/main.cxx src/unsupported.cxx src/apply.cxx
+  ${ANTS_SOURCE_DIR}/Examples/AverageImages.cxx
+  ${ANTS_SOURCE_DIR}/Examples/AverageAffineTransform.cxx
   ${ANTS_SOURCE_DIR}/Examples/antsRegistration.cxx
   ${ANTS_SOURCE_DIR}/Examples/antsRegistration3DFloat.cxx
   ${ANTS_SOURCE_DIR}/Examples/antsRegistrationTemplateHeader.cxx
