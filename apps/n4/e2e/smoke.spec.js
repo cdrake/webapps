@@ -90,9 +90,11 @@ test("cancelling stops the worker and permits another run", async ({ page }) => 
   await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(0);
 });
 
+// Rows: the input image, then the outputs.
 const EXAMPLE_RUNS = {
-  "ds005134-slab": { image: "sub-01_dir-AP_desc-slab_dwi.nii.gz", rows: 6, volumes: 137, stem: "sub-01_dir-AP", prefix: "sub-01_dir-AP_desc-n4_dwi" },
-  dwi: { image: "dwi.nii.gz", rows: 5, volumes: 21, stem: "dwi", prefix: "dwi_desc-n4" },
+  "ds005134-slab": { image: "sub-01_dir-AP_desc-slab_dwi.nii.gz", rows: 7, volumes: 137, stem: "sub-01_dir-AP", prefix: "sub-01_dir-AP_desc-n4_dwi" },
+  "t1-head": { image: "T1_head.nii.gz", rows: 4, volumes: 1, stem: "T1", prefix: "T1_desc-n4_head" },
+  dwi: { image: "dwi.nii.gz", rows: 6, volumes: 21, stem: "dwi", prefix: "dwi_desc-n4" },
 };
 
 test("the first example is the ds005134 multi-shell slab", () => {
@@ -110,6 +112,12 @@ for (const example of examples) {
     await expect(page.locator("#statusText")).toHaveText("Bias field corrected", { timeout: 210000 });
     await expect(page.locator("#technicalLog")).toContainText(/MindGrab .+ brain mask on (cpu|webgpu|webgl2)/);
     await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(run.rows);
+    // The viewer can go back to the scan before correction; its download is the input itself.
+    const inputRow = page.locator("#resultList .nd-volume-toggle").filter({ hasText: "Input image" });
+    await inputRow.getByRole("button", { name: "View" }).click();
+    await expect(page.locator("#technicalLog")).toContainText(`Showing ${run.image}`);
+    const original = download(page, "Input image");
+    expect((await original).suggestedFilename()).toBe(run.image);
     const image = download(page, "Corrected image");
     expect((await image).suggestedFilename()).toBe(`${run.prefix}.nii.gz`);
     const corrected = await readDownload(image);

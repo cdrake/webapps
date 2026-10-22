@@ -36,6 +36,21 @@
     ]
   },
   {
+    "id": "t1-head",
+    "label": "T1-weighted head MRI",
+    "description": "A whole-head T1-weighted scan, 1 mm, with a visible intensity bias.",
+    "expectedResult": "The bias field of the T1, the corrected T1 and the brain mask.",
+    "files": [
+      {
+        "role": "image",
+        "name": "T1_head.nii.gz",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/356a4adbce52cf9052d61ef90b14ba263e7c25e9/synthseg/validation/T1_head.nii.gz",
+        "sha256": "58220b40d179b7a93dd3ce231dd7afaa39989c75658b2b8e4c2f34abf8f16416",
+        "bytes": 5176902
+      }
+    ]
+  },
+  {
     "id": "dwi",
     "label": "Single-shell DWI",
     "description": "A 21-volume b = 2500 s/mm² DWI with its bval and bvec.",
