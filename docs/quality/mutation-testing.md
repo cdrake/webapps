@@ -121,8 +121,8 @@ on 8 cores, where the five earlier modules alone took 179 s.
 
 On 2026-10-22 the hosted runner took 335 s for the nine modules, 31 s of it
 for `tissue.js`. The workspace graph, now 393 mutants with the comment fixtures,
-took 182 s of that, up from 84 s on 2026-10-17. The 10-minute job timeout still
-leaves about four minutes.
+took 182 s of that, up from 84 s on 2026-10-17. The then-current 10-minute job
+timeout left about four minutes.
 
 On 2026-10-17 the workspace graph added 371 mutants. Its suite writes a fixture
 tree of about 150 files, two of them 1 MiB, for every mutant. On the hosted
@@ -132,16 +132,17 @@ host with a load average of 15 to 25 on 8 cores; measure on an idle host.
 
 The full run took about 4 s with the canary alone and 96 s with three modules.
 Most of `lockfile-impact.mjs`'s time is its seven timeouts: each is a mutant that
-loops forever and is stopped after Stryker's timeout. The workflow's 10-minute
-timeout leaves room for slower hosted runners. The hosted full run varies by
-about a minute between runs, mostly in the workspace graph (116 to 182 s on
-2026-10-22). With ten modules it takes 268 to about 410 s, so a new module
-needs its own hosted measurement and must keep the step under about 450 s.
-Otherwise the job timeout or the module list has to change first.
-With `voxel.js` the eleven modules took 523 s on 2026-10-22, with the workspace
-graph at 178 s. That is over the 450 s line, so this module needs the job
-timeout raised, or the full run split across jobs, before it can join the
-scheduled run.
+loops forever and is stopped after Stryker's timeout. The hosted full run varies
+by about a minute between runs, mostly in the workspace graph (116 to 182 s on
+2026-10-22). With ten modules it took 268 to about 410 s. With `voxel.js` the
+eleven modules took 523 s on 2026-10-22, with the workspace graph at 178 s; the
+whole job took 560 s, including setup. That left only 40 s under the old
+10-minute limit, less than the observed variation.
+
+The workflow now allows 20 minutes. New modules still need a hosted full-run
+measurement with room for setup and runner variation. If the full run approaches
+that limit, split it across jobs before adding more modules. Pull requests run
+only the mutation-detection canary; the full run remains scheduled or manual.
 
 ## Results and reviewed survivors
 
@@ -171,11 +172,14 @@ sub-point on such a face. That change would move shipped tissue fractions and
 the recorded browser references, so it is a separate decision (#550).
 
 It kills 486, and 6 time out, each a loop that never ends. Rerun with
-`MUTATION_MODULE=lcmodel-voxel pnpm exec stryker run stryker.config.mjs`. All
-10 survivors are equivalent:
+`MUTATION_MODULE=lcmodel-voxel pnpm exec stryker run stryker.config.mjs`. Nine
+survivors are equivalent for the supported inputs; one is a retained coverage
+gap at a near-singular determinant boundary:
 
 - `voxel.js:14`, `new Array(16)` to `new Array()`: all 16 entries are assigned.
-- `:32`, `< 1e-12` to `<= 1e-12`: changes only a determinant of exactly 1e-12.
+- `:32`, `< 1e-12` to `<= 1e-12`: not equivalent. At a determinant of exactly
+  1e-12, the original returns an inverse and the mutant throws. The suite does
+  not cover this near-singular boundary; its coverage remains incomplete here.
 - `:49`, not cutting rows to four columns: NIfTI affine rows have four.
 - `:78` (three) and `:81`, starting the bounding box at the opposite infinity
   or taking a fourth corner coordinate: the bounds only limit the scan, and the
