@@ -1,6 +1,6 @@
 # SDC port and validation plan
 
-Plan, 19 October 2026, for step 7 of the [diffusion design](dwi-microstructure-design.md): susceptibility distortion correction (`sdc`) with SyN-SDC, the fieldmap-less method of sdcflows. It follows the form of the HMC plan (PR [#486](https://github.com/neurodesk/webapps/pull/486)). PR #486 is not merged yet, so this plan links the PR. After #486 merges, a follow-up changes the link to `dwi-hmc-plan.md`. Nothing here is implemented yet.
+Plan, 19 October 2026, for step 7 of the [diffusion design](dwi-microstructure-design.md): susceptibility distortion correction (`sdc`) with SyN-SDC, the fieldmap-less method of sdcflows. It follows the form of the HMC plan (PR [#486](https://github.com/neurodesk/webapps/pull/486)). PR #486 is not merged yet, so this plan links the PR. After #486 merges, a follow-up changes the link to `dwi-hmc-plan.md`. The native reference runs of section 6.1 are done (#461; `sdc/reference/` and `sdc/prior/` on the Hugging Face dataset, pinned by `exes/dwi/sdc/validation/`). Nothing else is implemented yet.
 
 Sources that this plan read, with the commit of each:
 
@@ -234,6 +234,21 @@ Registration (WASM, `--float 1`). First replay the kept inputs of the double see
 - Also report the 95th percentile of the same differences, the native `--float 1` against double, and the difference of the pre-B-spline Hz field (more sensitive to the registration).
 - Report-only: the field against ds005134's GRE field map (`fmap/sub-01_run-001_phasediff`, magnitude 1 and 2), resampled to the EPI grid. This is an independent measure, not the reference of the port.
 
+Measured by #461 (`sdc/reference/` at dataset commit `8520dbca`, `README.md` there; median_M, p95_M in Hz):
+
+| Quantity | median | p95 |
+| --- | ---: | ---: |
+| spread, end to end (three seeds, 2 mm, double) | 2.710 | 8.233 |
+| native `--float 1` vs double, seed 1234, end to end | 0.437 | 1.920 |
+| spread, SyN only (replays on the kept seed-1234 inputs) | 1.375 | 5.603 |
+| native `--float 1` vs double, seed 1234, SyN only | 0.656 | 3.165 |
+| the same seed twice (end to end and SyN only) | 0 (byte-identical) | 0 |
+| report-only: reference `fmap` vs the GRE field map | 11.00 (Pearson r 0.663) | 35.08 |
+
+- The spread is larger than the cap, so the effective gate is `d < 0.5 Hz`.
+- The end-to-end spread also holds the `epi2anat` affine: the seed drives its Random 0.4 sampling, and between seeds it moves the mask voxels by 0.16-0.29 mm (median). The SyN-only replays fix it.
+- **Risk:** the native `--float 1` run differs from the native double run by 0.656 Hz in the SyN-only replay, the input set of the first gate of #462. That is above the 0.5 Hz cap. A WASM `--float 1` run is likely to differ by about as much. This measurement does not change Q66; the maintainer decides if #462 needs a different cap for the replay.
+
 The idea is the same as Q53: the WASM result must be within the native repeat spread. The rule is different in two ways:
 
 - Q53 uses one seed pair and compares per volume and per axis. Q66 takes the maximum over three pairs. That is closer to the shell-maximum alternative of the HMC plan, which is not accepted.
@@ -250,19 +265,22 @@ CI:
 
 ## 7. Runtime and memory (Q65)
 
-Estimates; #461 replaces them with measurements.
+Measured by #461 (21-22 October 2026) with native ANTs 52bc0ab on one thread, AMD Ryzen 9 9950X; `sdc/reference/README.md` has every run. Up to 17 runs shared the host's 32 logical cores, one thread each, so a wall time on an idle host can be shorter. "Max RSS" is the largest resident memory of one process (`/usr/bin/time -v`). The cgroup peak of a run also counts the page cache, so it is larger and is not used here.
 
-| Grid | Voxels | One vector field, float / double | Note |
+| Grid | Voxels | SyN `antsRegistration` (double / `--float 1`) | Whole run (double / float) |
 | --- | --- | --- | --- |
-| 0.8 mm (stock, ds005134) | 289 × 289 × 171 = 14.3 M | 171 MB / 343 MB | SyN holds several fields and gradient images for two metric pairs |
-| 2 mm (debug path, the port's grid, Q68) | 116 × 116 × 69 = 0.93 M | 11 MB / 22 MB | |
-| slab, 2 mm (Q68) | 67 × 92 × 10 = 0.06 M | 0.7 MB / 1.5 MB | |
+| 0.8 mm (stock, ds005134) | 289 × 289 × 171 = 14.3 M | 5242-5412 s, 13.10 GB / 4595 s, 6.97 GB | 5641-5807 s / 4973 s |
+| 2 mm (debug path, the port's grid, Q68) | 116 × 116 × 69 = 0.93 M | 73-97 s, 0.96-0.98 GB / 60 s, 0.54 GB | 459-490 s / 320 s |
+| slab, 2 mm (Q68) | 67 × 92 × 10 = 0.06 M | 6.5-7.2 s, 0.09 GB / 3.2 s, 0.07 GB | 77-80 s / 74 s |
 
-- Anchor: SYNcro's WASM affine + SyN at 1 mm (182 × 218 × 182 = 7.2 M voxels) took 186 s and grew a 3.16 GB heap (`packages/syncro/validation/README.md:33`). If the heap scales with the voxel count, the stock grid needs about 6 GB. The WASM module has `MAXIMUM_MEMORY` 4 GiB (`packages/registration/CMakeLists.txt:35`; #444 copies it). The stock grid will probably not fit in the browser. The command line (#466) runs the same wasm32 module in Node, with the same 4 GiB limit (no `MEMORY64` build in the repository). Thus the port uses the 2 mm grid in both (Q68).
-- Time: the stock schedule runs 300 + 10 iterations at full resolution with no shrink. Estimate 20-90 min native double on one thread, and 1-3 times that in WASM. On the 2 mm grid, estimate 1-5 min native, and 1-3 times that in WASM.
-- The B-spline fit: 0.93 M × 4624 sparse matrix with 64 entries for each row, about 0.5 GB in CSR float32 with indices. It runs in the Rust crate.
-- MindGrab: 2.6 GB peak for each call in Node (AGENTS.md, node drivers); the app runs it twice (mean b0, T1w).
-- The affine to MNI (Q59): the 1 mm template is 193 × 229 × 193 (8.5 M voxels). The affine schedule shrinks by 4 and 2 before the full-resolution level. Estimate well under 1 GB and under 1 min; #461 measures it. #461 also records the download size of the template.
+- The 0.8 mm `--float 1` SyN alone had a max RSS of 6.97 GB. That is above the 3.5 GB limit of Q68 option (a), so the stock grid does not fit the 4 GiB wasm32 heap. The field difference test of Q68 reopens the decision (section 9, Q68), but memory alone excludes option (a).
+- On the 2 mm grid SyN is not the longest step. `epi2anat` (the EPI-to-anat affine on the 0.8 mm T1w grid) took 190-314 s and 0.66 / 1.25 GB (float / double), and `DenoiseImage` of the 0.8 mm T1w took 27-30 s and 0.79 GB. These two steps work on the T1w grid, not on the SyN grid.
+- The affine to MNI (Q59): `affine.json` with the 1 mm template brain fixed (193 × 229 × 193) and the T1w brain moving took 885 s and 1.37 GB in double on one thread. The estimate (under 1 min) was wrong: the Rigid stage runs up to 1000 iterations at shrink 4 and the Affine stage 100 iterations at full resolution. With the 0.8 mm T1w fixed (21.3 M voxels) it took 1847 s. The browser cost of this step, and of `epi2anat`, must be measured in #462 and #464.
+- The template download is 13 844 613 bytes (T1w 13 685 075, brain mask 159 538); the atlas and its affine are 5 801 693 bytes (`sdc/prior/`).
+- MindGrab (Node driver, CPU, 32 threads): 14-15 s and 2.75-3.08 GB for each call (mean b0, slab mean b0, T1w).
+- The GRE field map (report-only): 11 s.
+- The B-spline fit: 0.93 M × 4624 sparse matrix with 64 entries for each row, about 0.5 GB in CSR float32 with indices. It runs in the Rust crate. It was not measured alone: it runs in the Python driver process, whose max RSS was 1.70 GB in the 0.8 mm runs and 2.57 GB in the reference run, which also unwarped the 137-volume DWI series (25 s).
+- Anchor kept for the WASM estimate: SYNcro's WASM affine + SyN at 1 mm (7.2 M voxels) took 186 s and grew a 3.16 GB heap (`packages/syncro/validation/README.md:33`). The WASM module has `MAXIMUM_MEMORY` 4 GiB (`packages/registration/CMakeLists.txt:35`; #444 copies it). The command line (#466) runs the same wasm32 module in Node, with the same limit.
 
 ## 8. Milestones
 
@@ -306,6 +324,7 @@ This plan changes these acceptance criteria of the issues. The maintainer confir
    SYNcro registers to a different template (FSL MNI152 1 mm, `packages/syncro/README.md:3,90`), so its transform cannot be used.
    **Decided (20 October 2026):** an affine-only registration of the MindGrab-masked T1w to the TemplateFlow `tpl-MNI152NLin2009cAsym_res-01_T1w` brain, with sdcflows' `affine.json` schedule, in WASM; the reference run gets the same transform from native ANTs. The prior is a coarse mask (`> 3` mm of average distortion), so an affine error of a few mm is likely small against the seed spread. Add an option "no prior" (`sd_prior=False`, the anat mask takes its place, `syn.py:540-542`).
    #461 measures three variants natively: a full SyN `std2anat_xfm` (as smriprep would give), the affine, and no prior. It reports the Dice of the prior masks and the field difference in brain. If the affine field differs from the SyN field by more than the seed spread, this decision is reopened.
+   **Measured (#461, 22 October 2026):** Dice of the affine and the full SyN prior masks 0.911; `fmap` differs by 0.152 Hz (median_M; p95 2.73 Hz), less than the 2 mm seed spread (2.71 Hz). **The decision stays.** "No prior" differs from the affine prior by 2.75 Hz. The affine registered the T1w brain (moving) to the template brain (fixed); `std2anat_xfm` is its inverse (`sdc/reference/std2anat/affine/`).
 4. **Q60. Licences and redistribution.**
    - `fmap_atlas.nii.gz` is in sdcflows `data/` (SHA-256 `72b8d2cc7ff3324f3bfaf52712bc191256e795bcff5ee168563b89e584aa40bb`).
      - It is the S2 File of Treiber et al. 2016, PLoS ONE 11(3): e0152472, [doi:10.1371/journal.pone.0152472.s002](https://doi.org/10.1371/journal.pone.0152472.s002). The downloaded file has SHA-256 `695bfdb19418309c9bdc4482e6e363067aa786322feb69751942985c7a707813`.
@@ -332,6 +351,7 @@ This plan changes these acceptance criteria of the issues. The maintainer confir
    The full T1w is the example's T1w. #461 adds it to the uploads of #374.
 9. **Q65. Runtime and memory.**
    **Decided (20 October 2026):** the estimates of section 7; #461 replaces them with measurements.
+   **Measured (#461, 22 October 2026):** section 7 now gives the measured times and memory.
 10. **Q66. The gate statistic.**
     **Decided (20 October 2026):** section 6.2. `d` is the median absolute difference in brain between the WASM field and the native double field at the same seed. `spread` is the largest median absolute difference between native seeds (three seeds, three pairs). The WASM field passes when `d ≤ max(spread, 0.05 Hz)` and `d < 0.5 Hz`. The deterministic parts keep fixed tolerances.
     The rule, the 0.05 Hz floor and the 0.5 Hz cap stay. The full-brain Node gate runs in a native workflow job (pull requests that touch the SDC code, nightly, manual). The slab Playwright test is untagged.
@@ -343,8 +363,13 @@ This plan changes these acceptance criteria of the issues. The maintainer confir
     - (b) 2 mm anat grid with the full `sd_syn.json` schedule. It is `init_syn_preprocessing_wf(debug=True)` with `init_syn_sdc_wf(sloppy=False)`, so the native reference can run it with no code change. `debug=True` also writes extra registration images (`syn.py:489-492`), which do not change the numbers;
     - (c) (a) on the command line and (b) in the browser, each with its own reference.
     **Decided (20 October 2026):** (b) in the browser and on the command line. The command line runs the same wasm32 module in Node, so it has the same 4 GiB limit, and (c) is the same as (b). The gate compares each WASM run with the native 2 mm runs (section 6.2). #461 also runs the stock 0.8 mm grid natively and reports the field difference between the two grids against the 0.8 mm seed spread, and the peak memory of the 0.8 mm `--float 1` run. If that difference is larger than the spread, this decision is reopened.
+    **Measured (#461, 22 October 2026): the difference is larger than the spread, so Q68 is reopened.**
+    - `fmap` on the 2 mm grid against the 0.8 mm grid at the same seed: 2.78, 2.81 and 2.68 Hz (median_M; p95 12.6-13.0 Hz). The 0.8 mm seed spread is 1.81 Hz (p95 4.20 Hz). The 2 mm seed spread is 2.71 Hz.
+    - Memory: the 0.8 mm `--float 1` SyN had a max RSS of 6.97 GB (double 13.10 GB). Option (a) needs under about 3.5 GB, so it is still not possible in the 4 GiB wasm32 heap. Time: 77 min for that SyN on one thread (section 7).
+    - Not decided here. The maintainer decides what to do; for example, keep (b) and state the grid difference, or look for a grid between 0.8 mm and 2 mm that fits.
 13. **Q69. `sd_syn_sloppy.json` (new; the issue asks if the app offers it).**
     **Decided (20 October 2026):** no, not in the first version. It has 10 times fewer iterations in stage 1 and 5 times fewer in stage 2, and it changes the B-spline fit (`zooms_min` 4.0). It would need its own reference and gate. Revisit after #461 if the full schedule is too slow.
+    **Measured (#461):** on the 2 mm grid `sloppy=True` differs from the full schedule by 1.44 Hz (median_M; p95 8.80 Hz), and its SyN took 53 s against 83 s. The full 2 mm SyN is not the slow step (section 7). This measurement does not change the decision.
 14. **Q70. N4 of the T1w (new).**
     fMRIPrep gives sdcflows a bias-corrected T1w (smriprep). sdcflows does not correct the T1w itself.
     **Decided (20 October 2026):** the app uses the T1w as the user gives it, and the reference does the same, so the gate compares like with like. The About text says that a bias-corrected T1w is better.
