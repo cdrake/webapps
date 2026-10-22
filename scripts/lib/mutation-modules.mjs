@@ -85,6 +85,14 @@ export const modules = [
     ],
     command: 'node --test packages/lcmodel/test/lcmodel-io.test.js',
   },
+  {
+    // Without the 64^3 oblique-volume and grid-orientation tests, which dominate an instrumented run.
+    id: 'lcmodel-voxel',
+    file: 'packages/lcmodel/src/voxel.js',
+    mutate: 'packages/lcmodel/src/voxel.js',
+    files: ['packages/lcmodel/package.json', 'packages/lcmodel/test/voxel.test.js'],
+    command: 'node --test --test-skip-pattern=oblique --test-skip-pattern=oriented packages/lcmodel/test/voxel.test.js',
+  },
 ];
 
 // The PR canary: tableName, a small naming function in the first module.

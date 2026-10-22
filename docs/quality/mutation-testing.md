@@ -23,6 +23,7 @@ network.
 | `scripts/lib/workspace-graph.mjs` | Which directories and root files each app and CI job reaches, and so which apps a change tests; a missed reference skips the tests that would catch the change | `test/workspace-graph.test.mjs` |
 | `packages/lcmodel/src/tissue.js` | LCModel's tissue- and alpha-corrected concentrations, the relaxation times behind them, when the correction applies, and its two downloads; the app and the `lcmodel` command line both use it | `packages/lcmodel/test/tissue.test.js` |
 | `packages/lcmodel/src/lcmodel-io.js:1-321` (all but `fillGaps`) | The control file every LCModel fit runs with, and how the app reads LCModel's .COORD and .TABLE files back: the concentrations, QC summary, curves, diagnostics and stop messages users see and download | `packages/lcmodel/test/lcmodel-io.test.js` |
+| `packages/lcmodel/src/voxel.js` | Which T1 voxels the spectroscopy voxel covers and the GM, WM and CSF fractions behind every tissue-corrected concentration | `packages/lcmodel/test/voxel.test.js`, without its two large-grid tests |
 
 `formatG` is mutated by line range because the rest of `index.js` drives the
 WebAssembly module. Its command selects the two `printf` tests by name; the rest
@@ -33,6 +34,12 @@ keeps covering that part. `fillGaps`, the last function in `lcmodel-io.js`, stay
 instrumenting its Fourier sums made each run of the suite take 4.4 s instead of
 0.25 s, about 20 minutes for the module. `test/mutation-quality.test.mjs` fails
 when the range stops ending at `presentRows` or another function follows it.
+The voxel suite skips its oblique-volume test on a 64³ grid and its
+grid-orientation test (`--test-skip-pattern=oblique --test-skip-pattern=oriented`).
+Instrumented, the two make every run take seconds, and the module took 175 s on
+the hosted runner. A rotated box on a small rotated grid covers the same code:
+it must match a direct count, sub-point for sub-point, voxel by voxel.
+`test/mutation-quality.test.mjs` fails when the patterns skip any other test.
 The two Carotid Flow modules share one suite of small
 in-memory NIfTI files. `packages/carotid-flow/test/node.test.js` runs the command
 line on the phantom and is not part of this run. The workspace graph's suite
@@ -103,6 +110,8 @@ Measured locally on 2026-10-15 (two workers, `Done in` from each module's log):
 | Full run, nine Stryker runs (2026-10-22, hosted runner) | 1511 | - | 335 s step |
 | LCModel `lcmodel-io.js:1-321` (2026-10-22) | 506 | 0.25 s | 75 s locally, 51 s hosted |
 | Full run, ten Stryker runs (2026-10-22, hosted runner) | 2017 | - | 268 s step |
+| LCModel `voxel.js` (2026-10-22) | 502 | 0.25 s instrumented | 80-91 s locally, 113 s hosted |
+| Full run, eleven Stryker runs (2026-10-22, hosted runner) | 2519 | - | 523 s step |
 | PR smoke (`tableName`) | 2 | 0.13 s | 6 s wall |
 
 On 2026-10-16 the two Carotid Flow modules added 39 and 42 mutants, each with a
@@ -112,8 +121,8 @@ on 8 cores, where the five earlier modules alone took 179 s.
 
 On 2026-10-22 the hosted runner took 335 s for the nine modules, 31 s of it
 for `tissue.js`. The workspace graph, now 393 mutants with the comment fixtures,
-took 182 s of that, up from 84 s on 2026-10-17. The 10-minute job timeout still
-leaves about four minutes.
+took 182 s of that, up from 84 s on 2026-10-17. The then-current 10-minute job
+timeout left about four minutes.
 
 On 2026-10-17 the workspace graph added 371 mutants. Its suite writes a fixture
 tree of about 150 files, two of them 1 MiB, for every mutant. On the hosted
@@ -123,14 +132,63 @@ host with a load average of 15 to 25 on 8 cores; measure on an idle host.
 
 The full run took about 4 s with the canary alone and 96 s with three modules.
 Most of `lockfile-impact.mjs`'s time is its seven timeouts: each is a mutant that
-loops forever and is stopped after Stryker's timeout. The workflow's 10-minute
-timeout leaves room for slower hosted runners. The hosted full run varies by
-about a minute between runs, mostly in the workspace graph (116 to 182 s on
-2026-10-22). With ten modules it takes 268 to about 410 s, so a new module
-needs its own hosted measurement and must keep the step under about 450 s.
-Otherwise the job timeout or the module list has to change first.
+loops forever and is stopped after Stryker's timeout. The hosted full run varies
+by about a minute between runs, mostly in the workspace graph (116 to 182 s on
+2026-10-22). With ten modules it took 268 to about 410 s. With `voxel.js` the
+eleven modules took 523 s on 2026-10-22, with the workspace graph at 178 s; the
+whole job took 560 s, including setup. That left only 40 s under the old
+10-minute limit, less than the observed variation.
+
+The workflow now allows 20 minutes. New modules still need a hosted full-run
+measurement with room for setup and runner variation. If the full run approaches
+that limit, split it across jobs before adding more modules. Pull requests run
+only the mutation-detection canary; the full run remains scheduled or manual.
 
 ## Results and reviewed survivors
+
+On 2026-10-22 the MRS voxel geometry, `packages/lcmodel/src/voxel.js`, joined
+the run with 502 mutants. Its tests moved from `apps/lcmodel/test` into the
+package so that Stryker's sandbox runs them against the mutated file. The
+data-gated Osprey mask comparison stays in the app. The first run killed 336,
+6 timed out and 160 survived. The only inverse checked was a permutation
+matrix, which leaves most cofactor terms at zero. No box was rotated except in
+the skipped test. No box hung over the image edge, the volume was never read on
+a non-1 mm grid, and nothing checked overlapping maps, map values outside the
+box or the no-tissue refusal. The suite now:
+
+- inverts a dense 4x4 matrix from both sides
+- checks a sheared, mirrored box's nominal volume
+- compares a rotated box on a rotated 2 mm grid, voxel by voxel, with a direct
+  count of sub-points mapped into the box
+- covers boxes hanging over three edges, overlapping maps, NaN outside the box
+  and both refusals
+- checks that with the default five samples a sub-point on a face counts as
+  inside, which gives a voxel centred on a face 3/5 of its weight
+
+That rule biases boxes whose faces fall on voxel centres. An axis-aligned 20 mm
+box centred on a voxel counts 20.2 mm a side, 3 % more volume, and its face
+layers outweigh the interior. An even default sample count would put no
+sub-point on such a face. That change would move shipped tissue fractions and
+the recorded browser references, so it is a separate decision (#550).
+
+It kills 486, and 6 time out, each a loop that never ends. Rerun with
+`MUTATION_MODULE=lcmodel-voxel pnpm exec stryker run stryker.config.mjs`. Nine
+survivors are equivalent for the supported inputs; one is a retained coverage
+gap at a near-singular determinant boundary:
+
+- `voxel.js:14`, `new Array(16)` to `new Array()`: all 16 entries are assigned.
+- `:32`, `< 1e-12` to `<= 1e-12`: not equivalent. At a determinant of exactly
+  1e-12, the original returns an inverse and the mutant throws. The suite does
+  not cover this near-singular boundary; its coverage remains incomplete here.
+- `:49`, not cutting rows to four columns: NIfTI affine rows have four.
+- `:78` (three) and `:81`, starting the bounding box at the opposite infinity
+  or taking a fourth corner coordinate: the bounds only limit the scan, and the
+  clamping to the image keeps every covered voxel inside it.
+- `:135`, the default `unlabelled` option as `""`: any value other than
+  `exclude` counts the unlabelled remainder as CSF.
+- `:140`, reading one weight past the end: it is `undefined` and skipped.
+- `:153`, `all > w` to `all >= w`: when the maps add up exactly to the box, the
+  scale is 1 either way.
 
 On 2026-10-22 LCModel's control file and output parsing joined the run with 506
 mutants. The suite fitted nothing new, but it only matched a few control lines

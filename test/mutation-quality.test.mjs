@@ -50,7 +50,7 @@ test('each module is a separate Stryker run against only its own data-free Node 
     assert.deepEqual(selected, config);
   }
   process.env.MUTATION_MODULE = 'missing';
-  await assert.rejects(import('../stryker.config.mjs?module=missing'), /Set MUTATION_MODULE to one of disconnectome, basis-select, format-g, date-versions, lockfile-impact, carotid-series, carotid-outputs, workspace-graph, lcmodel-tissue, lcmodel-io;/);
+  await assert.rejects(import('../stryker.config.mjs?module=missing'), /Set MUTATION_MODULE to one of disconnectome, basis-select, format-g, date-versions, lockfile-impact, carotid-series, carotid-outputs, workspace-graph, lcmodel-tissue, lcmodel-io, lcmodel-voxel;/);
   // Tools that load the config without the variable (Knip) get the canary's module.
   delete process.env.MUTATION_MODULE;
   const { default: fallback } = await import('../stryker.config.mjs?module=unset');
@@ -76,6 +76,12 @@ test('line ranges still cover exactly the functions they name', () => {
   assert.match(ioLines, /\nexport function presentRows\(rows\) \{[^]*\n\}$/, 'update the lcmodel-io range when presentRows moves');
   const [, after] = readFileSync(io.file, 'utf8').split(ioLines);
   assert.deepEqual([...after.matchAll(/^export function (\w+)/gm)].map((match) => match[1]), ['fillGaps']);
+  // The voxel suite skips only its two large-grid tests, too slow to run per mutant.
+  const voxel = moduleById('lcmodel-voxel');
+  const skips = [...voxel.command.matchAll(/--test-skip-pattern=(\S+)/g)].map((match) => new RegExp(match[1]));
+  const voxelTests = [...readFileSync(voxel.files.at(-1), 'utf8').matchAll(/^test\("([^"]+)"/gm)].map((match) => match[1]);
+  const skipped = voxelTests.filter((name) => skips.some((skip) => skip.test(name)));
+  assert.deepEqual(skipped, ['an oblique box keeps its volume on the grid', 'fractions do not depend on how the image grid is oriented']);
 });
 
 test('surviving mutations are reported per module without a score gate', () => {
