@@ -1,6 +1,6 @@
 {
   "name": "fastprep",
-  "version": "0.1.20261020",
+  "version": "0.1.20261022",
   "private": true,
   "type": "module",
   "license": "Apache-2.0",
@@ -20,6 +20,7 @@
     "@neurodesk/runtime-support": "workspace:*",
     "@neurodesk/synthsr": "workspace:*",
     "@neurodesk/webapp-components": "workspace:*",
+    "@niivue/meica": "0.1.20261021",
     "@niivue/niimath": "1.4.20261016",
     "fflate": "^0.8.2",
     "onnxruntime-web": "1.29.0"
