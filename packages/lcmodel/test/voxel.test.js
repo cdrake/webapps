@@ -80,14 +80,49 @@ test("tissue the maps leave out counts as CSF unless excluded", () => {
 
 const near = (actual, expected, label, tolerance = 1e-12) => assert.ok(Math.abs(actual - expected) <= tolerance * Math.max(1, Math.abs(expected)), `${label}: ${actual} vs ${expected}`);
 
-test("with the default five samples a sub-point on a face of the box counts as inside", () => {
-  // Faces at voxel centres x, y, z = 8 and 12: the middle sub-point of those voxels lies on a face.
-  const { weights, volumeMm3 } = voxelWeights(box([4, 4, 4], [10, 10, 10]), { affine: identity, dims: [20, 20, 20] });
+test("a box whose faces pass through voxel centres gives each face layer half its weight", () => {
+  // Faces at voxel centres x, y, z = 8 and 12. With an odd default the middle
+  // sub-point of those voxels lay on a face: 3/5 of a layer, 4.2 mm a side.
+  const { weights, volumeMm3, nominalMm3 } = voxelWeights(box([4, 4, 4], [10, 10, 10]), { affine: identity, dims: [20, 20, 20] });
   const at = (x, y, z) => weights[x + 20 * (y + 20 * z)];
-  for (const [x, y, z] of [[8, 10, 10], [12, 10, 10], [10, 8, 10], [10, 12, 10], [10, 10, 8], [10, 10, 12]]) near(at(x, y, z), 0.6, `${x},${y},${z}`, 1e-7);
-  near(at(8, 8, 8), 0.216, "corner", 1e-7);
-  // 4.2 mm a side: each face layer counts 3 of its 5 sub-points.
-  near(volumeMm3, 4.2 ** 3, "volume", 1e-6);
+  assert.equal(at(10, 10, 10), 1);
+  for (const [x, y, z] of [[8, 10, 10], [12, 10, 10], [10, 8, 10], [10, 12, 10], [10, 10, 8], [10, 10, 12]]) assert.equal(at(x, y, z), 0.5, `${x},${y},${z}`);
+  assert.equal(at(8, 8, 10), 0.25);
+  assert.equal(at(12, 12, 12), 0.125);
+  assert.equal(at(13, 10, 10), 0);
+  assert.equal(volumeMm3, nominalMm3);
+});
+
+test("an axis-aligned box keeps its exact volume wherever its faces fall", () => {
+  // Faces on voxel boundaries (a 5 mm box, or 4 mm shifted by half a voxel),
+  // on voxel centres, and between them.
+  for (const samples of [undefined, 4]) {
+    for (const [size, shift] of [[5, 0], [4, 0.5], [4, 0], [2, 0], [4, 0.3], [3, 0.2]]) {
+      const { volumeMm3, nominalMm3 } = voxelWeights(box([size, size, size], [6 + shift, 6 - shift, 6 + shift]), { affine: identity, dims: [12, 12, 12] }, { samples });
+      near(volumeMm3, nominalMm3, `${samples} samples, ${size} mm shifted ${shift}`, 1e-9);
+    }
+  }
+});
+
+test("oblique boxes keep their volume on average", () => {
+  // Rotations about all three axes and sub-voxel offsets: the sampling error
+  // of single poses averages out instead of adding up.
+  let total = 0;
+  let poses = 0;
+  for (let i = 0; i < 12; i += 1) {
+    const [a, b, g] = [0.13 * i + 0.05, 0.29 * i + 0.1, 0.41 * i + 0.2];
+    const rz = [[Math.cos(a), -Math.sin(a), 0, 0], [Math.sin(a), Math.cos(a), 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]];
+    const ry = [[Math.cos(b), 0, Math.sin(b), 0], [0, 1, 0, 0], [-Math.sin(b), 0, Math.cos(b), 0], [0, 0, 0, 1]];
+    const rx = [[1, 0, 0, 0], [0, Math.cos(g), -Math.sin(g), 0], [0, Math.sin(g), Math.cos(g), 0], [0, 0, 0, 1]];
+    const r = multiply4(multiply4(rx, ry), rz);
+    const centre = [16 + 0.37 * i, 16 - 0.23 * i, 16 + 0.11 * i];
+    const affine = [0, 1, 2].map((row) => [...[0, 1, 2].map((c) => r[row][c] * 12), centre[row]]).concat([[0, 0, 0, 1]]);
+    const { volumeMm3, nominalMm3 } = voxelWeights(affine, { affine: identity, dims: [40, 40, 40] });
+    near(volumeMm3, nominalMm3, `pose ${i}`, 0.001);
+    total += volumeMm3 / nominalMm3;
+    poses += 1;
+  }
+  near(total / poses, 1, "mean", 1e-4);
 });
 
 test("a general 4x4 matrix inverts from both sides", () => {

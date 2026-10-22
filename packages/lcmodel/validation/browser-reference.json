@@ -1142,8 +1142,8 @@
         "sub-01_PRESS_35_act_fida.json": "e53f9cc1a052060b370c3965015afa2b31342d35a1b41c68344f284e13896bdd",
         "sub-01_PRESS_35_act_report.html": "97e141ee157dba112fdf77f434b4249c79d7f763cf9f5ea48d143cc070e5bb93",
         "sub-01_PRESS_35_act_tissue_corrected.csv": "465ec9d636494a3b62a0b93827463fcbe862e2affa3405ffa521c0f3940598e5",
-        "sub-01_PRESS_35_act_tissue_correction.json": "ac1bf99b82d70d89713adb13d4142b28e2027589f4bf48b533a40e9069c18922",
-        "sub-01_PRESS_35_act_voxel_mask.nii": "0b202fc5a79cd7f154971f2fac641271d2d36eb292d00e9720560f82a24edb60",
+        "sub-01_PRESS_35_act_tissue_correction.json": "228c33eb5edbe8fe2ba529a1db1f6611dc72dddb2896cfc765fd04c84aa7410b",
+        "sub-01_PRESS_35_act_voxel_mask.nii": "8ae7fc4615990b13a1196807a12879feab945348a8e2cc89d9e68a435b726dfc",
         "sub-01_T1w_defaced_csf.nii": "36329c235fc0d430414f6316943708dbc6cc6f62d1bd59fc7e4d81b22991bf4a",
         "sub-01_T1w_defaced_gm.nii": "76efb91fe1804e3f88ede3b6f9c5411e5705b39cf22d8c0c925a697a45e2ec63",
         "sub-01_T1w_defaced_wm.nii": "6533eb339d6c47d329528763613dfc8088158df2a148caeea443f328678589ba"
@@ -1175,7 +1175,7 @@
             "version": "0.1.20260925",
             "backend": "cpu",
             "t1": "sub-01_T1w_defaced.nii.gz",
-            "coverage": 0.7968290556934439
+            "coverage": 0.7967879897745976
           },
           "voxel": {
             "affine": [
@@ -1217,7 +1217,7 @@
             "source": "Philips SPAR off_center, angulation, size",
             "space": "RAS"
           },
-          "voxelInT1Mm3": 27002.399999999296,
+          "voxelInT1Mm3": 27004.166666665653,
           "waterAttenuation": {
             "gm": 0.5655761756981438,
             "wm": 0.5847117859718276,
@@ -1576,12 +1576,12 @@
           ]
         }
       },
-      "seconds": 73.4
+      "seconds": 115.1
     }
   },
   "browser": {
     "path": "apps/lcmodel/e2e/reference.spec.js: the app's fit and fit-group automation, its worker, the built assets",
-    "app": "lcmodel 0.7.20261010",
+    "app": "lcmodel 0.8.20261022",
     "browser": "Chromium 156.0.8078.4"
   }
 }

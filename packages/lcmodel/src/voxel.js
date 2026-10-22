@@ -7,6 +7,13 @@
 // spec2nii's convention): its index coordinates -0.5..0.5 span the box. An
 // image voxel can be partly inside an oblique box, so each is sampled on an
 // n x n x n sub-grid and weighted by the share of samples inside.
+//
+// n is even by default. The sub-points sit at the midpoints of n equal slices,
+// so with an even n none lies on a voxel's centre planes or its boundaries.
+// A box of whole millimetres on a 1 mm grid has its faces on exactly those
+// planes. With an odd n the middle sub-point lies on such a face and rounding
+// in the inverse affine decides whether it counts: a face layer could get 3/5
+// of its weight instead of 1/2, and a 20 mm box measure 20.2 mm a side.
 
 /** 4x4 row-major inverse (general, by cofactors). */
 export function invert4(m) {
@@ -63,10 +70,10 @@ export function boxVolume(voxelAffine) {
  * Weight of every image voxel inside the MRS box, 0..1.
  * @param {number[][]} voxelAffine  MRS voxel, 1x1x1 index space to RAS mm
  * @param {{affine: number[][], dims: number[]}} image  structural image grid
- * @param {{samples?: number}} [options]  sub-samples per axis (default 5)
+ * @param {{samples?: number}} [options]  sub-samples per axis (default 6; keep it even)
  * @returns {{weights: Float32Array, count: number, volumeMm3: number, nominalMm3: number}}
  */
-export function voxelWeights(voxelAffine, image, { samples = 5 } = {}) {
+export function voxelWeights(voxelAffine, image, { samples = 6 } = {}) {
   const [nx, ny, nz] = image.dims;
   const imageAffine = toRows(image.affine);
   const box = toRows(voxelAffine);

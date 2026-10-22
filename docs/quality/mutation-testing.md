@@ -23,7 +23,7 @@ network.
 | `scripts/lib/workspace-graph.mjs` | Which directories and root files each app and CI job reaches, and so which apps a change tests; a missed reference skips the tests that would catch the change | `test/workspace-graph.test.mjs` |
 | `packages/lcmodel/src/tissue.js` | LCModel's tissue- and alpha-corrected concentrations, the relaxation times behind them, when the correction applies, and its two downloads; the app and the `lcmodel` command line both use it | `packages/lcmodel/test/tissue.test.js` |
 | `packages/lcmodel/src/lcmodel-io.js:1-321` (all but `fillGaps`) | The control file every LCModel fit runs with, and how the app reads LCModel's .COORD and .TABLE files back: the concentrations, QC summary, curves, diagnostics and stop messages users see and download | `packages/lcmodel/test/lcmodel-io.test.js` |
-| `packages/lcmodel/src/voxel.js` | Which T1 voxels the spectroscopy voxel covers and the GM, WM and CSF fractions behind every tissue-corrected concentration | `packages/lcmodel/test/voxel.test.js`, without its two large-grid tests |
+| `packages/lcmodel/src/voxel.js` | Which T1 voxels the spectroscopy voxel covers and the GM, WM and CSF fractions behind every tissue-corrected concentration | `packages/lcmodel/test/voxel.test.js`, without its three large-grid tests |
 
 `formatG` is mutated by line range because the rest of `index.js` drives the
 WebAssembly module. Its command selects the two `printf` tests by name; the rest
@@ -34,9 +34,10 @@ keeps covering that part. `fillGaps`, the last function in `lcmodel-io.js`, stay
 instrumenting its Fourier sums made each run of the suite take 4.4 s instead of
 0.25 s, about 20 minutes for the module. `test/mutation-quality.test.mjs` fails
 when the range stops ending at `presentRows` or another function follows it.
-The voxel suite skips its oblique-volume test on a 64³ grid and its
-grid-orientation test (`--test-skip-pattern=oblique --test-skip-pattern=oriented`).
-Instrumented, the two make every run take seconds, and the module took 175 s on
+The voxel suite skips its oblique-volume tests on a 64³ grid and on twelve
+poses on a 40³ grid, and its grid-orientation test
+(`--test-skip-pattern=oblique --test-skip-pattern=oriented`).
+Instrumented, they make every run take seconds, and the module took 175 s on
 the hosted runner. A rotated box on a small rotated grid covers the same code:
 it must match a direct count, sub-point for sub-point, voxel by voxel.
 `test/mutation-quality.test.mjs` fails when the patterns skip any other test.
@@ -162,33 +163,40 @@ box or the no-tissue refusal. The suite now:
   count of sub-points mapped into the box
 - covers boxes hanging over three edges, overlapping maps, NaN outside the box
   and both refusals
-- checks that with the default five samples a sub-point on a face counts as
-  inside, which gives a voxel centred on a face 3/5 of its weight
+- checks that a box whose faces pass through voxel centres gives each face
+  layer half its weight, and that axis-aligned boxes keep their exact volume
+  with faces on voxel boundaries, on centres and between them
 
-That rule biases boxes whose faces fall on voxel centres. An axis-aligned 20 mm
-box centred on a voxel counts 20.2 mm a side, 3 % more volume, and its face
-layers outweigh the interior. An even default sample count would put no
-sub-point on such a face. That change would move shipped tissue fractions and
-the recorded browser references, so it is a separate decision (#550).
+The first version of this suite pinned the old default of five samples, whose
+middle sub-point lay on such faces and gave a face layer 3/5 of its weight: a
+20 mm box measured 20.2 mm a side. #550 changed the default to six, an even
+count that puts no sub-point on a voxel's centre planes or boundaries.
 
-It kills 486, and 6 time out, each a loop that never ends. Rerun with
-`MUTATION_MODULE=lcmodel-voxel pnpm exec stryker run stryker.config.mjs`. Nine
-survivors are equivalent for the supported inputs; one is a retained coverage
-gap at a near-singular determinant boundary:
+With six samples it kills 483, and 6 time out, each a loop that never ends.
+Rerun with `MUTATION_MODULE=lcmodel-voxel pnpm exec stryker run stryker.config.mjs`
+(2 min 24 s locally on 2026-10-22). Nine of the 13 survivors
+are equivalent for the supported inputs; one is a retained coverage gap at a
+near-singular determinant boundary, and three are an untested tie rule:
 
-- `voxel.js:14`, `new Array(16)` to `new Array()`: all 16 entries are assigned.
-- `:32`, `< 1e-12` to `<= 1e-12`: not equivalent. At a determinant of exactly
+- `voxel.js:21`, `new Array(16)` to `new Array()`: all 16 entries are assigned.
+- `:39`, `< 1e-12` to `<= 1e-12`: not equivalent. At a determinant of exactly
   1e-12, the original returns an inverse and the mutant throws. The suite does
   not cover this near-singular boundary; its coverage remains incomplete here.
-- `:49`, not cutting rows to four columns: NIfTI affine rows have four.
-- `:78` (three) and `:81`, starting the bounding box at the opposite infinity
+- `:56`, not cutting rows to four columns: NIfTI affine rows have four.
+- `:85` (three) and `:88`, starting the bounding box at the opposite infinity
   or taking a fourth corner coordinate: the bounds only limit the scan, and the
   clamping to the image keeps every covered voxel inside it.
-- `:135`, the default `unlabelled` option as `""`: any value other than
+- `:142`, the default `unlabelled` option as `""`: any value other than
   `exclude` counts the unlabelled remainder as CSF.
-- `:140`, reading one weight past the end: it is `undefined` and skipped.
-- `:153`, `all > w` to `all >= w`: when the maps add up exactly to the box, the
+- `:147`, reading one weight past the end: it is `undefined` and skipped.
+- `:160`, `all > w` to `all >= w`: when the maps add up exactly to the box, the
   scale is 1 either way.
+- `:115` (three), `<= 0.5` to `< 0.5` on one axis of the inside test: not
+  equivalent. They differ only for a sub-point exactly on a face. With the even
+  default no sub-point lies on the faces whole-millimetre geometry produces, and
+  where a face does meet a sub-point, rounding in the inverse affine already
+  decides the tie. Pinning either rule would test that rounding, so it stays
+  untested.
 
 On 2026-10-22 LCModel's control file and output parsing joined the run with 506
 mutants. The suite fitted nothing new, but it only matched a few control lines
