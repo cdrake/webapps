@@ -124,9 +124,11 @@ host with a load average of 15 to 25 on 8 cores; measure on an idle host.
 The full run took about 4 s with the canary alone and 96 s with three modules.
 Most of `lockfile-impact.mjs`'s time is its seven timeouts: each is a mutant that
 loops forever and is stopped after Stryker's timeout. The workflow's 10-minute
-timeout leaves room for slower hosted runners. Keep the full run under five
-minutes locally; add a module only with its own completed run and a measured
-cost.
+timeout leaves room for slower hosted runners. The hosted full run varies by
+about a minute between runs, mostly in the workspace graph (116 to 182 s on
+2026-10-22). With ten modules it takes 268 to about 410 s, so a new module
+needs its own hosted measurement and must keep the step under about 450 s.
+Otherwise the job timeout or the module list has to change first.
 
 ## Results and reviewed survivors
 
