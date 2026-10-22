@@ -23,6 +23,7 @@ network.
 | `scripts/lib/workspace-graph.mjs` | Which directories and root files each app and CI job reaches, and so which apps a change tests; a missed reference skips the tests that would catch the change | `test/workspace-graph.test.mjs` |
 | `packages/lcmodel/src/tissue.js` | LCModel's tissue- and alpha-corrected concentrations, the relaxation times behind them, when the correction applies, and its two downloads; the app and the `lcmodel` command line both use it | `packages/lcmodel/test/tissue.test.js` |
 | `packages/lcmodel/src/lcmodel-io.js:1-321` (all but `fillGaps`) | The control file every LCModel fit runs with, and how the app reads LCModel's .COORD and .TABLE files back: the concentrations, QC summary, curves, diagnostics and stop messages users see and download | `packages/lcmodel/test/lcmodel-io.test.js` |
+| `packages/lcmodel/src/voxel.js` | Which T1 voxels the spectroscopy voxel covers and the GM, WM and CSF fractions behind every tissue-corrected concentration | `packages/lcmodel/test/voxel.test.js`, without its 64³ oblique-volume test |
 
 `formatG` is mutated by line range because the rest of `index.js` drives the
 WebAssembly module. Its command selects the two `printf` tests by name; the rest
@@ -33,6 +34,10 @@ keeps covering that part. `fillGaps`, the last function in `lcmodel-io.js`, stay
 instrumenting its Fourier sums made each run of the suite take 4.4 s instead of
 0.25 s, about 20 minutes for the module. `test/mutation-quality.test.mjs` fails
 when the range stops ending at `presentRows` or another function follows it.
+The voxel suite runs with `--test-skip-pattern=oblique`. Instrumented, its
+64³ oblique-volume test takes 3 s on every run. A rotated box on a small rotated
+grid, compared voxel by voxel with a direct count, covers the same code.
+`test/mutation-quality.test.mjs` fails when the pattern skips any other test.
 The two Carotid Flow modules share one suite of small
 in-memory NIfTI files. `packages/carotid-flow/test/node.test.js` runs the command
 line on the phantom and is not part of this run. The workspace graph's suite
@@ -103,6 +108,7 @@ Measured locally on 2026-10-15 (two workers, `Done in` from each module's log):
 | Full run, nine Stryker runs (2026-10-22, hosted runner) | 1511 | - | 335 s step |
 | LCModel `lcmodel-io.js:1-321` (2026-10-22) | 506 | 0.25 s | 75 s locally, 51 s hosted |
 | Full run, ten Stryker runs (2026-10-22, hosted runner) | 2017 | - | 268 s step |
+| LCModel `voxel.js` (2026-10-22) | 502 | 0.66 s instrumented | 150 s locally |
 | PR smoke (`tableName`) | 2 | 0.13 s | 6 s wall |
 
 On 2026-10-16 the two Carotid Flow modules added 39 and 42 mutants, each with a
@@ -131,6 +137,41 @@ needs its own hosted measurement and must keep the step under about 450 s.
 Otherwise the job timeout or the module list has to change first.
 
 ## Results and reviewed survivors
+
+On 2026-10-22 the MRS voxel geometry, `packages/lcmodel/src/voxel.js`, joined
+the run with 502 mutants. Its tests moved from `apps/lcmodel/test` into the
+package so that Stryker's sandbox runs them against the mutated file. The
+data-gated Osprey mask comparison stays in the app. The first run killed 336,
+6 timed out and 160 survived. The only inverse checked was a permutation
+matrix, which leaves most cofactor terms at zero. No box was rotated except in
+the skipped test. No box hung over the image edge, the volume was never read on
+a non-1 mm grid, and nothing checked overlapping maps, map values outside the
+box or the no-tissue refusal. The suite now:
+
+- inverts a dense 4x4 matrix from both sides
+- checks a sheared, mirrored box's nominal volume
+- compares a rotated box on a rotated 2 mm grid, voxel by voxel, with a direct
+  count of sub-points mapped into the box
+- covers boxes hanging over three edges, overlapping maps, NaN outside the box
+  and both refusals
+
+It kills 483, and 6 time out, each a loop that never ends. Rerun with
+`MUTATION_MODULE=lcmodel-voxel pnpm exec stryker run stryker.config.mjs`. All
+13 survivors are equivalent:
+
+- `voxel.js:14`, `new Array(16)` to `new Array()`: all 16 entries are assigned.
+- `:32`, `< 1e-12` to `<= 1e-12`: changes only a determinant of exactly 1e-12.
+- `:49`, not cutting rows to four columns: NIfTI affine rows have four.
+- `:78` (three) and `:81`, starting the bounding box at the opposite infinity
+  or taking a fourth corner coordinate: the bounds only limit the scan, and the
+  clamping to the image keeps every covered voxel inside it.
+- `:108` (three), `<= 0.5` to `< 0.5`: changes only a sub-point that falls
+  exactly on a face of the box.
+- `:135`, the default `unlabelled` option as `""`: any value other than
+  `exclude` counts the unlabelled remainder as CSF.
+- `:140`, reading one weight past the end: it is `undefined` and skipped.
+- `:153`, `all > w` to `all >= w`: when the maps add up exactly to the box, the
+  scale is 1 either way.
 
 On 2026-10-22 LCModel's control file and output parsing joined the run with 506
 mutants. The suite fitted nothing new, but it only matched a few control lines
