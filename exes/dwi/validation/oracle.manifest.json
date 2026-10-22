@@ -1,0 +1,39 @@
+{
+  "description": "Oracle data for exes/dwi/amico/tests/oracle.rs (AMICO 1.5.4) and exes/dwi/denoise/tests/oracle.rs (DIPY 1.12.1 Patch2Self). Fetch with fetch_oracle.py beside this file.",
+  "repository": "neurodeskorg/webapps",
+  "files": [
+    {
+      "path": "noddi/validation/amico-1.5.4-oracle-ds001226.json.gz",
+      "revision": "ce028ecca10e9abe7988f965e03ad51627ca9c52",
+      "bytes": 224747,
+      "sha256": "f3608ee2658baffe579255bd29673afb8bfb4b937ac6d38179487f0ed03f30c4",
+      "gunzip": {
+        "path": "noddi/validation/amico-1.5.4-oracle-ds001226.json",
+        "bytes": 941012,
+        "sha256": "9bcc16fe8fd3ca894b8700402b9449c5c64d934f34a7e4cc75ef72642a0cd755"
+      }
+    },
+    {
+      "path": "dwidenoise/validation/sub-01_dir-AP_desc-slabpatch2self_dwi.nii.gz",
+      "revision": "0eec9cd1c3a2720d37da055d954a5a296e30fcc3",
+      "bytes": 30444645,
+      "sha256": "c2de8805d3102e946b016de5697857c899691d2990fc7a402bcac2777d80dde3"
+    },
+    {
+      "path": "noddi/examples/sub-01_dir-AP_desc-slab_dwi.nii.gz",
+      "revision": "ce028ecca10e9abe7988f965e03ad51627ca9c52",
+      "bytes": 8353126,
+      "sha256": "1e7c8461d9bfc3c80633f930dc1df16d892a6bfd5e15db4c5a2be9d021e48d00"
+    },
+    {
+      "path": "noddi/examples/sub-01_dir-AP_desc-slab_dwi.bval",
+      "revision": "ce028ecca10e9abe7988f965e03ad51627ca9c52",
+      "bytes": 634,
+      "sha256": "5f990dc6bfeb61653df62e49437d1e71c1a4e4d487c478c7dd7571307566ff19"
+    }
+  ],
+  "env": {
+    "AMICO_ORACLE": "noddi/validation/amico-1.5.4-oracle-ds001226.json",
+    "DWIDENOISE_ORACLE": "dwidenoise/validation"
+  }
+}
