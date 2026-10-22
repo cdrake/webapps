@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Updated dependencies [8e4e37d]
+  - @neurodesk/syncro@0.7.20261022
 - Updated dependencies [d32b485]
   - @neurodesk/webapp-components@0.19.0
   - @neurodesk/runtime-support@0.9.8

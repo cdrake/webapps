@@ -32,6 +32,10 @@ Ordinary source files are not all entries. The following roots account for exter
   They remain explicit roots even though app code does not import them.
 - Explicit workers referenced by string URLs, Electron and Cloudflare entries,
   component showcase and template mains, and the prebuilt FreeBrowse entry.
+- The shared shell modules in `SHELL_COMPONENTS` (`scripts/lib/standalone.mjs`),
+  which `site/app-shell.js` imports from their staged copies by URL.
+- fastprep's report script `exes/fastprep/core/src/assets/sdc.js`, which the Rust
+  report inlines with `include_str!`.
 - Shared JavaScript sources named in `runtime-assets/manifest.json`.
 - NeSVoR verification programs and surfannotate's icon renderer invoked manually.
 
@@ -92,6 +96,10 @@ release-maintained version records as roots. Those historical scans also reporte
 Run `pnpm quality:unused` for current counts after dependency changes.
 
 ## Triage records
+
+- [2026-10-22](unused-code-triage-2026-10-22.md) registers two runtime-loaded
+  files as roots, removes SYNcro's dead `templateAsset` export and lists the
+  eight upstream-owned findings that remain.
 
 - [2026-10-17](unused-code-triage-2026-10-17.md) records the dicompare upstream
   sync, the fresh 29-candidate report, retained runtime contracts and the eight

@@ -7,4 +7,3 @@ export const assets={
 };
 const published=name=>{const asset=syncroManifest.assets.find(a=>a.filename===name);return {...asset,url:asset.url??syncroManifest.base_url+name};};
 export const browserSynthstrip=published('synthstrip-browser.onnx');
-export const templateAsset=published('MNI152_T1_1mm_brain.nii.gz');

@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, rm, symlink, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
+import { parse as parseYaml } from 'yaml';
 import { compareFindings, dependencyFindings, dependencyGraph, validateRuntimeContracts } from '@neurodesk/dependency-quality';
 
 async function checkFixture(t, files, manifests = new Map(), runtimeContracts = [], setup = async () => {}) {
@@ -17,6 +18,38 @@ async function checkFixture(t, files, manifests = new Map(), runtimeContracts = 
 }
 
 const leaf = 'export const value = 1;\n';
+
+function assertUniqueReleaseAgePackages(exclusions) {
+  const seen = new Set();
+  const duplicates = new Set();
+  for (const exclusion of exclusions) {
+    const version = exclusion.indexOf('@', 1);
+    const name = version < 0 ? exclusion : exclusion.slice(0, version);
+    if (/[*?[\]{}!]/.test(name)) continue;
+    if (seen.has(name)) duplicates.add(name);
+    seen.add(name);
+  }
+  assert.equal(duplicates.size, 0, `minimumReleaseAgeExclude matches only the first entry per package. Combine exact versions with || in one entry for: ${[...duplicates].join(', ')}`);
+}
+
+test('release-age exclusions have one entry per exact package name', async () => {
+  const workspace = parseYaml(await readFile(new URL('../pnpm-workspace.yaml', import.meta.url), 'utf8'));
+  assertUniqueReleaseAgePackages(workspace.minimumReleaseAgeExclude ?? []);
+});
+
+test('release-age exclusions reject shadowed versions and accept unions and distinct patterns', () => {
+  assert.throws(() => assertUniqueReleaseAgePackages([
+    '@niivue/niivue@1.0.0-rc.14', '@niivue/niivue@1.0.0-rc.33',
+  ]), /Combine exact versions with \|\| in one entry for: @niivue\/niivue/);
+  assert.throws(() => assertUniqueReleaseAgePackages(['example@1.0.0', 'example@2.0.0']), /example/);
+  assertUniqueReleaseAgePackages([
+    '@niivue/niivue@1.0.0-rc.14 || 1.0.0-rc.33',
+    'example@1.0.0 || 2.0.0',
+    'another@1.0.0',
+    '@scope/*',
+    '@other/*',
+  ]);
+});
 
 test('shared production modules cannot import apps, but validation fixtures can', async (t) => {
   const findings = await checkFixture(t, {

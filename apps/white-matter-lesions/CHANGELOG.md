@@ -4,6 +4,13 @@
 
 ### Patch Changes
 
+- 330f5b3: Keep the exact NiiVue rc.33 release-age exception effective by removing its obsolete rc.14 exception. Frozen installs can use the reviewed rc.33 build immediately without relaxing the age policy for other versions.
+
+  Reject duplicate exact package names in the release-age exclusions, which pnpm evaluates using the first match. Keep exact version unions and distinct package patterns valid, and remove the obsolete shadowing niimath exception.
+
+- Updated dependencies [330f5b3]
+  - @neurodesk/white-matter-lesions@0.5.20261022
+- Update NiiVue to 1.0.0-rc.33. On an oblique FLAIR, the parts of the crosshair arms that the tilted slice hides are now drawn faintly instead of disappearing. The viewer draws in world space only: rc.33 drops the unused image-space option `isPositionInMM`.
 - Updated dependencies [d32b485]
   - @neurodesk/webapp-components@0.19.0
   - @neurodesk/runtime-support@0.9.8
