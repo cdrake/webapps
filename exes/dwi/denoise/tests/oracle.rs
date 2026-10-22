@@ -1,7 +1,8 @@
 //! Compares the port with DIPY 1.12.1 Patch2Self version 1 on the ds005134 slab (67 × 92 × 10 ×
 //! 137). DWIDENOISE_ORACLE names the dataset's `dwidenoise/validation` directory; the input is
 //! read from `../../noddi/examples` next to it, or from DWIDENOISE_INPUT (a `.nii.gz` with its
-//! `.bval` beside it). Without DWIDENOISE_ORACLE the test is skipped.
+//! `.bval` beside it). Without DWIDENOISE_ORACLE the test is skipped, or fails when
+//! DWI_REQUIRE_ORACLE=1 (CI). `validation/fetch_oracle.py` fetches the pinned files.
 
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -84,6 +85,10 @@ fn read_nifti(path: &Path) -> Nifti {
 #[test]
 fn matches_dipy_patch2self_v1_on_the_slab() {
     let Ok(dir) = std::env::var("DWIDENOISE_ORACLE") else {
+        assert!(
+            std::env::var("DWI_REQUIRE_ORACLE").as_deref() != Ok("1"),
+            "DWI_REQUIRE_ORACLE=1 but DWIDENOISE_ORACLE is not set"
+        );
         eprintln!("DWIDENOISE_ORACLE is not set; skipping");
         return;
     };

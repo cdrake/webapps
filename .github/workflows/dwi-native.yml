@@ -128,3 +128,34 @@ jobs:
       - name: dwidenoise package tests on the committed module
         working-directory: packages/dwidenoise
         run: node --test test/*.test.js
+
+  # The AMICO 1.5.4 and DIPY Patch2Self oracle tests on the pinned Hugging Face data
+  # (exes/dwi/validation/oracle.manifest.json). The fetch checks the size and sha256 of every
+  # file, also on a cache hit, and DWI_REQUIRE_ORACLE turns each missing-data skip into a failure.
+  oracle:
+    name: exes/dwi oracle tests on the pinned AMICO and Patch2Self data
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install 1.98.0 --profile minimal
+      - name: Cache the oracle downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ~/dwi-oracle
+          key: dwi-oracle-${{ hashFiles('exes/dwi/validation/oracle.manifest.json') }}
+      - name: Fetch the oracle data (size and sha256 checked)
+        run: python3 exes/dwi/validation/fetch_oracle.py "$HOME/dwi-oracle" >> "$GITHUB_ENV"
+      - name: AMICO 1.5.4 oracle, release build
+        working-directory: exes/dwi
+        env:
+          DWI_REQUIRE_ORACLE: '1'
+        run: cargo +1.98.0 test --release --locked -p dwi-amico --test oracle -- --nocapture
+      - name: DIPY Patch2Self oracle, release build
+        working-directory: exes/dwi
+        env:
+          DWI_REQUIRE_ORACLE: '1'
+        run: cargo +1.98.0 test --release --locked -p dwi-denoise --test oracle -- --nocapture
