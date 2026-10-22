@@ -7,7 +7,7 @@ Plan, 18 October 2026, for step 6 of the [diffusion design](dwi-microstructure-d
 | Crate | Status | Content |
 |---|---|---|
 | `gradients` | reuse, extend | Add a b0 rule for each method. NiFreeze uses `b <= 50` and scales b by the gradient vector norm (`data/dmri/utils.py:36,269-280`). QSIPrep uses `b < 100` (`cli/parser.py:589-594`). The current rule is `b < 50` and it rejects short vectors (`gradients/src/lib.rs:6,45-58`). |
-| `tensor` | reuse, extend | `fit_dipy_wls` follows dipy 1.7 with an f64 Cholesky solve (`tensor/src/lib.rs:106-123`). Add a dipy 1.12.1 variant: `pinv`, float32 log, eigenvalue floor `1e-6/max(B)` (`dti.py:1476-1512`). |
+| `tensor` | reuse; extend only for the tensor option | `fit_dipy_wls` follows dipy 1.7 with an f64 Cholesky solve (`tensor/src/lib.rs:106-123`). The non-default SHORELine tensor option would need a dipy 1.12.1 variant: `pinv`, float32 log, eigenvalue floor `1e-6/max(B)` (`dti.py:1476-1512`). Parity does not: every reference iteration is 3dSHORE ([#455](https://github.com/neurodesk/webapps/issues/455), closed). |
 | `hmc` | new | Dataset, b0 split, `advanced_clip`, leave-one-out loop, motion decomposition, bvec rotation, TSV. |
 | `gp` | new | Spherical kriging kernel, sklearn log marginal likelihood, L-BFGS-B. |
 | `shore` | new | BrainSuite 3dSHORE basis, ridge solve, leave-neighbourhood-out rule. |
@@ -55,7 +55,8 @@ SHORELine argv:
   - The 1e-8 ridge is load-bearing, because rank(M) is 29-65 of 72. A `pinv` or `lstsq` port fails.
   - Compute `w = m_predᵀ solve(A, Mᵀ)` one time for each target, and apply it to all voxels.
   - Write `0⁰ = 1` explicitly.
-- **SHORELine tensor** uses dipy 1.12.1 WLS. Outside the mask the target is `max(b0_mean, 1e-4)`, not 0 (`dti.py:25,2362-2393`).
+- **SHORELine iterations** all use `shoreline_model`, 3dSHORE by default: QSIPrep 26.1.1 builds `initial_model_iteration` and `shoreline_iteration001` with the same `SignalPrediction(model=config.workflow.shoreline_model)` (`hmc.py:587,747`), and all four reference runs record `shoreline_model = "3dshore"`.
+- **SHORELine tensor** (`shoreline_model = "tensor"`, not the default) uses dipy 1.12.1 WLS. Outside the mask the target is `max(b0_mean, 1e-4)`, not 0 (`dti.py:25,2362-2393`).
 
 ## 4. b-vectors and outputs
 
