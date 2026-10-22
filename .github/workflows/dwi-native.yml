@@ -12,6 +12,7 @@ on:
       - 'packages/noddi/**'
       - 'packages/degibbs/**'
       - 'packages/dwidenoise/**'
+      - 'packages/n4/**'
       - 'packages/components/src/file-io/NiftiUtils.js'
       - 'packages/dwi2trx/src/gradients.js'
       - 'packages/dwi2trx/src/node-runner.js'
@@ -31,6 +32,7 @@ on:
       - 'packages/noddi/**'
       - 'packages/degibbs/**'
       - 'packages/dwidenoise/**'
+      - 'packages/n4/**'
       - 'packages/components/src/file-io/NiftiUtils.js'
       - 'packages/dwi2trx/src/gradients.js'
       - 'packages/dwi2trx/src/node-runner.js'
@@ -127,6 +129,11 @@ jobs:
         run: node --test test/*.test.js
       - name: dwidenoise package tests on the committed module
         working-directory: packages/dwidenoise
+        run: node --test test/*.test.js
+      # The N4 module is a Docker ITK-Wasm build (scripts/build.sh, up to 8 GB), so this job does
+      # not rebuild it; #437 adds that check. These tests pin its SHA-256 and test the procedure.
+      - name: n4 package tests on the committed module
+        working-directory: packages/n4
         run: node --test test/*.test.js
 
   # The AMICO 1.5.4 and DIPY Patch2Self oracle tests on the pinned Hugging Face data
