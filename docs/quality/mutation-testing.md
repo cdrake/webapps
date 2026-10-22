@@ -23,7 +23,7 @@ network.
 | `scripts/lib/workspace-graph.mjs` | Which directories and root files each app and CI job reaches, and so which apps a change tests; a missed reference skips the tests that would catch the change | `test/workspace-graph.test.mjs` |
 | `packages/lcmodel/src/tissue.js` | LCModel's tissue- and alpha-corrected concentrations, the relaxation times behind them, when the correction applies, and its two downloads; the app and the `lcmodel` command line both use it | `packages/lcmodel/test/tissue.test.js` |
 | `packages/lcmodel/src/lcmodel-io.js:1-321` (all but `fillGaps`) | The control file every LCModel fit runs with, and how the app reads LCModel's .COORD and .TABLE files back: the concentrations, QC summary, curves, diagnostics and stop messages users see and download | `packages/lcmodel/test/lcmodel-io.test.js` |
-| `packages/lcmodel/src/voxel.js` | Which T1 voxels the spectroscopy voxel covers and the GM, WM and CSF fractions behind every tissue-corrected concentration | `packages/lcmodel/test/voxel.test.js`, without its two large-grid tests |
+| `packages/lcmodel/src/voxel.js` | Which T1 voxels the spectroscopy voxel covers and the GM, WM and CSF fractions behind every tissue-corrected concentration | `packages/lcmodel/test/voxel.test.js`, without its three large-grid tests |
 
 `formatG` is mutated by line range because the rest of `index.js` drives the
 WebAssembly module. Its command selects the two `printf` tests by name; the rest
@@ -34,9 +34,10 @@ keeps covering that part. `fillGaps`, the last function in `lcmodel-io.js`, stay
 instrumenting its Fourier sums made each run of the suite take 4.4 s instead of
 0.25 s, about 20 minutes for the module. `test/mutation-quality.test.mjs` fails
 when the range stops ending at `presentRows` or another function follows it.
-The voxel suite skips its oblique-volume test on a 64³ grid and its
-grid-orientation test (`--test-skip-pattern=oblique --test-skip-pattern=oriented`).
-Instrumented, the two make every run take seconds, and the module took 175 s on
+The voxel suite skips its oblique-volume tests on a 64³ grid and on twelve
+poses on a 40³ grid, and its grid-orientation test
+(`--test-skip-pattern=oblique --test-skip-pattern=oriented`).
+Instrumented, they make every run take seconds, and the module took 175 s on
 the hosted runner. A rotated box on a small rotated grid covers the same code:
 it must match a direct count, sub-point for sub-point, voxel by voxel.
 `test/mutation-quality.test.mjs` fails when the patterns skip any other test.
@@ -110,7 +111,8 @@ Measured locally on 2026-10-15 (two workers, `Done in` from each module's log):
 | Full run, nine Stryker runs (2026-10-22, hosted runner) | 1511 | - | 335 s step |
 | LCModel `lcmodel-io.js:1-321` (2026-10-22) | 506 | 0.25 s | 75 s locally, 51 s hosted |
 | Full run, ten Stryker runs (2026-10-22, hosted runner) | 2017 | - | 268 s step |
-| LCModel `voxel.js` (2026-10-22) | 502 | 0.25 s instrumented | 80-91 s locally, 113 s hosted |
+| LCModel `voxel.js` (2026-10-22, initial) | 502 | 0.25 s instrumented | 80-91 s locally, 113 s hosted |
+| LCModel `voxel.js` boundary weights (2026-10-22, local) | 500 | 2.067 s instrumented | 409 s |
 | Full run, eleven Stryker runs (2026-10-22, hosted runner) | 2519 | - | 523 s step |
 | PR smoke (`tableName`) | 2 | 0.13 s | 6 s wall |
 
@@ -162,33 +164,57 @@ box or the no-tissue refusal. The suite now:
   count of sub-points mapped into the box
 - covers boxes hanging over three edges, overlapping maps, NaN outside the box
   and both refusals
-- checks that with the default five samples a sub-point on a face counts as
-  inside, which gives a voxel centred on a face 3/5 of its weight
+- checks that a box whose faces pass through voxel centres gives each face
+  layer half its weight, and that axis-aligned boxes keep their exact volume
+  with faces on voxel boundaries, on centres and between them, including
+  sample-aligned quarter-voxel offsets, mirrored/permuted grids and joint rotations
+- checks symmetric face, edge and corner tie weights, inverse-affine roundoff
+  on either side of a face and geometric perturbations beyond the tolerance
 
-That rule biases boxes whose faces fall on voxel centres. An axis-aligned 20 mm
-box centred on a voxel counts 20.2 mm a side, 3 % more volume, and its face
-layers outweigh the interior. An even default sample count would put no
-sub-point on such a face. That change would move shipped tissue fractions and
-the recorded browser references, so it is a separate decision (#550).
+The first version of this suite pinned the old default of five samples, whose
+middle sub-point lay on such faces and gave a face layer 3/5 of its weight: a
+20 mm box measured 20.2 mm a side. #550 changed the default to six, an even
+count that avoids centre-plane sub-points. Review found that changing the count
+alone moves the bias to other offsets: a 4 mm box shifted by a quarter voxel
+measured 72.33796 mm³ instead of 64 mm³. Boundary points now contribute symmetric
+quadrature weights of 1/2 per face axis, or 1/4 on edges and 1/8 on corners.
+A 1e-10 tolerance in normalized box coordinates absorbs affine roundoff, at most
+1e-8 mm for a 100 mm box. Other oblique and nonintegral geometry retains ordinary
+finite-sampling error; these weights do not compute exact polyhedral intersections.
 
-It kills 486, and 6 time out, each a loop that never ends. Rerun with
-`MUTATION_MODULE=lcmodel-voxel pnpm exec stryker run stryker.config.mjs`. Nine
-survivors are equivalent for the supported inputs; one is a retained coverage
-gap at a near-singular determinant boundary:
+The original six-sample run killed 483 mutants and timed out on 6 loops that
+never end. It left 13 survivors, including three untested inclusive-face tie
+mutations. The symmetric boundary rule and its regressions supersede that run.
+The final run killed 482 of 500 mutants, timed out on 6 loops that never end,
+and left 12 survivors, with no uncovered mutants or errors. It used two workers
+and took 409 seconds locally on 2026-10-22, with a 2.067-second instrumented
+baseline and no concurrent heavy validation. Rerun with
+`MUTATION_MODULE=lcmodel-voxel pnpm exec stryker run stryker.config.mjs`.
+The repeated translated and transformed cases use compact grids while retaining
+the exact 4 mm quarter-voxel regression and every boundary/transform condition.
+The same three large-grid tests remain excluded from the mutation command.
 
-- `voxel.js:14`, `new Array(16)` to `new Array()`: all 16 entries are assigned.
-- `:32`, `< 1e-12` to `<= 1e-12`: not equivalent. At a determinant of exactly
-  1e-12, the original returns an inverse and the mutant throws. The suite does
-  not cover this near-singular boundary; its coverage remains incomplete here.
-- `:49`, not cutting rows to four columns: NIfTI affine rows have four.
-- `:78` (three) and `:81`, starting the bounding box at the opposite infinity
-  or taking a fourth corner coordinate: the bounds only limit the scan, and the
-  clamping to the image keeps every covered voxel inside it.
-- `:135`, the default `unlabelled` option as `""`: any value other than
+Ten survivors are equivalent for the supported inputs; two numerical boundaries
+remain coverage gaps:
+
+- `voxel.js:21`, `new Array(16)` to `new Array()`: all 16 entries are assigned.
+- `:39`, `< 1e-12` to `<= 1e-12`: at a determinant of exactly 1e-12 the
+  original returns an inverse and the mutant throws. This retained
+  near-singular boundary is not tested.
+- `:56`, not cutting rows to four columns: NIfTI affine rows have four.
+- `:75`, `<= FACE_ROUNDOFF` to `< FACE_ROUNDOFF`: the suite checks exact
+  faces, roundoff on both sides and points beyond the band, but does not pin
+  equality at the numerical band limit. Retained without an equivalence claim.
+- `:76`, `distance < 0` to `distance <= 0`: the face-band branch already
+  returns one half when the distance is zero.
+- `:95` (three), starting the upper bound at positive infinity, and `:98`,
+  taking a fourth corner coordinate: these only expand the scan bounds, and
+  clamping to the image still visits every covered voxel.
+- `:154`, the default `unlabelled` option as `""`: any value other than
   `exclude` counts the unlabelled remainder as CSF.
-- `:140`, reading one weight past the end: it is `undefined` and skipped.
-- `:153`, `all > w` to `all >= w`: when the maps add up exactly to the box, the
-  scale is 1 either way.
+- `:159`, reading one weight past the end: it is `undefined` and skipped.
+- `:172`, `all > w` to `all >= w`: when the maps add up exactly to the box,
+  the scale is 1 either way.
 
 On 2026-10-22 LCModel's control file and output parsing joined the run with 506
 mutants. The suite fitted nothing new, but it only matched a few control lines

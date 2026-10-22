@@ -76,12 +76,12 @@ test('line ranges still cover exactly the functions they name', () => {
   assert.match(ioLines, /\nexport function presentRows\(rows\) \{[^]*\n\}$/, 'update the lcmodel-io range when presentRows moves');
   const [, after] = readFileSync(io.file, 'utf8').split(ioLines);
   assert.deepEqual([...after.matchAll(/^export function (\w+)/gm)].map((match) => match[1]), ['fillGaps']);
-  // The voxel suite skips only its two large-grid tests, too slow to run per mutant.
+  // The voxel suite skips only its three large-grid tests, too slow to run per mutant.
   const voxel = moduleById('lcmodel-voxel');
   const skips = [...voxel.command.matchAll(/--test-skip-pattern=(\S+)/g)].map((match) => new RegExp(match[1]));
   const voxelTests = [...readFileSync(voxel.files.at(-1), 'utf8').matchAll(/^test\("([^"]+)"/gm)].map((match) => match[1]);
   const skipped = voxelTests.filter((name) => skips.some((skip) => skip.test(name)));
-  assert.deepEqual(skipped, ['an oblique box keeps its volume on the grid', 'fractions do not depend on how the image grid is oriented']);
+  assert.deepEqual(skipped, ['an oblique box keeps its volume on the grid', 'fractions do not depend on how the image grid is oriented', 'oblique boxes keep their volume on average']);
 });
 
 test('surviving mutations are reported per module without a score gate', () => {

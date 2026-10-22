@@ -1142,8 +1142,8 @@
         "sub-01_PRESS_35_act_fida.json": "e53f9cc1a052060b370c3965015afa2b31342d35a1b41c68344f284e13896bdd",
         "sub-01_PRESS_35_act_report.html": "6088d2c4bfb00a6ea8e4093bf07fc6f1b577489a5d6ca59867e2069d3b811844",
         "sub-01_PRESS_35_act_tissue_corrected.csv": "97eaeedcbbd52b72b35343e1fbf8d651e4383f82b2f18ad34768098860f91e5d",
-        "sub-01_PRESS_35_act_tissue_correction.json": "194ff57b9d991c34a0a19ce3e2f42159dfa509838ba9ff1c0ea35addc6deebfd",
-        "sub-01_PRESS_35_act_voxel_mask.nii": "0b202fc5a79cd7f154971f2fac641271d2d36eb292d00e9720560f82a24edb60",
+        "sub-01_PRESS_35_act_tissue_correction.json": "072ea1a4da367274c0e975f468c46aa4f080d10c5d19d84d94e02e3e3a27bbdb",
+        "sub-01_PRESS_35_act_voxel_mask.nii": "8ae7fc4615990b13a1196807a12879feab945348a8e2cc89d9e68a435b726dfc",
         "sub-01_T1w_defaced_csf.nii": "36329c235fc0d430414f6316943708dbc6cc6f62d1bd59fc7e4d81b22991bf4a",
         "sub-01_T1w_defaced_gm.nii": "76efb91fe1804e3f88ede3b6f9c5411e5705b39cf22d8c0c925a697a45e2ec63",
         "sub-01_T1w_defaced_wm.nii": "6533eb339d6c47d329528763613dfc8088158df2a148caeea443f328678589ba"
@@ -1175,7 +1175,7 @@
             "version": "0.1.20260925",
             "backend": "cpu",
             "t1": "sub-01_T1w_defaced.nii.gz",
-            "coverage": 0.7968290556934439
+            "coverage": 0.7967879897745976
           },
           "voxel": {
             "affine": [
@@ -1217,7 +1217,7 @@
             "source": "Philips SPAR off_center, angulation, size",
             "space": "RAS"
           },
-          "voxelInT1Mm3": 27002.399999999296,
+          "voxelInT1Mm3": 27004.166666665653,
           "waterAttenuation": {
             "gm": 0.5655761756981438,
             "wm": 0.5847117859718276,
@@ -1576,7 +1576,7 @@
           ]
         }
       },
-      "seconds": 74
+      "seconds": 102.6
     },
     "philips-megapress-tissue": {
       "files": {
