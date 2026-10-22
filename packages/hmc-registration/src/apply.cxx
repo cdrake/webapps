@@ -6,8 +6,8 @@
 // HammingWindowedSinc or LanczosWindowedSinc, as antsApplyTransforms names them, case-insensitive.
 // fill is the value of output voxels that map outside the moving image.
 // A transform written as inverse:name is inverted. The last transform listed acts first on a
-// point, as on the antsApplyTransforms command line, so the list goes into ITK's composite
-// transform in reverse order.
+// point, as on the antsApplyTransforms command line. ITK applies its transform queue in reverse,
+// so add the transforms in command-line order.
 //
 // Pixels are float. Interpolation, resampling and transforms are double, as in
 // antsApplyTransforms without --float. The interpolators are the ones antsApplyTransforms builds
@@ -76,7 +76,7 @@ int applyTransforms(int argc, char* argv[]) {
   movingReader->SetFileName(argv[3]);
   movingReader->Update();
   auto composite = itk::CompositeTransform<double, 3>::New();
-  for (int i = argc - 1; i >= 7; --i) {
+  for (int i = 7; i < argc; ++i) {
     std::string path(argv[i]);
     const bool inverse = path.rfind("inverse:", 0) == 0;
     if (inverse) path = path.substr(8);

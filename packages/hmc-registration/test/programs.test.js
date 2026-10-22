@@ -89,6 +89,44 @@ test("--apply refuses an unknown interpolation and keeps the kernel usable", asy
   assertRecoversShift(readMatTransform(ants.run([...ARGV], { "fixed.nii": fixed, "moving.nii": moving }).outputs["out0GenericAffine.mat"]));
 });
 
+test("--apply composes noncommuting transforms with the last argument acting first", async () => {
+  const ants = await loadHmcRegistration();
+  const fixed = await data("fixed.nii");
+  const matrix = (name, values) => {
+    const label = new TextEncoder().encode(`${name}\0`);
+    const bytes = new Uint8Array(20 + label.length + 8 * values.length);
+    const view = new DataView(bytes.buffer);
+    [0, values.length, 1, 0, label.length].forEach((value, i) => view.setInt32(4 * i, value, true));
+    bytes.set(label, 20);
+    values.forEach((value, i) => view.setFloat64(20 + label.length + 8 * i, value, true));
+    return bytes;
+  };
+  const affine = (scale, shift) => {
+    const parameters = matrix("AffineTransform_double_3_3", [scale, 0, 0, 0, 1, 0, 0, 0, 1, shift, 0, 0]);
+    const centre = matrix("fixed", [0, 0, 0]);
+    const bytes = new Uint8Array(parameters.length + centre.length);
+    bytes.set(parameters);
+    bytes.set(centre, parameters.length);
+    return bytes;
+  };
+  const inputs = {
+    "fixed.nii": fixed,
+    "moving.nii": fixed,
+    "scale.mat": affine(2, 0),
+    "shift.mat": affine(1, 1),
+    "scale-after-shift.mat": affine(2, 2),
+    "shift-after-scale.mat": affine(2, 1),
+    "scale-after-inverse-shift.mat": affine(2, -2),
+  };
+  const apply = (transforms) => ants.run(["--apply", "fixed.nii", "moving.nii", "out.nii", "Linear", "0", ...transforms], inputs).outputs["out.nii"];
+  const scaleAfterShift = sha256(apply(["scale-after-shift.mat"]));
+  const shiftAfterScale = sha256(apply(["shift-after-scale.mat"]));
+  assert.notEqual(scaleAfterShift, shiftAfterScale, "the image distinguishes the two compositions");
+  assert.equal(sha256(apply(["scale.mat", "shift.mat"])), scaleAfterShift, "scale(shift(x)) = 2*x + 2");
+  assert.equal(sha256(apply(["shift.mat", "scale.mat"])), shiftAfterScale, "shift(scale(x)) = 2*x + 1");
+  assert.equal(sha256(apply(["scale.mat", "inverse:shift.mat"])), sha256(apply(["scale-after-inverse-shift.mat"])), "scale(inverseShift(x)) = 2*x - 2");
+});
+
 test("an input that argv names but inputs does not hold is refused before the kernel runs", async () => {
   const createModule = async () => ({ callMain: () => assert.fail("the kernel must not run"), FS: { mkdir() {}, writeFile() {}, chdir() {}, readdir: () => [], rmdir() {} } });
   const ants = await createHmcRegistration({ createModule });

@@ -124,6 +124,6 @@ bash packages/hmc-registration/scripts/build.sh /var/tmp/hmc-registration-build
 ```
 
 The script downloads ANTs at `52bc0ab588102682587303d31c720de94e6ef6c1` and compiles in `itkwasm/emscripten@sha256:d6c35290a9f1c5cfeb8168c18bbf64d78394cd111b6a19c6091921e98a3aaa1d`, one job, with an 8 GB container limit (`HMC_REGISTRATION_BUILD_MEMORY`).
-`SOURCE_DATE_EPOCH` fixes the `__DATE__` and `__TIME__` that `ANTsVersion.cxx` embeds at the ANTs commit time, so the build is reproducible: two builds from empty directories wrote the same `.wasm` (12 096 078 bytes, SHA-256 `5c51d581…`).
+`SOURCE_DATE_EPOCH` fixes the `__DATE__` and `__TIME__` that `ANTsVersion.cxx` embeds at the ANTs commit time. The committed `.wasm` is 12,096,089 bytes, SHA-256 `ee2cb3ca595e962ca561ad506611fdabfd1391fc2c037846ec716f1bb89b9666`.
 A build took about 2.6 minutes.
 When a source or the toolchain changes, put the printed SHA-256 in `src/pin.js`.
