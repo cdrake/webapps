@@ -82,6 +82,7 @@ function status(message, error = false) {
 const results = createResultList({
   element: $("resultList"),
   onView: (_stage, result) => {
+    log.log(`Showing ${result.file.name}`, "info");
     void showVolume({ file: result.file }).catch((error) => status(error.message, true));
   },
   onDownload: (_stage, result) => downloadFile(result.file),
@@ -143,7 +144,7 @@ async function loadFiles(filesPromise, signal) {
     controller.signal.throwIfAborted();
     await showVolume({ file: image }, { signal: controller.signal });
     controller.signal.throwIfAborted();
-    input = { name: image.name, buffer, ...frames, bval, bvec, sidecar, bvals, reference };
+    input = { name: image.name, file: image, buffer, ...frames, bval, bvec, sidecar, bvals, reference };
     mask = null;
     $("imageInput").dispatchEvent(new CustomEvent("nd-files", { bubbles: true, detail: { files } }));
     $("maskInput").dispatchEvent(new CustomEvent("nd-files", { bubbles: true, detail: { files: [] } }));
@@ -290,7 +291,8 @@ async function correct(signal) {
     await showVolume({ file: rows.image.file }, { signal: controller.signal });
     controller.signal.throwIfAborted();
     outputs = rows;
-    results.render(rows);
+    // The input leads the list so the viewer can go back to the scan before correction.
+    results.render({ input: { description: "Input image", file: input.file }, ...rows });
     $("outputSection").open = true;
     progress.end("Bias field corrected");
     status("Bias field corrected");

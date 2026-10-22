@@ -1,5 +1,21 @@
 # n4
 
+## 0.4.20261022
+
+### Minor Changes
+
+- 88883f8: A T1-weighted head example, and an Input image row in the results so the viewer can show the scan before correction.
+
+  Select the corrected image by its label in the desktop workflow so adding the input row preserves output validation.
+
+### Patch Changes
+
+- Updated dependencies [d32b485]
+  - @neurodesk/webapp-components@0.19.0
+  - @neurodesk/dwi2trx@0.6.20261022
+  - @neurodesk/runtime-support@0.9.8
+  - @neurodesk/n4@0.4.20261022
+
 ## 0.3.20261022
 
 ### Patch Changes

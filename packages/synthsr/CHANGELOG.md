@@ -1,5 +1,7 @@
 # @neurodesk/synthsr
 
+## 0.6.20261022
+
 ## 0.6.20261020
 
 ### Patch Changes
