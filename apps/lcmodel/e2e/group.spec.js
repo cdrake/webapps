@@ -248,7 +248,8 @@ test("a mixed group keeps the macromolecule model for MEGA-PRESS, and tissue-cor
   rows = table((await download(page, "Group table (.csv)")).bytes.toString());
   await expect(page.locator("#corrHeader")).toBeVisible();
   const naa = rows.find((r) => r.dataset.startsWith("sub-02_PRESS") && r.metabolite === "NAA+NAAG");
-  expect(Number(naa.tissue_corrected_mmol_per_kg) / Number(naa.concentration)).toBeCloseTo(12.6215878899 / 12, 3);
+  // Independent Osprey quantTiss result at TE 35 / TR 2000 ms for these fractions.
+  expect(Number(naa.tissue_corrected_mmol_per_kg) / Number(naa.concentration)).toBeCloseTo(25.7583426324 / 12, 3);
   expect([naa.fraction_gm, naa.fraction_wm, naa.fraction_csf, naa.fraction_source]).toEqual(["0.6", "0.27", "0.13", "entered"]);
   expect(rows.filter((r) => r.dataset.startsWith("sub-01_megapress")).every((r) => r.tissue_corrected_mmol_per_kg === "")).toBe(true);
   await page.locator(".nd-view-tab[data-view='group']").click();
