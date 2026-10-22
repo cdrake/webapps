@@ -246,21 +246,44 @@ test("cancelling the denoised viewer read restores the previous display", async 
   expect((await page.locator("#gl1").screenshot()).equals(original)).toBe(false);
 });
 
+const EXAMPLE_RUNS = {
+  "ds005134-slab": {
+    image: "sub-01_dir-AP_desc-slab_dwi.nii.gz",
+    info: "67×92×10×137 · 13 b0, 124 weighted · bval, bvec",
+    volumes: 137,
+    prefix: "sub-01_dir-AP_desc-denoised_dwi",
+  },
+  dwi: { image: "dwi.nii.gz", info: "1 b0, 20 weighted · bval, bvec", volumes: 21, prefix: "dwi_desc-denoised" },
+};
+
+test("the first example is the ds005134 multi-shell slab", () => {
+  expect(examples.map((example) => example.id)).toEqual(Object.keys(EXAMPLE_RUNS));
+});
+
 for (const example of examples) {
-  test(`example ${example.id} is denoised and downloads the image and gradients`, async ({ page }) => {
-    test.setTimeout(180000);
+  test(`example ${example.id} is denoised and downloads the image, gradients and sidecar`, async ({ page }) => {
+    test.setTimeout(300000);
+    const run = EXAMPLE_RUNS[example.id];
     await page.goto("/");
     await page.locator("select[data-neurodesk-example]").selectOption(example.id);
-    await expect(page.locator("#fileInfo")).toContainText("dwi.nii.gz", { timeout: 120000 });
-    await expect(page.locator("#fileInfo")).toContainText("1 b0, 20 weighted · bval, bvec");
+    await expect(page.locator("#fileInfo")).toContainText(run.image, { timeout: 120000 });
+    await expect(page.locator("#fileInfo")).toContainText(run.info);
     await page.locator("#runButton").click();
-    await expect(page.locator("#statusText")).toHaveText("Denoised 21 volumes", { timeout: 120000 });
+    await expect(page.locator("#statusText")).toHaveText(`Denoised ${run.volumes} volumes`, { timeout: 240000 });
     await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(4);
     const image = await download(page, "Denoised image");
-    expect(image.suggestedFilename()).toBe("dwi_desc-denoised.nii.gz");
+    expect(image.suggestedFilename()).toBe(`${run.prefix}.nii.gz`);
     const out = readNiftiFrames(gunzipSync(readFileSync(await image.path())));
-    expect(out.frames).toBe(21);
+    expect(out.frames).toBe(run.volumes);
     expect(out.data.every(Number.isFinite)).toBe(true);
+    const bval = await download(page, "b-values");
+    expect(bval.suggestedFilename()).toBe(`${run.prefix}.bval`);
+    const sidecar = await download(page, "Sidecar");
+    expect(sidecar.suggestedFilename()).toBe(`${run.prefix}.json`);
+    const metadata = JSON.parse(readFileSync(await sidecar.path(), "utf8"));
+    expect(metadata.Description).toMatch(/^Patch2Self/);
+    // The slab's acquisition sidecar is passed through under the new name.
+    if (example.files.some((file) => file.role === "sidecar")) expect(metadata.PhaseEncodingDirection).toBe("j-");
   });
 }
 

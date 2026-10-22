@@ -42,6 +42,10 @@ python -I tools/oracle.py INPUT_DIR WORK_DIR OUT_DIR 300
 AMICO_ORACLE=OUT_DIR/oracle.json cargo test --release -p dwi-amico --test oracle -- --nocapture
 ```
 
+The oracle of the numbers below is pinned on Hugging Face (`noddi/validation/`, `../validation/oracle.manifest.json`).
+`python3 ../validation/fetch_oracle.py DEST` downloads and checks it, and prints `AMICO_ORACLE`.
+The `oracle` job in `dwi-native.yml` runs the test with `DWI_REQUIRE_ORACLE=1`, which makes a missing oracle a failure, not a skip.
+
 On 300 voxels of ds001226 sub-CON01 (b = 0/700/1200/2800):
 
 | Comparison | Median | p95 | Maximum |

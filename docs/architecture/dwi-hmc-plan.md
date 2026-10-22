@@ -153,7 +153,7 @@ Replace the WASM numbers with the milestone M3 benchmark.
 
 ## 7. Milestones
 
-1. M0: reference runs, kept intermediates and masks, pinned on Hugging Face. Status: NiFreeze runs done; QSIPrep r1 and the repeats e1-e3 done; the folder `hmc/reference/` is ready; the upload and its revision are pending ([#409](https://github.com/neurodesk/webapps/issues/409), which waits for Hugging Face write access, [#374](https://github.com/neurodesk/webapps/issues/374); section 9).
+1. M0: reference runs, kept intermediates and masks, pinned on Hugging Face. Status: NiFreeze runs done; QSIPrep r1 and the repeats e1-e3 done; `hmc/reference/` is uploaded at dataset revision `a4ba04733c316430add7e9f8467887a1a47b6e65` ([#409](https://github.com/neurodesk/webapps/issues/409); section 9).
 2. M1: `hmc` motion decomposition, bvec rotation and TSV, tested with the reference `.mat` files.
 3. M2: `hmc-registration` with generic argv, `--float 1` only (no 3DDouble, Q53). Replay the reference inputs and apply Q53's per-volume, per-axis seed-spread rule for GP. Report its failures. The shell-maximum alternatives and the SHORELine gate in section 5 await an issue-owner decision.
 4. M3: NiFreeze `trivial` end to end, Node CLI, benchmark.
@@ -182,7 +182,7 @@ Replace the WASM numbers with the milestone M3 benchmark.
 
 ## 9. M0 results
 
-Measured 18-19 October 2026. Data: Hugging Face dataset `neurodeskorg/webapps`, path `hmc/reference/` (local folder ready with NiFreeze, QSIPrep r1 and e1-e3; upload and revision pending, [#409](https://github.com/neurodesk/webapps/issues/409) and [#374](https://github.com/neurodesk/webapps/issues/374)). Its README gives the commands, versions, patches and the purpose of each file. Use that path in the M1-M5 manifests.
+Measured 18-19 October 2026. Data: Hugging Face dataset `neurodeskorg/webapps`, path `hmc/reference/`, revision `a4ba04733c316430add7e9f8467887a1a47b6e65` (uploaded 21 October 2026, [#409](https://github.com/neurodesk/webapps/issues/409); 3513 files with NiFreeze, QSIPrep r1 and e1-e3; a fresh download passes `sha256sum -c SHA256SUMS`). Its README gives the commands, versions, patches and the purpose of each file. Use that path in the M1-M5 manifests.
 
 ### Input and environment
 

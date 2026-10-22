@@ -49,6 +49,8 @@ Storage is f32 or f64 (`Sample`); the computation is always f64.
 DWIDENOISE_ORACLE=/path/to/neurodeskorg-webapps/dwidenoise/validation cargo test --release -p dwi-denoise
 ```
 
+`python3 ../validation/fetch_oracle.py DEST` downloads the pinned oracle and input (`../validation/oracle.manifest.json`), checks their sha256 and prints `DWIDENOISE_ORACLE`. The `oracle` job in `dwi-native.yml` runs the test with `DWI_REQUIRE_ORACLE=1`, which makes missing data a failure, not a skip.
+
 ## Reference
 
 Fadnavis S, Batson J, Garyfallidis E (2020). Patch2Self: Denoising Diffusion MRI with Self-Supervised Learning. Advances in Neural Information Processing Systems 33.

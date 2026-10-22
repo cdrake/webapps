@@ -90,19 +90,46 @@ test("cancelling stops the worker and permits another run", async ({ page }) => 
   await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(0);
 });
 
+const EXAMPLE_RUNS = {
+  "ds005134-slab": { image: "sub-01_dir-AP_desc-slab_dwi.nii.gz", rows: 6, volumes: 137, stem: "sub-01_dir-AP", prefix: "sub-01_dir-AP_desc-n4_dwi" },
+  dwi: { image: "dwi.nii.gz", rows: 5, volumes: 21, stem: "dwi", prefix: "dwi_desc-n4" },
+};
+
+test("the first example is the ds005134 multi-shell slab", () => {
+  expect(examples.map((example) => example.id)).toEqual(Object.keys(EXAMPLE_RUNS));
+});
+
 for (const example of examples) {
-  test(`example ${example.id} corrects the bias field and downloads the image`, async ({ page }) => {
-    test.setTimeout(180000);
+  test(`example ${example.id} corrects the bias field and downloads the image, field and mask`, async ({ page }) => {
+    test.setTimeout(240000);
+    const run = EXAMPLE_RUNS[example.id];
     await page.goto("/");
     await page.locator("select[data-neurodesk-example]").selectOption(example.id);
-    await expect(page.locator("#fileInfo")).toContainText("dwi.nii.gz", { timeout: 120000 });
+    await expect(page.locator("#fileInfo")).toContainText(run.image, { timeout: 120000 });
     await page.locator("#runButton").click();
-    await expect(page.locator("#statusText")).toHaveText("Bias field corrected", { timeout: 150000 });
+    await expect(page.locator("#statusText")).toHaveText("Bias field corrected", { timeout: 210000 });
     await expect(page.locator("#technicalLog")).toContainText(/MindGrab .+ brain mask on (cpu|webgpu|webgl2)/);
-    await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(5);
+    await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(run.rows);
     const image = download(page, "Corrected image");
-    expect((await image).suggestedFilename()).toBe("dwi_desc-n4.nii.gz");
-    expect((await readDownload(image)).frames).toBe(21);
+    expect((await image).suggestedFilename()).toBe(`${run.prefix}.nii.gz`);
+    const corrected = await readDownload(image);
+    expect(corrected.frames).toBe(run.volumes);
+    expect(corrected.data.every(Number.isFinite)).toBe(true);
+    const mask = download(page, "Brain mask");
+    expect((await mask).suggestedFilename()).toBe(`${run.stem}_desc-brain_mask.nii.gz`);
+    const inMask = Array.from((await readDownload(mask)).data, (value) => value > 0);
+    expect(inMask.filter(Boolean).length).toBeGreaterThan(1000);
+    const field = download(page, "Bias field");
+    expect((await field).suggestedFilename()).toBe(`${run.stem}_desc-n4_biasfield.nii.gz`);
+    const bias = Array.from((await readDownload(field)).data).filter((_, i) => inMask[i]);
+    expect(bias.every((value) => Number.isFinite(value) && value > 0)).toBe(true);
+    if (example.files.some((file) => file.role === "sidecar")) {
+      const sidecar = download(page, "Sidecar");
+      expect((await sidecar).suggestedFilename()).toBe(`${run.prefix}.json`);
+      const metadata = JSON.parse(readFileSync(await (await sidecar).path(), "utf8"));
+      expect(metadata.PhaseEncodingDirection).toBe("j-");
+      expect(metadata.Description).toMatch(/N4/);
+    }
   });
 }
 
