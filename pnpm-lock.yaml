@@ -1196,8 +1196,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/white-matter-lesions
       '@niivue/niivue':
-        specifier: 1.0.0-rc.26
-        version: 1.0.0-rc.26
+        specifier: 1.0.0-rc.33
+        version: 1.0.0-rc.33
       onnxruntime-web:
         specifier: 1.29.0
         version: 1.29.0
@@ -3742,6 +3742,9 @@ packages:
 
   '@niivue/niivue@1.0.0-rc.26':
     resolution: {integrity: sha512-nGKRQm3MaFoDmBuV/prTXGokbQTdUpx/mMXOKdbWzXUaGMXfGySmToq9Ccza2sCaOk3Zn7CSWdSdtkcZIdJHoQ==}
+
+  '@niivue/niivue@1.0.0-rc.33':
+    resolution: {integrity: sha512-kcQcqSDCVqnIMvnyCH6MosAS6PoR5es31VQkBVCOwmo3E7FnrbQCfm5HCkYGg7MYu6e0cyhBM9lqtSg7Ym7Jgg==}
 
   '@niivue/niivue@1.0.0-rc.9':
     resolution: {integrity: sha512-CPu6+KTONESagpbYn+BF/TWy27twmPgqpLNam9x24tl9XDWKfJTLhkjqBZSCVOyWqu1eYMdJFt/nQeDbTGdWvA==}
@@ -7468,6 +7471,9 @@ packages:
   nifti-reader-js@0.8.0:
     resolution: {integrity: sha512-iO1iIhQDfKniy+l/86HfOPte7So+SxBmBiMSiUB2VXU7z4hSewMTlE3h0fCgfzfXvMUa+ilzLTJ2ZHmtFw6EWw==}
 
+  nifti-reader-js@0.8.1:
+    resolution: {integrity: sha512-inWrhWVqjn39gtTbK3DadYrevsmOzGK2a2LsgnwkNtvVlPrXbazOS2I2lzhmQa7KEwiegX4htGbi1moB0k/msA==}
+
   node-abi@4.33.0:
     resolution: {integrity: sha512-vLBWCKb+7LWsX+TbfzWOkw0W81m377tyx3hOweBTjO43CXZnRGS1/JPWs20fr0PgZyDXk6ROYrylsEycK8raDA==}
     engines: {node: '>=22.12.0'}
@@ -11112,6 +11118,15 @@ snapshots:
       earcut: 3.2.3
       gl-matrix: 3.4.4
       nifti-reader-js: 0.8.0
+      zarrita: 0.7.5
+
+  '@niivue/niivue@1.0.0-rc.33':
+    dependencies:
+      cbor-x: 1.6.4
+      clipper2-ts: 2.0.1-18
+      earcut: 3.2.3
+      gl-matrix: 3.4.4
+      nifti-reader-js: 0.8.1
       zarrita: 0.7.5
 
   '@niivue/niivue@1.0.0-rc.9':
@@ -15311,6 +15326,10 @@ snapshots:
   nifti-reader-js@0.8.0:
     dependencies:
       fflate: 0.8.3
+
+  nifti-reader-js@0.8.1:
+    dependencies:
+      fflate: 0.8.2
 
   node-abi@4.33.0:
     dependencies:
