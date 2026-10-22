@@ -67,6 +67,24 @@ export const modules = [
     files: ['packages/lcmodel/package.json', 'packages/lcmodel/test/tissue.test.js'],
     command: 'node --test packages/lcmodel/test/tissue.test.js',
   },
+  {
+    // Everything but fillGaps, the last function: instrumenting its Fourier
+    // sums makes every run of the suite take seconds instead of 0.2 s.
+    id: 'lcmodel-io',
+    file: 'packages/lcmodel/src/lcmodel-io.js',
+    mutate: 'packages/lcmodel/src/lcmodel-io.js:1-321',
+    files: [
+      'packages/lcmodel/package.json',
+      'packages/lcmodel/src/inputs.js',
+      'packages/lcmodel/src/spectrum-plot.js',
+      'packages/lcmodel/test/lcmodel-io.test.js',
+      'packages/lcmodel/test/data/siemens-megapress.coord.gz',
+      'packages/lcmodel/test/data/siemens-megapress.raw.gz',
+      'exes/lcmodel/tests/data/test_lcm/native.coord',
+      'exes/lcmodel/tests/data/test_lcm/native.table',
+    ],
+    command: 'node --test packages/lcmodel/test/lcmodel-io.test.js',
+  },
 ];
 
 // The PR canary: tableName, a small naming function in the first module.

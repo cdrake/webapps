@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { gunzipSync } from "node:zlib";
-import { buildControl, parseCoord, fillGaps, parseTable, concentrationsCsv, presentRows, FILES, LINE_BROADENING } from "../src/lcmodel-io.js";
+import { buildControl, parseCoord, fillGaps, parseTable, concentrationsCsv, presentRows, FILES, LINE_BROADENING, coordGaps, summarizeMisc, lcmodelError, explainDiagnostic } from "../src/lcmodel-io.js";
 import { spectrumSvg, fitSeries, metaboliteSeries, visibleIndices, tickStep, splitAtGaps } from "../src/spectrum-plot.js";
 
 const native = new URL("../../../exes/lcmodel/tests/data/test_lcm/", import.meta.url);
@@ -184,4 +184,257 @@ test("a MEGA-PRESS fit plot shades the excluded window and draws the data throug
   const bare = spectrumSvg({ ppm: coord.ppm, series: fitSeries(coord), range: [4.4, 0.3], gaps: coord.gaps, ariaLabel: "MEGA" });
   assert.equal((bare.match(/<rect class="lcm-gap"/g) || []).length, 1);
   assert.equal((bare.match(/class="lcm-data"/g) || []).length, 2);
+});
+
+test("the control file is exactly the namelist LCModel reads", () => {
+  const press = buildControl({ nunfil: 2048, deltat: 2.5e-4, hzpppm: 123.247, teMs: 30, water: true, title: "PRESS 30" });
+  assert.equal(press, [
+    " $LCMODL",
+    " key=210387309",
+    " lps=0",
+    " nunfil=2048",
+    " deltat=0.00025",
+    " hzpppm=123.247",
+    " filbas='basis.basis'",
+    " filraw='spectrum.raw'",
+    " ppmst=4",
+    " ppmend=0.2",
+    " lcoord=9",
+    " filcoo='result.coord'",
+    " ltable=7",
+    " filtab='result.table'",
+    " lcsv=11",
+    " filcsv='result.csv'",
+    " neach=99",
+    " desdt2=2",
+    " rfwbas=80",
+    " echot=30",
+    " filh2o='water.h2o'",
+    " dows=T",
+    " doecc=T",
+    " title='PRESS 30'",
+    " $END",
+    "",
+  ].join("\n"));
+  assert.deepEqual(FILES, { raw: "spectrum.raw", h2o: "water.h2o", basis: "basis.basis", table: "result.table", coord: "result.coord", csv: "result.csv" });
+  const mega = buildControl({ nunfil: 2080, deltat: 4.167e-4, hzpppm: 123.247, teMs: 68, sptype: "mega-press-3", ppmStart: 4.2, ppmEnd: 0.5, coEditedMM: true, lineBroadening: "lcmodel" });
+  assert.equal(mega, [
+    " $LCMODL",
+    " key=210387309",
+    " lps=0",
+    " sptype='mega-press-3'",
+    " nunfil=2080",
+    " deltat=0.0004167",
+    " hzpppm=123.247",
+    " filbas='basis.basis'",
+    " filraw='spectrum.raw'",
+    " ppmst=4.2",
+    " ppmend=0.5",
+    " lcoord=9",
+    " filcoo='result.coord'",
+    " ltable=7",
+    " filtab='result.table'",
+    " lcsv=11",
+    " filcsv='result.csv'",
+    " neach=99",
+    " nsimul=2",
+    " chsimu(1)='MM09 @ .915 +- .02 FWHM= .085 < .1 +- .35 AMP= 3.'",
+    " chsimu(2)='MM3co @ 3.0 +- .02 FWHM= 0.085 < 0.114 +- .02 AMP= 2.'",
+    " nratio=2",
+    " chrato(2)='MM3co/MM09 = 1. +- .2'",
+    " ncombi=18",
+    " chcomb(18)='GABA+MM3co'",
+    " ppmgap(1,1)=1.95",
+    " ppmgap(2,1)=1.2",
+    " echot=68",
+    " $END",
+    "",
+  ].join("\n"));
+  assert.deepEqual([LINE_BROADENING.widened.label, LINE_BROADENING.lcmodel.label], ["Widened", "LCModel defaults"]);
+});
+
+test("the control file refuses short spectra and empty fit ranges, and leaves out unknown TE and titles", () => {
+  const base = { nunfil: 2048, deltat: 2.5e-4, hzpppm: 123.247 };
+  assert.match(buildControl({ ...base, nunfil: 64 }), /\n nunfil=64\n/);
+  for (const nunfil of [63, undefined, Number.NaN]) {
+    assert.throws(() => buildControl({ ...base, nunfil }), { message: "The spectrum needs at least 64 points." });
+  }
+  assert.throws(() => buildControl({ ...base, ppmStart: 2, ppmEnd: 2 }), /fit range must run from a higher to a lower ppm/);
+  for (const teMs of [0, -30, Number.NaN, undefined]) assert.doesNotMatch(buildControl({ ...base, teMs }), /echot/, String(teMs));
+  assert.match(buildControl({ ...base, teMs: 0.5 }), /\n echot=0\.5\n/);
+  assert.doesNotMatch(buildControl(base), /title/);
+  const long = "x".repeat(130);
+  assert.match(buildControl({ ...base, title: long }), new RegExp(`\\n title='${"x".repeat(120)}'\\n`));
+});
+
+const f13 = (values) => values.map((v) => v.toFixed(6).padStart(13)).join("");
+const e13 = (values) => values.map((v) => v.toExponential(5).toUpperCase().padStart(13)).join("");
+const PPM = Array.from({ length: 12 }, (_, k) => 4 - k * 0.25);
+const series = (scale) => PPM.map((p, k) => scale * (k + 1));
+
+/** A .COORD file in LCModel's Fortran formats (exes/lcmodel/src/finout.rs), numbers in rows of ten. */
+function coordText({ data = series(1) } = {}) {
+  const rows = (format, values) => [` ${format(values.slice(0, 10))}`, ` ${format(values.slice(10))}`].filter((line) => line.trim());
+  return [
+    " LCModel (Version 6.3-1N) Copyright: S.W. Provencher.",
+    "  ",
+    "  5 lines in following concentration table = NCONC+1",
+    "    Conc.  %SD /NAA+NA  Metabolite",
+    " 1.91E-06   5%   0.803 NAA",
+    " 2.38E-06   3%   1.000 NAA+NAAG",
+    "      NaN 999%     NaN Lip13a",
+    " 1.00E-07  50%     NaN Ala",
+    "   3 lines in following misc. output table",
+    "  FWHM = 0.084 ppm    S/N =1234",
+    "  Data shift =-0.012 ppm",
+    "  Ph:-123 deg    -101.5 deg/ppm",
+    "   12 points on ppm-axis = NY",
+    ...rows(f13, PPM),
+    " NY phased data points follow",
+    ...rows(e13, data),
+    " NY points of the fit to the data follow",
+    ...rows(e13, series(2)),
+    " NY background values follow",
+    ...rows(e13, series(3)),
+    " GABA     Conc. =-8.45E-09",
+    ...rows(e13, series(4)),
+    " Lip13a   Conc. = 2.00E-08",
+    ...rows(e13, series(5)),
+    "   3 lines in following diagnostic table:",
+    "   3    info's RFALSI 12",
+    "   1      info FINOUT  9",
+    "",
+    "   0 lines in following table of input changes:",
+    "",
+  ].join("\n");
+}
+
+test("every section of a .COORD file is read in LCModel's own number formats", () => {
+  const coord = parseCoord(coordText());
+  // The ratio column's name is cut to six characters; it is named in full.
+  assert.equal(coord.ratioTo, "NAA+NAAG");
+  assert.deepEqual(coord.rows, [
+    { name: "NAA", concentration: 1.91e-6, sdPercent: 5, ratio: 0.803, combination: false },
+    { name: "NAA+NAAG", concentration: 2.38e-6, sdPercent: 3, ratio: 1, combination: true },
+    { name: "Ala", concentration: 1e-7, sdPercent: 50, ratio: null, combination: false },
+  ]);
+  assert.deepEqual(coord.misc, ["FWHM = 0.084 ppm    S/N =1234", "Data shift =-0.012 ppm", "Ph:-123 deg    -101.5 deg/ppm"]);
+  assert.deepEqual(coord.summary, { fwhmPpm: 0.084, snr: 1234, shiftPpm: -0.012, phase0Deg: -123, phase1DegPerPpm: -101.5 });
+  assert.deepEqual(coord.ppm, PPM);
+  assert.deepEqual(coord.data, series(1));
+  assert.deepEqual(coord.fit, series(2));
+  assert.deepEqual(coord.background, series(3));
+  assert.deepEqual(coord.metabolites, [
+    { name: "GABA", concentration: -8.45e-9, curve: series(4) },
+    { name: "Lip13a", concentration: 2e-8, curve: series(5) },
+  ]);
+  assert.deepEqual(coord.diagnostics, ["3    info's RFALSI 12", "1      info FINOUT  9"]);
+  assert.deepEqual(coord.gaps, []);
+});
+
+test("a cut or empty .COORD file keeps what it has", () => {
+  const text = coordText();
+  // Cut after the first row of the last curve: its numbers so far, no diagnostics.
+  const lines = text.split("\n");
+  const curve = lines.indexOf(" Lip13a   Conc. = 2.00E-08");
+  const cut = parseCoord(`${lines.slice(0, curve + 2).join("\n")}\n`);
+  assert.deepEqual(cut.metabolites[1].curve, series(5).slice(0, 10));
+  assert.deepEqual(cut.diagnostics, []);
+  // A short section stops at the next heading rather than reading into it.
+  const short = parseCoord(coordText({ data: series(1).slice(0, 5) }));
+  assert.deepEqual(short.data, series(1).slice(0, 5));
+  assert.deepEqual(short.fit, series(2));
+  assert.deepEqual(parseCoord(""), {
+    ratioTo: null,
+    rows: [],
+    misc: [],
+    ppm: [],
+    data: [],
+    fit: [],
+    background: [],
+    metabolites: [],
+    diagnostics: [],
+    summary: { fwhmPpm: null, snr: null, shiftPpm: null, phase0Deg: null, phase1DegPerPpm: null },
+    gaps: [],
+  });
+});
+
+test("a PPMGAP window is a step more than five times the usual spacing", () => {
+  assert.deepEqual(coordGaps([10, 9, 8, 7, 2, 1, 0]), [], "exactly five steps is not a gap");
+  assert.deepEqual(coordGaps([10, 9, 8, 7, 1.5, 0.5, -0.5]), [{ hi: 7, lo: 1.5 }]);
+  assert.deepEqual(coordGaps([4, 3.9, 3.8, 3.7, 3.6, 2, 1.9, 1.8, 0.4, 0.3]), [{ hi: 3.6, lo: 2 }, { hi: 1.8, lo: 0.4 }]);
+  assert.deepEqual(coordGaps([1]), []);
+  assert.deepEqual(coordGaps([]), []);
+});
+
+test("the .TABLE concentration section is read wherever it starts and however far it got", () => {
+  const conc = (count) => `$$CONC${String(count).padStart(3)} lines in following concentration table = NCONC+1`;
+  const header = "    Conc.  %SD /Cr+PCr  Metabolite";
+  const full = parseTable([conc(4), header, " 1.20E-06  13%   0.659 Cr", " 6.22E-07  26%   0.341 PCr", " 1.83E-06   3%   1.000 Cr+PCr", "", "$$MISC  0 lines"].join("\n"));
+  assert.equal(full.ratioTo, "Cr+PCr");
+  assert.deepEqual(full.rows.map((r) => r.name), ["Cr", "PCr", "Cr+PCr"]);
+  // A file that stops inside the table: the rows so far, the header's name as written.
+  const cut = parseTable(["", conc(36), header, " 1.20E-06  13%   0.659 Cr", ""].join("\n"));
+  assert.deepEqual([cut.ratioTo, cut.rows.map((r) => r.name)], ["Cr+PCr", ["Cr"]]);
+  assert.deepEqual(parseTable(" LCModel (Version 6.3-1N)\n"), { ratioTo: null, rows: [] });
+});
+
+test("the concentration CSV quotes names and leaves missing ratios and notes empty", () => {
+  const rows = [
+    { name: "GABA+MM3co", concentration: 2.6e-5, sdPercent: 6, ratio: 0.296, note: "GABA+ (GABA + MM3co): primary result" },
+    { name: 'Lip13, "a"', concentration: 1e-7, sdPercent: 50, ratio: null },
+  ];
+  assert.equal(concentrationsCsv(rows, null), [
+    "Metabolite,Concentration,SD (%),Ratio,Note",
+    "GABA+MM3co,0.000026,6,0.296,GABA+ (GABA + MM3co): primary result",
+    '"Lip13, ""a""",1e-7,50,,',
+    "",
+  ].join("\n"));
+  assert.equal(concentrationsCsv([rows[1]], "Cr"), 'Metabolite,Concentration,SD (%),/Cr\n"Lip13, ""a""",1e-7,50,\n');
+});
+
+test("a GABA+ fit without one of its parts still leads with GABA+", () => {
+  const shown = presentRows([{ name: "NAA" }, { name: "GABA+MM3co" }, { name: "GABA" }]);
+  assert.deepEqual(shown.map((r) => [r.name, r.primary, r.modelDependent, r.note]), [
+    ["GABA+MM3co", true, false, "GABA+ (GABA + MM3co): primary result"],
+    ["GABA", false, true, "model-dependent: split from MM3co by the macromolecule model"],
+    ["NAA", undefined, undefined, undefined],
+  ]);
+  const mm = presentRows([{ name: "MM3co" }, { name: "GABA+MM3co" }]);
+  assert.deepEqual(mm.map((r) => r.note), ["GABA+ (GABA + MM3co): primary result", "model-dependent: co-edited macromolecules under GABA at 3.0 ppm"]);
+});
+
+test("LCModel's stop codes are named, with the diagnostics from its table", () => {
+  const hints = {
+    "MYBASI 9": "The basis set was simulated for a different field strength.",
+    "MYBASI 2": "The basis set's bandwidth is too narrow for these data.",
+    "MYDATA 1": "The spectrum file could not be read.",
+    "INITIA 4": "The fit range lies outside the spectrum.",
+  };
+  for (const [code, hint] of Object.entries(hints)) assert.equal(lcmodelError(`FATAL ERROR ${code}`), `LCModel stopped (FATAL ERROR ${code}). ${hint}`);
+  const table = " LCModel\n$$DIAG  1 lines in following diagnostic table:\n   1     FATAL SETUP  3\n\n$$INPU  0 lines\n";
+  const stopped = "LCModel stopped (FATAL ERROR SETUP 3).";
+  assert.equal(lcmodelError("FATAL ERROR SETUP 3", { "result.coord": "", "result.table": table }), `${stopped} Diagnostics: 1 lines in following diagnostic table: 1 FATAL SETUP 3`);
+  assert.equal(lcmodelError("FATAL ERROR SETUP 3", { "result.coord": table }), stopped);
+  assert.equal(lcmodelError("FATAL ERROR SETUP 3", { "result.table": " LCModel\n" }), stopped);
+});
+
+test("diagnostic lines read in full, as LCModel aligns them", () => {
+  const advice = "LCModel still fits, but coupled metabolites (Glu, Gln, GABA, Ins) can be biased: check the TE the scanner recorded, or supply a basis set simulated at the data's TE.";
+  const both = explainDiagnostic("   1     ERROR MYBASI 10", { dataTeMs: 40.254, basisTeMs: 35 });
+  assert.equal(both, `   1     ERROR MYBASI 10: the basis set's echo time (35 ms) differs from the data's (40.25 ms) by 3 ms or more. ${advice}`);
+  const neither = explainDiagnostic("1 error MYBASI 10", { dataTeMs: 0, basisTeMs: Number.NaN });
+  assert.equal(neither, `1 error MYBASI 10: the basis set's echo time differs from the data's by 3 ms or more. ${advice}`);
+  assert.equal(explainDiagnostic("   1      info FINOUT  9"), "   1      info FINOUT  9 (LCModel information; the fit is unaffected)");
+  assert.equal(explainDiagnostic("1 ERROR MYBASI 1"), "1 ERROR MYBASI 1 (see LCModel's manual, section 12, for MYBASI 1)");
+  assert.equal(explainDiagnostic("1 ERROR SETUP 10"), "1 ERROR SETUP 10 (see LCModel's manual, section 12, for SETUP 10)");
+  assert.equal(explainDiagnostic("1 FATAL MYBASI 10 in basis.basis"), "1 FATAL MYBASI 10 in basis.basis");
+  // The .TABLE file pads each line with blanks.
+  assert.equal(explainDiagnostic("2  warnings SPLINE 3   "), "2  warnings SPLINE 3    (see LCModel's manual, section 12, for SPLINE 3)");
+});
+
+test("a diagnostic table of ten lines or more is read whole", () => {
+  const lines = Array.from({ length: 11 }, (_, k) => `   1   warning SPLINE ${k + 1}`);
+  const text = coordText().replace(/ {3}3 lines in following diagnostic table:\n.*\n.*\n\n/, `  11 lines in following diagnostic table:\n${lines.join("\n")}\n`);
+  assert.deepEqual(parseCoord(text).diagnostics, lines.map((line) => line.trim()));
 });
