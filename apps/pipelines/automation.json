@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 2,
+  "app": "pipelines",
+  "title": "Pipeline Builder",
+  "description": "Check a NeuroFlow workflow of Neurodesk web apps with the NeuroFlow validator.",
+  "defaultOperation": "validate",
+  "operations": {
+    "validate": {
+      "title": "Validate workflow",
+      "description": "Validate a NeuroFlow workflow against the catalog's tools and return the validator's report.",
+      "mode": "batch",
+      "inputs": {
+        "workflow": {
+          "source": "files",
+          "type": "neuro:workflow",
+          "formats": [
+            "json"
+          ],
+          "description": "One NeuroFlow .workflow.json document",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "parameters": {},
+      "artifacts": {
+        "validation": {
+          "type": "neuro:validation-report",
+          "mediaType": "application/json",
+          "minimum": 1,
+          "maximum": 1
+        }
+      },
+      "engines": [
+        "browser"
+      ]
+    }
+  }
+}

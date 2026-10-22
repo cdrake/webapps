@@ -2,6 +2,12 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { repoRoot } from './apps-registry.mjs';
 
+// Apps that ship no example, and why. Every other app pins at least one.
+export const WITHOUT_EXAMPLES = Object.freeze({
+  seedseg: 'withdrew its unsuitable example',
+  pipelines: 'edits workflow documents; its shipped workflows load from the page',
+});
+
 export function exampleAssets(examples) {
   return examples.flatMap(example => example.files);
 }
@@ -14,7 +20,7 @@ export async function loadAppExamples(app, root = repoRoot) {
   } catch (error) {
     throw new Error(`${app.id}: provide examples.json with a working, pinned example`, { cause: error });
   }
-  if (!Array.isArray(examples) || (examples.length === 0 && app.id !== 'seedseg')) {
+  if (!Array.isArray(examples) || (examples.length === 0 && !(app.id in WITHOUT_EXAMPLES))) {
     throw new Error(`${app.id}: examples.json must contain at least one example`);
   }
   const ids = new Set();

@@ -183,7 +183,8 @@ test('a root script that names one package file reaches that file, not the whole
   const contracts = createAppPlan(registry, ['packages/desktop/src/contracts.js'], await graph);
   const other = createAppPlan(registry, ['packages/desktop/src/jobs.js'], await graph);
   assert.equal(contracts.allApps, true, 'vite-app-config.mjs reaches contracts.js through app-automation.mjs');
-  assert.deepEqual(other.selected.map((app) => app.id), ['dicompare'], 'only dicompare depends on the desktop package');
+  // Pipelines builds its NeuroFlow bundle with packages/desktop/neuroflow/generator.mjs.
+  assert.deepEqual(other.selected.map((app) => app.id), ['dicompare', 'pipelines'], 'only dicompare and pipelines depend on the desktop package');
 });
 
 function manifest(before, after) {

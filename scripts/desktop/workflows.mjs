@@ -11,7 +11,7 @@ import { expect } from '@playwright/test';
 import { verifyMuscleMapFullPipeline, createSyntheticMuscleMapNifti } from '../../test/musclemap-full-pipeline-smoke.mjs';
 import { startReferenceServer } from '../../test-utils/compute-reference-server.mjs';
 
-export const workflowApps = ['nesvor', 'musclemap', 'vesselboost', 'spinalcordtoolbox', 'calmar', 'qsmbly', 'seedseg', 'dicompare', 'deface', 'easy-mp2rage', 'niimath', 'dicom2vid', 'browserqc', 'surfannotate', 'zarro', 'synthsr', 'synthseg', 'syncro', 'dwi2trx', 'edgereg', 'greedy', 'ants', 'brain2print', 'topofit', 'fireants', 'brain-extraction', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel', 'elastix', 'dicomview', 'fastprep', 'noddi', 'degibbs', 'n4', 'dcm2niix', 'dwidenoise', 'sdc', 'me-ica'];
+export const workflowApps = ['nesvor', 'musclemap', 'vesselboost', 'spinalcordtoolbox', 'calmar', 'qsmbly', 'seedseg', 'dicompare', 'deface', 'easy-mp2rage', 'niimath', 'dicom2vid', 'browserqc', 'surfannotate', 'zarro', 'synthsr', 'synthseg', 'syncro', 'dwi2trx', 'edgereg', 'greedy', 'ants', 'brain2print', 'topofit', 'fireants', 'brain-extraction', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel', 'elastix', 'dicomview', 'fastprep', 'noddi', 'degibbs', 'n4', 'dcm2niix', 'dwidenoise', 'sdc', 'me-ica', 'pipelines'];
 
 /**
  * Anything a workflow needs before the desktop app starts. NeSVoR computes on a
@@ -120,6 +120,18 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     const image = entries['sub-01/ses-01/anat/sub-01_ses-01_T1w.nii.gz'];
     assert.ok(image);
     return nifti({ filename: 'sub-01_ses-01_T1w.nii.gz', bytes: image });
+  }
+  if (id === 'pipelines') {
+    // The builder computes nothing: its workflow is loading a shipped pipeline,
+    // validating it with the bundled NeuroFlow WebAssembly and exporting it unchanged.
+    const shipped = JSON.parse(await readFile(join(root, 'apps/pipelines/workflows/n4-extract-synthseg.workflow.json')));
+    await expect(page.locator('#library')).toBeEnabled({ timeout: 120000 });
+    await page.locator('#library').selectOption({ label: shipped.description });
+    await expect(page.locator('#statusText')).toHaveText('Valid workflow · 3 steps', { timeout: 120000 });
+    const exported = await download('#runButton');
+    assert.equal(exported.filename, 'n4-extract-synthseg.workflow.json');
+    assert.deepEqual(JSON.parse(exported.bytes), shipped);
+    return { filename: exported.filename, bytes: exported.bytes.length };
   }
   if (id === 'nesvor') {
     assert.ok(compute, 'the nesvor workflow needs the reference compute server from prepareWorkflow');

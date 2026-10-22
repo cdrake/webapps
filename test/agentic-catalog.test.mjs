@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { agenticCatalog } from '../test-utils/agentic-catalog.mjs';
+import { WITHOUT_EXAMPLES } from '../scripts/lib/app-examples.mjs';
 import { loadAppsRegistry } from '../scripts/lib/apps-registry.mjs';
 
 test('every registered webapp has an e2e catalog entry and its declared examples', async () => {
@@ -8,7 +9,7 @@ test('every registered webapp has an e2e catalog entry and its declared examples
   const catalog = await agenticCatalog('');
   assert.deepEqual(catalog.map(app => app.id), registry.apps.map(app => app.id));
   for (const app of catalog) {
-    assert.ok(app.examples.length > 0 || app.id === 'seedseg', `${app.id}: missing example workflow`);
+    assert.ok(app.examples.length > 0 || app.id in WITHOUT_EXAMPLES, `${app.id}: missing example workflow`);
   }
 });
 

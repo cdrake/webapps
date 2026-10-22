@@ -1799,3 +1799,19 @@ apps:
         title: NiiVue
         reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
         url: https://github.com/niivue/niivue
+
+  pipelines:
+    about:
+      - Chain the web apps' operations into one NeuroFlow workflow document. Each step's inputs bind to earlier outputs whose type fits, and the workflow is checked as you edit by the same validator neuroflow-mcp runs. Nothing is computed here; the exported workflow runs in NeuroFlow clients such as neuroflow-mcp.
+    packages:
+      - { name: NeuroFlow validator (Rust/WebAssembly), url: https://github.com/cdrake/neuroflow, role: workflow and type checking }
+      - { name: NeuroFlow specification 0.1, url: https://github.com/cdrake/neuroflow-spec, role: tool and workflow document format }
+    citations:
+      - group: Workflow format
+        title: NeuroFlow specification
+        reference: "Drake C, Rorden C, Hanayik T. NeuroFlow: typed tool and workflow documents for neuroimaging [Specification]."
+        url: https://github.com/cdrake/neuroflow-spec
+      - group: Workflow validation
+        title: NeuroFlow
+        reference: "Drake C. NeuroFlow: a runtime for typed neuroimaging workflows [Computer software]."
+        url: https://github.com/cdrake/neuroflow

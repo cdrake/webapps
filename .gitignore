@@ -22,6 +22,7 @@ apps/syncro/public/mindgrab/
 apps/dicomview/src/vendor/
 apps/*/public/registration/
 apps/*/public/n4/
+apps/pipelines/public/neuroflow/
 exes/*/dist/
 exes/*/models/
 exes/*/target/

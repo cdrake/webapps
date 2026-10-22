@@ -257,6 +257,9 @@ export const EMBEDDED_VERSION_SITES = Object.freeze({
     { file: 'apps/topofit/src/config.js', pattern: /(version: ')[^']+(')/, replace: '$1{version}$2' },
     { file: 'apps/topofit/src/inference-worker.js', pattern: /(app: 'TopoFit web )[^']+(')/, replace: '$1{version}$2' },
   ],
+  pipelines: [
+    { file: 'apps/pipelines/src/config.js', pattern: /(version: ")[^"]+(")/, replace: '$1{version}$2' },
+  ],
 });
 
 async function embeddedVersionUpdates(appId, version, root) {

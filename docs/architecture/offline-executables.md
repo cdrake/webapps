@@ -70,6 +70,7 @@ Paths in this table are relative to the repository root. Existing implementation
 | `zarro` | No default batch equivalent | Interactive OME-Zarr exploration. Conversion or extraction would be a separately scoped command. |
 | `dicomview` | No default batch equivalent | Interactive DICOM browsing. Its batch steps already ship as command lines: dcm2niix for conversion and dicompare for protocol summaries and checks. |
 | `dcm2niix` | No default batch equivalent | Interactive BIDS curation: scan types, fieldmap targets and metadata are user decisions. Upstream dcm2niix already ships the converter command line. |
+| `pipelines` | No default batch equivalent | Builds and validates NeuroFlow workflow documents; it computes nothing. `neuroflow-mcp` and other NeuroFlow clients run the exported workflows against the apps' command lines. |
 
 ## Greedy release gates
 

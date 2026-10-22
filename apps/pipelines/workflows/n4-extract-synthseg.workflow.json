@@ -1,0 +1,57 @@
+{
+  "neuroflow": "0.1.1",
+  "kind": "workflow",
+  "id": "neurodesk.webapps/pipelines/n4-extract-synthseg",
+  "version": "0.1.0",
+  "description": "Bias-correct a T1 with N4, then extract the brain and segment the corrected head with SynthSeg.",
+  "inputs": {
+    "t1": {
+      "type": "core:array<neuro:volume>",
+      "description": "A T1-weighted head image, as NIfTI or DICOM"
+    }
+  },
+  "steps": {
+    "correct": {
+      "tool": "neurodesk.webapps/n4/correct",
+      "inputs": {
+        "input_image": {
+          "ref": "inputs.t1"
+        }
+      }
+    },
+    "extract": {
+      "tool": "neurodesk.webapps/brain-extraction/extract",
+      "inputs": {
+        "input_image": {
+          "ref": "steps.correct.outputs.output_image"
+        }
+      }
+    },
+    "segment": {
+      "tool": "neurodesk.webapps/synthseg/segment",
+      "inputs": {
+        "input_image": {
+          "ref": "steps.correct.outputs.output_image"
+        }
+      }
+    }
+  },
+  "outputs": {
+    "correct_image": {
+      "type": "neuro:volume",
+      "ref": "steps.correct.outputs.output_image"
+    },
+    "extract_brain": {
+      "type": "neuro:volume",
+      "ref": "steps.extract.outputs.output_brain"
+    },
+    "extract_mask": {
+      "type": "neuro:mask",
+      "ref": "steps.extract.outputs.output_mask"
+    },
+    "segment_labels": {
+      "type": "neuro:label-map",
+      "ref": "steps.segment.outputs.output_labels"
+    }
+  }
+}

@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { loadAppsRegistry, repoRoot } from '../scripts/lib/apps-registry.mjs';
-import { loadAppExamples, exampleAssets } from '../scripts/lib/app-examples.mjs';
+import { WITHOUT_EXAMPLES, loadAppExamples, exampleAssets } from '../scripts/lib/app-examples.mjs';
 import { modelManifestAssets } from '../scripts/lib/model-assets.mjs';
 
 const example = {
@@ -80,6 +80,8 @@ test('all catalog apps retain a browser workflow command', async () => {
   }
 });
 
-test('SeedSeg has withdrawn its unsuitable example', async () => {
-  assert.deepEqual(await loadAppExamples({ id: 'seedseg', ci: { browser_test: true } }), []);
+test('only the listed apps ship without an example', async () => {
+  for (const id of Object.keys(WITHOUT_EXAMPLES)) {
+    assert.deepEqual(await loadAppExamples({ id, ci: { browser_test: true } }), [], id);
+  }
 });
