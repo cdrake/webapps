@@ -19,15 +19,14 @@ and encodes the video in the page.
   Analytics. It makes no analytics request when Do Not Track or Global Privacy
   Control is enabled and never sends images, results, or custom events.
 - Inputs: DICOM (single-frame series and enhanced multiframe, grayscale and RGB
-  such as color-FA maps), NIfTI, and FreeSurfer MGZ. Compressed DICOM
-  (JPEG/JPEG2000) is not supported; convert it to uncompressed locally first.
+  such as color-FA maps), NIfTI, and FreeSurfer MGZ. DICOM pixels are decoded by
+  dcm2niix in the browser, so compressed transfer syntaxes (JPEG, JPEG-LS,
+  JPEG 2000, RLE) work too.
 - A whole DICOM directory is grouped by series; the most likely structural scan
   (a T1w, for example) is selected first, and you can pick any other series.
 - Siemens mosaic EPI (fMRI and diffusion) is split back into real slices. Each
   mosaic file is a whole volume, so a run of them is 4D; pick whether to use the
-  first volume, the mean, or a maximum intensity projection across volumes. Only
-  the collapsed volume is held in memory, so a long fMRI run costs the same as a
-  single volume.
+  first volume, the mean, or a maximum intensity projection across volumes.
 - Upscale resamples the frames before encoding, with nearest, bilinear, bicubic,
   or Lanczos interpolation. Low-resolution scans (EPI, B1 maps) read much better
   enlarged. It interpolates, it does not add detail.
@@ -37,8 +36,10 @@ and encodes the video in the page.
   falling back to MediaRecorder WebM on older browsers.
 
 The browser tool ports the behavior of `MRI2vid.py` for grayscale DICOM (global
-min/max normalize, the six orientations, slice range, slice annotation). That path
-is checked against the Python reference frame-for-frame (see Development).
+min/max normalize, the six orientations, slice range, slice annotation). dcm2niix's
+volume is laid back out in the reference's [rows, cols, slices] order, and that
+path is checked against the Python reference frame-for-frame (see Development),
+also from an RLE-compressed copy of the phantom series.
 
 ## Command line
 

@@ -1,14 +1,15 @@
-// Minimal DICOM reader for the video pipeline.
+// DICOM header parsing for the video pipeline, and the series reader.
 //
-// Scope: uncompressed Explicit VR Little Endian and Implicit VR Little Endian,
-// single-frame and enhanced multiframe, grayscale (8/16-bit, signed/unsigned)
-// and RGB (interleaved or planar, RGB or YBR_FULL). Compressed transfer syntaxes
-// and Explicit VR Big Endian are rejected with a clear error rather than a crash.
+// Headers are read here for series grouping: any little-endian transfer syntax, since a
+// header is never compressed. Pixels come from dcm2niix, which decodes compressed and
+// vendor-specific DICOM (Siemens mosaics included). readDicomFrames still decodes
+// uncompressed pixels itself for DICOM View's frames that share no plane.
 //
-// The series assembler mirrors MRI2vid.py: per-slice rescale, geometry sort,
-// and a [rows, cols, slices] volume.
+// readDicomSeries lays the volume out as MRI2vid.py reads a series: [rows, cols, slices],
+// slices in ascending order along the slice normal.
 
 import { makeVolume } from '../volume.js';
+import { VOLUME_REDUCTIONS, readNifti, volumeNote } from './nifti.js';
 
 // ---- transfer syntaxes ----
 const TS_IMPLICIT_LE = '1.2.840.10008.1.2';
@@ -280,7 +281,8 @@ export function parseDicom(arrayBuffer, { headerOnly = false } = {}) {
     throw new DicomError('Explicit VR Big Endian is not supported. Convert to Little Endian first.');
   }
   const uncompressed = transferSyntax === TS_IMPLICIT_LE || transferSyntax === TS_EXPLICIT_LE;
-  if (!uncompressed) {
+  // Encapsulated syntaxes compress only the pixels; their header is Explicit VR Little Endian.
+  if (!uncompressed && !(headerOnly && transferSyntax !== TS_DEFLATED_LE)) {
     throw new DicomError(`Unsupported (likely compressed) transfer syntax ${transferSyntax}. Decode to uncompressed DICOM/NIfTI locally first.`);
   }
   const implicitVR = transferSyntax === TS_IMPLICIT_LE;
@@ -429,9 +431,7 @@ function frameMeta(map, perFrameItem, sharedItem, frameIndex) {
       if (fc && fc.has(T.InstanceNumber)) { instanceNumber = elNumber(fc, T.InstanceNumber, frameIndex); break; }
     }
   } else {
-    // Ordinary single-frame file: sort by the top-level InstanceNumber (0020,0013)
-    // like load_and_sort_dicoms. Null when absent, so sortSlices falls back to
-    // filename order exactly as the reference's final else branch does.
+    // Ordinary single-frame file: the top-level InstanceNumber (0020,0013), null when absent.
     const n = elNumber(map, T.InstanceNumber, null);
     instanceNumber = n === null ? null : readNumberSafe(n, null);
   }
@@ -539,39 +539,12 @@ export function readDicomFrames(buffer, name) {
   return datasetToSlices(parseDicom(buffer), name).slices;
 }
 
-// Sort slice records like load_and_sort_dicoms.
-function sortSlices(slices) {
-  const first = slices[0];
-  if (first.ipp && first.iop) {
-    const rc = first.iop.slice(0, 3);
-    const cc = first.iop.slice(3, 6);
-    const normal = [
-      rc[1] * cc[2] - rc[2] * cc[1],
-      rc[2] * cc[0] - rc[0] * cc[2],
-      rc[0] * cc[1] - rc[1] * cc[0],
-    ];
-    slices.forEach((s, i) => { s._i = i; s._key = s.ipp[0] * normal[0] + s.ipp[1] * normal[1] + s.ipp[2] * normal[2]; });
-  } else if (first.ipp) {
-    slices.forEach((s, i) => { s._i = i; s._key = s.ipp[2]; });
-  } else if (first.instanceNumber !== undefined && first.instanceNumber !== null) {
-    slices.forEach((s, i) => { s._i = i; s._key = s.instanceNumber; });
-  } else {
-    slices.forEach((s, i) => { s._i = i; s._key = s.name; });
-  }
-  slices.sort((a, b) => (a._key < b._key ? -1 : a._key > b._key ? 1 : a._i - b._i));
-  return slices;
-}
-
 // ---- Siemens mosaic ----
 //
 // An EPI series (fMRI, DWI) is often exported with every slice of one volume
-// tiled into a single large square frame. One file is then a whole 3D volume and
-// a run of files is 4D (timepoints or diffusion directions). Treating each file
-// as a slice, as a plain series read would, gives a video of tiled grids and a
-// volume large enough to exhaust the tab's memory.
-//
-// The tiles are laid out row-major in spatial slice order on a ceil(sqrt(n)) grid,
-// with the unused trailing cells zero-filled.
+// tiled into a single large square frame; a run of files is then 4D. dcm2niix
+// splits the tiles. The header says how many slices a file holds, which the
+// series list shows.
 export function mosaicInfo(map) {
   const imageType = elString(map, T.ImageType, '') || '';
   if (!/(^|\\)MOSAIC(\\|$)/i.test(imageType)) return null;
@@ -585,248 +558,193 @@ export function mosaicInfo(map) {
   return { n, grid, tileH: rows / grid, tileW: cols / grid, rows, cols };
 }
 
-// How a run of mosaic files (a 4D series) is collapsed to one 3D volume.
-export const MOSAIC_REDUCTIONS = ['first', 'mean', 'max'];
-
-// Read a mosaic series. Only one volume's worth of samples is ever held, so a
-// 620-timepoint fMRI run costs the same memory as a single volume.
-function readMosaicSeries(ordered, reduce) {
-  const firstParsed = parseDicom(ordered[0].buffer);
-  const info = mosaicInfo(firstParsed.map);
-  const { n: nSlices, grid, tileH, tileW, rows, cols } = info;
-
-  const use = reduce === 'first' ? [ordered[0]] : ordered;
-  const nVox = tileH * tileW * nSlices;
-  const acc = new Float32Array(nVox);
-  if (reduce === 'max') acc.fill(-Infinity);
-
-  let used = 0;
-  for (let fi = 0; fi < use.length; fi++) {
-    const parsed = fi === 0 ? firstParsed : parseDicom(use[fi].buffer);
-    const m = parsed.map;
-    // Every file in the series must share the mosaic geometry; skip strays
-    // rather than corrupting the accumulator.
-    const gi = mosaicInfo(m);
-    if (!gi || gi.n !== nSlices || gi.rows !== rows || gi.cols !== cols) continue;
-
-    const bitsAllocated = elNumber(m, T.BitsAllocated, 16);
-    const pixelRep = elNumber(m, T.PixelRepresentation, 0);
-    const slope = readNumberSafe(elNumber(m, T.RescaleSlope, 1.0), 1.0);
-    const intercept = readNumberSafe(elNumber(m, T.RescaleIntercept, 0.0), 0.0);
-    const px = decodeFramePixels(
-      { view: parsed.view, bytes: parsed.bytes, map: m },
-      rows, cols, 1, bitsAllocated, pixelRep, 0, 0,
-    );
-
-    for (let s = 0; s < nSlices; s++) {
-      const tr = Math.floor(s / grid) * tileH;
-      const tc = (s % grid) * tileW;
-      for (let y = 0; y < tileH; y++) {
-        const srcRow = (tr + y) * cols + tc;
-        const dstRow = y * tileW;
-        for (let x = 0; x < tileW; x++) {
-          const v = px[srcRow + x] * slope + intercept;
-          const di = (dstRow + x) * nSlices + s;
-          if (reduce === 'max') { if (v > acc[di]) acc[di] = v; }
-          else if (reduce === 'mean') acc[di] += v;
-          else acc[di] = v;
-        }
-      }
-    }
-    used++;
-  }
-
-  if (!used) throw new DicomError('No readable mosaic frames in this series');
-  if (reduce === 'mean' && used > 1) {
-    for (let i = 0; i < nVox; i++) acc[i] /= used;
-  }
-  if (reduce === 'max') {
-    for (let i = 0; i < nVox; i++) if (acc[i] === -Infinity) acc[i] = 0;
-  }
-
-  const total = ordered.length;
-  let note = `Siemens mosaic: split into ${nSlices} slices`;
-  if (total > 1) {
-    const what = reduce === 'first' ? `first of ${total}`
-      : reduce === 'mean' ? `mean across ${used} of ${total}`
-        : `maximum intensity across ${used} of ${total}`;
-    note = `Siemens mosaic: ${nSlices} slices per volume, ${what} volumes`;
-  }
-
-  return makeVolume({
-    dims: [tileH, tileW, nSlices],
-    channels: 1,
-    data: acc,
-    affine: mosaicAffine(firstParsed.map, nSlices),
-    photometric: 'MONOCHROME2',
-    meta: {
-      source: 'dicom',
-      rows: tileH, cols: tileW, slices: nSlices,
-      mosaic: { nSlices, volumes: ordered.length, used, reduce },
-      note,
-    },
-  });
-}
-
-// A voxel-size-only affine for the preview. The mosaic ImagePositionPatient
-// refers to the corner of the tiled frame, not the first slice, and recovering
-// the true slice geometry needs the Siemens CSA header, so do not pretend to
-// know the orientation here.
-function mosaicAffine(map, nSlices) {
-  const ps = elNumbers(map, T.PixelSpacing) || [1, 1];
-  const th = readNumberSafe(elNumber(map, T.SliceThickness, 1), 1) || 1;
-  const dr = Number.isFinite(ps[0]) && ps[0] > 0 ? ps[0] : 1;
-  const dc = Number.isFinite(ps[1]) && ps[1] > 0 ? ps[1] : 1;
-  return Float64Array.from([
-    dr, 0, 0, 0,
-    0, dc, 0, 0,
-    0, 0, th, 0,
-    0, 0, 0, 1,
-  ]);
-}
-
 // Read a set of DICOM files (one series) into a canonical Volume.
-// `files` is an array of { name, buffer (ArrayBuffer) }.
-// `mosaicReduce` picks how a 4D Siemens mosaic run is collapsed to one volume.
-export function readDicomSeries(files, { mosaicReduce = 'first' } = {}) {
+// files: [{ name, buffer (ArrayBuffer) }].
+// convertDicom(files) runs dcm2niix on [{ name, bytes }] and resolves to its outputs as
+// [{ name, bytes }]; the web app and the command line each supply their own build.
+// mosaicReduce picks how a 4D series (a mosaic run, a time series) becomes one volume;
+// batchBytes bounds the input of one dcm2niix call on a mosaic run.
+export async function readDicomSeries(files, { convertDicom, mosaicReduce = 'first', batchBytes = MOSAIC_BATCH_BYTES }) {
   if (!files || files.length === 0) throw new DicomError('No DICOM files provided');
-
-  // Reference reads files in sorted-filename order before the geometry sort.
+  const reduce = VOLUME_REDUCTIONS.includes(mosaicReduce) ? mosaicReduce : 'first';
+  // MRI2vid.py takes a series in file-name order.
   const ordered = [...files].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+  const mosaic = mosaicRun(ordered[0].buffer);
+  let nifti;
+  if (mosaic) {
+    nifti = await readMosaicRun(ordered, mosaic, reduce, convertDicom, batchBytes);
+  } else {
+    nifti = await convertSeries(files, reduce, convertDicom);
+    nifti.meta.note = joinNotes(splitNote(nifti.meta.images), nifti.meta.note);
+  }
+  const vol = dicomLayout(nifti, await seriesOrientation(ordered[0].buffer));
+  const [rows, cols, slices] = vol.dims;
+  vol.meta = { ...nifti.meta, source: 'dicom', rows, cols, slices };
+  return vol;
+}
 
-  // Mosaic series need de-tiling before anything else; one file is a volume.
+// A mosaic file's tiling and acquisition parameters; the files of one run share them. Null for any other file.
+function mosaicRun(buffer) {
   try {
-    const probe = parseDicom(ordered[0].buffer, { headerOnly: true });
-    if (mosaicInfo(probe.map)) {
-      const reduce = MOSAIC_REDUCTIONS.includes(mosaicReduce) ? mosaicReduce : 'first';
-      return readMosaicSeries(ordered, reduce);
+    const { map } = parseDicom(buffer, { headerOnly: true });
+    const info = mosaicInfo(map);
+    if (!info) return null;
+    // The acquisition parameters dcm2niix splits a series on.
+    const timing = [T.EchoTime, T.RepetitionTime, T.InversionTime, T.FlipAngle].map((tag) => elNumber(map, tag, null));
+    return { ...info, key: `${info.n} ${info.rows}x${info.cols} ${timing.join(' ')} ${elString(map, T.ImageType, '')}` };
+  } catch {
+    return null;
+  }
+}
+
+const joinNotes = (...notes) => notes.filter(Boolean).join('. ') || null;
+
+// dcm2niix splits a series it cannot stack into one volume, such as one holding
+// several echoes; the video shows the first of them.
+const splitNote = (images) => (images > 1
+  ? `dcm2niix split this series into ${images} images (for example one per echo); showing the first`
+  : null);
+
+// Run dcm2niix on one series and read its first image, reduced to one volume;
+// meta.images counts the images dcm2niix made.
+async function convertSeries(files, reduce, convertDicom, total = null) {
+  // dcm2niix reads its inputs from one directory, so files from different folders that
+  // share a name must not overwrite each other.
+  const inputs = files.map((f, i) => ({ name: `${i}_${f.name.replaceAll('/', '_')}`, bytes: new Uint8Array(f.buffer) }));
+  const outputs = (await convertDicom(inputs))
+    .filter((o) => /\.nii(\.gz)?$/i.test(o.name))
+    .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+  if (!outputs.length) throw new DicomError('dcm2niix found no image in this series');
+  const { bytes, name } = outputs[0];
+  const nifti = await readNifti(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), name, { reduce, total });
+  nifti.meta = { ...nifti.meta, images: outputs.length };
+  return nifti;
+}
+
+// Each file of a Siemens mosaic run is a whole volume. Converting only the files a
+// reduction needs, a batch at a time, keeps a long run within the WASM heap.
+const MOSAIC_BATCH_BYTES = 256 * 1024 * 1024;
+
+async function readMosaicRun(ordered, first, reduce, convertDicom, batchBytes) {
+  // Only files tiled and acquired like the first belong to its run; another echo or an
+  // ordinary image in the same series is left out rather than averaged in.
+  const run = ordered.filter((file, i) => i === 0 || mosaicRun(file.buffer)?.key === first.key);
+  const leftOut = ordered.length - run.length;
+  const leftOutNote = leftOut
+    ? `${leftOut} file(s) of this series are not part of the first mosaic run (for example another echo) and were left out`
+    : null;
+  if (reduce === 'first') {
+    const nifti = await convertSeries(run.slice(0, 1), reduce, convertDicom);
+    const volumes = run.length > 1 ? volumeNote(run.length, 1, reduce) : nifti.meta.note;
+    const note = joinNotes(splitNote(nifti.meta.images), leftOutNote, volumes);
+    nifti.meta = { ...nifti.meta, volumes: run.length, used: 1, reduce, note };
+    return nifti;
+  }
+  const batches = [[]];
+  let bytes = 0;
+  for (const file of run) {
+    if (bytes + file.buffer.byteLength > batchBytes && batches.at(-1).length) {
+      batches.push([]);
+      bytes = 0;
     }
-  } catch (e) {
-    if (e instanceof DicomError) throw e;
-    // Fall through to the ordinary series path on any probe failure.
+    batches.at(-1).push(file);
+    bytes += file.buffer.byteLength;
   }
-
-  let allSlices = [];
-  let anyMultiframe = false;
-  const parsedList = [];
-  for (const f of ordered) {
-    const parsed = parseDicom(f.buffer);
-    parsedList.push(parsed);
-    const { slices, multiframe } = datasetToSlices(parsed, f.name);
-    if (multiframe) anyMultiframe = true;
-    allSlices = allSlices.concat(slices);
-  }
-  if (anyMultiframe && ordered.length > 1) {
-    throw new DicomError('Multiple files contain multiframe (3D) pixel data; provide a single multiframe file or a set of single-frame files.');
-  }
-
-  sortSlices(allSlices);
-
-  const first = allSlices[0];
-  const rows = first.rows;
-  const cols = first.cols;
-  const spp = first.spp;
-  for (const s of allSlices) {
-    if (s.rows !== rows || s.cols !== cols || s.spp !== spp) {
-      throw new DicomError('Slice geometry (rows/cols/channels) is not consistent across the series');
+  // The mean keeps its float64 sum across batches, so batching cannot change a pixel.
+  const total = reduce === 'mean' ? new Float64Array(first.n * first.tileH * first.tileW) : null;
+  let result = null;
+  let used = 0;
+  let images = 1;
+  for (const batch of batches) {
+    const part = await convertSeries(batch, reduce, convertDicom, total);
+    images = Math.max(images, part.meta.images);
+    if (!result) {
+      result = part;
+    } else if (part.dims.some((d, i) => d !== result.dims[i])) {
+      // Positions may differ: motion-corrected runs move each volume.
+      throw new DicomError('The volumes of this mosaic run differ in shape');
+    } else if (!total) {
+      for (let i = 0; i < part.data.length; i++) if (part.data[i] > result.data[i]) result.data[i] = part.data[i];
     }
+    used += part.meta.used;
   }
+  if (total) for (let i = 0; i < total.length; i++) result.data[i] = total[i] / used;
+  const note = joinNotes(splitNote(images), leftOutNote, volumeNote(run.length, used, reduce));
+  result.meta = { ...result.meta, volumes: run.length, used, reduce, note };
+  return result;
+}
 
-  const N = allSlices.length;
-  const isColor = spp === 3;
+// The row and column directions (LPS) of a series' first frame, null without geometry.
+async function seriesOrientation(buffer) {
+  const { map } = await parseDicomHeader(buffer);
+  const perFrame = map.get(T.PerFrameFunctionalGroupsSequence)?.items?.[0] ?? null;
+  const shared = map.get(T.SharedFunctionalGroupsSequence)?.items?.[0] ?? null;
+  const { iop } = frameMeta(map, perFrame, shared, 0);
+  return iop && iop.length === 6 && iop.every(Number.isFinite) ? iop : null;
+}
 
-  if (!isColor) {
-    // Grayscale: apply per-slice rescale to real float32 values in [rows, cols, slices].
-    const data = allocate(Float32Array, rows * cols * N, rows, cols, N, 4);
-    for (let s = 0; s < N; s++) {
-      const sl = allSlices[s];
-      const px = sl.pixels;
-      const slope = sl.slope;
-      const intercept = sl.intercept;
-      let p = 0;
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          data[(r * cols + c) * N + s] = px[p++] * slope + intercept;
-        }
+// Without an orientation dcm2niix cannot reorient, so it stores the columns along i
+// and the rows along j, bottom row first, with an identity affine.
+const STORED_LAYOUT = { perm: [1, 0, 2], flip: [true, false, false] };
+
+// dcm2niix stores columns along i and rows along j, flipped, and may reverse the slice
+// order; which of these it does depends on the orientation. Find, for each axis of the
+// DICOM layout, the NIfTI axis that runs the same way, from the NIfTI affine (RAS) and
+// the DICOM orientation (LPS).
+function axesFromOrientation(A, [rx, ry, rz, cx, cy, cz]) {
+  const normal = [ry * cz - rz * cy, rz * cx - rx * cz, rx * cy - ry * cx];
+  const ras = ([x, y, z]) => [-x, -y, z];
+  // Rows run along the column direction, columns along the row direction.
+  const wanted = [ras([cx, cy, cz]), ras([rx, ry, rz]), ras(normal)];
+  const axes = [0, 1, 2].map((a) => [A[a], A[4 + a], A[8 + a]]);
+  const perm = [];
+  const flip = [];
+  for (const w of wanted) {
+    let best = -1;
+    let bestDot = 0;
+    axes.forEach((axis, a) => {
+      const dot = (w[0] * axis[0] + w[1] * axis[1] + w[2] * axis[2]) / (Math.hypot(...axis) || 1);
+      if (Math.abs(dot) > Math.abs(bestDot)) { best = a; bestDot = dot; }
+    });
+    perm.push(best);
+    flip.push(bestDot < 0);
+  }
+  if (new Set(perm).size !== 3) throw new DicomError('dcm2niix returned an image whose axes do not follow the DICOM orientation');
+  return { perm, flip };
+}
+
+// Copy dcm2niix's voxels into the DICOM [rows, cols, slices] layout.
+function dicomLayout(vol, iop) {
+  const A = vol.affine;
+  const { perm, flip } = iop ? axesFromOrientation(A, iop) : STORED_LAYOUT;
+  const src = vol.dims;
+  const dims = perm.map((a) => src[a]);
+  const C = vol.channels;
+  const data = new vol.data.constructor(vol.data.length);
+  const strides = [src[1] * src[2], src[2], 1];
+  const step = perm.map((a, t) => (flip[t] ? -strides[a] : strides[a]));
+  const origin = perm.reduce((o, a, t) => o + (flip[t] ? (src[a] - 1) * strides[a] : 0), 0);
+  let di = 0;
+  for (let i0 = 0; i0 < dims[0]; i0++) {
+    for (let i1 = 0; i1 < dims[1]; i1++) {
+      let si = origin + i0 * step[0] + i1 * step[1];
+      for (let i2 = 0; i2 < dims[2]; i2++, si += step[2]) {
+        for (let ch = 0; ch < C; ch++) data[di++] = vol.data[si * C + ch];
       }
     }
-    return buildVolume(data, 1, rows, cols, N, 'MONOCHROME2', first, allSlices);
   }
 
-  // Color: interleaved RGB uint8 in [rows, cols, slices] with 3 channels.
-  const data = allocate(Uint8Array, rows * cols * N * 3, rows, cols, N, 3);
-  for (let s = 0; s < N; s++) {
-    const px = allSlices[s].pixels;
-    let p = 0;
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const di = ((r * cols + c) * N + s) * 3;
-        data[di] = px[p++];
-        data[di + 1] = px[p++];
-        data[di + 2] = px[p++];
-      }
-    }
+  const affine = new Float64Array(16);
+  affine[15] = 1;
+  for (let r = 0; r < 3; r++) {
+    let offset = A[r * 4 + 3];
+    perm.forEach((a, t) => {
+      affine[r * 4 + t] = flip[t] ? -A[r * 4 + a] : A[r * 4 + a];
+      if (flip[t]) offset += (src[a] - 1) * A[r * 4 + a];
+    });
+    affine[r * 4 + 3] = offset;
   }
-  return buildVolume(data, 3, rows, cols, N, 'RGB', first, allSlices);
-}
-
-// Allocate the volume buffer, turning an out-of-memory failure into an error that
-// says how big the series is and what to do about it. A long EPI run can easily
-// ask for more than a tab will give.
-function allocate(Ctor, length, rows, cols, N, bytesPerVoxel) {
-  try {
-    return new Ctor(length);
-  } catch (e) {
-    const gb = (rows * cols * N * bytesPerVoxel) / (1024 ** 3);
-    throw new DicomError(
-      `This series is too large to hold in the browser (${rows}x${cols}x${N} needs about ${gb.toFixed(1)} GB). `
-      + 'Load a subset of the files, or use a series with fewer or smaller slices.',
-    );
-  }
-}
-
-function buildVolume(data, channels, rows, cols, N, photometric, first, slices) {
-  const affine = affineFromSlices(first, slices);
-  return makeVolume({
-    dims: [rows, cols, N],
-    channels,
-    data,
-    affine,
-    photometric,
-    meta: {
-      source: 'dicom',
-      rows, cols, slices: N,
-      seriesDescription: undefined,
-    },
-  });
-}
-
-// Build a 4x4 affine (LPS) from the sorted slice geometry, if available. This is
-// used only for the optional NiiVue preview, not for the reslice.
-function affineFromSlices(first, slices) {
-  if (!first.ipp || !first.iop) return null;
-  const rc = first.iop.slice(0, 3);
-  const cc = first.iop.slice(3, 6);
-  let normal = [
-    rc[1] * cc[2] - rc[2] * cc[1],
-    rc[2] * cc[0] - rc[0] * cc[2],
-    rc[0] * cc[1] - rc[1] * cc[0],
-  ];
-  let dz = 1;
-  if (slices.length > 1 && slices[1].ipp) {
-    dz = Math.sqrt(
-      (slices[1].ipp[0] - first.ipp[0]) ** 2 +
-      (slices[1].ipp[1] - first.ipp[1]) ** 2 +
-      (slices[1].ipp[2] - first.ipp[2]) ** 2,
-    ) || 1;
-  }
-  const A = [
-    rc[0], cc[0], normal[0] * dz, first.ipp[0],
-    rc[1], cc[1], normal[1] * dz, first.ipp[1],
-    rc[2], cc[2], normal[2] * dz, first.ipp[2],
-    0, 0, 0, 1,
-  ];
-  return Float64Array.from(A);
+  return makeVolume({ dims, channels: C, data, affine, photometric: vol.photometric, meta: vol.meta });
 }
 
 // Lightweight per-file header parse for series grouping/ranking (no pixel decode).

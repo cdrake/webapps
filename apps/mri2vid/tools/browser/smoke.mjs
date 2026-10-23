@@ -1,5 +1,6 @@
 // Headless browser smoke test. Serves the repo, then in a real Chromium checks:
-//  1. the reader + pipeline reproduce a golden frame stack in-browser (max|diff|=0),
+//  1. dcm2niix + the pipeline reproduce a golden frame stack in-browser from the RLE
+//     compressed copy of the phantom (max|diff|=0),
 //  2. the encoder produces a non-empty video (WebM always, MP4 if supported),
 //  3. the full UI flow works: pick phantom DICOMs, generate, get a downloadable blob.
 //
@@ -18,7 +19,7 @@ const MIME = {
   '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript',
   '.css': 'text/css', '.json': 'application/json', '.bin': 'application/octet-stream',
   '.dcm': 'application/octet-stream', '.nii': 'application/octet-stream',
-  '.gz': 'application/octet-stream', '.mgz': 'application/octet-stream',
+  '.gz': 'application/octet-stream', '.mgz': 'application/octet-stream', '.wasm': 'application/wasm',
 };
 
 function startServer() {
@@ -61,22 +62,26 @@ async function main() {
     const parity = await page.evaluate(async () => {
       const { readDicomSeries } = await import('/web/vendor/mri2vid/src/readers/dicom.js');
       const { buildFrames } = await import('/web/vendor/mri2vid/src/pipeline.js');
+      const { createDicomConverter } = await import('/web/vendor/webapp-components/src/automation/index.js');
+      const dcm2niix = createDicomConverter({ moduleUrl: '/web/vendor/dcm2niix/index.jpeg.js' });
+      window.convertDicom = async (inputs) => Promise.all((await dcm2niix(inputs.map((f) => new File([f.bytes], f.name))))
+        .map(async (file) => ({ name: file.name, bytes: new Uint8Array(await file.arrayBuffer()) })));
       const manifest = await (await fetch('/tools/golden/manifest.json')).json();
       const cfg = manifest.configs.find((c) => c.name === 'single_sagittal');
       const names = ['img_000.dcm', 'img_001.dcm', 'img_002.dcm', 'img_003.dcm', 'img_004.dcm'];
       const files = [];
       for (const n of names) {
-        const ab = await (await fetch(`/tools/phantom_out/dicom_single/${n}`)).arrayBuffer();
+        const ab = await (await fetch(`/tools/phantom_out/dicom_rle/${n}`)).arrayBuffer();
         files.push({ name: n, buffer: ab });
       }
-      const vol = readDicomSeries(files);
+      const vol = await readDicomSeries(files, { convertDicom: window.convertDicom });
       const out = buildFrames(vol, { orientation: cfg.orientation, start: cfg.start, end: cfg.end, step: cfg.step });
       const golden = new Uint8Array(await (await fetch('/tools/golden/single_sagittal.bin')).arrayBuffer());
       let maxDiff = 0;
       for (let i = 0; i < golden.length; i++) maxDiff = Math.max(maxDiff, Math.abs(out.frames[i] - golden[i]));
       return { len: out.frames.length, glen: golden.length, maxDiff };
     });
-    if (parity.len === parity.glen && parity.maxDiff === 0) ok(`in-browser parity max|diff|=0 (${parity.len} bytes)`);
+    if (parity.len === parity.glen && parity.maxDiff === 0) ok(`in-browser parity from RLE DICOM max|diff|=0 (${parity.len} bytes)`);
     else fail(`in-browser parity: len ${parity.len} vs ${parity.glen}, maxDiff ${parity.maxDiff}`);
 
     // 2. Encoder unit test.
@@ -120,7 +125,7 @@ async function main() {
       const names = ['rgb_000.dcm', 'rgb_001.dcm', 'rgb_002.dcm', 'rgb_003.dcm', 'rgb_004.dcm'];
       const files = [];
       for (const n of names) files.push({ name: n, buffer: await (await fetch(`/tools/phantom_out/dicom_rgb/${n}`)).arrayBuffer() });
-      const rvol = readDicomSeries(files);
+      const rvol = await readDicomSeries(files, { convertDicom: window.convertDicom });
       const rout = buildFrames(rvol, { orientation: 'sagittal' });
       const rres = await encodeVideo({ nFrames: rout.nFrames, fps: 10, container: 'webm', frameProvider: providerFrom(rout, 3), total: rout.total });
       return { niftiSize: nres.blob.size, colorChannels: rvol.channels, colorSize: rres.blob.size };

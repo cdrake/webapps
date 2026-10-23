@@ -6,6 +6,9 @@ on:
       - '.github/workflows/mri2vid-native.yml'
       - 'packages/mri2vid/**'
       - 'apps/mri2vid/**'
+      - 'packages/node-drivers/package.json'
+      - 'packages/node-drivers/src/dcm2niix.js'
+      - 'test-utils/dicom-fixture.mjs'
   push:
     branches: [main]
     paths:
@@ -14,6 +17,9 @@ on:
       - 'exes/node-cli/**'
       - 'packages/mri2vid/**'
       - 'apps/mri2vid/**'
+      - 'packages/node-drivers/package.json'
+      - 'packages/node-drivers/src/dcm2niix.js'
+      - 'test-utils/dicom-fixture.mjs'
   workflow_dispatch:
     inputs:
       sign_release:

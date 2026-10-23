@@ -20,7 +20,7 @@ import nibabel as nib
 import pydicom
 from pydicom.dataset import Dataset, FileDataset, FileMetaDataset
 from pydicom.sequence import Sequence
-from pydicom.uid import ExplicitVRLittleEndian, generate_uid
+from pydicom.uid import ExplicitVRLittleEndian, RLELossless, generate_uid
 
 ROOT = Path(__file__).resolve().parent
 OUT = ROOT / "phantom_out"
@@ -249,6 +249,15 @@ def write_dicom_rgb(volume_rgb, out_dir):
     return series
 
 
+def write_dicom_rle(source_dir, out_dir):
+    """The single-frame series again, RLE Lossless compressed (a compressed transfer syntax)."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for path in sorted(source_dir.glob("*.dcm")):
+        ds = pydicom.dcmread(str(path))
+        ds.compress(RLELossless)
+        ds.save_as(str(out_dir / path.name), write_like_original=False)
+
+
 # ----------------------------------------------------------------------------
 # Siemens mosaic series: each file tiles a whole volume into one square frame, so
 # a run of files is 4D (fMRI timepoints or diffusion directions). Tiles sit
@@ -288,6 +297,8 @@ def write_dicom_mosaic(out_dir):
         ds = base_dataset(path, MR_SOP_CLASS, study, series)
         ds.SeriesDescription = "cmrr_mbep2d_bold"
         ds.ImageType = ["ORIGINAL", "PRIMARY", "M", "ND", "MOSAIC"]
+        # dcm2niix reads the mosaic tags only from a Siemens file.
+        ds.Manufacturer = "SIEMENS"
         ds.RepetitionTime = "900"
         ds.EchoTime = "22"
         ds.Rows = side
@@ -387,6 +398,7 @@ def main():
 
     vol = gray_volume()
     single_series = write_dicom_single(vol, OUT / "dicom_single")
+    write_dicom_rle(OUT / "dicom_single", OUT / "dicom_rle")
     mf_series = write_dicom_multiframe(vol, OUT / "dicom_mf")
     write_dicom_nogeo(OUT / "dicom_nogeo")
 

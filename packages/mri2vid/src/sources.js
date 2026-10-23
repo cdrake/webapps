@@ -45,7 +45,6 @@ export async function discoverSources(records, { readPrefix, onSkip = () => {}, 
         headers.push({ ...h, name: id });
         byRecord.set(id, rec);
       } catch (e) {
-        // Skip unreadable or compressed DICOM at grouping time.
         unreadable++;
         onSkip(rec, e);
       }
@@ -76,12 +75,13 @@ export async function discoverSources(records, { readPrefix, onSkip = () => {}, 
   return { sources, unreadable };
 }
 
-// Reads a source into a volume. readBytes(record) resolves to the whole file as an ArrayBuffer.
-export async function loadSource(source, { readBytes, mosaicReduce = 'first' }) {
+// Reads a source into a volume. readBytes(record) resolves to the whole file as an ArrayBuffer;
+// convertDicom runs dcm2niix (see readDicomSeries).
+export async function loadSource(source, { readBytes, convertDicom, mosaicReduce = 'first' }) {
   if (source.kind === 'dicom-series') {
     const files = [];
     for (const rec of source.recs) files.push({ name: rec.name, buffer: await readBytes(rec) });
-    return readDicomSeries(files, { mosaicReduce });
+    return readDicomSeries(files, { convertDicom, mosaicReduce });
   }
   if (source.kind === 'nifti') return readNifti(await readBytes(source.recs[0]), source.label);
   if (source.kind === 'mgz') return readMgz(await readBytes(source.recs[0]), source.label);

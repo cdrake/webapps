@@ -15,9 +15,9 @@ const HELP = `Usage: mri2vid INPUT... OUTPUT_DIR [options]
        mri2vid self-check
 
 Turns the slices of one MRI volume into a video, as the mri2vid web app does.
-INPUT is a NIfTI (.nii, .nii.gz) or MGZ/MGH file, or DICOM files or folders
-(uncompressed transfer syntaxes). When the input holds several DICOM series,
-the command lists them; choose one with --series-uid.
+INPUT is a NIfTI (.nii, .nii.gz) or MGZ/MGH file, or DICOM files or folders,
+compressed ones included (the bundled dcm2niix decodes them). When the input
+holds several DICOM series, the command lists them; choose one with --series-uid.
 
 Options:
 ${optionsHelp}

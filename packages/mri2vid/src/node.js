@@ -4,6 +4,7 @@
 import { randomUUID } from 'node:crypto';
 import { mkdir, open, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { basename, join, relative, resolve } from 'node:path';
+import { convertDicom as runDcm2niix } from '@neurodesk/node-drivers/dcm2niix';
 import packageJson from '../package.json' with { type: 'json' };
 import { encodeVp9 } from './encoder.js';
 import { decodeVideo, inspectVideo } from './inspect.js';
@@ -11,7 +12,7 @@ import {
   INTERPOLATIONS, defaultNorm, orientationGeometry, renderFrame, resolveSliceIndices,
 } from './pipeline.js';
 import { drawLabel, rasterize, rgbToI420, sliceLabel } from './raster.js';
-import { MOSAIC_REDUCTIONS } from './readers/dicom.js';
+import { VOLUME_REDUCTIONS } from './readers/nifti.js';
 import { discoverSources, loadSource, outputFileName } from './sources.js';
 import { CONTAINERS, evenDim } from './video.js';
 import { ORIENTATIONS, makeVolume } from './volume.js';
@@ -29,7 +30,7 @@ export const OPTIONS = {
   upscale: { type: 'number', minimum: 1, maximum: 8, default: 1, description: 'Output spatial scale.' },
   interpolation: { type: 'string', enum: INTERPOLATIONS, default: 'bilinear', description: 'Resampling interpolation.' },
   seriesUid: { type: 'string', description: 'SeriesInstanceUID to encode when the input holds several series.' },
-  mosaicReduce: { type: 'string', enum: MOSAIC_REDUCTIONS, default: 'first', description: 'Collapse a Siemens mosaic time series.' },
+  mosaicReduce: { type: 'string', enum: VOLUME_REDUCTIONS, default: 'first', description: 'Collapse a 4D DICOM series, such as a Siemens mosaic run.' },
 };
 
 /** `colorNormalize` is `--color-normalize` on the command line. */
@@ -101,6 +102,12 @@ async function readPrefix(record, bytes) {
 }
 
 const readBytes = async (record) => arrayBuffer(await readFile(record.path));
+
+// The JPEG build of dcm2niix, which also decodes JPEG 2000 and JPEG-LS.
+export async function convertDicom(files) {
+  const { default: factory } = await import(new URL('dcm2niix.jpeg.js', import.meta.resolve('@niivue/dcm2niix')).href);
+  return runDcm2niix(files, factory);
+}
 
 function describe(source) {
   const id = source.seriesUid ?? source.label;
@@ -188,7 +195,8 @@ export async function encode({ inputs, output, parameters = {}, onProgress = () 
   if (unreadable) onProgress(`${unreadable} file(s) could not be read and were skipped`);
   const source = chooseSource(sources, settings.seriesUid);
   onProgress(`Loading ${source.label}`);
-  const vol = await loadSource(source, { readBytes, mosaicReduce: settings.mosaicReduce });
+  const vol = await loadSource(source, { readBytes, convertDicom, mosaicReduce: settings.mosaicReduce });
+  if (vol.meta?.note) onProgress(vol.meta.note);
   onProgress(`Loaded ${vol.dims.join('x')}${vol.channels === 3 ? ' RGB' : ''}; encoding ${settings.orientation} at ${settings.fps} fps`);
   let reported = 0;
   const result = await encodeVolume(vol, settings, {

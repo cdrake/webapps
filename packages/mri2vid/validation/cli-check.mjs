@@ -14,15 +14,20 @@
 //
 // The slice label is drawn with a different font in each, so annotated frames are compared
 // outside the label box, and inside it the label must be drawn in both.
+//
+// A synthetic DICOM series then proves the command line converts DICOM with its bundled
+// dcm2niix: every frame must match the series as this checkout reads and renders it.
 import { spawnSync } from 'node:child_process';
-import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { decodeVideo, inspectVideo } from '../src/inspect.js';
 import { labelPixels, labelBox, psnr, renderedLuma } from './frame-comparison.mjs';
-import { parseOptions } from '../src/node.js';
+import { dicomSeries } from '../../../test-utils/dicom-fixture.mjs';
+import { convertDicom, parseOptions } from '../src/node.js';
+import { readDicomSeries } from '../src/readers/dicom.js';
 import { readNifti } from '../src/readers/nifti.js';
 import { CASES, caseArguments, exampleFile, referenceVideo } from './cases.mjs';
 
@@ -103,6 +108,24 @@ try {
         check(cliInk >= MIN_LABEL_PIXELS && browserInk >= MIN_LABEL_PIXELS, `${item.id}: every frame carries a slice label (${cliInk} label pixels at least; browser ${browserInk})`);
       }
     }
+  }
+
+  const series = dicomSeries({ series: 7, slices: 6 });
+  const dicom = join(work, 'dicom');
+  await mkdir(dicom);
+  for (const file of series) await writeFile(join(dicom, file.name), file.buffer);
+  const settings = parseOptions({ orientation: 'axial' });
+  const output = join(work, 'dicom-video');
+  const run = spawnSync(command[0], [...command.slice(1), dicom, output, ...caseArguments({ orientation: 'axial' })], { encoding: 'utf8' });
+  check(run.status === 0, `dicom: the command line converts a DICOM series (exit ${run.status}${run.status ? `: ${run.stderr.trim().split('\n').at(-1)}` : ''})`);
+  if (run.status === 0) {
+    const files = series.map((file) => ({ name: file.name, buffer: file.buffer.buffer.slice(file.buffer.byteOffset, file.buffer.byteOffset + file.buffer.byteLength) }));
+    const source = renderedLuma(await readDicomSeries(files, { convertDicom }), settings);
+    const [name] = await readdir(output);
+    const decoded = await decodeVideo(await readFile(join(output, name)));
+    check(decoded.length === source.length, `dicom: ${decoded.length} decoded frames for ${source.length} rendered frames`);
+    const vsSource = lowest(decoded.map((f, k) => psnr(f.y, source[k].y, () => true)));
+    check(vsSource >= MIN_PSNR_DB, `dicom: every frame ${dB(vsSource)} or better against the rendered series (>= ${MIN_PSNR_DB} dB)`);
   }
 } finally {
   await rm(work, { recursive: true, force: true });

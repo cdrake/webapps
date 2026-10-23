@@ -8,9 +8,10 @@ import { fileURLToPath } from 'node:url';
 import { dicomSeries } from '../../../test-utils/dicom-fixture.mjs';
 import { syntheticNifti } from '../../../test-utils/nifti-fixture.mjs';
 import { decodeVideo, inspectVideo } from '../src/inspect.js';
-import { OPTIONS, encode, optionName, parseOptions } from '../src/node.js';
+import { OPTIONS, convertDicom, encode, optionName, parseOptions } from '../src/node.js';
 import { defaultNorm, renderFrame } from '../src/pipeline.js';
 import { drawLabel, labelPlacement, rasterize, rgbToI420, sliceLabel } from '../src/raster.js';
+import { readDicomSeries } from '../src/readers/dicom.js';
 import { readNifti } from '../src/readers/nifti.js';
 import { discoverSources, loadSource } from '../src/sources.js';
 
@@ -133,14 +134,36 @@ test('the output directory must be new or empty', async (t) => {
 });
 
 test('distinct DICOM records with the same filename retain every slice', async () => {
+  // Like the browser's dcm2niix worker, which writes its inputs into one directory by name.
+  const inDirectory = files => convertDicom([...new Map(files.map(file => [file.name, file])).values()]);
   const records = dicomSeries({ series: 72, slices: 2 }).map(file => ({ ...file, name: 'image.dcm' }));
   const bytes = record => record.buffer.buffer.slice(record.buffer.byteOffset, record.buffer.byteOffset + record.buffer.byteLength);
   const { sources } = await discoverSources(records, { readPrefix: async record => bytes(record) });
   assert.equal(sources.length, 1);
   assert.deepEqual(sources[0].recs, records);
-  const volume = await loadSource(sources[0], { readBytes: async record => bytes(record) });
+  const volume = await loadSource(sources[0], { readBytes: async record => bytes(record), convertDicom: inDirectory });
   assert.deepEqual(volume.dims, [16, 16, 2]);
   assert.deepEqual([...volume.data.subarray(0, 4)], [100, 200, 101, 201]);
+});
+
+const asRecords = files => files.map(file => ({
+  name: file.name,
+  buffer: file.buffer.buffer.slice(file.buffer.byteOffset, file.buffer.byteOffset + file.buffer.byteLength),
+}));
+
+test('a series without geometry keeps its stored rows and columns', async () => {
+  const volume = await readDicomSeries(asRecords(dicomSeries({ series: 73, slices: 2, geometry: false })), { convertDicom });
+  assert.deepEqual(volume.dims, [16, 16, 2]);
+  // Pixel (row, column) of slice s holds (s + 1) * 100 + 16 * row + column.
+  assert.deepEqual([...volume.data.subarray(0, 4)], [100, 200, 101, 201]);
+  assert.equal(volume.data[(1 * 16 + 0) * 2], 116);
+});
+
+test('a series dcm2niix splits by echo says it shows only the first image', async () => {
+  const files = asRecords(dicomSeries({ series: 74, slices: 2, echoTimes: ['10', '30'] }));
+  const volume = await readDicomSeries(files, { convertDicom });
+  assert.deepEqual(volume.dims, [16, 16, 2]);
+  assert.match(volume.meta.note, /split this series into 2 images/);
 });
 
 test('the executable reports usage errors and installs no models', () => {

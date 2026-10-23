@@ -7,7 +7,7 @@
   "readme": {
     "run": "Turn the axial slices of a volume into a WebM video",
     "notes": [
-      "Input is NIfTI, MGZ/MGH, or DICOM files or folders (uncompressed transfer syntaxes).",
+      "Input is NIfTI, MGZ/MGH, or DICOM files or folders; dcm2niix is included and reads compressed DICOM.",
       "When a folder holds several DICOM series, the command lists them; choose one with --series-uid.",
       "Add --help for every option: orientation, frame rate, slice range, labels, format and upscaling.",
       "",
