@@ -231,6 +231,8 @@ for (const [part, pattern, status] of [
 ]) {
   test(`a catalog whose ${part} cannot load validates nothing`, async ({ page }) => {
     await page.context().route(pattern, route => route.fulfill({ status, body: "" }));
+    const uncaught = [];
+    page.on("pageerror", error => uncaught.push(error.message));
     await page.goto("/");
     await expect(page.locator("#statusText")).toContainText("The tool catalog could not load");
     await dropWorkflow(page, "dropZone");
@@ -244,6 +246,7 @@ for (const [part, pattern, status] of [
     await expect(page.locator("#fileInfo")).toBeHidden();
     await expect(page.locator("#validationSummary")).not.toContainText("Valid");
     await expect(page.locator("#runButton")).toBeDisabled();
+    expect(uncaught).toEqual([]);
   });
 }
 

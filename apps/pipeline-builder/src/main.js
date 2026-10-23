@@ -113,9 +113,9 @@ function render() {
   const count = `${errors.length} problem${errors.length === 1 ? "" : "s"} to fix before export.`;
   const summary = steps.length === 0
     ? "Add a step to start a workflow."
-    : errors.length ? [count, ...general].join(" ") : `Valid · ${steps.length} step${steps.length === 1 ? "" : "s"}.`;
+    : validation.ok ? `Valid · ${steps.length} step${steps.length === 1 ? "" : "s"}.` : [count, ...general].join(" ");
   $("validationSummary").textContent = summary;
-  $("validationSummary").classList.toggle("error", errors.length > 0);
+  $("validationSummary").classList.toggle("error", !validation.ok);
   $("runButton").disabled = steps.length === 0 || !validation.ok;
   logDiagnostics(steps.length ? validation.issues ?? [] : [], summary);
   renderStep();
@@ -270,7 +270,7 @@ $("workflowInput").addEventListener("change", (event) => {
   event.target.value = "";
   if (files.length) void importFiles(files);
 });
-bindFileDrop($("dropZone"), importFiles);
+bindFileDrop($("dropZone"), importFiles, document, () => $("workflowInput").disabled);
 
 const exampleControl = createExampleSelector({
   examples,
@@ -312,12 +312,16 @@ async function start() {
     render();
     progress.end("Catalog ready");
     status(`${tools.length} operations from the Neurodesk catalog`);
-  } catch (error) {
+  } catch (cause) {
+    const error = new Error(`The tool catalog could not load: ${cause.message}`, { cause });
     progress.end("Catalog unavailable", { success: false });
-    status(`The tool catalog could not load: ${error.message}`, true);
+    status(error.message, true);
+    throw error;
   }
 }
+// The page has reported a failed load; automation runs await `ready` and fail with it.
 const ready = start();
+void ready.catch(() => {});
 
 registerAppAutomation({
   app: APP.id,
@@ -327,7 +331,7 @@ registerAppAutomation({
       signal?.throwIfAborted();
       await loadWorkflowFiles(inputs.workflow);
       const errors = (validation.issues ?? []).filter(issue => issue.severity === "error");
-      if (errors.length) throw new Error(errors.map(issue => `${issue.path || "workflow"}: ${issue.message}`).join("\n"));
+      if (!validation.ok) throw new Error(errors.map(issue => `${issue.path || "workflow"}: ${issue.message}`).join("\n"));
       const report = new File([`${JSON.stringify(validation, null, 2)}\n`], "validation.json", { type: "application/json" });
       return {
         artifacts: [{ role: "workflow", file: exportFile() }, { role: "validation", file: report }],
