@@ -111,8 +111,8 @@ The MCP server calls `registerCoreTools` next to its own tools. The
 The same page handlers answer nv-mcp's `AgentClient` over a WebSocket. The
 user runs `neurodesk-mcp` from `packages/agent-server` and registers
 `http://127.0.0.1:4242/mcp` with their agent. The page connects only after the
-user chooses **Connect an agent**, shows whether it is connected, and can
-disconnect.
+user chooses **Connect an agent**, says in its status bar whether it is
+connected, and can disconnect.
 
 - **Why a Node server.** nv-mcp's `startServer` runs only on Bun. The
   `neurodesk-mcp` command serves nv-mcp's `Bridge` and `buildServer` over
@@ -144,11 +144,20 @@ for the page, and directories mounted for a directory input. Browser
 permission prompts are always denied. So `load_volume`, `add_overlay` and
 `load_mesh` fail for any other URL, and a local path never works.
 
+Each viewer window has its own Electron session and its own address on the
+local server. The apps' service workers make most page requests, and Electron
+does not say which window such a request came from, so only the session can
+tell viewers apart. The session's request filter checks everything the viewer
+asks for against that viewer's grants, and a refused request counts against
+that viewer alone. The viewer's address serves the app and that viewer's
+mounts. Bundle and model files are shared.
+
 The desktop adds an approval step, so a source can be granted while the
 session is open:
 
 1. **Request.** The bridge checks the URL or path of every loading call before
-   forwarding it. If the source is already granted to the window, the call
+   forwarding it, and any relative address that leads into the local server's
+   mounts. If the source is already granted to the window, the call
    proceeds unchanged. Otherwise the bridge asks for it. A
    `sessions_grant { sessionId, url | path }` tool makes the same request
    ahead of time, for agents that want to batch approvals.
@@ -160,22 +169,23 @@ session is open:
    answer before the session's 30 second command limit, the request is
    denied, and the tool error says so.
 3. **Grant.**
-   - **URL:** the URL is appended to the window's source grants.
-     `createSourceGrants().add` currently replaces a window's list, so it
-     gains an append form.
+   - **URL:** the URL is added to the viewer's source grants.
    - **Local path:** the file is resolved with `realpath` and served on its
-     own through a one-time token on the local server, as directory inputs
-     are. The forwarded call's argument is rewritten to that URL.
-4. **Lifetime.** A grant belongs to the session. It is revoked, and a local
-   file unmounted, when the session closes for any reason. Grants are never
-   shared between windows and are not remembered across sessions.
+     own through a one-time token at the viewer's address, as directory
+     inputs are. The forwarded call's argument is rewritten to that URL.
+4. **Lifetime.** A grant belongs to the session. It is revoked, and the
+   viewer's address closed, when the session closes for any reason. Grants
+   are never shared between windows. Another viewer's address is just another
+   URL, and a relative address reaches only this viewer's own mounts. Grants
+   are not remembered across sessions. A closed viewer's browser session is
+   cleared before another viewer reuses it.
 
 Denials and approvals are recorded in the session's run record, so a report
 can show which sources an agent added after the run.
 
-In the hosted web apps the page cannot read local paths at all. There, the
-same request appears as an in-page prompt with a file picker, and the
-selected `File` is loaded directly.
+The hosted web apps have no approval step. As
+[Hosted web apps](#hosted-web-apps) describes, the loading tools fetch only
+what the page can read under CORS, and a local path never loads.
 
 ### Later options
 
@@ -230,6 +240,9 @@ page handlers above can be registered there once browsers support it.
   prompt wording is clear enough, and whether a later Safari adds a prompt.
 - **Atlas regions.** Apps expose regions through `viewers_regions` today.
   Mapping them onto nv-mcp's `atlas` hook needs an adapter per app.
+- **Local files in hosted apps.** A hosted page cannot read a local path. An
+  in-page prompt with a file picker could let the person hand the page the
+  file an agent asked for. It is not implemented.
 
 ## Proof of concept
 
@@ -246,8 +259,8 @@ Phase 1 runs on branch `feat/nv-mcp-bridge` against `@niivue/nv-mcp`
   - `set_view { slice: "coronal" }` changes the view, and `screenshot`
     returns a 2240×1508 PNG that differs from the earlier axial capture.
 
-  The existing `viewers_*` checks pass unchanged in the same run. Linux under
-  xvfb was not run.
+  The existing `viewers_*` checks pass unchanged in the same run. The smoke
+  also passes on Linux under xvfb.
 - **Tests.**
   - Desktop: an MCP stdio test drives `list_tabs`, `go_to_point` and
     `screenshot` through a fake session. It checks that strict schemas reject
@@ -291,6 +304,18 @@ Phase 1 runs on branch `feat/nv-mcp-bridge` against `@niivue/nv-mcp`
   - The smoke checks that a second `sessions_grant` of the mask returns
     `existing`, and that refusing the fixture by `sessions_grant` fails. It
     also checks that `run.json` lists the mask approval and both refusals.
+  - Each run's window gets its own session, from a pool of in-memory
+    partitions that are cleared and reused, and its own local server. An
+    earlier version told windows apart by `webContentsId`, which Electron
+    leaves empty for service worker requests. Approved URLs then failed in
+    Brain Extraction, any window could load another's token URL, and one
+    viewer's refused request failed the run in progress.
+  - The smoke loads two approved remote images on a loopback IP address, one
+    granted by `sessions_grant` and one by `add_overlay`, and refuses a URL
+    with credentials. A second viewer cannot load the first's mask by its
+    token URL or by `../_local/…`, and its `run.json` lists both refusals. A
+    run succeeds while a retained viewer's redirect out of its grants is
+    refused, and closing the first viewer stops its address.
 - **Timeouts.** The bridge timeout is 65 s: a 30 s approval wait plus the
   session's 30 s command limit. A stalled page is reported by the session,
   which also closes it, before nv-mcp's own timer fires.
