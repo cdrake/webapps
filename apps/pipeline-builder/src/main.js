@@ -1,5 +1,3 @@
-// Pipeline builder: the workspace edits one NeuroFlow workflow document. The sidebar
-// adds and configures steps; the viewer area is a report of steps and workflow I/O.
 import "@neurodesk/webapp-components/styles/imaging-workspace.css";
 import { mountImagingWorkspace } from "@neurodesk/webapp-components/core/mount-imaging-workspace";
 import {
@@ -66,6 +64,8 @@ let validate = () => ({ ok: false, issues: [] });
 let doc = emptyWorkflow();
 let selected = null;
 let validation = { ok: true, issues: [] };
+let editorKey = null;
+let reported = new Set();
 
 function setDoc(next, { select = selected } = {}) {
   doc = next;
@@ -73,7 +73,13 @@ function setDoc(next, { select = selected } = {}) {
   render();
 }
 
+function editStep(id) {
+  setDoc(doc, { select: id });
+  $("stepSection").open = true;
+}
+
 function render() {
+  const focused = document.activeElement?.id;
   validation = validate(doc);
   const steps = Object.entries(doc.steps);
   const byStep = issuesByStep(validation.issues ?? []);
@@ -85,14 +91,13 @@ function render() {
 
   $("stepRows").replaceChildren(...steps.map(([id, step]) => {
     const tool = toolsById.get(step.tool);
-    const name = el("td", { role: "button", tabIndex: 0, textContent: id, title: `Edit ${id}` });
+    const name = el("button", { type: "button", id: `step-${id}`, className: "nd-btn nd-btn-secondary nd-btn-sm", textContent: id, title: `Edit ${id}` });
     name.setAttribute("aria-pressed", String(id === selected));
-    name.onclick = () => setDoc(doc, { select: id });
-    name.onkeydown = event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); name.click(); } };
+    name.onclick = () => editStep(id);
     const reads = Object.values(step.inputs ?? {}).map(binding => binding.ref).filter(Boolean);
     const stepErrors = (byStep.get(id) ?? []).filter(issue => issue.severity === "error");
     return el("tr", {},
-      name,
+      el("td", {}, name),
       el("td", { textContent: tool ? toolLabel(tool) : step.tool }),
       el("td", { textContent: reads.join(", ") || "—" }),
       el("td", { textContent: stepErrors.map(issue => issue.message).join(" ") || "None" }));
@@ -104,7 +109,6 @@ function render() {
   ];
   $("ioRows").replaceChildren(...rows.map(cells => el("tr", {}, ...cells.map(text => el("td", { textContent: text })))));
 
-  // Step problems show in the table; workflow-level ones (description, outputs) here.
   const general = (byStep.get("") ?? []).filter(issue => issue.severity === "error").map(issue => issue.message);
   const count = `${errors.length} problem${errors.length === 1 ? "" : "s"} to fix before export.`;
   const summary = steps.length === 0
@@ -113,7 +117,18 @@ function render() {
   $("validationSummary").textContent = summary;
   $("validationSummary").classList.toggle("error", errors.length > 0);
   $("runButton").disabled = steps.length === 0 || !validation.ok;
+  logDiagnostics(steps.length ? validation.issues ?? [] : [], summary);
   renderStep();
+  if (focused && document.activeElement?.id !== focused) $(focused)?.focus();
+}
+
+// Each problem goes to the console once, when an edit introduces it. An unfinished
+// workflow is not a failure, so problems log as warnings, which leave the console closed.
+function logDiagnostics(issues, summary) {
+  const lines = new Set(issues.map(issue => `${issue.path || "workflow"}: ${issue.message}`));
+  for (const line of lines) if (!reported.has(line)) log.log(line, "warning");
+  if (reported.size && !lines.size && Object.keys(doc.steps).length) log.log(summary, "success");
+  reported = lines;
 }
 
 function sourceSelect(id, name, decl, tool) {
@@ -161,12 +176,24 @@ function parameterField(id, name, decl, tool) {
   return el("div", { className: "nd-field" }, text, control);
 }
 
+// Parameter values are left out: their controls already show them, and rebuilding
+// would drop focus and close Parameters while the user edits.
+function stepEditorKey() {
+  const bindings = Object.entries(doc.steps).map(([id, step]) => [id, step.tool,
+    Object.entries(step.inputs ?? {}).filter(([, binding]) => binding.ref)]);
+  return JSON.stringify([selected, doc.inputs, doc.outputs, bindings]);
+}
+
 function renderStep() {
   const editor = $("stepEditor");
   const step = selected && doc.steps[selected];
   const tool = step && toolsById.get(step.tool);
   $("stepHint").hidden = Boolean(step);
+  const key = step ? stepEditorKey() : null;
+  if (key === editorKey) return;
+  editorKey = key;
   if (!step) return editor.replaceChildren();
+  const parametersOpen = editor.querySelector("details")?.open ?? false;
   const id = selected;
   const fields = tool ? toolFields(tool) : { data: [], parameters: [] };
   const parts = [el("p", { className: "nd-hint", textContent: `${id} · ${tool ? toolLabel(tool) : `${step.tool} is not in the catalog`}` })];
@@ -175,13 +202,13 @@ function renderStep() {
     parts.push(el("div", { className: "nd-field" }, el("label", { htmlFor: select.id, title: decl.description ?? "" }, name.replace(/^input_/, "")), select));
   }
   if (fields.parameters.length) {
-    parts.push(el("details", { className: "nd-sidebar-section" },
+    parts.push(el("details", { className: "nd-sidebar-section", open: parametersOpen },
       el("summary", { className: "nd-section-title", textContent: "Parameters" }),
       el("div", { className: "nd-section-content" }, ...fields.parameters.map(([name, decl]) => parameterField(id, name, decl, tool)))));
   }
   if (fields.engine?.enum?.length > 1) parts.push(parameterField(id, "engine", fields.engine, tool));
   for (const name of Object.keys(tool?.outputs ?? {})) {
-    const box = el("input", { type: "checkbox", checked: Boolean(outputKey(doc, id, name)) });
+    const box = el("input", { type: "checkbox", id: `output-${name}`, checked: Boolean(outputKey(doc, id, name)) });
     box.onchange = () => setDoc(setWorkflowOutput(doc, id, name, box.checked, tool));
     parts.push(el("label", { className: "nd-check" }, box, ` Workflow output: ${name.replace(/^output_/, "")}`));
   }
@@ -189,7 +216,6 @@ function renderStep() {
   remove.onclick = () => { setDoc(removeStep(doc, id)); status(`Removed ${id}`); };
   parts.push(remove);
   editor.replaceChildren(...parts);
-  $("stepSection").open = true;
 }
 
 /** Bind each required input to its preferred compatible source, else a new workflow input. */
@@ -208,6 +234,7 @@ $("addStepButton").onclick = () => {
   if (!tool) return;
   const added = addStep(doc, tool);
   setDoc(autoBind(added.doc, added.stepId), { select: added.stepId });
+  $("stepSection").open = true;
   status(`Added ${added.stepId}: ${toolLabel(tool)}`);
 };
 $("workflowId").onchange = () => setDoc({ ...doc, id: $("workflowId").value.trim() });
@@ -220,10 +247,10 @@ $("newButton").onclick = () => {
 };
 
 function openWorkflow(next, label) {
+  reported = new Set();
   setDoc(next, { select: null });
   $("fileInfo").hidden = false;
   $("fileInfo").textContent = label;
-  for (const issue of validation.issues ?? []) log.log(`${issue.path || "workflow"}: ${issue.message}`, issue.severity === "error" ? "error" : "warning");
   status(validation.ok ? `${label} opened` : `${label} opened with problems; see the Issues column`, !validation.ok);
 }
 
@@ -262,8 +289,9 @@ function exportFile() {
 }
 $("runButton").onclick = () => {
   if (!validation.ok) return;
-  downloadFile(exportFile());
-  status(`Exported ${exportFile().name}`);
+  const file = exportFile();
+  downloadFile(file);
+  status(`Exported ${file.name}`);
 };
 
 function setReady(ready) {

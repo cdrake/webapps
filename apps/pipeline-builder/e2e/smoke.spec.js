@@ -98,7 +98,6 @@ test("steps chain by compatible outputs and the export validates", async ({ page
   await page.locator("#addStepButton").click();
   await page.locator("#toolSelect").selectOption("neurodesk.webapps/brain-extraction/extract");
   await page.locator("#addStepButton").click();
-  // brain-extraction was bound to N4's corrected image, the output named like its input.
   const source = page.locator("#bind-input_image");
   await expect(source).toHaveValue("steps.n4.outputs.output_image");
   await expect(source.locator("option[value='steps.n4.outputs.report']")).toHaveCount(0);
@@ -115,6 +114,55 @@ test("steps chain by compatible outputs and the export validates", async ({ page
   expect(Object.keys(doc.steps)).toEqual(["n4", "brain-extraction"]);
   expect(doc.steps.n4.inputs.input_image).toEqual({ ref: "inputs.image" });
   expect(doc.outputs.brain).toEqual({ type: "neuro:volume", ref: "steps.brain-extraction.outputs.output_brain" });
+});
+
+test("editing a step keeps its sections as the user left them and keeps focus", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("#toolSelect")).toBeEnabled();
+  await page.locator("#toolSelect").selectOption("neurodesk.webapps/brain-extraction/extract");
+  await page.locator("#addStepButton").click();
+  const parameters = page.locator("#stepEditor details");
+  await parameters.locator("summary").click();
+  const threshold = page.locator("#param-param_threshold");
+  await threshold.fill("0.3");
+  await threshold.press("Enter");
+  await expect(parameters).toHaveAttribute("open", "");
+  await expect(threshold).toBeFocused();
+  await threshold.fill("0.4");
+  await threshold.press("Tab");
+  await expect(page.locator("#output-output_brain")).toBeFocused();
+  await page.locator("#param-param_method").selectOption("bet");
+  await expect(parameters).toHaveAttribute("open", "");
+  await page.locator("#output-output_brain").check();
+  await expect(page.locator("#output-output_brain")).toBeFocused();
+  await expect(parameters).toHaveAttribute("open", "");
+  await expect(threshold).toHaveValue("0.4");
+
+  await page.locator("#stepSection > summary").click();
+  await page.locator("#workflowDescription").fill("Skull-strip a head MRI.");
+  await page.locator("#workflowDescription").press("Tab");
+  await expect(page.locator("#stepSection")).not.toHaveAttribute("open", "");
+  const stepButton = page.getByRole("button", { name: "brain-extraction", exact: true });
+  await stepButton.focus();
+  await stepButton.press("Enter");
+  await expect(page.locator("#stepSection")).toHaveAttribute("open", "");
+  await expect(page.locator("#step-brain-extraction")).toBeFocused();
+  await expect(page.locator("#step-brain-extraction")).toHaveAttribute("aria-pressed", "true");
+  const doc = await exported(page);
+  expect(doc.steps["brain-extraction"].inputs).toMatchObject({ param_threshold: { constant: 0.4 }, param_method: { constant: "bet" } });
+});
+
+test("validation diagnostics reach the console as the workflow is edited", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("#toolSelect")).toBeEnabled();
+  const log = page.locator("#technicalLog");
+  await page.locator("#toolSelect").selectOption("neurodesk.webapps/n4/correct");
+  await page.locator("#addStepButton").click();
+  await expect(log).toContainText("Workflow description is required.");
+  await expect(log).toHaveClass(/collapsed/);
+  await page.locator("#workflowDescription").fill("Correct a bias field.");
+  await page.locator("#workflowDescription").press("Tab");
+  await expect(log).toContainText("Valid · 1 step.");
 });
 
 test("an invalid workflow opens with its problems and cannot be exported", async ({ page }) => {

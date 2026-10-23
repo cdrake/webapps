@@ -2,5 +2,4 @@
 // without a browser (see test/config.test.js).
 export const APP = Object.freeze({
   id: "pipeline-builder",
-  version: "0.0.0",
 });
