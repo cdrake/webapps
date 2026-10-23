@@ -247,6 +247,7 @@ test('source approvals and refusals for a retained viewer are kept in its run re
   await service.grantSource(sessionId, { url: 'https://example.org/T1.nii' });
   await assert.rejects(service.grantSource(sessionId, { url: 'https://example.org/denied.nii' }), /was denied/);
   await assert.rejects(service.grantSource('missing', { url: 'https://example.org/T1.nii' }), /Unknown/);
+  await assert.rejects(service.grantSource(sessionId, { url: 'https://reader:secret@example.org/denied.nii' }), /must not contain credentials/);
   const expected = [
     { path: '/data/T2.nii.gz', outcome: 'approved', approval: 'person', grantedUrl: 'http://127.0.0.1:1/_local/token/T2.nii.gz' },
     { url: 'https://example.org/T1.nii', outcome: 'approved', approval: 'configured', grantedUrl: 'https://example.org/T1.nii' },
@@ -257,7 +258,9 @@ test('source approvals and refusals for a retained viewer are kept in its run re
     return entry;
   });
   assert.deepEqual(strip((await service.get(run.id)).sources), expected);
-  assert.deepEqual(strip(JSON.parse(await readFile(join(root, 'runs', run.id, 'run.json'), 'utf8')).sources), expected);
+  const record = await readFile(join(root, 'runs', run.id, 'run.json'), 'utf8');
+  assert.deepEqual(strip(JSON.parse(record).sources), expected);
+  assert.doesNotMatch(record, /secret/);
   await service.closeSession(sessionId);
   assert.deepEqual(strip((await service.get(run.id)).sources), expected);
 });
