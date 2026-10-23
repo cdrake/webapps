@@ -1,5 +1,14 @@
 # vesselboost
 
+## 0.6.20261023
+
+### Patch Changes
+
+- Updated dependencies [3a7e5bb]
+- Updated dependencies [72cbb8d]
+  - @neurodesk/webapp-components@0.20.0
+  - @neurodesk/vesselboost@0.6.20261023
+
 ## 0.6.20261022
 
 ### Patch Changes

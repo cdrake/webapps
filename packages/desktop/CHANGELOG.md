@@ -1,5 +1,18 @@
 # @neurodesk/desktop
 
+## 0.39.20261023
+
+### Minor Changes
+
+- 3a7e5bb: The desktop MCP server also offers NiiVue's own agent tools (`@niivue/nv-mcp`): each retained NiiVue viewer is a tab, so `list_tabs`, `where_am_i`, `go_to_point`, `set_view`, `screenshot` and the rest act on it through its session. Viewers register a `niivue` capability and answer the new `viewers.niivue` command. Loading tools can also load a local file or another URL once a person approves it in a dialog, or when it is listed in `NEURODESK_APPROVED_SOURCES`, for that viewer only; `NEURODESK_SOURCE_APPROVAL=deny` refuses without asking. The new `sessions_grant` tool approves a file or any http(s) URL ahead of time, and each approval or refusal is recorded under `sources` in the run record.
+
+### Patch Changes
+
+- 4c15920: Each viewer window now has its own browser session and its own address on the local server. An app's service worker makes most of its requests, and the desktop could not tell which window they came from. Remote run inputs such as ZARRo's OME-Zarr URL failed to load over http, any window could read the https sources granted to another, and a request refused in a retained viewer failed the run in progress in another window. Requests are now checked against, and counted for, the window that made them.
+- Updated dependencies [3a7e5bb]
+- Updated dependencies [72cbb8d]
+  - @neurodesk/webapp-components@0.20.0
+
 ## 0.38.20261022
 
 ### Minor Changes
