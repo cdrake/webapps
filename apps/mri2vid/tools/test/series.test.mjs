@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 
 import { readDicomHeader } from '@neurodesk/mri2vid/readers/dicom.js';
 import { groupSeries, classifySeries } from '@neurodesk/mri2vid/series.js';
+import { discoverSources } from '@neurodesk/mri2vid/sources.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..', '..');
@@ -49,6 +50,19 @@ if (haveData) {
       'default pick should be the T1 series');
     assert.equal(t1.files.length, 5);
     assert.equal(color.isColor, true);
+  });
+
+  test('groups a compressed series like its uncompressed original', async () => {
+    const dir = path.join(PHANTOM, 'dicom_rle');
+    const records = fs.readdirSync(dir).map((name) => ({ name, path: path.join(dir, name) }));
+    const { sources, unreadable } = await discoverSources(records, {
+      readPrefix: async (record, bytes) => readAB(record.path).slice(0, bytes),
+    });
+    assert.equal(unreadable, 0);
+    assert.equal(sources.length, 1);
+    assert.equal(sources[0].kind, 'dicom-series');
+    assert.equal(sources[0].sliceCount, 5);
+    assert.equal(sources[0].classification.label, 't1');
   });
 
   test('classifier basics', () => {

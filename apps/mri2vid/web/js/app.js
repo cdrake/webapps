@@ -1,5 +1,5 @@
 import { bindInfoTooltips, createConsole, createExampleSelector } from '../vendor/webapp-components/src/ui/index.js';
-import { registerAppAutomation } from '../vendor/webapp-components/src/automation/index.js';
+import { createDicomConverter, registerAppAutomation } from '../vendor/webapp-components/src/automation/index.js';
 // MRI2VID controller. Runs entirely on the client: ingest files, group DICOM
 // series, read the selected volume, window and preview it, and encode a video.
 // Public examples download on request; user-selected image data stays local.
@@ -18,6 +18,13 @@ import { drawFrame, drawAnnotation } from './annotate.js';
 import { Niivue } from './vendor/niivue.js';
 
 const $ = (id) => document.getElementById(id);
+
+const dcm2niix = createDicomConverter({ moduleUrl: new URL('../vendor/dcm2niix/index.jpeg.js', import.meta.url).href });
+
+async function convertDicom(files) {
+  const outputs = await dcm2niix(files.map((f) => new File([f.bytes], f.name)));
+  return Promise.all(outputs.map(async (file) => ({ name: file.name, bytes: new Uint8Array(await file.arrayBuffer()) })));
+}
 const round4 = (x) => Math.round(x * 10000) / 10000;
 
 const S = {
@@ -188,7 +195,7 @@ async function selectSource(id, { signal, throwOnError = false, mosaicReduce = $
   stopPlay();
 
   try {
-    const volume = await loadSource(src, { readBytes: (rec) => rec.file.arrayBuffer(), mosaicReduce });
+    const volume = await loadSource(src, { readBytes: (rec) => rec.file.arrayBuffer(), convertDicom, mosaicReduce });
     if (gen !== loadGen) return;
     signal?.throwIfAborted();
     S.volume = volume;

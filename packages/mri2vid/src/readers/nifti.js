@@ -36,7 +36,10 @@ function readTyped(view, off, count, datatype, littleEndian) {
   return out;
 }
 
-export async function readNifti(arrayBuffer, name = 'image.nii') {
+// How a 4D series (a run of timepoints or diffusion directions) becomes one 3D volume.
+export const VOLUME_REDUCTIONS = ['first', 'mean', 'max'];
+
+export async function readNifti(arrayBuffer, name = 'image.nii', { reduce = 'first' } = {}) {
   const buf = await maybeGunzip(arrayBuffer);
   const view = new DataView(buf);
   if (buf.byteLength < 352) throw new NiftiError('File too small to be a NIfTI-1 image');
@@ -55,9 +58,9 @@ export async function readNifti(arrayBuffer, name = 'image.nii') {
   const ndim = dim[0];
   const nx = dim[1] || 1, ny = dim[2] || 1, nz = dim[3] || 1, nt = dim[4] || 1;
   if (ndim < 3) throw new NiftiError('NIfTI must have at least 3 dimensions');
-  // 4D (e.g. BOLD/DWI series): use the first volume. The 4th axis is the slowest,
-  // so the first volume is the leading nx*ny*nz voxels.
+  // The 4th axis is the slowest, so each volume is a run of nx*ny*nz voxels.
   const is4D = nt > 1;
+  if (!VOLUME_REDUCTIONS.includes(reduce)) reduce = 'first';
 
   const datatype = view.getInt16(70, littleEndian);
   const voxOffset = view.getFloat32(108, littleEndian);
@@ -75,6 +78,10 @@ export async function readNifti(arrayBuffer, name = 'image.nii') {
   if (dataStart + nVox * bytesPer > buf.byteLength) {
     throw new NiftiError('NIfTI data is shorter than its declared dimensions');
   }
+  // Volumes past the end of a truncated file are left out of a mean or maximum.
+  const volumes = reduce === 'first' || datatype === DT_RGB24
+    ? 1
+    : Math.min(nt, Math.floor((buf.byteLength - dataStart) / (nVox * bytesPer)));
 
   const affine = readAffine(view, littleEndian, sformCode, qformCode, dim);
 
@@ -96,25 +103,38 @@ export async function readNifti(arrayBuffer, name = 'image.nii') {
     return makeVolume({ dims: [nx, ny, nz], channels: 3, data, affine, photometric: 'RGB', meta: { source: 'nifti', name } });
   }
 
-  const raw = readTyped(view, dataStart, nVox, datatype, littleEndian);
   if (!Number.isFinite(sclSlope) || sclSlope === 0) sclSlope = 1;
   const useScale = !(sclSlope === 1 && sclInter === 0);
 
   const data = new Float32Array(nVox);
-  // raw is in i-fastest disk order; transpose to [i,j,k] C-order.
-  let disk = 0;
-  for (let k = 0; k < nz; k++) {
-    for (let j = 0; j < ny; j++) {
-      for (let i = 0; i < nx; i++) {
-        const v = raw[disk++];
-        data[(i * ny + j) * nz + k] = useScale ? v * sclSlope + sclInter : v;
+  const sum = reduce === 'mean' && volumes > 1 ? new Float64Array(nVox) : null;
+  for (let t = 0; t < volumes; t++) {
+    const raw = readTyped(view, dataStart + t * nVox * bytesPer, nVox, datatype, littleEndian);
+    // raw is in i-fastest disk order; transpose to [i,j,k] C-order.
+    let disk = 0;
+    for (let k = 0; k < nz; k++) {
+      for (let j = 0; j < ny; j++) {
+        for (let i = 0; i < nx; i++) {
+          const raw0 = raw[disk++];
+          const v = useScale ? raw0 * sclSlope + sclInter : raw0;
+          const di = (i * ny + j) * nz + k;
+          if (sum) sum[di] += v;
+          else if (t === 0 || v > data[di]) data[di] = v;
+        }
       }
     }
   }
+  if (sum) for (let i = 0; i < nVox; i++) data[i] = sum[i] / volumes;
   return makeVolume({
     dims: [nx, ny, nz], channels: 1, data, affine, photometric: 'MONOCHROME2',
-    meta: { source: 'nifti', name, note: is4D ? `4D series (${nt} volumes); using the first volume` : null },
+    meta: { source: 'nifti', name, volumes: nt, used: volumes, reduce: volumes > 1 ? reduce : 'first', note: is4D ? volumeNote(nt, volumes, reduce) : null },
   });
+}
+
+function volumeNote(total, used, reduce) {
+  if (used === 1) return `4D series (${total} volumes); using the first volume`;
+  if (reduce === 'mean') return `4D series: mean across ${used} of ${total} volumes`;
+  return `4D series: maximum intensity across ${used} of ${total} volumes`;
 }
 
 function readAffine(view, le, sformCode, qformCode, dim) {

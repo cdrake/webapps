@@ -26,7 +26,9 @@
     "lint": "node --check src/node.js && node --check bin/mri2vid.js"
   },
   "dependencies": {
-    "@libav.js/variant-vp9-opus": "6.10.9"
+    "@libav.js/variant-vp9-opus": "6.10.9",
+    "@neurodesk/node-drivers": "workspace:*",
+    "@niivue/dcm2niix": "1.2.0"
   },
   "devDependencies": {
     "@playwright/test": "1.64.0"

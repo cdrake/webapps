@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 
 import { readNifti } from '@neurodesk/mri2vid/readers/nifti.js';
 import { readMgz } from '@neurodesk/mri2vid/readers/mgz.js';
+import { convertDicom } from '@neurodesk/mri2vid/node';
 import { readDicomSeries } from '@neurodesk/mri2vid/readers/dicom.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -84,11 +85,11 @@ if (haveGolden) {
     assertAffine(vol.affine, golden.mgz.affine, 'mgz', 1e-3);
   });
 
-  test('dicom RGB series', () => {
+  test('dicom RGB series', async () => {
     const files = fs.readdirSync(path.join(PHANTOM, 'dicom_rgb'))
       .filter((n) => n.toLowerCase().endsWith('.dcm'))
       .map((n) => ({ name: n, buffer: readAB(path.join(PHANTOM, 'dicom_rgb', n)) }));
-    const vol = readDicomSeries(files);
+    const vol = await readDicomSeries(files, { convertDicom });
     assert.equal(vol.channels, 3);
     assertArrayEqual(vol.data, loadGoldenArray(golden.dicom_rgb.array), 'dicom_rgb');
   });

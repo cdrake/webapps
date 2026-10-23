@@ -9,6 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { convertDicom } from '@neurodesk/mri2vid/node';
 import { readDicomSeries } from '@neurodesk/mri2vid/readers/dicom.js';
 import { buildFrames } from '@neurodesk/mri2vid/pipeline.js';
 
@@ -40,11 +41,13 @@ if (haveGolden) {
   const folders = {
     single: () => loadFolder(path.join(PHANTOM, 'dicom_single')),
     mf: () => loadFolder(path.join(PHANTOM, 'dicom_mf')),
+    // The single-frame series, RLE compressed: the reference reads the uncompressed files.
+    rle: () => loadFolder(path.join(PHANTOM, 'dicom_rle')),
   };
 
-  for (const cfg of manifest.configs) {
-    test(`parity: ${cfg.name}`, () => {
-      const vol = readDicomSeries(folders[cfg.source]());
+  for (const cfg of manifest.configs) for (const source of cfg.source === 'single' ? ['single', 'rle'] : [cfg.source]) {
+    test(`parity: ${cfg.name}${source === cfg.source ? '' : ` (${source})`}`, async () => {
+      const vol = await readDicomSeries(folders[source](), { convertDicom });
       const out = buildFrames(vol, {
         orientation: cfg.orientation,
         start: cfg.start,

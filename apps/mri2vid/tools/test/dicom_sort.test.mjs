@@ -8,6 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { convertDicom } from '@neurodesk/mri2vid/node';
 import { readDicomSeries } from '@neurodesk/mri2vid/readers/dicom.js';
 import { voxelIndex } from '@neurodesk/mri2vid/volume.js';
 
@@ -24,11 +25,11 @@ const have = fs.existsSync(DIR);
 test('nogeo phantom present', () => { assert.ok(have, 'Run tools/gen_phantom.py first'); });
 
 if (have) {
-  test('single-frame series with no geometry sorts by InstanceNumber', () => {
+  test('single-frame series with no geometry sorts by InstanceNumber', async () => {
     const files = fs.readdirSync(DIR)
       .filter((n) => n.endsWith('.dcm'))
       .map((n) => ({ name: n, buffer: readAB(path.join(DIR, n)) }));
-    const vol = readDicomSeries(files);
+    const vol = await readDicomSeries(files, { convertDicom });
     const [rows, cols, N] = vol.dims;
     assert.equal(N, 10);
     // Pixel value equals InstanceNumber; sorted order must read 1,2,...,10.

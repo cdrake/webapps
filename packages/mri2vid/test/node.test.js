@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { dicomSeries } from '../../../test-utils/dicom-fixture.mjs';
 import { syntheticNifti } from '../../../test-utils/nifti-fixture.mjs';
 import { decodeVideo, inspectVideo } from '../src/inspect.js';
-import { OPTIONS, encode, optionName, parseOptions } from '../src/node.js';
+import { OPTIONS, convertDicom, encode, optionName, parseOptions } from '../src/node.js';
 import { defaultNorm, renderFrame } from '../src/pipeline.js';
 import { drawLabel, labelPlacement, rasterize, rgbToI420, sliceLabel } from '../src/raster.js';
 import { readNifti } from '../src/readers/nifti.js';
@@ -133,12 +133,14 @@ test('the output directory must be new or empty', async (t) => {
 });
 
 test('distinct DICOM records with the same filename retain every slice', async () => {
+  // Like the browser's dcm2niix worker, which writes its inputs into one directory by name.
+  const inDirectory = files => convertDicom([...new Map(files.map(file => [file.name, file])).values()]);
   const records = dicomSeries({ series: 72, slices: 2 }).map(file => ({ ...file, name: 'image.dcm' }));
   const bytes = record => record.buffer.buffer.slice(record.buffer.byteOffset, record.buffer.byteOffset + record.buffer.byteLength);
   const { sources } = await discoverSources(records, { readPrefix: async record => bytes(record) });
   assert.equal(sources.length, 1);
   assert.deepEqual(sources[0].recs, records);
-  const volume = await loadSource(sources[0], { readBytes: async record => bytes(record) });
+  const volume = await loadSource(sources[0], { readBytes: async record => bytes(record), convertDicom: inDirectory });
   assert.deepEqual(volume.dims, [16, 16, 2]);
   assert.deepEqual([...volume.data.subarray(0, 4)], [100, 200, 101, 201]);
 });

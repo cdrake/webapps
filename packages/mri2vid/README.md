@@ -6,7 +6,11 @@ same readers, series grouping, orientation, slice selection, windowing and
 resampling, and the same video settings and muxers.
 
 - `src/readers/`, `src/series.js`, `src/sources.js` read files into a volume
-  and pick the series to encode. `parseDicomHeader` in `src/readers/dicom.js`
+  and pick the series to encode. DICOM headers are parsed here to group series;
+  their pixels come from dcm2niix (`@niivue/dcm2niix`, its JPEG build), which
+  the app runs in a worker and the command line through
+  `@neurodesk/node-drivers/dcm2niix`. `readDicomSeries` lays its volume out as
+  `MRI2vid.py` reads a series. `parseDicomHeader` in `src/readers/dicom.js`
   reads every header element before the pixel data, nested sequences included;
   the DICOM View app (`apps/dicomview`) shows it.
 - `src/pipeline.js` turns a volume into 8-bit frames (`renderFrame`).
@@ -18,8 +22,9 @@ resampling, and the same video settings and muxers.
   `bin/mri2vid.js` are the command line. They are Node-only and are not
   staged into the app.
 
-The app stages the browser modules into `web/vendor/mri2vid/` with
-`scripts/stage-browser.mjs` (its `vendor` and `prebuild` scripts).
+The app stages the browser modules into `web/vendor/mri2vid/`, and dcm2niix
+into `web/vendor/dcm2niix/`, with `scripts/stage-browser.mjs` (its `vendor`
+and `prebuild` scripts).
 
 ## Command line
 

@@ -12,6 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { convertDicom } from '@neurodesk/mri2vid/node';
 import { readDicomSeries, readDicomHeader, mosaicInfo, parseDicom } from '@neurodesk/mri2vid/readers/dicom.js';
 import { groupSeries } from '@neurodesk/mri2vid/series.js';
 
@@ -83,50 +84,50 @@ if (have) {
     assert.equal(h.mosaicSlices, NS);
   });
 
-  test('first volume: de-tiles into slices in spatial order', () => {
-    const vol = readDicomSeries(mosaicFiles(), { mosaicReduce: 'first' });
+  test('first volume: de-tiles into slices in spatial order', async () => {
+    const vol = await readDicomSeries(mosaicFiles(), { convertDicom, mosaicReduce: 'first' });
     assert.deepEqual(vol.dims, [TILE, TILE, NS]);
     assert.equal(vol.channels, 1);
     assertClose(vol.data, goldenFloat('reader_mosaic_first'), 'mosaic first');
   });
 
-  test('mean reduction averages across all volumes', () => {
-    const vol = readDicomSeries(mosaicFiles(), { mosaicReduce: 'mean' });
+  test('mean reduction averages across all volumes', async () => {
+    const vol = await readDicomSeries(mosaicFiles(), { convertDicom, mosaicReduce: 'mean' });
     assert.deepEqual(vol.dims, [TILE, TILE, NS]);
     assertClose(vol.data, goldenFloat('reader_mosaic_mean'), 'mosaic mean');
   });
 
-  test('max reduction takes the maximum across all volumes', () => {
-    const vol = readDicomSeries(mosaicFiles(), { mosaicReduce: 'max' });
+  test('max reduction takes the maximum across all volumes', async () => {
+    const vol = await readDicomSeries(mosaicFiles(), { convertDicom, mosaicReduce: 'max' });
     assert.deepEqual(vol.dims, [TILE, TILE, NS]);
     assertClose(vol.data, goldenFloat('reader_mosaic_max'), 'mosaic max');
   });
 
-  test('reduction only changes with more than one volume', () => {
+  test('reduction only changes with more than one volume', async () => {
     const one = mosaicFiles().slice(0, 1);
-    const first = readDicomSeries(one, { mosaicReduce: 'first' });
-    const mean = readDicomSeries(one, { mosaicReduce: 'mean' });
-    const max = readDicomSeries(one, { mosaicReduce: 'max' });
+    const first = await readDicomSeries(one, { convertDicom, mosaicReduce: 'first' });
+    const mean = await readDicomSeries(one, { convertDicom, mosaicReduce: 'mean' });
+    const max = await readDicomSeries(one, { convertDicom, mosaicReduce: 'max' });
     assertClose(mean.data, first.data, 'single-volume mean', 0);
     assertClose(max.data, first.data, 'single-volume max', 0);
   });
 
-  test('an unknown reduction falls back to the first volume', () => {
-    const vol = readDicomSeries(mosaicFiles(), { mosaicReduce: 'not-a-mode' });
+  test('an unknown reduction falls back to the first volume', async () => {
+    const vol = await readDicomSeries(mosaicFiles(), { convertDicom, mosaicReduce: 'not-a-mode' });
     assertClose(vol.data, goldenFloat('reader_mosaic_first'), 'mosaic fallback');
   });
 
-  test('default reduction is the first volume', () => {
-    const vol = readDicomSeries(mosaicFiles());
+  test('default reduction is the first volume', async () => {
+    const vol = await readDicomSeries(mosaicFiles(), { convertDicom });
     assertClose(vol.data, goldenFloat('reader_mosaic_first'), 'mosaic default');
   });
 
-  test('reports the mosaic in meta and does not hold the whole 4D run', () => {
-    const vol = readDicomSeries(mosaicFiles(), { mosaicReduce: 'mean' });
-    assert.equal(vol.meta.mosaic.nSlices, NS);
-    assert.equal(vol.meta.mosaic.volumes, NV);
-    assert.equal(vol.meta.mosaic.used, NV);
-    assert.match(vol.meta.note, /mean across/);
+  test('reports the reduction in meta and does not hold the whole 4D run', async () => {
+    const vol = await readDicomSeries(mosaicFiles(), { convertDicom, mosaicReduce: 'mean' });
+    assert.equal(vol.meta.slices, NS);
+    assert.equal(vol.meta.volumes, NV);
+    assert.equal(vol.meta.used, NV);
+    assert.match(vol.meta.note, /mean across 3 of 3 volumes/);
     // One volume of samples, not NV of them.
     assert.equal(vol.data.length, TILE * TILE * NS);
   });
