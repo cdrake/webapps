@@ -165,6 +165,19 @@ test("validation diagnostics reach the console as the workflow is edited", async
   await expect(log).toContainText("Valid · 1 step.");
 });
 
+test("a workflow dropped on the window opens through the workflow input", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("#toolSelect")).toBeEnabled();
+  await expect(page.locator("#dropZone")).toHaveClass(/nd-file-merged/);
+  await page.evaluate(text => {
+    const transfer = new DataTransfer();
+    transfer.items.add(new File([text], "dropped.workflow.json", { type: "application/json" }));
+    document.getElementById("viewer").dispatchEvent(new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: transfer }));
+  }, JSON.stringify(template));
+  await expect(page.locator("#fileInfo")).toHaveText("dropped.workflow.json");
+  await expect(page.locator("#validationSummary")).toHaveText("Valid · 3 steps.");
+});
+
 test("an invalid workflow opens with its problems and cannot be exported", async ({ page }) => {
   const broken = structuredClone(template);
   broken.steps.segment.inputs.input_image = { ref: "steps.n4.outputs.report" };
