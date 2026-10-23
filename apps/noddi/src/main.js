@@ -22,6 +22,7 @@ import {
 } from "@neurodesk/webapp-components/file-io";
 import { gzipFile } from "@neurodesk/webapp-components/file-io/bids-derivatives";
 import { binaryMask, readBrainMask } from "@neurodesk/webapp-components/file-io/brain-mask";
+import { bidsDiffusionSeries, chooseBidsRun, chosenBidsRun } from "@neurodesk/webapp-components/file-io/bids";
 import { registerAppAutomation } from "@neurodesk/webapp-components/automation";
 import { readDiffusionSeries, runDcm2niix } from "@neurodesk/runtime-support/dcm2niix-client";
 import { brainMask, mindgrab } from "@neurodesk/runtime-support/mindgrab";
@@ -74,6 +75,8 @@ const noddiApi = loadNoddi(fetch(wasmUrl));
 let input = null;
 let mask = null;
 let outputs = {};
+// The loaded BIDS folder's files and runs, so another run can be chosen without a new drop.
+let folder = null;
 let loading = null;
 let fitting = null;
 let noddiRequested = $("fitNoddi").checked;
@@ -104,9 +107,9 @@ function clearOutputs() {
   $("outputSection").open = false;
 }
 
-/** Reads a DWI with its gradients from one selection (NIfTI with bval and bvec, or DICOM). */
-async function readDwi(files, signal) {
-  const series = (await readDiffusionSeries(files, { signal })).filter((entry) => entry.bval && entry.bvec);
+/** Reads a DWI with its gradients from one selection (NIfTI with bval and bvec, or DICOM), or one BIDS run. */
+async function readDwi(files, signal, run = null) {
+  const series = (run ? [run] : await readDiffusionSeries(files, { signal })).filter((entry) => entry.bval && entry.bvec);
   signal?.throwIfAborted();
   if (!series.length) throw new Error("Choose a DWI with its .bval and .bvec files, or a DICOM diffusion series.");
   if (series.length > 1) throw new Error(`Choose one diffusion series; this selection has ${series.length}.`);
@@ -125,7 +128,19 @@ async function readDwi(files, signal) {
   return { name: image.name, buffer, dims: frames.dims, data: frames.data, voxels, bvals, bvecs, table, meanB0: meanVolumes(frames.data, voxels, table.b0) };
 }
 
-async function loadFiles(filesPromise, signal) {
+/** Show the run selector for a BIDS folder with more than one DWI run. A run without its gradient tables is disabled. */
+function showRuns(runs, index) {
+  const option = (run, i) => {
+    const text = run.missing.length ? `${run.label} (no ${run.missing.join(", ")})` : run.label;
+    const item = new Option(text, String(i), false, i === index);
+    item.disabled = run.missing.length > 0;
+    return item;
+  };
+  $("runSelect").replaceChildren(...(runs ?? []).map(option));
+  $("runField").hidden = !runs || runs.length < 2;
+}
+
+async function loadFiles(filesPromise, signal, runIndex = null) {
   if (loading || fitting) throw new Error("Wait for the current operation to finish, or cancel it.");
   const controller = new AbortController();
   const abort = () => controller.abort();
@@ -138,13 +153,19 @@ async function loadFiles(filesPromise, signal) {
   status("Reading diffusion data…");
   try {
     const files = await filesPromise;
-    const dwi = await readDwi(files, controller.signal);
+    const runs = await bidsDiffusionSeries(files);
+    // A folder loads the run last chosen from the same files (Undo gives them back), else its first complete run.
+    const index = runs ? (runIndex ?? chosenBidsRun(runs)) : 0;
+    const dwi = await readDwi(files, controller.signal, runs?.[index]);
     controller.signal.throwIfAborted();
     const b0 = await gzipFile(createNiftiFromData(dwi.meanB0, dwi.buffer, { dims: dwi.dims }), `${bidsStem(dwi.name)}_desc-meanb0.nii.gz`);
     controller.signal.throwIfAborted();
     await showVolume({ file: b0 }, { signal: controller.signal });
     controller.signal.throwIfAborted();
     input = dwi;
+    if (runs) chooseBidsRun(runs, index);
+    folder = runs ? { files, runs, index } : null;
+    showRuns(runs, index);
     mask = null;
     $("imageInput").dispatchEvent(new CustomEvent("nd-files", { bubbles: true, detail: { files } }));
     $("maskInput").dispatchEvent(new CustomEvent("nd-files", { bubbles: true, detail: { files: [] } }));
@@ -203,6 +224,7 @@ async function loadMask(file, signal) {
 function setBusy(busy) {
   results.inert = busy;
   $("imageInput").disabled = busy;
+  $("runSelect").disabled = busy;
   $("maskInput").disabled = busy;
   exampleControl?.setDisabled(busy);
   $("runButton").disabled = busy || !input;
@@ -318,6 +340,15 @@ $("maskInput").addEventListener("change", (event) => {
   if (file) void loadMask(file).catch(report);
 });
 bindFileDrop($("dropZone"), importFiles);
+$("runSelect").addEventListener("change", (event) => {
+  if (!folder) return;
+  const loaded = folder.index;
+  exampleControl.cancel();
+  void loadFiles(Promise.resolve(folder.files), undefined, Number(event.target.value)).catch((error) => {
+    event.target.value = String(loaded);
+    report(error);
+  });
+});
 bindFileDrop($("maskDrop"), async (files) => {
   const [file] = await files;
   if (file) await loadMask(file).catch(report);
