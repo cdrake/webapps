@@ -1,39 +1,99 @@
-// Real browser smoke test. Proves the deployed contract that Node tests cannot:
-// cross-origin isolation, worker loading, and app boot. Runs against `vite preview`
-// (see playwright.config.js) so it exercises the built, header-served output.
+// Real browser smoke test against `vite preview`: the built page publishes its tool
+// catalog, loads the vendored NeuroFlow validator, and edits and exports workflows.
 import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
-import { createHash } from "node:crypto";
 
 const examples = JSON.parse(readFileSync(new URL("../examples.json", import.meta.url), "utf8"));
+const template = JSON.parse(readFileSync(new URL("../src/workflows/t1-segmentation.workflow.json", import.meta.url), "utf8"));
+const stubSample = page => page.route(examples[0].files[0].url, route => route.fulfill({ body: "sample image bytes" }));
 
-test("the automation operation downloads exactly its declared input copy", async ({ page }) => {
-  const bytes = Buffer.from("template pass-through example");
+async function exported(page) {
+  const download = page.waitForEvent("download");
+  await page.locator("#runButton").click();
+  return JSON.parse(readFileSync(await (await download).path(), "utf8"));
+}
+
+test("app boots with the catalog ready", async ({ page }) => {
   await page.goto("/");
-  await page.locator("#neurodesk-input-transfer").setInputFiles({ name: "input.nii", mimeType: "application/octet-stream", buffer: bytes });
+  await expect(page.locator("#statusText")).toContainText("operations from the Neurodesk catalog");
+  await expect(page.locator("#toolSelect option[value='neurodesk.webapps/n4/correct']")).toHaveCount(1);
+  await expect(page.locator("#toolSelect option[value^='neurodesk.webapps/pipeline-builder/']")).toHaveCount(0);
+  await expect(page.locator("#runButton")).toBeDisabled();
+});
+
+test("the page publishes a NeuroFlow registry beside itself", async ({ page }) => {
+  await page.goto("/");
+  const index = await page.evaluate(async () => (await fetch("neuroflow/neuroflow-registry.json")).json());
+  expect(index.kind).toBe("neuroflow/registry-index");
+  expect(index.workflows).toEqual(["workflows/t1-segmentation.workflow.json"]);
+  const statuses = await page.evaluate(paths => Promise.all(paths.map(async path => (await fetch(`neuroflow/${path}`)).status)), [...index.tools.slice(0, 3), "scripts/neurodesk.mjs"]);
+  expect(statuses).toEqual([200, 200, 200, 200]);
+});
+
+test("the example opens the template and exports it unchanged", async ({ page }) => {
+  await stubSample(page);
+  await page.goto("/");
+  await page.getByRole("combobox", { name: "Input", exact: true }).selectOption(examples[0].id);
+  await expect(page.locator("[data-neurodesk-examples]")).toHaveAttribute("data-example-state", "ready");
+  await expect(page.locator("#stepRows tr")).toHaveCount(3);
+  await expect(page.locator("#validationSummary")).toHaveText("Valid · 3 steps.");
+  expect(await exported(page)).toEqual(template);
+});
+
+test("steps chain by compatible outputs and the export validates", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("#toolSelect")).toBeEnabled();
+  await page.locator("#toolSelect").selectOption("neurodesk.webapps/n4/correct");
+  await page.locator("#addStepButton").click();
+  await page.locator("#toolSelect").selectOption("neurodesk.webapps/brain-extraction/extract");
+  await page.locator("#addStepButton").click();
+  // brain-extraction was bound to N4's corrected image, the output named like its input.
+  const source = page.locator("#bind-input_image");
+  await expect(source).toHaveValue("steps.n4.outputs.output_image");
+  await expect(source.locator("option[value='steps.n4.outputs.report']")).toHaveCount(0);
+  await page.getByLabel("Workflow output: brain").check();
+  await expect(page.locator("#validationSummary")).toHaveText("1 problem to fix before export. Workflow description is required.");
+  await page.locator("#workflowId").fill("lab.pipelines/strip");
+  await page.locator("#workflowDescription").fill("Bias-correct and skull-strip a head MRI.");
+  await page.locator("#workflowDescription").press("Tab");
+  await expect(page.locator("#validationSummary")).toHaveText("Valid · 2 steps.");
+  const doc = await exported(page);
+  expect(doc.neuroflow).toBe("0.1.1");
+  expect(doc.id).toBe("lab.pipelines/strip");
+  expect(doc.description).toBe("Bias-correct and skull-strip a head MRI.");
+  expect(Object.keys(doc.steps)).toEqual(["n4", "brain-extraction"]);
+  expect(doc.steps.n4.inputs.input_image).toEqual({ ref: "inputs.image" });
+  expect(doc.outputs.brain).toEqual({ type: "neuro:volume", ref: "steps.brain-extraction.outputs.output_brain" });
+});
+
+test("an invalid workflow opens with its problems and cannot be exported", async ({ page }) => {
+  const broken = structuredClone(template);
+  broken.steps.segment.inputs.input_image = { ref: "steps.n4.outputs.report" };
+  await page.goto("/");
+  await expect(page.locator("#toolSelect")).toBeEnabled();
+  await page.locator("#workflowInput").setInputFiles({ name: "broken.workflow.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(broken)) });
+  await expect(page.locator("#validationSummary")).toHaveText("1 problem to fix before export.");
+  await expect(page.locator("#stepRows tr").nth(2)).toContainText("incompatible");
+  await expect(page.locator("#runButton")).toBeDisabled();
+});
+
+test("the automation operation validates a workflow", async ({ page }) => {
+  await page.goto("/");
+  await page.locator("#neurodesk-input-transfer").setInputFiles({ name: "t1.workflow.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(template)) });
   await page.evaluate(async () => {
-    await globalThis.neurodeskAutomation.dispatch("adopt", { role: "image" });
+    await globalThis.neurodeskAutomation.dispatch("adopt", { role: "workflow" });
     await globalThis.neurodeskAutomation.dispatch("start", {});
   });
   await expect.poll(() => page.evaluate(async () => (await globalThis.neurodeskAutomation.dispatch("snapshot")).state)).toBe("succeeded");
-  const report = await page.evaluate(async () => (await globalThis.neurodeskAutomation.dispatch("snapshot")).report);
-  expect(report.provenance.scientificProcessing).toBe(false);
-  expect(report.artifacts.output.sha256).toBe(createHash("sha256").update(bytes).digest("hex"));
   const download = page.waitForEvent("download");
-  await page.evaluate(() => globalThis.neurodeskAutomation.dispatch("download", { artifactId: "output" }));
-  expect(readFileSync(await (await download).path())).toEqual(bytes);
-});
-
-test("app boots", async ({ page }) => {
-  await page.goto("/");
-  await expect(page.locator("#viewer")).toBeVisible();
+  await page.evaluate(() => globalThis.neurodeskAutomation.dispatch("download", { artifactId: "workflow" }));
+  expect(JSON.parse(readFileSync(await (await download).path(), "utf8"))).toEqual(template);
 });
 
 test("shared app bar owns information actions and theme", async ({ page }) => {
   await page.goto("/");
   const bar = page.locator(".nd-app-bar:visible");
   await expect(bar).toHaveCount(1);
-  await expect(page.locator("#controls > #aboutBtn")).toBeHidden();
   await bar.getByRole("button", { name: "About", exact: true }).click();
   await expect(page.locator("#infoDialog")).toBeVisible();
   await page.locator("#infoDialog").getByRole("button", { name: "Close" }).click();
@@ -43,84 +103,5 @@ test("shared app bar owns information actions and theme", async ({ page }) => {
 
 test("page is cross-origin isolated (COOP/COEP active)", async ({ page }) => {
   await page.goto("/");
-  // Threaded ONNX Runtime needs this; asserts the shared isolation policy worked.
-  const isolated = await page.evaluate(() => self.crossOriginIsolated === true);
-  expect(isolated).toBe(true);
-});
-
-
-for (const example of examples) {
-  test(`example ${example.id} runs the demonstration and downloads its unchanged image`, async ({ page }) => {
-    test.setTimeout(120000);
-    await page.goto("/");
-    const responsePromise = page.waitForResponse(response => {
-      let request = response.request();
-      while (request.redirectedFrom()) request = request.redirectedFrom();
-      return request.url() === example.files[0].url && response.ok();
-    });
-    await page.locator("select[data-neurodesk-example]").selectOption(example.id);
-    await expect(page.locator("#fileInfo")).toContainText(example.files[0].name, { timeout: 120000 });
-    await expect(page.locator("#runButton")).toBeEnabled();
-    const inputBytes = await (await responsePromise).body();
-    expect(inputBytes.length).toBeGreaterThan(0);
-    await page.locator("#runButton").click();
-    await expect(page.locator("#statusText")).toHaveText("Input copy ready · no scientific processing applied");
-    const downloadPromise = page.waitForEvent("download");
-    await page.locator("#resultList").getByRole("button", { name: "Download", exact: true }).click();
-    const download = await downloadPromise;
-    expect(download.suggestedFilename()).toBe(example.files[0].name);
-    expect(readFileSync(await download.path())).toEqual(inputBytes);
-  });
-}
-
-for (const failure of ["download", "empty image"]) {
-  test(`a failed ${failure} can retry the same example`, async ({ page }) => {
-    const example = examples[0];
-    let attempts = 0;
-    await page.route(example.files[0].url, route => {
-      attempts++;
-      return attempts === 1
-        ? route.fulfill({ status: failure === "download" ? 503 : 200, body: "" })
-        : route.fulfill({ body: "sample image bytes" });
-    });
-    await page.goto("/");
-    const picker = page.getByRole("combobox", { name: "Input", exact: true });
-    await picker.selectOption(example.id);
-    await expect(page.locator("[data-neurodesk-examples]")).toHaveAttribute("data-example-state", "error");
-    await expect(page.locator("#runButton")).toBeDisabled();
-    await expect(picker).toBeEnabled();
-    await picker.selectOption(example.id);
-    await expect(page.locator("[data-neurodesk-examples]")).toHaveAttribute("data-example-state", "ready");
-    await expect(page.locator("#runButton")).toBeEnabled();
-    expect(attempts).toBe(2);
-  });
-}
-
-test("cancelling during image reading prevents a late commit and permits retry", async ({ page }) => {
-  const example = examples[0];
-  await page.route(example.files[0].url, route => route.fulfill({ body: "sample image bytes" }));
-  await page.goto("/");
-  await page.evaluate(() => {
-    const read = File.prototype.arrayBuffer;
-    File.prototype.arrayBuffer = function () {
-      const file = this;
-      return new Promise((resolve, reject) => {
-        window.finishExampleRead = () => {
-          File.prototype.arrayBuffer = read;
-          read.call(file).then(resolve, reject);
-        };
-      });
-    };
-  });
-  const picker = page.getByRole("combobox", { name: "Input", exact: true });
-  await picker.selectOption(example.id);
-  await page.waitForFunction(() => typeof window.finishExampleRead === "function");
-  await page.getByRole("button", { name: "Cancel example download", exact: true }).click();
-  await page.evaluate(() => window.finishExampleRead());
-  await expect(page.locator("[data-neurodesk-examples]")).toHaveAttribute("data-example-state", "cancelled");
-  await expect(page.locator("#fileInfo")).toBeHidden();
-  await expect(page.locator("#runButton")).toBeDisabled();
-  await expect(picker).toBeEnabled();
-  await picker.selectOption(example.id);
-  await expect(page.locator("[data-neurodesk-examples]")).toHaveAttribute("data-example-state", "ready");
+  expect(await page.evaluate(() => self.crossOriginIsolated === true)).toBe(true);
 });

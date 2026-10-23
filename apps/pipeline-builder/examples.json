@@ -1,14 +1,16 @@
 [
   {
-    "id": "t1",
-    "label": "T1-weighted head MRI",
-    "description": "A T1-weighted head MRI for the scaffold’s pass-through demonstration.",
-    "expectedResult": "Prepare and download an unchanged copy; replace this demonstration with the app’s scientific method.",
+    "id": "t1-segmentation",
+    "label": "T1 segmentation pipeline",
+    "description": "A three-step workflow: N4 bias correction, brain extraction and SynthSeg segmentation of a T1-weighted head MRI, with the sample T1 it was written for.",
+    "expectedResult": "The workflow validates with three steps, one input t1 and two outputs, brain and labels, and can be exported as t1-segmentation.workflow.json.",
     "files": [
       {
-        "role": "image",
+        "role": "t1",
         "name": "T1_head.nii.gz",
-        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/356a4adbce52cf9052d61ef90b14ba263e7c25e9/synthseg/validation/T1_head.nii.gz"
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/356a4adbce52cf9052d61ef90b14ba263e7c25e9/synthseg/validation/T1_head.nii.gz",
+        "sha256": "58220b40d179b7a93dd3ce231dd7afaa39989c75658b2b8e4c2f34abf8f16416",
+        "bytes": 5176902
       }
     ]
   }

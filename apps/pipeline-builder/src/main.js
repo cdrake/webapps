@@ -1,9 +1,8 @@
-// Canonical Neurodesk webapp entry. The interface is assembled entirely from
-// the shared workspace vocabulary; only the scientific logic is app-owned.
+// Pipeline builder: the workspace edits one NeuroFlow workflow document. The sidebar
+// adds and configures steps; the viewer area is a report of steps and workflow I/O.
 import "@neurodesk/webapp-components/styles/imaging-workspace.css";
 import { mountImagingWorkspace } from "@neurodesk/webapp-components/core/mount-imaging-workspace";
 import {
-  createResultList,
   bindFileDrop,
   createInfoDialog,
   createConsole,
@@ -14,42 +13,39 @@ import {
 } from "@neurodesk/webapp-components/ui";
 import { downloadFile } from "@neurodesk/webapp-components/file-io";
 import { registerAppAutomation } from "@neurodesk/webapp-components/automation";
+import wasmUrl from "../vendor/neuroflow/neuroflow_wasm_bg.wasm?url";
 import { APP } from "./config.js";
+import { createValidator, loadCatalog } from "./validator.js";
+import {
+  addStep, bindInput, bindNewWorkflowInput, compatibleSources, emptyWorkflow, issuesByStep,
+  outputKey, parseWorkflow, preferredSource, removeStep, serializeWorkflow, setParameter, setWorkflowOutput,
+  toolCatalog, toolFields, toolLabel,
+} from "./model.js";
 import examples from "../examples.json";
 
 const $ = (id) => document.getElementById(id);
 
-// 1. Shell: shared app bar, sidebar, viewer and status regions.
 const workspace = mountImagingWorkspace({
   controls: "#controls",
   viewer: "#viewer",
   status: "#status",
-  title: APP.id,
-  subtitle: "Browser-native Neurodesk webapp",
+  title: "Pipeline builder",
+  subtitle: "Chain apps into a NeuroFlow workflow",
   controlsContract: { about: "#aboutBtn", privacy: "#privacyBtn" },
 });
-
-// 2. Viewer chrome: layout tabs above the canvas, technical log below it.
-const toolbar = createViewerToolbar({ window: false, overlay: false, colormap: false, download: false, screenshot: false });
+const toolbar = createViewerToolbar({
+  views: [{ id: "steps", label: "Workflow", active: true }],
+  window: false, overlay: false, colormap: false, download: false, screenshot: false,
+});
 $("viewer").prepend(toolbar);
 const log = createConsole({ id: "technicalLog", resizable: true });
 $("viewer").append(log);
-// Status footer: message, progress, elapsed time and the × that shows only while cancellable.
 const progress = new ProgressManager();
 bindInfoTooltips(document);
 
-// 3. Information dialog: About and Privacy open from the shared app bar; Cite comes from the registry.
 const info = createInfoDialog();
-$("aboutBtn").onclick = () => info.open(`About ${APP.id}`, $("aboutContent"));
+$("aboutBtn").onclick = () => info.open("About Pipeline builder", $("aboutContent"));
 $("privacyBtn").onclick = () => info.open("Privacy", $("privacyContent"));
-
-// 4. Workflow: input → run → results. Replace the bodies with the science.
-const results = createResultList({
-  element: $("resultList"),
-  onView: (_stage, result) => status(`${result.file.name} · unchanged input copy`),
-  onDownload: (_stage, result) => downloadFile(result.file),
-});
-let source = null;
 
 function status(message, error = false) {
   $("statusText").textContent = message;
@@ -57,101 +53,268 @@ function status(message, error = false) {
   log.log(message, error ? "error" : "info");
 }
 
-let loading = null;
-async function loadFiles(filesPromise, signal) {
-  if (loading) throw new Error("An image is still loading. Wait or cancel, then retry.");
-  const controller = new AbortController();
-  const abort = () => controller.abort();
-  signal?.throwIfAborted();
-  signal?.addEventListener("abort", abort, { once: true });
-  loading = controller;
-  $("imageInput").disabled = true;
-  exampleControl.setDisabled(true);
-  $("runButton").disabled = true;
-  progress.begin("Loading image…");
-  status("Loading image…");
-  try {
-    const files = await filesPromise;
-    controller.signal.throwIfAborted();
-    if (files.length !== 1 || !files[0].size) throw new Error("Choose one nonempty image for the pass-through demonstration.");
-    await files[0].arrayBuffer();
-    controller.signal.throwIfAborted();
-    source = files[0];
-    results.render();
-    $("outputSection").open = false;
-    progress.setProgress(0);
-    $("fileInfo").hidden = false;
-    $("fileInfo").textContent = source.name;
-    $("dropZone").classList.add("has-files");
-    $("emptyState").hidden = true;
-    status(`${source.name} loaded`);
-  } finally {
-    signal?.removeEventListener("abort", abort);
-    loading = null;
-    $("imageInput").disabled = false;
-    exampleControl.setDisabled(false);
-    $("runButton").disabled = !source;
-    progress.stopTimer();
-    progress.setCancellable(false);
+function el(tag, props = {}, ...children) {
+  const node = Object.assign(document.createElement(tag), props);
+  node.append(...children.filter(child => child != null));
+  return node;
+}
+
+const catalogBase = new URL(`${import.meta.env.BASE_URL}neuroflow/`, document.baseURI);
+let tools = [];
+let toolsById = new Map();
+let validate = () => ({ ok: false, issues: [] });
+let doc = emptyWorkflow();
+let selected = null;
+let validation = { ok: true, issues: [] };
+
+function setDoc(next, { select = selected } = {}) {
+  doc = next;
+  selected = select && doc.steps[select] ? select : null;
+  render();
+}
+
+function render() {
+  validation = validate(doc);
+  const steps = Object.entries(doc.steps);
+  const byStep = issuesByStep(validation.issues ?? []);
+  const errors = (validation.issues ?? []).filter(issue => issue.severity === "error");
+  $("workflowId").value = doc.id ?? "";
+  $("workflowDescription").value = doc.description ?? "";
+  $("emptyState").hidden = steps.length > 0;
+  $("workflowReport").hidden = steps.length === 0;
+
+  $("stepRows").replaceChildren(...steps.map(([id, step]) => {
+    const tool = toolsById.get(step.tool);
+    const name = el("td", { role: "button", tabIndex: 0, textContent: id, title: `Edit ${id}` });
+    name.setAttribute("aria-pressed", String(id === selected));
+    name.onclick = () => setDoc(doc, { select: id });
+    name.onkeydown = event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); name.click(); } };
+    const reads = Object.values(step.inputs ?? {}).map(binding => binding.ref).filter(Boolean);
+    const stepErrors = (byStep.get(id) ?? []).filter(issue => issue.severity === "error");
+    return el("tr", {},
+      name,
+      el("td", { textContent: tool ? toolLabel(tool) : step.tool }),
+      el("td", { textContent: reads.join(", ") || "—" }),
+      el("td", { textContent: stepErrors.map(issue => issue.message).join(" ") || "None" }));
+  }));
+
+  const rows = [
+    ...Object.entries(doc.inputs ?? {}).map(([name, input]) => [name, "Input", input.type, input.formats ? `Supplied as ${input.formats.join(" or ")}` : "Supplied at run time"]),
+    ...Object.entries(doc.outputs ?? {}).map(([name, output]) => [name, "Output", output.type, output.ref]),
+  ];
+  $("ioRows").replaceChildren(...rows.map(cells => el("tr", {}, ...cells.map(text => el("td", { textContent: text })))));
+
+  // Step problems show in the table; workflow-level ones (description, outputs) here.
+  const general = (byStep.get("") ?? []).filter(issue => issue.severity === "error").map(issue => issue.message);
+  const count = `${errors.length} problem${errors.length === 1 ? "" : "s"} to fix before export.`;
+  const summary = steps.length === 0
+    ? "Add a step to start a workflow."
+    : errors.length ? [count, ...general].join(" ") : `Valid · ${steps.length} step${steps.length === 1 ? "" : "s"}.`;
+  $("validationSummary").textContent = summary;
+  $("validationSummary").classList.toggle("error", errors.length > 0);
+  $("runButton").disabled = steps.length === 0 || !validation.ok;
+  renderStep();
+}
+
+function sourceSelect(id, name, decl, tool) {
+  const select = el("select", { id: `bind-${name}` });
+  const current = doc.steps[id].inputs?.[name]?.ref ?? "";
+  select.append(el("option", { value: "", textContent: decl.optional ? "Not used" : "Choose a source" }));
+  for (const source of compatibleSources(doc, id, name, tools, validate)) {
+    select.append(el("option", { value: source.ref, textContent: source.label }));
   }
+  select.append(el("option", { value: "new", textContent: "New workflow input" }));
+  if (current && ![...select.options].some(option => option.value === current)) {
+    select.append(el("option", { value: current, textContent: `${current} (incompatible)` }));
+  }
+  select.value = current;
+  select.onchange = () => setDoc(select.value === "new"
+    ? bindNewWorkflowInput(doc, id, name, tool)
+    : bindInput(doc, id, name, select.value || null));
+  return select;
 }
-function importFiles(files) {
-  exampleControl.cancel();
-  return loadFiles(files).catch(error => status(
-    error.name === "AbortError" ? "Loading cancelled" : error.message,
-    error.name !== "AbortError",
-  ));
+
+function parameterField(id, name, decl, tool) {
+  const current = doc.steps[id].inputs?.[name]?.constant ?? decl.default;
+  const label = name.replace(/^param_/, "");
+  let control;
+  if (decl.enum) {
+    control = el("select", {}, ...decl.enum.map(value => el("option", { value: String(value), textContent: String(value) })));
+    control.value = String(current ?? "");
+    control.onchange = () => setDoc(setParameter(doc, id, name, decl.enum.find(value => String(value) === control.value), tool));
+  } else if (decl.type === "core:boolean") {
+    control = el("input", { type: "checkbox", checked: Boolean(current) });
+    control.onchange = () => setDoc(setParameter(doc, id, name, control.checked, tool));
+    return el("label", { className: "nd-check" }, control, ` ${label}`);
+  } else if (decl.type === "core:number" || decl.type === "core:integer") {
+    control = el("input", { type: "number", value: current ?? "" });
+    if (decl.min !== undefined) control.min = decl.min;
+    if (decl.max !== undefined) control.max = decl.max;
+    control.onchange = () => setDoc(setParameter(doc, id, name, control.value === "" ? undefined : Number(control.value), tool));
+  } else {
+    control = el("input", { type: "text", value: current ?? "" });
+    control.onchange = () => setDoc(setParameter(doc, id, name, control.value, tool));
+  }
+  control.id = `param-${name}`;
+  const text = el("label", { htmlFor: control.id }, label);
+  if (decl.description) text.title = decl.description;
+  return el("div", { className: "nd-field" }, text, control);
 }
-$("cancelButton").onclick = () => {
-  exampleControl.cancel();
-  loading?.abort();
+
+function renderStep() {
+  const editor = $("stepEditor");
+  const step = selected && doc.steps[selected];
+  const tool = step && toolsById.get(step.tool);
+  $("stepHint").hidden = Boolean(step);
+  if (!step) return editor.replaceChildren();
+  const id = selected;
+  const fields = tool ? toolFields(tool) : { data: [], parameters: [] };
+  const parts = [el("p", { className: "nd-hint", textContent: `${id} · ${tool ? toolLabel(tool) : `${step.tool} is not in the catalog`}` })];
+  for (const [name, decl] of fields.data) {
+    const select = sourceSelect(id, name, decl, tool);
+    parts.push(el("div", { className: "nd-field" }, el("label", { htmlFor: select.id, title: decl.description ?? "" }, name.replace(/^input_/, "")), select));
+  }
+  if (fields.parameters.length) {
+    parts.push(el("details", { className: "nd-sidebar-section" },
+      el("summary", { className: "nd-section-title", textContent: "Parameters" }),
+      el("div", { className: "nd-section-content" }, ...fields.parameters.map(([name, decl]) => parameterField(id, name, decl, tool)))));
+  }
+  if (fields.engine?.enum?.length > 1) parts.push(parameterField(id, "engine", fields.engine, tool));
+  for (const name of Object.keys(tool?.outputs ?? {})) {
+    const box = el("input", { type: "checkbox", checked: Boolean(outputKey(doc, id, name)) });
+    box.onchange = () => setDoc(setWorkflowOutput(doc, id, name, box.checked, tool));
+    parts.push(el("label", { className: "nd-check" }, box, ` Workflow output: ${name.replace(/^output_/, "")}`));
+  }
+  const remove = el("button", { type: "button", className: "nd-btn nd-btn-secondary", textContent: "Remove step" });
+  remove.onclick = () => { setDoc(removeStep(doc, id)); status(`Removed ${id}`); };
+  parts.push(remove);
+  editor.replaceChildren(...parts);
+  $("stepSection").open = true;
+}
+
+/** Bind each required input to its preferred compatible source, else a new workflow input. */
+function autoBind(next, id) {
+  const tool = toolsById.get(next.steps[id].tool);
+  for (const [name, decl] of toolFields(tool).data) {
+    if (decl.optional) continue;
+    const source = preferredSource(compatibleSources(next, id, name, tools, validate), name, decl);
+    next = source ? bindInput(next, id, name, source.ref) : bindNewWorkflowInput(next, id, name, tool);
+  }
+  return next;
+}
+
+$("addStepButton").onclick = () => {
+  const tool = toolsById.get($("toolSelect").value);
+  if (!tool) return;
+  const added = addStep(doc, tool);
+  setDoc(autoBind(added.doc, added.stepId), { select: added.stepId });
+  status(`Added ${added.stepId}: ${toolLabel(tool)}`);
 };
-$("imageInput").addEventListener("change", (event) => {
+$("workflowId").onchange = () => setDoc({ ...doc, id: $("workflowId").value.trim() });
+$("workflowDescription").onchange = () => setDoc({ ...doc, description: $("workflowDescription").value.trim() });
+$("newButton").onclick = () => {
+  exampleControl.reset();
+  $("fileInfo").hidden = true;
+  setDoc(emptyWorkflow(), { select: null });
+  status("New workflow");
+};
+
+function openWorkflow(next, label) {
+  setDoc(next, { select: null });
+  $("fileInfo").hidden = false;
+  $("fileInfo").textContent = label;
+  for (const issue of validation.issues ?? []) log.log(`${issue.path || "workflow"}: ${issue.message}`, issue.severity === "error" ? "error" : "warning");
+  status(validation.ok ? `${label} opened` : `${label} opened with problems; see the Issues column`, !validation.ok);
+}
+
+async function readWorkflowFile(file) {
+  const next = parseWorkflow(await file.text());
+  openWorkflow(next, file.name);
+  return next;
+}
+function importFiles(filesPromise) {
+  exampleControl.cancel();
+  return Promise.resolve(filesPromise).then(files => {
+    if (files.length !== 1) throw new Error("Choose one .workflow.json file.");
+    return readWorkflowFile(files[0]);
+  }).catch(error => status(error.message, true));
+}
+$("workflowInput").addEventListener("change", (event) => {
   const files = Array.from(event.target.files);
   event.target.value = "";
-  if (files.length) void importFiles(Promise.resolve(files));
+  if (files.length) void importFiles(files);
 });
 bindFileDrop($("dropZone"), importFiles);
+
+// An example is a shipped template workflow plus the sample image it was written for.
 const exampleControl = createExampleSelector({
   examples,
   onStatus: status,
-  onLoad: async (_example, { fetchFiles, assertCurrent, signal }) => {
-    const files = await fetchFiles();
+  onLoad: async (example, { fetchFiles, assertCurrent, signal }) => {
+    const response = await fetch(new URL(`workflows/${example.id}.workflow.json`, catalogBase), { signal });
+    if (!response.ok) throw new Error(`Template ${example.id}: HTTP ${response.status}`);
+    const next = parseWorkflow(await response.text());
+    const [sample] = await fetchFiles();
     assertCurrent();
-    await loadFiles(Promise.resolve(files), signal);
-    assertCurrent();
+    if (!sample?.size) throw new Error("The sample image is empty.");
+    openWorkflow(next, `${example.id}.workflow.json · sample input ${sample.name}`);
   },
 });
 $("exampleControl").append(exampleControl);
 
-function copyInput(signal) {
-  signal?.throwIfAborted();
-  if (!source || loading) throw new Error("Load an image before copying it.");
-  // Replace this explicit pass-through demonstration with the app's method.
-  results.render({ output: { description: "Unchanged input copy", file: source } });
-  $("outputSection").open = true;
-  progress.end("Input copy ready");
-  status("Input copy ready · no scientific processing applied");
-  return {
-    artifacts: [{ role: "output", file: source }],
-    provenance: { method: "unchanged-input-copy", scientificProcessing: false },
-  };
+function exportFile() {
+  const name = `${(doc.id ?? "workflow").split("/").pop() || "workflow"}.workflow.json`;
+  return new File([serializeWorkflow(doc)], name, { type: "application/json" });
 }
-$("runButton").addEventListener("click", () => {
-  if (source && !loading) copyInput();
-});
+$("runButton").onclick = () => {
+  if (!validation.ok) return;
+  downloadFile(exportFile());
+  status(`Exported ${exportFile().name}`);
+};
+
+function setReady(ready) {
+  for (const id of ["toolSelect", "addStepButton", "workflowInput", "newButton"]) $(id).disabled = !ready;
+  exampleControl.setDisabled(!ready);
+}
+
+async function start() {
+  setReady(false);
+  progress.begin("Loading the tool catalog…", { cancellable: false });
+  try {
+    ({ tools } = await loadCatalog(catalogBase));
+    toolsById = new Map(tools.map(tool => [tool.id, tool]));
+    validate = await createValidator(tools, wasmUrl);
+    $("toolSelect").replaceChildren(...toolCatalog(tools).map(group => el("optgroup", { label: group.title },
+      ...group.tools.map(tool => el("option", { value: tool.id, textContent: toolLabel(tool) })))));
+    setReady(true);
+    render();
+    progress.end("Catalog ready");
+    status(`${tools.length} operations from the Neurodesk catalog`);
+  } catch (error) {
+    progress.end("Catalog unavailable", { success: false });
+    status(`The tool catalog could not load: ${error.message}`, true);
+  }
+}
+const ready = start();
+
 registerAppAutomation({
   app: APP.id,
   operations: {
-    "copy-input": async ({ inputs, signal }) => {
-      await loadFiles(Promise.resolve(inputs.image), signal);
-      return copyInput(signal);
+    validate: async ({ inputs, signal }) => {
+      await ready;
+      signal?.throwIfAborted();
+      const [file] = inputs.workflow;
+      await readWorkflowFile(file);
+      const errors = (validation.issues ?? []).filter(issue => issue.severity === "error");
+      if (errors.length) throw new Error(errors.map(issue => `${issue.path || "workflow"}: ${issue.message}`).join("\n"));
+      const report = new File([`${JSON.stringify(validation, null, 2)}\n`], "validation.json", { type: "application/json" });
+      return {
+        artifacts: [{ role: "workflow", file: exportFile() }, { role: "validation", file: report }],
+        provenance: { method: "neuroflow-validate", catalogTools: tools.length, scientificProcessing: false },
+      };
     },
   },
 });
-window.addEventListener("pagehide", () => {
-  exampleControl.destroy();
-  loading?.abort();
-});
+window.addEventListener("pagehide", () => exampleControl.destroy());
 
-export default Object.freeze({ workspace, toolbar, log, info, results });
+export default Object.freeze({ workspace, toolbar, log, info });
