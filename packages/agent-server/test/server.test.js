@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { request } from 'node:http';
+import { connect } from 'node:net';
 import { after, before, test } from 'node:test';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
@@ -76,4 +77,28 @@ test('the status page and /mcp answer only to this server’s own host names', a
   assert.match(own.body, /mcp endpoint: http:\/\/127\.0\.0\.1:\d+\/mcp/);
   assert.equal((await get('/', 'rebound.example')).status, 403);
   assert.equal((await get('/mcp', 'rebound.example')).status, 403);
+});
+
+/** Writes `text` to the server as it is and resolves with the status line it answers. */
+function raw(text) {
+  return new Promise((resolve, reject) => {
+    const socket = connect(server.port, '127.0.0.1', () => socket.write(text));
+    socket.once('data', data => {
+      resolve(data.toString().split('\r\n')[0]);
+      socket.destroy();
+    });
+    socket.once('error', reject);
+  });
+}
+
+test('a malformed request or frame is refused without stopping the server', { timeout: 5000 }, async () => {
+  const host = `127.0.0.1:${server.port}`;
+  assert.equal(await raw(`GET http://[ HTTP/1.1\r\nHost: ${host}\r\n\r\n`), 'HTTP/1.1 404 Not Found');
+  const upgrade = 'Connection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n';
+  assert.equal(await raw(`GET http://[ HTTP/1.1\r\nHost: ${host}\r\n${upgrade}\r\n`), 'HTTP/1.1 404 Not Found');
+  const page = await openPage('https://webapps.neurodesk.org');
+  const closed = new Promise(resolve => page.once('close', resolve));
+  page.send(Buffer.from([0xff, 0xfe]), { binary: false });
+  assert.equal(await closed, 1007, 'a text frame that is not UTF-8 closes that socket');
+  assert.equal((await get('/', host)).status, 200);
 });
