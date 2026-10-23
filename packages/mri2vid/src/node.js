@@ -196,6 +196,7 @@ export async function encode({ inputs, output, parameters = {}, onProgress = () 
   const source = chooseSource(sources, settings.seriesUid);
   onProgress(`Loading ${source.label}`);
   const vol = await loadSource(source, { readBytes, convertDicom, mosaicReduce: settings.mosaicReduce });
+  if (vol.meta?.note) onProgress(vol.meta.note);
   onProgress(`Loaded ${vol.dims.join('x')}${vol.channels === 3 ? ' RGB' : ''}; encoding ${settings.orientation} at ${settings.fps} fps`);
   let reported = 0;
   const result = await encodeVolume(vol, settings, {

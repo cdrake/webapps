@@ -26,6 +26,11 @@
   },
   {
     "from": "apps/mri2vid/web/js/app.js",
+    "to": "../vendor/dcm2niix/index.jpeg.js",
+    "reason": "packages/mri2vid/scripts/stage-browser.mjs stages the @niivue/dcm2niix JPEG build in apps/mri2vid/web/vendor/dcm2niix before the app vendor, dev and build scripts run."
+  },
+  {
+    "from": "apps/mri2vid/web/js/app.js",
     "to": "../vendor/mri2vid/src/pipeline.js",
     "reason": "packages/mri2vid/scripts/stage-browser.mjs stages this shared browser module in apps/mri2vid/web/vendor/mri2vid before the app vendor, dev and build scripts run."
   },

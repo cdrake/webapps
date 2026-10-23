@@ -131,7 +131,7 @@ export async function readNifti(arrayBuffer, name = 'image.nii', { reduce = 'fir
   });
 }
 
-function volumeNote(total, used, reduce) {
+export function volumeNote(total, used, reduce) {
   if (used === 1) return `4D series (${total} volumes); using the first volume`;
   if (reduce === 'mean') return `4D series: mean across ${used} of ${total} volumes`;
   return `4D series: maximum intensity across ${used} of ${total} volumes`;

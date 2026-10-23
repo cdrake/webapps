@@ -9,7 +9,7 @@
 // slices in ascending order along the slice normal.
 
 import { makeVolume } from '../volume.js';
-import { readNifti } from './nifti.js';
+import { VOLUME_REDUCTIONS, readNifti, volumeNote } from './nifti.js';
 
 // ---- transfer syntaxes ----
 const TS_IMPLICIT_LE = '1.2.840.10008.1.2';
@@ -562,9 +562,30 @@ export function mosaicInfo(map) {
 // files: [{ name, buffer (ArrayBuffer) }].
 // convertDicom(files) runs dcm2niix on [{ name, bytes }] and resolves to its outputs as
 // [{ name, bytes }]; the web app and the command line each supply their own build.
-// mosaicReduce picks how a 4D series (a mosaic run, a time series) becomes one volume.
-export async function readDicomSeries(files, { convertDicom, mosaicReduce = 'first' }) {
+// mosaicReduce picks how a 4D series (a mosaic run, a time series) becomes one volume;
+// batchBytes bounds the input of one dcm2niix call on a mosaic run.
+export async function readDicomSeries(files, { convertDicom, mosaicReduce = 'first', batchBytes = MOSAIC_BATCH_BYTES }) {
   if (!files || files.length === 0) throw new DicomError('No DICOM files provided');
+  const reduce = VOLUME_REDUCTIONS.includes(mosaicReduce) ? mosaicReduce : 'first';
+  const nifti = isMosaic(files[0].buffer)
+    ? await readMosaicRun(files, reduce, convertDicom, batchBytes)
+    : await convertSeries(files, reduce, convertDicom);
+  const vol = dicomLayout(nifti, await seriesOrientation(files[0].buffer));
+  const [rows, cols, slices] = vol.dims;
+  vol.meta = { ...nifti.meta, source: 'dicom', rows, cols, slices };
+  return vol;
+}
+
+function isMosaic(buffer) {
+  try {
+    return Boolean(mosaicInfo(parseDicom(buffer, { headerOnly: true }).map));
+  } catch {
+    return false;
+  }
+}
+
+// Run dcm2niix on one series and read its first image, reduced to one volume.
+async function convertSeries(files, reduce, convertDicom) {
   // dcm2niix reads its inputs from one directory, so files from different folders that
   // share a name must not overwrite each other.
   const inputs = files.map((f, i) => ({ name: `${i}_${f.name.replaceAll('/', '_')}`, bytes: new Uint8Array(f.buffer) }));
@@ -573,11 +594,60 @@ export async function readDicomSeries(files, { convertDicom, mosaicReduce = 'fir
     .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
   if (!outputs.length) throw new DicomError('dcm2niix found no image in this series');
   const { bytes, name } = outputs[0];
-  const nifti = await readNifti(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), name, { reduce: mosaicReduce });
-  const vol = dicomLayout(nifti, await seriesOrientation(files[0].buffer));
-  const [rows, cols, slices] = vol.dims;
-  vol.meta = { ...nifti.meta, source: 'dicom', rows, cols, slices, outputs: outputs.length };
-  return vol;
+  const nifti = await readNifti(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), name, { reduce });
+  // dcm2niix splits a series it cannot stack into one volume, such as one holding
+  // several echoes; the video shows the first of them.
+  if (outputs.length > 1) {
+    const split = `dcm2niix split this series into ${outputs.length} images (for example one per echo); showing the first`;
+    nifti.meta = { ...nifti.meta, note: [split, nifti.meta.note].filter(Boolean).join('. ') };
+  }
+  return nifti;
+}
+
+// Each file of a Siemens mosaic run is a whole volume. Converting only the files a
+// reduction needs, a batch at a time, keeps a long run within the WASM heap.
+const MOSAIC_BATCH_BYTES = 256 * 1024 * 1024;
+
+async function readMosaicRun(files, reduce, convertDicom, batchBytes) {
+  // MRI2vid.py takes the run in file-name order.
+  const ordered = [...files].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+  if (reduce === 'first') {
+    const nifti = await convertSeries(ordered.slice(0, 1), reduce, convertDicom);
+    const note = ordered.length > 1 ? volumeNote(ordered.length, 1, reduce) : nifti.meta.note;
+    nifti.meta = { ...nifti.meta, volumes: ordered.length, used: 1, reduce, note };
+    return nifti;
+  }
+  const batches = [[]];
+  let bytes = 0;
+  for (const file of ordered) {
+    if (bytes + file.buffer.byteLength > batchBytes && batches.at(-1).length) {
+      batches.push([]);
+      bytes = 0;
+    }
+    batches.at(-1).push(file);
+    bytes += file.buffer.byteLength;
+  }
+  if (batches.length === 1) return convertSeries(ordered, reduce, convertDicom);
+  let result = null;
+  let sum = null;
+  let used = 0;
+  for (const batch of batches) {
+    const part = await convertSeries(batch, reduce, convertDicom);
+    if (!result) {
+      result = part;
+      sum = reduce === 'mean' ? Float64Array.from(part.data, (v) => v * part.meta.used) : null;
+    } else if (part.data.length !== result.data.length) {
+      throw new DicomError('The volumes of this mosaic run differ in size');
+    } else if (sum) {
+      for (let i = 0; i < sum.length; i++) sum[i] += part.data[i] * part.meta.used;
+    } else {
+      for (let i = 0; i < part.data.length; i++) if (part.data[i] > result.data[i]) result.data[i] = part.data[i];
+    }
+    used += part.meta.used;
+  }
+  if (sum) for (let i = 0; i < sum.length; i++) result.data[i] = sum[i] / used;
+  result.meta = { ...result.meta, volumes: ordered.length, used, reduce, note: volumeNote(ordered.length, used, reduce) };
+  return result;
 }
 
 // The row and column directions (LPS) of a series' first frame, null without geometry.
@@ -589,18 +659,19 @@ async function seriesOrientation(buffer) {
   return iop && iop.length === 6 && iop.every(Number.isFinite) ? iop : null;
 }
 
+// Without an orientation dcm2niix cannot reorient, so it stores the columns along i
+// and the rows along j, bottom row first, with an identity affine.
+const STORED_LAYOUT = { perm: [1, 0, 2], flip: [true, false, false] };
+
 // dcm2niix stores columns along i and rows along j, flipped, and may reverse the slice
 // order; which of these it does depends on the orientation. Find, for each axis of the
 // DICOM layout, the NIfTI axis that runs the same way, from the NIfTI affine (RAS) and
-// the DICOM orientation (LPS), and copy the voxels across.
-function dicomLayout(vol, iop) {
-  // dcm2niix assumes this orientation when a series has none.
-  const [rx, ry, rz, cx, cy, cz] = iop ?? [1, 0, 0, 0, 1, 0];
+// the DICOM orientation (LPS).
+function axesFromOrientation(A, [rx, ry, rz, cx, cy, cz]) {
   const normal = [ry * cz - rz * cy, rz * cx - rx * cz, rx * cy - ry * cx];
   const ras = ([x, y, z]) => [-x, -y, z];
   // Rows run along the column direction, columns along the row direction.
   const wanted = [ras([cx, cy, cz]), ras([rx, ry, rz]), ras(normal)];
-  const A = vol.affine;
   const axes = [0, 1, 2].map((a) => [A[a], A[4 + a], A[8 + a]]);
   const perm = [];
   const flip = [];
@@ -615,7 +686,13 @@ function dicomLayout(vol, iop) {
     flip.push(bestDot < 0);
   }
   if (new Set(perm).size !== 3) throw new DicomError('dcm2niix returned an image whose axes do not follow the DICOM orientation');
+  return { perm, flip };
+}
 
+// Copy dcm2niix's voxels into the DICOM [rows, cols, slices] layout.
+function dicomLayout(vol, iop) {
+  const A = vol.affine;
+  const { perm, flip } = iop ? axesFromOrientation(A, iop) : STORED_LAYOUT;
   const src = vol.dims;
   const dims = perm.map((a) => src[a]);
   const C = vol.channels;

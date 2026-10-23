@@ -122,6 +122,26 @@ if (have) {
     assertClose(vol.data, goldenFloat('reader_mosaic_first'), 'mosaic default');
   });
 
+  test('the first volume converts only the first file of the run', async () => {
+    const converted = [];
+    const counting = (inputs) => { converted.push(inputs.length); return convertDicom(inputs); };
+    const vol = await readDicomSeries(mosaicFiles(), { convertDicom: counting, mosaicReduce: 'first' });
+    assert.deepEqual(converted, [1]);
+    assert.equal(vol.meta.volumes, NV);
+    assert.match(vol.meta.note, /using the first volume/);
+  });
+
+  test('a run converted one file at a time reduces as it does in one call', async () => {
+    for (const reduce of ['mean', 'max']) {
+      const converted = [];
+      const counting = (inputs) => { converted.push(inputs.length); return convertDicom(inputs); };
+      const vol = await readDicomSeries(mosaicFiles(), { convertDicom: counting, mosaicReduce: reduce, batchBytes: 1 });
+      assert.deepEqual(converted, Array(NV).fill(1));
+      assertClose(vol.data, goldenFloat(`reader_mosaic_${reduce}`), `batched mosaic ${reduce}`);
+      assert.equal(vol.meta.used, NV);
+    }
+  });
+
   test('reports the reduction in meta and does not hold the whole 4D run', async () => {
     const vol = await readDicomSeries(mosaicFiles(), { convertDicom, mosaicReduce: 'mean' });
     assert.equal(vol.meta.slices, NS);
