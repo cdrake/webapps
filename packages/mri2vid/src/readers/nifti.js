@@ -39,7 +39,9 @@ function readTyped(view, off, count, datatype, littleEndian) {
 // How a 4D series (a run of timepoints or diffusion directions) becomes one 3D volume.
 export const VOLUME_REDUCTIONS = ['first', 'mean', 'max'];
 
-export async function readNifti(arrayBuffer, name = 'image.nii', { reduce = 'first' } = {}) {
+// `total`, a Float64Array of one volume, collects the sum for a mean that the caller
+// finishes across several files; data is then left at zero.
+export async function readNifti(arrayBuffer, name = 'image.nii', { reduce = 'first', total = null } = {}) {
   const buf = await maybeGunzip(arrayBuffer);
   const view = new DataView(buf);
   if (buf.byteLength < 352) throw new NiftiError('File too small to be a NIfTI-1 image');
@@ -107,7 +109,8 @@ export async function readNifti(arrayBuffer, name = 'image.nii', { reduce = 'fir
   const useScale = !(sclSlope === 1 && sclInter === 0);
 
   const data = new Float32Array(nVox);
-  const sum = reduce === 'mean' && volumes > 1 ? new Float64Array(nVox) : null;
+  if (total && total.length !== nVox) throw new NiftiError('NIfTI volume size differs from the running total');
+  const sum = reduce === 'mean' ? total ?? (volumes > 1 ? new Float64Array(nVox) : null) : null;
   for (let t = 0; t < volumes; t++) {
     const raw = readTyped(view, dataStart + t * nVox * bytesPer, nVox, datatype, littleEndian);
     // raw is in i-fastest disk order; transpose to [i,j,k] C-order.
@@ -124,7 +127,7 @@ export async function readNifti(arrayBuffer, name = 'image.nii', { reduce = 'fir
       }
     }
   }
-  if (sum) for (let i = 0; i < nVox; i++) data[i] = sum[i] / volumes;
+  if (sum && !total) for (let i = 0; i < nVox; i++) data[i] = sum[i] / volumes;
   return makeVolume({
     dims: [nx, ny, nz], channels: 1, data, affine, photometric: 'MONOCHROME2',
     meta: { source: 'nifti', name, volumes: nt, used: volumes, reduce: volumes > 1 ? reduce : 'first', note: is4D ? volumeNote(nt, volumes, reduce) : null },

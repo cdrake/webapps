@@ -567,25 +567,46 @@ export function mosaicInfo(map) {
 export async function readDicomSeries(files, { convertDicom, mosaicReduce = 'first', batchBytes = MOSAIC_BATCH_BYTES }) {
   if (!files || files.length === 0) throw new DicomError('No DICOM files provided');
   const reduce = VOLUME_REDUCTIONS.includes(mosaicReduce) ? mosaicReduce : 'first';
-  const nifti = isMosaic(files[0].buffer)
-    ? await readMosaicRun(files, reduce, convertDicom, batchBytes)
-    : await convertSeries(files, reduce, convertDicom);
-  const vol = dicomLayout(nifti, await seriesOrientation(files[0].buffer));
+  // MRI2vid.py takes a series in file-name order.
+  const ordered = [...files].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+  const mosaic = mosaicRun(ordered[0].buffer);
+  let nifti;
+  if (mosaic) {
+    nifti = await readMosaicRun(ordered, mosaic, reduce, convertDicom, batchBytes);
+  } else {
+    nifti = await convertSeries(files, reduce, convertDicom);
+    nifti.meta.note = joinNotes(splitNote(nifti.meta.images), nifti.meta.note);
+  }
+  const vol = dicomLayout(nifti, await seriesOrientation(ordered[0].buffer));
   const [rows, cols, slices] = vol.dims;
   vol.meta = { ...nifti.meta, source: 'dicom', rows, cols, slices };
   return vol;
 }
 
-function isMosaic(buffer) {
+// A mosaic file's tiling and timing; the files of one run share it. Null for any other file.
+function mosaicRun(buffer) {
   try {
-    return Boolean(mosaicInfo(parseDicom(buffer, { headerOnly: true }).map));
+    const { map } = parseDicom(buffer, { headerOnly: true });
+    const info = mosaicInfo(map);
+    if (!info) return null;
+    const echo = elNumber(map, T.EchoTime, null);
+    return { ...info, key: `${info.n} ${info.rows}x${info.cols} TE ${echo} ${elString(map, T.ImageType, '')}` };
   } catch {
-    return false;
+    return null;
   }
 }
 
-// Run dcm2niix on one series and read its first image, reduced to one volume.
-async function convertSeries(files, reduce, convertDicom) {
+const joinNotes = (...notes) => notes.filter(Boolean).join('. ') || null;
+
+// dcm2niix splits a series it cannot stack into one volume, such as one holding
+// several echoes; the video shows the first of them.
+const splitNote = (images) => (images > 1
+  ? `dcm2niix split this series into ${images} images (for example one per echo); showing the first`
+  : null);
+
+// Run dcm2niix on one series and read its first image, reduced to one volume;
+// meta.images counts the images dcm2niix made.
+async function convertSeries(files, reduce, convertDicom, total = null) {
   // dcm2niix reads its inputs from one directory, so files from different folders that
   // share a name must not overwrite each other.
   const inputs = files.map((f, i) => ({ name: `${i}_${f.name.replaceAll('/', '_')}`, bytes: new Uint8Array(f.buffer) }));
@@ -594,13 +615,8 @@ async function convertSeries(files, reduce, convertDicom) {
     .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
   if (!outputs.length) throw new DicomError('dcm2niix found no image in this series');
   const { bytes, name } = outputs[0];
-  const nifti = await readNifti(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), name, { reduce });
-  // dcm2niix splits a series it cannot stack into one volume, such as one holding
-  // several echoes; the video shows the first of them.
-  if (outputs.length > 1) {
-    const split = `dcm2niix split this series into ${outputs.length} images (for example one per echo); showing the first`;
-    nifti.meta = { ...nifti.meta, note: [split, nifti.meta.note].filter(Boolean).join('. ') };
-  }
+  const nifti = await readNifti(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), name, { reduce, total });
+  nifti.meta = { ...nifti.meta, images: outputs.length };
   return nifti;
 }
 
@@ -608,18 +624,24 @@ async function convertSeries(files, reduce, convertDicom) {
 // reduction needs, a batch at a time, keeps a long run within the WASM heap.
 const MOSAIC_BATCH_BYTES = 256 * 1024 * 1024;
 
-async function readMosaicRun(files, reduce, convertDicom, batchBytes) {
-  // MRI2vid.py takes the run in file-name order.
-  const ordered = [...files].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+async function readMosaicRun(ordered, first, reduce, convertDicom, batchBytes) {
+  // Only files tiled and timed like the first belong to its run; another echo or an
+  // ordinary image in the same series is left out rather than averaged in.
+  const run = ordered.filter((file, i) => i === 0 || mosaicRun(file.buffer)?.key === first.key);
+  const leftOut = ordered.length - run.length;
+  const leftOutNote = leftOut
+    ? `${leftOut} file(s) of this series are not part of the first mosaic run (for example another echo) and were left out`
+    : null;
   if (reduce === 'first') {
-    const nifti = await convertSeries(ordered.slice(0, 1), reduce, convertDicom);
-    const note = ordered.length > 1 ? volumeNote(ordered.length, 1, reduce) : nifti.meta.note;
-    nifti.meta = { ...nifti.meta, volumes: ordered.length, used: 1, reduce, note };
+    const nifti = await convertSeries(run.slice(0, 1), reduce, convertDicom);
+    const volumes = run.length > 1 ? volumeNote(run.length, 1, reduce) : nifti.meta.note;
+    const note = joinNotes(splitNote(nifti.meta.images), leftOutNote, volumes);
+    nifti.meta = { ...nifti.meta, volumes: run.length, used: 1, reduce, note };
     return nifti;
   }
   const batches = [[]];
   let bytes = 0;
-  for (const file of ordered) {
+  for (const file of run) {
     if (bytes + file.buffer.byteLength > batchBytes && batches.at(-1).length) {
       batches.push([]);
       bytes = 0;
@@ -627,26 +649,27 @@ async function readMosaicRun(files, reduce, convertDicom, batchBytes) {
     batches.at(-1).push(file);
     bytes += file.buffer.byteLength;
   }
-  if (batches.length === 1) return convertSeries(ordered, reduce, convertDicom);
+  // The mean keeps its float64 sum across batches, so batching cannot change a pixel.
+  const total = reduce === 'mean' ? new Float64Array(first.n * first.tileH * first.tileW) : null;
   let result = null;
-  let sum = null;
   let used = 0;
+  let images = 1;
   for (const batch of batches) {
-    const part = await convertSeries(batch, reduce, convertDicom);
+    const part = await convertSeries(batch, reduce, convertDicom, total);
+    images = Math.max(images, part.meta.images);
     if (!result) {
       result = part;
-      sum = reduce === 'mean' ? Float64Array.from(part.data, (v) => v * part.meta.used) : null;
-    } else if (part.data.length !== result.data.length) {
-      throw new DicomError('The volumes of this mosaic run differ in size');
-    } else if (sum) {
-      for (let i = 0; i < sum.length; i++) sum[i] += part.data[i] * part.meta.used;
-    } else {
+    } else if (part.dims.some((d, i) => d !== result.dims[i])) {
+      // Positions may differ: motion-corrected runs move each volume.
+      throw new DicomError('The volumes of this mosaic run differ in shape');
+    } else if (!total) {
       for (let i = 0; i < part.data.length; i++) if (part.data[i] > result.data[i]) result.data[i] = part.data[i];
     }
     used += part.meta.used;
   }
-  if (sum) for (let i = 0; i < sum.length; i++) result.data[i] = sum[i] / used;
-  result.meta = { ...result.meta, volumes: ordered.length, used, reduce, note: volumeNote(ordered.length, used, reduce) };
+  if (total) for (let i = 0; i < total.length; i++) result.data[i] = total[i] / used;
+  const note = joinNotes(splitNote(images), leftOutNote, volumeNote(run.length, used, reduce));
+  result.meta = { ...result.meta, volumes: run.length, used, reduce, note };
   return result;
 }
 

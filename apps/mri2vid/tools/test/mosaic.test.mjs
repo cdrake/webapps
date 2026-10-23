@@ -131,14 +131,34 @@ if (have) {
     assert.match(vol.meta.note, /using the first volume/);
   });
 
-  test('a run converted one file at a time reduces as it does in one call', async () => {
+  test('a run converted one file at a time reduces exactly as it does in one call', async () => {
     for (const reduce of ['mean', 'max']) {
       const converted = [];
       const counting = (inputs) => { converted.push(inputs.length); return convertDicom(inputs); };
+      const whole = await readDicomSeries(mosaicFiles(), { convertDicom, mosaicReduce: reduce });
       const vol = await readDicomSeries(mosaicFiles(), { convertDicom: counting, mosaicReduce: reduce, batchBytes: 1 });
       assert.deepEqual(converted, Array(NV).fill(1));
-      assertClose(vol.data, goldenFloat(`reader_mosaic_${reduce}`), `batched mosaic ${reduce}`);
+      assert.deepEqual(vol.data, whole.data, `batched mosaic ${reduce}`);
       assert.equal(vol.meta.used, NV);
+    }
+  });
+
+  test('a second echo in the series is left out of the run, not averaged in', async () => {
+    // Copies of the run whose EchoTime reads 44 instead of 22.
+    const secondEcho = mosaicFiles().map(({ name, buffer }) => {
+      const bytes = new Uint8Array(buffer.slice(0));
+      const at = Buffer.from(bytes.buffer).indexOf(Buffer.from([0x18, 0, 0x81, 0, 0x44, 0x53]));
+      assert.ok(at > 0, 'EchoTime not found');
+      bytes.set(Buffer.from('44'), at + 8);
+      return { name: name.replace('.dcm', '_e2.dcm'), buffer: bytes.buffer };
+    });
+    for (const reduce of ['mean', 'max']) {
+      const names = [];
+      const recording = (inputs) => { names.push(...inputs.map((f) => f.name)); return convertDicom(inputs); };
+      const vol = await readDicomSeries([...mosaicFiles(), ...secondEcho], { convertDicom: recording, mosaicReduce: reduce, batchBytes: 1 });
+      assert.ok(names.every((n) => !n.includes('_e2')), `${reduce}: a second-echo file was converted`);
+      assertClose(vol.data, goldenFloat(`reader_mosaic_${reduce}`), `two-echo mosaic ${reduce}`);
+      assert.match(vol.meta.note, new RegExp(`${NV} file\\(s\\) of this series are not part of the first mosaic run`));
     }
   });
 
