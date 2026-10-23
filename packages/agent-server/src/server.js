@@ -68,7 +68,7 @@ export function startAgentServer({
   }
 
   const server = createServer((req, res) => {
-    const { pathname } = new URL(req.url, 'http://localhost');
+    const pathname = pathOf(req);
     if (pathname === '/mcp') {
       mcp(req, res).catch(error => {
         log(`mcp request failed: ${error.message}`);
@@ -80,7 +80,7 @@ export function startAgentServer({
   });
 
   server.on('upgrade', (req, socket, head) => {
-    const { pathname } = new URL(req.url, 'http://localhost');
+    const pathname = pathOf(req);
     const origin = req.headers.origin;
     if (pathname !== '/app') return refuse(socket, 404, 'Not Found');
     if (!originAllowed(origin, host, allowedOrigins)) {
@@ -97,6 +97,8 @@ export function startAgentServer({
         const tabs = bridge.list();
         if (tabs.length !== before) log(`tab connected: ${tabs.map(entry => `${entry.id} "${entry.title}"`).join(', ')}`);
       });
+      // An invalid frame closes this socket; without a listener its error would end the process.
+      ws.on('error', error => log(`socket error: ${error.message}`));
       ws.on('close', () => {
         const before = bridge.list().length;
         bridge.detach(tab);
@@ -126,6 +128,11 @@ export function startAgentServer({
     },
   };
   return running;
+}
+
+/** The request's path, or null when its target is not a URL, which no route matches. */
+function pathOf(req) {
+  try { return new URL(req.url, 'http://localhost').pathname; } catch { return null; }
 }
 
 function send(res, code, text) {
