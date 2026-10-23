@@ -53,7 +53,8 @@ Measured on the full-brain ds005134 sub-01 DWI (`sub-01_dir-AP_run-001_dwi`, 116
 | Longest main-thread task | 9040 ms | 169 ms |
 | Time | 19.5 s | 17.6 s |
 
-The renderer peak is `VmHWM` after `clear_refs` was reset when the image was loaded.
+Each browser was started with Playwright's `launchServer`; the renderer peak is `VmHWM` in `/proc/<pid>/status`, read after the run, with `clear_refs` reset to 5 when the image was loaded, and the sum is the largest total of `VmRSS` over the browser's processes, sampled every 25 ms.
+The peaks change by about 100 MB from run to run (two runs before: 3376 and 3475 MB; two after: 3022 and 3011 MB).
 The output NIfTI was the same in both runs (sha256 `2127198e4f66a1c6eff7342a35a2214aa668dde6d97cd7cd6676e0615e98ddbd`).
 The peak now comes when the viewer reads the denoised image, while the page still holds the input (509 MB) for another run.
 Before, most of the 9 s task was gzip on the page's thread.

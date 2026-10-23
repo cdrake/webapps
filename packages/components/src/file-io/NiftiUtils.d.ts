@@ -89,6 +89,17 @@ export function createFloat32Nifti(data: ArrayLike<number>, sourceHeader: NiftiB
 export function createFloat64Nifti(data: ArrayLike<number>, sourceHeader: NiftiBytes, dims?: [number, number, number] | null): ArrayBuffer;
 export function createMaskNifti(maskData: ArrayLike<number | boolean>, sourceHeader: NiftiBytes, dims?: [number, number, number] | null): ArrayBuffer;
 export function createNiftiFromData(data: NiftiVoxelArray, sourceHeader: NiftiBytes, options?: NiftiFromDataOptions): ArrayBuffer;
+/**
+ * The file createNiftiFromData would write, with `data` a view of its own buffer to fill in place.
+ * `finish()` sets cal_max/cal_min from the voxels and returns the buffer. Null for a big-endian
+ * header or an unaligned data offset.
+ */
+export function allocateNifti<T extends NiftiVoxelArray>(
+  sourceHeader: NiftiBytes,
+  ArrayType: NiftiOutputConstructor<T>,
+  length: number,
+  options?: NiftiFromDataOptions,
+): { buffer: ArrayBuffer; data: T; finish(options?: NiftiFromDataOptions): ArrayBuffer } | null;
 export function createNiftiHeaderFromVolume(volume: unknown): ArrayBuffer;
 export function createNiftiFromVolume(volume: unknown): ArrayBuffer;
 /** Copy an uncompressed NIfTI-1 image without free-text fields or extensions. */

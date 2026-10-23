@@ -13,17 +13,25 @@ import {
   bindInfoTooltips,
   ProgressManager,
 } from "@neurodesk/webapp-components/ui";
-import { createNiftiFromData, decodeNiftiBuffer, downloadFile, extractNiftiHeader, readNiftiFrames } from "@neurodesk/webapp-components/file-io";
+import {
+  allocateNifti,
+  assertNiftiDecodedSize,
+  createNiftiFromData,
+  decodeNiftiBuffer,
+  downloadFile,
+  extractNiftiHeader,
+  readNiftiFrames,
+} from "@neurodesk/webapp-components/file-io";
 import { bidsDiffusionSeries, chooseBidsRun, chosenBidsRun } from "@neurodesk/webapp-components/file-io/bids";
 import { registerAppAutomation } from "@neurodesk/webapp-components/automation";
 import { readDiffusionSeries, runDcm2niix } from "@neurodesk/runtime-support/dcm2niix-client";
 import { loadDwidenoise } from "@neurodesk/dwidenoise";
 import wasmUrl from "@neurodesk/dwidenoise/wasm?url";
 import { APP } from "./config.js";
-import { gzipFile, sidecarText } from "@neurodesk/webapp-components/file-io/bids-derivatives";
+import { sidecarText } from "@neurodesk/webapp-components/file-io/bids-derivatives";
 import { parseBval } from "@neurodesk/dwi2trx/gradients";
 import { derivativeSidecar, outputNames } from "./pipeline.js";
-import { denoiseSeries } from "./pool.js";
+import { denoiseSeries, gzipInWorker } from "./pool.js";
 import examples from "../examples.json";
 
 const $ = (id) => document.getElementById(id);
@@ -37,7 +45,7 @@ const workspace = mountImagingWorkspace({
   controlsContract: { about: "#aboutBtn", privacy: "#privacyBtn" },
 });
 
-// The main thread uses the module for the group rule and the one solve per group.
+// The main thread uses the module only for the group rule; the workers do every solve.
 const patch2self = loadDwidenoise(fetch(wasmUrl));
 
 const SLICE_TYPES = {
@@ -139,6 +147,7 @@ async function loadFiles(filesPromise, signal, runIndex = null) {
     if (series.length !== 1) throw new Error(`Choose one DWI; this selection has ${series.length} images.`);
     const [{ image, bval, bvec, sidecar }] = series;
     if (!bval) throw new Error(`Choose the .bval file with ${image.name}: Patch2Self groups volumes by b-value.`);
+    await assertNiftiDecodedSize(image);
     const buffer = await decodeNiftiBuffer(await image.arrayBuffer());
     controller.signal.throwIfAborted();
     const frames = readNiftiFrames(buffer);
@@ -187,21 +196,25 @@ async function denoise(signal) {
     const nvox = input.dims[0] * input.dims[1] * input.dims[2];
     const sizes = groups.map((group) => group.length).join(" and ");
     status(`Denoising ${input.frames} volumes in ${groups.length} group${groups.length === 1 ? "" : "s"} of ${sizes}`);
-    let denoised = await denoiseSeries({
+    // The workers' results go straight into the output file's voxels: no second full copy.
+    const dims = [...input.dims, input.frames];
+    const file = allocateNifti(input.headerBytes, Float32Array, input.data.length, { dims });
+    const denoised = await denoiseSeries({
       data: input.data,
       nvox,
       frames: input.frames,
       groups,
-      solve: (gram, group) => p2s.solve(gram, group),
+      output: file?.data,
       signal: controller.signal,
-      onProgress: (fraction) => progress.setProgress(fraction),
+      onProgress: (fraction, text) => progress.setProgress(fraction, text),
     });
     controller.signal.throwIfAborted();
     const names = outputNames(input.name);
-    const bytes = createNiftiFromData(denoised, input.headerBytes, { dims: [...input.dims, input.frames] });
-    // Release the float32 result before compression, so the peak holds one fewer full copy.
-    denoised = null;
-    const image = await gzipFile(bytes, names.image);
+    progress.setIndeterminate("Compressing the denoised image…");
+    // The workers found the largest value, so the page does not read the image again for cal_max.
+    const niftiOptions = { dims, calMax: denoised.max };
+    const bytes = file ? file.finish(niftiOptions) : createNiftiFromData(denoised.data, input.headerBytes, niftiOptions);
+    const image = new File([await gzipInWorker(bytes, controller.signal)], names.image, { type: "application/gzip" });
     controller.signal.throwIfAborted();
     const rows = { image: { description: "Denoised image", file: image } };
     const artifacts = [{ role: "image", file: image }];
