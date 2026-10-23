@@ -81,7 +81,8 @@ export async function createMcpServer(service, { version, niivue }) {
     'Ask to let a retained viewer load a local file or an http(s) URL its run was not given. The person at the viewer approves '
     + 'unless the desktop pre-approves it. Returns grantedUrl, the address to load it by, until the session closes. '
     + 'NiiVue loading tools ask on their own; use this to approve sources ahead of time.',
-    session.extend({ path: z.string().min(1).optional(), url: z.httpUrl().optional() }),
+    // Every http(s) address a loading tool takes, loopback and IP addresses included.
+    session.extend({ path: z.string().min(1).optional(), url: z.url({ protocol: /^https?$/ }).optional() }),
     { ...startsRun, idempotentHint: true },
     async ({ sessionId, path, url }) => {
       if (Boolean(path) === Boolean(url)) throw new Error('Give exactly one of path or url');

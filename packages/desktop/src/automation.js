@@ -189,7 +189,8 @@ export function createAutomationService({ contracts, outputRoot, execute, native
      */
     async grantSource(sessionId, source) {
       // Refused before anyone is asked, like input URLs, so neither the dialog nor the run record shows a password.
-      const url = source.url && new URL(source.url);
+      // A relative address carries none.
+      const url = source.url && URL.parse(source.url);
       if (url && (url.username || url.password)) throw new Error('Source URLs must not contain credentials');
       const requestedAt = new Date().toISOString();
       let granted;

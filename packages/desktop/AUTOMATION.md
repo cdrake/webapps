@@ -165,7 +165,11 @@ viewer displays; it is not an export of image data.
 
 Commands are serialized per session. A command that
 exceeds 30 seconds closes that session. URL access and local directory mounts
-are scoped to the requesting window and supplied source tree.
+are scoped to the requesting window and supplied source tree. Each viewer
+window has its own browser session and its own address on the local server,
+which serves the app and that window's mounts only, so this holds for requests
+the app's service worker makes too. A request the window may not make counts
+against that window's run alone.
 
 ### NiiVue agent tools
 
@@ -186,13 +190,17 @@ the sources granted to the run. They also accept an absolute local path, a
 `file:` URL or another http(s) URL once it is approved. The desktop shows an
 **Allow**/**Deny** dialog on the viewer window and denies after 30 seconds
 without an answer. An approved URL is added to the window's grants. An
-approved file is served on its own through the local server. Approvals last
-until the session closes.
+approved file is served on its own at the window's address. Approvals last
+until the session closes and never reach another window. Another session's
+`grantedUrl` is a URL like any other, and a relative URL into `../_local/`
+must name one of this session's own files.
 
 To approve a source ahead of time, call
 `sessions_grant { sessionId, path }` or `sessions_grant { sessionId, url }`.
-A path must be absolute. The result's `grantedUrl` is the address to load the
-source by. `approval` says how it was approved:
+A path must be absolute. A URL may be any http(s) address the loading tools
+take, loopback and IP addresses included, but not one with a user name or
+password. The result's `grantedUrl` is the address to load the source by.
+`approval` says how it was approved:
 
 - `person`: someone clicked **Allow**.
 - `configured`: it is listed in `NEURODESK_APPROVED_SOURCES`.

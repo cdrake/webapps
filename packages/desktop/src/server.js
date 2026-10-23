@@ -12,6 +12,10 @@ export const mimeType = path => ({
   '.png': 'image/png', '.jpg': 'image/jpeg', '.woff2': 'font/woff2', '.txt': 'text/plain',
 }[extname(path)] || 'application/octet-stream');
 
+/**
+ * Serves the offline bundle, and the files and directories mounted through it, on its own loopback origin. The desktop
+ * starts one per viewer window, so a viewer's mounts are reachable only at that viewer's address.
+ */
 export async function startOfflineServer(root, { port = 0, resolveFile } = {}) {
   const mounts = new Map();
   const server = createServer(async (request, response) => {
@@ -85,10 +89,19 @@ export async function startOfflineServer(root, { port = 0, resolveFile } = {}) {
       mounts.set(token, { file });
       return `${origin}/_local/${token}/${encodeURIComponent(basename(file))}`;
     },
-    unmount(url) {
-      const source = new URL(url);
-      if (source.origin !== origin) throw new Error('Mount belongs to another server');
-      mounts.delete(source.pathname.split('/')[2]);
+    /** Whether `url` is this server's to answer, as part of the bundle or as a mount granted through this server. */
+    owns(value) {
+      const url = new URL(value);
+      if (url.origin !== origin) return false;
+      let pathname;
+      try { pathname = decodeURIComponent(url.pathname); } catch { return false; }
+      return !pathname.startsWith('/_local/') || mounts.has(pathname.split('/')[2]);
+    },
+    /** Stops answering, which ends every mount granted through this server. */
+    close() {
+      mounts.clear();
+      server.close();
+      server.closeAllConnections();
     },
   };
 }
