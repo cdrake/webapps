@@ -17,8 +17,8 @@ claude mcp add --transport http neurodesk http://127.0.0.1:4242/mcp
 
 Then open an app with `?agent`, for example
 `https://webapps.neurodesk.org/brain-extraction/?agent`, open an image and
-choose **Connect an agent**. The page says when it is connected and which tab
-ID it is.
+choose **Connect an agent**. The status bar at the bottom of the page says when
+it is connected and which tab ID it is.
 
 - **Chrome** asks to allow access to devices on your local network. Allow it.
 - **Firefox** connects without asking.

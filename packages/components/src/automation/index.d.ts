@@ -59,7 +59,6 @@ export type AutomationHandle = {
   agentConnection(options?: AgentConnectionOptions): AgentConnection;
 };
 export const agentServerPort: 4242;
-export function createAgentControl(connection: AgentConnection, options?: { document?: Document }): HTMLElement;
 export type DicomConverter = (files: File[], options: { signal?: AbortSignal; niftiOnly?: boolean }) => Promise<File[]>;
 export function registerAppAutomation(options: {
   app: string;

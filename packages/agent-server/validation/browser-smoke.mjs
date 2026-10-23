@@ -45,12 +45,14 @@ async function drive(name, type, options) {
     const page = await context.newPage();
     await page.goto(`${hostedOrigin}/brain-extraction/?agent=${server.port}`);
     await page.locator('#imageInput').setInputFiles(fixture);
+    // The connection reports in the status bar, so the image's own status must come first.
+    const status = page.locator('#statusText');
+    await status.filter({ hasText: 'ready to extract brain' }).waitFor({ timeout: 30000 });
     await page.getByRole('button', { name: 'Connect an agent' }).click();
-    const line = page.locator('.nd-agent-control [role=status]');
     try {
-      await line.filter({ hasText: 'Agent server connected' }).waitFor({ timeout: 10000 });
+      await status.filter({ hasText: 'Agent connected' }).waitFor({ timeout: 10000 });
     } catch {
-      return results.push(`${name} ${browser.version()}: did not connect: ${await line.textContent()}`);
+      return results.push(`${name} ${browser.version()}: did not connect: ${await status.textContent()}`);
     }
     const agent = new Client({ name: 'browser-smoke', version: '0.0.0' });
     await agent.connect(new StreamableHTTPClientTransport(new URL(server.url)));

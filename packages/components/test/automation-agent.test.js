@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
-import { registerAppAutomation, createNiivueAdapter, createAgentControl } from '../src/automation/index.js';
+import { registerAppAutomation, createNiivueAdapter } from '../src/automation/index.js';
+import { createAgentControl } from '../src/ui/agentControl.js';
 
 const contract = { schemaVersion: 2, app: 'test', appVersion: '0.1.20260928', defaultOperation: 'run', operations: {
   run: { mode: 'viewer', inputs: {}, parameters: {}, artifacts: {}, engines: ['browser'] },
@@ -80,29 +81,42 @@ test('an agent connection answers nv-mcp requests from the main viewer only afte
   connection.disconnect();
   assert.equal(socket.readyState, 3);
   assert.deepEqual(connection.status, { active: false, connected: false, id: null });
-  assert.deepEqual(seen.map(({ active, connected }) => [active, connected]), [[true, false], [true, false], [true, true], [true, false], [false, false]]);
+  assert.deepEqual(seen.map(({ active, connected }) => [active, connected]), [[true, false], [true, false], [true, true], [false, false], [false, false]],
+    'a deliberate disconnect never reads as waiting to reconnect');
   assert.equal(FakeSocket.sockets.length, 1, 'a disconnected page does not retry');
 });
 
-test('the agent control connects and disconnects on click and says what it is waiting for', async t => {
+test('the agent control reports its connection through the app status and keeps only its action and help', async t => {
   const { dom, registration, nv } = fixture(t);
   const connection = registration.agentConnection({ WebSocket: FakeSocket, storage: null });
-  const control = createAgentControl(connection, { document: dom.window.document });
-  const [button, line] = control.children;
+  const reported = [];
+  const control = createAgentControl(connection, { document: dom.window.document, onStatus: (message, error = false) => reported.push([message, error]) });
+  const button = control.querySelector('button');
+  const help = control.querySelector('.nd-viewer-label').textContent;
   assert.equal(button.textContent, 'Connect an agent');
+  assert.ok(help.length <= 90, help);
+  assert.match(control.querySelector('.nd-info-icon .nd-info-tooltip').textContent, /port 4242.*Chrome.*local network.*Safari cannot connect/);
+  assert.equal(control.querySelector('[role="status"], [aria-live]'), null, 'live status belongs to the status bar');
+  assert.deepEqual(reported, [], 'nothing is reported before the person acts');
   button.click();
   await settle();
-  assert.match(line.textContent, /Open an image first/);
+  assert.deepEqual(reported, [['Open an image first. There is no viewer for an agent yet.', true]]);
   assert.equal(FakeSocket.sockets.length, 0);
   registration.registerViewer('main', createNiivueAdapter(nv));
   button.click();
   await settle();
   await settle();
   assert.equal(button.textContent, 'Disconnect agent');
-  assert.match(line.textContent, /Waiting for neurodesk-mcp on port 4242.*Safari cannot connect/);
+  assert.equal(button.getAttribute('aria-pressed'), 'true');
   FakeSocket.sockets[0].open();
-  assert.match(line.textContent, /Agent server connected/);
   button.click();
   assert.equal(button.textContent, 'Connect an agent');
   assert.equal(FakeSocket.sockets[0].readyState, 3);
+  assert.deepEqual(reported.slice(1).map(([message, error]) => [message.replace(/tab \S+\./, 'tab <id>.'), error]), [
+    ['Waiting for neurodesk-mcp on port 4242, or for Chrome\'s local network prompt.', false],
+    ['Agent connected. This viewer is tab <id>.', false],
+    ['Agent disconnected.', false],
+  ]);
+  for (const [message] of reported) assert.ok(message.length <= 90, message);
+  assert.equal(control.querySelector('.nd-viewer-label').textContent, help, 'the toolbar help never changes');
 });

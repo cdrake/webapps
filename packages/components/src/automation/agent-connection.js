@@ -52,35 +52,11 @@ export function createAgentConnection(findViewer, { port = agentServerPort, WebS
     disconnect() {
       generation++;
       pending = undefined;
-      client?.detach();
+      // Cleared first, so the socket closing does not read as waiting to reconnect.
+      const closing = client;
       client = undefined;
+      closing?.detach();
       report(false);
     },
   };
-}
-
-/** A toolbar row with a button that connects or disconnects the agent, and a line saying where it stands. */
-export function createAgentControl(connection, { document: doc = globalThis.document } = {}) {
-  // Automation modules also load under Node, so this builds its elements without the browser-only UI helpers.
-  const button = Object.assign(doc.createElement('button'), { className: 'nd-btn nd-btn-sm', type: 'button' });
-  const line = Object.assign(doc.createElement('span'), { className: 'nd-viewer-label' });
-  line.setAttribute('role', 'status');
-  line.setAttribute('aria-live', 'polite');
-  const row = Object.assign(doc.createElement('div'), { className: 'nd-viewer-toolbar nd-agent-control' });
-  row.append(button, line);
-  const show = ({ active, connected, id }, error) => {
-    button.textContent = active ? 'Disconnect agent' : 'Connect an agent';
-    button.setAttribute('aria-pressed', String(active));
-    line.textContent = error ? error.message
-      : connected ? `Agent server connected. This viewer is tab ${id}.`
-        : active ? `Waiting for neurodesk-mcp on port ${connection.port}. In Chrome, allow local network access when asked. Safari cannot connect.`
-          : 'Lets an AI agent on this computer view and control this viewer through neurodesk-mcp.';
-  };
-  connection.watch(current => show(current));
-  button.addEventListener('click', () => {
-    if (connection.status.active) connection.disconnect();
-    else connection.connect().catch(error => show(connection.status, error));
-  });
-  show(connection.status);
-  return row;
 }
