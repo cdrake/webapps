@@ -1,1 +1,0 @@
-export {}; Promise.resolve(1);

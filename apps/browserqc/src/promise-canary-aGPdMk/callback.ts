@@ -1,1 +1,0 @@
-export {}; document.addEventListener("click", async () => { await Promise.resolve(1); });

@@ -1,1 +1,0 @@
-export {}; Promise.reject(new Error("reported")).catch((error: unknown) => { console.error(error); });
