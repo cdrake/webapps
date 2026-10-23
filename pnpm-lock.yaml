@@ -943,6 +943,9 @@ importers:
         specifier: workspace:*
         version: link:../../packages/components
     devDependencies:
+      '@neurodesk/desktop':
+        specifier: workspace:*
+        version: link:../../packages/desktop
       '@playwright/test':
         specifier: 1.64.0
         version: 1.64.0

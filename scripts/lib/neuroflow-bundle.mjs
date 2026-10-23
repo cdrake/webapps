@@ -28,13 +28,8 @@ export async function neuroflowBundleFiles(contracts) {
     const binding = tool.extensions['neurodesk/automation'];
     files.set(`tools/${binding.contract.app}/${binding.operation}.tool.json`, Buffer.from(`${JSON.stringify(tool, null, 2)}\n`));
   }
-  // Each runtime file is named in full so the workspace graph tracks these files, not the package.
-  for (const path of [
-    'packages/desktop/neuroflow/runtime/neurodesk.mjs',
-    'packages/desktop/neuroflow/runtime/contract.mjs',
-    'packages/desktop/neuroflow/runtime/stdio.mjs',
-  ]) {
-    files.set(`scripts/${path.split('/').pop()}`, await readFile(join(repoRoot, path)));
+  for (const name of ['neurodesk.mjs', 'contract.mjs', 'stdio.mjs']) {
+    files.set(`scripts/${name}`, await readFile(join(repoRoot, 'packages/desktop/neuroflow/runtime', name)));
   }
   return { tools, files };
 }
