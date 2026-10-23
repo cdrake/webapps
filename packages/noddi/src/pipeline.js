@@ -2,6 +2,10 @@
 // mean b0, voxel chunks for the workers, and the written maps with their BIDS derivative names
 // (BEP016 dwimap).
 
+import { maskName } from "@neurodesk/webapp-components/file-io/bids-derivatives";
+
+export { maskName };
+
 /** The maps each model writes: BEP016 parameter label, worker output key, row label. */
 export const MAPS = Object.freeze({
   tensor: [
@@ -28,11 +32,6 @@ export function bidsStem(fileName) {
 /** BEP016 name of one parameter map: <stem>_model-<model>_param-<param>_dwimap.nii.gz. */
 export function mapName(stem, model, param) {
   return `${stem}_model-${model}_param-${param}_dwimap.nii.gz`;
-}
-
-/** BIDS name of the brain mask used for the fit. */
-export function maskName(stem) {
-  return `${stem}_desc-brain_mask.nii.gz`;
 }
 
 /** Mean of the given volumes, voxel by voxel. `data` is volume-major. */

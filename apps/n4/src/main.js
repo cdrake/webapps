@@ -21,6 +21,7 @@ import {
   readNiftiImageData,
   sameNiftiGrid,
 } from "@neurodesk/webapp-components/file-io";
+import { derivativeSidecar, gzipFile, sidecarText } from "@neurodesk/webapp-components/file-io/bids-derivatives";
 import { registerAppAutomation } from "@neurodesk/webapp-components/automation";
 import { readDiffusionSeries, runDcm2niix } from "@neurodesk/runtime-support/dcm2niix-client";
 import { brainMask, mindgrab } from "@neurodesk/runtime-support/mindgrab";
@@ -93,14 +94,6 @@ const showVolume = createNiivueVolumePreview({
   ready: viewerReady,
   emptyState: $("emptyState"),
 });
-
-async function gzipFile(buffer, name, signal) {
-  signal?.throwIfAborted();
-  const stream = new Blob([buffer]).stream().pipeThrough(new CompressionStream("gzip"));
-  const bytes = await new Response(stream).arrayBuffer();
-  signal?.throwIfAborted();
-  return new File([bytes], name, { type: "application/gzip" });
-}
 
 function clearOutputs() {
   outputs = {};
@@ -285,8 +278,8 @@ async function correct(signal) {
     if (input.bval) rows.bval = { description: "b-values (unchanged)", file: new File([input.bval], names.bval), viewable: false };
     if (input.bvec) rows.bvec = { description: "b-vectors (unchanged)", file: new File([input.bvec], names.bvec), viewable: false };
     if (input.sidecar) {
-      const sidecar = { ...input.sidecar, Description: "Bias-field correction with ANTs N4 (MRtrix dwibiascorrect ants procedure)" };
-      rows.sidecar = { description: "Sidecar", file: new File([`${JSON.stringify(sidecar, null, 2)}\n`], names.sidecar, { type: "application/json" }), viewable: false };
+      const sidecar = derivativeSidecar(input.sidecar, "Bias-field correction with ANTs N4 (MRtrix dwibiascorrect ants procedure)");
+      rows.sidecar = { description: "Sidecar", file: new File([sidecarText(sidecar)], names.sidecar, { type: "application/json" }), viewable: false };
     }
     await showVolume({ file: rows.image.file }, { signal: controller.signal });
     controller.signal.throwIfAborted();

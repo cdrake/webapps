@@ -1,4 +1,7 @@
 // DOM-free steps of the n4 workflow: the b0 mean and BIDS derivative names.
+// The naming rules are the DWI apps' shared module.
+
+import { maskName, outputNames as stepNames, sourceStem } from "@neurodesk/webapp-components/file-io/bids-derivatives";
 
 /** The b0 volumes of a series (b < 50 s/mm²), or every volume of a series without b-values. */
 export function b0Volumes(bvals, frames) {
@@ -22,24 +25,9 @@ export function meanVolumes(data, voxels, volumes) {
   return mean;
 }
 
-/** The BIDS stem and suffix of an image name: sub-01_dwi.nii.gz gives ["sub-01", "dwi"]. */
-export function splitName(fileName) {
-  const base = fileName.replace(/\.nii(\.gz)?$/i, "");
-  const match = base.match(/^(.*)_([A-Za-z0-9]+)$/);
-  return match ? [match[1], match[2]] : [base, ""];
-}
-
 /** Derivative names for the corrected image, the bias field, the mask and passed-through files. */
 export function outputNames(fileName) {
-  const [originalStem, suffix] = splitName(fileName);
-  const stem = originalStem.split("_").filter((entity) => !entity.startsWith("desc-")).join("_");
-  const base = suffix ? `${stem}_desc-n4_${suffix}` : `${stem}_desc-n4`;
-  return {
-    image: `${base}.nii.gz`,
-    bias: `${stem}_desc-n4_biasfield.nii.gz`,
-    mask: `${stem}_desc-brain_mask.nii.gz`,
-    bval: `${base}.bval`,
-    bvec: `${base}.bvec`,
-    sidecar: `${base}.json`,
-  };
+  const stem = sourceStem(fileName);
+  const { image, bval, bvec, sidecar } = stepNames(fileName, "n4");
+  return { image, bias: `${stem}_desc-n4_biasfield.nii.gz`, mask: maskName(stem), bval, bvec, sidecar };
 }

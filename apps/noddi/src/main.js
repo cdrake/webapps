@@ -21,6 +21,7 @@ import {
   readNiftiFrames,
   sameNiftiGrid,
 } from "@neurodesk/webapp-components/file-io";
+import { gzipFile } from "@neurodesk/webapp-components/file-io/bids-derivatives";
 import { registerAppAutomation } from "@neurodesk/webapp-components/automation";
 import { readDiffusionSeries, runDcm2niix } from "@neurodesk/runtime-support/dcm2niix-client";
 import { brainMask, mindgrab } from "@neurodesk/runtime-support/mindgrab";
@@ -97,11 +98,6 @@ const showVolume = createNiivueVolumePreview({
   emptyState: $("emptyState"),
 });
 
-async function niftiFile(buffer, name) {
-  const stream = new Blob([buffer]).stream().pipeThrough(new CompressionStream("gzip"));
-  return new File([await new Response(stream).arrayBuffer()], name, { type: "application/gzip" });
-}
-
 function clearOutputs() {
   outputs = {};
   results.render();
@@ -144,7 +140,7 @@ async function loadFiles(filesPromise, signal) {
     const files = await filesPromise;
     const dwi = await readDwi(files, controller.signal);
     controller.signal.throwIfAborted();
-    const b0 = await niftiFile(createNiftiFromData(dwi.meanB0, dwi.buffer, { dims: dwi.dims }), `${bidsStem(dwi.name)}_desc-meanb0.nii.gz`);
+    const b0 = await gzipFile(createNiftiFromData(dwi.meanB0, dwi.buffer, { dims: dwi.dims }), `${bidsStem(dwi.name)}_desc-meanb0.nii.gz`);
     controller.signal.throwIfAborted();
     await showVolume({ file: b0 }, { signal: controller.signal });
     controller.signal.throwIfAborted();
@@ -265,7 +261,7 @@ async function fitModels(signal) {
     const artifacts = [];
     for (const entry of outputEntries(fit, brain, stem)) {
       const nifti = createNiftiFromData(entry.data, input.buffer, { dims: [...dims, entry.frames] });
-      const file = await niftiFile(nifti, entry.name);
+      const file = await gzipFile(nifti, entry.name);
       controller.signal.throwIfAborted();
       const range = entry.frames === 1 ? rangeOf(entry.model, entry.param) : undefined;
       rows[entry.role] = { description: entry.label, file, range, viewable: entry.frames === 1 };

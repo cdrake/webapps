@@ -17,6 +17,7 @@ import { assertNiftiDecodedSize, createNiftiFromData, decodeNiftiBuffer, downloa
 import { registerAppAutomation } from "@neurodesk/webapp-components/automation";
 import { readDiffusionSeries, runDcm2niix } from "@neurodesk/runtime-support/dcm2niix-client";
 import { sliceAxes } from "@neurodesk/degibbs";
+import { gzipFile, sidecarText } from "@neurodesk/webapp-components/file-io/bids-derivatives";
 import { derivativeSidecar, outputNames } from "@neurodesk/degibbs/outputs";
 import { APP } from "./config.js";
 import { correctVolumes } from "./pool.js";
@@ -83,11 +84,6 @@ const showVolume = createNiivueVolumePreview({
   ready: viewerReady,
   emptyState: $("emptyState"),
 });
-
-async function gzipFile(buffer, name) {
-  const stream = new Blob([buffer]).stream().pipeThrough(new CompressionStream("gzip"));
-  return new File([await new Response(stream).arrayBuffer()], name, { type: "application/gzip" });
-}
 
 function clearOutputs() {
   outputs = {};
@@ -179,7 +175,7 @@ async function removeRinging(signal) {
       rows[role] = { description, file, viewable: false };
       artifacts.push({ role, file });
     }
-    const sidecar = new File([`${JSON.stringify(derivativeSidecar(input.sidecar), null, 2)}\n`], names.sidecar, { type: "application/json" });
+    const sidecar = new File([sidecarText(derivativeSidecar(input.sidecar))], names.sidecar, { type: "application/json" });
     rows.sidecar = { description: "Sidecar", file: sidecar, viewable: false };
     artifacts.push({ role: "sidecar", file: sidecar });
     await showVolume({ file: image }, { signal: controller.signal });
