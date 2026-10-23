@@ -85,12 +85,25 @@ function withStep(doc, stepId, change) {
   return { ...doc, steps: { ...doc.steps, [stepId]: change(step) } };
 }
 
+/**
+ * Drop the workflow inputs among `refs` that no step reads any more; an input nobody
+ * read before the edit stays. NeuroFlow outputs reference step outputs only, so step
+ * bindings are the only readers.
+ */
+function dropUnread(doc, refs) {
+  const read = new Set(Object.values(doc.steps).flatMap(step => Object.values(step.inputs ?? {}).map(binding => binding.ref)));
+  const inputs = Object.fromEntries(Object.entries(doc.inputs ?? {})
+    .filter(([name]) => !refs.has(`inputs.${name}`) || read.has(`inputs.${name}`)));
+  return { ...doc, inputs };
+}
+
 function withBinding(doc, stepId, name, binding) {
-  return withStep(doc, stepId, step => {
+  const replaced = doc.steps[stepId]?.inputs?.[name]?.ref;
+  return dropUnread(withStep(doc, stepId, step => {
     const inputs = { ...step.inputs };
     if (binding) inputs[name] = binding; else delete inputs[name];
     return { ...step, inputs };
-  });
+  }), new Set([replaced]));
 }
 
 /** Workflow inputs, then outputs of the steps before `stepId`, as candidate refs. */
@@ -181,11 +194,7 @@ export function removeStep(doc, stepId) {
     inputs: Object.fromEntries(Object.entries(step.inputs ?? {}).filter(([, binding]) => !binding.ref?.startsWith(prefix))),
   }]));
   const outputs = Object.fromEntries(Object.entries(doc.outputs ?? {}).filter(([, output]) => !output.ref?.startsWith(prefix)));
-  const read = new Set(Object.values(steps).flatMap(step => Object.values(step.inputs).map(binding => binding.ref)));
-  const removedRefs = new Set(Object.values(removed.inputs ?? {}).map(binding => binding.ref));
-  const inputs = Object.fromEntries(Object.entries(doc.inputs ?? {})
-    .filter(([name]) => !removedRefs.has(`inputs.${name}`) || read.has(`inputs.${name}`)));
-  return { ...doc, inputs, steps, outputs };
+  return dropUnread({ ...doc, steps, outputs }, new Set(Object.values(removed.inputs ?? {}).map(binding => binding.ref)));
 }
 
 /** Issues keyed by step id; workflow-level issues are under "". */
