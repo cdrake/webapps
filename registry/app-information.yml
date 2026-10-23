@@ -603,7 +603,7 @@ apps:
         reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
         url: https://github.com/niivue/niivue
 
-  dicom2vid:
+  mri2vid:
     builders: MRI2VID was written by Thomas Shaw (University of Queensland), based on Ashley Stewart's QSMbly.
     packages:
       - { name: NiiVue, url: https://github.com/niivue/niivue, role: image viewer and frame rendering }
