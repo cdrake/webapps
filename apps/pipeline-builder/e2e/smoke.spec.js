@@ -1,11 +1,14 @@
-// Real browser smoke test against `vite preview`: the built page publishes its tool
-// catalog, loads the vendored NeuroFlow validator, and edits and exports workflows.
 import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
 
-const examples = JSON.parse(readFileSync(new URL("../examples.json", import.meta.url), "utf8"));
+const [example] = JSON.parse(readFileSync(new URL("../examples.json", import.meta.url), "utf8"));
+const exampleUrl = example.files[0].url;
 const template = JSON.parse(readFileSync(new URL("../src/workflows/t1-segmentation.workflow.json", import.meta.url), "utf8"));
-const stubSample = page => page.route(examples[0].files[0].url, route => route.fulfill({ body: "sample image bytes" }));
+
+async function chooseExample(page) {
+  await expect(page.locator("#toolSelect")).toBeEnabled();
+  await page.getByRole("combobox", { name: "Input", exact: true }).selectOption(example.id);
+}
 
 async function exported(page) {
   const download = page.waitForEvent("download");
@@ -30,14 +33,62 @@ test("the page publishes a NeuroFlow registry beside itself", async ({ page }) =
   expect(statuses).toEqual([200, 200, 200, 200]);
 });
 
-test("the example opens the template and exports it unchanged", async ({ page }) => {
-  await stubSample(page);
+test("the hosted example is the shipped template and exports unchanged", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("combobox", { name: "Input", exact: true }).selectOption(examples[0].id);
+  await chooseExample(page);
   await expect(page.locator("[data-neurodesk-examples]")).toHaveAttribute("data-example-state", "ready");
+  await expect(page.locator("#fileInfo")).toHaveText("t1-segmentation.workflow.json");
   await expect(page.locator("#stepRows tr")).toHaveCount(3);
   await expect(page.locator("#validationSummary")).toHaveText("Valid · 3 steps.");
-  expect(await exported(page)).toEqual(template);
+  const download = page.waitForEvent("download");
+  await page.locator("#runButton").click();
+  expect((await download).suggestedFilename()).toBe("t1-segmentation.workflow.json");
+  expect(JSON.parse(readFileSync(await (await download).path(), "utf8"))).toEqual(template);
+});
+
+for (const [failure, response, message] of [
+  ["download", { status: 503, body: "" }, "Could not download t1-segmentation.workflow.json (HTTP 503)."],
+  ["checksum", { status: 200, body: " ".repeat(example.files[0].bytes) }, "The checksum for t1-segmentation.workflow.json did not match."],
+]) {
+  test(`a failed example ${failure} opens nothing and can retry`, async ({ page }) => {
+    let attempts = 0;
+    await page.context().route(exampleUrl, route => (++attempts > 1 ? route.fallback() : route.fulfill(response)));
+    await page.goto("/");
+    await chooseExample(page);
+    const selector = page.locator("[data-neurodesk-examples]");
+    await expect(selector).toHaveAttribute("data-example-state", "error");
+    await expect(selector).toContainText(message);
+    await expect(page.locator("#stepRows tr")).toHaveCount(0);
+    await expect(page.locator("#runButton")).toBeDisabled();
+    await chooseExample(page);
+    await expect(selector).toHaveAttribute("data-example-state", "ready");
+    await expect(page.locator("#validationSummary")).toHaveText("Valid · 3 steps.");
+    expect(attempts).toBe(2);
+  });
+}
+
+test("cancelling the example download opens nothing and permits a retry", async ({ page }) => {
+  let attempts = 0;
+  let release;
+  const held = new Promise(resolve => { release = resolve; });
+  await page.context().route(exampleUrl, async route => {
+    if (++attempts > 1) return route.fallback();
+    await held;
+    return route.fulfill({ body: JSON.stringify(template) }).catch(() => {});
+  });
+  await page.goto("/");
+  await chooseExample(page);
+  const selector = page.locator("[data-neurodesk-examples]");
+  await expect(selector).toHaveAttribute("data-example-state", "loading");
+  await expect.poll(() => attempts).toBe(1);
+  await page.getByRole("button", { name: "Cancel example download", exact: true }).click();
+  await expect(selector).toHaveAttribute("data-example-state", "cancelled");
+  release();
+  await expect(page.locator("#stepRows tr")).toHaveCount(0);
+  await expect(page.locator("#fileInfo")).toBeHidden();
+  await chooseExample(page);
+  await expect(selector).toHaveAttribute("data-example-state", "ready");
+  await expect(page.locator("#stepRows tr")).toHaveCount(3);
 });
 
 test("steps chain by compatible outputs and the export validates", async ({ page }) => {

@@ -227,17 +227,16 @@ function openWorkflow(next, label) {
   status(validation.ok ? `${label} opened` : `${label} opened with problems; see the Issues column`, !validation.ok);
 }
 
-async function readWorkflowFile(file) {
+async function loadWorkflowFiles(files, assertCurrent = () => {}) {
+  if (files.length !== 1) throw new Error("Choose one .workflow.json file.");
+  const [file] = files;
   const next = parseWorkflow(await file.text());
+  assertCurrent();
   openWorkflow(next, file.name);
-  return next;
 }
 function importFiles(filesPromise) {
   exampleControl.cancel();
-  return Promise.resolve(filesPromise).then(files => {
-    if (files.length !== 1) throw new Error("Choose one .workflow.json file.");
-    return readWorkflowFile(files[0]);
-  }).catch(error => status(error.message, true));
+  return Promise.resolve(filesPromise).then(files => loadWorkflowFiles(files)).catch(error => status(error.message, true));
 }
 $("workflowInput").addEventListener("change", (event) => {
   const files = Array.from(event.target.files);
@@ -246,18 +245,13 @@ $("workflowInput").addEventListener("change", (event) => {
 });
 bindFileDrop($("dropZone"), importFiles);
 
-// An example is a shipped template workflow plus the sample image it was written for.
 const exampleControl = createExampleSelector({
   examples,
   onStatus: status,
-  onLoad: async (example, { fetchFiles, assertCurrent, signal }) => {
-    const response = await fetch(new URL(`workflows/${example.id}.workflow.json`, catalogBase), { signal });
-    if (!response.ok) throw new Error(`Template ${example.id}: HTTP ${response.status}`);
-    const next = parseWorkflow(await response.text());
-    const [sample] = await fetchFiles();
+  onLoad: async (_example, { fetchFiles, assertCurrent }) => {
+    const files = await fetchFiles();
     assertCurrent();
-    if (!sample?.size) throw new Error("The sample image is empty.");
-    openWorkflow(next, `${example.id}.workflow.json · sample input ${sample.name}`);
+    await loadWorkflowFiles(files, assertCurrent);
   },
 });
 $("exampleControl").append(exampleControl);
@@ -303,8 +297,7 @@ registerAppAutomation({
     validate: async ({ inputs, signal }) => {
       await ready;
       signal?.throwIfAborted();
-      const [file] = inputs.workflow;
-      await readWorkflowFile(file);
+      await loadWorkflowFiles(inputs.workflow);
       const errors = (validation.issues ?? []).filter(issue => issue.severity === "error");
       if (errors.length) throw new Error(errors.map(issue => `${issue.path || "workflow"}: ${issue.message}`).join("\n"));
       const report = new File([`${JSON.stringify(validation, null, 2)}\n`], "validation.json", { type: "application/json" });

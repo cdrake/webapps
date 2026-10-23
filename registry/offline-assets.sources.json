@@ -5120,7 +5120,9 @@
     ],
     "pipeline-builder": [
       {
-        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/356a4adbce52cf9052d61ef90b14ba263e7c25e9/synthseg/validation/T1_head.nii.gz",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/19e3b7602d4e70abc740bc8fe1288ef01848a8db/pipeline-builder/examples/t1-segmentation.workflow.json",
+        "sha256": "5513cd2f32e3e533ca1b9f768f92f1b1d232ab6cbf558552a4ea71dfcc965c63",
+        "bytes": 1007,
         "kind": "example"
       }
     ]

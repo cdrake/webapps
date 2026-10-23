@@ -2,15 +2,15 @@
   {
     "id": "t1-segmentation",
     "label": "T1 segmentation pipeline",
-    "description": "A three-step workflow: N4 bias correction, brain extraction and SynthSeg segmentation of a T1-weighted head MRI, with the sample T1 it was written for.",
+    "description": "A three-step workflow for a T1-weighted head MRI: N4 bias correction, brain extraction and SynthSeg segmentation.",
     "expectedResult": "The workflow validates with three steps, one input t1 and two outputs, brain and labels, and can be exported as t1-segmentation.workflow.json.",
     "files": [
       {
-        "role": "t1",
-        "name": "T1_head.nii.gz",
-        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/356a4adbce52cf9052d61ef90b14ba263e7c25e9/synthseg/validation/T1_head.nii.gz",
-        "sha256": "58220b40d179b7a93dd3ce231dd7afaa39989c75658b2b8e4c2f34abf8f16416",
-        "bytes": 5176902
+        "role": "workflow",
+        "name": "t1-segmentation.workflow.json",
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/19e3b7602d4e70abc740bc8fe1288ef01848a8db/pipeline-builder/examples/t1-segmentation.workflow.json",
+        "sha256": "5513cd2f32e3e533ca1b9f768f92f1b1d232ab6cbf558552a4ea71dfcc965c63",
+        "bytes": 1007
       }
     ]
   }
