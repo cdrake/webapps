@@ -118,6 +118,7 @@ const service = {
   },
   async grantSource(sessionId, { path, url }) {
     if (url?.includes('denied')) throw new Error(`Loading ${url} was denied.`);
+    if (url?.includes('_local/foreign')) throw new Error(`${url} is not granted to this viewer`);
     return { url: url ?? `http://127.0.0.1:1/_local/token/${path.split('/').at(-1)}`, approval: 'person' };
   },
   async closeSession(id) {

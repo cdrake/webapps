@@ -173,9 +173,18 @@ test('nv-mcp tools reach a retained NiiVue viewer through its session', { timeou
   assert.equal(await forwarded({ url: '/data/sub-01/T2.nii.gz' }), 'http://127.0.0.1:1/_local/token/T2.nii.gz');
   assert.equal(await forwarded({ url: 'https://example.org/T2.nii.gz' }), 'https://example.org/T2.nii.gz');
   assert.equal(await forwarded({ url: 'T1.nii.gz' }), 'T1.nii.gz');
+  assert.equal(await forwarded({ url: 'http://127.0.0.1:4517/T2.nii.gz' }), 'http://127.0.0.1:4517/T2.nii.gz');
   const denied = await client.tool('load_volume', { url: 'https://example.org/denied.nii.gz' });
   assert.equal(denied.result.isError, true);
   assert.match(text(denied), /was denied/);
+  const borrowed = await client.tool('load_volume', { url: '../_local/foreign/T2.nii.gz' });
+  assert.equal(borrowed.result.isError, true, 'a relative address into the local mounts is put to the session');
+  assert.match(text(borrowed), /not granted to this viewer/);
+  // sessions_grant takes every http(s) URL a loading tool takes, loopback and IP addresses included.
+  for (const url of ['http://127.0.0.1:4517/T2.nii.gz', 'http://localhost:4517/T2.nii.gz', 'http://[::1]:4517/T2.nii.gz']) {
+    assert.deepEqual(value(await client.tool('sessions_grant', { sessionId: 'session-1', url })),
+      { sessionId: 'session-1', url, grantedUrl: url, approval: 'person' });
+  }
   assert.deepEqual(value(await client.tool('sessions_grant', { sessionId: 'session-1', path: '/data/sub-01/T2.nii.gz' })), {
     sessionId: 'session-1', path: '/data/sub-01/T2.nii.gz', grantedUrl: 'http://127.0.0.1:1/_local/token/T2.nii.gz', approval: 'person',
   });

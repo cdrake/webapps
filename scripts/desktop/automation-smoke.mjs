@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { cp, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -52,7 +53,22 @@ async function focusedBundle() {
   return bundle;
 }
 
-function connect(bundle) {
+// A remote image host on another loopback port. Only /approved/ is pre-approved, and its redirect leads out of it.
+async function remoteHost() {
+  const image = await readFile(fixture);
+  const hits = [];
+  const server = createServer((request, response) => {
+    hits.push(request.url);
+    const cors = { 'Access-Control-Allow-Origin': '*' };
+    if (request.url === '/approved/redirect.nii.gz') response.writeHead(302, { ...cors, Location: '/outside/T1.nii.gz' }).end();
+    else if (request.url.endsWith('/T1.nii.gz')) response.writeHead(200, { ...cors, 'Content-Type': 'application/gzip', 'Content-Length': image.length }).end(image);
+    else response.writeHead(404, cors).end();
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  return { origin: `http://127.0.0.1:${server.address().port}`, hits, close: () => server.close() };
+}
+
+function connect(bundle, remote) {
   const require = createRequire(join(root, 'packages/desktop/package.json'));
   const executable = process.env.NEURODESK_EXECUTABLE || require('electron');
   const env = {
@@ -60,8 +76,9 @@ function connect(bundle) {
     NEURODESK_BUNDLE: bundle,
     NEURODESK_USER_DATA: join(scratch, 'profile'),
     NEURODESK_SOFTWARE_RENDERING: process.env.NEURODESK_SOFTWARE_RENDERING || '1',
-    // Run outputs are pre-approved for agent loading; no one is there to approve anything else.
-    NEURODESK_APPROVED_SOURCES: join(scratch, 'runs'),
+    // Run outputs and the remote host's /approved/ are pre-approved for agent loading; no one is there to approve
+    // anything else.
+    NEURODESK_APPROVED_SOURCES: `${join(scratch, 'runs')},${remote.origin}/approved/`,
     NEURODESK_SOURCE_APPROVAL: 'deny',
   };
   delete env.ELECTRON_RUN_AS_NODE;
@@ -180,9 +197,11 @@ async function waitForRun(client, id) {
 }
 
 let client;
+let remote;
 try {
   const bundle = await focusedBundle();
-  client = connect(bundle);
+  remote = await remoteHost();
+  client = connect(bundle, remote);
   const initialized = await client.call('initialize', {
     protocolVersion: summary.protocolVersion,
     capabilities: {},
@@ -340,6 +359,66 @@ try {
     [[maskPath, 'approved', 'configured'], [fixture, 'refused', undefined], [fixture, 'refused', undefined]]);
   summary.niivue = { tabs: tabs.text, target, reported, screenshot: nvShot,
     sources: { approvedOverlay: report.artifacts.mask.filename, unapproved: refusedLoad.content[0].text, record: record.sources } };
+
+  // Approved remote images load, granted ahead of time or by the loading tool, though the app's service worker makes
+  // the requests. A URL with credentials is refused before anyone is asked.
+  const remoteImage = `${remote.origin}/approved/T1.nii.gz`;
+  const remoteGrant = await client.tool('sessions_grant', { sessionId, url: remoteImage });
+  assert.deepEqual([remoteGrant.grantedUrl, remoteGrant.approval], [remoteImage, 'configured']);
+  await niivue('add_overlay', { url: remoteImage, opacity: 0.2 });
+  const remoteCopy = `${remote.origin}/approved/copy/T1.nii.gz`;
+  await niivue('add_overlay', { url: remoteCopy, opacity: 0.2 });
+  assert.equal(await layers(), layerCount + 3, 'both approved remote images load as overlays');
+  for (const path of ['/approved/T1.nii.gz', '/approved/copy/T1.nii.gz']) assert.ok(remote.hits.includes(path), `the remote host served ${path}`);
+  const credentialed = remoteImage.replace('http://', 'http://reader:secret@');
+  for (const [name, args] of [['sessions_grant', { sessionId, url: credentialed }], ['add_overlay', { url: credentialed }]]) {
+    const refused = await client.call('tools/call', { name, arguments: args });
+    assert.equal(refused.isError, true, `${name}: ${JSON.stringify(refused.content)}`);
+    assert.match(refused.content[0].text, /must not contain credentials/);
+  }
+  const remoteRecord = await readFile(join(scratch, 'runs', started.id, 'run.json'), 'utf8');
+  assert.deepEqual(JSON.parse(remoteRecord).sources.slice(3).map(({ url, outcome, approval }) => [url, outcome, approval]),
+    [[remoteImage, 'approved', 'configured'], [remoteCopy, 'approved', 'configured']]);
+  assert.doesNotMatch(remoteRecord, /secret/);
+
+  // A second viewer cannot load the first viewer's file, by its address or by a path relative to its own page, and its
+  // run record shows both refusals.
+  const second = await waitForRun(client, (await client.tool('run_brain_extraction', request)).id);
+  assert.equal(second.state, 'succeeded', JSON.stringify(second.error));
+  const otherId = second.session.id;
+  const otherViewer = (await client.tool('viewers_list', { sessionId: otherId })).viewers[0].id;
+  const otherLayers = async () => (await client.tool('viewers_volumes', { sessionId: otherId, viewerId: otherViewer })).volumes.length;
+  const otherCount = await otherLayers();
+  const relativeMask = `../_local/${new URL(regrant.grantedUrl).pathname.split('/').slice(2).join('/')}`;
+  for (const url of [regrant.grantedUrl, relativeMask]) {
+    const crossed = await client.call('tools/call', { name: 'add_overlay', arguments: { tab: otherId, url } });
+    assert.equal(crossed.isError, true, `${url}: ${JSON.stringify(crossed.content)}`);
+  }
+  assert.equal(await otherLayers(), otherCount, 'the second viewer loaded nothing of the first');
+  const otherRecord = JSON.parse(await readFile(join(scratch, 'runs', second.id, 'run.json'), 'utf8'));
+  assert.deepEqual(otherRecord.sources.map(({ url, outcome }) => [url, outcome]), [[regrant.grantedUrl, 'refused'], [relativeMask, 'refused']]);
+
+  // A request refused in a retained viewer is charged to that viewer, not to a run in progress in another window.
+  const concurrent = await client.tool('run_brain_extraction', { ...request, retainViewer: false });
+  const running = async () => (await client.tool('runs_get', { runId: concurrent.id })).state === 'running';
+  let refusedDuringRun = false;
+  while (!refusedDuringRun && await running()) {
+    const redirected = await client.call('tools/call', { name: 'add_overlay',
+      arguments: { tab: sessionId, url: `${remote.origin}/approved/redirect.nii.gz` } });
+    assert.equal(redirected.isError, true, JSON.stringify(redirected.content));
+    refusedDuringRun = await running();
+  }
+  assert.ok(refusedDuringRun, 'a refusal came while the other run was in progress');
+  assert.ok(!remote.hits.includes('/outside/T1.nii.gz'), 'the redirect out of the approved prefix was blocked');
+  const concurrentRun = await waitForRun(client, concurrent.id);
+  assert.equal(concurrentRun.state, 'succeeded', JSON.stringify(concurrentRun.error));
+
+  // The first viewer still loads its own file. Closing it ends the address that file was given.
+  await niivue('add_overlay', { tab: sessionId, url: regrant.grantedUrl, opacity: 0.2 });
+  assert.equal(await layers(), layerCount + 4);
+  await client.tool('sessions_close', { sessionId });
+  assert.equal(await fetch(regrant.grantedUrl).then(response => response.ok, () => false), false, 'a closed viewer no longer serves its granted file');
+  summary.isolation = { remoteHits: remote.hits, crossViewerRefusals: otherRecord.sources, refusedDuringRun, concurrentRun: concurrentRun.state };
   const eofRun = await client.tool('run_brain_extraction', request);
   summary.exit = await client.end();
   const afterEof = JSON.parse(await readFile(join(scratch, 'runs', eofRun.id, 'run.json'), 'utf8'));
@@ -348,7 +427,7 @@ try {
   summary.bet = { voxelCount, maskSha256, artifacts: report.artifacts, provenance: report.provenance };
   summary.cancellation = { requested: cancelled.state, stdinClosed: afterEof.state };
   summary.passed = true;
-  console.log(`Automation smoke passed: both contracts discovered; BET mask ${voxelCount} voxels; artifacts and retained viewer verified; cancellation and clean EOF exit verified.`);
+  console.log(`Automation smoke passed: both contracts discovered; BET mask ${voxelCount} voxels; artifacts, retained viewer and per-viewer source isolation verified; cancellation and clean EOF exit verified.`);
 } catch (error) {
   summary.error = error.stack || error.message;
   console.error(summary.error);
@@ -356,6 +435,7 @@ try {
   process.exitCode = 1;
 } finally {
   await client?.dispose();
+  remote?.close();
   if (evidence) {
     await mkdir(evidence, { recursive: true });
     await writeFile(join(evidence, 'automation-smoke.json'), `${JSON.stringify(summary, null, 2)}\n`);
