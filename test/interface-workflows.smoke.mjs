@@ -4,6 +4,7 @@ import { chromium, expect } from '@playwright/test';
 import { loadAppsRegistry, repoRoot } from '../scripts/lib/apps-registry.mjs';
 import { serveSite } from '../test-utils/serve-site.mjs';
 import { dicomSeries } from '../test-utils/dicom-fixture.mjs';
+import { bidsTree, dropFolder } from '../test-utils/bids-folder-drop.mjs';
 
 function nifti(name, value = 20) {
   const buffer = Buffer.alloc(352 + 4096, 0);
@@ -39,6 +40,20 @@ function dwiSeries(stem = 'interface-dwi') {
     { name: `${stem}.bval`, mimeType: 'text/plain', buffer: Buffer.from(`${bvals.join(' ')}\n`) },
     { name: `${stem}.bvec`, mimeType: 'text/plain', buffer: Buffer.from(`${[0, 1, 2].map(axis => bvecs.map(g => g[axis]).join(' ')).join('\n')}\n`) },
   ];
+}
+// A BIDS folder with two runs gives a run selector; the run chosen after loading must survive
+// closing and opening the input section.
+async function checkBidsRun(page) {
+  await expect(page.locator('#runSelect')).toBeHidden();
+  await dropFolder(page, bidsTree(dwiSeries('sub-01_dwi')));
+  await expect(page.locator('#fileInfo')).toContainText('sub-01_run-1_dwi.nii');
+  await page.locator('#runSelect').selectOption({ label: 'sub-01_run-2_dwi' });
+  await expect(page.locator('#fileInfo')).toContainText('sub-01_run-2_dwi.nii');
+  const input = page.locator('#inputSection > summary');
+  await input.tap();
+  await expect(page.locator('#runSelect')).toBeHidden();
+  await input.tap();
+  await expect(page.locator('#runSelect')).toHaveValue('1');
 }
 const apps = (await loadAppsRegistry()).apps;
 const site = await serveSite(join(repoRoot, 'dist'));
@@ -461,6 +476,8 @@ try {
     await task.tap();
     await expect(page.locator('#runButton')).toBeHidden();
     await task.tap();
+    await expect(page.locator('#runButton')).toBeEnabled();
+    await checkBidsRun(page);
     await expect(page.locator('#runButton')).toBeEnabled();
     await expect(page.locator('#outputSection')).not.toHaveAttribute('open', '');
   });
