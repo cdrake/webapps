@@ -1057,7 +1057,7 @@ apps:
     keywords: [pipeline, workflow, neuroflow, batch, desktop]
     anatomy: [brain]
     modalities: [mri]
-    inputs: [dicom, nifti]
+    inputs: [neuroflow]
     hardware: cpu
     legacy_domain: null
     runtime: vite-wasm
@@ -1067,6 +1067,7 @@ apps:
     license: NOASSERTION
     maintainers: [neurodesk]
     support_status: experimental
+    handoff: none
     shell: imaging-workspace
     ci:
       toolchains: [node]
