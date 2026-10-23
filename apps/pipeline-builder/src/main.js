@@ -263,7 +263,7 @@ async function loadWorkflowFiles(files, assertCurrent = () => {}) {
 }
 function importFiles(filesPromise) {
   exampleControl.cancel();
-  return Promise.resolve(filesPromise).then(files => loadWorkflowFiles(files)).catch(error => status(error.message, true));
+  return Promise.resolve(filesPromise).then(loadWorkflowFiles).catch(error => status(error.message, true));
 }
 $("workflowInput").addEventListener("change", (event) => {
   const files = Array.from(event.target.files);

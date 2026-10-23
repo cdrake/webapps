@@ -74,7 +74,7 @@ test("cancelling the example download opens nothing and permits a retry", async 
   await page.context().route(exampleUrl, async route => {
     if (++attempts > 1) return route.fallback();
     await held;
-    return route.fulfill({ body: JSON.stringify(template) }).catch(() => {});
+    return route.fulfill({ body: JSON.stringify(template) });
   });
   await page.goto("/");
   await chooseExample(page);
