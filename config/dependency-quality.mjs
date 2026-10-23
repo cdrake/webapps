@@ -1,8 +1,8 @@
 // Generated runtimes contain conditional Node branches and bundled dependencies.
 // Their staging and offline checks own validation; keep exclusions at exact paths.
 export const generatedSources = {
-  'apps/dicom2vid/web/js/vendor/': 'Pinned third-party viewer bundle.',
-  'packages/dicom2vid/src/vendor/': 'Pinned third-party muxer bundles.',
+  'apps/mri2vid/web/js/vendor/': 'Pinned third-party viewer bundle.',
+  'packages/mri2vid/src/vendor/': 'Pinned third-party muxer bundles.',
   'apps/dwi2trx/vendor/niimath/': 'Vendored Emscripten dtifit build.',
   'packages/runtime-support/vendor/freebrowse/': 'Vendored FreeBrowse development build; React is its own dependency.',
   'packages/easy-mp2rage/wasm/mp2rage_wasm.js': 'Committed wasm-bindgen glue.',
@@ -58,12 +58,14 @@ export const devRuntimeContracts = [
   ['apps/dicompare/electron/main.ts', 'electron'],
   ['apps/dicompare/electron/preload.ts', 'electron'],
   ['apps/dicompare/electron/main.ts', '@electron-toolkit/utils'],
+  // The node-drivers take the caller's pinned MindGrab; the CLI resolves the one installed beside it.
+  ['packages/node-drivers/bin/brainchop-mindgrab.js', '@brainchop/mindgrab'],
 ];
 
 export const sourceMirrors = {
   'apps/qsmbly/vendor/webapp-components/src/': 'packages/components/src/',
   'apps/calmar/web/vendor/webapp-components/src/': 'packages/components/src/',
-  'apps/dicom2vid/web/vendor/webapp-components/src/': 'packages/components/src/',
+  'apps/mri2vid/web/vendor/webapp-components/src/': 'packages/components/src/',
   'apps/easy-mp2rage/web/vendor/webapp-components/src/': 'packages/components/src/',
   'apps/musclemap/web/vendor/webapp-components/src/': 'packages/components/src/',
   'apps/seedseg/web/vendor/webapp-components/src/': 'packages/components/src/',
