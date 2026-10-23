@@ -16,6 +16,25 @@ async function exported(page) {
   return JSON.parse(readFileSync(await (await download).path(), "utf8"));
 }
 
+async function dropWorkflow(page, target) {
+  await page.evaluate(([text, id]) => {
+    const transfer = new DataTransfer();
+    transfer.items.add(new File([text], "dropped.workflow.json", { type: "application/json" }));
+    document.getElementById(id).dispatchEvent(new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: transfer }));
+  }, [JSON.stringify(template), target]);
+}
+
+async function automationRun(page) {
+  await page.locator("#neurodesk-input-transfer").setInputFiles({ name: "t1.workflow.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(template)) });
+  await page.evaluate(async () => {
+    await globalThis.neurodeskAutomation.dispatch("adopt", { role: "workflow" });
+    await globalThis.neurodeskAutomation.dispatch("start", {});
+  });
+  const snapshot = () => page.evaluate(() => globalThis.neurodeskAutomation.dispatch("snapshot"));
+  await expect.poll(async () => (await snapshot()).state).not.toBe("running");
+  return snapshot();
+}
+
 test("app boots with the catalog ready", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("#statusText")).toContainText("operations from the Neurodesk catalog");
@@ -89,6 +108,18 @@ test("cancelling the example download opens nothing and permits a retry", async 
   await chooseExample(page);
   await expect(selector).toHaveAttribute("data-example-state", "ready");
   await expect(page.locator("#stepRows tr")).toHaveCount(3);
+});
+
+test("rebinding a step drops the workflow input nothing reads any more", async ({ page }) => {
+  await page.goto("/");
+  await chooseExample(page);
+  await expect(page.locator("#validationSummary")).toHaveText("Valid · 3 steps.");
+  await page.getByRole("button", { name: "n4", exact: true }).click();
+  await page.locator("#bind-input_image").selectOption("new");
+  await expect(page.locator("#ioRows td:first-child")).toHaveText(["image", "brain", "labels"]);
+  const doc = await exported(page);
+  expect(Object.keys(doc.inputs)).toEqual(["image"]);
+  expect(doc.steps.n4.inputs.input_image).toEqual({ ref: "inputs.image" });
 });
 
 test("steps chain by compatible outputs and the export validates", async ({ page }) => {
@@ -169,11 +200,7 @@ test("a workflow dropped on the window opens through the workflow input", async 
   await page.goto("/");
   await expect(page.locator("#toolSelect")).toBeEnabled();
   await expect(page.locator("#dropZone")).toHaveClass(/nd-file-merged/);
-  await page.evaluate(text => {
-    const transfer = new DataTransfer();
-    transfer.items.add(new File([text], "dropped.workflow.json", { type: "application/json" }));
-    document.getElementById("viewer").dispatchEvent(new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: transfer }));
-  }, JSON.stringify(template));
+  await dropWorkflow(page, "viewer");
   await expect(page.locator("#fileInfo")).toHaveText("dropped.workflow.json");
   await expect(page.locator("#validationSummary")).toHaveText("Valid · 3 steps.");
 });
@@ -191,16 +218,34 @@ test("an invalid workflow opens with its problems and cannot be exported", async
 
 test("the automation operation validates a workflow", async ({ page }) => {
   await page.goto("/");
-  await page.locator("#neurodesk-input-transfer").setInputFiles({ name: "t1.workflow.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(template)) });
-  await page.evaluate(async () => {
-    await globalThis.neurodeskAutomation.dispatch("adopt", { role: "workflow" });
-    await globalThis.neurodeskAutomation.dispatch("start", {});
-  });
-  await expect.poll(() => page.evaluate(async () => (await globalThis.neurodeskAutomation.dispatch("snapshot")).state)).toBe("succeeded");
+  expect((await automationRun(page)).state).toBe("succeeded");
   const download = page.waitForEvent("download");
   await page.evaluate(() => globalThis.neurodeskAutomation.dispatch("download", { artifactId: "workflow" }));
   expect(JSON.parse(readFileSync(await (await download).path(), "utf8"))).toEqual(template);
 });
+
+for (const [part, pattern, status] of [
+  ["registry", "**/neuroflow/neuroflow-registry.json", 503],
+  ["tool", "**/neuroflow/tools/n4/correct.tool.json", 404],
+  ["validator", "**/*.wasm", 404],
+]) {
+  test(`a catalog whose ${part} cannot load validates nothing`, async ({ page }) => {
+    await page.context().route(pattern, route => route.fulfill({ status, body: "" }));
+    await page.goto("/");
+    await expect(page.locator("#statusText")).toContainText("The tool catalog could not load");
+    await dropWorkflow(page, "dropZone");
+    await dropWorkflow(page, "viewer");
+    const run = await automationRun(page);
+    expect(run.state).toBe("failed");
+    expect(run.error.message).toMatch(/^The tool catalog could not load: /);
+    expect(run.report).toBeUndefined();
+    await expect(page.evaluate(() => globalThis.neurodeskAutomation.dispatch("download", { artifactId: "validation" }))).rejects.toThrow("unavailable");
+    await expect(page.locator("#stepRows tr")).toHaveCount(0);
+    await expect(page.locator("#fileInfo")).toBeHidden();
+    await expect(page.locator("#validationSummary")).not.toContainText("Valid");
+    await expect(page.locator("#runButton")).toBeDisabled();
+  });
+}
 
 test("shared app bar owns information actions and theme", async ({ page }) => {
   await page.goto("/");

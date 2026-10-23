@@ -71,6 +71,25 @@ test("workflow outputs toggle and removing a step drops what read it", () => {
   assert.deepEqual(removed.inputs, {});
 });
 
+test("a binding change drops the workflow input only the replaced binding read", () => {
+  const doc = {
+    ...emptyWorkflow(),
+    inputs: { t1: { type: "neuro:volume" }, iterations: { type: "core:number" }, spare: { type: "core:string" } },
+    steps: {
+      n4: { tool: n4.id, inputs: { input_image: { ref: "inputs.t1" }, param_iterations: { ref: "inputs.iterations" } } },
+      bet: { tool: bet.id, inputs: { input_image: { ref: "inputs.t1" } } },
+    },
+  };
+  const names = next => Object.keys(next.inputs);
+  assert.deepEqual(names(bindNewWorkflowInput(doc, "n4", "input_image", n4)), ["t1", "iterations", "spare", "image"]);
+  const alone = bindInput(doc, "bet", "input_image", "steps.n4.outputs.output_image");
+  assert.deepEqual(names(alone), ["t1", "iterations", "spare"]);
+  assert.deepEqual(names(bindNewWorkflowInput(alone, "n4", "input_image", n4)), ["iterations", "spare", "image"]);
+  assert.deepEqual(names(bindInput(alone, "n4", "input_image", null)), ["iterations", "spare"]);
+  assert.deepEqual(names(bindInput(alone, "n4", "input_image", "inputs.t1")), ["t1", "iterations", "spare"]);
+  assert.deepEqual(names(setParameter(alone, "n4", "param_iterations", 20, n4)), ["t1", "spare"]);
+});
+
 test("documents round-trip at NeuroFlow 0.1.1 and non-workflows are refused", () => {
   const doc = parseWorkflow(JSON.stringify({ neuroflow: "0.1.0", kind: "workflow", id: "a.b/c", steps: {} }));
   assert.equal(JSON.parse(serializeWorkflow(doc)).neuroflow, "0.1.1");
