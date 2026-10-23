@@ -20,7 +20,8 @@ import { loadDwidenoise } from "@neurodesk/dwidenoise";
 import wasmUrl from "@neurodesk/dwidenoise/wasm?url";
 import { APP } from "./config.js";
 import { gzipFile, sidecarText } from "@neurodesk/webapp-components/file-io/bids-derivatives";
-import { derivativeSidecar, outputNames, parseBvals } from "./pipeline.js";
+import { parseBval } from "@neurodesk/dwi2trx/gradients";
+import { derivativeSidecar, outputNames } from "./pipeline.js";
 import { denoiseSeries } from "./pool.js";
 import examples from "../examples.json";
 
@@ -122,7 +123,7 @@ async function loadFiles(filesPromise, signal) {
     const buffer = await decodeNiftiBuffer(await image.arrayBuffer());
     controller.signal.throwIfAborted();
     const frames = readNiftiFrames(buffer);
-    const bvals = parseBvals(await bval.text(), frames.frames);
+    const bvals = parseBval(await bval.text(), frames.frames);
     const p2s = await patch2self;
     const groups = p2s.groups(bvals);
     await showVolume({ file: image }, { signal: controller.signal });

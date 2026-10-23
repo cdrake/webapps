@@ -41,6 +41,10 @@
       "types": "./src/file-io/bids-derivatives.d.ts",
       "default": "./src/file-io/bids-derivatives.js"
     },
+    "./file-io/brain-mask": {
+      "types": "./src/file-io/brain-mask.d.ts",
+      "default": "./src/file-io/brain-mask.js"
+    },
     "./file-io/input-limits": {
       "types": "./src/file-io/input-limits.d.ts",
       "default": "./src/file-io/input-limits.js"
@@ -57,6 +61,7 @@
     "./automation/parameters": "./src/automation/parameters.js",
     "./automation/freesurfer-lut": "./src/automation/freesurfer-lut.json",
     "./volume": "./src/volume/index.js",
+    "./volume/mean": "./src/volume/mean.js",
     "./worker": "./src/worker/index.js",
     "./qsm": "./src/qsm/index.js",
     "./styles/base.css": "./src/styles/base.css",

@@ -561,6 +561,9 @@ importers:
 
   apps/dwidenoise:
     dependencies:
+      '@neurodesk/dwi2trx':
+        specifier: workspace:*
+        version: link:../../packages/dwi2trx
       '@neurodesk/dwidenoise':
         specifier: workspace:*
         version: link:../../packages/dwidenoise

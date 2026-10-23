@@ -17,7 +17,10 @@ on:
       - 'packages/hmc-registration/**'
       - 'packages/components/src/file-io/NiftiUtils.js'
       - 'packages/components/src/file-io/bids-derivatives.js'
+      - 'packages/components/src/file-io/brain-mask.js'
+      - 'packages/components/src/volume/mean.js'
       - 'packages/dwi2trx/src/gradients.js'
+      - 'packages/dwi2trx/test/gradients.test.js'
       - 'packages/dwi2trx/src/node-runner.js'
       - 'packages/dwi2trx/src/tensor.js'
       - 'packages/node-drivers/src/mindgrab.js'
@@ -40,7 +43,10 @@ on:
       - 'packages/hmc-registration/**'
       - 'packages/components/src/file-io/NiftiUtils.js'
       - 'packages/components/src/file-io/bids-derivatives.js'
+      - 'packages/components/src/file-io/brain-mask.js'
+      - 'packages/components/src/volume/mean.js'
       - 'packages/dwi2trx/src/gradients.js'
+      - 'packages/dwi2trx/test/gradients.test.js'
       - 'packages/dwi2trx/src/node-runner.js'
       - 'packages/dwi2trx/src/tensor.js'
       - 'packages/node-drivers/src/mindgrab.js'
@@ -136,7 +142,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - name: Install package test dependencies
-        run: pnpm install --frozen-lockfile --ignore-scripts --filter @neurodesk/noddi... --filter @neurodesk/degibbs... --filter @neurodesk/dwidenoise... --filter @neurodesk/hmc...
+        run: pnpm install --frozen-lockfile --ignore-scripts --filter @neurodesk/noddi... --filter @neurodesk/degibbs... --filter @neurodesk/dwidenoise... --filter @neurodesk/hmc... --filter @neurodesk/dwi2trx...
       - name: noddi package tests on the committed module
         working-directory: packages/noddi
         run: node --test test/*.test.js
@@ -146,6 +152,10 @@ jobs:
       - name: dwidenoise package tests on the committed module
         working-directory: packages/dwidenoise
         run: node --test test/*.test.js
+      # The JavaScript b0 rule against the gradients crate (tests/data/b0-rule.tsv and lib.rs).
+      - name: dwi2trx gradient rules against the gradients crate
+        working-directory: packages/dwi2trx
+        run: node --test test/gradients.test.js
       # The pool, cancellation and 1-versus-4-worker tests run the hmc-registration kernel on
       # worker threads.
       - name: hmc package tests on the committed modules

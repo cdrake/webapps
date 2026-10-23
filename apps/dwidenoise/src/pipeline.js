@@ -1,4 +1,4 @@
-// DOM-free steps of the dwidenoise workflow: b-values, voxel chunks and BIDS derivative names.
+// DOM-free steps of the dwidenoise workflow: voxel chunks and BIDS derivative names.
 // The naming rules are the DWI apps' shared module.
 
 import { derivativeSidecar as stepSidecar, outputNames as stepNames } from "@neurodesk/webapp-components/file-io/bids-derivatives";
@@ -13,15 +13,6 @@ export function outputNames(fileName) {
 /** The sidecar of a denoised image: the input's, with the step recorded as BIDS derivatives do. */
 export function derivativeSidecar(sidecar) {
   return stepSidecar(sidecar, "Patch2Self denoising (DIPY 1.12.1 version 1 port, patch radius 0, OLS)");
-}
-
-/** The b-values of an FSL .bval file, one per volume of the image. */
-export function parseBvals(text, frames) {
-  const bvals = text.trim().split(/\s+/).filter(Boolean).map(Number);
-  if (bvals.length === 0) throw new Error("The bval file is empty.");
-  if (!bvals.every((b) => Number.isFinite(b) && b >= 0)) throw new Error("The bval file holds a value that is not a b-value.");
-  if (bvals.length !== frames) throw new Error(`The image has ${frames} volumes but the bval file lists ${bvals.length}.`);
-  return bvals;
 }
 
 /** Splits nvox voxels into ranges of at most `size` voxels: [[first, count], …]. */

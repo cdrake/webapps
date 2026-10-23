@@ -6,7 +6,6 @@ import {
   derivativeSidecar,
   gatherChunk,
   outputNames,
-  parseBvals,
   scatterChunk,
   splitName,
   voxelRanges,
@@ -29,14 +28,6 @@ test("the derivative sidecar keeps the input's fields and names the method", () 
   assert.equal(out.PhaseEncodingDirection, "j-");
   assert.match(out.Description, /Patch2Self/);
   assert.match(derivativeSidecar(null).Description, /DIPY 1\.12\.1/);
-});
-
-test("b-values must be numbers, one per volume", () => {
-  assert.deepEqual(parseBvals("0 1000\t1000\n2000\n", 4), [0, 1000, 1000, 2000]);
-  assert.throws(() => parseBvals("  ", 1), /empty/);
-  assert.throws(() => parseBvals("0 abc", 2), /not a b-value/);
-  assert.throws(() => parseBvals("0 -5", 2), /not a b-value/);
-  assert.throws(() => parseBvals("0 1000", 3), /3 volumes but the bval file lists 2/);
 });
 
 test("voxel ranges cover every voxel once", () => {

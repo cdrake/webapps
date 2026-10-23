@@ -19,16 +19,17 @@ import {
   downloadFile,
   readNiftiFrames,
   readNiftiImageData,
-  sameNiftiGrid,
 } from "@neurodesk/webapp-components/file-io";
 import { derivativeSidecar, gzipFile, sidecarText } from "@neurodesk/webapp-components/file-io/bids-derivatives";
+import { binaryMask, readBrainMask } from "@neurodesk/webapp-components/file-io/brain-mask";
 import { registerAppAutomation } from "@neurodesk/webapp-components/automation";
 import { readDiffusionSeries, runDcm2niix } from "@neurodesk/runtime-support/dcm2niix-client";
 import { brainMask, mindgrab } from "@neurodesk/runtime-support/mindgrab";
-import { parseNumbers } from "@neurodesk/dwi2trx/gradients";
+import { b0Volumes, parseBval } from "@neurodesk/dwi2trx/gradients";
 import { divideVolumes, rescaleBias } from "@neurodesk/n4";
 import { APP } from "./config.js";
-import { b0Volumes, meanVolumes, outputNames } from "./pipeline.js";
+import { meanVolumes } from "@neurodesk/webapp-components/volume/mean";
+import { outputNames } from "./pipeline.js";
 import examples from "../examples.json";
 
 const $ = (id) => document.getElementById(id);
@@ -129,10 +130,7 @@ async function loadFiles(filesPromise, signal) {
     const buffer = await decodeNiftiBuffer(await image.arrayBuffer());
     controller.signal.throwIfAborted();
     const frames = readNiftiFrames(buffer);
-    const bvals = bval ? parseNumbers(await bval.text()) : null;
-    if (bvals && bvals.length !== frames.frames) {
-      throw new Error(`${image.name} has ${frames.frames} volumes but the bval file lists ${bvals.length}.`);
-    }
+    const bvals = bval ? parseBval(await bval.text(), frames.frames) : null;
     const reference = b0Volumes(bvals, frames.frames);
     controller.signal.throwIfAborted();
     await showVolume({ file: image }, { signal: controller.signal });
@@ -179,12 +177,7 @@ async function loadMask(file, signal) {
   progress.setCancellable(true);
   status("Reading mask…");
   try {
-    const buffer = await decodeNiftiBuffer(await file.arrayBuffer());
-    controller.signal.throwIfAborted();
-    if (!sameNiftiGrid(buffer, input.buffer)) throw new Error(`${file.name} is not on the image grid.`);
-    const volume = readNiftiFrames(buffer);
-    if (volume.frames !== 1) throw new Error("The brain mask must be a single 3D image.");
-    mask = Uint8Array.from(volume.data, (value) => (value > 0 ? 1 : 0));
+    mask = await readBrainMask(await file.arrayBuffer(), input.buffer, { name: file.name, grid: "image", signal: controller.signal });
     $("maskInput").dispatchEvent(new CustomEvent("nd-files", { bubbles: true, detail: { files: [file] } }));
     clearOutputs();
     $("maskInfo").hidden = false;
@@ -244,7 +237,7 @@ async function correct(signal) {
       status(`Extracting the brain from ${what} with MindGrab`);
       const image = createNiftiFromData(reference, input.buffer, { dims: input.dims });
       const extracted = await brainMask(new Uint8Array(image), { assetPath: `${import.meta.env.BASE_URL}mindgrab/`, signal: controller.signal });
-      brain = Uint8Array.from(readNiftiFrames(extracted.mask).data, (value) => (value > 0 ? 1 : 0));
+      brain = binaryMask(readNiftiFrames(extracted.mask).data);
       maskSource = `mindgrab-${mindgrab.version}-${extracted.backend}`;
       log.log(`MindGrab ${mindgrab.version} brain mask on ${extracted.backend}`, "info");
     }

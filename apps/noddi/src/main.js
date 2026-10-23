@@ -19,9 +19,9 @@ import {
   decodeNiftiBuffer,
   downloadFile,
   readNiftiFrames,
-  sameNiftiGrid,
 } from "@neurodesk/webapp-components/file-io";
 import { gzipFile } from "@neurodesk/webapp-components/file-io/bids-derivatives";
+import { binaryMask, readBrainMask } from "@neurodesk/webapp-components/file-io/brain-mask";
 import { registerAppAutomation } from "@neurodesk/webapp-components/automation";
 import { readDiffusionSeries, runDcm2niix } from "@neurodesk/runtime-support/dcm2niix-client";
 import { brainMask, mindgrab } from "@neurodesk/runtime-support/mindgrab";
@@ -184,12 +184,7 @@ async function loadMask(file, signal) {
   progress.setCancellable(true);
   status("Reading mask…");
   try {
-    const buffer = await decodeNiftiBuffer(await file.arrayBuffer());
-    controller.signal.throwIfAborted();
-    if (!sameNiftiGrid(buffer, input.buffer)) throw new Error(`${file.name} is not on the DWI grid.`);
-    const volume = readNiftiFrames(buffer);
-    if (volume.frames !== 1) throw new Error("The brain mask must be a single 3D image.");
-    mask = Uint8Array.from(volume.data, (value) => (value > 0 ? 1 : 0));
+    mask = await readBrainMask(await file.arrayBuffer(), input.buffer, { name: file.name, grid: "DWI", signal: controller.signal });
     $("maskInput").dispatchEvent(new CustomEvent("nd-files", { bubbles: true, detail: { files: [file] } }));
     clearOutputs();
     $("maskInfo").hidden = false;
@@ -234,7 +229,7 @@ async function fitModels(signal) {
       status("Extracting the brain from the mean b0 with MindGrab");
       const meanB0 = createNiftiFromData(input.meanB0, input.buffer, { dims: input.dims });
       const extracted = await brainMask(new Uint8Array(meanB0), { assetPath: `${import.meta.env.BASE_URL}mindgrab/`, signal: controller.signal });
-      brain = Uint8Array.from(readNiftiFrames(extracted.mask).data, (value) => (value > 0 ? 1 : 0));
+      brain = binaryMask(readNiftiFrames(extracted.mask).data);
       maskSource = `mindgrab-${mindgrab.version}-${extracted.backend}`;
       log.log(`MindGrab ${mindgrab.version} brain mask on ${extracted.backend}`, "info");
     }
