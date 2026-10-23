@@ -143,24 +143,32 @@ if (have) {
     }
   });
 
-  test('a second echo in the series is left out of the run, not averaged in', async () => {
-    // Copies of the run whose EchoTime reads 44 instead of 22.
-    const secondEcho = mosaicFiles().map(({ name, buffer }) => {
+  // Copies of the run with one DS element rewritten in place, keeping its length.
+  function rewritten(element, value, suffix) {
+    return mosaicFiles().map(({ name, buffer }) => {
       const bytes = new Uint8Array(buffer.slice(0));
-      const at = Buffer.from(bytes.buffer).indexOf(Buffer.from([0x18, 0, 0x81, 0, 0x44, 0x53]));
-      assert.ok(at > 0, 'EchoTime not found');
-      bytes.set(Buffer.from('44'), at + 8);
-      return { name: name.replace('.dcm', '_e2.dcm'), buffer: bytes.buffer };
+      const at = Buffer.from(bytes.buffer).indexOf(Buffer.from([0x18, 0, element, 0, 0x44, 0x53]));
+      assert.ok(at > 0, `(0018,${element.toString(16)}) not found`);
+      const length = bytes[at + 6] | (bytes[at + 7] << 8);
+      bytes.set(Buffer.from(value.padEnd(length, ' ')), at + 8);
+      return { name: name.replace('.dcm', `${suffix}.dcm`), buffer: bytes.buffer };
     });
-    for (const reduce of ['mean', 'max']) {
-      const names = [];
-      const recording = (inputs) => { names.push(...inputs.map((f) => f.name)); return convertDicom(inputs); };
-      const vol = await readDicomSeries([...mosaicFiles(), ...secondEcho], { convertDicom: recording, mosaicReduce: reduce, batchBytes: 1 });
-      assert.ok(names.every((n) => !n.includes('_e2')), `${reduce}: a second-echo file was converted`);
-      assertClose(vol.data, goldenFloat(`reader_mosaic_${reduce}`), `two-echo mosaic ${reduce}`);
-      assert.match(vol.meta.note, new RegExp(`${NV} file\\(s\\) of this series are not part of the first mosaic run`));
-    }
-  });
+  }
+
+  const otherAcquisitions = [['echo time', 0x81, '44'], ['repetition time', 0x80, '9']];
+  for (const [label, element, value] of otherAcquisitions) {
+    test(`files with another ${label} are left out of the run, not averaged in`, async () => {
+      const secondEcho = rewritten(element, value, '_e2');
+      for (const reduce of ['mean', 'max']) {
+        const names = [];
+        const recording = (inputs) => { names.push(...inputs.map((f) => f.name)); return convertDicom(inputs); };
+        const vol = await readDicomSeries([...mosaicFiles(), ...secondEcho], { convertDicom: recording, mosaicReduce: reduce, batchBytes: 1 });
+        assert.ok(names.every((n) => !n.includes('_e2')), `${reduce}: a second-echo file was converted`);
+        assertClose(vol.data, goldenFloat(`reader_mosaic_${reduce}`), `two-echo mosaic ${reduce}`);
+        assert.match(vol.meta.note, new RegExp(`${NV} file\\(s\\) of this series are not part of the first mosaic run`));
+      }
+    });
+  }
 
   test('reports the reduction in meta and does not hold the whole 4D run', async () => {
     const vol = await readDicomSeries(mosaicFiles(), { convertDicom, mosaicReduce: 'mean' });

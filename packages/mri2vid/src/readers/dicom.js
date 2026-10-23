@@ -583,14 +583,15 @@ export async function readDicomSeries(files, { convertDicom, mosaicReduce = 'fir
   return vol;
 }
 
-// A mosaic file's tiling and timing; the files of one run share it. Null for any other file.
+// A mosaic file's tiling and acquisition parameters; the files of one run share them. Null for any other file.
 function mosaicRun(buffer) {
   try {
     const { map } = parseDicom(buffer, { headerOnly: true });
     const info = mosaicInfo(map);
     if (!info) return null;
-    const echo = elNumber(map, T.EchoTime, null);
-    return { ...info, key: `${info.n} ${info.rows}x${info.cols} TE ${echo} ${elString(map, T.ImageType, '')}` };
+    // The acquisition parameters dcm2niix splits a series on.
+    const timing = [T.EchoTime, T.RepetitionTime, T.InversionTime, T.FlipAngle].map((tag) => elNumber(map, tag, null));
+    return { ...info, key: `${info.n} ${info.rows}x${info.cols} ${timing.join(' ')} ${elString(map, T.ImageType, '')}` };
   } catch {
     return null;
   }
@@ -625,7 +626,7 @@ async function convertSeries(files, reduce, convertDicom, total = null) {
 const MOSAIC_BATCH_BYTES = 256 * 1024 * 1024;
 
 async function readMosaicRun(ordered, first, reduce, convertDicom, batchBytes) {
-  // Only files tiled and timed like the first belong to its run; another echo or an
+  // Only files tiled and acquired like the first belong to its run; another echo or an
   // ordinary image in the same series is left out rather than averaged in.
   const run = ordered.filter((file, i) => i === 0 || mosaicRun(file.buffer)?.key === first.key);
   const leftOut = ordered.length - run.length;
