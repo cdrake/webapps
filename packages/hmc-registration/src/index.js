@@ -152,14 +152,27 @@ export async function createHmcRegistration({ createModule, wasmBinary, onLog = 
       }
     };
     const stack = module.stackSave();
+    let code;
+    let trap;
+    let trapped = false;
     try {
       // callMain puts the program name in front of the array it is given, so it gets a copy.
-      return module.callMain([...argv]);
-    } finally {
-      module.stackRestore(stack);
-      console.log = consoleLog;
-      console.error = consoleError;
+      code = module.callMain([...argv]);
+    } catch (error) {
+      trap = error;
+      trapped = true;
     }
+    // The console comes back first, so a failing stackRestore cannot leave it redirected.
+    console.log = consoleLog;
+    console.error = consoleError;
+    try {
+      module.stackRestore(stack);
+    } catch (error) {
+      // After a trap the kernel is lost anyway, and the trap's error is the one to report.
+      if (!trapped) throw error;
+    }
+    if (trapped) throw trap;
+    return code;
   }
   let next = 0;
   let stopped = null;

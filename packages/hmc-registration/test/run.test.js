@@ -152,6 +152,62 @@ test("an aborted run reports the log's cause and marks the kernel stopped", asyn
   assertRecoversShift(readMatTransform(fresh.run([...ARGV], await inputs()).outputs["out0GenericAffine.mat"]));
 });
 
+// A fake kernel whose callMain and stackRestore can each throw. Its file system holds only the
+// directories that run() makes.
+function fakeKernel({ callMain, stackRestore }) {
+  const files = new Set(["/"]);
+  return async () => ({
+    callMain,
+    stackSave: () => 0,
+    stackRestore,
+    FS: {
+      mkdir: (path) => files.add(path),
+      writeFile: () => {},
+      chdir: () => {},
+      readdir: () => [],
+      rmdir: () => {},
+      isDir: () => true,
+      stat: (path) => {
+        if (!files.has(path)) throw new Error("ENOENT");
+        return { mode: 0 };
+      },
+    },
+  });
+}
+
+test("a trap is reported even when stackRestore then fails, and the console comes back", async () => {
+  const { log, error } = console;
+  const createModule = fakeKernel({
+    callMain: () => {
+      throw new Error("memory access out of bounds");
+    },
+    stackRestore: () => {
+      throw new Error("stackRestore failed");
+    },
+  });
+  const ants = await createHmcRegistration({ createModule });
+  const pair = await inputs();
+  assert.throws(() => ants.run([...ARGV], pair), (caught) => caught.aborted === true && /memory access out of bounds/.test(caught.message) && !/stackRestore failed/.test(caught.message));
+  assert.equal(console.log, log);
+  assert.equal(console.error, error);
+  assert.throws(() => ants.run([...ARGV], pair), (later) => later.aborted === true && /load a new one/.test(later.message));
+});
+
+test("a stackRestore that fails after a clean run stops the kernel", async () => {
+  const { log, error } = console;
+  const createModule = fakeKernel({
+    callMain: () => 0,
+    stackRestore: () => {
+      throw new Error("stackRestore failed");
+    },
+  });
+  const ants = await createHmcRegistration({ createModule });
+  const pair = await inputs();
+  assert.throws(() => ants.run([...ARGV], pair), (caught) => caught.aborted === true && /stackRestore failed/.test(caught.message));
+  assert.equal(console.log, log);
+  assert.equal(console.error, error);
+});
+
 test("a kernel without stackSave and stackRestore is refused", async () => {
   const createModule = async () => ({ callMain: () => assert.fail("the kernel must not run") });
   await assert.rejects(createHmcRegistration({ createModule }), /stackSave and stackRestore/);
