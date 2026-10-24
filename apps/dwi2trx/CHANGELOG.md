@@ -1,5 +1,38 @@
 # dwi2trx
 
+## 0.7.20261024
+
+### Patch Changes
+
+- Updated dependencies [bd5f3a8]
+  - @neurodesk/webapp-components@0.22.0
+  - @neurodesk/dwi2trx@0.7.20261024
+  - @neurodesk/runtime-support@0.9.12
+- 25f296e: NODDI names the niimath build in its provenance when it fits the tensor with niimath dtifit, in the app and in the `noddi` command line. `@neurodesk/dwi2trx/niimath-version` gives the version of the pinned niimath build; DWI2TRX and the `dwi2trx` command line now read it from there.
+- Updated dependencies [941884c]
+- Updated dependencies [a028e96]
+- Updated dependencies [650ce5f]
+- Updated dependencies [343c256]
+- Updated dependencies [25f296e]
+- Updated dependencies [941884c]
+  - @neurodesk/webapp-components@0.21.0
+  - @neurodesk/dwi2trx@0.7.20261024
+  - @neurodesk/runtime-support@0.9.11
+
+## 0.6.20261024
+
+### Patch Changes
+
+- Updated dependencies [3a7e5bb]
+- Updated dependencies [72cbb8d]
+  - @neurodesk/webapp-components@0.20.0
+  - @neurodesk/dwi2trx@0.6.20261024
+  - @neurodesk/runtime-support@0.9.10
+- Updated dependencies [3fc9cf2]
+  - @neurodesk/webapp-components@0.19.1
+  - @neurodesk/dwi2trx@0.6.20261024
+  - @neurodesk/runtime-support@0.9.9
+
 ## 0.6.20261022
 
 ### Patch Changes

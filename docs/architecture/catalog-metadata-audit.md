@@ -128,7 +128,7 @@ and shown as card badges and search terms:
 | --- | --- | --- |
 | `anatomy` | brain, spinal-cord, whole-body, prostate, neck, any | "Brain", "Spinal cord", … ("any" shows nothing) |
 | `modalities` | mri, ct, mrs, microscopy, surface | "MRI", "CT", "MRS", … |
-| `inputs` | dicom, nifti, mgz, ome-zarr, tiff, itk, gifti, freesurfer, mesh, mrs-raw | "DICOM", "NIfTI", … |
+| `inputs` | dicom, nifti, mgz, ome-zarr, tiff, itk, gifti, freesurfer, mesh, mrs-raw, neuroflow | "DICOM", "NIfTI", … |
 | `hardware` | cpu, webgpu-optional, webgpu-required | "No GPU needed", "WebGPU optional", "Needs WebGPU" |
 | `remote_compute` | true (optional) | "Compute server option" (Spinal Cord Toolbox, NeSVoR) |
 

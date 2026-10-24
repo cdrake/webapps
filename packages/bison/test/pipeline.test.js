@@ -59,6 +59,19 @@ test('checkInput refuses 4D, non-finite, constant and coarse images', async () =
   await checkInput(nifti((i) => i, { mm: 2.5 }), 'FLAIR');
 });
 
+test('checkInput refuses non-finite and singular image geometry', async () => {
+  for (const [offset, value] of [[280, 0], [280, NaN], [292, Infinity]]) {
+    const image = nifti((i) => i);
+    new DataView(image.buffer, image.byteOffset, image.byteLength).setFloat32(offset, value, true);
+    await assert.rejects(checkInput(image, 'T1'), /T1.*geometry/);
+  }
+  const collinear = nifti((i) => i);
+  const header = new DataView(collinear.buffer, collinear.byteOffset, collinear.byteLength);
+  header.setFloat32(284, 1, true);
+  header.setFloat32(300, 0, true);
+  await assert.rejects(checkInput(collinear, 'FLAIR'), /FLAIR.*geometry/);
+});
+
 test('classVolumes counts each class in millilitres', () => {
   const labels = Uint8Array.of(0, 1, 1, 8, 8, 8);
   const volumes = classVolumes(labels, 't1', { affine: [[2, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]] });

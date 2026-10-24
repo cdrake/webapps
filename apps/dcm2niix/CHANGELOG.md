@@ -1,5 +1,33 @@
 # dcm2niix
 
+## 0.2.20261024
+
+### Patch Changes
+
+- Updated dependencies [bd5f3a8]
+  - @neurodesk/webapp-components@0.22.0
+  - @neurodesk/runtime-support@0.9.12
+  - @neurodesk/mri2vid@0.6.20261024
+- Updated dependencies [941884c]
+- Updated dependencies [a028e96]
+- Updated dependencies [650ce5f]
+- Updated dependencies [343c256]
+- Updated dependencies [ba38bd9]
+- Updated dependencies [941884c]
+- Updated dependencies [ef05562]
+  - @neurodesk/webapp-components@0.21.0
+  - @neurodesk/mri2vid@0.6.20261024
+  - @neurodesk/runtime-support@0.9.11
+- Updated dependencies [3a7e5bb]
+- Updated dependencies [72cbb8d]
+  - @neurodesk/webapp-components@0.20.0
+  - @neurodesk/runtime-support@0.9.10
+  - @neurodesk/mri2vid@0.5.20261024
+- Updated dependencies [3fc9cf2]
+  - @neurodesk/webapp-components@0.19.1
+  - @neurodesk/runtime-support@0.9.9
+  - @neurodesk/mri2vid@0.5.20261024
+
 ## 0.2.20261022
 
 ### Patch Changes

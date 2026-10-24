@@ -19,6 +19,7 @@ import {
 } from "@neurodesk/webapp-components/ui";
 import { downloadFile } from "@neurodesk/webapp-components/file-io";
 import { describeNiftiFile } from "@neurodesk/webapp-components/file-io/nifti";
+import { readImageFiles } from "@neurodesk/runtime-support/dcm2niix-client";
 import { registerAppAutomation, runAbortable } from "@neurodesk/webapp-components/automation";
 import { MAX_T1_VOXEL_MM } from "@neurodesk/bison";
 import {
@@ -102,7 +103,7 @@ bindInfoTooltips(document);
 const info = createInfoDialog();
 $("privacyBtn").onclick = () => info.open("Privacy", $("privacyContent"));
 
-const flairField = createFileField({ id: "flairInput", rootId: "flairDrop", text: "Drop a FLAIR NIfTI image", label: "Choose an optional FLAIR NIfTI image" });
+const flairField = createFileField({ id: "flairInput", rootId: "flairDrop", text: "Drop a FLAIR image or DICOM series", label: "Choose an optional FLAIR image or DICOM series" });
 $("flairField").querySelector("label").after(flairField);
 const legend = new LabelLegend({ element: $("classLegend") });
 
@@ -272,12 +273,13 @@ toolbar.addEventListener("nd-overlay-change", ({ detail }) => {
   }).catch((error) => log.log(error.message, "error", "technical"));
 });
 
-// One NIfTI image, one 3D volume; a T1 with voxels over 2 mm is refused.
-async function readImage(files, role) {
+// One image or DICOM series, one 3D volume; a T1 with voxels over 2 mm is refused.
+async function readImage(files, role, signal) {
   const label = role === "t1" ? "T1" : "FLAIR";
-  if (files.length !== 1) throw new Error(`Choose one ${label} image; this selection has ${files.length} files.`);
-  const [file] = files;
-  if (!/\.nii(\.gz)?$/i.test(file.name)) throw new Error(`The ${label} must be a NIfTI image (.nii or .nii.gz).`);
+  const images = await readImageFiles(files, { signal });
+  signal?.throwIfAborted();
+  if (images.length !== 1) throw new Error(`Choose one ${label} NIfTI image or one DICOM series at a time.`);
+  const [file] = images;
   if (!file.size) throw new Error(`${file.name} is empty.`);
   const description = await describeNiftiFile(file);
   if (description.dimensionality !== 3 || description.frames !== 1) throw new Error(`The ${label} must be a single 3D volume.`);
@@ -300,10 +302,10 @@ async function load(request, signal) {
     const next = { ...inputs };
     if (request.t1) {
       if (inputs.t1 && !request.flair) next.flair = null;
-      next.t1 = request.t1.length ? await readImage(request.t1, "t1") : null;
+      next.t1 = request.t1.length ? await readImage(request.t1, "t1", current.controller.signal) : null;
     }
     current.controller.signal.throwIfAborted();
-    if (request.flair) next.flair = request.flair.length ? await readImage(request.flair, "flair") : null;
+    if (request.flair) next.flair = request.flair.length ? await readImage(request.flair, "flair", current.controller.signal) : null;
     current.controller.signal.throwIfAborted();
     Object.assign(inputs, next);
     for (const [role, input] of [["t1", $("imageInput")], ["flair", flairField.input]]) {

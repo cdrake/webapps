@@ -26,7 +26,7 @@ fetch "https://codeload.github.com/ANTsX/ANTs/tar.gz/$ants_commit" \
 fetch "https://codeload.github.com/ntustison/ITKAdaptiveDenoising/tar.gz/$ad_commit" \
   "$denoise_build/adaptive-denoising-$ad_commit.tar.gz" "$ad_sha256" "$denoise_build/adaptive-denoising-$ad_commit"
 docker run --rm --network none --entrypoint bash \
-  -v "$denoise_build:/build" -v "$denoise_root/packages/ants-denoise/native:/source:ro" \
+  -v "$denoise_build:/build" -v "$denoise_root/packages/ants-denoise:/source:ro" \
   "$denoise_toolchain" -c "emcmake cmake -S /source -B /build/wasm-denoise -DITK_DIR=/ITK-build -DANTS_SOURCE_DIR=/build/ants-$ants_commit -DAD_SOURCE_DIR=/build/adaptive-denoising-$ad_commit -DCMAKE_BUILD_TYPE=Release && cmake --build /build/wasm-denoise -j 2"
 cp "$denoise_build/wasm-denoise/ants-denoise.mjs" "$denoise_build/wasm-denoise/ants-denoise.wasm" "$denoise_root/packages/ants-denoise/wasm/"
 sha256sum "$denoise_root/packages/ants-denoise/wasm/ants-denoise.wasm"

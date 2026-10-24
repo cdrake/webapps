@@ -2,8 +2,8 @@
 // forest, with the held model files served from BISON_ASSET_DIR (vite.config.js). With
 // BISON_BROWSER_OUTPUT set, each output is also written to <it>/<example id>/, which
 // packages/bison/validation/browser-reference.mjs records for the command line's check.
-// Each example takes about 15 to 20 minutes on 8 cores, so the tests are @slow; the held files are
-// not public, so CI cannot run them.
+// These are the only completed runs of each model, so both remain in the PR suite. The held
+// files are not public, so CI cannot run them until publication.
 import { test, expect } from "@playwright/test";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -58,7 +58,7 @@ async function runExample(page, example, status) {
   await expect(page.locator("#statusText")).toHaveText(status, { timeout: RUN_TIMEOUT - 600000 });
 }
 
-test("the T1 example segments into 8 classes on the T1 grid, and a second run cancels", { tag: "@slow" }, async ({ page }) => {
+test("the T1 example segments into 8 classes on the T1 grid, and a second run cancels", async ({ page }) => {
   test.skip(!process.env.BISON_ASSET_DIR, "BISON_ASSET_DIR is not set; the BISON model files are not published");
   test.setTimeout(RUN_TIMEOUT);
   await runExample(page, examples[0], "Segmentation complete · 8 classes");
@@ -74,7 +74,7 @@ test("the T1 example segments into 8 classes on the T1 grid, and a second run ca
   await expect(page.locator("#resultList .nd-download-btn")).toHaveCount(1);
 });
 
-test("the T1 + FLAIR example segments into 9 classes, with white matter hyperintensities", { tag: "@slow" }, async ({ page }) => {
+test("the T1 + FLAIR example segments into 9 classes, with white matter hyperintensities", async ({ page }) => {
   test.skip(!process.env.BISON_ASSET_DIR, "BISON_ASSET_DIR is not set; the BISON model files are not published");
   test.setTimeout(RUN_TIMEOUT);
   await runExample(page, examples[1], "Segmentation complete · 9 classes with WMH");

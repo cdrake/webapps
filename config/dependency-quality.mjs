@@ -55,10 +55,14 @@ export const devRuntimeContracts = [
   ['packages/synthstrip/src/browser.js', '@neurodesk/runtime-support'],
   ['packages/synthseg/src/browser.js', '@neurodesk/runtime-support'],
   ['packages/brain2print/src/browser.js', '@neurodesk/runtime-support'],
+  // App builds bundle nv-mcp's browser client and the composite serves it from its runtime store; no Node install loads it.
+  ['packages/components/src/automation/nv-mcp.js', '@niivue/nv-mcp'],
   ['packages/desktop/src/main.js', 'electron'],
   ['apps/dicompare/electron/main.ts', 'electron'],
   ['apps/dicompare/electron/preload.ts', 'electron'],
   ['apps/dicompare/electron/main.ts', '@electron-toolkit/utils'],
+  // The node-drivers take the caller's pinned MindGrab; the CLI resolves the one installed beside it.
+  ['packages/node-drivers/bin/brainchop-mindgrab.js', '@brainchop/mindgrab'],
 ];
 
 export const sourceMirrors = {

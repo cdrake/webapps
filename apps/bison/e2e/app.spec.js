@@ -3,7 +3,10 @@
 // URL in this build.
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
-import { T1 } from "./fixtures.mjs";
+import { gunzipSync } from "node:zlib";
+import { readNiftiFrames } from "@neurodesk/webapp-components/file-io";
+import { dicomSeries } from "../../../test-utils/dicom-fixture.mjs";
+import { T1, downloaded } from "./fixtures.mjs";
 
 const examples = JSON.parse(await readFile(new URL("../examples.json", import.meta.url), "utf8"));
 const held = Boolean(process.env.BISON_ASSET_DIR);
@@ -13,6 +16,37 @@ const NOT_PUBLISHED = "The BISON model files are not published yet, so this app 
 const reportMemory = (page, gigabytes) => page.addInitScript((value) => {
   Object.defineProperty(Navigator.prototype, "deviceMemory", { configurable: true, get: () => value });
 }, gigabytes);
+
+test("T1 and FLAIR inputs convert extensionless DICOM series", async ({ page }) => {
+  await page.goto("./");
+  await page.locator("#imageInput").setInputFiles(dicomSeries({ series: 601, extension: "" }));
+  await expect(page.locator("#fileInfo")).toContainText("16 × 16 × 4", { timeout: 60000 });
+  await page.locator("#flairInput").setInputFiles(dicomSeries({ series: 602, extension: "" }));
+  await expect(page.locator("#flairInfo")).toContainText("16 × 16 × 4", { timeout: 60000 });
+  await expect(page.locator("#modeHint")).toContainText("BISON-WMH: 9 classes");
+  await expect(page.locator("#runButton")).toBeEnabled();
+  await page.locator("#outputSection").evaluate((section) => { section.open = true; });
+  for (const label of ["T1", "FLAIR"]) {
+    const pending = page.waitForEvent("download");
+    await page.locator("#resultList .nd-volume-toggle").filter({ hasText: label }).getByRole("button", { name: "Download" }).click();
+    const { bytes } = await downloaded(await pending);
+    const image = readNiftiFrames(bytes[0] === 0x1f ? gunzipSync(bytes) : bytes);
+    expect(image.dims).toEqual([16, 16, 4]);
+    expect(image.frames).toBe(1);
+    expect(Math.min(...image.data)).toBe(100);
+    expect(Math.max(...image.data)).toBe(655);
+  }
+});
+
+test("multiple DICOM series are refused and a NIfTI input can recover", async ({ page }) => {
+  await page.goto("./");
+  await page.locator("#imageInput").setInputFiles([...dicomSeries({ series: 603 }), ...dicomSeries({ series: 604 })]);
+  await expect(page.locator("#statusText")).toHaveText("Choose one T1 NIfTI image or one DICOM series at a time.", { timeout: 60000 });
+  await expect(page.locator("#runButton")).toBeDisabled();
+  await page.locator("#imageInput").setInputFiles(T1);
+  await expect(page.locator("#fileInfo")).toContainText(T1.name);
+  await expect(page.locator("#runButton")).toBeEnabled();
+});
 
 test("app boots on its workspace, cross-origin isolated, with the shared app bar", async ({ page }) => {
   await page.goto("./");
@@ -80,9 +114,13 @@ test("a failed example download can retry the same example", async ({ page }) =>
 });
 
 test("a T1 that is not one 3D volume is refused with the reason", async ({ page }) => {
+  const single = gunzipSync(T1.buffer);
+  const series = Buffer.concat([single, single.subarray(352)]);
+  series.writeInt16LE(4, 40);
+  series.writeInt16LE(2, 48);
   await page.goto("./");
-  await page.locator("#imageInput").setInputFiles({ name: "notes.txt", mimeType: "text/plain", buffer: Buffer.from("not an image") });
-  await expect(page.locator("#statusText")).toHaveText("The T1 must be a NIfTI image (.nii or .nii.gz).");
+  await page.locator("#imageInput").setInputFiles({ name: "series.nii", mimeType: "application/x-nifti", buffer: series });
+  await expect(page.locator("#statusText")).toHaveText("The T1 must be a single 3D volume.");
   await expect(page.locator("#runButton")).toBeDisabled();
 });
 

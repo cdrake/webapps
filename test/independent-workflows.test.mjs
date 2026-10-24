@@ -120,7 +120,7 @@ test('native packages share one gated publisher while signing stays isolated', a
 
 test('native and independent test workflows pin actions and discard checkout credentials', async () => {
   const portable = (await portableCallers()).map(([name]) => name);
-  for (const name of ['synthsr-native', 'synthseg-native', ...portable, 'node-cli-portable', 'node-cli', 'greedy-native', 'sct-full-tests', 'native-nifti', 'native-publish', 'standalone-links', 'hmc-registration']) {
+  for (const name of ['synthsr-native', 'synthseg-native', ...portable, 'node-cli-portable', 'node-cli', 'greedy-native', 'sct-full-tests', 'native-nifti', 'native-publish', 'standalone-links', 'hmc-registration', 'n4-wasm-source']) {
     const flow = await workflow(name);
     for (const job of Object.values(flow.jobs)) {
       if (job.uses) assert.match(job.uses, /^\.\/\.github\/workflows\/[\w-]+\.yml$/, `${name}: ${job.uses}`);
@@ -209,6 +209,21 @@ test('pull requests build the portable packager on linux-x64, except the package
   assert.equal(gate.jobs.packager.uses,'./.github/workflows/node-cli-portable.yml');
   assert.equal(gate.jobs.packager.with.all_platforms_on_pull_request,true);
   assert.deepEqual(JSON.parse(gate.jobs.packager.with.targets).map(entry=>entry.platform).sort(),['linux-x64','macos-arm64','windows-x64']);
+});
+
+test('the N4 module rebuild runs weekly or by hand and compares both committed files', async () => {
+  const flow = await workflow('n4-wasm-source');
+  assert.deepEqual(Object.keys(flow.on).sort(), ['schedule', 'workflow_dispatch']);
+  assert.equal(flow.on.schedule.length, 1);
+  assert.match(flow.on.schedule[0].cron, /^\d+ \d+ \* \* \d$/, 'once a week');
+  assert.deepEqual(flow.permissions, { contents: 'read' });
+  assert.equal(flow.concurrency['cancel-in-progress'], false);
+  assert.ok(!JSON.stringify(flow).includes('secrets.'));
+  const steps = flow.jobs.rebuild.steps;
+  assert.ok(steps.some(step => step.run === 'bash packages/n4/scripts/build.sh --check "$RUNNER_TEMP/n4-build"'));
+  const script = await readFile(new URL('../packages/n4/scripts/build.sh', import.meta.url), 'utf8');
+  for (const file of ['n4-bias.wasm', 'n4-bias.mjs']) assert.match(script, new RegExp(`for file in .*${file.replace('.', '\\.')}`));
+  assert.match(script, /SOURCE_DATE_EPOCH="\$source_date_epoch"/, 'ANTsVersion.cxx compiles in __DATE__ and __TIME__');
 });
 
 test('a push to main never cancels the nightly full-catalog CI run', async () => {
