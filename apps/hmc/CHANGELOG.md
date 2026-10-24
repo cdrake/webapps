@@ -8,6 +8,8 @@
 
 ### Patch Changes
 
+- d73bb8b: Use the shared scan picker and DICOM conversion for supplied brain masks, rejecting selections containing more than one mask image.
+  - @neurodesk/hmc@0.4.20261024
 - 3e93e32: Restore the previous BIDS run selection when loading another run fails, preserving the retained input, supplied mask and completed results.
   - @neurodesk/hmc@0.4.20261024
 - Updated dependencies [328cb77]
