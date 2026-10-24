@@ -4,7 +4,9 @@ The [design](dwi-microstructure-design.md#data) asks each DWI app to run on the 
 
 PR [#596](https://github.com/neurodesk/webapps/pull/596) (open) adds `docs/quality/dwi-vendor-checks-2026-10.md`, a scripted check of the same Philips series and of GE ds006837. It runs the browser checks on a 64×64×10 slab. This section adds full-volume browser runs, dwicorrect with the reverse b0, dwi2trx and a b-vector check. Where both reports measure the same item, the results agree. Merge the two reports when both are on `main`.
 
-Method: the production build of each app in headless Chromium (Playwright 1.64.0), driven through its interface or its automation contract with the BIDS files as given. The command line runs where one is on `main`. Host: Intel Core Ultra 200V with Arc 130V/140V (xe, Mesa 26.2.4 Vulkan). Times are wall times on that host, not benchmarks.
+Report snapshot: [ee2463de](https://github.com/gdevenyi/webapps/commit/ee2463de87c02eb28bef953c9e56beb6ab864e73), 24 October 2026. These checks predate the N4 command line added by [#595](https://github.com/neurodesk/webapps/pull/595); its Philips workflow was not tested in this run.
+
+Method: the production build of each app in headless Chromium (Playwright 1.64.0), driven through its interface or its automation contract with the BIDS files as given. Command-line results cover the runs listed below. Host: Intel Core Ultra 200V with Arc 130V/140V (xe, Mesa 26.2.4 Vulkan). Times are wall times on that host, not benchmarks.
 
 ## Philips
 
@@ -32,7 +34,7 @@ All apps treat the b=1 volumes as b0 (threshold 50 s/mm²). All apps apply `scl_
 |---|---|---|
 | degibbs | Pass, 101 s. Slice axes 1 and 2: the default when `SliceEncodingDirection` is absent. The default agrees with `dim_info` (slice = k). | Pass, 285 s. Decompressed NIfTI identical to the browser output. |
 | dwidenoise | Pass, 14 s. 12 b0 and 124 weighted volumes found. | Pass, 8 s on 6 threads. 12 b0 and 124 weighted volumes found. Decompressed NIfTI and sidecar identical to the browser output. |
-| n4 | Pass, 34 s. Field fitted on the mean of 12 b0, MindGrab mask 206570 voxels, field 0.73–1.27 in the mask (1st–99th percentile). | Not on `main`. |
+| n4 | Pass, 34 s. Field fitted on the mean of 12 b0, MindGrab mask 206570 voxels, field 0.73–1.27 in the mask (1st–99th percentile). | Not tested in this run; added later by [#595](https://github.com/neurodesk/webapps/pull/595). |
 | noddi | Pass, 351 s. 10 maps downloaded. The mask is the 11th download, which does not start in this driver (see Notes). Median FA 0.150, ICVF 0.479, ODI 0.451 in the mask. Midline corpus callosum V1: mean \|x\| 0.81. | Pass, 296 s on 6 threads. Mask 206569 voxels (CPU MindGrab) against 206570 (WebGPU). FA, MD and ODI differ in 7 voxels and ICVF in 6. All are voxels where the two masks disagree (7 voxels; browser mask from the N4 run, same WebGPU MindGrab, same count). FA is above 1 in 399 voxels (maximum 1.225): the WLS fit allows negative eigenvalues. |
 | dwicorrect (extra) | Pass, 82 s. The reverse b0 and its sidecar are accepted. 8 outlier slices replaced. Field −92 to 64 Hz (1st–99th percentile) in the mask. b-vectors rotated by up to 1.07°. The field sign is correct: unwarping AP by +u and PA by −u raises their correlation in the mask from 0.643 to 0.694 (0.548 with the opposite sign). | No command line. |
 | dwi2trx (extra) | Tensor fit passes, 21 s. Tracking fails: `Streamline tracking failed: Failed to execute 'mapAsync' on 'GPUBuffer': [Device] is lost.` | Tensor fit passes, 39 s. FA identical to the browser except 4 mask-edge voxels. No tracking in the command line. |
