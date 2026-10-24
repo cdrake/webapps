@@ -217,7 +217,8 @@ test('a shared lazy chunk is deduplicated beside vendored component sources of t
   assert.equal(await readFile(join(siteDist, 'brain-extraction/assets/index-B-xnO4h2.js'), 'utf8'),
     'const client = () => import("../../_runtime/nv-mcp/1/nv-mcp.js");');
   await assert.rejects(access(join(siteDist, 'musclemap/vendor/webapp-components')), { code: 'ENOENT' });
-  assert.equal(await readFile(join(siteDist, '_runtime/webapp-components/0.1.2/src/automation/nv-mcp.js'), 'utf8'), facade);
+  assert.equal(await readFile(join(siteDist, '_runtime/webapp-components/0.1.2/src/automation/nv-mcp.js'), 'utf8'),
+    "export { AgentClient } from '../../../../nv-mcp/1/nv-mcp.js';", 'import-map apps load the client the bundled apps share');
 });
 
 test('a declared WASM runtime is shared across app-relative and root-relative worker references', async t => {
