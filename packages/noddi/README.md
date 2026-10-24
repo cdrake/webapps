@@ -75,7 +75,7 @@ By default the brain mask is MindGrab's of the mean b0, as in the web app.
 The command line runs MindGrab's CPU modules through `@neurodesk/node-drivers/mindgrab` (about 2.6 GB of memory); do not run two at once.
 `--mask FILE` uses your own mask, on the diffusion image's voxel grid; `--no-mask` fits every voxel.
 `--threads N` sets the worker threads (default: one per core).
-The files go to standard output and the settings that produced them, as one JSON line, to standard error.
+The files go to standard output and the settings that produced them, as one JSON line, to standard error. With `--tensor-fit niimath-dtifit`, `niimath` in that line names the niimath build.
 `OUTPUT_DIR` must be new or empty.
 
 ### Release check

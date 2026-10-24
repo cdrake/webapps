@@ -20,6 +20,8 @@ for each app are recorded in `registry/apps.yml`.
 - `apps/niimath`: BSD-2-Clause (`apps/niimath/LICENSE`)
 - `packages/degibbs`: MPL-2.0 (`packages/degibbs/LICENSE`), as the MRtrix3 `mrdegibbs` source it ports;
   attribution in `packages/degibbs/NOTICE`. It holds the degibbs WebAssembly module and command line
+- `packages/dwidenoise`: BSD-3-Clause (`packages/dwidenoise/LICENSE`), as the DIPY 1.12.1 Patch2Self source it ports;
+  attribution in `packages/dwidenoise/NOTICE`. It holds the dwidenoise WebAssembly module and command line
 - `packages/shoreline`: Apache-2.0 AND BSD-3-Clause (`packages/shoreline/LICENSE`,
   `packages/shoreline/NOTICE`); the WebAssembly build of `exes/dwi/shoreline`, whose 3dSHORE
   and topup displacement crates port QSIPrep and DIPY code (BSD-3-Clause)

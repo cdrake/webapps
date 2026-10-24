@@ -27,6 +27,7 @@ import { registerAppAutomation } from "@neurodesk/webapp-components/automation";
 import { readDiffusionSeries, runDcm2niix } from "@neurodesk/runtime-support/dcm2niix-client";
 import { brainMask, mindgrab } from "@neurodesk/runtime-support/mindgrab";
 import { parseBvalBvec } from "@neurodesk/dwi2trx/gradients";
+import { NIIMATH_VERSION } from "@neurodesk/dwi2trx/niimath-version";
 import { loadNoddi } from "@neurodesk/noddi";
 import wasmUrl from "@neurodesk/noddi/wasm?url";
 import { APP } from "./config.js";
@@ -294,7 +295,13 @@ async function fitModels(signal) {
     status(`Fitted ${indices.length} voxels · ${Object.keys(rows).length} maps`);
     return {
       artifacts,
-      provenance: { method: withNoddi ? "dti+noddi-amico" : "dti", tensorFit, maskVoxels: indices.length, mask: maskSource },
+      provenance: {
+        method: withNoddi ? "dti+noddi-amico" : "dti",
+        tensorFit,
+        niimath: tensorFit === "niimath-dtifit" ? NIIMATH_VERSION : null,
+        maskVoxels: indices.length,
+        mask: maskSource,
+      },
     };
   } catch (error) {
     progress.reset();
