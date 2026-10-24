@@ -1,10 +1,31 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileHash } from '../../packages/desktop/src/bundle.js';
 import { makeRequest } from '../../packages/desktop/neuroflow/runtime/contract.mjs';
 import { openDesktop } from '../../packages/desktop/neuroflow/runtime/stdio.mjs';
+
+const execute = promisify(execFile);
+
+/** Preserve member hashes and container timestamps without weakening archive equality. */
+export async function zipEvidence(path) {
+  const { stdout: listing } = await execute('unzip', ['-Z1', path]);
+  const { stdout: metadata } = await execute('unzip', ['-Z', '-T', path]);
+  const members = {};
+  for (const name of listing.trim().split('\n').filter(Boolean).sort()) {
+    const { stdout } = await execute('unzip', ['-p', path, name], { encoding: 'buffer', maxBuffer: 512 * 1024 * 1024 });
+    members[name] = {
+      bytes: stdout.length,
+      sha256: createHash('sha256').update(stdout).digest('hex'),
+      ...(name === 'header.json' ? { header: JSON.parse(stdout.toString('utf8')) } : {}),
+    };
+  }
+  return { sha256: await fileHash(path), bytes: (await stat(path)).size, metadata, members };
+}
 
 const timingKeys = new Set(['elapsedMs', 'elapsedSeconds', 'durationMs', 'processingMs', 'seconds', 'Seconds', 'fitSeconds']);
 
@@ -67,6 +88,19 @@ export async function compareIndividualApps({ workflow, inputs, results, tools, 
           assert.deepEqual(scientificProvenance(JSON.parse(await readFile(independentPath))),
             scientificProvenance(JSON.parse(await readFile(chainedPath))), `${id}.${key} JSON differs only in execution timing`);
         } else {
+          if (artifact.sha256 !== chained.artifacts[key].sha256 && artifact.mediaType === 'application/zip') {
+            const chainedPaths = [results[id][tool.extensions['neurodesk/automation'].artifacts[artifact.role]]].flat();
+            const chainedPath = chainedPaths.find(path => path.endsWith(`/${artifact.filename}`));
+            let evidence;
+            try {
+              evidence = { independent: await zipEvidence(independentPath), chained: await zipEvidence(chainedPath) };
+            } catch (error) {
+              evidence = { diagnosticError: error.message };
+            }
+            const logs = join(scratch, 'logs');
+            await mkdir(logs, { recursive: true });
+            await writeFile(join(logs, `${id}.${key}.archive-comparison.json`), `${JSON.stringify(evidence, null, 2)}\n`);
+          }
           assert.equal(artifact.sha256, chained.artifacts[key].sha256, `${id}.${key} equals the independently executed app output`);
           assert.equal(artifact.bytes, chained.artifacts[key].bytes, `${id}.${key} byte count`);
         }
