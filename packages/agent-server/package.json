@@ -1,6 +1,6 @@
 {
   "name": "@neurodesk/agent-server",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "private": true,
   "type": "module",
   "description": "neurodesk-mcp: a local MCP server that lets an AI agent drive the viewer of a hosted Neurodesk webapp.",
