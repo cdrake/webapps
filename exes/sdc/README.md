@@ -105,6 +105,10 @@ Two WebGPU runs on one device give the same field.
 The gate of issue #506 is a median below 0.1 Hz on ds005134 sub-01; the field passes it by more than three orders of magnitude.
 The times include the CPU initialization and the copies between WebAssembly and the GPU; they are from one run on a host that was not idle.
 
+Second vendor, ds005134 sub-01 (AMD Radeon RDNA 2 integrated GPU of a Ryzen 9 9950X, Mesa RADV, `VK_DRIVER_FILES` set to the RADV driver, same spec and Chromium build): 5 and 5 Gauss-Newton iterations, a median of 1.8e-5 Hz from the native PyHySCO field (maximum 0.066 Hz), 1.3e-5 Hz from the CUDA field, 0.50 s on WebGPU and 1.10 s on the CPU path. Two WebGPU runs give the same field. The app's example on WebGPU differs from the native command line by a median of 2.4e-6 Hz (maximum 0.0089 Hz).
+On the same host, Chromium gave only a fallback adapter with the NVIDIA Vulkan driver (RTX 5080, driver 615.78.08, no display), so the spec refused the run and NVIDIA is not validated.
+Apple Metal is not validated yet, because CI does not run this gate.
+
 `estimate` in `packages/sdc` picks WebGPU only on a hardware adapter and when the engine has JSPI.
 It does not pick software adapters (SwiftShader, llvmpipe, WARP), because they are slower than the CPU path.
 It uses the software-adapter check of `@neurodesk/runtime-support/mindgrab/backend`, which MindGrab's backend choice and `test-utils/hardware-gpu.mjs` also use.
