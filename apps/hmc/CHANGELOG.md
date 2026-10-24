@@ -8,6 +8,8 @@
 
 ### Patch Changes
 
+- 3e93e32: Restore the previous BIDS run selection when loading another run fails, preserving the retained input, supplied mask and completed results.
+  - @neurodesk/hmc@0.4.20261024
 - Updated dependencies [328cb77]
 - Updated dependencies [14d97d8]
 - Updated dependencies [25f296e]

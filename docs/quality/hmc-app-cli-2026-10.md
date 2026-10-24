@@ -20,7 +20,7 @@ The sidecar records the effective estimator mask after GP eligibility reduction:
 SHA-256, byte count and included-voxel count. It also identifies a supplied mask
 or the default MindGrab model, version and actual backend. It contains no local
 input paths. The dedicated mask worker terminates before registration starts;
-the earlier masking peak and the viewer remain outside the registration benchmark.
+the earlier masking peak and the viewer remain outside the supplied-mask pipeline benchmark.
 
 On a separate synthetic 32³, ten-frame series, both command-line modes wrote
 every file byte for byte as an independent invocation of the low-level Node
@@ -34,6 +34,8 @@ downloaded sidecar confirms that the supplied mask was used. Clearing it returns
 to automatic masking. This caught and fixed an integration defect: shared
 `createFileField` consumers must use `onFiles`, because the component consumes
 and clears its native input's file list.
+
+A malformed BIDS run selection also retains the previous successful run, its mask, completed outputs and downloaded provenance. A production regression caught and fixed the selector changing even when the new load failed.
 
 The fresh production reference/parity run passed five tests. The final recovery,
 mask-clear and retry run passed two tests. The shared source, catalog, version,
@@ -66,9 +68,22 @@ packages. `hmc-native.yml` verifies the production browser reference before the
 shared portable workflow builds its target matrix. The command's self-check
 executes the pinned registration resampler and verifies an identity phantom.
 
-The actual released-version Linux archive check follows the final release and
-frozen install. Windows and macOS archive execution requires the remote target
-jobs; no local result establishes those platforms. Full interface audits and
-the final retained desktop/phone output screenshots follow the final production
-build. These gates must be reported separately before claiming full app or
-portable acceptance.
+The actual Linux x64 archive at version `0.4.20261024` passed extraction,
+manifest verification, its embedded Node 22.22.0 self-check and both complete
+pinned-example comparisons. Every GP and trivial derivative matched the
+production browser reference. The 54 MB archive's SHA-256 is
+`216f133b06e85cd6ed084ca88ba0b413393c59793e0b719472164c30a63c530e`.
+The packager wrote its actual receipt to
+`exes/node-cli/dist/hmc-0.4.20261024-linux-x64.tar.gz.validation.txt`.
+
+The final released production bundle also reran the trivial pinned example
+successfully against the recorded output hashes. Desktop and phone output
+screenshots were preserved under `$TMPDIR/hmc-final-trivial-reference` and
+reviewed: the corrected slab and all six output controls are visible on desktop;
+the phone layout retains readable controls with the viewer below them.
+
+Windows and macOS archive execution requires the remote target jobs; no local
+result establishes those platforms. The final catalog interface audits and
+whole-app automatic-mask memory observations are reported separately. The
+supplied-mask pipeline benchmark excludes automatic masking and the viewer, so it
+cannot establish a whole-app input-size limit.
