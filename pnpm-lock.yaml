@@ -876,9 +876,6 @@ importers:
 
   apps/n4:
     dependencies:
-      '@neurodesk/dwi2trx':
-        specifier: workspace:*
-        version: link:../../packages/dwi2trx
       '@neurodesk/n4':
         specifier: workspace:*
         version: link:../../packages/n4
@@ -1623,15 +1620,16 @@ importers:
       '@brainchop/mindgrab':
         specifier: 0.1.20260925
         version: 0.1.20260925
-      '@neurodesk/dwi2trx':
-        specifier: workspace:*
-        version: link:../dwi2trx
       '@neurodesk/node-drivers':
         specifier: workspace:*
         version: link:../node-drivers
       '@neurodesk/webapp-components':
         specifier: workspace:*
         version: link:../components
+    devDependencies:
+      '@neurodesk/dwi2trx':
+        specifier: workspace:*
+        version: link:../dwi2trx
 
   packages/nesvor:
     dependencies:

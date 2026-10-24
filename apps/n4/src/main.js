@@ -26,10 +26,9 @@ import { bidsDiffusionSeries, chooseBidsRun, chosenBidsRun } from "@neurodesk/we
 import { registerAppAutomation } from "@neurodesk/webapp-components/automation";
 import { readDiffusionSeries, runDcm2niix } from "@neurodesk/runtime-support/dcm2niix-client";
 import { brainMask, mindgrab } from "@neurodesk/runtime-support/mindgrab";
-import { b0Volumes, parseBval } from "@neurodesk/dwi2trx/gradients";
 import { divideVolumes, rescaleBias } from "@neurodesk/n4";
 import { APP } from "./config.js";
-import { METHOD, n4Sidecar, outputNames } from "@neurodesk/n4/pipeline";
+import { METHOD, b0Volumes, n4Sidecar, outputNames, parseBval } from "@neurodesk/n4/pipeline";
 import { meanVolumes } from "@neurodesk/webapp-components/volume/mean";
 import examples from "../examples.json";
 

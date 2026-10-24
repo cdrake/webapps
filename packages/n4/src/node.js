@@ -4,7 +4,6 @@ import { randomUUID } from "node:crypto";
 import { access, link, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
 import { gzipSync } from "node:zlib";
-import { b0Volumes, parseBval } from "@neurodesk/dwi2trx/gradients";
 import { loadMindgrabCpu } from "@neurodesk/node-drivers/mindgrab";
 import {
   createNiftiFromData,
@@ -20,7 +19,7 @@ import { meanVolumes } from "@neurodesk/webapp-components/volume/mean";
 import packageJson from "../package.json" with { type: "json" };
 import createModule from "../wasm/n4-bias.mjs";
 import { DEFAULTS, createN4, divideVolumes, rescaleBias } from "./index.js";
-import { METHOD, n4Sidecar, outputNames } from "./pipeline.js";
+import { METHOD, b0Volumes, n4Sidecar, outputNames, parseBval } from "./pipeline.js";
 
 const MINDGRAB_PACKAGE = import.meta.resolve("@brainchop/mindgrab/package.json");
 export const MINDGRAB_VERSION = JSON.parse(await readFile(new URL(MINDGRAB_PACKAGE), "utf8")).version;

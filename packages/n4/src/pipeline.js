@@ -1,8 +1,10 @@
 // DOM-free steps of the n4 workflow: its BIDS derivative names and sidecar, from the DWI apps'
 // shared module. The web app and the n4 command line both import them, so both write the same
-// files. The b0 selection is @neurodesk/dwi2trx/gradients' and the mean b0 the shared meanVolumes.
+// files. The b0 selection is dwi2trx's rule (./gradients.js) and the mean b0 the shared meanVolumes.
 
 import { derivativeSidecar, maskName, outputNames as stepNames, sourceStem } from "@neurodesk/webapp-components/file-io/bids-derivatives";
+
+export { b0Volumes, parseBval } from "./gradients.js";
 
 /** The method the provenance of both the app and the command line records. */
 export const METHOD = "ants-n4-2.6.2-wasm";
