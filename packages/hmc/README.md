@@ -71,6 +71,32 @@ The GP acceptance gate remains Q53, per volume and axis. The existing replay rep
 
 The complete ds005577 GP run produces all 90 predictions exactly equal to the native targets and reproduces the replay's 48 failing volumes and 77 failing axis checks. The recorded shell-mean Pearson correlations, within the 161,668-voxel GP mask, are 0.894919 → 0.902327 for b1000 and 0.626808 → 0.635975 for b3000. The native-double figures are 0.910 and 0.674 after correction. These measurements establish neither the Q53 gate nor native-double image parity. `validation/nifreeze-quality.mjs ROOT OUT gp` repeats the pinned QC script's correlation definition, and `validation/check-nifreeze-outputs.mjs` compares all 90 command lines and writes each native-motion difference into the saved report.
 
+## Performance measurements
+
+Issue #452's measurement harness runs the complete NiFreeze estimator in isolated Node and Chromium processes. It uses the pinned ds005577 full series or ds005134 slab and checks every download's checksum. Input loading is outside the timed region; model preparation, registration, resampling and gzip are inside it. Output verification runs afterward and checks completed work, finite voxels in every frame, frame and table counts, unchanged b0 frames and scientific output hashes.
+
+For a correctness preflight, with data and receipts on the storage volume:
+
+```bash
+node packages/hmc/validation/benchmark.mjs \
+  --data slab --host node --model trivial --workers 1 \
+  --cache "$TMPDIR/hmc-benchmark-cache" \
+  --out "$TMPDIR/hmc-slab-node-preflight.json" --preflight
+```
+
+Use `--host chromium` for the browser path, `--data full` for ds005577 and `--model gp` for the GP estimator. Chromium requires Playwright's installed browser and permission to listen on loopback. `--provision` downloads and verifies inputs without running the estimator. Preflight receipts explicitly exclude performance conclusions.
+
+After reserving a quiet host, the matrix driver runs five trials per configuration, rotating 1, 2 and 4 workers for both datasets, estimators and hosts:
+
+```bash
+node packages/hmc/validation/benchmark-matrix.mjs \
+  "$TMPDIR/hmc-benchmark-cache" "$TMPDIR/hmc-benchmark-results"
+```
+
+The driver writes 120 individual receipts and `matrix.json`, and rejects differences in scientific outputs across worker counts or hosts. Receipts hash all HMC and registration source files, generated kernels, shared file IO, package manifests, the dependency lock and benchmark scripts. Each run checks the hashes before and after execution; the matrix rejects changes across all configurations. Receipts also include input pins, machine details, awaited runtime and externally sampled process-tree RSS. RSS is sampled every 100 ms; it is an observed peak, and shared Chromium pages can be counted more than once. Inspect trial variation and separate profiling runs before choosing worker defaults or input limits.
+
+The full matrix has not been measured. The Node and Chromium one-worker slab trivial preflights complete 124 registrations and resamplings across 137 frames, with identical hashes for all 142 scientific artifacts. GP still fails Q53 as described above; performance measurements do not establish scientific acceptance.
+
 ## Pool
 
 - Each worker holds one `@neurodesk/hmc-registration` kernel, which starts at the `INITIAL_MEMORY` of its build (256 MiB). The caller sets the worker count, and so the memory: 4 workers start at about 1 GiB.

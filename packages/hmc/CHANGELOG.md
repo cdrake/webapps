@@ -1,5 +1,11 @@
 # @neurodesk/hmc
 
+## 0.3.3
+
+### Patch Changes
+
+- Add isolated Node and Chromium estimator measurement tools with pinned inputs, completed-work checks, scientific output hashes and process memory sampling. Document correctness preflights and the pending performance matrix without changing worker defaults or scientific acceptance gates.
+
 ## 0.3.2
 
 ### Patch Changes
