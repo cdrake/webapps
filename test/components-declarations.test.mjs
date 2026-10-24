@@ -39,15 +39,20 @@ test('the components\' public declarations compile with only their production de
   }
   assert.ok(imports.some(line => line.endsWith("/automation';")), 'the automation declarations must be among those compiled');
   await writeFile(join(root, 'consumer.ts'), `${imports.join('\n')}\n`);
-  await writeFile(join(root, 'tsconfig.json'), JSON.stringify({
-    compilerOptions: {
-      strict: true, skipLibCheck: false, noEmit: true, target: 'ES2022', module: 'ESNext', moduleResolution: 'Bundler',
-      lib: ['ES2022', 'DOM'], types: [],
-    },
-    files: ['consumer.ts'],
-  }));
+  await writeFile(join(root, 'package.json'), JSON.stringify({ type: 'module' }));
 
-  const diagnostics = await execFileAsync(process.execPath, [tsc, '-p', join(root, 'tsconfig.json'), '--pretty', 'false'])
-    .then(() => '', error => `${error.stdout}${error.stderr}`.replaceAll(root, ''));
-  assert.equal(diagnostics, '', 'a consumer without the components\' development dependencies must type-check their public API');
+  const diagnostics = {};
+  for (const [module, moduleResolution] of [['ESNext', 'Bundler'], ['NodeNext', 'NodeNext']]) {
+    await writeFile(join(root, 'tsconfig.json'), JSON.stringify({
+      compilerOptions: {
+        strict: true, skipLibCheck: false, noEmit: true, target: 'ES2022', module, moduleResolution,
+        lib: ['ES2022', 'DOM'], types: [],
+      },
+      files: ['consumer.ts'],
+    }));
+    diagnostics[moduleResolution] = await execFileAsync(process.execPath, [tsc, '-p', join(root, 'tsconfig.json'), '--pretty', 'false'])
+      .then(() => '', error => `${error.stdout}${error.stderr}`.replaceAll(root, ''));
+  }
+  assert.deepEqual(diagnostics, { Bundler: '', NodeNext: '' },
+    'a consumer without the components\' development dependencies must type-check their public API');
 });
