@@ -128,7 +128,19 @@ export const provisioners = {
   // The browser reference runs the app's three examples, each after the command line's CPU MindGrab, about 4 min.
   n4: { env: ['N4_BROWSER_REFERENCE'], provision: async () => ({ N4_BROWSER_REFERENCE: 'check' }) },
   // The browser reference runs MindGrab on the CPU once and fits the example and the phantom, about 1 min.
-  noddi: { env: ['NODDI_BROWSER_REFERENCE'], provision: async () => ({ NODDI_BROWSER_REFERENCE: 'check' }) },
+  noddi: {
+    env: ['NODDI_BROWSER_REFERENCE', 'NODDI_DMIPY_REFERENCE'],
+    provision: async (cache) => {
+      const directory = join(cache, 'noddi-dmipy');
+      const manifest = JSON.parse(await readFile(join(root, 'exes/dwi/dmipy/validation/reference.manifest.json'), 'utf8'));
+      for (const file of [...manifest.files, ...manifest.inputs]) {
+        const path = join(directory, file.path);
+        await mkdir(join(path, '..'), { recursive: true });
+        await fetchChecked(file.url ?? manifest.base + file.path, path, file);
+      }
+      return { NODDI_BROWSER_REFERENCE: 'check', NODDI_DMIPY_REFERENCE: directory };
+    },
+  },
   syncro: {
     env: ['SYNCRO_SCIENTIFIC_TESTS', 'SYNCRO_AUTOMATION_IMAGE', 'SYNTHSR_MODEL'],
     provision: async (cache) => {

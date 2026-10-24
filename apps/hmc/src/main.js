@@ -38,10 +38,35 @@ let input = null;
 let folder = null;
 let mask = null;
 let active = null;
+let imports = Promise.resolve();
+let importGeneration = 0;
 const maskField = createFileField({ id: "maskInput", label: "Brain mask (optional)", kind: "image", text: "Drop a brain mask" });
 $("maskField").append(maskField);
 const results = createResultList({ element: $("resultList"), onView: (_stage, row) => { void show(row.file).catch(report); }, onDownload: (_stage, row) => downloadFile(row.file) });
 bindInfoTooltips(document);
+
+function syncInputFiles(id, files) {
+  $(id).dispatchEvent(new CustomEvent("nd-files", { bubbles: true, detail: { files } }));
+}
+
+function clearMask() {
+  mask = null;
+  $("maskInput").value = "";
+  maskField.setText("Drop a brain mask");
+  maskField.setHasFiles(false);
+  $("clearMask").hidden = true;
+  syncInputFiles("maskInput", []);
+}
+
+function queueImport(callback) {
+  const generation = importGeneration;
+  const next = imports.then(() => {
+    if (generation !== importGeneration) throw new DOMException("Loading cancelled", "AbortError");
+    return callback();
+  });
+  imports = next.catch(() => {});
+  return next;
+}
 
 function status(message, error = false) {
   $("statusText").textContent = message;
@@ -70,6 +95,8 @@ function busy(value) {
   maskField.disabled = value;
   exampleControl.setDisabled(value);
   $("runButton").disabled = value || !input;
+  const undo = document.querySelector(".nd-status-undo");
+  if (undo) undo.disabled = value;
 }
 
 async function operation(message, signal, callback) {
@@ -108,12 +135,9 @@ async function load(files, signal, runIndex) {
     if (gradients.bvals.length !== decoded.frames) throw new Error("The gradients must list every image volume.");
     await show(image);
     current.throwIfAborted();
-    input = { fileName: image.name, buffer, series: decoded, ...gradients, sidecar };
-    mask = null;
-    $("maskInput").value = "";
-    maskField.setText("Drop a brain mask");
-    maskField.setHasFiles(false);
-    $("clearMask").hidden = true;
+    input = { sourceFiles: files, fileName: image.name, buffer, series: decoded, ...gradients, sidecar };
+    clearMask();
+    syncInputFiles("imageInput", files);
     folder = runs ? { files, runs, index } : null;
     if (runs) chooseBidsRun(runs, index);
     $("runField").hidden = !runs || runs.length < 2;
@@ -123,6 +147,9 @@ async function load(files, signal, runIndex) {
     results.render();
     $("outputSection").open = false;
     progress.end("Diffusion image loaded");
+  }).catch(error => {
+    syncInputFiles("imageInput", input?.sourceFiles ?? []);
+    throw error;
   });
 }
 
@@ -136,7 +163,7 @@ async function run(signal, parameters = {}) {
   if (!Number.isInteger(workers) || workers < 1 || workers > 4) throw new Error("Choose 1 to 4 registration workers.");
   return operation("Correcting head motion…", signal, async current => {
     const hmc = await api;
-    let brain = mask;
+    let brain = mask?.data;
     let maskProvenance = { Source: "supplied" };
     if (!brain) {
       status("Extracting the brain from the mean b0");
@@ -179,7 +206,7 @@ async function run(signal, parameters = {}) {
 const exampleControl = createExampleSelector({ examples, onStatus: status, onLoad: async (_example, { fetchFiles, assertCurrent, signal }) => {
   const files = await fetchFiles();
   assertCurrent();
-  await load(files, signal);
+  await queueImport(() => load(files, signal));
   assertCurrent();
 } });
 $("exampleControl").append(exampleControl);
@@ -187,55 +214,59 @@ $("imageInput").addEventListener("change", event => {
   const files = Array.from(event.target.files);
   event.target.value = "";
   exampleControl.cancel();
-  if (files.length) void load(files).catch(report);
+  if (files.length) void queueImport(() => load(files)).catch(report);
 });
+async function loadMask(selected, signal) {
+  return operation("Reading brain mask…", signal, async current => {
+    if (!input) throw new Error("Load diffusion data before its mask.");
+    const images = await readImageFiles(selected, { signal: current });
+    if (images.length !== 1) throw new Error("Choose one NIfTI mask or one DICOM mask series.");
+    const [file] = images;
+    const brain = await readBrainMask(await file.arrayBuffer(), input.buffer, { grid: "DWI", signal: current });
+    current.throwIfAborted();
+    mask = { data: brain, file };
+    maskField.setText(file.name);
+    maskField.setHasFiles(true);
+    $("clearMask").hidden = false;
+    syncInputFiles("maskInput", [file]);
+    progress.end("Brain mask loaded");
+  });
+}
+
 maskField.onFiles(async files => {
   try {
-    const selected = await files;
-    if (!input) throw new Error("Load diffusion data before its mask.");
-    await operation("Reading brain mask…", undefined, async signal => {
-      const images = await readImageFiles(selected, { signal });
-      if (images.length !== 1) throw new Error("Choose one NIfTI mask or one DICOM mask series.");
-      const [file] = images;
-      mask = file ? await readBrainMask(await file.arrayBuffer(), input.buffer, { grid: "DWI", signal }) : null;
-      maskField.setText(file?.name ?? "Drop a brain mask");
-      maskField.setHasFiles(Boolean(mask));
-      $("clearMask").hidden = !mask;
-      progress.end(mask ? "Brain mask loaded" : "Using automatic brain mask");
-    });
+    await queueImport(async () => loadMask(await files));
   } catch (error) {
-    $("maskInput").value = "";
-    mask = null;
-    maskField.setText("Drop a brain mask");
-    maskField.setHasFiles(false);
-    $("clearMask").hidden = true;
+    if (error.name === "AbortError") syncInputFiles("maskInput", mask ? [mask.file] : []);
+    else clearMask();
     report(error);
   }
 });
 $("clearMask").onclick = () => {
-  mask = null;
-  maskField.setText("Drop a brain mask");
-  maskField.setHasFiles(false);
-  $("clearMask").hidden = true;
+  clearMask();
   status("Using automatic brain mask");
 };
 $("runSelect").addEventListener("change", () => {
   if (!folder) return;
   const previous = folder;
   const previousInput = input;
-  void load(previous.files, undefined, Number($("runSelect").value)).catch(error => {
+  const index = Number($("runSelect").value);
+  void queueImport(() => load(previous.files, undefined, index)).catch(error => {
     if (folder === previous && input === previousInput) $("runSelect").value = String(previous.index);
     report(error);
   });
 });
 $("runButton").onclick = () => { void run().catch(report); };
 $("cancelButton").onclick = () => {
+  importGeneration++;
   exampleControl.cancel();
   active?.abort();
+  syncInputFiles("imageInput", input?.sourceFiles ?? []);
+  syncInputFiles("maskInput", mask ? [mask.file] : []);
 };
 registerAppAutomation({ app: "hmc", convertDicom: runDcm2niix, operations: { correct: async ({ inputs, inputDetails, parameters, signal }) => {
-  await load(imageFiles(inputs, inputDetails), signal);
-  if (inputs.mask?.[0]) mask = await readBrainMask(await inputs.mask[0].arrayBuffer(), input.buffer, { signal, grid: "DWI" });
+  await queueImport(() => load(imageFiles(inputs, inputDetails), signal));
+  if (inputs.mask?.[0]) await queueImport(() => loadMask(inputs.mask, signal));
   return run(signal, parameters);
 } } });
 window.addEventListener("pagehide", () => {
