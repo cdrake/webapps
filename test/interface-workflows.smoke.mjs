@@ -5,6 +5,7 @@ import { chromium, expect } from '@playwright/test';
 import { loadAppsRegistry, repoRoot } from '../scripts/lib/apps-registry.mjs';
 import { serveSite } from '../test-utils/serve-site.mjs';
 import { dicomSeries } from '../test-utils/dicom-fixture.mjs';
+import { bidsTree, dropFolder } from '../test-utils/bids-folder-drop.mjs';
 
 function nifti(name, value = 20) {
   const buffer = Buffer.alloc(352 + 4096, 0);
@@ -40,6 +41,20 @@ function dwiSeries(stem = 'interface-dwi') {
     { name: `${stem}.bval`, mimeType: 'text/plain', buffer: Buffer.from(`${bvals.join(' ')}\n`) },
     { name: `${stem}.bvec`, mimeType: 'text/plain', buffer: Buffer.from(`${[0, 1, 2].map(axis => bvecs.map(g => g[axis]).join(' ')).join('\n')}\n`) },
   ];
+}
+// A BIDS folder with two runs gives a run selector; the run chosen after loading must survive
+// closing and opening the input section.
+async function checkBidsRun(page) {
+  await expect(page.locator('#runSelect')).toBeHidden();
+  await dropFolder(page, bidsTree(dwiSeries('sub-01_dwi')));
+  await expect(page.locator('#fileInfo')).toContainText('sub-01_run-1_dwi.nii');
+  await page.locator('#runSelect').selectOption({ label: 'sub-01_run-2_dwi' });
+  await expect(page.locator('#fileInfo')).toContainText('sub-01_run-2_dwi.nii');
+  const input = page.locator('#inputSection > summary');
+  await input.tap();
+  await expect(page.locator('#runSelect')).toBeHidden();
+  await input.tap();
+  await expect(page.locator('#runSelect')).toHaveValue('1');
 }
 const apps = (await loadAppsRegistry()).apps;
 const site = await serveSite(join(repoRoot, 'dist'));
@@ -122,17 +137,6 @@ try {
     await expect(page.locator('#fWm')).toHaveValue('0.3');
     await expect(page.locator('#fCsf')).toHaveValue('0.1');
     await expect(page.locator('#viewerNotice')).toBeHidden();
-  });
-  await check('noddi', async page => {
-    const settings = page.locator('#advancedSettings > summary');
-    await expect(page.locator('#tensorFit')).toBeHidden();
-    await settings.tap();
-    await expect(page.locator('#tensorFit')).toHaveValue('wls');
-    await page.locator('#tensorFit').selectOption('niimath-dtifit');
-    await settings.tap();
-    await expect(page.locator('#tensorFit')).toBeHidden();
-    await settings.tap();
-    await expect(page.locator('#tensorFit')).toHaveValue('niimath-dtifit');
   });
   await check('seedseg', async page => {
     const settings = page.locator('#seedseg-section-2 [data-disclosure-toggle]');
@@ -425,6 +429,7 @@ try {
   await check('degibbs', async page => {
     await expect(page.locator('#statusText')).toHaveText('Drag and drop files', { timeout: 60000 });
     await expect(page.locator('#technicalLog')).toHaveClass(/collapsed/);
+    await checkBidsRun(page);
     await page.locator('#imageInput').setInputFiles(dwiSeries());
     await expect(page.locator('#fileInfo')).toContainText('interface-dwi.nii');
     await expect(page.locator('#runButton')).toBeEnabled();
@@ -441,17 +446,68 @@ try {
   await check('noddi', async page => {
     await expect(page.locator('#statusText')).toHaveText('Drag and drop files', { timeout: 60000 });
     await expect(page.locator('#technicalLog')).toHaveClass(/collapsed/);
+    await checkBidsRun(page);
     await page.locator('#imageInput').setInputFiles(dwiSeries());
     await expect(page.locator('#fileInfo')).toContainText('1×b0, 6×b1000, 6×b2000');
     await expect(page.locator('#noddiNote')).toHaveText('');
     await expect(page.locator('#runButton')).toBeEnabled();
     const advanced = page.locator('#advancedSettings > summary');
+    await expect(page.locator('#tensorFit')).toBeHidden();
     await advanced.tap();
+    await expect(page.locator('#tensorFit')).toHaveValue('wls');
     await page.locator('#tensorFit').selectOption('ols');
     await advanced.tap();
     await expect(page.locator('#tensorFit')).toBeHidden();
     await advanced.tap();
     await expect(page.locator('#tensorFit')).toHaveValue('ols');
+    await expect(page.locator('#outputSection')).not.toHaveAttribute('open', '');
+  });
+  // dwidenoise has no option to set: Patch2Self takes only the DWI and its bval.
+  await check('dwidenoise', async page => {
+    await expect(page.locator('#statusText')).toHaveText('Drag and drop files', { timeout: 60000 });
+    await expect(page.locator('#technicalLog')).toHaveClass(/collapsed/);
+    await page.locator('#imageInput').setInputFiles(dwiSeries());
+    const info = 'interface-dwi.nii · 16×16×16×13 · 1 b0, 12 weighted · bval, bvec';
+    await expect(page.locator('#fileInfo')).toHaveText(info);
+    await expect(page.locator('#runButton')).toBeEnabled();
+    const input = page.locator('#inputSection > summary');
+    await input.tap();
+    await expect(page.locator('#fileInfo')).toBeHidden();
+    await input.tap();
+    await expect(page.locator('#fileInfo')).toHaveText(info);
+    const task = page.locator('#taskSection > summary');
+    await task.tap();
+    await expect(page.locator('#runButton')).toBeHidden();
+    await task.tap();
+    await expect(page.locator('#runButton')).toBeEnabled();
+    await checkBidsRun(page);
+    await expect(page.locator('#runButton')).toBeEnabled();
+    await expect(page.locator('#outputSection')).not.toHaveAttribute('open', '');
+  });
+  await check('n4', async page => {
+    await expect(page.locator('#statusText')).toHaveText('Drag and drop files', { timeout: 60000 });
+    await expect(page.locator('#technicalLog')).toHaveClass(/collapsed/);
+    await page.locator('#imageInput').setInputFiles(dwiSeries());
+    await expect(page.locator('#fileInfo')).toHaveText('interface-dwi.nii · 16×16×16×13 · bval, bvec');
+    await expect(page.locator('#modeNote')).toHaveText('DWI: the field is fitted to the b0 volume.');
+    await expect(page.locator('#runButton')).toBeEnabled();
+    // The optional mask chosen in Advanced settings must survive closing that section and its parent.
+    const advanced = page.locator('#advancedSettings > summary');
+    await expect(page.locator('#maskInput')).toBeHidden();
+    await advanced.tap();
+    await page.locator('#maskInput').setInputFiles(nifti('interface-mask.nii', 1));
+    await expect(page.locator('#maskInfo')).toHaveText('interface-mask.nii · 4096 voxels');
+    await advanced.tap();
+    await expect(page.locator('#maskInfo')).toBeHidden();
+    await advanced.tap();
+    await expect(page.locator('#maskInfo')).toHaveText('interface-mask.nii · 4096 voxels');
+    const task = page.locator('#taskSection > summary');
+    await task.tap();
+    await expect(page.locator('#maskInfo')).toBeHidden();
+    await task.tap();
+    await expect(page.locator('#maskInfo')).toHaveText('interface-mask.nii · 4096 voxels');
+    await checkBidsRun(page);
+    await expect(page.locator('#runButton')).toBeEnabled();
     await expect(page.locator('#outputSection')).not.toHaveAttribute('open', '');
   });
   await check('sdc', async page => {

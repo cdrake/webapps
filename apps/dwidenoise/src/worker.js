@@ -1,31 +1,22 @@
-// One Patch2Self worker: loads the WebAssembly once, then handles one voxel chunk per message.
-// In: { id, type: "gram" | "apply", data, count, groups, coefficients? }.
-// Out: { id, grams } for "gram", { id, data } for "apply", or { id, error }.
+// One Patch2Self worker: loads the WebAssembly once, then handles one voxel chunk or one volume
+// solve per message (worker-tasks.js lists the messages). gzip-worker.js compresses the output.
 import { loadDwidenoise } from "@neurodesk/dwidenoise";
 import wasmUrl from "@neurodesk/dwidenoise/wasm?url";
+import { createWorkerTasks } from "./worker-tasks.js";
 
-const ready = loadDwidenoise(fetch(wasmUrl));
+const ready = loadDwidenoise(fetch(wasmUrl)).then(createWorkerTasks);
+// A load failure is reported in the reply to each message. This keeps it from being an
+// unhandled rejection when the page stops the worker before it sends a message.
+ready.catch(() => {});
 
 self.onmessage = async ({ data: message }) => {
+  let handle;
   try {
-    const p2s = await ready;
-    const buffer = p2s.allocate(message.data.length);
-    try {
-      buffer.view().set(message.data);
-      if (message.type === "gram") {
-        const grams = message.groups.map((group) =>
-          p2s.accumulate(buffer, message.count, group, new Float64Array(p2s.gramLength(group.length))),
-        );
-        self.postMessage({ id: message.id, grams }, grams.map((gram) => gram.buffer));
-      } else {
-        message.groups.forEach((group, g) => p2s.apply(buffer, message.count, group, message.coefficients[g]));
-        const out = buffer.view().slice();
-        self.postMessage({ id: message.id, data: out }, [out.buffer]);
-      }
-    } finally {
-      buffer.free();
-    }
+    handle = await ready;
   } catch (error) {
     self.postMessage({ id: message.id, error: error?.message ?? String(error) });
+    return;
   }
+  const reply = handle(message);
+  if (reply) self.postMessage(...reply);
 };

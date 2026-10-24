@@ -16,7 +16,11 @@ on:
       - 'packages/hmc/**'
       - 'packages/hmc-registration/**'
       - 'packages/components/src/file-io/NiftiUtils.js'
+      - 'packages/components/src/file-io/bids-derivatives.js'
+      - 'packages/components/src/file-io/brain-mask.js'
+      - 'packages/components/src/volume/mean.js'
       - 'packages/dwi2trx/src/gradients.js'
+      - 'packages/dwi2trx/test/gradients.test.js'
       - 'packages/dwi2trx/src/node-runner.js'
       - 'packages/dwi2trx/src/tensor.js'
       - 'packages/node-drivers/src/mindgrab.js'
@@ -38,7 +42,11 @@ on:
       - 'packages/hmc/**'
       - 'packages/hmc-registration/**'
       - 'packages/components/src/file-io/NiftiUtils.js'
+      - 'packages/components/src/file-io/bids-derivatives.js'
+      - 'packages/components/src/file-io/brain-mask.js'
+      - 'packages/components/src/volume/mean.js'
       - 'packages/dwi2trx/src/gradients.js'
+      - 'packages/dwi2trx/test/gradients.test.js'
       - 'packages/dwi2trx/src/node-runner.js'
       - 'packages/dwi2trx/src/tensor.js'
       - 'packages/node-drivers/src/mindgrab.js'
@@ -134,7 +142,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - name: Install package test dependencies
-        run: pnpm install --frozen-lockfile --ignore-scripts --filter @neurodesk/noddi... --filter @neurodesk/degibbs... --filter @neurodesk/dwidenoise... --filter @neurodesk/hmc...
+        run: pnpm install --frozen-lockfile --ignore-scripts --filter @neurodesk/noddi... --filter @neurodesk/degibbs... --filter @neurodesk/dwidenoise... --filter @neurodesk/hmc... --filter @neurodesk/dwi2trx...
       - name: noddi package tests on the committed module
         working-directory: packages/noddi
         run: node --test test/*.test.js
@@ -144,14 +152,18 @@ jobs:
       - name: dwidenoise package tests on the committed module
         working-directory: packages/dwidenoise
         run: node --test test/*.test.js
+      # The JavaScript b0 rule against the gradients crate (tests/data/b0-rule.tsv and lib.rs).
+      - name: dwi2trx gradient rules against the gradients crate
+        working-directory: packages/dwi2trx
+        run: node --test test/gradients.test.js
       # The pool, cancellation and 1-versus-4-worker tests run the hmc-registration kernel on
       # worker threads.
       - name: hmc package tests on the committed modules
         working-directory: packages/hmc
         run: node --test test/*.test.js
       # The N4 module is a Docker ITK-Wasm build (scripts/build.sh, up to 8 GB), so this job does
-      # not rebuild it; #437 adds that check. These tests pin its SHA-256, test the procedure and
-      # hold its bias field to native ANTs 2.6.5 N4 on the pinned slab reference, exactly.
+      # not rebuild it; n4-wasm-source.yml does, each week. These tests pin its SHA-256, test the
+      # procedure and hold its bias field to native ANTs 2.6.5 N4 on the pinned slab reference, exactly.
       - name: Fetch the N4 native reference (sha256-checked)
         run: node packages/n4/validation/fetch-reference.mjs "$RUNNER_TEMP/n4-reference" >> "$GITHUB_ENV"
       - name: n4 package tests on the committed module
@@ -160,11 +172,11 @@ jobs:
           N4_REQUIRE_REFERENCE: '1'
         run: node --test test/*.test.js
 
-  # The AMICO 1.5.4 and DIPY Patch2Self oracle tests on the pinned Hugging Face data
+  # The AMICO 1.5.4, DIPY Patch2Self and MRtrix 3.0.8 mrdegibbs oracle tests on the pinned Hugging Face data
   # (exes/dwi/validation/oracle.manifest.json). The fetch checks the size and sha256 of every
   # file, also on a cache hit, and DWI_REQUIRE_ORACLE turns each missing-data skip into a failure.
   oracle:
-    name: exes/dwi oracle tests on the pinned AMICO and Patch2Self data
+    name: exes/dwi oracle tests on the pinned AMICO, Patch2Self and mrdegibbs data
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -190,3 +202,8 @@ jobs:
         env:
           DWI_REQUIRE_ORACLE: '1'
         run: cargo +1.98.0 test --release --locked -p dwi-denoise --test oracle -- --nocapture
+      - name: MRtrix 3.0.8 mrdegibbs oracle on the ds005577 slab, release build
+        working-directory: exes/dwi
+        env:
+          DWI_REQUIRE_ORACLE: '1'
+        run: cargo +1.98.0 test --release --locked -p dwi-degibbs --test oracle -- --nocapture

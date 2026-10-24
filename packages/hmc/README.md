@@ -82,7 +82,7 @@ The complete ds005577 GP run produces all 90 predictions exactly equal to the na
 
 ## Outputs
 
-`#413` (one shared naming module) is not merged, so `src/outputs.js` writes the names in the form of the degibbs and dwidenoise outputs. For `sub-01_dwi.nii.gz`:
+`src/outputs.js` makes the names with the shared module of the DWI apps, `@neurodesk/webapp-components/file-io/bids-derivatives` (#413), so they have the form of the degibbs, dwidenoise, n4 and noddi outputs. Two rules are hmc's own: a path keeps only its file name, and a name without a suffix becomes `dwi`. For `sub-01_dwi.nii.gz`:
 
 | File | Content |
 | --- | --- |
@@ -92,7 +92,7 @@ The complete ds005577 GP run produces all 90 predictions exactly equal to the na
 | `sub-01_desc-hmc_dwi.json` | the input's sidecar with `Description` and `HeadMotionCorrection`, no time or host |
 | `sub-01_vol-0003_desc-hmc_xfm.mat` | the ITK transform of volume 3 (0-based), as antsRegistration wrote it; an identity transform for a volume that was not registered |
 
-The per-volume transform name is provisional until #413 sets one.
+The shared module has no rule for per-volume files, so the motion table and transform names are hmc's own. They use the same source entities and `desc-hmc`.
 
 ## Resampling
 

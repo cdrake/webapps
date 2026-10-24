@@ -442,7 +442,7 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     await page.locator('#runButton').click();
     await expect(page.locator('#statusText')).toContainText('Ringing removed', { timeout: 600000 });
     const image = nifti(await download('#resultList .nd-volume-toggle:nth-child(1) .nd-download-btn'));
-    assert.equal(image.filename, 'dwi_desc-degibbs.nii.gz');
+    assert.equal(image.filename, 'sub-107_dir-AP_desc-degibbs_dwi.nii.gz');
     return image;
   }
   if (id === 'sdc') {
