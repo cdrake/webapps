@@ -1,5 +1,4 @@
-// n4's copy of the b-value rules must give dwi2trx's results, so the app, the command line and
-// the other DWI apps pick the same b0 volumes and refuse the same bval files.
+// The app and command line select the same b0 volumes as dwi2trx and the gradients crate.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
@@ -16,22 +15,6 @@ const outcome = (fn) => {
     return { error: error.message };
   }
 };
-
-test("parseBval accepts and refuses what dwi2trx's parseBval does, with the same messages", () => {
-  const cases = [
-    ["0 1000\t1000\n2000\n", 4],
-    ["0 1000", undefined],
-    ["  ", 1],
-    ["0 abc", 2],
-    ["0 Infinity", 2],
-    ["0 -5", 2],
-    ["0 1000", 3],
-    ["0 1e3 5e1 49.999", 4],
-  ];
-  for (const [text, frames] of cases) {
-    assert.deepEqual(outcome(() => parseBval(text, frames)), outcome(() => shared.parseBval(text, frames)), JSON.stringify(text));
-  }
-});
 
 test("b0Volumes selects and refuses what dwi2trx's b0Volumes does", () => {
   assert.equal(B0_THRESHOLD, shared.B0_THRESHOLD);

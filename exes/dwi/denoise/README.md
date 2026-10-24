@@ -22,7 +22,7 @@ The centred Gram is `S[:n,:n] - N m mᵀ`, and each volume has its own Cholesky 
 The work is three steps, so that a caller can split the voxels across workers and keep one copy of the data.
 
 1. `accumulate_gram` adds a voxel range to a group's Gram matrix, in f64. The Gram matrices of separate ranges add element by element.
-2. `solve` makes each volume's weights and intercept from the Gram matrix.
+2. `solve` makes each volume's weights and intercept from the Gram matrix. It is `centre` (the means and centred Gram, once per group) and then `Centred::solve_volume` for each volume, so a caller can solve one volume at a time, or the volumes in separate workers, and get the same values.
 3. `apply` replaces a voxel range with its predictions, in place. It reads a block of 256 voxels of every group volume into a small f64 buffer before it writes the block.
 
 Data is volume-major, as in NIfTI (first spatial index fastest, volume slowest).

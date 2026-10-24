@@ -429,6 +429,7 @@ try {
   await check('degibbs', async page => {
     await expect(page.locator('#statusText')).toHaveText('Drag and drop files', { timeout: 60000 });
     await expect(page.locator('#technicalLog')).toHaveClass(/collapsed/);
+    await checkBidsRun(page);
     await page.locator('#imageInput').setInputFiles(dwiSeries());
     await expect(page.locator('#fileInfo')).toContainText('interface-dwi.nii');
     await expect(page.locator('#runButton')).toBeEnabled();
@@ -445,6 +446,7 @@ try {
   await check('noddi', async page => {
     await expect(page.locator('#statusText')).toHaveText('Drag and drop files', { timeout: 60000 });
     await expect(page.locator('#technicalLog')).toHaveClass(/collapsed/);
+    await checkBidsRun(page);
     await page.locator('#imageInput').setInputFiles(dwiSeries());
     await expect(page.locator('#fileInfo')).toContainText('1×b0, 6×b1000, 6×b2000');
     await expect(page.locator('#noddiNote')).toHaveText('');
@@ -477,6 +479,8 @@ try {
     await task.tap();
     await expect(page.locator('#runButton')).toBeHidden();
     await task.tap();
+    await expect(page.locator('#runButton')).toBeEnabled();
+    await checkBidsRun(page);
     await expect(page.locator('#runButton')).toBeEnabled();
     await expect(page.locator('#outputSection')).not.toHaveAttribute('open', '');
   });
