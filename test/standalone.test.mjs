@@ -84,6 +84,7 @@ const WITHOUT_COMMAND_LINE = {
   n4: 'the n4 command line follows its app, as noddi\'s does (docs/architecture/dwi-microstructure-design.md)',
   fastprep: 'exes/fastprep drives separately installed niimath, brainchop, greedy-rs, synthsr, topofit and glm; a bundled release waits on packaging those (TopoFit licence pending)',
   'me-ica': 'its meica CLI is released from niivue/meica-rs; no release is tagged yet',
+  bison: 'the bison command line in packages/bison follows the app; its release packaging is not done yet',
 };
 
 test('every app ships its own command line or states why it cannot', async () => {
