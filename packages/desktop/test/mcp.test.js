@@ -221,6 +221,15 @@ test('an address with a user name or password is refused before approval, howeve
   const font = { atlas: 'https://example.org/font/atlas.png', metrics: 'https://example.org/font/metrics.json' };
   assert.deepEqual(await forwarded('set_font', font), font);
   for (const [name, args] of [
+    ['add_overlay', { url: 'https://example.org/T2.nii.gz', labels: 'https://example.org/denied.nii.gz' }],
+    ['set_font', { ...font, atlas: 'https://example.org/denied.nii.gz' }],
+    ['set_font', { ...font, metrics: 'https://example.org/denied.nii.gz' }],
+  ]) {
+    const response = await client.tool(name, args);
+    assert.equal(response.result.isError, true, JSON.stringify(args));
+    assert.match(text(response), /was denied/);
+  }
+  for (const [name, args] of [
     ['load_volume', { url: '//reader:secret@example.org/T2.nii.gz' }],
     ['load_volume', { url: '\\\\reader:secret@example.org\\T2.nii.gz' }],
     ['load_volume', { url: '/\\reader:secret@example.org/T2.nii.gz' }],

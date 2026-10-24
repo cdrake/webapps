@@ -82,6 +82,35 @@ test('every url in tool arguments is granted in order, at any depth', async () =
   await assert.rejects(grantSources({ layers: [{ url: 'x' }] }, async () => { throw new Error('denied'); }), /denied/);
 });
 
+test('label tables and font files receive source approval before loading', async () => {
+  const asked = [];
+  const params = {
+    url: 'https://example.org/overlay.nii.gz',
+    labels: 'https://example.org/labels.json',
+    font: { atlas: 'https://example.org/font.png', metrics: 'https://example.org/font.json' },
+  };
+  const granted = await grantSources(params, async value => {
+    asked.push(value);
+    return `granted:${value}`;
+  });
+  assert.deepEqual(asked, [
+    'https://example.org/overlay.nii.gz',
+    'https://example.org/labels.json',
+    'https://example.org/font.png',
+    'https://example.org/font.json',
+  ]);
+  assert.deepEqual(granted, {
+    url: 'granted:https://example.org/overlay.nii.gz',
+    labels: 'granted:https://example.org/labels.json',
+    font: { atlas: 'granted:https://example.org/font.png', metrics: 'granted:https://example.org/font.json' },
+  });
+  for (const key of ['labels', 'atlas', 'metrics']) {
+    await assert.rejects(grantSources({ [key]: 'https://example.org/denied' }, async () => {
+      throw new Error('denied');
+    }), /denied/);
+  }
+});
+
 test('pre-approved sources cover files inside a directory and URLs under a prefix', async t => {
   const root = await realpath(await mkdtemp(join(tmpdir(), 'approved-sources-')));
   t.after(() => rm(root, { recursive: true, force: true }));
