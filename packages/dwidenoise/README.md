@@ -44,21 +44,21 @@ In Node 22 on the development host, the Gram pass did about 0.5 million voxels p
 The app (#428) solves each volume in a worker, writes the workers' results straight into the output NIfTI (`allocateNifti` from `@neurodesk/webapp-components/file-io`), finds `cal_max` in the workers, and compresses the output in a worker (without the WebAssembly) that receives the buffer without a copy.
 Before, the page solved each group on its own thread, held the result and a second copy for the NIfTI writer, wrote 127 M values one at a time, and compressed through a `Blob` copy on its own thread.
 
-Measured on the full-brain ds005134 sub-01 DWI (`sub-01_dir-AP_run-001_dwi`, 116 × 116 × 69 × 137, int16, 81 MB gzipped, 509 MB as Float32), from the Denoise click to "Denoised", in Playwright's headless Chromium (1.64) on the 8-core Linux development host:
+Measured on the full-brain ds005134 sub-01 DWI (`sub-01_dir-AP_run-001_dwi`, 116 × 116 × 69 × 137, int16, 81 MB gzipped, 509 MB as Float32), from the Denoise click to "Denoised", in Playwright's headless Chromium (1.64) on the 8-core Linux development host, two runs of each build, alternating:
 
 | | Before | After |
 | --- | --- | --- |
-| Peak RSS of the page's renderer process (workers included) | 3475 MB | 3011 MB |
-| Peak sum of RSS of all browser processes (sampled every 25 ms) | 4315 MB | 3879 MB |
-| Longest main-thread task | 9040 ms | 169 ms |
-| Time | 19.5 s | 17.6 s |
+| Peak RSS of the page's renderer process (workers included) | 3076, 3011 MB | 2550, 2665 MB |
+| Peak sum of RSS of all browser processes (sampled every 25 ms) | 3794, 3786 MB | 3257, 3253 MB |
+| Longest main-thread task | 15326, 14713 ms | 413, 258 ms |
+| Time | 37.5, 31.6 s | 50.6, 29.7 s |
 
-`apps/dwidenoise/validation/measure-run.mjs DIST OUTDIR IMAGE.nii.gz IMAGE.bval IMAGE.bvec IMAGE.json` repeats the measurement on a production build (`DIST`) of each commit.
-Each browser was started with Playwright's `launchServer`; the renderer peak is `VmHWM` in `/proc/<pid>/status`, read after the run, with `clear_refs` reset to 5 when the image was loaded, and the sum is the largest total of `VmRSS` over the browser's processes, sampled every 25 ms.
-The peaks change by about 100 MB from run to run (two runs before: 3376 and 3475 MB; two after: 3022 and 3011 MB).
-The output NIfTI was the same in both runs (sha256 `2127198e4f66a1c6eff7342a35a2214aa668dde6d97cd7cd6676e0615e98ddbd`).
+`apps/dwidenoise/validation/measure-run.mjs DIST OUTDIR IMAGE.nii.gz IMAGE.bval IMAGE.bvec IMAGE.json` makes the measurement on a production build (`DIST`) of each commit.
+Each browser is started with Playwright's `launchServer`; the renderer peak is `VmHWM` in `/proc/<pid>/status`, read after the run, with `clear_refs` reset to 5 when the image was loaded, and the sum is the largest total of `VmRSS` over the browser's processes, sampled every 25 ms.
+Other jobs ran on the host (load average 8 to 12), so the times and task lengths change much from run to run; an earlier pair of runs on a quieter host gave 19.5 s and 9.0 s before, 17.6 s and 0.17 s after.
+The output NIfTI was the same in all runs (sha256 `2127198e4f66a1c6eff7342a35a2214aa668dde6d97cd7cd6676e0615e98ddbd`).
 The peak now comes when the viewer reads the denoised image, while the page still holds the input (509 MB) for another run.
-Before, most of the 9 s task was gzip on the page's thread.
+Before, most of the longest task was gzip on the page's thread.
 
 ## Build
 
