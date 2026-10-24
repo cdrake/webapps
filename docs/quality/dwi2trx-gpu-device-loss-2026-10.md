@@ -47,8 +47,8 @@ buffer, and yields to UI/abort tasks between commands. A 10,000-seed logical bat
 uses 5,000 logical workgroups, hence 313 submissions per pass. The additional
 submissions/yields are a deliberate overhead tradeoff against long uninterruptible
 commands; no timing or speedup claim is made. One physical command still cannot be
-interrupted, and 16 workgroups is a tested setting only once the hardware gate
-passes, not a universal driver guarantee.
+interrupted. The successful Metal crop below validates this setting for that
+case, not as a universal driver guarantee.
 
 The logical seed batch remains 10,000. Merely shrinking it would change the old
 random-stream mapping: the shader ignores its existing `rng_offset` field and
@@ -68,10 +68,50 @@ host dispatcher to compare random streams across window sizes 37, 16, 7 and 1.
 The real-data regression additionally requires all tracking commands to respect
 the 16-workgroup bound while retaining the logical 10,000-seed batch.
 
-The patch still awaits a successful rerun of these Metal tests; no source or unit
-test result alone establishes that the device-loss issue is fixed. Intel/Mesa
-validation remains separate. Source review also identified a fixed 32-lane
-subgroup assumption and removed subgroup barriers. WGSL does not guarantee that
-width or the mapping from local invocation IDs to subgroup lane IDs
-([WGSL §15.5](https://www.w3.org/TR/WGSL/#subgroups)); the bounded-command change
-does not claim to resolve those portability questions.
+## Observed Metal result
+
+The [patched run](https://github.com/neurodesk/webapps/actions/runs/40122075751),
+checkout `fbd95d5b0cc35428044805452ad9fa4635e7a6b1`, passed both hardware tests on
+an Apple adapter with `isFallbackAdapter=false`. The actual Philox probe produced
+identical 4,736-element uint32 results for physical window sizes 37, 16, 7 and 1.
+Their little-endian SHA256 is
+`48a038b2b160687cd7600901bfdcf5427622fb62634b8fa644a631572d84d4e8`.
+This validates partition-invariant RNG initialization for the exercised shader
+indices; it is not an independent biological validation of the tractography.
+
+The same Philips crop (`58b21311677e3d35a6260618054a4517ebebfbaf711598c5d4d885eb16981f86`)
+completed with these observed results:
+
+| Check | Result |
+| --- | --- |
+| Selected / processed seeds | 51,129 / 51,129 |
+| Logical batches | 10,000 × 5, then 1,129 |
+| Retained streamlines / points | 236,088 / 23,306,894 |
+| Capped / truncated / partial | false / false / false |
+| Logical chunk size / RNG seed | 10,000 / 0 |
+| Physical count / generation commands | 1,601 / 1,601 |
+| Workgroups per command | at most 16 |
+| Failed readbacks / unexpected device losses | 0 / 0 |
+| Fresh-device buffer read after tracking | `0x12345678` |
+
+The dispatch histogram is 3,190 commands of 16 workgroups, ten of eight, and two
+of five, across both passes. All six offsets readbacks and all six streamline
+metadata readbacks completed. Their offsets-buffer lengths independently account
+for all 51,129 seeds. The first batch allocated 48,210 candidate streamlines,
+matching the baseline's aggregate count; the failed baseline supplies no complete
+trajectories for comparison. The test also checked the downloaded TRX hash, header
+counts, and every world-coordinate value for finiteness. The resulting archive
+is 280,627,677 bytes, SHA256
+`b7893c40e81e7060e6ec3d6e5bfe812354bff66a3835a7d9dea7b70bacb36904`.
+The artifact `dwi2trx-tracking-diagnostic` preserves `gpu-dispatches.json` and both
+Playwright traces. Diagnostic/test duration is not reported as a benchmark or
+speedup. The baseline never completed generation, so it supplies no complete
+tractogram against which to claim full-output equality.
+
+This passes the reproduced **Metal crop** failure. It does not establish support
+for the full 615 MB source or the original Intel/Mesa device. Source review also
+identified a fixed 32-lane subgroup assumption and removed subgroup barriers.
+WGSL does not guarantee that width or the mapping from local invocation IDs to
+subgroup lane IDs ([WGSL §15.5](https://www.w3.org/TR/WGSL/#subgroups)); the bounded
+commands do not establish resolution of those portability questions. Intel/Mesa
+and full-size validation remain separate open limits.
