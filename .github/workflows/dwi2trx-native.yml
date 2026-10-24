@@ -125,7 +125,7 @@ jobs:
       - name: Track the real-data crop on Metal
         env:
           NEURODESK_E2E_PREBUILT: '1'
-        run: pnpm --filter dwi2trx exec playwright test e2e/real-data.spec.js --trace=on --reporter=line
+        run: pnpm --filter dwi2trx exec playwright test e2e/dispatch.spec.js e2e/real-data.spec.js --workers=1 --trace=on --reporter=line
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: always()
         with:
