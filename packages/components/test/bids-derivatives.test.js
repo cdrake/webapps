@@ -70,6 +70,16 @@ test('the derivative sidecar keeps the input fields and their order, then Descri
   assert.equal(sidecarText(sidecar), '{\n  "PhaseEncodingDirection": "j-",\n  "TotalReadoutTime": 0.05,\n  "Description": "Step"\n}\n');
 });
 
+test('outputNames and derivativeSidecar refuse a missing, empty or non-string label', () => {
+  // The DWI apps export one-argument wrappers named outputNames and derivativeSidecar, so a swapped import drops the label.
+  assert.throws(() => outputNames('sub-01_dwi.nii.gz'), TypeError);
+  assert.throws(() => derivativeSidecar({ PhaseEncodingDirection: 'j-' }), TypeError);
+  for (const label of [null, '', 5]) {
+    assert.throws(() => outputNames('sub-01_dwi.nii.gz', label), TypeError, String(label));
+    assert.throws(() => derivativeSidecar({ PhaseEncodingDirection: 'j-' }, label), TypeError, String(label));
+  }
+});
+
 test('gzipFile writes a gzip File that inflates to the input bytes', async () => {
   const bytes = Uint8Array.from({ length: 1000 }, (_, i) => i % 7);
   const file = await gzipFile(bytes, 'x.nii.gz');
