@@ -1,13 +1,13 @@
 import { createHash } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
-import { join } from "node:path";
+import { join, posix } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export async function benchmarkSourceHashes(root = fileURLToPath(new URL("../../../", import.meta.url))) {
   async function files(directory) {
     const entries = await readdir(join(root, directory), { withFileTypes: true });
     return (await Promise.all(entries.map(entry => entry.isDirectory()
-      ? files(join(directory, entry.name)) : join(directory, entry.name)))).flat();
+      ? files(posix.join(directory, entry.name)) : posix.join(directory, entry.name)))).flat();
   }
   const paths = [
     "pnpm-lock.yaml", "packages/hmc/package.json", "packages/hmc-registration/package.json", "packages/components/package.json",
