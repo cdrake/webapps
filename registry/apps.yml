@@ -36,6 +36,9 @@ site:
     - id: quality-control
       title: Quality Control
       description: Check image quality and compare acquisition protocols.
+    - id: pipelines
+      title: Pipelines
+      description: Chain the apps into workflows to run on the desktop suite.
 
 apps:
   - id: musclemap
@@ -848,7 +851,7 @@ apps:
     path: fastprep
     title: fastprep
     description: Preprocess fMRI BOLD runs in the style of fMRIPrep.
-    categories: [image-processing]
+    categories: [image-processing, pipelines]
     keywords: [fMRI, functional MRI, BOLD, preprocessing, fMRIPrep, BIDS, motion correction, distortion correction, task activation, GLM]
     anatomy: [brain]
     modalities: [mri]
@@ -1068,6 +1071,31 @@ apps:
     shell: imaging-workspace
     ci:
       toolchains: [node, rust-wasm]
+      shared_runtime: false
+      browser_test: true
+      release: false
+  - id: pipeline-builder
+    path: pipeline-builder
+    title: Pipeline Builder
+    description: Chain apps into a NeuroFlow workflow.
+    categories: [pipelines]
+    keywords: [pipeline, workflow, neuroflow, batch, desktop]
+    anatomy: [brain]
+    modalities: [mri]
+    inputs: [neuroflow]
+    hardware: cpu
+    legacy_domain: null
+    runtime: vite-wasm
+    model_manifest: null
+    asset_manifest_schema: null
+    source: neurodesk/webapps@local
+    license: NOASSERTION
+    maintainers: [neurodesk]
+    support_status: experimental
+    handoff: none
+    shell: imaging-workspace
+    ci:
+      toolchains: [node]
       shared_runtime: false
       browser_test: true
       release: false

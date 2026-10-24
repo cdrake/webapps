@@ -36,6 +36,7 @@ const REQUIRED_METHODS = {
   seedseg: ['10.1101/2023.10.26.564293', '10.1007/978-3-319-46723-8_49', '10.1016/j.jneumeth.2016.03.001'],
   dicompare: ['github.com/astewartau/dicompare', 'pyodide.org', '10.1016/j.jneumeth.2016.03.001'],
   dicomview: ['10.1016/j.jneumeth.2016.03.001', 'github.com/niivue/niivue', 'github.com/astewartau/dicompare', 'pyodide.org'],
+  'pipeline-builder': ['github.com/cdrake/neuroflow', 'github.com/cdrake/neuroflow-spec'],
   deface: ['10.52294/001c.94384', 'arxiv.org/abs/2506.11860', '10.21105/joss.05098', '10.1098/rstb.2001.0915', '10.1016/j.jneumeth.2016.03.001'],
   'easy-mp2rage': ['10.1016/j.neuroimage.2009.10.002', '10.1371/journal.pone.0069294', '10.1002/mrm.23145', '10.1371/journal.pone.0099676'],
   niimath: ['10.52294/001c.94384', '10.1016/j.jneumeth.2016.03.001'],
@@ -212,6 +213,7 @@ test('every page carries the site catalog, so one app can open another with its 
   assert.ok(!catalog.some(({ id }) => id === 'zarro'), 'Zarro streams from URLs and takes no files');
   assert.ok(!catalog.some(({ id }) => id === 'me-ica'), 'ME-ICA needs an echo bundle, not a single image');
   assert.ok(!catalog.some(({ id }) => id === 'sdc'), 'SDC needs an opposite-phase pair, not a single image');
+  assert.ok(!catalog.some(({ id }) => id === 'pipeline-builder'), 'Pipeline builder opens workflow documents, not images');
 });
 
 test('DICOM handoff Privacy discloses unchanged scanner headers', () => {

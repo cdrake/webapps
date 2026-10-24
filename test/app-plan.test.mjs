@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import test from 'node:test';
 import { parse, stringify } from 'yaml';
-import { createAppPlan, INDEPENDENT_ROOT_DEV_DEPENDENCIES, RUNTIME_MANIFEST_READERS, SITE_ONLY_FILES } from '../scripts/lib/app-plan.mjs';
+import { AUTOMATION_CATALOG_READERS, createAppPlan, INDEPENDENT_ROOT_DEV_DEPENDENCIES, RUNTIME_MANIFEST_READERS, SITE_ONLY_FILES } from '../scripts/lib/app-plan.mjs';
 import { testedBase } from '../scripts/lib/tested-base.mjs';
 import { lockfileImpact } from '../scripts/lib/lockfile-impact.mjs';
 import { loadAppsRegistry, repoRoot } from '../scripts/lib/apps-registry.mjs';
@@ -183,7 +183,7 @@ test('a root script that names one package file reaches that file, not the whole
   const contracts = createAppPlan(registry, ['packages/desktop/src/contracts.js'], await graph);
   const other = createAppPlan(registry, ['packages/desktop/src/jobs.js'], await graph);
   assert.equal(contracts.allApps, true, 'vite-app-config.mjs reaches contracts.js through app-automation.mjs');
-  assert.deepEqual(other.selected.map((app) => app.id), ['dicompare'], 'only dicompare depends on the desktop package');
+  assert.deepEqual(other.selected.map((app) => app.id), ['dicompare', 'pipeline-builder'], 'only dicompare and Pipeline builder depend on the desktop package');
 });
 
 function manifest(before, after) {
@@ -1142,6 +1142,30 @@ test('a runtime manifest change selects the apps that stage its files and the si
     for (const user of registry.apps.filter((candidate) => reaches(candidate, owner))) {
       assert.ok(selected.has(user.id), `${file} reads the runtime manifest, and ${user.id} reaches ${owner} but is not selected`);
     }
+  }
+});
+
+test('an automation contract change also selects the apps that generate tools from every contract', async () => {
+  const registry = await loadAppsRegistry();
+  const workspace = await graph;
+  const reaches = (app, node) => reachableFrom(workspace, `apps/${app.id}`).has(node);
+  const generating = registry.apps.filter((app) => AUTOMATION_CATALOG_READERS.some((reader) => reaches(app, reader)));
+  assert.ok(generating.some(({ id }) => id === 'pipeline-builder'));
+  const ids = (paths) => createAppPlan(registry, paths, workspace).selected.map(({ id }) => id).sort();
+  assert.deepEqual(ids(['apps/n4/automation.json']), [...new Set(['n4', ...generating.map(({ id }) => id)])].sort());
+  assert.deepEqual(ids(['apps/n4/src/main.js']), ['n4']);
+  for (const path of ['packages/desktop/neuroflow/generator.mjs', 'packages/desktop/neuroflow/runtime/stdio.mjs', 'packages/desktop/neuroflow/vendor/tool.schema.json']) {
+    assert.ok(ids([path]).includes('pipeline-builder'), `${path} is part of the catalog Pipeline builder publishes`);
+  }
+
+  // Other loaders an app's build or tests reach read only that app's own contract.
+  const ownContract = new Set(['scripts/lib/app-automation.mjs', 'scripts/lib/vite-app-config.mjs', 'apps/dicompare/vite.config.mts']);
+  const reached = new Set(registry.apps.flatMap((app) => [...reachableFrom(workspace, `apps/${app.id}`)]));
+  for (const file of filesNaming(String.raw`\b(loadAppContract|loadCatalogContracts)\b`)) {
+    const app = file.match(/^apps\/([^/]+)\//)?.[1];
+    if (!app && !reached.has(file)) continue;
+    if (AUTOMATION_CATALOG_READERS.includes(file) || ownContract.has(file) || generating.some(({ id }) => id === app)) continue;
+    assert.fail(`${file} loads automation contracts; if it reads other apps' contracts, add it to AUTOMATION_CATALOG_READERS`);
   }
 });
 

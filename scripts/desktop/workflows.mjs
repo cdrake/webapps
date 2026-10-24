@@ -11,7 +11,7 @@ import { expect } from '@playwright/test';
 import { verifyMuscleMapFullPipeline, createSyntheticMuscleMapNifti } from '../../test/musclemap-full-pipeline-smoke.mjs';
 import { startReferenceServer } from '../../test-utils/compute-reference-server.mjs';
 
-export const workflowApps = ['nesvor', 'musclemap', 'vesselboost', 'spinalcordtoolbox', 'calmar', 'qsmbly', 'seedseg', 'dicompare', 'deface', 'easy-mp2rage', 'niimath', 'mri2vid', 'browserqc', 'surfannotate', 'zarro', 'synthsr', 'synthseg', 'syncro', 'dwi2trx', 'edgereg', 'greedy', 'ants', 'brain2print', 'topofit', 'fireants', 'brain-extraction', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel', 'elastix', 'dicomview', 'fastprep', 'noddi', 'degibbs', 'n4', 'dcm2niix', 'dwidenoise', 'sdc', 'dwicorrect', 'me-ica'];
+export const workflowApps = ['nesvor', 'musclemap', 'vesselboost', 'spinalcordtoolbox', 'calmar', 'qsmbly', 'seedseg', 'dicompare', 'deface', 'easy-mp2rage', 'niimath', 'mri2vid', 'browserqc', 'surfannotate', 'zarro', 'synthsr', 'synthseg', 'syncro', 'dwi2trx', 'edgereg', 'greedy', 'ants', 'brain2print', 'topofit', 'fireants', 'brain-extraction', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel', 'elastix', 'dicomview', 'fastprep', 'noddi', 'degibbs', 'n4', 'dcm2niix', 'dwidenoise', 'sdc', 'dwicorrect', 'me-ica', 'pipeline-builder'];
 
 /**
  * Anything a workflow needs before the desktop app starts. NeSVoR computes on a
@@ -99,7 +99,7 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     assert.ok(bytes.length > 352, 'Output must contain image data');
     return { filename: data.filename, bytes: data.bytes.length };
   };
-  if (['deface', 'brain2print', 'dwi2trx', 'ants', 'greedy', 'edgereg', 'fireants', 'elastix', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel', 'dicomview', 'fastprep', 'noddi', 'degibbs', 'n4', 'dcm2niix', 'dwidenoise', 'sdc', 'dwicorrect', 'me-ica'].includes(id)) {
+  if (['deface', 'brain2print', 'dwi2trx', 'ants', 'greedy', 'edgereg', 'fireants', 'elastix', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel', 'dicomview', 'fastprep', 'noddi', 'degibbs', 'n4', 'dcm2niix', 'dwidenoise', 'sdc', 'dwicorrect', 'me-ica', 'pipeline-builder'].includes(id)) {
     const examples = JSON.parse(await readFile(join(root, 'apps', id, 'examples.json')));
     const selector = page.getByRole('combobox', { name: 'Input', exact: true });
     await expect(selector).toBeEnabled({ timeout: 120000 });
@@ -120,6 +120,16 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     const image = entries['sub-01/ses-01/anat/sub-01_ses-01_T1w.nii.gz'];
     assert.ok(image);
     return nifti({ filename: 'sub-01_ses-01_T1w.nii.gz', bytes: image });
+  }
+  if (id === 'pipeline-builder') {
+    // The template validates against the bundled catalog and exports unchanged.
+    await expect(page.locator('#validationSummary')).toHaveText('Valid · 3 steps.', { timeout: 120000 });
+    const exported = await download('#runButton');
+    const workflow = JSON.parse(exported.bytes.toString('utf8'));
+    const template = JSON.parse(await readFile(join(root, 'apps/pipeline-builder/src/workflows/t1-segmentation.workflow.json')));
+    assert.equal(exported.filename, 't1-segmentation.workflow.json');
+    assert.deepEqual(workflow, template);
+    return { filename: exported.filename, steps: Object.keys(workflow.steps) };
   }
   if (id === 'nesvor') {
     assert.ok(compute, 'the nesvor workflow needs the reference compute server from prepareWorkflow');
