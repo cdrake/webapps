@@ -8,6 +8,8 @@
 
 ### Patch Changes
 
+- Report a valid workflow in the console after its errors are corrected, while retaining warnings that require a runtime check.
+- Reject imported workflow bindings whose known gradient format is incompatible with the input. Validate the full document before enabling export, so a bvec file cannot feed a bval input or vice versa.
 - Updated dependencies [14a8b29]
 - Updated dependencies [a028e96]
 - Updated dependencies [650ce5f]

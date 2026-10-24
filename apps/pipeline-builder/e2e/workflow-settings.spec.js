@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
 
 const template = JSON.parse(readFileSync(new URL("../src/workflows/t1-segmentation.workflow.json", import.meta.url), "utf8"));
+const diffusion = JSON.parse(readFileSync(new URL("../src/workflows/dwi-preprocessing.workflow.json", import.meta.url), "utf8"));
 
 async function importWorkflow(page, doc) {
   await page.goto("/");
@@ -15,6 +16,23 @@ async function exportWorkflow(page) {
   const downloaded = page.waitForEvent("download");
   await page.locator("#runButton").click();
   return JSON.parse(readFileSync(await (await downloaded).path(), "utf8"));
+}
+
+for (const [input, output] of [["bval", "bvec"], ["bvec", "bval"]]) {
+  test(`an imported ${output}-to-${input} binding blocks export until corrected`, async ({ page }) => {
+    const doc = structuredClone(diffusion);
+    doc.steps.models.inputs[`input_${input}`].ref = `steps.correct.outputs.output_${output}`;
+    await importWorkflow(page, doc);
+    await expect(page.locator("#validationSummary")).toContainText("problem");
+    await expect(page.locator("#stepRows")).toContainText(/formats.*incompatible/i);
+    await expect(page.locator("#runButton")).toBeDisabled();
+    await page.getByRole("button", { name: "models", exact: true }).click();
+    await page.locator(`#bind-input_${input}`).selectOption(`steps.correct.outputs.output_${input}`);
+    await expect(page.locator("#validationSummary")).toContainText("Valid");
+    await expect(page.locator("#runButton")).toBeEnabled();
+    expect((await exportWorkflow(page)).steps.models.inputs[`input_${input}`].ref)
+      .toBe(`steps.correct.outputs.output_${input}`);
+  });
 }
 
 for (const theme of ["light", "dark"]) {
