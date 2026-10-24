@@ -185,12 +185,17 @@ export async function assembleRuntimeAssetStore({ repoRoot, siteDist, registry }
     }
   }
 
-  await cp(
-    join(repoRoot, 'packages', 'components', 'src'),
-    join(runtimeRoot, 'webapp-components', '0.1.2', 'src'),
-    { recursive: true },
-  );
-  await stageOperationParameters({ repoRoot, componentsSrc: join(runtimeRoot, 'webapp-components', '0.1.2', 'src') });
+  const sharedSource = join(runtimeRoot, 'webapp-components', '0.1.2', 'src');
+  await cp(join(repoRoot, 'packages', 'components', 'src'), sharedSource, { recursive: true });
+  await stageOperationParameters({ repoRoot, componentsSrc: sharedSource });
+  const nvMcp = manifest.families.find(family => family.id === 'nv-mcp');
+  if (nvMcp) {
+    // Import-map apps load these shared components; their nv-mcp module imports the client the bundled apps share.
+    const module = join(sharedSource, 'automation', 'nv-mcp.js');
+    const client = join(runtimeRoot, nvMcp.target, nvMcp.files[0].name);
+    const source = await readFile(module, 'utf8');
+    await writeFile(module, source.replace(/(['"])@niivue\/nv-mcp\/browser\1/, (_match, quote) => `${quote}${moduleReference(module, client)}${quote}`));
+  }
 
   const files = await walk(siteDist);
   for (const file of files) {
