@@ -97,6 +97,11 @@ jobs:
         with:
           path: ~/.cache/neurodesk-neuroflow-assets
           key: neuroflow-assets-${{ hashFiles('registry/offline-assets.lock.json') }}
+      - name: Install the pinned DWI WebAssembly build toolchain
+        if: matrix.template == 'dwi'
+        run: |
+          rustup toolchain install nightly-2025-11-15 --profile minimal --component rust-src --target wasm32-unknown-unknown
+          cargo install wasm-pack --version 0.13.1 --locked
       - name: Build the exported workflow's applications
         run: pnpm ${{ matrix.apps }} build
       - name: Run the exported ${{ matrix.template }} workflow through the desktop suite

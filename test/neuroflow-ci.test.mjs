@@ -64,3 +64,16 @@ test('scientific workflow triggers cover the actual transitive workspace graph',
     }
   }
 });
+
+
+test('the DWI job installs the toolchain that the real shoreline build requires', async () => {
+  const build = await readFile(new URL('packages/shoreline/scripts/build-wasm.mjs', root), 'utf8');
+  const toolchain = build.match(/const toolchain\s*=\s*["']([^"']+)["']/)[1];
+  const steps = flow.jobs['exported-template'].steps;
+  const install = steps.findIndex(step => step.run?.includes(`rustup toolchain install ${toolchain}`));
+  const compile = steps.findIndex(step => step.name === "Build the exported workflow's applications");
+  assert.ok(install >= 0 && install < compile, 'Install the pinned toolchain before building DWI Correct');
+  assert.match(steps[install].run, /--component rust-src/);
+  assert.match(steps[install].run, /--target wasm32-unknown-unknown/);
+  assert.match(steps[install].run, /cargo install wasm-pack --version 0\.13\.1 --locked/);
+});

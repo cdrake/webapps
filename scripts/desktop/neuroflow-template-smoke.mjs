@@ -9,6 +9,8 @@ import { openDesktop } from '../../packages/desktop/neuroflow/runtime/stdio.mjs'
 import { parseWorkflow, serializeWorkflow } from '../../apps/pipeline-builder/src/model.js';
 import { neuroflowBundleFiles } from '../lib/neuroflow-bundle.mjs';
 import { inspectScientificImage } from '../lib/scientific-output-checks.mjs';
+import { decodeNiftiBuffer, parseNiftiHeader } from '../../packages/components/src/file-io/NiftiUtils.js';
+import { MAX_BUFFER_BYTES, planInputMemory } from '../../packages/synthseg/src/input-memory.js';
 import { compareIndividualApps } from '../lib/neuroflow-parity.mjs';
 
 const root = resolve(import.meta.dirname, '../..');
@@ -117,9 +119,20 @@ if (name === 'dwi') {
     inputs[role] = path;
   }
 } else {
-  const fixture = join(root, 'apps/calmar/tests/fixtures/synthstrip-mini/T1.nii.gz');
-  inputs = { t1: fixture };
-  dataRoot = dirname(fixture);
+  // Use SynthSeg's validated whole-head example, retaining its complete physical field of view.
+  const examples = JSON.parse(await readFile(join(root, 'apps/synthseg/examples.json')));
+  const fixture = examples.find(example => example.id === 't1-head')?.files.find(file => file.role === 'image');
+  assert.ok(fixture, 'The T1 template needs the pinned SynthSeg whole-head example');
+  await stageAsset(fixture.url);
+  dataRoot = join(scratch, 'inputs');
+  await mkdir(dataRoot, { recursive: true });
+  const path = join(dataRoot, fixture.name);
+  await cp(join(bundle, assets[fixture.url].path), path);
+  const header = parseNiftiHeader(await decodeNiftiBuffer(await readFile(path)));
+  const plan = planInputMemory(header);
+  assert.ok(plan.requiredBufferBytes <= MAX_BUFFER_BYTES,
+    `The whole-head T1 fixture must fit SynthSeg at 1 mm: padded ${plan.paddedShape.join('×')}, ${plan.requiredBufferBytes} buffer bytes`);
+  inputs = { t1: path };
 }
 const require = createRequire(join(root, 'packages/desktop/package.json'));
 const env = { ...process.env, NEURODESK_BUNDLE: bundle, NEURODESK_USER_DATA: join(scratch, 'profile'),
