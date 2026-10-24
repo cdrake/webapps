@@ -272,10 +272,10 @@ test("a dropped BIDS folder removes ringing from the chosen run and keeps its si
   await expect(runs).toHaveValue("1");
   await expect(page.locator("#runButton")).toBeEnabled();
   await page.locator("#runButton").click();
-  await expect(page.locator("#statusText")).toHaveText("Ringing removed from 21 volumes", { timeout: 120000 });
+  await expect(page.locator("#statusText")).toHaveText("Ringing removed from 101 volumes", { timeout: 120000 });
   const image = await download(page, "Corrected image");
   expect(image.suggestedFilename()).toBe("sub-01_run-2_desc-degibbs_dwi.nii.gz");
-  expect(readNiftiFrames(gunzipSync(readFileSync(await image.path()))).frames).toBe(21);
+  expect(readNiftiFrames(gunzipSync(readFileSync(await image.path()))).frames).toBe(101);
   const bval = await download(page, "b-values");
   expect(bval.suggestedFilename()).toBe("sub-01_run-2_desc-degibbs_dwi.bval");
   expect(readFileSync(await bval.path())).toEqual(tree["ds/sub-01/dwi/sub-01_run-2_dwi.bval"]);
