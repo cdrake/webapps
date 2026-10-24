@@ -1,6 +1,6 @@
 {
   "name": "@neurodesk/ants-denoise",
-  "version": "0.1.20261023",
+  "version": "0.2.0",
   "description": "ANTs DenoiseImage (adaptive non-local means) in WebAssembly",
   "type": "module",
   "private": true,
