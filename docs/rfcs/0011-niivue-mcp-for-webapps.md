@@ -4,7 +4,8 @@ Status: Draft
 
 Date: 2026-10-22
 
-Implementation evidence: the desktop proof of concept on branch
+Implementation evidence: the proof of concept in
+[PR #556](https://github.com/neurodesk/webapps/pull/556), branch
 `feat/nv-mcp-bridge`, described under [Proof of concept](#proof-of-concept).
 
 ## Summary
@@ -16,8 +17,13 @@ server registers nv-mcp's core tools beside its own `apps_*`, `runs_*` and
 Electron bridge. Hosted web apps later reach the same tools through nv-mcp's
 WebSocket client and a server the user runs locally.
 
-No image data leaves the user's machine in either path. A hosted relay is
-described as a later option and is not proposed for implementation here.
+Neither path adds a server outside the user's computer. The desktop serves MCP
+over stdio, and a hosted page connects only to a server on `127.0.0.1`. The
+agent the user connects receives what the tools return. That includes
+screenshots, scene state and image statistics, and on the desktop also run
+reports and output files. An agent that runs on a cloud model sends what it
+receives to its provider. A hosted relay is described as a later option and is
+not proposed for implementation here.
 
 ## Motivation
 
@@ -81,14 +87,16 @@ uses 0.69 and keeps the existing adapter.
 ### Page
 
 `createNiivueAdapter` gains a `niivue` member. On first use it imports
-`@niivue/nv-mcp/browser` dynamically, so apps pay for the code only when an
-agent calls it, and builds `coreHandlers({ view: nv })` once. The viewer
-registry adds one command, `viewers.niivue`, with `{ viewerId, method,
+`automation/nv-mcp.js`, the only module that loads `@niivue/nv-mcp/browser`,
+and builds `coreHandlers({ view: nv })` once. Apps pay for the code only when
+an agent calls it, and an app without a NiiVue adapter does not bundle it. The
+viewer registry adds one command, `viewers.niivue`, with `{ viewerId, method,
 params }`. It returns `{ result, state }`, where `state` is nv-mcp's
 `sceneState`. A request without `method` returns only the state.
 
 `viewers.list` reports a `niivue` capability. The command is added to the
-three desktop allowlists.
+two desktop allowlists: the page dispatcher in `browser-automation.js` and the
+session commands in `viewer-sessions.js`.
 
 ### Desktop
 
@@ -119,7 +127,9 @@ connected, and can disconnect.
   `node:http` and `ws` with the same checks. `/mcp` is stateless and protected
   against DNS rebinding. `/app` accepts pages on loopback names and on
   `https://webapps.neurodesk.org`, and `--allow-origin` adds others. It listens
-  on `127.0.0.1` only.
+  on `127.0.0.1` only. A malformed request, an invalid frame or a reset socket
+  ends only that connection. A refused socket is destroyed once its reply is
+  sent, so a client that holds it half open cannot delay shutdown.
 - **Why its own package.** People using the hosted apps should not need
   Electron, and the desktop already serves the same tools itself. The package
   is private until the RFC settles its name and how it is installed.
@@ -127,10 +137,14 @@ connected, and can disconnect.
   address has `?agent`, or `?agent=<port>` for a server on another port.
   Brain Extraction is the only app wired so far.
 - **Browsers.** Chrome asks the user to allow local network access the first
-  time a page connects. Firefox connects without asking. Safari blocks the
-  connection as mixed content and offers no prompt, so it is unsupported: its
-  users need the desktop app, Chrome or Firefox. The page cannot tell a denied
-  prompt from a server that is not running, so the waiting message names both.
+  time a page connects. In the first test, on macOS, Firefox connected without
+  asking. Safari blocks the connection as mixed content and offers no prompt,
+  so it is unsupported. Its users need the desktop app, Chrome or Firefox. The
+  page cannot tell a denied prompt from a server that is not running, so the
+  waiting message names both.
+- **Privacy.** A connected agent receives the page's screenshots and scene
+  details. An app that offers the control says so in its Privacy text, and
+  says that an agent on a cloud model sends them to its provider.
 - **Loading.** A hosted page has no approval step. `load_volume` and the other
   loading tools fetch whatever the page can read under CORS, as any script on
   the page could, and a local path never works. The server's instructions say
@@ -150,7 +164,9 @@ does not say which window such a request came from, so only the session can
 tell viewers apart. The session's request filter checks everything the viewer
 asks for against that viewer's grants, and a refused request counts against
 that viewer alone. The viewer's address serves the app and that viewer's
-mounts. Bundle and model files are shared.
+mounts. Bundle and model files are shared. The desktop answers the viewer's
+https requests itself and fetches granted sources and compute origins in the
+viewer's session, so a cookie that a host sets stays with that viewer.
 
 The desktop adds an approval step, so a source can be granted while the
 session is open:
@@ -178,7 +194,8 @@ session is open:
    are never shared between windows. Another viewer's address is just another
    URL, and a relative address reaches only this viewer's own mounts. Grants
    are not remembered across sessions. A closed viewer's browser session is
-   cleared before another viewer reuses it.
+   cleared, cookies and cache included, before another viewer reuses it. A
+   session that fails to clear is not reused.
 
 Denials and approvals are recorded in the session's run record, so a report
 can show which sources an agent added after the run.
@@ -220,10 +237,15 @@ page handlers above can be registered there once browsers support it.
   `NEURODESK_APPROVED_SOURCES` and can refuse instead of asking through
   `NEURODESK_SOURCE_APPROVAL=deny`. The **Allow** scope is still open.
 - **Duplicate MCP SDK.** nv-mcp depends on `@modelcontextprotocol/sdk` 1.x.
-  The desktop also installs it beside 2.1. Ask upstream to make it a peer
-  dependency or move to 2.x.
-- **Prerelease tags.** npm's `latest` tag is `1.0.0-rc.1` and the tested code
-  is `next`, `1.0.0-rc.7`. Pin the exact version.
+  Only the processes that serve tools need it: the desktop, which installs it
+  beside 2.1, and `neurodesk-mcp`. Pages use only nv-mcp's browser entry, so
+  the components package must not bring the SDK and its server dependencies
+  into the command-line archives built from it. Ask upstream to make the SDK
+  a peer dependency or move to 2.x.
+- **Prerelease pin.** The proof of concept pins `1.0.0-rc.7`, the release it
+  was tested against. To adopt a later release candidate, change the pin, the
+  `nv-mcp` family's version in `runtime-assets/manifest.json` and that
+  family's sha256 together.
 - **Local network access.** Tested with Playwright on macOS, a page on
   `https://webapps.neurodesk.org` opening `ws://127.0.0.1`:
   - Chromium 156 and Chrome 155 fail with
@@ -232,7 +254,9 @@ page handlers above can be registered there once browsers support it.
     prompt. The server then sees the page's own origin. Headed Chrome 155
     reports the permission as `prompt` and holds the socket open until the
     person decides, where headless fails at once.
-  - Firefox 157 connects without a prompt.
+  - Firefox 157 connected without a prompt. Later runs on Linux could not
+    repeat the check, because headless Firefox there has no WebGL2 and the
+    page never gets a viewer.
   - WebKit 27.2 blocks the socket as mixed content, with no permission to grant.
 
   nv-mcp's README says an HTTPS page cannot open `ws://127.0.0.1` at all,
@@ -268,16 +292,27 @@ Phase 1 runs on branch `feat/nv-mcp-bridge` against `@niivue/nv-mcp`
     closed session leaves `list_tabs`.
   - Components: a test drives `viewers.niivue` against a fake NiiVue: state
     only, `set_view`, an unknown method, invalid parameters, and a 0.x viewer.
-- **Bundle cost.** Vite emits the browser handlers as a separate lazy chunk:
-  100 KB, 31 KB gzipped. It is loaded only on the first `viewers.niivue`
-  call, and the app's main chunk does not grow.
+- **Bundle cost.** Vite emits nv-mcp's browser handlers and `AgentClient` as
+  one lazy chunk, `nv-mcp-<hash>.js`. At rc.7 it is 104,301 bytes, about 32 KB
+  gzipped, and every Vite app with a NiiVue adapter emits the same bytes. The
+  composite site serves it once, from `_runtime/nv-mcp/1.0.0-rc.7/nv-mcp.js`,
+  which `runtime-assets/manifest.json` pins by sha256 as the `nv-mcp` family.
+  An app without a NiiVue adapter ships none. Import-map apps that call
+  `createNiivueAdapter` get `automation/nv-mcp.js` bundled with its client
+  in their standalone builds, and import the shared file in the composite
+  site. The chunk loads only on the first `viewers.niivue` call, or when a
+  person chooses **Connect an agent**. Brain Extraction's main chunk grows by
+  about 3 KB.
 - **Dependencies.**
-  - The exact pin needs a `minimumReleaseAgeExclude` entry, because rc.7 is
-    one day old. This matches the existing `@niivue` prerelease entries.
-  - About 50 packages enter the lockfile through nv-mcp's
-    `@modelcontextprotocol/sdk` 1.x, including express, hono, cors and jose.
-    Only the desktop ships them. Making the SDK a peer dependency upstream
-    would remove them.
+  - The exact pin needs a `minimumReleaseAgeExclude` entry, because rc.7 was
+    one day old when it was adopted. This matches the existing `@niivue`
+    prerelease entries.
+  - nv-mcp's `@modelcontextprotocol/sdk` 1.x brings express, hono, cors, jose
+    and their dependencies into the lockfile. The desktop and
+    `neurodesk-mcp` ship them, because they serve the tools. No page loads
+    them, and the command-line archives built from the components package
+    must not include them. Making the SDK a peer dependency upstream would
+    remove them from the lockfile.
 - **Source approval.** Phase 2 is in the same branch.
   - The bridge finds every `url` argument in a call. An absolute path, a
     `file:` URL or an http(s) URL outside the window's grants is approved
@@ -314,12 +349,23 @@ Phase 1 runs on branch `feat/nv-mcp-bridge` against `@niivue/nv-mcp`
     leaves empty for service worker requests. Approved URLs then failed in
     Brain Extraction, any window could load another's token URL, and one
     viewer's refused request failed the run in progress.
+  - The https handler fetches approved sources and compute traffic with the
+    viewer's session, not with `net.fetch`'s default session. With
+    `net.fetch`, a cookie that a host set for one viewer reached other
+    viewers and the profile on disk.
+  - Closing a viewer clears its storage and its cache. The desktop waits for
+    both clears to settle before it quits, even when one fails, because a
+    clear that finishes after Electron's shutdown crashes the process.
   - The smoke loads two approved remote images on a loopback IP address, one
     granted by `sessions_grant` and one by `add_overlay`, and refuses a URL
     with credentials. A second viewer cannot load the first's mask by its
     token URL or by `../_local/…`, and its `run.json` lists both refusals. A
     run succeeds while a retained viewer's redirect out of its grants is
     refused, and closing the first viewer stops its address.
+  - Over https, the smoke checks that a cookie that an approved host or a
+    compute origin sets goes back only to the viewer that received it. The
+    second viewer, the next viewer on the first one's cleared session, and a
+    relaunched desktop send none, and no profile file holds it.
 - **Timeouts.** The bridge timeout is 65 s: a 30 s approval wait plus the
   session's 30 s command limit. A stalled page is reported by the session,
   which also closes it, before nv-mcp's own timer fires.
@@ -333,15 +379,20 @@ Phase 1 runs on branch `feat/nv-mcp-bridge` against `@niivue/nv-mcp`
 - **Hosted page.** Phase 3 is in the same branch.
   - `packages/agent-server` tests drive a fake page through `/mcp` with the
     MCP SDK client. They check that a page on another origin is refused with
-    403, and that `/` and `/mcp` refuse a foreign `Host`.
+    403, and that `/` and `/mcp` refuse a foreign `Host`. They also check that
+    a malformed request or frame, a client that resets a refused socket, and
+    a client that holds a refused socket half open neither stop the server
+    nor delay its shutdown.
   - `packages/agent-server/validation/browser-smoke.mjs` serves the built
     Brain Extraction app at its hosted address in each Playwright browser,
     opens an image, and clicks **Connect an agent**. An MCP client then calls
-    `list_tabs`, `set_view`, `go_to_point` and `screenshot`. Chromium 156
-    (with the permission granted) and Firefox 157 pass, and their screenshots
-    show the axial slice. WebKit 27.2 stays waiting, as expected.
+    `list_tabs`, `set_view`, `go_to_point` and `screenshot`. Chromium 156,
+    with the permission granted, passes, and its screenshot shows the axial
+    slice. Firefox 157 passed in the first run, on macOS. On Linux, headless
+    Firefox has no WebGL2, so the page never gets a viewer. WebKit 27.2 stays
+    waiting, as expected.
   - nv-mcp's own servers default to port 4242 too, so a NiiVue page's dev
     server can hold it. `neurodesk-mcp --port` and `?agent=<port>` move both
     ends.
-  - The browser handlers' lazy chunk grows to 124 KB, 39 KB gzipped, with
-    `AgentClient`. Brain Extraction's main chunk grows by 2 KB.
+  - Brain Extraction's Privacy text says what a connected agent can read and
+    that an agent on a cloud model sends it to its provider.
