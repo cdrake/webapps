@@ -132,6 +132,7 @@ Every other method gets the same mean AP and aligned mean PA pair.
 ### One field convention and one resampler
 
 Every method's output becomes a field in Hz with topup's sign on the AP b0 grid (`fields.py`).
+`fields.py` also converts the fields of the Synb0-DisCo comparison (`synb0-topup`, `synb0-sdc`, `synb0-sdc-raw`, `synb0-pyhysco-*` and the zero field `uncorrected`; see [Synb0-DisCo front end](dwi-synb0-disco.md)).
 `calibrate.py` finds the sign that relates topup's field to the sampling displacement: it corrects the first AP b0 with topup's field and keeps the sign that reproduces topup's own `--iout`.
 `correct.py` then applies every field the same way: linear interpolation along the PE axis and Jacobian modulation.
 Thus the metrics compare fields, not each tool's resampler.
@@ -277,6 +278,7 @@ For DR-BUDDI, a port is not started until a WebAssembly build of the solver runs
 3. **WebGPU path for PyHySCO** ([#506](https://github.com/neurodesk/webapps/issues/506)). The Gauss-Newton and PCG steps as WebGPU kernels, held to the CPU field by the port gate.
 4. **ANTs restricted SyN** ([#507](https://github.com/neurodesk/webapps/issues/507)). It failed the gate on every subject with the SyN-SDC schedule. When SyN-SDC (#444, #462) is in `apps/sdc`, either find a reverse-PE schedule that passes the gate or keep ANTs for single-PE data only.
 5. **Synb0-DisCo front end** ([#508](https://github.com/neurodesk/webapps/issues/508)). Its `--notopup` output (a synthetic undistorted b0) as the second image for the chosen solver, for data without a reverse-PE b0. Needs its own check against topup with the same synthetic image.
+   Measured in [Synb0-DisCo front end](dwi-synb0-disco.md): on the six subjects, the PyHySCO field with the synthetic b0 differs from topup with the same synthetic b0 by 6.11 Hz (demeaned), and it is no closer to topup with the real pair than a zero field. No browser front end yet.
 6. **fastprep PEPOLAR** ([#509](https://github.com/neurodesk/webapps/issues/509)). Use the `sdc` solver package in fastprep for reverse-PE field estimation.
 
 ## Reproduce
