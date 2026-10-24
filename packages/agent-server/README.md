@@ -39,6 +39,13 @@ refused; the page cannot tell which.
 The server listens on `127.0.0.1` only, and `/mcp` refuses requests whose
 `Host` is not this server's, against DNS rebinding.
 
+## What a connected agent receives
+
+A connected page answers the agent's tool calls with screenshots of its
+viewer and details of the loaded images, such as their names, dimensions and
+intensity statistics. The server passes these answers to the agent on your
+computer. An agent that runs on a cloud model sends them to its provider.
+
 ## What an agent can load
 
 The page loads volumes itself, so `load_volume` and the other loading tools
