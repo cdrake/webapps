@@ -8,6 +8,8 @@
 
 ### Patch Changes
 
+- @neurodesk/dwi2trx@0.8.20261024
+- @neurodesk/noddi@0.6.20261024
 - Updated dependencies
   - @neurodesk/webapp-components@0.21.1
   - @neurodesk/dwi2trx@0.8.20261024

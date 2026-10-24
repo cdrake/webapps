@@ -8,6 +8,8 @@
 
 ### Patch Changes
 
+- ecaf40a: Release copied text and transform result buffers with the NiFreeze model so repeated full-volume GP runs can reuse the bounded WebAssembly heap without fragmentation. Preserve all scientific output values and the production heap limit.
+  - @neurodesk/dwi2trx@0.8.20261024
 - Updated dependencies
   - @neurodesk/webapp-components@0.21.1
   - @neurodesk/dwi2trx@0.8.20261024
