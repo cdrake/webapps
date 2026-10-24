@@ -1,5 +1,5 @@
-// DOM-free steps of the dwidenoise workflow: voxel chunks and BIDS derivative names.
-// The naming rules are the DWI apps' shared module.
+// DOM-free steps of the dwidenoise workflow, shared by the web app and the command line: voxel
+// chunks and BIDS derivative names. The naming rules are the DWI apps' shared module.
 
 import { derivativeSidecar as stepSidecar, outputNames as stepNames } from "@neurodesk/webapp-components/file-io/bids-derivatives";
 

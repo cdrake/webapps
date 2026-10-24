@@ -31,6 +31,48 @@ For workers, `accumulate(buffer, nvox, group, gram, first, count)` adds a voxel 
 The app's output equals it bit for bit.
 `fittedGroups(bvals)` gives the groups to fit: the b0 volumes (b < 50 s/mm², `B0_THRESHOLD` from the module) when there are two or more, and the diffusion-weighted volumes.
 
+## Workers
+
+`@neurodesk/dwidenoise/pool` (`denoiseSeries`) spreads a series over workers in three passes: the Gram sums of each 16384-voxel chunk (`CHUNK_VOXELS`), one `solveVolume` per volume, then the predictions of each chunk.
+It adds the partial Gram sums in chunk order, so the result is the same for any number of workers, and it equals `denoiseChunks` bit for bit.
+A cancel stops a run between two messages, also between two volume solves.
+It writes the predictions into the `output` array it is given (for example the voxels of `allocateNifti` from `@neurodesk/webapp-components/file-io`) and returns their largest finite value, found by the workers, for `cal_max`.
+`@neurodesk/dwidenoise/worker` holds the worker's message handler (`denoiseWorkerHandler`, and `createWorkerTasks` on a loaded module).
+The web app runs it in Web Workers, the command line in worker threads.
+`@neurodesk/dwidenoise/gzip` (`gzipInWorker`, `gzipWorkerHandler`) compresses the output in a worker that loads no WebAssembly; the web app uses it, and the command line uses Node's zlib.
+`@neurodesk/dwidenoise/pipeline` holds the chunk helpers and the BIDS output names (from the DWI apps' shared `bids-derivatives` module) that both use.
+Both read the .bval with `parseBval` from `@neurodesk/webapp-components/file-io/gradients`.
+
+## Command line
+
+```bash
+dwidenoise sub-01_dwi.nii.gz results
+```
+
+The command line writes the web app's four downloads:
+
+- `<name>_desc-denoised_<suffix>.nii.gz`: the denoised image.
+- `.bval` and `.bvec`: the gradient files, unchanged.
+- `.json`: the sidecar, with the step's `Description`.
+
+It reads the `.bval` (required), `.bvec` and `.json` with the image's stem (FSL `.bvals` and `.bvecs` too).
+When the image is the only image in its directory, a sole gradient file there pairs whatever its name (FSL `data.nii.gz` with `bvals` and `bvecs`), as the web app pairs a one-image selection.
+`--bval`, `--bvec` and `--json` name other files.
+`--threads N` sets the worker threads (default: one per core). The output is the same for any number.
+The output directory must be new or empty.
+The command prints the directory to standard output, and progress and the run's settings (JSON) to standard error.
+`dwidenoise self-check` denoises a phantom on one and on three threads and requires the same bits.
+Input is NIfTI only: convert DICOM with dcm2niix first.
+
+Its release check, `validation/cli-check.mjs`, runs each pinned example of the web app (`apps/dwidenoise/examples.json`) and compares each output with `validation/browser-reference.json`.
+It compares the image by its decompressed bytes, and the other files byte for byte.
+It also runs the first example on one thread.
+`apps/dwidenoise/e2e/reference.spec.js` records the reference from the built app's `denoise` automation (`DWIDENOISE_BROWSER_REFERENCE=write`) and checks it (`check`).
+Record it again when the module, the pool or the examples change.
+Chromium and Node use different zlib builds, so the compressed bytes can differ.
+
+Cite Fadnavis S, Batson J, Garyfallidis E. Patch2Self: Denoising Diffusion MRI with Self-Supervised Learning. NeurIPS 2020, and DIPY (Garyfallidis et al. 2014, Front Neuroinform 8:8).
+
 ## Parity
 
 The WASM output of the ds005134 slab (67 × 92 × 10 × 137) equals the stage 1 DIPY reference (`dwidenoise/validation` in the dataset, float32) bit for bit.
