@@ -10,6 +10,8 @@
 
 - 3e7ff03: Keep HMC's loaded files synchronized with page-drop routing and Undo. Serialize paired imports, preserve the last valid input after failures, and cancel pending imports together while retaining the prior mask. Cite MindGrab's method paper. Run the full pinned dmipy white-matter slab through production browser downloads in CI, with all 19 reference files verified by size and checksum.
   - @neurodesk/noddi@0.6.20261024
+- @neurodesk/dwi2trx@0.8.20261024
+- @neurodesk/noddi@0.6.20261024
 - Updated dependencies
   - @neurodesk/webapp-components@0.21.1
   - @neurodesk/dwi2trx@0.8.20261024

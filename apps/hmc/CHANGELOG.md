@@ -10,6 +10,9 @@
 
 - 3e7ff03: Keep HMC's loaded files synchronized with page-drop routing and Undo. Serialize paired imports, preserve the last valid input after failures, and cancel pending imports together while retaining the prior mask. Cite MindGrab's method paper. Run the full pinned dmipy white-matter slab through production browser downloads in CI, with all 19 reference files verified by size and checksum.
   - @neurodesk/hmc@0.4.20261024
+- Updated dependencies [ecaf40a]
+  - @neurodesk/hmc@0.4.20261024
+  - @neurodesk/dwi2trx@0.8.20261024
 - cd75826: Bundle one registration kernel pair through the worker's existing URLs instead of staging a duplicate, and declare the scoped MindGrab runtime in the site registry.
 - Updated dependencies
   - @neurodesk/webapp-components@0.21.1
