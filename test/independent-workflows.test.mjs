@@ -215,7 +215,7 @@ test('portable Node command lines build on target runners and publish through on
     const installer=Object.values(release.targets).some(target=>target.archive==='pkg');
     // A release with a macOS installer is published only by signing it.
     const publishInput=installer?'sign_release':'publish_release';
-    assert.deepEqual(Object.keys(flow.on.workflow_dispatch.inputs),[publishInput],name);
+    assert.deepEqual(Object.keys(flow.on.workflow_dispatch.inputs),[publishInput,...(name==='dwi2trx-native'?['tracking_only']:[])],name);
     assert.equal(flow.jobs.portable.with.publish_release,`\${{ github.event_name == 'workflow_dispatch' && inputs.${publishInput} }}`,name);
     assert.equal(flow.jobs.portable.with.sign_release,installer?"${{ github.event_name == 'workflow_dispatch' && inputs.sign_release }}":undefined,name);
     assert.equal(Object.keys(flow.jobs.portable.secrets||{}).length,installer?7:0,name);
@@ -226,6 +226,27 @@ test('portable Node command lines build on target runners and publish through on
     for(const path of ['exes/node-cli/**','.github/workflows/node-cli-portable.yml',`${packageDir}/**`])assert.ok(flow.on.push.paths.includes(path),`${name} pushes select ${path}`);
     for(const path of ['exes/node-cli/**','.github/workflows/node-cli-portable.yml'])assert.ok(!flow.on.pull_request.paths.includes(path),`${name}: node-cli.yml gates ${path} on pull requests`);
     assert.equal(flow.jobs.portable.with.all_platforms_on_pull_request,undefined,`${name} builds linux-x64 only on pull requests`);
+  }
+});
+
+test('manual DWI2TRX tracking diagnostics isolate Metal from reference and publication jobs', async () => {
+  const flow = await workflow('dwi2trx-native');
+  assert.equal(flow.on.workflow_dispatch.inputs.tracking_only.default, false);
+  const tracking = flow.jobs.tracking;
+  assert.equal(tracking['runs-on'], 'macos-15');
+  assert.equal(tracking.needs, undefined);
+  assert.equal(tracking.env.NEURODESK_HARDWARE_GPU, '1');
+  assert.equal(tracking.env.NEURODESK_HARDWARE_GPU_VENDOR, 'apple');
+  assert.ok(tracking.steps.some(step => /e2e\/real-data\.spec\.js.*--trace=on/.test(step.run ?? '')));
+  assert.ok(tracking.steps.some(step => step.if === 'always()' && step.with?.name === 'dwi2trx-tracking-diagnostic'));
+  for (const event of ['pull_request', 'push', 'workflow_dispatch']) {
+    for (const only of [false, true]) {
+      const context = { github: { event_name: event }, inputs: { tracking_only: only, sign_release: true } };
+      assert.equal(runInNewContext(tracking.if, context), event === 'workflow_dispatch' && only);
+      for (const name of ['web-app-reference', 'portable']) {
+        assert.equal(runInNewContext(flow.jobs[name].if, context), event !== 'workflow_dispatch' || !only);
+      }
+    }
   }
 });
 

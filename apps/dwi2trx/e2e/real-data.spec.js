@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { createHash } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { gpuBrowser, hardwareGpu, assertHardwareAdapter, readAdapterInfo } from '../../../test-utils/hardware-gpu.mjs';
@@ -21,6 +21,44 @@ test('Philips real-data crop completes tractography without losing the hardware 
   expect(createHash('sha256').update(input).digest('hex')).toBe(crop.sha256);
   await page.addInitScript(() => {
     window.trackingDeviceLosses = [];
+    window.trackingGpuEvents = [];
+    const pipelines = new WeakMap();
+    const passes = new WeakMap();
+    const copies = new WeakMap();
+    const record = event => window.trackingGpuEvents.push({ ...event, at: performance.now() });
+    const createPipeline = GPUDevice.prototype.createComputePipeline;
+    GPUDevice.prototype.createComputePipeline = function (descriptor) {
+      const pipeline = createPipeline.call(this, descriptor);
+      pipelines.set(pipeline, descriptor.compute.entryPoint);
+      return pipeline;
+    };
+    const setPipeline = GPUComputePassEncoder.prototype.setPipeline;
+    GPUComputePassEncoder.prototype.setPipeline = function (pipeline) {
+      passes.set(this, pipelines.get(pipeline));
+      return setPipeline.call(this, pipeline);
+    };
+    const dispatch = GPUComputePassEncoder.prototype.dispatchWorkgroups;
+    GPUComputePassEncoder.prototype.dispatchWorkgroups = function (...counts) {
+      record({ kind: 'dispatch', entryPoint: passes.get(this), counts });
+      return dispatch.apply(this, counts);
+    };
+    const copy = GPUCommandEncoder.prototype.copyBufferToBuffer;
+    GPUCommandEncoder.prototype.copyBufferToBuffer = function (source, sourceOffset, destination, ...rest) {
+      copies.set(destination, source.label);
+      return copy.call(this, source, sourceOffset, destination, ...rest);
+    };
+    const map = GPUBuffer.prototype.mapAsync;
+    GPUBuffer.prototype.mapAsync = async function (...args) {
+      const source = copies.get(this) ?? this.label;
+      record({ kind: 'map-start', source, bytes: this.size });
+      try {
+        await map.apply(this, args);
+        record({ kind: 'map-complete', source, bytes: this.size });
+      } catch (error) {
+        record({ kind: 'map-failed', source, bytes: this.size, message: error.message });
+        throw error;
+      }
+    };
     const request = GPUAdapter.prototype.requestDevice;
     GPUAdapter.prototype.requestDevice = async function (...args) {
       const device = await request.apply(this, args);
@@ -39,10 +77,17 @@ test('Philips real-data crop completes tractography without losing the hardware 
     await page.evaluate(role => globalThis.neurodeskAutomation.dispatch('adopt', { role }), role);
   }
   await page.evaluate(() => globalThis.neurodeskAutomation.dispatch('start', { operation: 'tractography' }));
-  await expect.poll(async () => (await page.evaluate(() => globalThis.neurodeskAutomation.dispatch('snapshot'))).state, {
-    timeout: 25 * 60_000,
-    intervals: [2000],
-  }).not.toBe('running');
+  try {
+    await expect.poll(async () => (await page.evaluate(() => globalThis.neurodeskAutomation.dispatch('snapshot'))).state, {
+      timeout: 25 * 60_000,
+      intervals: [2000],
+    }).not.toBe('running');
+  } finally {
+    const diagnostics = await page.evaluate(() => ({ events: window.trackingGpuEvents, losses: window.trackingDeviceLosses }));
+    const path = test.info().outputPath('gpu-dispatches.json');
+    await writeFile(path, JSON.stringify({ adapter, crop, ...diagnostics }, null, 2));
+    await test.info().attach('gpu-dispatches.json', { path, contentType: 'application/json' });
+  }
   const snapshot = await page.evaluate(() => globalThis.neurodeskAutomation.dispatch('snapshot'));
   expect(snapshot.state, snapshot.error?.message).toBe('succeeded');
   const measured = snapshot.report.measurements;
