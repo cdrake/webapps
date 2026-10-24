@@ -1462,7 +1462,16 @@ apps:
       - { name: SynthSR, url: https://github.com/BBillot/SynthSR, role: fieldmap-less distortion correction }
       - { name: ONNX Runtime Web, url: https://onnxruntime.ai, role: SynthSR inference }
       - { name: meica, url: https://github.com/niivue/meica-rs, role: multi-echo ICA denoising (a Rust port of tedana) }
+      - { name: sdc / PyHySCO, url: https://github.com/neurodesk/webapps/tree/main/exes/sdc, role: reverse phase-encoding field estimation }
     citations:
+      - group: Distortion correction
+        title: PyHySCO
+        reference: "Julian A, Ruthotto L. PyHySCO: GPU-enabled susceptibility artifact distortion correction in seconds. 2024."
+        url: https://arxiv.org/abs/2403.10706
+      - group: Distortion correction
+        title: HySCO
+        reference: "Ruthotto L, Kugel H, Olesch J, et al. Diffeomorphic susceptibility artifact correction of diffusion-weighted magnetic resonance images. Phys Med Biol. 2012;57(18):5715-5731."
+        url: https://doi.org/10.1088/0031-9155/57/18/5715
       - group: Method
         title: fMRIPrep
         reference: "Esteban O, Markiewicz CJ, Blair RW, et al. fMRIPrep: a robust preprocessing pipeline for functional MRI. Nat Methods. 2019;16(1):111-116."

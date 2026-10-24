@@ -713,6 +713,9 @@ importers:
       '@neurodesk/runtime-support':
         specifier: workspace:*
         version: link:../../packages/runtime-support
+      '@neurodesk/sdc':
+        specifier: workspace:*
+        version: link:../../packages/sdc
       '@neurodesk/synthsr':
         specifier: workspace:*
         version: link:../../packages/synthsr
@@ -1537,6 +1540,12 @@ importers:
 
   packages/fastprep:
     dependencies:
+      '@neurodesk/sdc':
+        specifier: workspace:*
+        version: link:../sdc
+      '@neurodesk/webapp-components':
+        specifier: workspace:*
+        version: link:../components
       '@niivue/meica':
         specifier: 0.1.20261021
         version: 0.1.20261021
