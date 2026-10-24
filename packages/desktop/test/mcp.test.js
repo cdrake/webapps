@@ -205,6 +205,44 @@ test('nv-mcp tools reach a retained NiiVue viewer through its session', { timeou
   assert.doesNotMatch(text(await client.tool('list_tabs')), /session-1/);
 });
 
+test('an address with a user name or password is refused before approval, however it is written', { timeout: 10000 }, async t => {
+  const client = connect(t);
+  await client.initialize();
+  const text = response => response.result.content.filter(part => part.type === 'text').map(part => part.text).join('\n');
+  const forwarded = async (name, args) => {
+    const response = await client.tool(name, args);
+    assert.notEqual(response.result.isError, true, JSON.stringify(response.result));
+    return JSON.parse(text(response).slice(text(response).indexOf('{'))).params;
+  };
+  assert.equal((await forwarded('load_volume', { url: '/data/reader@lab/T2.nii.gz' })).url, 'http://127.0.0.1:1/_local/token/T2.nii.gz');
+  for (const labels of ['freesurfer', 'https://example.org/atlas/labels.json']) {
+    assert.equal((await forwarded('add_overlay', { url: 'https://example.org/T2.nii.gz', labels })).labels, labels);
+  }
+  const font = { atlas: 'https://example.org/font/atlas.png', metrics: 'https://example.org/font/metrics.json' };
+  assert.deepEqual(await forwarded('set_font', font), font);
+  for (const [name, args] of [
+    ['load_volume', { url: '//reader:secret@example.org/T2.nii.gz' }],
+    ['load_volume', { url: '\\\\reader:secret@example.org\\T2.nii.gz' }],
+    ['load_volume', { url: '/\\reader:secret@example.org/T2.nii.gz' }],
+    ['load_volume', { url: ' //reader:secret@example.org/T2.nii.gz' }],
+    ['load_volume', { url: '//reader:secret@[example.org/T2.nii.gz' }],
+    ['load_volume', { url: 'http://reader:secret@example.org:99999/T2.nii.gz' }],
+    ['load_mesh', { url: 'https://example.org/lh.pial', layers: [{ url: '//reader:secret@example.org/lh.curv' }] }],
+    ['add_overlay', { url: 'https://example.org/T2.nii.gz', labels: 'http://reader:secret@example.org/labels.json' }],
+    ['add_overlay', { url: 'https://example.org/T2.nii.gz', labels: '//reader:secret@example.org/labels.json' }],
+    ['set_volume', { labels: 'http://reader:secret@example.org/labels.json' }],
+    ['add_data', { id: 'atlas', tool: 'add_overlay', args: { url: 'https://example.org/T2.nii.gz', labels: '//reader:secret@example.org/labels.json' } }],
+    ['set_font', { atlas: '//reader:secret@example.org/font/atlas.png', metrics: 'https://example.org/font/metrics.json' }],
+    ['set_font', { atlas: 'https://example.org/font/atlas.png', metrics: 'http://reader:secret@example.org/font/metrics.json' }],
+    ['sessions_grant', { sessionId: 'session-1', path: '//reader:secret@example.org/T2.nii.gz' }],
+    ['sessions_grant', { sessionId: 'session-1', path: 'http://reader:secret@example.org/T2.nii.gz' }],
+  ]) {
+    const response = await client.tool(name, args);
+    assert.equal(response.result?.isError, true, `${name} ${JSON.stringify(args)}: ${JSON.stringify(response)}`);
+    assert.equal(text(response), 'Source URLs must not contain credentials', `${name} ${JSON.stringify(args)}`);
+  }
+});
+
 test('validation rejects invalid metadata and missing files while preserving omitted CT', { timeout: 10000 }, async t => {
   const path = await inputFile(t);
   const client = connect(t);

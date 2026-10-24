@@ -250,6 +250,7 @@ test('source approvals and refusals for a retained viewer are kept in its run re
   await assert.rejects(service.grantSource(sessionId, { url: '../_local/token/T2.nii.gz' }), /not granted to this viewer/);
   await assert.rejects(service.grantSource('missing', { url: 'https://example.org/T1.nii' }), /Unknown/);
   await assert.rejects(service.grantSource(sessionId, { url: 'https://reader:secret@example.org/denied.nii' }), /must not contain credentials/);
+  await assert.rejects(service.grantSource(sessionId, { path: '//reader:secret@example.org/T2.nii.gz' }), /must not contain credentials/);
   const expected = [
     { path: '/data/T2.nii.gz', outcome: 'approved', approval: 'person', grantedUrl: 'http://127.0.0.1:1/_local/token/T2.nii.gz' },
     { url: 'https://example.org/T1.nii', outcome: 'approved', approval: 'configured', grantedUrl: 'https://example.org/T1.nii' },
