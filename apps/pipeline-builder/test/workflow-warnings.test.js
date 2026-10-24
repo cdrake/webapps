@@ -33,7 +33,7 @@ function workflow(binding) {
     },
   };
 }
-const countWarnings = doc => model.workflowWarnings(doc, tools).filter(issue => issue.code === "input-count");
+const countWarnings = doc => model.workflowIssues(doc, tools).filter(issue => issue.code === "input-count");
 
 test("array workflow inputs retain their container type and format qualifiers", () => {
   const tool = { ...target, inputs: { input_images: { ...target.inputs.input_images, formats: ["nii", "nii-gz"] } } };
@@ -92,7 +92,7 @@ test("optional outputs warn on required consumers and workflow outputs", () => {
   const doc = workflow({ ref: "steps.source.outputs.conditional" });
   doc.steps.target.inputs.input_optional = { ref: "steps.source.outputs.conditional" };
   doc.outputs.result = { type: "neuro:volume", ref: "steps.source.outputs.conditional" };
-  assert.deepEqual(model.workflowWarnings(doc, tools).filter(issue => issue.code === "optional-output"), [
+  assert.deepEqual(model.workflowIssues(doc, tools).filter(issue => issue.code === "optional-output"), [
     {
       severity: "warning", code: "optional-output", path: "steps.target.inputs.input_images",
       message: "steps.source.outputs.conditional is optional and may be absent when this required input runs.",
@@ -103,12 +103,12 @@ test("optional outputs warn on required consumers and workflow outputs", () => {
     },
   ]);
   doc.outputs.result.optional = true;
-  assert.equal(model.workflowWarnings(doc, tools).filter(issue => issue.code === "optional-output").length, 1);
+  assert.equal(model.workflowIssues(doc, tools).filter(issue => issue.code === "optional-output").length, 1);
 });
 
 test("required outputs and unbounded inputs need no additional warnings", () => {
   const unbounded = { ...target, inputs: { input_images: { type: "core:array<neuro:volume>", optional: true } } };
   const doc = workflow({ ref: "steps.source.outputs.images" });
   doc.outputs.result = { type: "neuro:volume", ref: "steps.source.outputs.image" };
-  assert.deepEqual(model.workflowWarnings(doc, [source, unbounded]), []);
+  assert.deepEqual(model.workflowIssues(doc, [source, unbounded]), []);
 });

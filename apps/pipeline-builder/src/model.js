@@ -124,6 +124,12 @@ export function candidateSources(doc, stepId, tools) {
   return sources;
 }
 
+function gradientFormats(decl) {
+  if (!["neuro:gradients", "neuro:gradient-table"].includes(elementType(decl?.type))) return [];
+  return (decl.extensions?.["neurodesk/data"]?.formats ?? decl.formats ?? [])
+    .map(format => format.replace(/^(bval|bvec)s$/, "$1"));
+}
+
 /**
  * The candidates the validator accepts for one input: a trial binding counts when it
  * leaves no error on that input's path.
@@ -131,16 +137,12 @@ export function candidateSources(doc, stepId, tools) {
 export function compatibleSources(doc, stepId, name, tools, validate) {
   const path = `steps.${stepId}.inputs.${name}`;
   const decl = tools.find(tool => tool.id === doc.steps[stepId].tool)?.inputs?.[name];
-  // The core currently suppresses gradient input formats because its runtime has
-  // no gradient inspectors. Preserve known format exclusions in the editor.
-  const gradientFormats = ["neuro:gradients", "neuro:gradient-table"].includes(elementType(decl?.type))
-    ? (decl?.extensions?.["neurodesk/data"]?.formats ?? decl?.formats ?? []).map(format => format.replace(/^(bval|bvec)s$/, "$1")) : [];
+  const formats = gradientFormats(decl);
   return candidateSources(doc, stepId, tools).flatMap(source => {
-    if (gradientFormats.length && source.formats?.length && !source.formats.some(format => gradientFormats.includes(format))) return [];
     const { issues = [] } = validate(withBinding(doc, stepId, name, { ref: source.ref }));
     if (issues.some(issue => issue.severity === "error" && issue.path === path)) return [];
     const requiresRuntimeCheck = issues.some(issue => issue.path === path && issue.outcome === "requires-runtime-check")
-      || Boolean(gradientFormats.length && !source.formats?.length);
+      || Boolean(formats.length && !source.formats?.length);
     return [{ ...source, requiresRuntimeCheck, label: source.label + (requiresRuntimeCheck ? " (needs a run-time check)" : "") }];
   }).sort((a, b) => Number(a.requiresRuntimeCheck) - Number(b.requiresRuntimeCheck));
 }
@@ -248,10 +250,10 @@ export function moveStep(doc, stepId, direction) {
 }
 
 /** Checks the app contract constraints not yet enforced by NeuroFlow's validator. */
-export function workflowWarnings(doc, tools) {
+export function workflowIssues(doc, tools) {
   const byId = new Map(tools.map(tool => [tool.id, tool]));
-  const warnings = [];
-  const warn = (code, path, message) => warnings.push({ severity: "warning", code, path, message });
+  const issues = [];
+  const warn = (code, path, message) => issues.push({ severity: "warning", code, path, message });
   const declaration = ref => {
     const input = /^inputs\.([^.]+)$/.exec(ref ?? "");
     if (input) return doc.inputs?.[input[1]];
@@ -264,6 +266,16 @@ export function workflowWarnings(doc, tools) {
       const path = `steps.${id}.inputs.${name}`;
       const binding = step.inputs?.[name];
       const source = declaration(binding?.ref);
+      // Gradient input formats stay in metadata until the runtime has inspectors.
+      // Known bindings still need the same checks when imported or edited.
+      const expected = gradientFormats(input);
+      const provided = gradientFormats(source);
+      if (expected.length && provided.length && !provided.some(format => expected.includes(format))) {
+        issues.push({
+          severity: "error", code: "formats-incompatible", path,
+          message: `Formats are incompatible: expected ${expected.join(" or ")}, got ${provided.join(" or ")}.`,
+        });
+      }
       const limits = input.extensions?.["neurodesk/data"];
       if (limits) {
         const minimum = limits.minimum ?? 0;
@@ -291,7 +303,7 @@ export function workflowWarnings(doc, tools) {
       warn("optional-output", `outputs.${name}`, `${output.ref} is optional and may not produce this workflow output.`);
     }
   }
-  return warnings;
+  return issues;
 }
 
 /** Issues keyed by step id; workflow-level issues are under "". */

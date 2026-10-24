@@ -16,7 +16,7 @@ import { APP } from "./config.js";
 import { createValidator, loadCatalog } from "./validator.js";
 import {
   addStep, autoBind, bindInput, bindNewWorkflowInput, compatibleSources, emptyWorkflow, issuesByStep,
-  moveStep, outputKey, parseWorkflow, removeStep, serializeWorkflow, setParameter, setWorkflowOutput, workflowWarnings,
+  moveStep, outputKey, parseWorkflow, removeStep, serializeWorkflow, setParameter, setWorkflowOutput,
   toolCatalog, toolFields, toolLabel,
 } from "./model.js";
 import examples from "../examples.json";
@@ -65,7 +65,7 @@ let doc = emptyWorkflow();
 let selected = null;
 let validation = { ok: true, issues: [] };
 let editorKey = null;
-let reported = new Set();
+let reported = new Map();
 
 function setDoc(next, { select = selected } = {}) {
   doc = next;
@@ -80,8 +80,7 @@ function editStep(id) {
 
 function render() {
   const focused = document.activeElement?.id;
-  const coreValidation = validate(doc);
-  validation = { ...coreValidation, issues: [...(coreValidation.issues ?? []), ...workflowWarnings(doc, tools)] };
+  validation = validate(doc);
   const steps = Object.entries(doc.steps);
   const byStep = issuesByStep(validation.issues ?? []);
   const errors = (validation.issues ?? []).filter(issue => issue.severity === "error");
@@ -132,9 +131,11 @@ function render() {
 // Each problem goes to the console once, when an edit introduces it. An unfinished
 // workflow is not a failure, so problems log as warnings, which leave the console closed.
 function logDiagnostics(issues, summary) {
-  const lines = new Set(issues.map(issue => `${issue.path || "workflow"}: ${issue.message}`));
-  for (const line of lines) if (!reported.has(line)) log.log(line, "warning");
-  if (reported.size && !lines.size && Object.keys(doc.steps).length) log.log(summary, "success");
+  const lines = new Map(issues.map(issue => [`${issue.path || "workflow"}: ${issue.message}`, issue.severity]));
+  for (const line of lines.keys()) if (!reported.has(line)) log.log(line, "warning");
+  const hadErrors = [...reported.values()].includes("error");
+  const hasErrors = [...lines.values()].includes("error");
+  if (reported.size && !hasErrors && (hadErrors || !lines.size) && Object.keys(doc.steps).length) log.log(summary, "success");
   reported = lines;
 }
 
@@ -256,7 +257,7 @@ $("newButton").onclick = () => {
 };
 
 function openWorkflow(next, label) {
-  reported = new Set();
+  reported = new Map();
   setDoc(next, { select: null });
   $("fileInfo").hidden = false;
   $("fileInfo").textContent = label;
