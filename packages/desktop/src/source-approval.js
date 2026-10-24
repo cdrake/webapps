@@ -51,7 +51,7 @@ export function sourceOf(value) {
   return ['http:', 'https:'].includes(url.protocol) ? { url: url.href } : null;
 }
 
-/** Replaces every `url` in a tool's arguments, at any depth, with what `grant` returns for it, one at a time. */
+/** Replaces every loading address with what `grant` returns for it, one at a time. */
 export async function grantSources(value, grant) {
   if (Array.isArray(value)) {
     const items = [];
@@ -61,7 +61,7 @@ export async function grantSources(value, grant) {
   if (!value || typeof value !== 'object') return value;
   const result = {};
   for (const [key, item] of Object.entries(value)) {
-    result[key] = key === 'url' && typeof item === 'string' ? await grant(item) : await grantSources(item, grant);
+    result[key] = addressKeys.has(key) && typeof item === 'string' ? await grant(item) : await grantSources(item, grant);
   }
   return result;
 }
