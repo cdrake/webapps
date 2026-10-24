@@ -34,6 +34,10 @@ files, and publishes a new bundle only after all documents are valid.
 
 ## Run through NeuroFlow
 
+Use `neuroflow-mcp` from NeuroFlow 0.2.0 or later. Earlier releases reject a
+single artifact bound to an array input, which workflows exported by Pipeline
+builder use.
+
 Install the Neurodesk desktop suite containing the same contracts. Set
 `NEURODESK_WEBAPPS` to its executable path if it is not named
 `neurodesk-webapps` on `PATH`. A macOS application bundle is a directory; use
@@ -90,7 +94,7 @@ process; the launcher never constructs a shell command.
 | Limits and operation mode | Full source contract in `neurodesk/automation` |
 
 A role with `maximum: 1` is a scalar in the tool document, so a single
-artifact from another tool binds to it directly; NeuroFlow never binds a
+artifact from another tool binds to it directly; NeuroFlow before 0.2.0 never binds a
 scalar to an array. The launcher widens a scalar input to the one-element list
 the desktop takes and narrows a single-file output to one path (omitting an
 absent optional one). A role without a maximum stays an array. Cardinality on
