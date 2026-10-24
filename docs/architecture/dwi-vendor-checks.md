@@ -24,16 +24,16 @@ Data: OpenNeuro [ds007522](https://openneuro.org/datasets/ds007522) v2.0.1 (CC0)
 | Reverse b0 | 8 volumes (b=0 and 7×b=1), `IntendedFor` the DWI |
 | b-vector convention | FSL, image axes. MRtrix `dwigradcheck` (MindGrab mask) selects the table as given: no flip, no permutation, mean length 80.5 against 44.3 for the next option |
 
-All apps treat the b=1 volumes as b0 (threshold 50 s/mm²). All apps apply `scl_slope`: the median of the first b0 in the output, divided by the scaled input, is 0.99–1.02 (1.063 for N4, which removes the bias field).
+All apps treat the b=1 volumes as b0 (threshold 50 s/mm²). All apps apply `scl_slope`. In the MindGrab mask of the N4 run, the median of the first b0 in the output, divided by the scaled input, is 1.003–1.010 for degibbs, dwidenoise, n4 and dwicorrect.
 
 ### Results
 
 | App | Browser | Command line |
 |---|---|---|
 | degibbs | Pass, 101 s. Slice axes 1 and 2: the default when `SliceEncodingDirection` is absent. The default agrees with `dim_info` (slice = k). | Pass, 285 s. Decompressed NIfTI identical to the browser output. |
-| dwidenoise | Pass, 14 s. 12 b0 and 124 weighted volumes found. | Not on `main`. |
-| n4 | Pass, 34 s. Field fitted on the mean of 12 b0, MindGrab mask 206570 voxels, field 0.61–1.53 (1st–99th percentile). | Not on `main`. |
-| noddi | Pass, 351 s. 11 maps and mask. Median FA 0.150, ICVF 0.479, ODI 0.451 in the mask. Midline corpus callosum V1: mean \|x\| 0.81. | Pass, 296 s on 6 threads. Mask 206569 voxels (CPU MindGrab) against 206570 (WebGPU). FA, MD and ODI differ in 7 voxels and ICVF in 6. All are voxels where the two masks disagree (7 voxels; browser mask from the N4 run, same WebGPU MindGrab, same count). FA is above 1 in 399 voxels (maximum 1.225): the WLS fit allows negative eigenvalues. |
+| dwidenoise | Pass, 14 s. 12 b0 and 124 weighted volumes found. | Pass, 8 s on 6 threads. 12 b0 and 124 weighted volumes found. Decompressed NIfTI and sidecar identical to the browser output. |
+| n4 | Pass, 34 s. Field fitted on the mean of 12 b0, MindGrab mask 206570 voxels, field 0.73–1.27 in the mask (1st–99th percentile). | Not on `main`. |
+| noddi | Pass, 351 s. 10 maps downloaded. The mask is the 11th download, which does not start in this driver (see Notes). Median FA 0.150, ICVF 0.479, ODI 0.451 in the mask. Midline corpus callosum V1: mean \|x\| 0.81. | Pass, 296 s on 6 threads. Mask 206569 voxels (CPU MindGrab) against 206570 (WebGPU). FA, MD and ODI differ in 7 voxels and ICVF in 6. All are voxels where the two masks disagree (7 voxels; browser mask from the N4 run, same WebGPU MindGrab, same count). FA is above 1 in 399 voxels (maximum 1.225): the WLS fit allows negative eigenvalues. |
 | dwicorrect (extra) | Pass, 82 s. The reverse b0 and its sidecar are accepted. 8 outlier slices replaced. Field −92 to 64 Hz (1st–99th percentile) in the mask. b-vectors rotated by up to 1.07°. The field sign is correct: unwarping AP by +u and PA by −u raises their correlation in the mask from 0.643 to 0.694 (0.548 with the opposite sign). | No command line. |
 | dwi2trx (extra) | Tensor fit passes, 21 s. Tracking fails: `Streamline tracking failed: Failed to execute 'mapAsync' on 'GPUBuffer': [Device] is lost.` | Tensor fit passes, 39 s. FA identical to the browser except 4 mask-edge voxels. No tracking in the command line. |
 
