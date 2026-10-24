@@ -8,6 +8,7 @@
     "packages/desktop/src/resource-limits.js",
     "scripts/build-static.mjs",
     "scripts/lib/app-automation.mjs",
+    "scripts/lib/operation-parameters-runtime.mjs",
     "scripts/vendor-components.mjs",
     "scripts/lib/isolation-fallback-plugin.mjs",
     "scripts/lib/runtime-support.mjs",
