@@ -4631,6 +4631,12 @@
     "pipeline-builder": [
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/19e3b7602d4e70abc740bc8fe1288ef01848a8db/pipeline-builder/examples/t1-segmentation.workflow.json",
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/5fefd28435b9dde73b63629ee4de1381a962de8a/pipeline-builder/examples/dwi-preprocessing.workflow.json"
+    ],
+    "hmc": [
+      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/ce028ecca10e9abe7988f965e03ad51627ca9c52/noddi/examples/sub-01_dir-AP_desc-slab_dwi.bval",
+      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/ce028ecca10e9abe7988f965e03ad51627ca9c52/noddi/examples/sub-01_dir-AP_desc-slab_dwi.bvec",
+      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/ce028ecca10e9abe7988f965e03ad51627ca9c52/noddi/examples/sub-01_dir-AP_desc-slab_dwi.json",
+      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/ce028ecca10e9abe7988f965e03ad51627ca9c52/noddi/examples/sub-01_dir-AP_desc-slab_dwi.nii.gz"
     ]
   }
 }

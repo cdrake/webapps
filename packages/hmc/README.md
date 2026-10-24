@@ -152,6 +152,47 @@ NiFreeze 3bcfb00 resamples with `nitransforms.resampling.apply(..., order=3)`, a
 Inside the grid the two agree to float precision. At the faces they differ, because SciPy pads with 0 (`mode="constant"`) and ITK's B-spline mirrors the image.
 NiFreeze also casts the output back to the input type; this package writes float32.
 
+## Node files and command line
+
+The file adapter calls the existing `correctNiFreeze` estimator and output writer:
+
+```bash
+node packages/hmc/bin/hmc.js sub-01_dwi.nii.gz sub-01_dwi.bval sub-01_dwi.bvec results --mask brain.nii.gz
+```
+
+`--method gp` is the default; `--method trivial` uses the b0 template. The seed
+defaults to 1234. `--workers` defaults to one until the worker-count benchmark
+establishes a suitable default. Without `--mask`, the pinned MindGrab CPU runtime
+extracts the brain from the mean b0, using the shared Float32 averaging helper and
+NiFreeze's b0 classification. `--sidecar FILE` preserves input JSON metadata.
+The output directory must be new or empty. Existing files are never overwritten.
+SIGINT and SIGTERM cancel the registration pool; completed files may remain if
+writing fails. Default CPU mask preparation finishes its current call before
+cancellation is observed.
+
+The same adapter is exported as `correctFiles` from `@neurodesk/hmc/node`.
+`self-check` executes the pinned registration resampler on an identity phantom.
+`download-models` initializes the pinned MindGrab CPU runtime; its models are bundled.
+
+`test/node-files.test.js` runs both estimators with the real registration kernel
+and checks every CLI output byte against an independent low-level Node invocation
+on a synthetic series. This checks the adapter; it does not establish scientific
+accuracy or browser parity.
+
+Portable packaging uses `release.json` and the shared packager in
+`exes/node-cli/README.md`. Every Linux, Windows and macOS archive must pass its
+self-check and compare every derivative against the production browser reference
+before publishing. The `hmc-native` workflow provides the remote target matrix.
+A local Linux archive and remote verification receipts are recorded separately;
+source tests alone do not establish portable archive acceptance.
+
+`node packages/hmc/validation/cli-check.mjs --executable PATH` refuses to pass
+without `validation/browser-reference.json`. Its reference contains
+`source: "production-browser"` and a `cases` array. Each case records `method`,
+`seed`, `inputs` (dwi, bval, bvec, and optional mask/sidecar, each with an immutable `url`, `name` and `sha256`, or a relative `path` and `sha256`), and `outputs` (every derivative filename and its `sha256`).
+Keep the large input files in validation storage, record them from the fresh
+production browser workflow, and run the command against the packaged executable.
+
 ## Module
 
 `src/wasm.js` (`loadHmc`) drives the C ABI of `src/hmc.wasm`, as `packages/noddi` does: no wasm-bindgen.

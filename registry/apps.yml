@@ -1099,3 +1099,27 @@ apps:
       shared_runtime: false
       browser_test: true
       release: false
+  - id: hmc
+    path: hmc
+    title: HMC
+    description: DWI head-motion correction with GP or b0-template targets.
+    categories: [image-processing]
+    keywords: [diffusion, motion, registration]
+    anatomy: [brain]
+    modalities: [mri]
+    inputs: [dicom, nifti]
+    hardware: cpu
+    legacy_domain: null
+    runtime: react-vite
+    model_manifest: null
+    asset_manifest_schema: null
+    source: neurodesk/webapps@local
+    license: Apache-2.0 AND BSD-3-Clause AND BSD-2-Clause AND MIT
+    maintainers: [neurodesk]
+    support_status: experimental
+    shell: imaging-workspace
+    ci:
+      toolchains: [node]
+      shared_runtime: false
+      browser_test: true
+      release: true

@@ -29,6 +29,38 @@ shared:
     code: https://www.neurodesk.org
 
 apps:
+  hmc:
+    packages:
+      - { name: NiFreeze, url: https://github.com/nipreps/nifreeze, role: Gaussian-process and b0-template estimator reference at commit 3bcfb00 }
+      - { name: ANTs WebAssembly, url: https://github.com/ANTsX/ANTs, role: float rigid registration and B-spline resampling }
+      - { name: MindGrab, url: https://www.npmjs.com/package/@brainchop/mindgrab, role: CPU brain mask of the mean b0 }
+      - { name: NiiVue, url: https://github.com/niivue/niivue, role: image viewer }
+    citations:
+      - group: Motion correction
+        title: NiFreeze
+        reference: "Legarreta JH, Savary E, Markiewicz CJ, Rokem A, Norgaard M, Esteban O. An open implementation of FSL's eddy with volume-to-volume artifact estimation for neuroimaging beyond diffusion MRI. ISMRM. 2025;3252."
+        doi: 10.58530/2025/3252
+        code: https://github.com/nipreps/nifreeze
+      - group: Signal prediction
+        title: Gaussian process prediction
+        reference: "Andersson JLR, Sotiropoulos SN. Non-parametric representation and prediction of single- and multi-shell diffusion-weighted MRI data using Gaussian processes. NeuroImage. 2015;122:166–176."
+        doi: 10.1016/j.neuroimage.2015.07.067
+      - group: Registration
+        title: ANTs
+        reference: "Avants BB, Tustison NJ, Song G, Cook PA, Klein A, Gee JC. A reproducible evaluation of ANTs similarity metric performance in brain image registration. NeuroImage. 2011;54(3):2033–2044."
+        doi: 10.1016/j.neuroimage.2010.09.025
+      - group: Brain extraction
+        title: Brainchop
+        reference: "Masoud M, Hu F, Plis S. Brainchop: in-browser MRI volumetric segmentation and rendering. Journal of Open Source Software. 2023;8(83):5098."
+        doi: 10.21105/joss.05098
+      - group: DICOM conversion
+        title: dcm2niix
+        reference: "Li X, Morgan PS, Ashburner J, Smith J, Rorden C. The first step for neuroimaging data analysis: DICOM to NIfTI conversion. Journal of Neuroscience Methods. 2016;264:47–56."
+        doi: 10.1016/j.jneumeth.2016.03.001
+      - group: Visualization
+        title: NiiVue
+        reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
+        url: https://github.com/niivue/niivue
   musclemap:
     packages:
       - { name: ONNX Runtime Web, url: https://onnxruntime.ai, role: runs the segmentation model in the browser }

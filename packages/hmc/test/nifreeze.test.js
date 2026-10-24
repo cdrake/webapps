@@ -43,6 +43,10 @@ test("the trivial loop clips shared float bzero in visit order and keeps every o
   assert.equal(result.transforms.length, 3);
   const metadata = JSON.parse(new TextDecoder().decode(result.files[result.names.sidecar]));
   assert.equal(metadata.HeadMotionCorrection.Model, "trivial");
+  assert.deepEqual(metadata.HeadMotionCorrection.Mask, {
+    Source: "unspecified", Bytes: 360, Voxels: 360,
+    SHA256: "76b2875461618e970a037f35eeb94af3911e11353a7e620c81e49b9756cda47b",
+  });
   assert.deepEqual(metadata.HeadMotionCorrection.VisitOrder, [1, 0]);
   assert.equal(new TextDecoder().decode(result.files[result.names.motion]).trim().split("\n").length, 4);
 });

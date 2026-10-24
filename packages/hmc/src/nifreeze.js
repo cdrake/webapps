@@ -3,6 +3,7 @@
 // median, GP and registration argv are the existing Rust ports, exposed by hmc.wasm.
 import { correctHeadMotion } from "./pipeline.js";
 import { sidecarText } from "./outputs.js";
+import { sha256 } from "@neurodesk/webapp-components/file-io/hash";
 
 /** A reproducible visit order. The sidecar records it; it is not NumPy's permutation. */
 export function nifreezeOrder(length, seed) {
@@ -24,12 +25,18 @@ export function nifreezeOrder(length, seed) {
  * `onPrediction` observes the prepared target synchronously before transfer to the kernel.
  * The registration pool limits live targets; none of the 90 GP targets is kept after use.
  */
-export async function correctNiFreeze({ model = "gp", seed = 1234, visitOrder, onPrediction, ...options }) {
+export async function correctNiFreeze({ model = "gp", seed = 1234, visitOrder, onPrediction, maskProvenance = { Source: "unspecified" }, ...options }) {
   const { series, bvals, bvecs, mask, hmc, signal } = options;
   signal?.throwIfAborted();
   const argv = hmc.nifreezeArguments(seed);
   const estimator = hmc.createNifreezeModel({ data: series.data, dims: series.dims, frames: series.frames, bvals, bvecs, mask, model });
   try {
+    const effectiveMask = {
+      ...maskProvenance,
+      Bytes: estimator.mask.byteLength,
+      Voxels: estimator.mask.reduce((sum, value) => sum + (value ? 1 : 0), 0),
+      SHA256: await sha256(estimator.mask, signal),
+    };
     const order = visitOrder ?? nifreezeOrder(estimator.dwiVolumes.length, seed);
     if (order.length !== estimator.dwiVolumes.length || new Set(order).size !== order.length
       || order.some(i => !Number.isInteger(i) || i < 0 || i >= order.length)) {
@@ -67,7 +74,7 @@ export async function correctNiFreeze({ model = "gp", seed = 1234, visitOrder, o
       },
     });
     const provenance = JSON.parse(new TextDecoder().decode(result.files[result.names.sidecar]));
-    Object.assign(provenance.HeadMotionCorrection, { Model: model, Seed: seed, VisitOrder: order, VisitOrderConvention: visitOrder ? "DWI-only indices; supplied order" : "DWI-only indices; seeded port permutation, not NumPy" });
+    Object.assign(provenance.HeadMotionCorrection, { Model: model, Seed: seed, Mask: effectiveMask, VisitOrder: order, VisitOrderConvention: visitOrder ? "DWI-only indices; supplied order" : "DWI-only indices; seeded port permutation, not NumPy" });
     result.files[result.names.sidecar] = new TextEncoder().encode(sidecarText(provenance));
     return { ...result, model, seed, visitOrder: order };
   } finally {
