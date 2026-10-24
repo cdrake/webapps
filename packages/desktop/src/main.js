@@ -98,14 +98,15 @@ try {
     });
     // Full installations serve packaged files. The smaller edition can fetch
     // only pinned model assets, which are verified and cached before use.
-    // The request filter never sees https requests this handler answers.
+    // The request filter never sees https requests this handler answers. It fetches in this viewer's session, not
+    // net.fetch's default one, so a cookie a host sets stays with this viewer and is cleared with it.
     if (ses.protocol.isProtocolHandled('https')) ses.protocol.unhandle('https');
     ses.protocol.handle('https', async request => {
-      if (computeRequest(new URL(request.url))) return net.fetch(request, { bypassCustomProtocolHandlers: true });
+      if (computeRequest(new URL(request.url))) return ses.fetch(request, { bypassCustomProtocolHandlers: true });
       const asset = bundle.assets[canonicalUrl(request.url)];
       if (!asset) {
         if (['GET', 'HEAD'].includes(request.method) && viewer.grants.permits(request.url)) {
-          return net.fetch(request, { bypassCustomProtocolHandlers: true, redirect: 'manual' });
+          return ses.fetch(request, { bypassCustomProtocolHandlers: true, redirect: 'manual' });
         }
         await blocked(viewer, request.url);
         return new Response('Asset not included', { status: 404 });
