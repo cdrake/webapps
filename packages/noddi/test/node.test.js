@@ -10,6 +10,9 @@ import { createNiftiFromData, readNiftiFrames } from '@neurodesk/webapp-componen
 import { checkInstallation, fit, threadCount } from '../src/node.js';
 import { multiShellPhantom } from '../src/phantom.js';
 
+// The niimath build @neurodesk/dwi2trx pins, read from its package.json, not from the version module.
+const NIIMATH = JSON.parse(await readFile(new URL('../../../apps/dwi2trx/vendor/niimath/package.json', import.meta.url), 'utf8')).version;
+
 const BIN = fileURLToPath(new URL('../bin/noddi.js', import.meta.url));
 
 async function scratch(t) {
@@ -117,6 +120,7 @@ test('the command line prints the written files and its settings', async (t) => 
   const provenance = JSON.parse(run.stderr.trim().split('\n').at(-1));
   assert.equal(provenance.method, 'dti');
   assert.equal(provenance.tensorFit, 'ols');
+  assert.equal(provenance.niimath, null);
   assert.equal(provenance.threads, 2);
   const refused = spawnSync(process.execPath, [BIN, input.dwi, input.bval, input.bvec, join(directory, 'x'), '--mask', input.dwi, '--no-mask'], { encoding: 'utf8' });
   assert.equal(refused.status, 1);
@@ -135,6 +139,7 @@ test('the command line selects niimath dtifit and preserves the NODDI maps', asy
   assert.deepEqual(run.stdout.trim().split('\n'), NAMES.map((name) => join(output, name)));
   const provenance = JSON.parse(run.stderr.trim().split('\n').at(-1));
   assert.equal(provenance.tensorFit, 'niimath-dtifit');
+  assert.equal(provenance.niimath, NIIMATH);
   assert.equal(provenance.method, 'dti+noddi-amico');
   for (const name of NAMES.filter((name) => name.includes('noddi') || name.includes('mask'))) {
     const [actual, expected] = await Promise.all([readFile(join(output, name)), readFile(join(baseline.output, name))]);

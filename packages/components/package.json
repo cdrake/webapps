@@ -49,6 +49,10 @@
       "types": "./src/file-io/input-limits.d.ts",
       "default": "./src/file-io/input-limits.js"
     },
+    "./file-io/gradients": {
+      "types": "./src/file-io/gradients.d.ts",
+      "default": "./src/file-io/gradients.js"
+    },
     "./file-io/mesh": "./src/file-io/mesh.js",
     "./fetch": {
       "types": "./src/net/fetchWithRetry.d.ts",

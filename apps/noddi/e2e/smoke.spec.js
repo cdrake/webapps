@@ -442,6 +442,7 @@ test("the automation operation fits the tensor and returns its maps", async ({ p
   const report = await page.evaluate(async () => (await globalThis.neurodeskAutomation.dispatch("snapshot")).report);
   expect(report.provenance.method).toBe("dti");
   expect(report.provenance.tensorFit).toBe("wls");
+  expect(report.provenance.niimath).toBeNull();
   expect(Object.keys(report.artifacts)).toContain("tensor-fa");
 });
 
@@ -459,6 +460,7 @@ test("the automation operation fits with niimath dtifit and NODDI, and names the
   const report = await page.evaluate(async () => (await globalThis.neurodeskAutomation.dispatch("snapshot")).report);
   expect(report.provenance.method).toBe("dti+noddi-amico");
   expect(report.provenance.tensorFit).toBe("niimath-dtifit");
+  expect(report.provenance.niimath).toMatch(/^\d+\.\d+\.\S+$/);
   expect(Object.keys(report.artifacts)).toEqual(expect.arrayContaining(["tensor-fa", "tensor-rd", "tensor-direction", "noddi-icvf"]));
   await expect(page.locator("#technicalLog")).toContainText("niimath dtifit on 32 of 62 volumes");
 });

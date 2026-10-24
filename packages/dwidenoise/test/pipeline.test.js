@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { loadDwidenoise } from "@neurodesk/dwidenoise";
+import { loadDwidenoise } from "../src/wasm.js";
 import {
   derivativeSidecar,
   gatherChunk,
@@ -51,7 +51,7 @@ test("a chunk gathered from every volume scatters back to the same place", () =>
 
 test("chunked Gram sums with one solve equal the package's one-pass denoise", async () => {
   // The pool's arithmetic without workers: Gram per chunk, sums in chunk order, apply per chunk.
-  const p2s = await loadDwidenoise(readFileSync(new URL("../../../packages/dwidenoise/src/dwidenoise.wasm", import.meta.url)));
+  const p2s = await loadDwidenoise(readFileSync(new URL("../src/dwidenoise.wasm", import.meta.url)));
   const nvox = 300;
   const bvals = [0, 1000, 1000, 1000, 5, 1000];
   const frames = bvals.length;
