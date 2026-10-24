@@ -4,6 +4,10 @@
 
 ### Patch Changes
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.21.1
+  - @neurodesk/dwi2trx@0.8.20261024
+  - @neurodesk/runtime-support@0.9.14
 - 25f296e: NODDI names the niimath build in its provenance when it fits the tensor with niimath dtifit, in the app and in the `noddi` command line. `@neurodesk/dwi2trx/niimath-version` gives the version of the pinned niimath build; DWI2TRX and the `dwi2trx` command line now read it from there.
 - Updated dependencies [328cb77]
 - Updated dependencies [25f296e]
@@ -338,7 +342,6 @@
   run whose input was replaced is logged without overwriting the newer input's status.
   Files chosen while the viewer is still starting no longer fail with
   "Cannot access … before initialization". Tensor maps and streamlines are unchanged.
-
 
 ## 0.5.20261015
 

@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.21.1
 - Updated dependencies [941884c]
 - Updated dependencies [a028e96]
 - Updated dependencies [650ce5f]
@@ -334,43 +336,23 @@
 
 ## 0.5.20261003
 
-
-
 ## 0.5.20260930
-
-
 
 ## 0.5.20260928
 
-
-
 ## 0.4.20260928
-
-
 
 ## 0.3.20260924
 
-
-
 ## 0.3.20260923
-
-
 
 ## 0.3.20260920
 
-
-
 ## 0.3.20260918
-
-
 
 ## 0.3.20260916
 
-
-
 ## 0.3.20260915
-
-
 
 ## 0.2.20260914
 

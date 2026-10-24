@@ -8,6 +8,13 @@
 
 ### Patch Changes
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.21.1
+  - @neurodesk/fastprep@0.2.3
+  - @neurodesk/runtime-support@0.9.14
+  - @neurodesk/synthsr@0.6.20261024
+  - @neurodesk/greedy@0.6.20261024
+  - @neurodesk/sdc@0.2.20261024
 - Updated dependencies [328cb77]
   - @neurodesk/webapp-components@0.20.1
   - @neurodesk/fastprep@0.2.2

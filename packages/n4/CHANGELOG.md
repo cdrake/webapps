@@ -6,6 +6,11 @@
 
 - Add the niworkflows EPI-reference N4 argv builder and allow the existing runtime to select it without changing the default MRtrix profile or WASM bytes. This is independent entry-point wiring; the full SyN-SDC accuracy and memory gates remain pending.
 
+### Patch Changes
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.21.1
+
 ## 0.5.20261024
 
 ### Minor Changes
@@ -33,19 +38,11 @@
 
 ## 0.4.20261022
 
-
-
 ## 0.3.20261022
-
-
 
 ## 0.3.20261020
 
-
-
 ## 0.3.20261019
-
-
 
 ## 0.2.20261018
 

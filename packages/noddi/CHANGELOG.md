@@ -8,6 +8,9 @@
 
 ### Patch Changes
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.21.1
+  - @neurodesk/dwi2trx@0.8.20261024
 - 25f296e: NODDI names the niimath build in its provenance when it fits the tensor with niimath dtifit, in the app and in the `noddi` command line. `@neurodesk/dwi2trx/niimath-version` gives the version of the pinned niimath build; DWI2TRX and the `dwi2trx` command line now read it from there.
 - fa60404: Ignore queued worker messages after fitting is cancelled, and reject nonfinite selected dmipy samples before entering WASM. Preserve masked-out and finite nonpositive reference skipping, AMICO defaults and caller ownership of returned maps.
 - Updated dependencies [328cb77]
@@ -119,11 +122,7 @@
 
 ## 0.3.20261019
 
-
-
 ## 0.3.20261018
-
-
 
 ## 0.2.20261018
 

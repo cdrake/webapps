@@ -8,6 +8,9 @@
 
 ### Patch Changes
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.21.1
+  - @neurodesk/dwi2trx@0.8.20261024
 - 14d97d8: Reject registration tasks cancelled while their inputs are prepared, without posting to terminated workers or leaving the caller waiting. Preserve benchmark trial receipts and support validated resume with matching runtime sources, inputs, settings and machine identity.
 - Updated dependencies [328cb77]
 - Updated dependencies [25f296e]

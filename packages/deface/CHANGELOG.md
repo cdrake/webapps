@@ -4,6 +4,7 @@
 
 ### Patch Changes
 
+- @neurodesk/runtime-support@0.9.14
 - Updated dependencies [5b5ff35]
   - @neurodesk/node-drivers@0.3.0
   - @neurodesk/runtime-support@0.9.11
@@ -132,7 +133,6 @@
 - Updated dependencies
 
   - @neurodesk/runtime-support@0.6.3
-
 
 ## 1.4.20261015
 

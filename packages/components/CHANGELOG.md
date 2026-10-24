@@ -1,5 +1,11 @@
 # @neurodesk/webapp-components
 
+## 0.21.1
+
+### Patch Changes
+
+- Retain the HMC workspace controls, diffusion workflow artifact metadata and selected-button hover contrast alongside the reviewed agent connection support.
+
 ## 0.21.0
 
 ### Minor Changes
