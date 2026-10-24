@@ -156,11 +156,13 @@ try {
       released = true;
       site.close();
       if (!target.isDestroyed()) target.destroy();
-      // The session goes back to the pool only once nothing of this viewer is left in it.
-      const cleared = Promise.all([viewerSession.clearStorageData(), viewerSession.clearCache()]).then(
-        () => partitions.push(viewerSession),
-        error => console.error(`A viewer session could not be cleared and is not reused: ${error.message}`),
-      );
+      // The session goes back to the pool only once nothing of this viewer is left in it. Quitting waits for both
+      // clears to settle, even when one fails.
+      const cleared = Promise.allSettled([viewerSession.clearStorageData(), viewerSession.clearCache()]).then(results => {
+        const errors = results.filter(result => result.status === 'rejected').map(result => result.reason.message);
+        if (errors.length) console.error(`A viewer session could not be cleared and is not reused: ${errors.join('; ')}`);
+        else partitions.push(viewerSession);
+      });
       clearing.add(cleared);
       void cleared.finally(() => clearing.delete(cleared));
     };
