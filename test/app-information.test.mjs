@@ -222,3 +222,20 @@ test('DICOM handoff Privacy discloses unchanged scanner headers', () => {
   assert.match(privacy, /Apps that read DICOM/);
   assert.match(privacy, /headers do hold the patient/);
 });
+
+test('SDC About records the reverse-PE ANTs exclusion without claiming single-PE availability', async () => {
+  const about = information.apps.sdc.about.join(' ');
+  assert.match(about, /ANTs restricted SyN is not offered for reverse-PE pairs/);
+  assert.match(about, /failed the image gate on all six subjects/);
+  assert.match(about, /Single-PE ANTs SyN-SDC is still under development and is not available/);
+  const window = await mountShell('sdc');
+  window.document.querySelector('.nd-app-bar [data-neurodesk-shell-control="about"]').click();
+  assert.match(window.document.querySelector('dialog[open]').textContent, /not offered for reverse-PE pairs/);
+});
+
+test('fastprep About describes browser PEPOLAR and GPL solver distribution', () => {
+  const about = information.apps.fastprep.about.join(' ');
+  assert.match(about, /bundled app is distributed under GPL-3.0-or-later/);
+  assert.match(about, /Opposite-PE EPI references support PyHySCO field estimation in this browser/);
+  assert.doesNotMatch(about, /opposite-PE fieldmaps are native-only/);
+});

@@ -29,7 +29,7 @@ const workspace = mountImagingWorkspace({
   status: "#status",
   title: "SDC",
   subtitle: "Reverse phase-encoding distortion correction",
-  controlsContract: { about: "#aboutBtn", privacy: "#privacyBtn" },
+  controlsContract: { privacy: "#privacyBtn" },
 });
 
 const SLICE_TYPES = {
@@ -55,7 +55,6 @@ const progress = new ProgressManager();
 bindInfoTooltips(document);
 
 const info = createInfoDialog();
-$("aboutBtn").onclick = () => info.open("About SDC", $("aboutContent"));
 $("privacyBtn").onclick = () => info.open("Privacy", $("privacyContent"));
 
 /** The two loaded inputs, each { name, sidecar, header buffer, mean, frames used, total frames }. */

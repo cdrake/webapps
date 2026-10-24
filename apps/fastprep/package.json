@@ -3,7 +3,7 @@
   "version": "0.2.20261024",
   "private": true,
   "type": "module",
-  "license": "Apache-2.0",
+  "license": "GPL-3.0-or-later",
   "scripts": {
     "runtime": "pnpm --filter @neurodesk/greedy build:wasm && pnpm --filter @neurodesk/fastprep build:wasm && node scripts/copy-runtime.mjs",
     "dev": "pnpm run runtime && vite --force",

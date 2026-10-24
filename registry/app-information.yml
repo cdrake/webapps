@@ -1453,6 +1453,9 @@ apps:
         url: https://pyodide.org
 
   fastprep:
+    about:
+      - "fastprep follows the fMRIPrep workflow with: niimath, MindGrab, Greedy, SynthSR and glm. Reverse phase-encoding field estimation uses the GPL-3.0-or-later PyHySCO solver; the bundled app is distributed under GPL-3.0-or-later and the orchestration source retains Apache-2.0. Runs with three or more echoes are also denoised with ME-ICA by meica, an LGPL-2.1 port of tedana; the report compares the original and denoised task maps. The Rust orchestration is the same as the native fastprep command, so this page writes the same derivatives and HTML report."
+      - "Input: one subject of a BIDS dataset with a T1w and BOLD runs, each with its JSON sidecar. An events.tsv with left/right trial types adds a task analysis. Runs are limited to 1 GB of float32 BOLD here; cortical surfaces (TopoFit) are native-only. Opposite-PE EPI references support PyHySCO field estimation in this browser. Larger studies: use the native fastprep."
     packages:
       - { name: fastprep Rust core (WebAssembly), url: https://github.com/neurodesk/webapps/tree/main/exes/fastprep, role: pipeline orchestration }
       - { name: glm Rust core (WebAssembly), url: https://github.com/neurodesk/webapps/tree/main/exes/glm, role: first-level GLM with AR(1) Prais-Winsten prewhitening }
@@ -1626,6 +1629,8 @@ apps:
         url: https://github.com/niivue/niivue
 
   sdc:
+    about:
+      - "SDC estimates the susceptibility field of an EPI acquisition from two b = 0 images with opposite phase-encoding directions, such as AP and PA, in this browser. It is a port of PyHySCO 0.0.4 (Julian and Ruthotto 2024), the hyperelastic susceptibility correction of Ruthotto et al. 2012, and its field differs from PyHySCO's by a median of 5e-6 Hz (at most 0.03 Hz). In a comparison on six subjects it was the closest fast method to FSL topup; DR-BUDDI was closer but takes about 40 minutes. Each input's volumes with b ≤ 50 are averaged, without motion correction, and the two images must be in one space. The field is in Hz, with topup's sign, on the grid of the field reference; a constant offset against another tool is a translation along the phase-encoding axis. The corrected images are for quality control: the app does not resample the DWI series. The example is a 10-slice slab of OpenNeuro ds005134 (CC0); because the regularization is 3D, a slab's field is not identical to the field of the full volume. The solver is GPL-3.0-or-later, as PyHySCO is. ANTs restricted SyN is not offered for reverse-PE pairs: its tested schedule failed the image gate on all six subjects. Single-PE ANTs SyN-SDC is still under development and is not available in this app."
     packages:
       - name: PyHySCO 0.0.4 (Rust and WebAssembly port)
         url: https://github.com/EmoryMLIP/PyHySCO

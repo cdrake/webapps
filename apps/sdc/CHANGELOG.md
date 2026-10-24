@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Document the decision not to offer ANTs reverse-PE correction after its six-subject image-gate failure, without implying single-PE ANTs is available. Keep About content in the canonical registry. Correct fastprep's browser PEPOLAR description and bundled GPL solver license metadata.
+  - @neurodesk/sdc@0.2.20261024
 - Updated dependencies
   - @neurodesk/sdc@0.2.20261024
 - Updated dependencies [14a8b29]
