@@ -21,9 +21,16 @@
 int applyTransforms(int argc, char* argv[]);
 
 int main(int argc, char* argv[]) {
-  itk::NiftiImageIOFactory::RegisterOneFactory();
-  itk::MatlabTransformIOFactory::RegisterOneFactory();
-  itk::TxtTransformIOFactory::RegisterOneFactory();
+  // One kernel instance runs main() many times (callMain), and ITK keeps every statically linked
+  // factory it is given, duplicates included (ObjectFactoryBase::RegisterFactoryInternal). Register
+  // the IO factories in the first run only (#537).
+  static const bool registered = [] {
+    itk::NiftiImageIOFactory::RegisterOneFactory();
+    itk::MatlabTransformIOFactory::RegisterOneFactory();
+    itk::TxtTransformIOFactory::RegisterOneFactory();
+    return true;
+  }();
+  (void)registered;
   itk::MultiThreaderBase::SetGlobalDefaultNumberOfThreads(1);
   itk::MultiThreaderBase::SetGlobalDefaultThreader(itk::MultiThreaderBase::ThreaderEnum::Platform);
   try {
