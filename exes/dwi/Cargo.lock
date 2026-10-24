@@ -111,6 +111,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "dwi-dmipy"
+version = "0.1.0"
+dependencies = [
+ "dwi-gp",
+ "serde_json",
+]
+
+[[package]]
 name = "dwi-ec-distortion"
 version = "0.1.0"
 dependencies = [
@@ -279,6 +287,7 @@ name = "noddi-wasm"
 version = "0.1.0"
 dependencies = [
  "dwi-amico",
+ "dwi-dmipy",
  "dwi-gradients",
  "dwi-tensor",
 ]

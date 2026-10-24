@@ -1,5 +1,11 @@
 # @neurodesk/noddi
 
+## 0.6.20261024
+
+### Minor Changes
+
+- Offer the pinned dmipy nonlinear Watson NODDI fit alongside the unchanged AMICO default in the shared WASM pipeline and command line. Record method and optimizer diagnostics, include source licences, and require independent native/WASM WM-reference gates in CI.
+
 ## 0.5.20261024
 
 ### Patch Changes

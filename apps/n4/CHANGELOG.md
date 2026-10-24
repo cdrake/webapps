@@ -1,5 +1,12 @@
 # n4
 
+## 0.6.20261024
+
+### Patch Changes
+
+- Updated dependencies
+  - @neurodesk/n4@0.6.20261024
+
 ## 0.5.20261024
 
 ### Minor Changes

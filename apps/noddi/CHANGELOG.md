@@ -1,5 +1,16 @@
 # noddi
 
+## 0.6.20261024
+
+### Minor Changes
+
+- Offer the optional nonlinear dmipy NODDI fit alongside default AMICO, with method selection in automation, voxel diagnostics in provenance and the technical log, and canonical About/Cite content describing the white-matter validation scope.
+
+### Patch Changes
+
+- Updated dependencies
+  - @neurodesk/noddi@0.6.20261024
+
 ## 0.5.20261024
 
 ### Minor Changes
