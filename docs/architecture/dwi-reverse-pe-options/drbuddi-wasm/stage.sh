@@ -44,6 +44,6 @@ for dir in "$base"/runs/*/*/*/; do
     gzip -9nc "$dir/down.nii" > "$dest/down.nii.gz"
   fi
 done
-(cd "$out" && find . -type f ! -name SHA256SUMS -printf '%P\n' | sort | xargs sha256sum) > "$out/SHA256SUMS"
+(cd "$out" && find . -type f ! -path ./SHA256SUMS -printf '%P\n' | sort | xargs sha256sum) > "$out/SHA256SUMS"
 du -sh "$out"
 find "$out" -type f | wc -l

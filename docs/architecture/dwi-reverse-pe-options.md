@@ -331,7 +331,7 @@ A failed optional method does not stop `post.sh` from recording completed method
 A missing or failed topup baseline stops post-processing with an error.
 ### Pinned results
 
-The prepared inputs (AP mean, PA mean and its alignment to the AP mean, b0 mask, T1w white-matter segmentation), every method's field in Hz and every `metrics.json` and `summary.json` are on the Hugging Face dataset `neurodeskorg/webapps`, `sdc/reverse-pe-options/`, at commit `d9f25191` (167 files, 268 MB, CC0 sources).
+The prepared inputs (AP mean, PA mean and its alignment to the AP mean, b0 mask, T1w white-matter segmentation), every method's field in Hz, every `metrics.json` and `summary.json`, the shared BBR start of the #471 runs (`mask/b0_to_t1w_init.mat`, `mask/topup_corrected_mean.nii.gz`) and the #505 DR-BUDDI results (`drbuddi-wasm/`) are on the Hugging Face dataset `neurodeskorg/webapps`, `sdc/reverse-pe-options/`, at commit `6fce3512` (429 files, 509 MB, CC0 sources).
 `results.manifest.json` pins each file's size and SHA-256, and the folder's `README.md` describes each file.
 The tables above come back without OpenNeuro, the containers or `epic`:
 
