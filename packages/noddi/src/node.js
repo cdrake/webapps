@@ -7,6 +7,7 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { Worker } from 'node:worker_threads';
 import { gzipSync } from 'node:zlib';
 import { parseBvalBvec } from '@neurodesk/dwi2trx/gradients';
+import { NIIMATH_VERSION } from '@neurodesk/dwi2trx/niimath-version';
 import { runNiimath } from '@neurodesk/dwi2trx/node-runner';
 import { loadMindgrabCpu } from '@neurodesk/node-drivers/mindgrab';
 import { createNiftiFromData, decodeNiftiBuffer, isValidNifti1, readNiftiFrames, sameNiftiGrid } from '@neurodesk/webapp-components/file-io/nifti';
@@ -184,6 +185,7 @@ export async function fit({ dwi, bval, bvec, output, maskFile, noMask = false, n
       app: `noddi command line ${packageJson.version}`,
       method: withNoddi ? 'dti+noddi-amico' : 'dti',
       tensorFit,
+      niimath: tensorFit === 'niimath-dtifit' ? NIIMATH_VERSION : null,
       maskVoxels: indices.length,
       mask,
       noddiRefused: noddi && input.table.noddiError ? input.table.noddiError : null,
