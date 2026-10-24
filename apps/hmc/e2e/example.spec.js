@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { fetchPinnedExample } from "../../../test-utils/registration-similarity.mjs";
+import { bidsTree, dropFolder } from "../../../test-utils/bids-folder-drop.mjs";
 import { fixture } from "./fixtures.mjs";
 
 const [example] = JSON.parse(await readFile(new URL("../examples.json", import.meta.url), "utf8"));
@@ -67,4 +68,41 @@ test("cancelling a registration leaves the loaded input available for retry", as
   await page.locator("#clearMask").click();
   await expect(page.locator("#clearMask")).toBeHidden();
   await expect(page.locator("#maskField .nd-file-text")).toHaveText("Drop a brain mask");
+});
+
+test("a failed BIDS run selection restores the previous input, mask and completed outputs", async ({ page }) => {
+  test.setTimeout(60000);
+  const data = await fixture();
+  const files = [
+    { name: "sub-test_dwi.nii", buffer: Buffer.from(data.nifti) },
+    { name: "sub-test_dwi.bval", buffer: Buffer.from(data.bvals.join(" ")) },
+    { name: "sub-test_dwi.bvec", buffer: Buffer.from(data.bvecs.map(row => row.join(" ")).join("\n")) },
+  ];
+  const tree = bidsTree(files);
+  tree["ds/sub-01/dwi/sub-01_run-2_dwi.nii"] = Buffer.from("invalid NIfTI");
+  await page.goto("./");
+  await dropFolder(page, tree);
+  await expect(page.locator("#fileInfo")).toContainText("sub-01_run-1_dwi.nii");
+  await expect(page.locator("#runSelect")).toHaveValue("0");
+  await page.locator("#advancedSettings > summary").click();
+  await page.locator("#maskInput").setInputFiles({ name: "previous-mask.nii", mimeType: "application/octet-stream", buffer: Buffer.from(data.maskNifti) });
+  await expect(page.locator("#statusText")).toHaveText("Brain mask loaded");
+  await page.locator("#method").selectOption("trivial");
+  await page.locator("#runButton").click();
+  await expect(page.locator("#statusText")).toHaveText("Head motion corrected", { timeout: 30000 });
+  await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(6);
+  await page.locator("#runSelect").selectOption("1");
+  await expect(page.locator("#statusText")).toContainText("NIfTI");
+  await expect(page.locator("#runButton")).toBeEnabled();
+  await expect(page.locator("#runSelect")).toHaveValue("0");
+  await expect(page.locator("#fileInfo")).toContainText("sub-01_run-1_dwi.nii");
+  await expect(page.locator("#maskField .nd-file-text")).toHaveText("previous-mask.nii");
+  await expect(page.locator("#clearMask")).toBeVisible();
+  await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(6);
+  const pending = page.waitForEvent("download");
+  await page.locator("#resultList .nd-volume-toggle").filter({ hasText: "sidecar" }).getByRole("button", { name: "Download" }).click();
+  const downloaded = await pending;
+  expect(downloaded.suggestedFilename()).toContain("run-1");
+  const metadata = JSON.parse(await readFile(await downloaded.path(), "utf8"));
+  expect(metadata.HeadMotionCorrection.Mask.Source).toBe("supplied");
 });

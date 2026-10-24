@@ -218,7 +218,13 @@ $("clearMask").onclick = () => {
   status("Using automatic brain mask");
 };
 $("runSelect").addEventListener("change", () => {
-  if (folder) void load(folder.files, undefined, Number($("runSelect").value)).catch(report);
+  if (!folder) return;
+  const previous = folder;
+  const previousInput = input;
+  void load(previous.files, undefined, Number($("runSelect").value)).catch(error => {
+    if (folder === previous && input === previousInput) $("runSelect").value = String(previous.index);
+    report(error);
+  });
 });
 $("runButton").onclick = () => { void run().catch(report); };
 $("cancelButton").onclick = () => {
