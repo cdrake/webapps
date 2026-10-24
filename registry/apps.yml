@@ -1111,6 +1111,7 @@ apps:
     hardware: cpu
     legacy_domain: null
     runtime: react-vite
+    app_scoped_runtime_families: [mindgrab-20260925]
     model_manifest: null
     asset_manifest_schema: null
     source: neurodesk/webapps@local

@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { fetchPinnedExample } from "../../../test-utils/registration-similarity.mjs";
 import { bidsTree, dropFolder } from "../../../test-utils/bids-folder-drop.mjs";
 import { dicomSeries } from "../../../test-utils/dicom-fixture.mjs";
@@ -142,4 +142,11 @@ test("the mask picker accepts one extensionless DICOM series and rejects indepen
   await expect(page.locator("#clearMask")).toBeHidden();
   await picker.setInputFiles(mask);
   await expect(page.locator("#statusText")).toHaveText("Brain mask loaded");
+});
+
+test("the production bundle contains one registration kernel pair", async () => {
+  const assets = await readdir(new URL("../dist/assets/", import.meta.url));
+  expect(assets.filter(name => /^hmc-registration-[\w-]+\.wasm$/.test(name))).toHaveLength(1);
+  expect(assets.filter(name => /^hmc-registration-[\w-]+\.mjs$/.test(name))).toHaveLength(1);
+  await expect(readdir(new URL("../dist/registration/", import.meta.url))).rejects.toMatchObject({ code: "ENOENT" });
 });
