@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@neurodesk/bison": "workspace:*",
+    "@neurodesk/runtime-support": "workspace:*",
     "@neurodesk/webapp-components": "workspace:*",
     "@niivue/niimath": "1.4.20261016",
     "@niivue/niivue": "1.0.0-rc.33",

@@ -1,5 +1,5 @@
 import examples from '../examples.json'
-import niimathPackage from '../vendor/niimath/package.json'
+import { NIIMATH_VERSION } from '@neurodesk/dwi2trx/niimath-version'
 import { createExampleSelector } from '@neurodesk/webapp-components/ui'
 /**
  * dwi2trx — browser-only diffusion MRI pipeline (WASM + WebGPU; no data leaves
@@ -1401,7 +1401,7 @@ async function runAutomation(request: OperationContext, track: boolean): Promise
     const fitted = await runFit({ mask, signal, progress })
     const base = outputBase(resolved)
     const artifacts = TENSOR_MAPS.map((map) => ({ role: map.toLowerCase(), file: new File([fitted.files[map]], mapFileName(base, map)) }))
-    const provenance = { tensor: { algorithm: 'niimath dtifit', version: niimathPackage.version, masked: fitted.masked, maskFailure: fitted.maskFailure, mask: fitted.maskProvenance } }
+    const provenance = { tensor: { algorithm: 'niimath dtifit', version: NIIMATH_VERSION, masked: fitted.masked, maskFailure: fitted.maskFailure, mask: fitted.maskProvenance } }
     if (!track) return { artifacts, provenance }
     for (const [input, key] of [[seedFaIn, 'seedFa'], [stopFaIn, 'stopFa'], [stepSizeIn, 'stepSize'], [maxAngleIn, 'maxAngle'], [seedDensityIn, 'density']] as const) input.value = String(parameters[key])
     const tracked = await runTrack({ signal, progress })

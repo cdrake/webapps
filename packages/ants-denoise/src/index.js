@@ -93,6 +93,7 @@ export async function createDenoiser({ createModule, wasmBinary, onLog = () => {
         // In Node an Emscripten abort also sets process.exitCode. The abort becomes the error thrown
         // here, so the caller decides how the process ends.
         const exitCode = globalThis.process?.exitCode;
+        const stack = module.stackSave();
         try {
           code = module.callMain(args);
         } catch (error) {
@@ -102,6 +103,7 @@ export async function createDenoiser({ createModule, wasmBinary, onLog = () => {
           aborted = error instanceof Error ? error.message : `exception ${error}`;
           throw new Error(`ANTs DenoiseImage aborted (${aborted}). See processing log.`, { cause: error });
         } finally {
+          if (!aborted) module.stackRestore(stack);
           forwardLog();
         }
         if (code !== 0) {

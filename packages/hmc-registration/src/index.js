@@ -127,6 +127,12 @@ export async function createHmcRegistration({ createModule, wasmBinary, onLog = 
     onLog(line);
   };
   const module = await createModule({ noInitialRun: true, wasmBinary });
+  // Emscripten's callMain puts argv on the kernel's 64 KiB stack and never takes it off, as it
+  // expects one call. Without stackRestore, each run left about 0.5 KiB (2 KiB for NiFreeze's
+  // command lines) there, and a run aborted once the stack was full (#537).
+  if (typeof module.stackSave !== "function" || typeof module.stackRestore !== "function") {
+    throw new Error("The registration kernel does not export stackSave and stackRestore.");
+  }
   // The ITK-Wasm toolchain's pre-js replaces print and printErr with functions that write to the
   // console and append to a string that grows with every run. While the synchronous kernel runs,
   // the console is routed to the run's log, and the strings are emptied before each run.
@@ -145,12 +151,28 @@ export async function createHmcRegistration({ createModule, wasmBinary, onLog = 
         forwarding = false;
       }
     };
+    const stack = module.stackSave();
+    let code;
+    let trap;
+    let trapped = false;
     try {
-      return module.callMain(argv);
-    } finally {
-      console.log = consoleLog;
-      console.error = consoleError;
+      // callMain puts the program name in front of the array it is given, so it gets a copy.
+      code = module.callMain([...argv]);
+    } catch (error) {
+      trap = error;
+      trapped = true;
     }
+    // The console comes back first, so a failing stackRestore cannot leave it redirected.
+    console.log = consoleLog;
+    console.error = consoleError;
+    try {
+      module.stackRestore(stack);
+    } catch (error) {
+      // After a trap the kernel is lost anyway, and the trap's error is the one to report.
+      if (!trapped) throw error;
+    }
+    if (trapped) throw trap;
+    return code;
   }
   let next = 0;
   let stopped = null;
@@ -208,5 +230,7 @@ export async function createHmcRegistration({ createModule, wasmBinary, onLog = 
       }
     },
     memoryBytes: () => module.HEAPU8?.byteLength ?? null,
+    /** The kernel's stack pointer between runs: every run leaves it where it was. */
+    stackPointer: () => module.stackSave(),
   };
 }

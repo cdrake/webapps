@@ -82,7 +82,7 @@ For these three programs `run` refuses, before the kernel runs, an input that ar
 ## Rules
 
 - For `antsRegistration`, `run` refuses argv without exactly one `--float 1`, in JavaScript, before the kernel runs. Only `antsRegistration3DFloat` is compiled; `src/unsupported.cxx` (a copy of `packages/registration`'s) refuses 2D, 4D and every double mode, 3D double included.
-- For `antsRegistration`, `run` refuses argv without exactly one `--random-seed N`, N an integer from 1 to 2147483647. Without it ANTs seeds from the clock. The seed is never taken from the environment: `ENV` is not in `EXPORTED_RUNTIME_METHODS` (only `FS` and `callMain`), so `ANTS_RANDOM_SEED` cannot reach the kernel.
+- For `antsRegistration`, `run` refuses argv without exactly one `--random-seed N`, N an integer from 1 to 2147483647. Without it ANTs seeds from the clock. The seed is never taken from the environment: `ENV` is not in `EXPORTED_RUNTIME_METHODS` (only `FS`, `callMain`, `stackSave` and `stackRestore`), so `ANTS_RANDOM_SEED` cannot reach the kernel.
 - The kernel uses one ITK thread (`src/main.cxx`), so results do not depend on the host.
 - Memory starts at 256 MiB (`INITIAL_MEMORY=268435456`) and grows to at most 4 GiB (`MAXIMUM_MEMORY`), as `packages/registration`: four workers start at about 1 GiB.
 - Node and the worker refuse a `.wasm` whose SHA-256 is not `HMC_REGISTRATION_WASM_SHA256` (`src/pin.js`).
@@ -96,8 +96,11 @@ The tests pin that file's SHA-256.
 On NiFreeze's own registrations (#446, `validation/nifreeze-replay.mjs`, held to `exes/dwi/hmc/validation/q53-replay.json` in the `dwi-native` workflow), the module writes the same transform as native `--float 1` for 98 of 101 runs; GP volumes 31, 52 and 88 differ by at most 0.03 mm.
 A run takes about 0.5 s in Node.
 
-One instance aborts on its 27th run, whatever the input ([#537](https://github.com/neurodesk/webapps/issues/537)), so load a new one before that (the replay loads one every 20 runs).
-`src/main.cxx` registers ITK's IO factories in every `main()`, and ITK does not drop duplicate statically linked factories; that is the likely cause.
+One instance serves many runs: the replay uses one for all 101, and `test/run.test.js` and `validation/browser-worker.mjs` run the pair 200 times in one instance.
+Emscripten's `callMain` puts argv on the kernel's 64 KiB stack and does not take it off, as it expects one call.
+Before `run` restored the stack pointer (`stackSave` and `stackRestore`), each run left its argv there, and an instance aborted when the stack was full: on run 27 of NiFreeze's command lines and run 91 of the test pair ([#537](https://github.com/neurodesk/webapps/issues/537)).
+`callMain` also put the program name in front of the argv array it was given, so a run that reused an array grew it; `run` now passes a copy.
+`src/main.cxx` also registers ITK's IO factories in the first `main()` only, as ITK keeps every duplicate statically linked factory; that was not the cause of the abort.
 
 `validation/native-reference.sh` runs the SHORELine steps with native ANTs 52bc0ab on the same pair: registrations with seeds 1234 and 4321, `AverageAffineTransform` of the two, `antsApplyTransforms -u float` with each interpolator, `HammingWindowedSinc` through the inverse average, and `AverageImages` with normalize 0 and 1.
 Native `AverageImages` and `AverageAffineTransform` come from the same configuration as the native `antsRegistration` (the `ANTS-build` cache options, with `ANTS_BUILD_AverageImages` and `ANTS_BUILD_AverageAffineTransform` on).
@@ -128,6 +131,6 @@ bash packages/hmc-registration/scripts/build.sh /var/tmp/hmc-registration-build
 ```
 
 The script downloads ANTs at `52bc0ab588102682587303d31c720de94e6ef6c1` and compiles in `itkwasm/emscripten@sha256:d6c35290a9f1c5cfeb8168c18bbf64d78394cd111b6a19c6091921e98a3aaa1d`, one job, with an 8 GB container limit (`HMC_REGISTRATION_BUILD_MEMORY`).
-`SOURCE_DATE_EPOCH` fixes the `__DATE__` and `__TIME__` that `ANTsVersion.cxx` embeds at the ANTs commit time. The committed `.wasm` is 12,096,089 bytes, SHA-256 `ee2cb3ca595e962ca561ad506611fdabfd1391fc2c037846ec716f1bb89b9666`.
+`SOURCE_DATE_EPOCH` fixes the `__DATE__` and `__TIME__` that `ANTsVersion.cxx` embeds at the ANTs commit time. The committed `.wasm` is 12,096,141 bytes, SHA-256 `d552ee295d79cd1722ced2c13c58d9afa0a5008275bbe70593d8caf9243de9ef`; two builds of the same source gave the same bytes.
 A build took about 2.6 minutes.
 When a source or the toolchain changes, put the printed SHA-256 in `src/pin.js`.

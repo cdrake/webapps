@@ -36,22 +36,22 @@
       "parameters": {},
       "artifacts": {
         "labels": {
-          "type": "neuro:volume",
-          "mediaType": "application/x-nifti",
+          "type": "neuro:label-map",
+          "mediaType": "application/gzip",
           "minimum": 1,
           "maximum": 1,
           "space": "native"
         },
         "probabilities": {
           "type": "neuro:volume",
-          "mediaType": "application/x-nifti",
+          "mediaType": "application/gzip",
           "minimum": 8,
           "maximum": 9,
           "space": "native"
         },
         "mask": {
           "type": "neuro:mask",
-          "mediaType": "application/x-nifti",
+          "mediaType": "application/gzip",
           "minimum": 1,
           "maximum": 1,
           "space": "native"

@@ -29,6 +29,11 @@ function voxelSize(affine) {
   return [0, 1, 2].map((c) => Math.hypot(affine[0][c], affine[1][c], affine[2][c]));
 }
 
+function voxelVolumeMm3(affine) {
+  const [a, b, c] = affine;
+  return Math.abs(a[0] * (b[1] * c[2] - b[2] * c[1]) - a[1] * (b[0] * c[2] - b[2] * c[0]) + a[2] * (b[0] * c[1] - b[1] * c[0]));
+}
+
 /** Refuses an image that is not one 3D volume, has non-finite or constant voxels, or (T1) voxels over 2 mm. */
 export async function checkInput(bytes, name, { maxVoxelMm = Infinity } = {}) {
   const { data, header } = readNiftiImageData(await decodeNiftiBuffer(bytes));
@@ -45,6 +50,12 @@ export async function checkInput(bytes, name, { maxVoxelMm = Infinity } = {}) {
   }
   if (!(max > min)) throw new Error(`The ${name} is constant.`);
   const size = voxelSize(header.affine);
+  const volume = voxelVolumeMm3(header.affine);
+  if (header.affine.some((row) => row.some((value) => !Number.isFinite(value)))
+    || size.some((mm) => !Number.isFinite(mm) || mm <= 0)
+    || !Number.isFinite(volume) || volume <= 0) {
+    throw new Error(`The ${name} geometry must have finite coordinates and an invertible voxel grid.`);
+  }
   if (size.some((mm) => mm > maxVoxelMm)) {
     throw new Error(`The ${name} voxels are ${size.map((mm) => mm.toFixed(2)).join(' x ')} mm; BISON needs ${maxVoxelMm} mm or finer.`);
   }
@@ -64,9 +75,7 @@ function histogram(assets, filename, classes) {
 /** Voxels and millilitres of every class inside the mask; label 0 is the forest's background class. */
 export function classVolumes(labels, mode, header) {
   const { classes } = modeSpec(mode);
-  const affine = header.affine;
-  const [a, b, c] = [0, 1, 2].map((r) => affine[r]);
-  const voxelMl = Math.abs(a[0] * (b[1] * c[2] - b[2] * c[1]) - a[1] * (b[0] * c[2] - b[2] * c[0]) + a[2] * (b[0] * c[1] - b[1] * c[0])) / 1000;
+  const voxelMl = voxelVolumeMm3(header.affine) / 1000;
   const counts = new Float64Array(classes + 1);
   for (let i = 0; i < labels.length; i++) counts[labels[i]]++;
   return CLASS_SLUGS.slice(0, classes).map((slug, k) => ({ label: k + 1, slug, voxels: counts[k + 1], ml: counts[k + 1] * voxelMl }));

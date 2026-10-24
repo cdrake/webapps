@@ -36,6 +36,9 @@ site:
     - id: quality-control
       title: Quality Control
       description: Check image quality and compare acquisition protocols.
+    - id: pipelines
+      title: Pipelines
+      description: Chain the apps into workflows to run on the desktop suite.
 
 apps:
   - id: musclemap
@@ -848,7 +851,7 @@ apps:
     path: fastprep
     title: fastprep
     description: Preprocess fMRI BOLD runs in the style of fMRIPrep.
-    categories: [image-processing]
+    categories: [image-processing, pipelines]
     keywords: [fMRI, functional MRI, BOLD, preprocessing, fMRIPrep, BIDS, motion correction, distortion correction, task activation, GLM]
     anatomy: [brain]
     modalities: [mri]
@@ -994,7 +997,7 @@ apps:
       toolchains: [node]
       shared_runtime: false
       browser_test: true
-      release: false
+      release: true
   - id: sdc
     path: sdc
     title: SDC
@@ -1046,6 +1049,57 @@ apps:
       shared_runtime: false
       browser_test: true
       release: false
+  - id: dwicorrect
+    path: dwicorrect
+    title: DWI Correct
+    description: Correct motion, eddy currents and distortion in DWI.
+    categories: [diffusion-imaging]
+    keywords: [motion correction, eddy currents, susceptibility distortion, outlier replacement, slice-to-volume, topup, eddy, diffusion MRI, WebAssembly]
+    anatomy: [brain]
+    modalities: [mri]
+    inputs: [dicom, nifti]
+    hardware: webgpu-optional
+    handoff: dicom
+    legacy_domain: null
+    runtime: vite-wasm
+    model_manifest: null
+    asset_manifest_schema: null
+    source: neurodesk/webapps@local
+    license: Apache-2.0 AND BSD-3-Clause AND GPL-3.0-or-later
+    maintainers: [neurodesk]
+    support_status: experimental
+    shell: imaging-workspace
+    ci:
+      toolchains: [node, rust-wasm]
+      shared_runtime: false
+      browser_test: true
+      release: false
+  - id: pipeline-builder
+    path: pipeline-builder
+    title: Pipeline Builder
+    description: Chain apps into a NeuroFlow workflow.
+    categories: [pipelines]
+    keywords: [pipeline, workflow, neuroflow, batch, desktop]
+    anatomy: [brain]
+    modalities: [mri]
+    inputs: [neuroflow]
+    hardware: cpu
+    legacy_domain: null
+    runtime: vite-wasm
+    model_manifest: null
+    asset_manifest_schema: null
+    source: neurodesk/webapps@local
+    license: NOASSERTION
+    maintainers: [neurodesk]
+    support_status: experimental
+    handoff: none
+    shell: imaging-workspace
+    ci:
+      toolchains: [node]
+      shared_runtime: false
+      browser_test: true
+      release: false
+
   - id: bison
     path: bison
     title: BISON tissue segmentation
@@ -1054,7 +1108,7 @@ apps:
     keywords: [BISON, BISON-WMH, tissue segmentation, brain volumes, white matter hyperintensities, WMH, T1, FLAIR, random forest, ICBM 2009c]
     anatomy: [brain]
     modalities: [mri]
-    inputs: [nifti]
+    inputs: [dicom, nifti]
     hardware: cpu
     legacy_domain: null
     runtime: vite-wasm

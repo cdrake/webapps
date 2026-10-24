@@ -9,6 +9,7 @@ import { gzipSync } from 'node:zlib';
 import { denoiseArguments } from '../src/index.js';
 import { DENOISE, loadDenoise, readDenoiseWasm } from '../src/node.js';
 import { DENOISE_MODULE_SHA256, DENOISE_WASM_SHA256 } from '../src/pin.js';
+import { syntheticNifti } from '../../../test-utils/nifti-fixture.mjs';
 
 const N = 20;
 const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
@@ -127,6 +128,15 @@ test('settings reach DenoiseImage and an aborted module refuses further work', a
   await assert.rejects(broken.denoise({ image: new Uint8Array(400) }), /DenoiseImage aborted/);
   assert.match(logs.join('\n'), /not recognized as a supported image format/);
   await assert.rejects(broken.denoise({ image }), /Create a new denoiser/);
+});
+
+test('200 consecutive denoising calls preserve the output bytes', async () => {
+  const image = new Uint8Array(syntheticNifti({ dims: [8, 8, 8], gzip: false, value: (i) => 100 + i % 53 }));
+  const denoiser = await loadDenoise();
+  for (let run = 1; run <= 200; run++) {
+    const output = await denoiser.denoise({ image });
+    assert.equal(sha256(output), 'c460abeb7d65733bf676a1942a4580f6d074149944890c653220dfa8f7525c6a', `call ${run}`);
+  }
 });
 
 // The full T1 volume takes about 10 minutes, so it runs only when ANTS_DENOISE_REFERENCE names it.

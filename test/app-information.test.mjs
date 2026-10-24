@@ -23,6 +23,7 @@ const REQUIRED_METHODS = {
   'brain-extraction': ['10.1002/hbm.10062', 'arxiv.org/abs/2506.11860', '10.1016/j.neuroimage.2022.119474', 'github.com/niivue/niivue'],
   dwi2trx: ['10.1016/S0006-3495(94)80775-1', 'github.com/dipy/GPUStreamlines', 'PMC5381389', 'brainder.org/2025/05/05/15656/'],
   sdc: ['arxiv.org/abs/2403.10706', '10.1088/0031-9155/57/18/5715', '10.1016/j.jneumeth.2016.03.001', 'github.com/niivue/niivue'],
+  dwicorrect: ['10.1016/j.neuroimage.2015.10.019', '10.1016/j.neuroimage.2016.06.058', '10.1016/j.neuroimage.2017.02.085', '10.1016/j.neuroimage.2015.07.067', '10.1016/j.media.2013.02.010', '10.1038/s41592-021-01185-5', 'arxiv.org/abs/2403.10706', '10.1088/0031-9155/57/18/5715', 'arxiv.org/abs/2506.11860', '10.21105/joss.05098', '10.1016/j.jneumeth.2016.03.001', 'github.com/niivue/niivue'],
   dwidenoise: ['arxiv.org/abs/2011.01355', '10.3389/fninf.2014.00008', '10.1016/j.jneumeth.2016.03.001', 'github.com/niivue/niivue'],
   degibbs: ['10.1002/mrm.26054', '10.1016/j.neuroimage.2019.116137', '10.1016/j.jneumeth.2016.03.001', 'github.com/niivue/niivue'],
   n4: ['10.1109/TMI.2010.2046908', '10.1016/j.neuroimage.2010.09.025', '10.1016/j.neuroimage.2019.116137', 'arxiv.org/abs/2506.11860', '10.21105/joss.05098', '10.1016/j.jneumeth.2016.03.001', 'github.com/niivue/niivue'],
@@ -35,6 +36,7 @@ const REQUIRED_METHODS = {
   seedseg: ['10.1101/2023.10.26.564293', '10.1007/978-3-319-46723-8_49', '10.1016/j.jneumeth.2016.03.001'],
   dicompare: ['github.com/astewartau/dicompare', 'pyodide.org', '10.1016/j.jneumeth.2016.03.001'],
   dicomview: ['10.1016/j.jneumeth.2016.03.001', 'github.com/niivue/niivue', 'github.com/astewartau/dicompare', 'pyodide.org'],
+  'pipeline-builder': ['github.com/cdrake/neuroflow', 'github.com/cdrake/neuroflow-spec'],
   deface: ['10.52294/001c.94384', 'arxiv.org/abs/2506.11860', '10.21105/joss.05098', '10.1098/rstb.2001.0915', '10.1016/j.jneumeth.2016.03.001'],
   'easy-mp2rage': ['10.1016/j.neuroimage.2009.10.002', '10.1371/journal.pone.0069294', '10.1002/mrm.23145', '10.1371/journal.pone.0099676'],
   niimath: ['10.52294/001c.94384', '10.1016/j.jneumeth.2016.03.001'],
@@ -59,7 +61,7 @@ const REQUIRED_METHODS = {
   nesvor: ['10.1016/j.jneumeth.2016.03.001', '10.1109/TMI.2023.3236216', '10.1007/978-3-031-16446-0_1', 'arxiv.org/abs/2103.13314', '10.1109/TMI.2010.2046908', 'github.com/niivue/niivue'],
   fastprep: ['10.1038/s41592-018-0235-4', '10.52294/001c.94384', '10.1016/j.neuroimage.2026.122074', '10.1126/sciadv.add3607', '10.1016/j.neuroimage.2010.07.033', 'sites.google.com/view/greedyreg/cite', 'github.com/pyushkevich/greedy', '10.1016/j.neuroimage.2004.07.068', '10.1002/hbm.460020402', 'cowles.yale.edu/sites/default/files/2023-05/s-0383.pdf', '10.21105/joss.03669', '10.1016/j.neuroimage.2011.12.028', '10.1002/hbm.20359'],
   elastix: ['10.1109/TMI.2009.2035616', '10.3389/fninf.2013.00050', '10.1038/s41592-021-01326-w', '10.1016/j.jneumeth.2016.03.001', 'github.com/niivue/niivue'],
-  bison: ['10.1002/mrm.28547', '10.1016/j.neuroimage.2017.06.009', '10.1016/j.neuroimage.2010.07.033', '10.1016/S1053-8119(09)70884-5', '10.1016/j.media.2007.06.004', '10.1109/TMI.2010.2046908', '10.1002/jmri.22003', '10.52294/001c.94384', '10.18112/openneuro.ds007522.v2.0.1', 'github.com/niivue/niivue'],
+  bison: ['10.1002/mrm.28547', '10.1016/j.neuroimage.2017.06.009', '10.1016/j.neuroimage.2010.07.033', '10.1016/S1053-8119(09)70884-5', '10.1016/j.media.2007.06.004', '10.1109/TMI.2010.2046908', '10.1002/jmri.22003', '10.52294/001c.94384', '10.18112/openneuro.ds007522.v2.0.1', '10.1016/j.jneumeth.2016.03.001', 'github.com/niivue/niivue'],
 };
 
 test('every registered app has app information with packages and cited methods', () => {
@@ -100,6 +102,12 @@ test('QSMbly About credits and links its upstream application', () => {
   const upstream = information.apps.qsmbly.packages.find(item => item.name === 'QSMbly (upstream)');
   assert.equal(upstream.url, 'https://github.com/astewartau/qsmbly');
   assert.match(information.apps.qsmbly.builders, /Ashley Stewart/);
+});
+
+test('DWI Correct About credits the author of the app and its shoreline core, and its contributor', () => {
+  assert.match(information.apps.dwicorrect.builders, /shoreline/);
+  assert.match(information.apps.dwicorrect.builders, /https:\/\/github\.com\/parent41/);
+  assert.match(information.apps.dwicorrect.builders, /Gabriel A\. Devenyi \(https:\/\/github\.com\/gdevenyi\)/);
 });
 
 test('theme injection carries the app information as one JSON script and stays idempotent', () => {
@@ -206,6 +214,7 @@ test('every page carries the site catalog, so one app can open another with its 
   assert.ok(!catalog.some(({ id }) => id === 'zarro'), 'Zarro streams from URLs and takes no files');
   assert.ok(!catalog.some(({ id }) => id === 'me-ica'), 'ME-ICA needs an echo bundle, not a single image');
   assert.ok(!catalog.some(({ id }) => id === 'sdc'), 'SDC needs an opposite-phase pair, not a single image');
+  assert.ok(!catalog.some(({ id }) => id === 'pipeline-builder'), 'Pipeline builder opens workflow documents, not images');
 });
 
 test('DICOM handoff Privacy discloses unchanged scanner headers', () => {
