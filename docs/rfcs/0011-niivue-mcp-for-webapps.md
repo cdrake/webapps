@@ -328,9 +328,10 @@ Phase 1 runs on branch `feat/nv-mcp-bridge` against `@niivue/nv-mcp`
     them. Making the SDK a peer dependency upstream would remove the stack
     from the lockfile.
 - **Source approval.** Phase 2 is in the same branch.
-  - The bridge finds every `url` argument in a call. An absolute path, a
-    `file:` URL or an http(s) URL outside the window's grants is approved
-    first, then rewritten to the granted address. Relative URLs pass through.
+  - The bridge finds every loading address in a call: each `url`, a `labels`
+    table, and `set_font`'s `atlas` and `metrics`. An absolute path, a `file:`
+    URL or an http(s) URL outside the window's grants is approved first,
+    then rewritten to the granted address. Relative URLs pass through.
     Before any of them is approved, every address the page would fetch (each
     `url`, a `labels` table, `set_font`'s `atlas` and `metrics`) is read as
     the page would read it, and the call is refused if one carries a user
