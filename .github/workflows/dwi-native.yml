@@ -15,6 +15,7 @@ on:
       - 'packages/n4/**'
       - 'packages/hmc/**'
       - 'packages/hmc-registration/**'
+      - 'packages/sdc/**'
       - 'packages/components/src/file-io/NiftiUtils.js'
       - 'packages/components/src/file-io/bids-derivatives.js'
       - 'packages/components/src/file-io/brain-mask.js'
@@ -41,6 +42,7 @@ on:
       - 'packages/n4/**'
       - 'packages/hmc/**'
       - 'packages/hmc-registration/**'
+      - 'packages/sdc/**'
       - 'packages/components/src/file-io/NiftiUtils.js'
       - 'packages/components/src/file-io/bids-derivatives.js'
       - 'packages/components/src/file-io/brain-mask.js'
@@ -117,6 +119,37 @@ jobs:
           HMC_REQUIRE_REFERENCE: '1'
         run: cargo +1.98.0 test --release --workspace --locked -- --nocapture
 
+  sdc-field-fit-reference:
+    name: deterministic SDC field fitting on the pinned native reference
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install 1.98.0 --profile minimal
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+      - name: Cache the reference downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ~/sdc-reference
+          key: sdc-field-fit-${{ hashFiles('exes/dwi/sdc/validation/reference.manifest.json') }}
+      - name: Fetch the field-fit subset and stage arrays with shared NIfTI IO
+        run: |
+          python3 exes/dwi/sdc/validation/fetch_reference.py "$HOME/sdc-reference" field-fit >> "$GITHUB_ENV"
+          node exes/dwi/sdc/validation/prepare-reference.mjs "$HOME/sdc-reference" "$RUNNER_TEMP/sdc-field-fit"
+          echo "SDC_FIELD_FIT_REFERENCE=$RUNNER_TEMP/sdc-field-fit" >> "$GITHUB_ENV"
+      - name: Require the native field conversion and coefficient parity gates
+        working-directory: exes/dwi
+        env:
+          SDC_REQUIRE_REFERENCE: '1'
+        run: cargo +1.98.0 test --release --locked -p dwi-sdc --test reference -- --nocapture
+      - name: Verify the committed WebAssembly field fit against the same native outputs
+        run: node exes/dwi/sdc/validation/wasm-reference.mjs
+
   wasm-source:
     name: committed WASM modules equal a rebuild from source
     runs-on: ubuntu-24.04
@@ -136,13 +169,15 @@ jobs:
         run: bash packages/dwidenoise/scripts/build-wasm.sh --check
       - name: Rebuild and compare hmc
         run: bash packages/hmc/scripts/build-wasm.sh --check
+      - name: Rebuild and compare SDC field fitting
+        run: bash packages/sdc/scripts/build-field-fit.sh --check
       - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 22
           cache: pnpm
       - name: Install package test dependencies
-        run: pnpm install --frozen-lockfile --ignore-scripts --filter @neurodesk/noddi... --filter @neurodesk/degibbs... --filter @neurodesk/dwidenoise... --filter @neurodesk/hmc... --filter @neurodesk/dwi2trx...
+        run: pnpm install --frozen-lockfile --ignore-scripts --filter @neurodesk/noddi... --filter @neurodesk/degibbs... --filter @neurodesk/dwidenoise... --filter @neurodesk/hmc... --filter @neurodesk/dwi2trx... --filter @neurodesk/sdc...
       - name: noddi package tests on the committed module
         working-directory: packages/noddi
         run: node --test test/*.test.js
@@ -175,6 +210,10 @@ jobs:
   # The AMICO 1.5.4, DIPY Patch2Self and MRtrix 3.0.8 mrdegibbs oracle tests on the pinned Hugging Face data
   # (exes/dwi/validation/oracle.manifest.json). The fetch checks the size and sha256 of every
   # file, also on a cache hit, and DWI_REQUIRE_ORACLE turns each missing-data skip into a failure.
+      - name: SDC field-fit tests on the committed module
+        working-directory: packages/sdc
+        run: node --test test/field-fit.test.js
+
   oracle:
     name: exes/dwi oracle tests on the pinned AMICO, Patch2Self and mrdegibbs data
     runs-on: ubuntu-24.04
