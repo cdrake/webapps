@@ -123,7 +123,7 @@ async function nodeRun() {
 const allowed = ["packages/hmc/", "packages/hmc-registration/", "packages/components/src/file-io/"];
 const mime = { ".js": "text/javascript", ".mjs": "text/javascript", ".wasm": "application/wasm" };
 async function chromiumRun() {
-  const { chromium } = await import("playwright");
+  const { chromium } = await import("@playwright/test");
   const server = createServer((request, response) => {
     response.setHeader("Cross-Origin-Opener-Policy", "same-origin");
     response.setHeader("Cross-Origin-Embedder-Policy", "require-corp");

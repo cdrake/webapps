@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import { tmpdir } from "node:os";
 import { createNiftiFromData } from "@neurodesk/webapp-components/file-io/nifti";
 import { benchmarkSourceHashes } from "../validation/benchmark-sources.mjs";
 import { prepareBenchmark } from "../validation/benchmark-task.js";
@@ -14,7 +15,7 @@ test("benchmark receipts cover worker adapters, generated kernels, shared IO and
   for (const path of ["packages/hmc/src/pool.js", "packages/hmc/src/node-worker.js", "packages/hmc/src/browser.js",
     "packages/hmc-registration/src/worker.js", "packages/hmc-registration/wasm/hmc-registration.mjs",
     "packages/components/src/file-io/NiftiUtils.js", "packages/hmc/validation/benchmark-matrix.mjs"]) assert.ok(actual[path], path);
-  const root = await mkdtemp(join(process.env.TMPDIR, "hmc-source-hashes-"));
+  const root = await mkdtemp(join(tmpdir(), "hmc-source-hashes-"));
   try {
     for (const path of Object.keys(actual)) {
       await mkdir(dirname(join(root, path)), { recursive: true });
