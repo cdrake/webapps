@@ -479,6 +479,8 @@ try {
     await expect(page.locator('#runButton')).toBeHidden();
     await task.tap();
     await expect(page.locator('#runButton')).toBeEnabled();
+    await checkBidsRun(page);
+    await expect(page.locator('#runButton')).toBeEnabled();
     await expect(page.locator('#outputSection')).not.toHaveAttribute('open', '');
   });
   await check('n4', async page => {

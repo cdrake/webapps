@@ -9,6 +9,7 @@ import { createNiftiFromData, readNiftiFrames } from "@neurodesk/webapp-componen
 import { loadDwidenoise } from "@neurodesk/dwidenoise";
 import { dwiSeries } from "./fixtures.mjs";
 import { dicomSeries } from "../../../test-utils/dicom-fixture.mjs";
+import { dropFolder, exampleBidsTree } from "../../../test-utils/bids-folder-drop.mjs";
 
 const examples = JSON.parse(readFileSync(new URL("../examples.json", import.meta.url), "utf8"));
 const imageUrl = examples[0].files.find((file) => file.role === "image").url;
@@ -375,4 +376,39 @@ test("a DICOM series without diffusion gradients is converted and then refused",
   await page.locator("#imageInput").setInputFiles(dicomSeries({ slices: 16, patient: { birthDate: "19800102" } }));
   await expect(page.locator("#statusText")).toContainText("Choose the .bval file with", { timeout: 60000 });
   await expect(page.locator("#runButton")).toBeDisabled();
+});
+
+test("a dropped BIDS folder denoises the chosen run and keeps its sidecar", async ({ page }) => {
+  test.setTimeout(300000);
+  const tree = await exampleBidsTree(page.request, examples[0], { runs: 2 });
+  await page.goto("/");
+  await expect(page.locator("#statusText")).toHaveText("Drag and drop files");
+  await expect(page.getByRole("combobox", { name: "DWI run" })).toBeHidden();
+  await dropFolder(page, tree);
+  await expect(page.locator("#fileInfo")).toContainText("sub-01_run-1_dwi.nii.gz", { timeout: 120000 });
+  const runs = page.getByRole("combobox", { name: "DWI run" });
+  await expect(runs.locator("option")).toHaveText(["sub-01_run-1_dwi", "sub-01_run-2_dwi"]);
+  await runs.selectOption({ label: "sub-01_run-2_dwi" });
+  await expect(page.locator("#fileInfo")).toContainText("sub-01_run-2_dwi.nii.gz", { timeout: 120000 });
+  await expect(page.locator("#fileInfo")).toContainText("67×92×10×137 · 13 b0, 124 weighted · bval, bvec");
+  // Undo after another drop gives back the folder with the chosen run, not its first run.
+  const other = Object.fromEntries(["nii.gz", "bval", "bvec"].map((ext) => [`ds/sub-01/dwi/sub-01_dwi.${ext}`, tree[`ds/sub-01/dwi/sub-01_run-1_dwi.${ext}`]]));
+  await dropFolder(page, other);
+  await expect(page.locator("#fileInfo")).toContainText("sub-01_dwi.nii.gz", { timeout: 60000 });
+  await expect(runs).toBeHidden();
+  await page.locator(".nd-status-undo").click();
+  await expect(page.locator("#fileInfo")).toContainText("sub-01_run-2_dwi.nii.gz", { timeout: 60000 });
+  await expect(runs).toHaveValue("1");
+  await page.locator("#runButton").click();
+  await expect(page.locator("#statusText")).toHaveText("Denoised 137 volumes", { timeout: 240000 });
+  const image = await download(page, "Denoised image");
+  expect(image.suggestedFilename()).toBe("sub-01_run-2_desc-denoised_dwi.nii.gz");
+  expect(readNiftiFrames(gunzipSync(readFileSync(await image.path()))).frames).toBe(137);
+  const bval = await download(page, "b-values");
+  expect(bval.suggestedFilename()).toBe("sub-01_run-2_desc-denoised_dwi.bval");
+  expect(readFileSync(await bval.path())).toEqual(tree["ds/sub-01/dwi/sub-01_run-2_dwi.bval"]);
+  const sidecar = await download(page, "Sidecar");
+  expect(sidecar.suggestedFilename()).toBe("sub-01_run-2_desc-denoised_dwi.json");
+  // The run's own sidecar (the example's) and the dataset's dwi.json both reach the output.
+  expect(JSON.parse(readFileSync(await sidecar.path(), "utf8"))).toMatchObject({ PhaseEncodingDirection: "j-", InheritedField: "ds/dwi.json", RunSidecar: 2 });
 });
