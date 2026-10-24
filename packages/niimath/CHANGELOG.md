@@ -2,6 +2,11 @@
 
 ## 1.3.20261024
 
+### Patch Changes
+
+- Updated dependencies [5b5ff35]
+  - @neurodesk/node-drivers@0.3.0
+
 ## 1.3.20261022
 
 ## 1.3.20261020

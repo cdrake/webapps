@@ -80,6 +80,21 @@
       ]
     },
     {
+      "id": "nv-mcp",
+      "version": "1.0.0-rc.7",
+      "target": "nv-mcp/1.0.0-rc.7",
+      "deduplicate": true,
+      "reason": "Share the nv-mcp browser client that each app's NiiVue viewer automation imports into the page when an agent first drives it; no worker loads it, so it needs no service-worker scope.",
+      "files": [
+        {
+          "name": "nv-mcp.js",
+          "source_app": "brain-extraction",
+          "source": "assets/nv-mcp-DssI0BZx.js",
+          "sha256": "9937c81877265e876e0ccbb9f73df08a230e9e46223eeffe6d360f264820dd6a"
+        }
+      ]
+    },
+    {
       "id": "mindgrab-cpu",
       "version": "0.1.20260813",
       "target": "mindgrab/0.1.20260813/cpu",

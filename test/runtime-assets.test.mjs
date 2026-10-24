@@ -130,6 +130,39 @@ test('composite JPEG DICOM workers use one pinned WASM without moving the worker
   assert.ok(consumers > 1, 'multiple app consumers must share the JPEG runtime');
 });
 
+test('composite apps import one nv-mcp browser client from the shared store', async () => {
+  const registry = await loadAppsRegistry();
+  const manifest = JSON.parse(await readFile(join(repoRoot, 'runtime-assets/manifest.json'), 'utf8'));
+  const components = JSON.parse(await readFile(join(repoRoot, 'packages/components/package.json'), 'utf8'));
+  const family = manifest.families.find(family => family.id === 'nv-mcp');
+  assert.ok(family?.deduplicate, 'the nv-mcp client must declare physical deduplication');
+  assert.equal(family.target, `nv-mcp/${components.devDependencies['@niivue/nv-mcp']}`,
+    'the shared path must name the nv-mcp version the components bundle');
+  const runtimePath = `_runtime/${family.target}/${family.files[0].name}`;
+  let consumers = 0;
+  for (const app of registry.apps) {
+    const standalone = await readdir(join(repoRoot, 'apps', app.id, 'dist'), { recursive: true });
+    const copies = standalone.filter(file => /(?:^|\/)nv-mcp-[\w-]{8}\.js$/.test(file));
+    if (!copies.length) continue;
+    consumers++;
+    for (const copy of copies) await assert.rejects(access(join(dist, app.path, copy)), { code: 'ENOENT' }, `${app.id}/${copy} must not stay in the app`);
+    let imports = 0;
+    const composite = await readdir(join(dist, app.path), { recursive: true });
+    for (const file of composite.filter(file => file.endsWith('.js'))) {
+      const source = await readFile(join(dist, app.path, file), 'utf8');
+      for (const [, reference] of source.matchAll(/import\("([^"]*nv-mcp[^"]*\.js)"\)/g)) {
+        imports++;
+        for (const base of ['https://example.test/', 'https://example.test/webapps/']) {
+          assert.equal(new URL(reference, new URL(`${app.path}/${file}`, base)).href, new URL(runtimePath, base).href,
+            `${app.id}/${file} must import the shared nv-mcp client`);
+        }
+      }
+    }
+    assert.ok(imports, `${app.id}: no module imports the shared nv-mcp client`);
+  }
+  assert.ok(consumers > 1, 'multiple app consumers must share the nv-mcp client');
+});
+
 
 test('brain extraction ships its compact shared BET kernel without a second QSM runtime', async () => {
   const directory = join(dist, 'brain-extraction', 'bet');

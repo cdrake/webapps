@@ -82,7 +82,6 @@ const WITHOUT_COMMAND_LINE = {
   'pipeline-builder': 'writes NeuroFlow workflows: neuroflow-mcp runs and validates them from the command line',
   sdc: 'exes/sdc builds the sdc command line on the same core; its release packaging follows the app (#473)',
   dwicorrect: 'exes/dwi/shoreline builds the shoreline command line on the same core; its release packaging follows the app',
-  n4: 'the n4 command line follows its app, as noddi\'s does (docs/architecture/dwi-microstructure-design.md)',
   fastprep: 'exes/fastprep drives separately installed niimath, brainchop, greedy-rs, synthsr, topofit and glm; a bundled release waits on packaging those (TopoFit licence pending)',
   'me-ica': 'its meica CLI is released from niivue/meica-rs; no release is tagged yet',
   bison: 'the bison command line in packages/bison follows the app; its release packaging is not done yet',

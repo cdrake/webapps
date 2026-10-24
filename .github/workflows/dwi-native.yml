@@ -146,7 +146,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - name: Install package test dependencies
-        run: pnpm install --frozen-lockfile --ignore-scripts --filter @neurodesk/noddi... --filter @neurodesk/degibbs... --filter @neurodesk/dwidenoise... --filter @neurodesk/hmc... --filter @neurodesk/dwi2trx...
+        run: pnpm install --frozen-lockfile --ignore-scripts --filter @neurodesk/noddi... --filter @neurodesk/degibbs... --filter @neurodesk/dwidenoise... --filter @neurodesk/hmc... --filter @neurodesk/dwi2trx... --filter @neurodesk/n4...
       - name: noddi package tests on the committed module
         working-directory: packages/noddi
         run: node --test test/*.test.js

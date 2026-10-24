@@ -1,5 +1,17 @@
 # @neurodesk/mri2vid
 
+## 0.6.20261024
+
+### Minor Changes
+
+- ba38bd9: Decode DICOM with dcm2niix (`@niivue/dcm2niix`) in the app and the command line. Compressed series (JPEG, JPEG-LS, JPEG 2000, RLE) now open, and Siemens mosaics are split by dcm2niix. Videos from DICOM that already worked are unchanged: dcm2niix's volume is laid back out in `MRI2vid.py`'s order, and the parity goldens still match bit for bit.
+- ef05562: Rename dicom2vid to MRI2VID: the app now lives at `/mri2vid/`, the package is `@neurodesk/mri2vid` and the command line is `mri2vid`. Old `/dicom2vid/` links redirect to the new address.
+
+### Patch Changes
+
+- Updated dependencies [5b5ff35]
+  - @neurodesk/node-drivers@0.3.0
+
 ## 0.5.20261024
 
 ## 0.5.20261022
