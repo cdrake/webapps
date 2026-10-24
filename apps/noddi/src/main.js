@@ -19,8 +19,10 @@ import {
   decodeNiftiBuffer,
   downloadFile,
   readNiftiFrames,
-  sameNiftiGrid,
 } from "@neurodesk/webapp-components/file-io";
+import { gzipFile } from "@neurodesk/webapp-components/file-io/bids-derivatives";
+import { binaryMask, readBrainMask } from "@neurodesk/webapp-components/file-io/brain-mask";
+import { bidsDiffusionSeries, chooseBidsRun, chosenBidsRun } from "@neurodesk/webapp-components/file-io/bids";
 import { registerAppAutomation } from "@neurodesk/webapp-components/automation";
 import { readDiffusionSeries, runDcm2niix } from "@neurodesk/runtime-support/dcm2niix-client";
 import { brainMask, mindgrab } from "@neurodesk/runtime-support/mindgrab";
@@ -73,6 +75,8 @@ const noddiApi = loadNoddi(fetch(wasmUrl));
 let input = null;
 let mask = null;
 let outputs = {};
+// The loaded BIDS folder's files and runs, so another run can be chosen without a new drop.
+let folder = null;
 let loading = null;
 let fitting = null;
 let noddiRequested = $("fitNoddi").checked;
@@ -97,20 +101,15 @@ const showVolume = createNiivueVolumePreview({
   emptyState: $("emptyState"),
 });
 
-async function niftiFile(buffer, name) {
-  const stream = new Blob([buffer]).stream().pipeThrough(new CompressionStream("gzip"));
-  return new File([await new Response(stream).arrayBuffer()], name, { type: "application/gzip" });
-}
-
 function clearOutputs() {
   outputs = {};
   results.render();
   $("outputSection").open = false;
 }
 
-/** Reads a DWI with its gradients from one selection (NIfTI with bval and bvec, or DICOM). */
-async function readDwi(files, signal) {
-  const series = (await readDiffusionSeries(files, { signal })).filter((entry) => entry.bval && entry.bvec);
+/** Reads a DWI with its gradients from one selection (NIfTI with bval and bvec, or DICOM), or one BIDS run. */
+async function readDwi(files, signal, run = null) {
+  const series = (run ? [run] : await readDiffusionSeries(files, { signal })).filter((entry) => entry.bval && entry.bvec);
   signal?.throwIfAborted();
   if (!series.length) throw new Error("Choose a DWI with its .bval and .bvec files, or a DICOM diffusion series.");
   if (series.length > 1) throw new Error(`Choose one diffusion series; this selection has ${series.length}.`);
@@ -129,7 +128,19 @@ async function readDwi(files, signal) {
   return { name: image.name, buffer, dims: frames.dims, data: frames.data, voxels, bvals, bvecs, table, meanB0: meanVolumes(frames.data, voxels, table.b0) };
 }
 
-async function loadFiles(filesPromise, signal) {
+/** Show the run selector for a BIDS folder with more than one DWI run. A run without its gradient tables is disabled. */
+function showRuns(runs, index) {
+  const option = (run, i) => {
+    const text = run.missing.length ? `${run.label} (no ${run.missing.join(", ")})` : run.label;
+    const item = new Option(text, String(i), false, i === index);
+    item.disabled = run.missing.length > 0;
+    return item;
+  };
+  $("runSelect").replaceChildren(...(runs ?? []).map(option));
+  $("runField").hidden = !runs || runs.length < 2;
+}
+
+async function loadFiles(filesPromise, signal, runIndex = null) {
   if (loading || fitting) throw new Error("Wait for the current operation to finish, or cancel it.");
   const controller = new AbortController();
   const abort = () => controller.abort();
@@ -142,13 +153,19 @@ async function loadFiles(filesPromise, signal) {
   status("Reading diffusion data…");
   try {
     const files = await filesPromise;
-    const dwi = await readDwi(files, controller.signal);
+    const runs = await bidsDiffusionSeries(files);
+    // A folder loads the run last chosen from the same files (Undo gives them back), else its first complete run.
+    const index = runs ? (runIndex ?? chosenBidsRun(runs)) : 0;
+    const dwi = await readDwi(files, controller.signal, runs?.[index]);
     controller.signal.throwIfAborted();
-    const b0 = await niftiFile(createNiftiFromData(dwi.meanB0, dwi.buffer, { dims: dwi.dims }), `${bidsStem(dwi.name)}_desc-meanb0.nii.gz`);
+    const b0 = await gzipFile(createNiftiFromData(dwi.meanB0, dwi.buffer, { dims: dwi.dims }), `${bidsStem(dwi.name)}_desc-meanb0.nii.gz`);
     controller.signal.throwIfAborted();
     await showVolume({ file: b0 }, { signal: controller.signal });
     controller.signal.throwIfAborted();
     input = dwi;
+    if (runs) chooseBidsRun(runs, index);
+    folder = runs ? { files, runs, index } : null;
+    showRuns(runs, index);
     mask = null;
     $("imageInput").dispatchEvent(new CustomEvent("nd-files", { bubbles: true, detail: { files } }));
     $("maskInput").dispatchEvent(new CustomEvent("nd-files", { bubbles: true, detail: { files: [] } }));
@@ -188,12 +205,7 @@ async function loadMask(file, signal) {
   progress.setCancellable(true);
   status("Reading mask…");
   try {
-    const buffer = await decodeNiftiBuffer(await file.arrayBuffer());
-    controller.signal.throwIfAborted();
-    if (!sameNiftiGrid(buffer, input.buffer)) throw new Error(`${file.name} is not on the DWI grid.`);
-    const volume = readNiftiFrames(buffer);
-    if (volume.frames !== 1) throw new Error("The brain mask must be a single 3D image.");
-    mask = Uint8Array.from(volume.data, (value) => (value > 0 ? 1 : 0));
+    mask = await readBrainMask(await file.arrayBuffer(), input.buffer, { name: file.name, grid: "DWI", signal: controller.signal });
     $("maskInput").dispatchEvent(new CustomEvent("nd-files", { bubbles: true, detail: { files: [file] } }));
     clearOutputs();
     $("maskInfo").hidden = false;
@@ -212,6 +224,7 @@ async function loadMask(file, signal) {
 function setBusy(busy) {
   results.inert = busy;
   $("imageInput").disabled = busy;
+  $("runSelect").disabled = busy;
   $("maskInput").disabled = busy;
   exampleControl?.setDisabled(busy);
   $("runButton").disabled = busy || !input;
@@ -238,7 +251,7 @@ async function fitModels(signal) {
       status("Extracting the brain from the mean b0 with MindGrab");
       const meanB0 = createNiftiFromData(input.meanB0, input.buffer, { dims: input.dims });
       const extracted = await brainMask(new Uint8Array(meanB0), { assetPath: `${import.meta.env.BASE_URL}mindgrab/`, signal: controller.signal });
-      brain = Uint8Array.from(readNiftiFrames(extracted.mask).data, (value) => (value > 0 ? 1 : 0));
+      brain = binaryMask(readNiftiFrames(extracted.mask).data);
       maskSource = `mindgrab-${mindgrab.version}-${extracted.backend}`;
       log.log(`MindGrab ${mindgrab.version} brain mask on ${extracted.backend}`, "info");
     }
@@ -265,7 +278,7 @@ async function fitModels(signal) {
     const artifacts = [];
     for (const entry of outputEntries(fit, brain, stem)) {
       const nifti = createNiftiFromData(entry.data, input.buffer, { dims: [...dims, entry.frames] });
-      const file = await niftiFile(nifti, entry.name);
+      const file = await gzipFile(nifti, entry.name);
       controller.signal.throwIfAborted();
       const range = entry.frames === 1 ? rangeOf(entry.model, entry.param) : undefined;
       rows[entry.role] = { description: entry.label, file, range, viewable: entry.frames === 1 };
@@ -327,6 +340,15 @@ $("maskInput").addEventListener("change", (event) => {
   if (file) void loadMask(file).catch(report);
 });
 bindFileDrop($("dropZone"), importFiles);
+$("runSelect").addEventListener("change", (event) => {
+  if (!folder) return;
+  const loaded = folder.index;
+  exampleControl.cancel();
+  void loadFiles(Promise.resolve(folder.files), undefined, Number(event.target.value)).catch((error) => {
+    event.target.value = String(loaded);
+    report(error);
+  });
+});
 bindFileDrop($("maskDrop"), async (files) => {
   const [file] = await files;
   if (file) await loadMask(file).catch(report);

@@ -97,6 +97,7 @@ dependencies = [
 name = "dwi-degibbs"
 version = "0.1.0"
 dependencies = [
+ "flate2",
  "rustfft",
 ]
 
