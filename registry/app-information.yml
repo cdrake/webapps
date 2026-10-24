@@ -1892,3 +1892,18 @@ apps:
         title: NiiVue
         reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
         url: https://github.com/niivue/niivue
+
+  pipeline-builder:
+    privacy: Workflow files you open are read on this page and never uploaded. The tool catalog is fetched from this site, and the example workflow from the Neurodesk dataset on Hugging Face. Exported workflows name tools and bindings only, never image data.
+    packages:
+      - { name: NeuroFlow Rust core (WebAssembly), url: https://github.com/cdrake/neuroflow, role: workflow validation against the tool catalog }
+      - { name: Neurodesk NeuroFlow generator, url: https://github.com/neurodesk/webapps/tree/main/packages/desktop/neuroflow, role: one NeuroFlow tool per app operation }
+    citations:
+      - group: Workflow format
+        title: NeuroFlow
+        reference: "NeuroFlow Contributors. NeuroFlow: typed neuroimaging workflows [Computer software]."
+        url: https://github.com/cdrake/neuroflow
+      - group: Workflow format
+        title: NeuroFlow specification
+        reference: "NeuroFlow Contributors. NeuroFlow 0.1 specification."
+        url: https://github.com/cdrake/neuroflow-spec

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { chromium, expect } from '@playwright/test';
 import { loadAppsRegistry, repoRoot } from '../scripts/lib/apps-registry.mjs';
@@ -506,6 +507,31 @@ try {
     await task.tap();
     await expect(page.locator('#iterations')).toHaveValue('3');
     await expect(page.locator('#outputSection')).not.toHaveAttribute('open', '');
+  });
+  await check('pipeline-builder', async page => {
+    await expect(page.locator('#statusText')).toContainText('operations from the Neurodesk catalog', { timeout: 60000 });
+    await expect(page.locator('#technicalLog')).toHaveClass(/collapsed/);
+    await page.getByRole('combobox', { name: 'Input', exact: true }).selectOption('t1-segmentation');
+    await expect(page.locator('[data-neurodesk-examples]')).toHaveAttribute('data-example-state', 'ready', { timeout: 60000 });
+    await expect(page.locator('#validationSummary')).toHaveText('Valid · 3 steps.');
+    await page.getByRole('button', { name: 'brain', exact: true }).tap();
+    const parameters = page.locator('#stepEditor details');
+    await parameters.locator('summary').tap();
+    await page.locator('#param-param_threshold').fill('0.3');
+    await page.locator('#param-param_threshold').press('Enter');
+    await expect(parameters).toHaveAttribute('open', '');
+    const step = page.locator('#stepSection > summary');
+    await step.tap();
+    await expect(page.locator('#param-param_threshold')).toBeHidden();
+    await step.tap();
+    await expect(page.locator('#param-param_threshold')).toHaveValue('0.3');
+    const pending = page.waitForEvent('download');
+    await page.locator('#runButton').tap();
+    const download = await pending;
+    expect(download.suggestedFilename()).toBe('t1-segmentation.workflow.json');
+    const template = JSON.parse(await readFile(join(repoRoot, 'apps/pipeline-builder/src/workflows/t1-segmentation.workflow.json'), 'utf8'));
+    template.steps.brain.inputs.param_threshold = { constant: 0.3 };
+    expect(JSON.parse(await readFile(await download.path(), 'utf8'))).toEqual(template);
   });
 } finally { await browser.close(); await site.close(); }
 if (failures.length) throw new Error(failures.join('\n'));
