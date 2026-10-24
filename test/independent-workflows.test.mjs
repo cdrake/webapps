@@ -120,7 +120,7 @@ test('native packages share one gated publisher while signing stays isolated', a
 
 test('native and independent test workflows pin actions and discard checkout credentials', async () => {
   const portable = (await portableCallers()).map(([name]) => name);
-  for (const name of ['synthsr-native', 'synthseg-native', ...portable, 'node-cli-portable', 'node-cli', 'greedy-native', 'sct-full-tests', 'native-nifti', 'native-publish', 'standalone-links', 'hmc-registration', 'n4-wasm-source']) {
+  for (const name of ['synthsr-native', 'synthseg-native', ...portable, 'node-cli-portable', 'node-cli', 'greedy-native', 'sct-full-tests', 'native-nifti', 'native-publish', 'standalone-links', 'hmc-registration', 'n4-wasm-source', 'desktop-source-approval']) {
     const flow = await workflow(name);
     for (const job of Object.values(flow.jobs)) {
       if (job.uses) assert.match(job.uses, /^\.\/\.github\/workflows\/[\w-]+\.yml$/, `${name}: ${job.uses}`);
@@ -132,6 +132,21 @@ test('native and independent test workflows pin actions and discard checkout cre
       }
     }
   }
+});
+
+test('desktop source approval runs on Windows without an offline bundle or dependency install', async () => {
+  const flow = await workflow('desktop-source-approval');
+  for (const event of ['pull_request', 'push']) {
+    for (const path of ['packages/desktop/src/**', 'packages/desktop/test/source-approval.test.js', '.github/workflows/desktop-source-approval.yml']) {
+      assert.ok(flow.on[event].paths.includes(path), `${event}: ${path}`);
+    }
+  }
+  assert.ok(Object.hasOwn(flow.on, 'workflow_dispatch'));
+  const job = flow.jobs['windows-paths'];
+  assert.equal(job['runs-on'], 'windows-latest');
+  assert.equal(job.needs, undefined);
+  assert.equal(job.steps.find(step => step.uses?.startsWith('actions/setup-node@')).with['node-version'], 24);
+  assert.deepEqual(job.steps.filter(step => step.run).map(step => step.run), ['node --test packages/desktop/test/source-approval.test.js']);
 });
 
 test('portable Node command lines build on target runners and publish through one gated job', async () => {

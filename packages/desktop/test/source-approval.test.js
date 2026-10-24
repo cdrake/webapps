@@ -1,12 +1,74 @@
 import assert from 'node:assert/strict';
 import { mkdir, mkdtemp, realpath, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, toNamespacedPath } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import test from 'node:test';
 import { startOfflineServer } from '../src/server.js';
 import { createSourceGrants } from '../src/source-grants.js';
-import { createSourceGranter, grantSources, parseApprovedSources, sourceOf } from '../src/source-approval.js';
+import { addressesIn, createSourceGranter, grantSources, parseApprovedSources, refuseCredentials, sourceOf } from '../src/source-approval.js';
+
+test('Windows namespace and WebDAV paths with @ are files only on Windows', () => {
+  for (const value of [String.raw`C:\data\a@b.nii.gz`, String.raw`\\server\share\a@b.nii.gz`, String.raw`\\.\C:\data\a@b.nii.gz`]) {
+    for (const platform of ['win32', 'linux', 'darwin']) assert.doesNotThrow(() => refuseCredentials(value, platform));
+  }
+  for (const value of [
+    String.raw`\\?\C:\data\a@b.nii.gz`,
+    String.raw`\\?\UNC\server\share\a@b.nii.gz`,
+    String.raw`\\server@SSL\DavWWWRoot\scan.nii.gz`,
+    String.raw`\\server@SSL@8443\DavWWWRoot\a@b.nii.gz`,
+    String.raw`\\server@8080\DavWWWRoot\scan.nii.gz`,
+    String.raw`\\server@ssl\DavWWWRoot\scan.nii.gz`,
+    String.raw`\\?\UNC\server@SSL\DavWWWRoot\scan.nii.gz`,
+  ]) {
+    assert.doesNotThrow(() => refuseCredentials(value, 'win32'), value);
+    for (const platform of ['linux', 'darwin']) assert.throws(() => refuseCredentials(value, platform), /must not contain credentials/, `${platform}: ${value}`);
+  }
+});
+
+test('Windows file recognition cannot bypass credential refusal for nested source addresses', () => {
+  for (const value of [
+    'https://reader:secret@example.org/scan.nii.gz',
+    '//reader:secret@example.org/scan.nii.gz',
+    String.raw`\\reader:secret@example.org\scan.nii.gz`,
+    String.raw`/\reader:secret@example.org/scan.nii.gz`,
+    String.raw`\/reader:secret@example.org/scan.nii.gz`,
+    ' //reader:secret@example.org/scan.nii.gz',
+    '//reader:secret@[example.org/scan.nii.gz',
+    'http://reader:secret@example.org:99999/scan.nii.gz',
+    String.raw`\\?\UNC\reader:secret@example.org\share\scan.nii.gz`,
+    String.raw`\\?\C:/data/a@b.nii.gz`,
+    String.raw`\\server@SSL/DavWWWRoot/scan.nii.gz`,
+    String.raw`\\reader@example.org\share\scan.nii.gz`,
+    String.raw`\\server@SSL@0\DavWWWRoot\scan.nii.gz`,
+    String.raw`\\server@65536\DavWWWRoot\scan.nii.gz`,
+  ]) {
+    const sources = addressesIn({ layers: [{ url: value }], labels: value, font: { atlas: value, metrics: value } });
+    assert.equal(sources.length, 4);
+    for (const platform of ['win32', 'linux', 'darwin']) {
+      for (const source of sources) assert.throws(() => refuseCredentials(source, platform), /^Error: Source URLs must not contain credentials$/);
+    }
+  }
+});
+
+test('a Windows extended path with @ approves and mounts the actual local file', { skip: process.platform !== 'win32' }, async t => {
+  const root = await realpath(await mkdtemp(join(tmpdir(), 'viewer-native-path-')));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const file = join(root, 'scan@session.nii.gz');
+  await writeFile(file, 'native file bytes');
+  const extended = toNamespacedPath(file);
+  assert.ok(extended.startsWith('\\\\?\\'), extended);
+  refuseCredentials(extended);
+  assert.deepEqual(sourceOf(extended), { path: extended });
+  const site = await startOfflineServer(root);
+  t.after(() => site.close());
+  const grant = createSourceGranter({ site, grants: createSourceGrants(), approved: parseApprovedSources(root),
+    ask() { assert.fail('a pre-approved local file must not ask for permission'); },
+  });
+  const mounted = await grant(sourceOf(extended), { base: `${site.origin}/dicomview/`, signal: new AbortController().signal });
+  assert.equal(mounted.approval, 'configured');
+  assert.equal(await (await fetch(mounted.url)).text(), 'native file bytes');
+});
 
 test('sources are local files, remote addresses or nothing to approve', () => {
   const file = join(tmpdir(), 'T2.nii.gz');
