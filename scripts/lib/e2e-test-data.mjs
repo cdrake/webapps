@@ -97,6 +97,8 @@ export const provisioners = {
   },
   // The browser reference runs the app's example through its degibbs automation, about 10 s.
   degibbs: { env: ['DEGIBBS_BROWSER_REFERENCE'], provision: async () => ({ DEGIBBS_BROWSER_REFERENCE: 'check' }) },
+  // The browser reference runs the app's two examples through its denoise automation, about 10 s.
+  dwidenoise: { env: ['DWIDENOISE_BROWSER_REFERENCE'], provision: async () => ({ DWIDENOISE_BROWSER_REFERENCE: 'check' }) },
   // The browser reference runs the app's 14 commands on both examples, about 3 min.
   niimath: { env: ['NIIMATH_BROWSER_REFERENCE'], provision: async () => ({ NIIMATH_BROWSER_REFERENCE: 'check' }) },
   // The browser reference runs MindGrab on the CPU once and fits the example and the phantom, about 1 min.

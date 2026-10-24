@@ -1,13 +1,13 @@
-// The page's worker schedule (pool.js) in Node: fake workers run the real message handlers
-// (worker-tasks.js) and answer out of order.
+// The shared worker schedule (pool.js) in Node: fake workers run the real message handlers
+// (worker.js's createWorkerTasks) and answer out of order.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { loadDwidenoise } from "@neurodesk/dwidenoise";
-import { CHUNK_VOXELS, denoiseSeries, passCosts } from "../src/pool.js";
-import { createWorkerTasks } from "../src/worker-tasks.js";
+import { loadDwidenoise } from "../src/wasm.js";
+import { CHUNK_VOXELS, denoiseSeries as denoiseShared, passCosts } from "../src/pool.js";
+import { createWorkerTasks } from "../src/worker.js";
 
-const p2s = await loadDwidenoise(readFileSync(new URL("../../../packages/dwidenoise/src/dwidenoise.wasm", import.meta.url)));
+const p2s = await loadDwidenoise(readFileSync(new URL("../src/dwidenoise.wasm", import.meta.url)));
 
 let seed = 7;
 const random = () => {
@@ -37,7 +37,8 @@ class FakeWorker {
     this.terminated = true;
   }
 }
-globalThis.Worker = FakeWorker;
+// The web app's four workers, as its adapter starts them on a 5-core or larger host.
+const denoiseSeries = (options) => denoiseShared({ ...options, spawn: () => new FakeWorker(), workers: 4 });
 
 function series(nvox, bvals) {
   const frames = bvals.length;

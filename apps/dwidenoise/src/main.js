@@ -30,7 +30,7 @@ import wasmUrl from "@neurodesk/dwidenoise/wasm?url";
 import { APP } from "./config.js";
 import { sidecarText } from "@neurodesk/webapp-components/file-io/bids-derivatives";
 import { parseBval } from "@neurodesk/dwi2trx/gradients";
-import { derivativeSidecar, outputNames } from "./pipeline.js";
+import { derivativeSidecar, outputNames } from "@neurodesk/dwidenoise/pipeline";
 import { denoiseSeries, gzipInWorker } from "./pool.js";
 import examples from "../examples.json";
 

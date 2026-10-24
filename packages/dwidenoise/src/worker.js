@@ -1,12 +1,18 @@
-// The messages a Patch2Self worker handles, without the worker itself, so that Node tests can
-// run the page's schedule (pool.js) against the same code.
+// One Patch2Self worker's message handler, shared by the web app's Web Worker and the command
+// line's worker thread: it loads the WebAssembly once, then handles one voxel chunk or one volume
+// solve per message.
 // In: { id, type: "gram" | "apply", data, count, groups, coefficients? },
 //     { type: "grams", grams, groups } (kept for the solves that follow), { id, type: "solve", g, j }.
 // Out: { id, grams } for "gram", { id, row } or { id, failed } for "solve", { id, data, max }
 //      for "apply" (max: the largest finite value of the chunk), or { id, error }; "grams" has
 //      no reply.
+import { loadDwidenoise } from "./wasm.js";
 
-/** @returns (message) => [reply, transfer] | null */
+/**
+ * The messages a worker handles, on a loaded module, without the worker itself, so that tests
+ * can run the pool against the same code.
+ * @returns (message) => [reply, transfer] | null
+ */
 export function createWorkerTasks(p2s) {
   let summed = null;
 
@@ -15,7 +21,7 @@ export function createWorkerTasks(p2s) {
       const row = p2s.solveVolume(summed.grams[message.g], summed.groups[message.g], message.j);
       return [{ id: message.id, row }, [row.buffer]];
     } catch (error) {
-      // The page reports the first failing volume in group order, so a failure is a result.
+      // The pool reports the first failing volume in group order, so a failure is a result.
       return [{ id: message.id, failed: error?.message ?? String(error) }, []];
     }
   }
@@ -52,5 +58,28 @@ export function createWorkerTasks(p2s) {
     } catch (error) {
       return [{ id: message.id, error: error?.message ?? String(error) }, []];
     }
+  };
+}
+
+/**
+ * @param wasm the module source loadDwidenoise takes (a fetch Response, its bytes, or a Promise of either)
+ * @param post posts one message (and its transfer list) to the pool
+ * @returns the function to call with each message the pool sends
+ */
+export function denoiseWorkerHandler(wasm, post) {
+  const ready = loadDwidenoise(wasm).then(createWorkerTasks);
+  // A load failure is reported in the reply to each message. This keeps it from being an
+  // unhandled rejection when the pool stops the worker before it sends a message.
+  ready.catch(() => {});
+  return async (message) => {
+    let handle;
+    try {
+      handle = await ready;
+    } catch (error) {
+      post({ id: message.id, error: error?.message ?? String(error) });
+      return;
+    }
+    const reply = handle(message);
+    if (reply) post(...reply);
   };
 }
