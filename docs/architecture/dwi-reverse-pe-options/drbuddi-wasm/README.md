@@ -16,8 +16,8 @@ For sub-01 they are the same bytes as the inputs in the #596 receipt.
 - The native probe on the QSIPrep "quad" grid gives voxel data bit-identical to the QSIPrep 26.1.1 `DRBUDDI` binary with the same schedule and one thread.
 - The probe is not the full DR-BUDDI method. The `DRBUDDI` program first resamples the b0 pair to about 0.91 mm with a 16-voxel in-plane pad (`CreateBlipUpQuadImage`) and aligns the down b0 rigidly. The probe runs on the 2 mm grid. With the same schedule, the two fields differ by a median 2.69 Hz (maximum 29.6 Hz) in the brain on sub-01.
 - Thus the port gate of the document (median < 0.1 Hz from the pinned native field of the same method, `../ds005134-sub-01/drbuddi/field_hz.nii.gz`) is not met. The probe differs from that field by a median 1.13 Hz (`default`), 1.45 Hz (`m100-300-300`) and 1.69 Hz (`c10-20-20`) in the brain.
-- On the quad grid, the WebAssembly probe stops at the start of the full-resolution stage with a 4,200,595,456-byte heap (the build's limit is 4 GiB). Natively, the same run needs 4.04 GB. Thus the full method does not fit the browser.
-- On the 2 mm grid, the heap is 1,784,676,352 bytes for every schedule. The best schedules pass 3 of 6 subjects. BBR fails on sub-0001, sub-0003 and sub-0005 for every schedule, as it does for the archived full-pipeline run.
+- On the quad grid, the WebAssembly probe stops at the 4 GiB wasm32 memory limit at the start of the full-resolution stage. The heap was 4,200,595,456 bytes when it stopped (the build's maximum is 4,294,967,296 bytes). The abort does not give a reason, because the build has no assertions (`-sASSERTIONS`). Natively, the peak RSS of the same run is 3856 MiB. Thus the full method does not fit a wasm32 browser build. A memory64 build was not tried.
+- On the 2 mm grid, the heap is 1,784,676,352 bytes for every schedule. The best schedules pass 3 of 6 subjects. BBR fails on sub-0001, sub-0003 and sub-0005 for every finer schedule and for the archived run. TORTOISE default fails BBR only on sub-0005, but AP-PA on sub-0001, sub-0003 and sub-0005. 10/20/20 fails BBR on five subjects.
 
 ## Gate
 
@@ -70,7 +70,7 @@ The native runs ran 14 at a time on a 32-core host; their wall times in the rece
 | Chromium vs native probe, 2 mm grid, each of 5 schedules | 0 | 0 (byte-identical files) |
 | Native probe vs QSIPrep `DRBUDDI`, quad grid, `c10-20-20`, one thread | 0 | 0 (identical voxel data) |
 | Probe 2 mm grid vs QSIPrep `DRBUDDI` quad grid, `c10-20-20` | 29.6 | 2.69 |
-| Probe 2 mm grid (`default`, `m100-300-300`, `c10-20-20`) vs the pinned #471 DR-BUDDI field (final field only) | 30.8, 35.3, 43.6 | 1.13, 1.45, 1.69 |
+| Probe 2 mm grid (`default`, `m100-300-300`, `c10-20-20`) vs the pinned #471 DR-BUDDI field (final field only, `probe_2mm_vs_pinned_471_drbuddi_<schedule>`) | 30.8, 35.3, 43.6 | 1.13, 1.45, 1.69 |
 
 The native build (`native-build.sh`) uses the same container (`itkwasm/emscripten@sha256:d6c35290…`), its ITK source (ITK 5.4.6, ITK-Wasm branch commit `0fb171cc`), its clang 20 for x86-64 at `-O3`, the same TORTOISE commit, VNL patch, Boost 1.90 headers and `compat/omp.h`.
 One addition: `native/missing_readImageD.cxx` defines `readImageD` as an abort. The WebAssembly link leaves that symbol as an import that aborts when called; the solver calls it only for an initial field, which the probe never gets.

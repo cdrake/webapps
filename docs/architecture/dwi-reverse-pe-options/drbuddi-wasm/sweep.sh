@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Native sweep on epic: every schedule x subject, one thread per probe run,
+# Native sweep on a 32-core host: every schedule x subject, one thread per probe run,
 # JOBS runs at a time; each run is scored by evaluate-run.sh when it ends.
 # Usage: sweep.sh BASE JOBS SCHEDULE... -- SUBJECT...
 #   BASE holds scripts/ (this folder), rpe-scripts/ (upstream/main),

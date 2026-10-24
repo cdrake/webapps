@@ -3,12 +3,13 @@
 Usage: compare_fields.py RPE_SCRIPTS RUN_DIR A_DIR B_DIR [A_FIELD_HZ B_FIELD_HZ]
 
 RUN_DIR is a #471 run directory (prep/, mask/, calibration.json). A_DIR and
-B_DIR each hold up.nii (FINV) and down.nii (MINV). Each field's PE component
-goes to Hz on the AP b0 grid with fields.py's conversion. The optional
-field_hz.nii.gz files are the final fields that post.sh scores. Prints JSON:
-max, median and 99th percentile of |A - B| in Hz in the brain mask, and the
-largest absolute difference of any vector component in mm over the volume
-(only when both fields share one grid).
+B_DIR each hold up.nii (FINV) and down.nii (MINV), or are both "-" to compare
+only the final fields (for a reference that has no up and down fields). Each
+field's PE component goes to Hz on the AP b0 grid with fields.py's conversion.
+The optional field_hz.nii.gz files are the final fields that post.sh scores.
+Prints JSON: max, median and 99th percentile of |A - B| in Hz in the brain
+mask, and the largest absolute difference of any vector component in mm over
+the volume (only when both fields share one grid).
 """
 
 import hashlib
@@ -47,7 +48,12 @@ def main(scripts, run, a_dir, b_dir, *finals):
     v_ap = -1.0 if pe.endswith("-") else 1.0
     scale = 1.0 / (cal["S"] * meta["ap"]["trt"] * v_ap)
     out = {"voxels": int(mask.sum())}
-    for name in ("up", "down"):
+    names = () if a_dir == b_dir == "-" else ("up", "down")
+    if not names and not finals:
+        sys.exit(
+            "compare_fields.py: with A_DIR and B_DIR '-', give both field_hz files"
+        )
+    for name in names:
         pa, pb = Path(a_dir, f"{name}.nii"), Path(b_dir, f"{name}.nii")
         ia, wa = load_field(pa)
         ib, wb = load_field(pb)

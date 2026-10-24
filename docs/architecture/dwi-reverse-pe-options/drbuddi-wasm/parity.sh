@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# All field comparisons of the #505 parity check, on ds005134 sub-01.
+# All field comparisons of the #505 parity check, on ds005134 sub-01,
+# including the port gate against the pinned #471 DR-BUDDI field.
 # Usage: parity.sh BASE   (BASE as for sweep.sh); writes BASE/parity.json
 set -euo pipefail
 base=$(cd "$1" && pwd)
@@ -22,6 +23,15 @@ cmp_() {  # name A_dir B_dir A_eval B_eval
   echo ","
   cmp_ "probe_2mm_vs_qsiprep_quad_c10-20-20" "$base/runs/native/c10-20-20/ds005134-sub-01" \
     "$base/runs/qsiprep/c10-20-20/ds005134-sub-01" "native-c10-20-20" "qsiprep-c10-20-20"
+  # The port gate: the final probe field against the pinned #471 DR-BUDDI field
+  # (full method, QSIPrep default). That run has no up and down fields.
+  for s in default m100-300-300 c10-20-20; do
+    echo ","
+    echo "\"probe_2mm_vs_pinned_471_drbuddi_$s\": $(py "$base/scripts/compare_fields.py" \
+      "$base/rpe-scripts" "$run" - - \
+      "$base/eval/native-$s/runs/ds005134-sub-01/drbuddi/field_hz.nii.gz" \
+      "$run/drbuddi/field_hz.nii.gz")"
+  done
   echo "}"
 } > "$base/parity.json"
 python3 -m json.tool "$base/parity.json" > /dev/null
