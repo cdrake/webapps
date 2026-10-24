@@ -8,6 +8,7 @@ import { gunzipSync } from "node:zlib";
 import { readNiftiFrames } from "@neurodesk/webapp-components/file-io";
 import { oversizedHeaderDwi, squareSeries } from "./fixtures.mjs";
 import { dicomSeries } from "../../../test-utils/dicom-fixture.mjs";
+import { dropFolder, exampleBidsTree } from "../../../test-utils/bids-folder-drop.mjs";
 
 const examples = JSON.parse(readFileSync(new URL("../examples.json", import.meta.url), "utf8"));
 const imageUrl = examples[0].files.find((file) => file.role === "image").url;
@@ -246,4 +247,53 @@ test("DICOM derivatives retain acquisition fields without personal metadata", as
   expect(sidecar.EchoTime).toBe(0.02);
   expect(sidecar).not.toHaveProperty("PatientName");
   expect(sidecar).not.toHaveProperty("PatientBirthDate");
+});
+
+test("a dropped BIDS folder removes ringing from the chosen run and keeps its sidecar", async ({ page }) => {
+  test.setTimeout(180000);
+  const tree = await exampleBidsTree(page.request, examples[0], { runs: 2 });
+  await page.goto("/");
+  await expect(page.locator("#statusText")).toHaveText("Drag and drop files");
+  await expect(page.getByRole("combobox", { name: "DWI run" })).toBeHidden();
+  await dropFolder(page, tree);
+  await expect(page.locator("#fileInfo")).toContainText("sub-01_run-1_dwi.nii.gz", { timeout: 60000 });
+  const runs = page.getByRole("combobox", { name: "DWI run" });
+  await expect(runs.locator("option")).toHaveText(["sub-01_run-1_dwi", "sub-01_run-2_dwi"]);
+  await runs.selectOption({ label: "sub-01_run-2_dwi" });
+  await expect(page.locator("#fileInfo")).toContainText("sub-01_run-2_dwi.nii.gz", { timeout: 60000 });
+  await expect(page.locator("#fileInfo")).toContainText("bval, bvec");
+  // Undo after another drop gives back the folder with the chosen run, not its first run.
+  const other = Object.fromEntries(["nii.gz", "bval", "bvec"].map((ext) => [`ds/sub-01/dwi/sub-01_dwi.${ext}`, tree[`ds/sub-01/dwi/sub-01_run-1_dwi.${ext}`]]));
+  await dropFolder(page, other);
+  await expect(page.locator("#fileInfo")).toContainText("sub-01_dwi.nii.gz", { timeout: 60000 });
+  await expect(runs).toBeHidden();
+  await page.locator(".nd-status-undo").click();
+  await expect(page.locator("#fileInfo")).toContainText("sub-01_run-2_dwi.nii.gz", { timeout: 60000 });
+  await expect(runs).toHaveValue("1");
+  await expect(page.locator("#runButton")).toBeEnabled();
+  await page.locator("#runButton").click();
+  await expect(page.locator("#statusText")).toHaveText("Ringing removed from 21 volumes", { timeout: 120000 });
+  const image = await download(page, "Corrected image");
+  expect(image.suggestedFilename()).toBe("sub-01_run-2_desc-degibbs_dwi.nii.gz");
+  expect(readNiftiFrames(gunzipSync(readFileSync(await image.path()))).frames).toBe(21);
+  const bval = await download(page, "b-values");
+  expect(bval.suggestedFilename()).toBe("sub-01_run-2_desc-degibbs_dwi.bval");
+  expect(readFileSync(await bval.path())).toEqual(tree["ds/sub-01/dwi/sub-01_run-2_dwi.bval"]);
+  const sidecar = await download(page, "Sidecar");
+  expect(sidecar.suggestedFilename()).toBe("sub-01_run-2_desc-degibbs_dwi.json");
+  expect(JSON.parse(readFileSync(await sidecar.path(), "utf8"))).toMatchObject({ InheritedField: "ds/dwi.json", RunSidecar: 2 });
+});
+
+test("a dropped BIDS folder without gradient tables loads, as a loose image does", async ({ page }) => {
+  const tree = await exampleBidsTree(page.request, examples[0], { runs: 2 });
+  for (const path of Object.keys(tree)) if (/\.(bval|bvec)$/.test(path)) delete tree[path];
+  await page.goto("/");
+  await expect(page.locator("#statusText")).toHaveText("Drag and drop files");
+  await dropFolder(page, tree);
+  await expect(page.locator("#fileInfo")).toContainText("sub-01_run-1_dwi.nii.gz", { timeout: 60000 });
+  await expect(page.locator("#fileInfo")).not.toContainText("bval");
+  const runs = page.getByRole("combobox", { name: "DWI run" });
+  await expect(runs.locator("option")).toHaveText(["sub-01_run-1_dwi", "sub-01_run-2_dwi"]);
+  await expect(runs.locator("option:disabled")).toHaveCount(0);
+  await expect(page.locator("#runButton")).toBeEnabled();
 });
