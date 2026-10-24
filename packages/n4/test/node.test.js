@@ -117,9 +117,71 @@ test("companions pair by stem unless named, and a named file must exist", async 
   try {
     await writeFile(join(dir, "a_dwi.bval"), "0");
     await writeFile(join(dir, "other.bvec"), "0\n0\n0");
+    await writeFile(join(dir, "other.nii.gz"), "");
     assert.deepEqual(await companions(join(dir, "a_dwi.nii.gz")), { bval: join(dir, "a_dwi.bval"), bvec: null, json: null });
     assert.deepEqual(await companions(join(dir, "a_dwi.nii.gz"), { bvec: join(dir, "other.bvec") }), { bval: join(dir, "a_dwi.bval"), bvec: join(dir, "other.bvec"), json: null });
     await assert.rejects(companions(join(dir, "a_dwi.nii.gz"), { json: join(dir, "missing.json") }), /does not exist/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("companions pair .bvals and .bvecs by stem and FSL's bvals and bvecs beside a series", async () => {
+  const dir = await scratch();
+  try {
+    await writeFile(join(dir, "a_dwi.bvals"), "0");
+    await writeFile(join(dir, "a_dwi.bvecs"), "0\n0\n0");
+    assert.deepEqual(await companions(join(dir, "a_dwi.nii.gz")), { bval: join(dir, "a_dwi.bvals"), bvec: join(dir, "a_dwi.bvecs"), json: null });
+    await rm(join(dir, "a_dwi.bvals"));
+    await rm(join(dir, "a_dwi.bvecs"));
+    await writeFile(join(dir, "bvals"), "0");
+    await writeFile(join(dir, "bvecs"), "0\n0\n0");
+    await writeFile(join(dir, "T1w.nii.gz"), "");
+    assert.deepEqual(await companions(join(dir, "data.nii.gz")), { bval: join(dir, "bvals"), bvec: join(dir, "bvecs"), json: null });
+    // A 3D image takes no gradient file it does not name, and gradient files of another image stay theirs.
+    assert.deepEqual(await companions(join(dir, "T1w.nii.gz"), {}, { volumes: 1 }), { bval: null, bvec: null, json: null });
+    await writeFile(join(dir, "b.nii.gz"), "");
+    await writeFile(join(dir, "b.bval"), "0");
+    assert.equal((await companions(join(dir, "data.nii.gz"))).bval, join(dir, "bvals"));
+    await writeFile(join(dir, "orphan.bvals"), "0");
+    await assert.rejects(companions(join(dir, "data.nii.gz")), /holds 2 bval files \(bvals, orphan\.bvals\).*--bval/);
+    assert.equal((await companions(join(dir, "data.nii.gz"), { bval: join(dir, "bvals") })).bval, join(dir, "bvals"));
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("an FSL layout fits the field to the mean b0 and passes bvals and bvecs through", async () => {
+  const dir = await scratch();
+  try {
+    const input = series();
+    const image = join(dir, "data.nii.gz");
+    await writeFile(image, gzipSync(input.nifti));
+    await writeFile(join(dir, "nodif_brain_mask.nii.gz"), gzipSync(input.maskNifti));
+    await writeFile(join(dir, "bvals"), "0 1000 0\n");
+    await writeFile(join(dir, "bvecs"), "0 1 0\n0 0 0\n0 0 0\n");
+    const out = join(dir, "out");
+    const result = await correct({ input: image, output: out, mask: join(dir, "nodif_brain_mask.nii.gz") });
+    assert.equal(result.provenance.referenceVolumes, 2);
+    const files = await readdir(out);
+    assert.equal(await readFile(join(out, files.find((name) => name.endsWith(".bval"))), "utf8"), "0 1000 0\n");
+    assert.equal(await readFile(join(out, files.find((name) => name.endsWith(".bvec"))), "utf8"), "0 1 0\n0 0 0\n0 0 0\n");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("a sidecar named with --json must parse to an object; one beside the image is left out", async () => {
+  const dir = await scratch();
+  try {
+    const input = await writeSeries(dir, { bvals: [0] });
+    for (const [file, content, error] of [["bad.json", "{ not json", /is not valid JSON/], ["array.json", "[1, 2]", /must hold a JSON object/], ["scalar.json", "3", /must hold a JSON object/]]) {
+      await writeFile(join(dir, file), content);
+      await assert.rejects(correct({ input: input.image, output: join(dir, `out-${file}`), mask: input.maskPath, json: join(dir, file) }), error);
+    }
+    await writeFile(join(dir, "sub-01_dwi.json"), "{ not json");
+    const result = await correct({ input: input.image, output: join(dir, "out"), mask: input.maskPath });
+    assert.ok(!result.files.some(({ role }) => role === "sidecar"));
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

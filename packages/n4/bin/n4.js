@@ -26,8 +26,10 @@ dwibiascorrect ants does. N4 runs with its options: -s ${DEFAULTS.shrink} -b [${
 
 The fit is weighted by a MindGrab brain mask of that mean b0 (or the image),
 on the CPU: it needs about 2.6 GB of memory. --mask FILE gives your own mask.
-The .bval, .bvec and .json beside IMAGE with the same name are used unless
-another file is given. OUTPUT_DIR must be new or empty.
+The .bval (or .bvals), .bvec (or .bvecs) and .json beside IMAGE with the same
+name are used unless another file is given. For a series, a sole gradient file
+that no other image owns (FSL's bvals and bvecs) is used too. OUTPUT_DIR must
+be new or empty.
 
 Options:
   --mask FILE      brain mask on the image grid, in place of MindGrab's

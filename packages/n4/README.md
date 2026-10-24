@@ -41,7 +41,7 @@ n4 self-check
 
 A 3D image is corrected by N4 directly. For a series, the field is fitted to the mean of the b0 volumes (b < 50 s/mm², or every volume without a `.bval`), then `rescaleBias` and `divideVolumes` correct every volume, as `dwibiascorrect ants` does.
 The fit is weighted by a MindGrab brain mask (model `mindgrab`) of that mean b0 or image, from MindGrab's CPU modules through `@neurodesk/node-drivers/mindgrab`. A run needs about 2.6 GB of memory for MindGrab. `--mask FILE` gives a mask on the image grid instead.
-The `.bval`, `.bvec` and `.json` beside the image with the same name are paired as the app pairs a dropped selection; `--bval`, `--bvec` and `--json` name other files.
+The `.bval` (or `.bvals`), `.bvec` (or `.bvecs`) and `.json` beside the image with the same name are paired as the app pairs a dropped selection. For a series, a sole gradient file that no other image in the directory owns, such as FSL's `bvals` and `bvecs`, is paired too; several such files are refused. `--bval`, `--bvec` and `--json` name other files. A sidecar named with `--json` must hold a JSON object.
 The output directory must be new or empty.
 The mean b0, the output names and the sidecar come from `src/pipeline.js`, which the app imports too.
 Input is NIfTI only: convert DICOM with dcm2niix first, or use the web app.

@@ -39,31 +39,62 @@ function engine(onLog) {
   return enginePromise;
 }
 
+// FSL gradient files as readDiffusionSeries matches them: dwi.bval and dwi.bvec as dcm2niix
+// writes them, dwi.bvals and dwi.bvecs, or FSL's bare bvals and bvecs.
+const BVAL_FILE = /(^|\.)bvals?$/i;
+const BVEC_FILE = /(^|\.)bvecs?$/i;
+const NIFTI_FILE = /\.nii(\.gz)?$/i;
+
 /**
- * The input's .bval, .bvec and .json: those given, else the files of the same stem beside it,
- * as the web app pairs a dropped selection.
+ * The input's .bval, .bvec and .json: those given, else those beside it, paired as the web app
+ * pairs a selection of the image and its directory (readDiffusionSeries). A gradient file pairs
+ * by stem (`dwi.bval`, `dwi.bvals`); for a series (`volumes` > 1, or not known) a sole gradient
+ * file that no other image in the directory owns pairs whatever its name, as FSL's `bvals` and
+ * `bvecs` do. Several such files are refused rather than guessed. The sidecar pairs by stem only.
  */
-export async function companions(input, { bval, bvec, json } = {}) {
-  const base = join(dirname(input), stem(basename(input)));
-  const pick = async (given, extension) => {
-    if (given !== undefined) {
-      if (!await exists(given)) throw new Error(`${given} does not exist.`);
-      return given;
-    }
-    return await exists(`${base}${extension}`) ? `${base}${extension}` : null;
+export async function companions(input, { bval, bvec, json } = {}, { volumes } = {}) {
+  const directory = dirname(input);
+  const own = stem(basename(input));
+  const entries = await readdir(directory).catch(() => []);
+  const images = new Set(entries.filter((name) => NIFTI_FILE.test(name)).map(stem));
+  const given = async (path) => {
+    if (!await exists(path)) throw new Error(`${path} does not exist.`);
+    return path;
   };
-  return { bval: await pick(bval, ".bval"), bvec: await pick(bvec, ".bvec"), json: await pick(json, ".json") };
+  const gradient = async (path, pattern, option) => {
+    if (path !== undefined) return given(path);
+    const found = entries.filter((name) => pattern.test(name));
+    const same = found.find((name) => stem(name) === own);
+    if (same) return join(directory, same);
+    if (volumes === 1) return null;
+    const unowned = found.filter((name) => !images.has(stem(name)));
+    if (unowned.length > 1) throw new Error(`${directory} holds ${unowned.length} ${option} files (${unowned.join(", ")}) and none has the stem ${own}. Name one with --${option}.`);
+    return unowned.length ? join(directory, unowned[0]) : null;
+  };
+  return {
+    bval: await gradient(bval, BVAL_FILE, "bval"),
+    bvec: await gradient(bvec, BVEC_FILE, "bvec"),
+    json: json !== undefined ? await given(json) : (await exists(join(directory, `${own}.json`)) ? join(directory, `${own}.json`) : null),
+  };
 }
 
-/** The sidecar as the web app parses it: an object, or null when absent or unparsable. */
-async function readSidecar(path) {
+/**
+ * The sidecar as the web app parses it: an object, or null when absent. A sidecar beside the
+ * image that does not parse to an object is left out, as the app leaves it out; one named with
+ * --json must parse to an object.
+ */
+async function readSidecar(path, named) {
   if (!path) return null;
+  let value;
   try {
-    const value = JSON.parse(await readFile(path, "utf8"));
-    return value && typeof value === "object" && !Array.isArray(value) ? value : null;
-  } catch {
+    value = JSON.parse(await readFile(path, "utf8"));
+  } catch (error) {
+    if (named) throw new Error(`The sidecar ${path} is not valid JSON (${error.message}).`);
     return null;
   }
+  if (value && typeof value === "object" && !Array.isArray(value)) return value;
+  if (named) throw new Error(`The sidecar ${path} must hold a JSON object.`);
+  return null;
 }
 
 async function assertNewOutput(directory) {
@@ -96,9 +127,9 @@ async function readNifti(path, role) {
 }
 
 /** Reads an image and its b-values as the web app does, and picks the volumes the field is fitted to. */
-export async function readInput({ image, bval }) {
-  const buffer = await readNifti(image, "image");
-  const frames = readNiftiFrames(buffer);
+export async function readInput({ image, bval, buffer, frames }) {
+  buffer ??= await readNifti(image, "image");
+  frames ??= readNiftiFrames(buffer);
   const name = basename(image);
   const bvals = bval ? parseBval(await readFile(bval, "utf8"), frames.frames) : null;
   const reference = b0Volumes(bvals, frames.frames);
@@ -140,9 +171,11 @@ export async function correct({ input, output, bval, bvec, json, mask: maskFile,
   if (maskFile !== undefined && !await exists(maskFile)) throw new Error(`${maskFile} does not exist.`);
   const destination = resolve(output);
   await assertNewOutput(destination);
-  const paired = await companions(input, { bval, bvec, json });
-  const sidecar = await readSidecar(paired.json);
-  const image = await readInput({ image: input, bval: paired.bval });
+  const buffer = await readNifti(input, "image");
+  const frames = readNiftiFrames(buffer);
+  const paired = await companions(input, { bval, bvec, json }, { volumes: frames.frames });
+  const sidecar = await readSidecar(paired.json, json !== undefined);
+  const image = await readInput({ image: input, bval: paired.bval, buffer, frames });
   const reference = meanVolumes(image.data, image.voxels, image.reference);
   const referenceNifti = createNiftiFromData(reference, image.buffer, { dims: image.dims });
   onProgress(`${image.name}: ${image.dims.join("×")}${image.frames > 1 ? `×${image.frames}` : ""}; the field is fitted to ${image.frames === 1 ? "the image" : `the mean of ${image.reference.length} ${image.bvals ? "b0 " : ""}volumes`}`);
