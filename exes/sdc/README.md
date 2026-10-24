@@ -107,7 +107,9 @@ The times include the CPU initialization and the copies between WebAssembly and 
 
 `estimate` in `packages/sdc` picks WebGPU only on a hardware adapter and when the engine has JSPI.
 It does not pick software adapters (SwiftShader, llvmpipe, WARP), because they are slower than the CPU path.
+It uses the software-adapter check of `@neurodesk/runtime-support/mindgrab/backend`, which MindGrab's backend choice and `test-utils/hardware-gpu.mjs` also use.
 When the WebGPU run fails, it runs the CPU path.
+After a failure the same instance stays on the CPU path, but when the browser lost the device, the next run opens a new device.
 
 ### Limits
 

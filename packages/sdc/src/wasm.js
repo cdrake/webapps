@@ -50,6 +50,8 @@ export async function loadSdc(source) {
     const cpu = () => ({ ...pyhysco(image1, image2, dims, voxel, options), backend: "cpu" });
     if (backend === "cpu") return cpu();
     const key = options.device ?? backend;
+    // A device that this module opened and the browser then lost is opened again.
+    if ((await solvers.get(key)?.catch(() => null))?.lost()) solvers.delete(key);
     if (!solvers.has(key)) solvers.set(key, openGpu(backend, options.device));
     let solver;
     try {
@@ -66,7 +68,9 @@ export async function loadSdc(source) {
       if (backend === "webgpu") throw error;
       // Invalid input fails on the CPU path with its own message; only a GPU failure remains.
       const out = cpu();
-      solvers.set(key, Promise.resolve(null));
+      // A lost device is opened again on the next run; any other failure keeps auto on the CPU.
+      if (solver.lost()) solvers.delete(key);
+      else solvers.set(key, Promise.resolve(null));
       return { ...out, gpuError: error?.message ?? String(error) };
     }
   }
@@ -79,15 +83,19 @@ export async function loadSdc(source) {
     device.pushErrorScope("validation");
     device.pushErrorScope("out-of-memory");
     let out;
+    let failure = null;
     try {
       out = await call(instance.exports, WebAssembly.promising(instance.exports.pyhysco_webgpu), image1, image2, dims, voxel, options);
-    } finally {
-      run.dispose();
-      const memoryError = await device.popErrorScope();
-      const validationError = await device.popErrorScope();
-      const error = memoryError ?? validationError;
-      if (error) throw new Error(`WebGPU failed: ${error.message}`);
+    } catch (error) {
+      failure = error;
     }
+    run.dispose();
+    const memoryError = await device.popErrorScope();
+    const validationError = await device.popErrorScope();
+    // A WebGPU error explains a failure better than the error it caused in the WebAssembly.
+    const error = memoryError ?? validationError;
+    if (error) throw new Error(`WebGPU failed: ${error.message}`);
+    if (failure) throw failure;
     return out;
   }
 
@@ -101,6 +109,7 @@ async function openGpu(backend, device) {
     return null;
   }
   let adapterInfo = null;
+  let lost = false;
   if (!device) {
     const gpu = globalThis.navigator?.gpu;
     const adapter = backend === "webgpu" ? await gpu?.requestAdapter() : await requestHardwareAdapter(gpu);
@@ -110,9 +119,12 @@ async function openGpu(backend, device) {
     }
     adapterInfo = [adapter.info?.vendor, adapter.info?.architecture].filter(Boolean).join(" ");
     device = await requestSdcDevice(adapter);
+    device.lost?.then(() => {
+      lost = true;
+    });
   }
   const solver = await createGpuSolver(device);
-  return { ...solver, device, adapter: adapterInfo };
+  return { ...solver, device, adapter: adapterInfo, lost: () => lost };
 }
 
 /** Copies the inputs in, runs `entry` (sync or a promise) and copies the outputs out. */

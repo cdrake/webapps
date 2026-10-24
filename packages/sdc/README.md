@@ -29,6 +29,7 @@ const { field, backend, gpuError } = await estimate(ap, pa, [nx, ny, nz], voxel,
 `options.backend` is `"auto"` (the default), `"webgpu"` or `"cpu"`.
 `auto` runs the Gauss-Newton evaluations and the CG solves on WebGPU (`src/webgpu.js`) when the browser has a hardware adapter and JSPI (`WebAssembly.Suspending`).
 Otherwise, or when the WebGPU run fails, it runs the CPU path and gives the reason in `gpuError`.
+After a WebGPU failure the instance stays on the CPU path. When the browser lost the device, the next run opens a new device.
 `webgpu` also accepts a software adapter, or the device in `options.device`, and fails instead of falling back.
 The WebGPU path computes in float32. Its field agrees with the native PyHySCO field to a median of 1.9e-5 Hz in the brain on ds005134 sub-01 ([measurements](../../exes/sdc/README.md#webgpu)).
 

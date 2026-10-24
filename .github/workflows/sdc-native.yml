@@ -8,6 +8,8 @@ on:
       - 'exes/sdc/**'
       - 'exes/nifti/**'
       - 'packages/sdc/**'
+      - 'packages/runtime-support/package.json'
+      - 'packages/runtime-support/src/mindgrab/backend.js'
   push:
     branches: [main]
     paths:
@@ -16,6 +18,8 @@ on:
       - 'exes/sdc/**'
       - 'exes/nifti/**'
       - 'packages/sdc/**'
+      - 'packages/runtime-support/package.json'
+      - 'packages/runtime-support/src/mindgrab/backend.js'
   workflow_dispatch:
 
 concurrency:

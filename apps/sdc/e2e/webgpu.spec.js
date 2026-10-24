@@ -22,6 +22,10 @@ test.use(gpuBrowser);
 
 const here = dirname(fileURLToPath(import.meta.url));
 const packageSrc = join(here, "../../../packages/sdc/src");
+// webgpu.js imports the shared software-adapter check; the page has no bundler, so an import map
+// resolves it to /shared/backend.js.
+const sharedBackend = join(here, "../../../packages/runtime-support/src/mindgrab/backend.js");
+const importMap = JSON.stringify({ imports: { "@neurodesk/runtime-support/mindgrab/backend": "/shared/backend.js" } });
 const manifest = JSON.parse(readFileSync(join(here, "../../../docs/architecture/dwi-reverse-pe-options/results.manifest.json"), "utf8"));
 
 // A page origin that serves the package sources and the volumes of one test, and stores what
@@ -46,13 +50,17 @@ async function serve(volumes) {
       response.setHeader("content-type", types[name.slice(name.lastIndexOf("."))] ?? "application/octet-stream");
       return response.end(readFileSync(join(packageSrc, name)));
     }
+    if (url.pathname === "/shared/backend.js") {
+      response.setHeader("content-type", "text/javascript");
+      return response.end(readFileSync(sharedBackend));
+    }
     if (url.pathname.startsWith("/data/")) {
       const volume = volumes[url.pathname.slice(6)];
       if (!volume) return response.writeHead(404).end();
       return response.end(Buffer.from(volume.buffer, volume.byteOffset, volume.byteLength));
     }
     response.setHeader("content-type", "text/html");
-    response.end("<!doctype html><title>sdc webgpu</title>");
+    response.end(`<!doctype html><title>sdc webgpu</title><script type="importmap">${importMap}</script>`);
   });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   return { url: `http://127.0.0.1:${server.address().port}/`, posted, close: () => new Promise((resolve) => server.close(resolve)) };

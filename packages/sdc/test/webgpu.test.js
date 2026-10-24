@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { fakeGpuDevice, installGpuConstants } from "../../../test-utils/gpu-device.mjs";
 import { loadSdc } from "../src/wasm.js";
-import { isSoftwareAdapter, shaders } from "../src/webgpu.js";
+import { requestHardwareAdapter, shaders } from "../src/webgpu.js";
 
 const bytes = readFileSync(new URL("../src/sdc.wasm", import.meta.url));
 
@@ -64,12 +64,46 @@ test("a failing WebGPU run falls back to the CPU under auto and fails under webg
   await assert.rejects(sdc.estimate(...pair, { phaseEncodingDirection: "k", totalReadoutTime: 0.05, device: fakeGpuDevice() }), /must be i, i-, j or j-/);
 });
 
-test("auto does not pick a software adapter", () => {
-  assert.ok(isSoftwareAdapter({ info: { vendor: "google", architecture: "swiftshader", isFallbackAdapter: true } }));
-  assert.ok(isSoftwareAdapter({ info: { vendor: "mesa", description: "llvmpipe (LLVM 19.1.7, 256 bits)" } }));
-  assert.ok(isSoftwareAdapter({ info: { vendor: "microsoft", description: "Microsoft Basic Render Driver" } }));
-  assert.ok(!isSoftwareAdapter({ info: { vendor: "intel", architecture: "xe-2lpg" } }));
-  assert.ok(!isSoftwareAdapter({ info: { vendor: "apple", architecture: "metal-3" } }));
+// A navigator.gpu whose adapter reports `info` and opens fake devices; `lost` resolves each
+// device's lost promise at once.
+function fakeGpu(info, { lost = false } = {}) {
+  const gpu = { adapters: 0 };
+  gpu.requestAdapter = async () => {
+    gpu.adapters++;
+    return {
+      info,
+      limits: {},
+      requestDevice: async () => ({ ...fakeGpuDevice(), lost: lost ? Promise.resolve({ reason: "destroyed" }) : new Promise(() => {}) }),
+    };
+  };
+  return gpu;
+}
+
+test("auto does not pick a software adapter (the shared runtime-support check)", async () => {
+  assert.equal(await requestHardwareAdapter(fakeGpu({ vendor: "google", architecture: "swiftshader" })), null);
+  assert.equal(await requestHardwareAdapter(fakeGpu({ vendor: "intel", architecture: "xe-2lpg", isFallbackAdapter: true })), null);
+  assert.equal(await requestHardwareAdapter(fakeGpu({ vendor: "microsoft", architecture: "warp" })), null);
+  assert.ok(await requestHardwareAdapter(fakeGpu({ vendor: "intel", architecture: "xe-2lpg" })));
+});
+
+test("auto opens a new device after the browser loses one, and stays on the CPU after other failures", { skip: typeof WebAssembly.Suspending !== "function" && "needs JSPI" }, async () => {
+  installGpuConstants();
+  const saved = Object.getOwnPropertyDescriptor(globalThis, "navigator");
+  try {
+    for (const [lost, adapters] of [[true, 3], [false, 1]]) {
+      const gpu = fakeGpu({ vendor: "intel", architecture: "xe-2lpg" }, { lost });
+      Object.defineProperty(globalThis, "navigator", { value: { gpu }, configurable: true });
+      const sdc = await loadSdc(bytes);
+      for (let run = 0; run < 3; run++) {
+        const out = await sdc.estimate(...pair, options);
+        assert.equal(out.backend, "cpu");
+      }
+      assert.equal(gpu.adapters, adapters, lost ? "each run opens a new device" : "one failure keeps auto on the CPU");
+    }
+  } finally {
+    if (saved) Object.defineProperty(globalThis, "navigator", saved);
+    else delete globalThis.navigator;
+  }
 });
 
 test("every kernel binds its uniforms first and reduces only where it declares partials", () => {

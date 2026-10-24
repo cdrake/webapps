@@ -1747,7 +1747,11 @@ importers:
         specifier: ^6.3.2
         version: 6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.14)(yaml@2.9.0)
 
-  packages/sdc: {}
+  packages/sdc:
+    dependencies:
+      '@neurodesk/runtime-support':
+        specifier: workspace:*
+        version: link:../runtime-support
 
   packages/seedseg:
     dependencies:

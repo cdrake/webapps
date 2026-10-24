@@ -8,6 +8,8 @@
 // float64, in PyHySCO's order. Each kernel follows the function of exes/sdc/core/src/hysco.rs
 // that its comment names.
 
+import { isSoftwareAdapter } from "@neurodesk/runtime-support/mindgrab/backend";
+
 const WORKGROUP = 256;
 const MAX_GROUPS_X = 65535;
 
@@ -346,16 +348,10 @@ export const shaders = SHADERS;
 export async function requestHardwareAdapter(gpu = globalThis.navigator?.gpu) {
   if (!gpu) return null;
   const adapter = await gpu.requestAdapter({ powerPreference: "high-performance" });
-  if (!adapter || isSoftwareAdapter(adapter)) return null;
+  if (!adapter || isSoftwareAdapter(adapter.info)) return null;
   return adapter;
 }
 
-export function isSoftwareAdapter(adapter) {
-  const info = adapter.info ?? {};
-  if (info.isFallbackAdapter || adapter.isFallbackAdapter) return true;
-  const identity = [info.vendor, info.architecture, info.device, info.description].join(" ");
-  return /swiftshader|llvmpipe|lavapipe|software|basic render|\bwarp\b|\bcpu\b/i.test(identity);
-}
 
 /** True when this JavaScript engine can suspend WebAssembly on a promise (JSPI). */
 export function hasJspi() {
