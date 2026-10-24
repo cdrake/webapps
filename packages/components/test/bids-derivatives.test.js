@@ -46,6 +46,8 @@ test('derivative names without a suffix, with and without an earlier desc-', () 
   };
   assert.deepEqual(outputNames('data.nii', 'step'), expected);
   assert.deepEqual(outputNames('data.nii.gz', 'step'), expected);
+  assert.deepEqual(outputNames('data_desc-raw.nii', 'step'), expected);
+  assert.deepEqual(outputNames('data_desc-raw.nii.gz', 'step'), expected);
   // A name with no underscore has no suffix, even when it is dwi.
   assert.equal(outputNames('dwi.nii.gz', 'denoised').image, 'dwi_desc-denoised.nii.gz');
   assert.equal(outputNames('scan.nii.gz', 'hmc', { defaultSuffix: 'dwi' }).image, 'scan_desc-hmc_dwi.nii.gz');
