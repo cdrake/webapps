@@ -42,9 +42,9 @@ export function createNiivueAdapter(nv, { tabs, regions } = {}) {
   const display = layers && typeof nv.setVolume === 'function' && typeof nv.sliceType === 'number';
   // nv-mcp answers its tool vocabulary from the live scene; it is loaded only when an agent first calls it.
   let agent;
-  const nvMcp = () => agent ??= import('@niivue/nv-mcp/browser').then(({ coreHandlers, sceneState }) => {
+  const nvMcp = () => agent ??= import('./nv-mcp.js').then(({ AgentClient, coreHandlers, sceneState }) => {
     const host = { view: nv };
-    return { handlers: coreHandlers(host), state: () => sceneState(host) };
+    return { AgentClient, handlers: coreHandlers(host), state: () => sceneState(host) };
   }).catch(error => {
     agent = undefined;
     throw error;

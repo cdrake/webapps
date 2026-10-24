@@ -32,8 +32,12 @@ export type ViewerAdapter = {
   frame?(): void | Promise<void>;
   /** Answers an nv-mcp tool call from the scene; without a method, returns only the scene state. */
   niivue?(method?: string, params?: Record<string, unknown>): Promise<{ result?: unknown; state: object }>;
-  /** nv-mcp's page handlers and scene state for this viewer, loaded on first use. */
-  nvMcp?(): Promise<{ handlers: Record<string, (params: Record<string, unknown>) => unknown>; state(): object }>;
+  /** nv-mcp's page handlers, scene state and agent client for this viewer, loaded on first use. */
+  nvMcp?(): Promise<{
+    AgentClient: typeof import('@niivue/nv-mcp/browser').AgentClient;
+    handlers: Record<string, (params: Record<string, unknown>) => unknown>;
+    state(): object;
+  }>;
 };
 export type AgentStatus = { active: boolean; connected: boolean; id: string | null };
 export type AgentConnection = {

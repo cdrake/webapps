@@ -30,8 +30,9 @@ export function createAgentConnection(findViewer, { port = agentServerPort, WebS
       const viewer = findViewer();
       if (!viewer) return Promise.reject(new Error('Open an image first. There is no viewer for an agent yet.'));
       const current = ++generation;
+      // The client comes with the viewer's nv-mcp, so an app without a NiiVue adapter never bundles nv-mcp.
       // Only the page's own WebSocket address: a hosted page has no proxy to try first.
-      pending = Promise.all([import('@niivue/nv-mcp/browser'), viewer.nvMcp()]).then(([{ AgentClient }, { handlers, state }]) => {
+      pending = viewer.nvMcp().then(({ AgentClient, handlers, state }) => {
         if (current !== generation) return;
         client = new AgentClient(handlers, {
           urls: [`ws://127.0.0.1:${port}/app`],
