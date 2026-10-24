@@ -12,6 +12,8 @@
 
 ### Patch Changes
 
+- Updated dependencies
+  - @neurodesk/sdc@0.2.20261024
 - Updated dependencies [14a8b29]
 - Updated dependencies [a028e96]
 - Updated dependencies [650ce5f]
