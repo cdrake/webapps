@@ -26,13 +26,39 @@ Call `view()` again after other calls: when the module's memory grows, earlier v
 
 For workers, `accumulate(buffer, nvox, group, gram, first, count)` adds a voxel range to a group's Float64 Gram matrix, and the Gram matrices of separate ranges add element by element.
 `solve(gram, group)` makes the coefficients, and `apply(buffer, nvox, group, coefficients, first, count)` replaces a range with its predictions.
+`solveVolume(gram, group, j)` makes row `j` of `solve` (the same values, bit for bit): one Cholesky solve, so a worker can solve one volume per message and the page can stop or report progress between volumes.
+`denoiseChunks(data, nvox, bvals, { chunk })` is the web app's worker schedule in one thread: chunks of `CHUNK_VOXELS` voxels, partial Gram sums added in chunk order, one `solveVolume` per volume, then the predictions of each chunk.
+The app's output equals it bit for bit.
 `fittedGroups(bvals)` gives the groups to fit: the b0 volumes (b < 50 s/mm², `B0_THRESHOLD` from the module) when there are two or more, and the diffusion-weighted volumes.
 
 ## Parity
 
 The WASM output of the ds005134 slab (67 × 92 × 10 × 137) equals the stage 1 DIPY reference (`dwidenoise/validation` in the dataset, float32) bit for bit.
 `scripts/check-slab.mjs INPUT.nii.gz INPUT.bval REFERENCE.nii.gz` repeats the check and times the two passes.
+`--app OUTPUT.nii.gz ...` also runs `denoiseChunks` and fails unless each downloaded app output has the same float32 bits.
+On the slab, the outputs of the app before and after the worker solve (#428) both pass, and `denoiseChunks` also equals the DIPY reference bit for bit.
 In Node 22 on the development host, the Gram pass did about 0.5 million voxels per second and the apply pass about 0.24 million voxels per second (both groups, 137 volumes).
+
+## Memory and responsiveness of the app
+
+The app (#428) solves each volume in a worker, writes the workers' results straight into the output NIfTI (`allocateNifti` from `@neurodesk/webapp-components/file-io`), finds `cal_max` in the workers, and compresses the output in a worker (without the WebAssembly) that receives the buffer without a copy.
+Before, the page solved each group on its own thread, held the result and a second copy for the NIfTI writer, wrote 127 M values one at a time, and compressed through a `Blob` copy on its own thread.
+
+Measured on the full-brain ds005134 sub-01 DWI (`sub-01_dir-AP_run-001_dwi`, 116 × 116 × 69 × 137, int16, 81 MB gzipped, 509 MB as Float32), from the Denoise click to "Denoised", in Playwright's headless Chromium (1.64) on the 8-core Linux development host, two runs of each build, alternating:
+
+| | Before | After |
+| --- | --- | --- |
+| Peak RSS of the page's renderer process (workers included) | 3076, 3011 MB | 2550, 2665 MB |
+| Peak sum of RSS of all browser processes (sampled every 25 ms) | 3794, 3786 MB | 3257, 3253 MB |
+| Longest main-thread task | 15326, 14713 ms | 413, 258 ms |
+| Time | 37.5, 31.6 s | 50.6, 29.7 s |
+
+`apps/dwidenoise/validation/measure-run.mjs DIST OUTDIR IMAGE.nii.gz IMAGE.bval IMAGE.bvec IMAGE.json` makes the measurement on a production build (`DIST`) of each commit.
+Each browser is started with Playwright's `launchServer`; the renderer peak is `VmHWM` in `/proc/<pid>/status`, read after the run, with `clear_refs` reset to 5 when the image was loaded, and the sum is the largest total of `VmRSS` over the browser's processes, sampled every 25 ms.
+Other jobs ran on the host (load average 8 to 12), so the times and task lengths change much from run to run; an earlier pair of runs on a quieter host gave 19.5 s and 9.0 s before, 17.6 s and 0.17 s after.
+The output NIfTI was the same in all runs (sha256 `2127198e4f66a1c6eff7342a35a2214aa668dde6d97cd7cd6676e0615e98ddbd`).
+The peak now comes when the viewer reads the denoised image, while the page still holds the input (509 MB) for another run.
+Before, most of the longest task was gzip on the page's thread.
 
 ## Build
 
