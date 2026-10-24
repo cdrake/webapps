@@ -4,6 +4,16 @@
 
 ### Patch Changes
 
+- Updated dependencies [941884c]
+- Updated dependencies [a028e96]
+- Updated dependencies [650ce5f]
+- Updated dependencies [343c256]
+- Updated dependencies [941884c]
+  - @neurodesk/webapp-components@0.21.0
+  - @neurodesk/runtime-support@0.9.11
+  - @neurodesk/brain-extraction@0.5.20261024
+  - @neurodesk/synthsr@0.6.20261024
+  - @neurodesk/synthstrip@0.2.0
 - 72cbb8d: Hosted apps can hand their NiiVue viewer to an AI agent on the same computer. `automation.agentConnection()` and `createAgentControl()` connect the page to a local nv-mcp server only after the person chooses **Connect an agent**, and report the connection in the app's status bar. The new `neurodesk-mcp` command (`@neurodesk/agent-server`) is that server for Node, accepting pages from `https://webapps.neurodesk.org` and localhost. Brain Extraction shows the control as a preview when opened with `?agent` (or `?agent=<port>`). Chrome asks to allow local network access, Firefox connects directly, and Safari cannot connect.
 - Updated dependencies [3a7e5bb]
 - Updated dependencies [72cbb8d]
