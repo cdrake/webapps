@@ -37,14 +37,18 @@ test('desktop builds run on the daily schedule or by hand, and publish only on s
   const flow = await workflow('standalone');
   assert.deepEqual(flow.on, {
     schedule: [{ cron: '23 3 * * *' }],
-    workflow_dispatch: { inputs: { publish: { description: 'Publish the desktop release when every job passes', type: 'boolean', default: false } } },
+    workflow_dispatch: { inputs: {
+      publish: { description: 'Publish the desktop release when every job passes', type: 'boolean', default: false },
+      source_approval_only: { description: 'Run only the native Windows source approval tests', type: 'boolean', default: false },
+    } },
   });
   assert.equal(flow.concurrency['cancel-in-progress'], false);
-  assert.equal(flow.jobs.publish.if, "github.event_name == 'schedule' || inputs.publish");
+  assert.equal(flow.jobs.publish.if, "!inputs.source_approval_only && (github.event_name == 'schedule' || inputs.publish)");
   assert.deepEqual(flow.jobs.publish.needs, ['bundle', 'desktop', 'models-offline']);
   assert.ok(flow.jobs.bundle.steps.some(step => step.run === 'pnpm build'));
   assert.equal(flow.jobs.bundle.outputs.release_date, '${{ steps.date.outputs.release_date }}');
   for (const [name, job] of Object.entries(flow.jobs)) {
+    if (job.uses) continue;
     const checkout = job.steps.find(step => step.uses?.startsWith('actions/checkout@'));
     assert.equal(checkout.with?.ref, undefined, 'use the scheduled run commit for every job');
     const stamp = job.steps.find(step => step.run === 'node scripts/desktop/daily-version.mjs');
@@ -142,11 +146,25 @@ test('desktop source approval runs on Windows without an offline bundle or depen
     }
   }
   assert.ok(Object.hasOwn(flow.on, 'workflow_dispatch'));
+  assert.ok(Object.hasOwn(flow.on, 'workflow_call'));
   const job = flow.jobs['windows-paths'];
   assert.equal(job['runs-on'], 'windows-latest');
   assert.equal(job.needs, undefined);
   assert.equal(job.steps.find(step => step.uses?.startsWith('actions/setup-node@')).with['node-version'], 24);
   assert.deepEqual(job.steps.filter(step => step.run).map(step => step.run), ['node --test packages/desktop/test/source-approval.test.js']);
+  const standalone = await workflow('standalone');
+  assert.equal(standalone.jobs['source-approval'].uses, './.github/workflows/desktop-source-approval.yml');
+  assert.equal(standalone.jobs['source-approval'].needs, undefined);
+  for (const event of ['schedule', 'workflow_dispatch']) {
+    for (const only of [false, true]) {
+      for (const publish of [false, true]) {
+        const context = { github: { event_name: event }, inputs: { source_approval_only: only, publish } };
+        assert.equal(runInNewContext(standalone.jobs['source-approval'].if, context), event === 'workflow_dispatch' && only);
+        assert.equal(runInNewContext(standalone.jobs.bundle.if, context), event !== 'workflow_dispatch' || !only);
+        assert.equal(runInNewContext(standalone.jobs.publish.if, context), !only && (event === 'schedule' || publish));
+      }
+    }
+  }
 });
 
 test('portable Node command lines build on target runners and publish through one gated job', async () => {
