@@ -4,7 +4,7 @@ import { describeFile, verifyOperationReport } from './reports.js';
 export function browserDispatcher(contents, { signal, timeoutMs = 30000 } = {}) {
   const commands = new Set(['describe', 'adopt', 'start', 'snapshot', 'cancel', 'download',
     'viewers.list', 'viewers.state', 'viewers.crosshair', 'viewers.tab', 'viewers.regions',
-    'viewers.volumes', 'viewers.display', 'viewers.canvas']);
+    'viewers.volumes', 'viewers.display', 'viewers.canvas', 'viewers.niivue']);
   const deadline = Date.now() + timeoutMs;
   async function bounded(promise) {
     signal?.throwIfAborted();
