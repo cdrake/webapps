@@ -112,6 +112,27 @@ test("a 3D image is corrected directly and writes no companions it was not given
   }
 });
 
+test("200 consecutive corrections preserve the corrected image bytes", async () => {
+  const dir = await scratch();
+  try {
+    const header = createNiftiHeaderFromVolume({ hdr: { dims: [3, 2, 2, 2, 1, 1, 1, 1], pixDims: [1, 4, 4, 4, 1, 1, 1, 1] } });
+    const input = join(dir, "tiny.nii");
+    const mask = join(dir, "mask.nii");
+    await writeFile(input, new Uint8Array(createNiftiFromData(Float32Array.from({ length: 8 }, (_, i) => 100 + 10 * i), header, { dims: [2, 2, 2] })));
+    await writeFile(mask, new Uint8Array(createNiftiFromData(new Uint8Array(8).fill(1), header, { dims: [2, 2, 2] })));
+    let expected;
+    for (let run = 0; run < 200; run++) {
+      const output = join(dir, `out-${run}`);
+      await correct({ input, output, mask });
+      const bytes = gunzipSync(await readFile(join(output, "tiny_desc-n4.nii.gz")));
+      expected ??= bytes;
+      assert.deepEqual(bytes, expected, `correction ${run + 1}`);
+    }
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("companions pair by stem unless named, and a named file must exist", async () => {
   const dir = await scratch();
   try {

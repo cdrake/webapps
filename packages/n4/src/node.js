@@ -32,10 +32,9 @@ const exists = (path) => access(path).then(() => true, () => false);
 // The stem the web app pairs gradient files and sidecars by (readDiffusionSeries).
 const stem = (name) => name.replace(/\.(nii\.gz|[^.]*)$/i, "");
 
-let enginePromise;
-function engine(onLog) {
-  enginePromise ??= readFile(new URL("../wasm/n4-bias.wasm", import.meta.url)).then((wasmBinary) => createN4({ createModule, wasmBinary, onLog: (line) => onLog?.(line) }));
-  return enginePromise;
+async function engine(onLog) {
+  const wasmBinary = await readFile(new URL("../wasm/n4-bias.wasm", import.meta.url));
+  return createN4({ createModule, wasmBinary, onLog: (line) => onLog?.(line) });
 }
 
 // FSL gradient files as readDiffusionSeries matches them: dwi.bval and dwi.bvec as dcm2niix
