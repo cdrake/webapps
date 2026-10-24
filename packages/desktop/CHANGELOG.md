@@ -1,5 +1,11 @@
 # @neurodesk/desktop
 
+## 0.44.20261024
+
+### Patch Changes
+
+- d9c35b4: Recognize canonical Windows extended paths and WebDAV UNC server suffixes containing @ before URL credential checks. Keep credential-bearing URL refusals on every platform, and exercise a real extended-path file approval on Windows.
+
 ## 0.43.20261024
 
 ### Patch Changes
