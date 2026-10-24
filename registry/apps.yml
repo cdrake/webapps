@@ -1007,7 +1007,7 @@ apps:
     anatomy: [brain]
     modalities: [mri]
     inputs: [dicom, nifti]
-    hardware: cpu
+    hardware: webgpu-optional
     handoff: none
     legacy_domain: null
     runtime: vite-wasm
