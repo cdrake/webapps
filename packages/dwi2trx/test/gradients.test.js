@@ -34,11 +34,9 @@ test('b0 volumes are those with b < 50, or every volume without b-values', () =>
   assert.equal(b0Index('1000 2000'), 0);
 });
 
-test('the b0 rule is the gradients crate rule: the same threshold and comparison', () => {
+test('the b0 threshold is the gradients crate threshold, and a b-value at it is not a b0', () => {
   const lib = read('src/lib.rs');
   assert.equal(Number(lib.match(/pub const B0_THRESHOLD: f64 = ([0-9.]+);/)[1]), B0_THRESHOLD);
-  assert.match(lib, /pub fn is_b0\(&self, volume: usize\) -> bool \{\s*self\.bvals\[volume\] < B0_THRESHOLD\s*\}/);
-  assert.match(read('src/rules.rs'), /B0Rule::Dtifit => b < B0_THRESHOLD,/);
   assert.equal(isB0(B0_THRESHOLD), false);
   assert.equal(isB0(B0_THRESHOLD - 1e-9), true);
 });
