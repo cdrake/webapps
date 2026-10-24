@@ -1,6 +1,6 @@
 # pipeline-builder
 
-## 0.1.20261023
+## 0.1.20261024
 
 ### Minor Changes
 
