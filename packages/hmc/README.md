@@ -67,9 +67,18 @@ The default seeded visit order is the port's recorded permutation, not NumPy's. 
 
 The completed trivial run writes 101 volumes, transforms and motion rows, including 11 unchanged b0 volumes. All 90 prepared targets equal NiFreeze's kept prediction exactly. This is a loop/software check, not a quality claim. Native NiFreeze's trivial model itself degrades the high-b shell on this data, as the HMC plan records.
 
-The GP acceptance gate remains Q53, per volume and axis. The existing replay report (`exes/dwi/hmc/validation/q53-replay.json`) already records 48 of 90 failing GP volumes and 77 failing cells, with 87 transforms equal to native float byte for byte. The three differing volumes are 31, 52 and 88, the same set as the complete estimator run. The complete-loop harness reports its own measurements separately and exits unsuccessfully if the required gate fails. No tolerance is relaxed because the model target agrees.
+The [2026-10-24 decision in #451](https://github.com/neurodesk/webapps/issues/451) compares WASM with native `--float 1`, using the existing per-volume, per-axis native-double seed-spread limits **about the world grid centre**. All 90 volumes and 540 cells pass. Of the transforms, 87 equal native float byte for byte; volumes 31, 52 and 88 differ but remain within those limits. Independent Rust `world_centre_motion` agrees with the JavaScript validation to 1e-12. `validation/nifreeze-gate-check.mjs ROOT OUT` rechecks an existing run against checksummed reference transforms.
 
-The complete ds005577 GP run produces all 90 predictions exactly equal to the native targets and reproduces the replay's 48 failing volumes and 77 failing axis checks. The recorded shell-mean Pearson correlations, within the 161,668-voxel GP mask, are 0.894919 → 0.902327 for b1000 and 0.626808 → 0.635975 for b3000. The native-double figures are 0.910 and 0.674 after correction. These measurements establish neither the Q53 gate nor native-double image parity. `validation/nifreeze-quality.mjs ROOT OUT gp` repeats the pinned QC script's correlation definition, and `validation/check-nifreeze-outputs.mjs` compares all 90 command lines and writes each native-motion difference into the saved report.
+The output TSV retains QSIPrep's pivot, which omits the affine origin. That additional comparison fails volume 52 translation-x (0.045133 mm versus a 0.016137 mm spread); at the documented world centre the same cell passes (0.029730 mm versus 0.036337 mm). Reports keep both conventions. The historical double comparison also remains visible: 48 volumes and 77 QSIPrep cells fail, as in `exes/dwi/hmc/validation/q53-replay.json`. No per-volume limit was increased.
+
+The complete ds005577 GP run produces all 90 predictions exactly equal to native targets. Image QC uses Pearson correlation against the mean of raw same-shell volumes inside the 161,668-voxel GP mask:
+
+| Shell | Before | WASM output | Native float, cubic | Native double, cubic |
+| --- | ---: | ---: | ---: | ---: |
+| b1000 | 0.894919 | 0.902327 | 0.902327 | 0.902354 |
+| b3000 | 0.626808 | 0.635975 | 0.635975 | 0.634689 |
+
+No volume drops by more than 0.02 in any path. The native columns apply the pinned matrices with NiFreeze's nitransforms 25.1.0 cubic-spline resampler. The older QC script uses **linear** interpolation, so its 0.909626/0.673994 native-double medians must not be compared directly with cubic outputs. Matched linear QC gives WASM/native-float medians 0.909596/0.672683, also with no drops over 0.02. `validation/nifreeze-native-quality.py ROOT OUT REPORT_JSON` reproduces both comparisons, checks every reference checksum, and records library versions. `validation/check-nifreeze-outputs.mjs` separately checks all 90 registration command lines.
 
 ## Performance measurements
 

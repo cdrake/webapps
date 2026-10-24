@@ -1,7 +1,7 @@
 // Runs the complete estimator on the pinned M0 series, independently of the kept-target replay.
 //   node packages/hmc/validation/nifreeze-loop.mjs ROOT OUT trivial|gp [WORKERS]
 // ROOT is fetched by exes/dwi/hmc/validation/fetch_reference.py (gp, clip, decomposition,
-// nifreeze-replay). GP writes its report even when the unchanged Q53 acceptance gate fails.
+// nifreeze-replay). GP writes its report even when the native-float acceptance gate fails.
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -10,6 +10,7 @@ import { decodeNiftiBuffer, readNiftiFrames } from "@neurodesk/webapp-components
 import { correctNiFreeze } from "../src/nifreeze.js";
 import { readSeries } from "../src/pipeline.js";
 import { loadHmcNode, nodeRuntime } from "../src/node.js";
+import { nativeFloatGate } from "./nifreeze-gate.mjs";
 
 const [root, out, model, workerText = "4"] = process.argv.slice(2);
 if (!root || !out || !["trivial", "gp"].includes(model)) throw new Error("Usage: nifreeze-loop.mjs ROOT OUT trivial|gp [WORKERS]");
@@ -103,12 +104,34 @@ if (model === "gp") {
     return { volume: i, rawVolume: v, difference, spread, failingAxes: axes.filter((_, k) => difference[k] > spread[k]), equalsNativeFloat: hash(result.files[result.names.transform(v)]) === hash(nativeFloat[i]) };
   });
   report.q53 = { failingVolumes: rows.filter(row => row.failingAxes.length).length, failingCells: rows.reduce((n, row) => n + row.failingAxes.length, 0), differsFromNativeFloat: rows.filter(row => !row.equalsNativeFloat).map(row => row.volume), rows };
+  const cases = [];
+  for (let i = 0; i < rawIndices.length; i++) {
+    const v = rawIndices[i];
+    const name = `ants-${String(i).padStart(5, "0")}0GenericAffine.mat`;
+    cases.push({
+      volume: i, rawVolume: v,
+      wasm: result.files[result.names.transform(v)],
+      nativeFloat: nativeFloat[i],
+      nativeDouble: await pinned(`nifreeze-gp/work/${name}`),
+      secondSeed: await pinned(`nifreeze-gp-seed1235/work/${name}`),
+    });
+  }
+  report.nativeFloatGate = nativeFloatGate({ hmc, grid, cases });
 }
 await mkdir(out, { recursive: true });
 for (const [name, bytes] of Object.entries(result.files)) await writeFile(join(out, name), bytes);
 await writeFile(join(out, "estimator-report.json"), `${JSON.stringify(report, null, 2)}\n`);
-console.log(JSON.stringify({ ...report, q53: report.q53 && { ...report.q53, rows: undefined }, visitOrder: undefined }));
-if (report.q53?.failingCells || report.predictionMismatches?.length) {
-  console.error("The estimator does not meet the unchanged per-volume, per-axis Q53 gate.");
+console.log(JSON.stringify({
+  ...report,
+  q53: report.q53 && { ...report.q53, rows: undefined },
+  nativeFloatGate: report.nativeFloatGate && {
+    pass: report.nativeFloatGate.pass,
+    worldFailingCells: report.nativeFloatGate.world.failingCells,
+    qsiprepFailingCells: report.nativeFloatGate.qsiprep.failingCells,
+  },
+  visitOrder: undefined,
+}));
+if (report.nativeFloatGate?.pass === false || report.predictionMismatches?.length) {
+  console.error("The estimator does not meet the native-float world-centre gate or prediction parity.");
   process.exitCode = 1;
 }
