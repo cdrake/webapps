@@ -1599,6 +1599,13 @@
       "downloads": [],
       "containers": []
     },
+    "dwicorrect": {
+      "desktop": true,
+      "profile": "interactive",
+      "assets": [],
+      "downloads": [],
+      "containers": []
+    },
     "pipeline-builder": {
       "desktop": true,
       "profile": "interactive",
