@@ -4,6 +4,9 @@
 
 ### Patch Changes
 
+- 0b30f24: Split GPU tracking into completed commands of at most 16 workgroups to avoid long generation commands triggering the GPU watchdog. Preserve logical seed batches, seed/lane indexing and Philox initialization; yield for cancellation between commands. Pin the patched GPUStreamlines source with its license and upstream hashes, and add hardware RNG equivalence and full real-data tracking regressions.
+- 2b6bd39: Fix TRX ZIP entry timestamps so identical scientific members produce identical archives across runs and time zones. Keep strict exported-workflow archive equality and save member hashes, headers and ZIP metadata when it fails.
+  - @neurodesk/dwi2trx@0.8.20261024
 - 1f9c868: Record the unlimited tractography point count as "unbounded" in JSON provenance so downloaded reports match live operation reports. Reject unexpected nonfinite tracking parameters without changing the tracker's unlimited runtime option.
   - @neurodesk/dwi2trx@0.8.20261024
 - Updated dependencies

@@ -534,8 +534,8 @@ importers:
         specifier: 0.1.20260925
         version: 0.1.20260925
       '@dipy/gpu-streamlines':
-        specifier: ^0.1.0
-        version: 0.1.0
+        specifier: file:./vendor/gpu-streamlines
+        version: file:apps/dwi2trx/vendor/gpu-streamlines
       '@neurodesk/dwi2trx':
         specifier: workspace:*
         version: link:../../packages/dwi2trx
@@ -2598,8 +2598,8 @@ packages:
     resolution: {integrity: sha512-Vd/9EVDiu6PPJt9yAh6roZP6El1xHrdvIVGjyBsHR0RYwNHgL7FJPyIIW4fANJNG6FtyZfvlRPpFI4ZM/lubvw==}
     engines: {node: '>=18'}
 
-  '@dipy/gpu-streamlines@0.1.0':
-    resolution: {integrity: sha512-3zPjDQYdW8sdKv+w6GR1k+UWAkpmcS0yCHJXp5ac0k/C7ZQ4aQabmjhcQXMAgt3EVijD0H5jyqLATx38n7G+Bg==}
+  '@dipy/gpu-streamlines@file:apps/dwi2trx/vendor/gpu-streamlines':
+    resolution: {directory: apps/dwi2trx/vendor/gpu-streamlines, type: directory}
 
   '@dnd-kit/accessibility@3.1.1':
     resolution: {integrity: sha512-2P+YgaXF+gRsIihwwY1gCsQSYnu9Zyj2py8kY5fFvUM1qm2WA2u639R6YNVfU4GWr+ZM5mqEsfHZZLoRONbemw==}
@@ -10247,7 +10247,7 @@ snapshots:
 
   '@csstools/css-tokenizer@3.0.4': {}
 
-  '@dipy/gpu-streamlines@0.1.0':
+  '@dipy/gpu-streamlines@file:apps/dwi2trx/vendor/gpu-streamlines':
     dependencies:
       fflate: 0.8.3
 
