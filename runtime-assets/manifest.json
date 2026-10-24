@@ -84,7 +84,7 @@
       "version": "1.0.0-rc.7",
       "target": "nv-mcp/1.0.0-rc.7",
       "deduplicate": true,
-      "reason": "Share the nv-mcp browser client that every app's viewer automation imports into the page when an agent first drives it; no worker loads it, so it needs no service-worker scope.",
+      "reason": "Share the nv-mcp browser client that each app's NiiVue viewer automation imports into the page when an agent first drives it; no worker loads it, so it needs no service-worker scope.",
       "files": [
         {
           "name": "nv-mcp.js",
