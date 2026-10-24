@@ -1,5 +1,11 @@
 # @neurodesk/webapp-components
 
+## 0.21.1
+
+### Patch Changes
+
+- 0066f60: Reject missing, empty, or non-string step labels in `outputNames` and `derivativeSidecar` with a `TypeError`. Valid labels keep the same filenames and sidecar content.
+
 ## 0.21.0
 
 ### Minor Changes
