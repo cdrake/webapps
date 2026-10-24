@@ -8,6 +8,7 @@
 
 ### Patch Changes
 
+- 37a1791: Ask for source approval before loading custom label tables and font atlas or metrics files through the NiiVue MCP tools.
 - 4c15920: Each viewer window now has its own browser session and its own address on the local server. An app's service worker makes most of its requests, and the desktop could not tell which window they came from. Remote run inputs such as ZARRo's OME-Zarr URL failed to load over http, any window could read the https sources granted to another, and a request refused in a retained viewer failed the run in progress in another window. Requests are now checked against, and counted for, the window that made them. The desktop fetches a viewer's approved https sources and its compute server requests in that viewer's session, so a cookie a host sets stays with that viewer. A closed viewer's session is cleared before another viewer reuses it, and a session that fails to clear is not reused. Before it quits, the desktop waits for every clear to settle, even when one fails.
 - Updated dependencies [3a7e5bb]
 - Updated dependencies [72cbb8d]
