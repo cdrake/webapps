@@ -155,6 +155,11 @@ pub unsafe extern "C" fn nifreeze_predict(index: usize, out: *mut f64) -> u32 {
 #[unsafe(no_mangle)]
 pub extern "C" fn nifreeze_release() {
     NIFREEZE.with(|state| *state.borrow_mut() = None);
+    // Hosts have copied these results before releasing the model. Keeping their small
+    // allocations can split the freed series arena and prevent the next full-size split
+    // from fitting under the same heap limit, even though the model itself was dropped.
+    TEXT.with(|text| *text.borrow_mut() = String::new());
+    BYTES.with(|bytes| *bytes.borrow_mut() = Vec::new());
 }
 
 #[unsafe(no_mangle)]

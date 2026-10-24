@@ -87,3 +87,29 @@ result establishes those platforms. The final catalog interface audits and
 whole-app automatic-mask memory observations are reported separately. The
 supplied-mask pipeline benchmark excludes automatic masking and the viewer, so it
 cannot establish a whole-app input-size limit.
+
+## Repeated full-volume lifecycle
+
+The first whole-app observations completed and verified the full ds005577
+acquisition with one and two registration workers. Automatic CPU masking produced
+the same effective mask as the pinned reference (161,668 eligible voxels), and
+all scientific outputs matched the accepted full-GP result. These pre-fix fresh
+observations are retained in validation storage; they do not establish rerun safety.
+
+The four-worker direct rerun exposed a trap before its first registration. Dropping
+the model left small owned text/transform result buffers inside the freed arena;
+the next full-series split could not obtain a contiguous allocation under the
+unchanged 1 GiB core heap limit. Releasing those scratch buffers at model teardown
+allows the arena to be reused. JavaScript has already copied their results.
+
+A test reduces only the module's declared maximum to 32 MiB and runs the unchanged
+model code on a proportionally smaller synthetic series. It reproduced the
+second-run trap before the fix and now completes three model/prediction/output
+cycles with the original first-prediction hash. The actual production 1 GiB module
+also completed three consecutive full-size initialization, prediction and result
+serialization cycles. Its rebuilt SHA-256 is
+`9ab321e70b7533264e80b5a5fbd4343fd0cfa19e232c56d550cbb2243f3c8f22`.
+
+Full production GP, retained-output/replacement memory observations and final
+portable verification repeat after this lifecycle fix. The archive checksum
+above records the earlier verified artifact, before this final kernel rebuild.
