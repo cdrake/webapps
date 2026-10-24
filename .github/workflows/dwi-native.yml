@@ -150,8 +150,8 @@ jobs:
         working-directory: packages/hmc
         run: node --test test/*.test.js
       # The N4 module is a Docker ITK-Wasm build (scripts/build.sh, up to 8 GB), so this job does
-      # not rebuild it; #437 adds that check. These tests pin its SHA-256, test the procedure and
-      # hold its bias field to native ANTs 2.6.5 N4 on the pinned slab reference, exactly.
+      # not rebuild it; n4-wasm-source.yml does, each week. These tests pin its SHA-256, test the
+      # procedure and hold its bias field to native ANTs 2.6.5 N4 on the pinned slab reference, exactly.
       - name: Fetch the N4 native reference (sha256-checked)
         run: node packages/n4/validation/fetch-reference.mjs "$RUNNER_TEMP/n4-reference" >> "$GITHUB_ENV"
       - name: n4 package tests on the committed module
