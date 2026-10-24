@@ -15,6 +15,12 @@ export type NiftiVoxelArray =
   | Float64Array;
 
 export type NiftiOutputConstructor<T extends NiftiVoxelArray = NiftiVoxelArray> = new (length: number) => T;
+/** A typed array constructor called as a view: new ArrayType(buffer, byteOffset, length). */
+export type NiftiViewConstructor<T extends NiftiVoxelArray = NiftiVoxelArray> = new (
+  buffer: ArrayBuffer,
+  byteOffset: number,
+  length: number,
+) => T;
 
 export interface NiftiHeader {
   dims: number[];
@@ -96,7 +102,7 @@ export function createNiftiFromData(data: NiftiVoxelArray, sourceHeader: NiftiBy
  */
 export function allocateNifti<T extends NiftiVoxelArray>(
   sourceHeader: NiftiBytes,
-  ArrayType: NiftiOutputConstructor<T>,
+  ArrayType: NiftiViewConstructor<T>,
   length: number,
   options?: NiftiFromDataOptions,
 ): { buffer: ArrayBuffer; data: T; finish(options?: NiftiFromDataOptions): ArrayBuffer } | null;

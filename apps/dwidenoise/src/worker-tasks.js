@@ -33,7 +33,9 @@ export function createWorkerTasks(p2s) {
       message.groups.forEach((group, g) => p2s.apply(buffer, message.count, group, message.coefficients[g]));
       const out = buffer.view().slice();
       let max = -Infinity;
-      for (let i = 0; i < out.length; i++) if (out[i] > max && Number.isFinite(out[i])) max = out[i];
+      for (let i = 0; i < out.length; i++) {
+        if (out[i] > max && Number.isFinite(out[i])) max = out[i];
+      }
       return [{ id: message.id, data: out, max }, [out.buffer]];
     } finally {
       buffer.free();

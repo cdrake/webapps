@@ -41,7 +41,7 @@ In Node 22 on the development host, the Gram pass did about 0.5 million voxels p
 
 ## Memory and responsiveness of the app
 
-The app (#428) solves each volume in a worker, writes the workers' results straight into the output NIfTI (`allocateNifti` from `@neurodesk/webapp-components/file-io`), finds `cal_max` in the workers, and compresses the output in a worker that receives the buffer without a copy.
+The app (#428) solves each volume in a worker, writes the workers' results straight into the output NIfTI (`allocateNifti` from `@neurodesk/webapp-components/file-io`), finds `cal_max` in the workers, and compresses the output in a worker (without the WebAssembly) that receives the buffer without a copy.
 Before, the page solved each group on its own thread, held the result and a second copy for the NIfTI writer, wrote 127 M values one at a time, and compressed through a `Blob` copy on its own thread.
 
 Measured on the full-brain ds005134 sub-01 DWI (`sub-01_dir-AP_run-001_dwi`, 116 × 116 × 69 × 137, int16, 81 MB gzipped, 509 MB as Float32), from the Denoise click to "Denoised", in Playwright's headless Chromium (1.64) on the 8-core Linux development host:
@@ -53,6 +53,7 @@ Measured on the full-brain ds005134 sub-01 DWI (`sub-01_dir-AP_run-001_dwi`, 116
 | Longest main-thread task | 9040 ms | 169 ms |
 | Time | 19.5 s | 17.6 s |
 
+`apps/dwidenoise/validation/measure-run.mjs DIST OUTDIR IMAGE.nii.gz IMAGE.bval IMAGE.bvec IMAGE.json` repeats the measurement on a production build (`DIST`) of each commit.
 Each browser was started with Playwright's `launchServer`; the renderer peak is `VmHWM` in `/proc/<pid>/status`, read after the run, with `clear_refs` reset to 5 when the image was loaded, and the sum is the largest total of `VmRSS` over the browser's processes, sampled every 25 ms.
 The peaks change by about 100 MB from run to run (two runs before: 3376 and 3475 MB; two after: 3022 and 3011 MB).
 The output NIfTI was the same in both runs (sha256 `2127198e4f66a1c6eff7342a35a2214aa668dde6d97cd7cd6676e0615e98ddbd`).

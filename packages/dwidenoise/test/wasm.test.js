@@ -159,6 +159,10 @@ test("a volume solve refuses a bad position and names a dependent volume as solv
     assert.throws(() => p2s.solve(gram, group), /Volume 2 \(counting from 0\) is a linear combination/);
     assert.throws(() => p2s.solveVolume(new Float64Array(16), group, 0), /no voxels/);
     assert.throws(() => p2s.solveVolume(new Float64Array(16).fill(NaN), group, 0), /not finite numbers/);
+    // A group of one volume has no other volume to fit it from; the message says so.
+    for (const solveOne of [() => p2s.solveVolume(new Float64Array(p2s.gramLength(1)), [0], 0), () => p2s.solve(new Float64Array(p2s.gramLength(1)), [0])]) {
+      assert.throws(solveOne, /groups of 2 or more volumes\. This group has 1\./);
+    }
   } finally {
     buffer.free();
   }

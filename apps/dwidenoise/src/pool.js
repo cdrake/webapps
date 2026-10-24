@@ -56,7 +56,11 @@ export async function denoiseSeries({ data, nvox, frames, groups, output, signal
         parts.delete(next++);
         part.forEach((gram, g) => {
           if (!grams[g]) grams[g] = gram;
-          else for (let i = 0; i < gram.length; i++) grams[g][i] += gram[i];
+          else {
+            for (let i = 0; i < gram.length; i++) {
+              grams[g][i] += gram[i];
+            }
+          }
         });
       }
       advance((costs.gram * count) / nvox, "Adding Gram sums…");
@@ -68,7 +72,9 @@ export async function denoiseSeries({ data, nvox, frames, groups, output, signal
     const coefficients = groups.map((group) => new Float64Array(group.length * (group.length + 1)));
     const failures = new Map();
     let solved = 0;
-    for (const worker of workers) worker.postMessage({ type: "grams", grams, groups });
+    for (const worker of workers) {
+      worker.postMessage({ type: "grams", grams, groups });
+    }
     const solveRequest = (g, j) => ({ type: "solve", g, j });
     const keepRow = (message, [g, j]) => {
       if (message.failed) failures.set(message.id, message.failed);
@@ -98,7 +104,7 @@ export async function denoiseSeries({ data, nvox, frames, groups, output, signal
  * worker, not copied, so it is detached here afterwards. A cancel stops the worker.
  */
 export function gzipInWorker(buffer, signal) {
-  const worker = new Worker(new URL("./worker.js", import.meta.url), { type: "module" });
+  const worker = new Worker(new URL("./gzip-worker.js", import.meta.url), { type: "module" });
   return new Promise((resolve, reject) => {
     const finish = (error, data) => {
       signal?.removeEventListener("abort", abort);

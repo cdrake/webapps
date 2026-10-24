@@ -129,8 +129,14 @@ export async function loadDwidenoise(source) {
     );
   }
 
+  /** Patch2Self fits each volume from the others, so a group needs 2 or more volumes. */
+  function requireFitted(group) {
+    if (group.length < 2) throw new Error(`Patch2Self fits groups of 2 or more volumes. This group has ${group.length}.`);
+  }
+
   /** The regression coefficients of `group` from its Gram matrix. */
   function solve(gram, group) {
+    requireFitted(group);
     const n = group.length;
     const length = wasm.coefficients_length(n);
     return withF64(gram.length, gram, (g) =>
@@ -148,6 +154,7 @@ export async function loadDwidenoise(source) {
    * report progress between volumes, or solve the volumes of a group in separate workers.
    */
   function solveVolume(gram, group, j) {
+    requireFitted(group);
     const n = group.length;
     if (!Number.isInteger(j) || j < 0 || j >= n) throw new Error(`Volume position ${j} is not in a group of ${n}.`);
     if (gram.length !== gramLength(n)) throw new Error(`The Gram matrix needs ${gramLength(n)} values.`);
@@ -232,7 +239,9 @@ export async function loadDwidenoise(source) {
         const buffer = allocate(count * frames);
         try {
           const view = buffer.view();
-          for (let t = 0; t < frames; t++) view.set(out.subarray(t * nvox + first, t * nvox + first + count), t * count);
+          for (let t = 0; t < frames; t++) {
+            view.set(out.subarray(t * nvox + first, t * nvox + first + count), t * count);
+          }
           visit(buffer, first, count);
         } finally {
           buffer.free();
@@ -244,7 +253,11 @@ export async function loadDwidenoise(source) {
       fitted.forEach((group, g) => {
         const part = accumulate(buffer, count, group, new Float64Array(gramLength(group.length)));
         if (!grams[g]) grams[g] = part;
-        else for (let i = 0; i < part.length; i++) grams[g][i] += part[i];
+        else {
+          for (let i = 0; i < part.length; i++) {
+            grams[g][i] += part[i];
+          }
+        }
       });
     });
     const coefficients = fitted.map((group, g) => {
@@ -256,7 +269,9 @@ export async function loadDwidenoise(source) {
     each((buffer, first, count) => {
       fitted.forEach((group, g) => apply(buffer, count, group, coefficients[g]));
       const view = buffer.view();
-      for (let t = 0; t < frames; t++) out.set(view.subarray(t * count, (t + 1) * count), t * nvox + first);
+      for (let t = 0; t < frames; t++) {
+        out.set(view.subarray(t * count, (t + 1) * count), t * nvox + first);
+      }
     });
     return out;
   }

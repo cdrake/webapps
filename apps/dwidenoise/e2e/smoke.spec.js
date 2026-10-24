@@ -129,11 +129,12 @@ test("a DWI of several voxel chunks equals the serial schedule bit for bit", asy
   expect(Buffer.from(out.data.buffer, out.data.byteOffset, out.data.byteLength).equals(Buffer.from(expected.buffer))).toBe(true);
 });
 
-test("the footer cancel stops the volume solves, and the page answers during them", async ({ page }) => {
+test("the footer cancel stops the run between volume solves and stops the workers", async ({ page }) => {
   await page.goto("/");
   await page.locator("#imageInput").setInputFiles(dwiSeries().files);
   await expect(page.locator("#runButton")).toBeEnabled();
-  // Hold every volume solve, as a long solve would keep the workers busy.
+  // Hold every volume solve, so the cancel comes between two volumes. This test does not
+  // measure responsiveness: validation/measure-run.mjs does, on a full-brain DWI.
   await page.evaluate(() => {
     const send = Worker.prototype.postMessage;
     window.heldSolves = 0;
@@ -148,7 +149,6 @@ test("the footer cancel stops the volume solves, and the page answers during the
   const stopped = new Promise((resolve) => worker.once("close", resolve));
   await page.waitForFunction(() => window.heldSolves > 0);
   await expect(page.locator("#statusText")).toHaveText(/^Adding Gram sums…$/);
-  expect(await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => resolve(true))))).toBe(true);
   await page.locator("#cancelButton").click();
   await stopped;
   await expect(page.locator("#statusText")).toHaveText("Cancelled");

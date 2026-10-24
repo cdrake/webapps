@@ -43,7 +43,9 @@ function series(nvox, bvals) {
   const frames = bvals.length;
   const data = new Float32Array(nvox * frames);
   for (let t = 0; t < frames; t++) {
-    for (let v = 0; v < nvox; v++) data[t * nvox + v] = 100 + 20 * Math.sin(v * (0.01 + 0.007 * t)) + ((v * 7919 + t * 104729) % 13);
+    for (let v = 0; v < nvox; v++) {
+      data[t * nvox + v] = 100 + 20 * Math.sin(v * (0.01 + 0.007 * t)) + ((v * 7919 + t * 104729) % 13);
+    }
   }
   return data;
 }
