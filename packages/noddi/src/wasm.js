@@ -115,6 +115,16 @@ export async function loadNoddi(source) {
         throw new Error(`The image has ${data.length / voxels} volumes but the gradient table has ${g.n}.`);
       }
       if (mask && mask.length !== voxels) throw new Error('The mask is not on the image grid.');
+      if (method === 'dmipy') {
+        for (let frame = 0; frame < g.n; frame++) {
+          for (let voxel = 0; voxel < voxels; voxel++) {
+            if (mask && !mask[voxel]) continue;
+            if (!Number.isFinite(data[frame * voxels + voxel])) {
+              throw new Error('dmipy signal must contain one finite value per measurement in selected voxels.');
+            }
+          }
+        }
+      }
       const d = copyIn(data);
       const m = mask ? copyIn(mask) : { ptr: 0, free: () => {} };
       const outBytes = NODDI_MAPS.length * voxels * 4;

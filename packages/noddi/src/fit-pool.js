@@ -90,6 +90,7 @@ function fitChunks({ data, voxels, volumes, indices, bvals, bvecs, weighted, ten
       workers.push(worker);
       worker.onerror = (event) => finish(new Error(event.message || "A fitting worker failed."));
       worker.onmessage = ({ data: message }) => {
+        if (settled) return;
         if (message.type === "error") return finish(new Error(message.message));
         if (message.type === "ready") return send(worker);
         if (message.type !== "done") return;

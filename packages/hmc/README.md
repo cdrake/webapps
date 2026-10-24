@@ -102,9 +102,16 @@ node packages/hmc/validation/benchmark-matrix.mjs \
   "$TMPDIR/hmc-benchmark-cache" "$TMPDIR/hmc-benchmark-results"
 ```
 
-The driver writes 120 individual receipts and `matrix.json`, and rejects differences in scientific outputs across worker counts or hosts. Receipts hash all HMC and registration source files, generated kernels, shared file IO, package manifests, the dependency lock and benchmark scripts. Each run checks the hashes before and after execution; the matrix rejects changes across all configurations. Receipts also include input pins, machine details, awaited runtime and externally sampled process-tree RSS. RSS is sampled every 100 ms; it is an observed peak, and shared Chromium pages can be counted more than once. Inspect trial variation and separate profiling runs before choosing worker defaults or input limits.
+Add `--resume` with the same paths to validate completed receipts and run only missing trials. Resume requires the same input pins, source hashes, settings, machine and runtime version. Preflights, failed or incomplete trials are rejected; archive those receipts before retrying. Existing trial receipts are never overwritten. Without `--resume`, a directory containing matrix receipts is refused.
 
-The full matrix has not been measured. The Node and Chromium one-worker slab trivial preflights complete 124 registrations and resamplings across 137 frames, with identical hashes for all 142 scientific artifacts. GP still fails Q53 as described above; performance measurements do not establish scientific acceptance.
+The driver writes 120 individual receipts and `matrix.json`, and rejects differences in scientific outputs across worker counts or hosts. Receipts hash all HMC and registration source files, generated kernels, shared file IO, package manifests, the dependency lock and benchmark scripts. Each run checks the hashes before and after execution; the matrix rejects changes across all configurations. Receipts also include input pins, machine details, awaited runtime and externally sampled process-tree RSS. Memory sampling starts before input loading and continues through completed correction; preparation and completion are sampled explicitly in addition to the 100 ms interval. Output verification is excluded. This is an observed peak, and shared Chromium pages can be counted more than once. Inspect trial variation and separate profiling runs before choosing worker defaults or input limits.
+
+The full matrix has not been measured. The Node and Chromium one-worker slab trivial preflights complete 124 registrations and resamplings across 137 frames, with identical hashes for all 142 scientific artifacts. The separate #451 gate determines scientific acceptance; performance measurements do not establish it.
+
+Both datasets use precomputed pinned masks. Automatic MindGrab masking and the application
+viewer are excluded. Their memory must be measured separately before these measurements
+can justify a whole-app input-size limit. The app's dedicated MindGrab worker terminates
+before HMC starts, but its earlier peak still matters. The matrix does not measure it.
 
 ## Pool
 

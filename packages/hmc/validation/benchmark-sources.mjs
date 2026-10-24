@@ -12,7 +12,7 @@ export async function benchmarkSourceHashes(root = fileURLToPath(new URL("../../
   const paths = [
     "pnpm-lock.yaml", "packages/hmc/package.json", "packages/hmc-registration/package.json", "packages/components/package.json",
     ...(await Promise.all([
-      "packages/hmc/src", "packages/hmc-registration/src", "packages/hmc-registration/wasm", "packages/components/src/file-io",
+      "packages/hmc/src", "packages/hmc-registration/src", "packages/hmc-registration/wasm", "packages/components/src/file-io", "packages/components/src/automation",
     ].map(files))).flat(),
     ...(await readdir(join(root, "packages/hmc/validation")))
       .filter(name => /^benchmark.*\.[cm]?js$/.test(name)).map(name => `packages/hmc/validation/${name}`),

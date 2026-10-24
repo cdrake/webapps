@@ -38,9 +38,16 @@ export async function prepareBenchmark(config, { readBytes, loadHmc, runtime }) 
       if (!result) throw new Error("The measured operation has not completed.");
       const uncompressed = await decodeNiftiBuffer(result.files[result.names.image]);
       const written = readNiftiFrames(uncompressed);
+      if (!sameNiftiGrid(series.headerBytes, uncompressed)) throw new Error("Benchmark corrected DWI is not on the input grid.");
       if (written.frames !== series.frames || written.data.length !== series.data.length) throw new Error("Benchmark output lost volumes.");
+      const nonzero = new Uint8Array(series.frames);
       for (let offset = 0; offset < written.data.length; offset++) {
-        if (!Number.isFinite(written.data[offset])) throw new Error(`Benchmark output contains a nonfinite value at voxel ${offset}.`);
+        const value = written.data[offset];
+        if (!Number.isFinite(value)) throw new Error(`Benchmark output contains a nonfinite value at voxel ${offset}.`);
+        if (value !== 0) nonzero[Math.floor(offset / loaded.voxels)] = 1;
+      }
+      for (let frame = 0; frame < series.frames; frame++) {
+        if (!b0[frame] && !nonzero[frame]) throw new Error(`Benchmark corrected DWI frame ${frame} contains no signal.`);
       }
       for (let frame = 0; frame < series.frames; frame++) if (b0[frame]) {
         for (let v = 0; v < loaded.voxels; v++) {
@@ -48,11 +55,31 @@ export async function prepareBenchmark(config, { readBytes, loadHmc, runtime }) 
           if (written.data[offset] !== series.data[offset]) throw new Error(`Benchmark changed b0 frame ${frame}.`);
         }
       }
+      const required = [result.names.image, result.names.bval, result.names.bvec, result.names.motion, result.names.sidecar,
+        ...Array.from({ length: series.frames }, (_, frame) => result.names.transform(frame))];
+      if (required.some(name => !result.files[name]?.byteLength)) throw new Error("Benchmark is missing a required scientific artifact.");
+      const writtenBvals = numbers(result.files[result.names.bval]);
       const bvecRows = decoder.decode(result.files[result.names.bvec]).trim().split("\n");
-      if (numbers(result.files[result.names.bval]).length !== series.frames
+      if (writtenBvals.length !== series.frames
         || bvecRows.length !== 3 || bvecRows.some(row => row.trim().split(/\s+/).length !== series.frames)
         || decoder.decode(result.files[result.names.motion]).trim().split("\n").length !== series.frames + 1
         || result.transforms.length !== series.frames) throw new Error("Benchmark output tables do not cover all frames.");
+      if (writtenBvals.some(value => !Number.isFinite(value) || value < 0)
+        || bvecRows.some(row => row.trim().split(/\s+/).map(Number).some(value => !Number.isFinite(value)))) {
+        throw new Error("Benchmark gradient tables contain invalid numeric values.");
+      }
+      const motionRows = decoder.decode(result.files[result.names.motion]).trim().split("\n").map(row => row.trim().split(/\s+/));
+      const motionColumns = motionRows[0].length;
+      const displacementColumn = motionRows[0].indexOf("framewise_displacement");
+      if (motionRows.slice(1).some((row, frame) => row.length !== motionColumns || row.some((text, column) => {
+        if (frame === 0 && column === displacementColumn && text === "n/a") return false;
+        return !Number.isFinite(Number(text));
+      }))) {
+        throw new Error("Benchmark motion table contains invalid numeric values.");
+      }
+      if (result.transforms.some(transform => [...transform.parameters, ...transform.fixed].some(value => !Number.isFinite(value)))) {
+        throw new Error("Benchmark transforms contain nonfinite values.");
+      }
       const hashes = { [result.names.image]: await hash(uncompressed) };
       for (const [name, bytes] of Object.entries(result.files)) if (name !== result.names.image) hashes[name] = await hash(bytes);
       return { ...loaded, ...measured, hashes, verified: true };
