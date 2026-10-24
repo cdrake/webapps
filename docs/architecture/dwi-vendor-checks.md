@@ -4,7 +4,9 @@ The [design](dwi-microstructure-design.md#data) asks each DWI app to run on the 
 
 PR [#596](https://github.com/neurodesk/webapps/pull/596) (open) adds `docs/quality/dwi-vendor-checks-2026-10.md`, a scripted check of the same Philips series and of GE ds006837. It runs the browser checks on a 64×64×10 slab. The sections below add full-volume browser runs, dwicorrect with the reverse b0, dwi2trx and a b-vector check. Where both reports measure the same item, the results agree. Merge the two reports when both are on `main`.
 
-Method: the production build of each app in headless Chromium (Playwright 1.64.0), driven through its interface or its automation contract with the BIDS files as given. The command line runs where one is on `main`. Host: Intel Core Ultra 200V with Arc 130V/140V (xe, Mesa 26.2.4 Vulkan). Times are wall times on that host, not benchmarks.
+Philips report snapshot: [ee2463de](https://github.com/gdevenyi/webapps/commit/ee2463de87c02eb28bef953c9e56beb6ab864e73), 24 October 2026. The GE checks ran on the same day. The n4 command-line rows of both sections ran after [#595](https://github.com/neurodesk/webapps/pull/595) merged.
+
+Method: the production build of each app in headless Chromium (Playwright 1.64.0), driven through its interface or its automation contract with the BIDS files as given. Command-line results cover the runs listed below. Host: Intel Core Ultra 200V with Arc 130V/140V (xe, Mesa 26.2.4 Vulkan). Times are wall times on that host, not benchmarks.
 
 ## Philips
 
