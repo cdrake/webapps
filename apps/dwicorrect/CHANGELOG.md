@@ -12,6 +12,24 @@
 
 ### Patch Changes
 
+- Updated dependencies [941884c]
+- Updated dependencies [a028e96]
+- Updated dependencies [650ce5f]
+- Updated dependencies [343c256]
+- Updated dependencies [941884c]
+  - @neurodesk/webapp-components@0.21.0
+  - @neurodesk/runtime-support@0.9.11
+  - @neurodesk/sdc@0.2.20261024
+- Updated dependencies [3a7e5bb]
+- Updated dependencies [72cbb8d]
+  - @neurodesk/webapp-components@0.20.0
+  - @neurodesk/runtime-support@0.9.10
+  - @neurodesk/sdc@0.2.20261024
+- Updated dependencies [3fc9cf2]
+  - @neurodesk/shoreline@0.2.0
+  - @neurodesk/webapp-components@0.19.1
+  - @neurodesk/runtime-support@0.9.9
+  - @neurodesk/sdc@0.2.20261024
 - Updated dependencies [328cb77]
   - @neurodesk/webapp-components@0.20.1
   - @neurodesk/runtime-support@0.9.13
@@ -20,9 +38,6 @@
 - Updated dependencies
   - @neurodesk/sdc@0.2.20261024
 - Updated dependencies [14a8b29]
-- Updated dependencies [a028e96]
-- Updated dependencies [650ce5f]
-- Updated dependencies [343c256]
 - Updated dependencies [941884c]
   - @neurodesk/webapp-components@0.20.0
   - @neurodesk/runtime-support@0.9.12
@@ -36,9 +51,4 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.19.2
   - @neurodesk/runtime-support@0.9.10
-  - @neurodesk/sdc@0.2.20261024
-- Updated dependencies [3fc9cf2]
-  - @neurodesk/shoreline@0.2.0
-  - @neurodesk/webapp-components@0.19.1
-  - @neurodesk/runtime-support@0.9.9
   - @neurodesk/sdc@0.2.20261024

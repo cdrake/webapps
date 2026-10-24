@@ -12,7 +12,6 @@
     "lint": "node ../../scripts/lint.mjs --workspace"
   },
   "dependencies": {
-    "@neurodesk/dwi2trx": "workspace:*",
     "@neurodesk/n4": "workspace:*",
     "@neurodesk/runtime-support": "workspace:*",
     "@neurodesk/webapp-components": "workspace:*",
