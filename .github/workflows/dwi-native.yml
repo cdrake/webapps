@@ -164,7 +164,7 @@ jobs:
   # (exes/dwi/validation/oracle.manifest.json). The fetch checks the size and sha256 of every
   # file, also on a cache hit, and DWI_REQUIRE_ORACLE turns each missing-data skip into a failure.
   oracle:
-    name: exes/dwi oracle tests on the pinned AMICO and Patch2Self data
+    name: exes/dwi oracle tests on the pinned AMICO, Patch2Self and mrdegibbs data
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
