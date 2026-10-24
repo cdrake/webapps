@@ -19,6 +19,9 @@ for each app are recorded in `registry/apps.yml`.
 - `apps/niimath`: BSD-2-Clause (`apps/niimath/LICENSE`)
 - `packages/degibbs`: MPL-2.0 (`packages/degibbs/LICENSE`), as the MRtrix3 `mrdegibbs` source it ports;
   attribution in `packages/degibbs/NOTICE`. It holds the degibbs WebAssembly module and command line
+- `packages/n4`: Apache-2.0 AND MPL-2.0 (`packages/n4/LICENSE`): ANTs N4 in WebAssembly (Apache-2.0) and the
+  MRtrix3 `dwibiascorrect ants` procedure (MPL-2.0); attribution in `packages/n4/NOTICE`. It holds the
+  N4 WebAssembly module and the n4 command line
 - `packages/niimath`: BSD-2-Clause (`packages/niimath/LICENSE`); niimath attribution in `packages/niimath/NOTICE`
 - `apps/me-ica`: LGPL-2.1-only, as the `@niivue/meica` package it ships (LGPL-2.1-only, from
   https://github.com/niivue/meica-rs; a port of tedana, LGPL-2.1, and mapca and GIFT, GPL-2.0,

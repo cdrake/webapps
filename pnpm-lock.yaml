@@ -1574,7 +1574,20 @@ importers:
         specifier: 1.29.0
         version: 1.29.0
 
-  packages/n4: {}
+  packages/n4:
+    dependencies:
+      '@brainchop/mindgrab':
+        specifier: 0.1.20260925
+        version: 0.1.20260925
+      '@neurodesk/dwi2trx':
+        specifier: workspace:*
+        version: link:../dwi2trx
+      '@neurodesk/node-drivers':
+        specifier: workspace:*
+        version: link:../node-drivers
+      '@neurodesk/webapp-components':
+        specifier: workspace:*
+        version: link:../components
 
   packages/nesvor:
     dependencies:

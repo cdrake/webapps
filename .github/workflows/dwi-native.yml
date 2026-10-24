@@ -166,11 +166,12 @@ jobs:
       # hold its bias field to native ANTs 2.6.5 N4 on the pinned slab reference, exactly.
       - name: Fetch the N4 native reference (sha256-checked)
         run: node packages/n4/validation/fetch-reference.mjs "$RUNNER_TEMP/n4-reference" >> "$GITHUB_ENV"
+      # Only the tests without workspace dependencies: n4-native.yml runs the command line's.
       - name: n4 package tests on the committed module
         working-directory: packages/n4
         env:
           N4_REQUIRE_REFERENCE: '1'
-        run: node --test test/*.test.js
+        run: node --test test/native-reference.test.js test/procedure.test.js test/wasm-pin.test.js test/pipeline.test.js
 
   # The AMICO 1.5.4 and DIPY Patch2Self oracle tests on the pinned Hugging Face data
   # (exes/dwi/validation/oracle.manifest.json). The fetch checks the size and sha256 of every

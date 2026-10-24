@@ -29,6 +29,41 @@ N4_REQUIRE_REFERENCE=1 node --test test/*.test.js
 
 An earlier hand check with an FSL `bet -f 0.3` mask (44 521 voxels) was also exact.
 
+## Command line
+
+`bin/n4.js` runs the web app's correction on a NIfTI image with the committed module and writes the app's downloads: the corrected image, the bias field and the brain mask, and the `.bval`, `.bvec` and sidecar when the input has them.
+
+```bash
+n4 sub-01_dwi.nii.gz results
+n4 T1w.nii.gz results --mask T1w_brain_mask.nii.gz
+n4 self-check
+```
+
+A 3D image is corrected by N4 directly. For a series, the field is fitted to the mean of the b0 volumes (b < 50 s/mm², or every volume without a `.bval`), then `rescaleBias` and `divideVolumes` correct every volume, as `dwibiascorrect ants` does.
+The fit is weighted by a MindGrab brain mask (model `mindgrab`) of that mean b0 or image, from MindGrab's CPU modules through `@neurodesk/node-drivers/mindgrab`. A run needs about 2.6 GB of memory for MindGrab. `--mask FILE` gives a mask on the image grid instead.
+The `.bval`, `.bvec` and `.json` beside the image with the same name are paired as the app pairs a dropped selection; `--bval`, `--bvec` and `--json` name other files.
+The output directory must be new or empty.
+The mean b0, the output names and the sidecar come from `src/pipeline.js`, which the app imports too.
+Input is NIfTI only: convert DICOM with dcm2niix first, or use the web app.
+`self-check` runs the module on a ramp phantom (the tissue's coefficient of variation must fall by half or more) and loads the MindGrab package.
+
+The portable archives are built by `exes/node-cli` (`release.json`) in `.github/workflows/n4-native.yml`.
+
+### Accuracy
+
+`validation/cli-check.mjs` is the release gate. It runs the command line on the three pinned examples in `apps/n4/examples.json`: the ds005134 multi-shell slab with its sidecar, the 3D T1-weighted head and the single-shell DWI.
+The command line's MindGrab mask must equal the recorded one, and the corrected image, the bias field and the mask must equal the web app's downloads once decompressed; the `.bval`, `.bvec` and sidecar must equal them byte for byte. A second run with that mask through `--mask` must write the same files.
+`validation/browser-reference.json` holds the downloads, which `apps/n4/e2e/reference.spec.js` recorded through the built app's `correct` automation in Chromium. The spec gives the app the command line's CPU MindGrab mask through its mask input, because the app's MindGrab prefers a GPU; `@neurodesk/node-drivers` holds that CPU MindGrab to the browser's byte for byte.
+
+```bash
+node packages/n4/validation/cli-check.mjs
+node packages/n4/validation/cli-check.mjs --executable path/to/n4
+N4_BROWSER_REFERENCE=write pnpm --filter n4 exec playwright test e2e/reference.spec.js
+```
+
+Rerecord the reference after a change to the module, `src/pipeline.js`, MindGrab or the app's NIfTI writing.
+Cite Tustison et al. (2010), as the app's Cite dialog does.
+
 ## Rebuild
 
 Docker, curl and tar are required:
