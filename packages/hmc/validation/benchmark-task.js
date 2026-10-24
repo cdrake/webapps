@@ -21,7 +21,13 @@ export async function prepareBenchmark(config, { readBytes, loadHmc, runtime }) 
   const b0 = hmc.b0Flags("nifreeze", bvals, bvecs);
   const expected = bvals.filter(value => value > 50).length;
   if (b0.some((flag, i) => flag !== (bvals[i] <= 50))) throw new Error("The benchmark b0 split does not match the NiFreeze threshold.");
-  const loaded = { loadSeconds: (performance.now() - loadStart) / 1000, frames: series.frames, voxels: series.dims.reduce((a, b) => a * b), rawFloat32Bytes: series.data.byteLength, expectedRegistrations: expected };
+  // Keep evidence independent of the mutable series passed into the measured pipeline.
+  const voxels = series.dims.reduce((a, b) => a * b);
+  const originalB0Hashes = new Map();
+  for (let frame = 0; frame < series.frames; frame++) if (b0[frame]) {
+    originalB0Hashes.set(frame, await hash(series.data.subarray(frame * voxels, (frame + 1) * voxels)));
+  }
+  const loaded = { loadSeconds: (performance.now() - loadStart) / 1000, frames: series.frames, voxels, rawFloat32Bytes: series.data.byteLength, expectedRegistrations: expected };
   let result;
   let measured;
   return {
@@ -49,11 +55,9 @@ export async function prepareBenchmark(config, { readBytes, loadHmc, runtime }) 
       for (let frame = 0; frame < series.frames; frame++) {
         if (!b0[frame] && !nonzero[frame]) throw new Error(`Benchmark corrected DWI frame ${frame} contains no signal.`);
       }
-      for (let frame = 0; frame < series.frames; frame++) if (b0[frame]) {
-        for (let v = 0; v < loaded.voxels; v++) {
-          const offset = frame * loaded.voxels + v;
-          if (written.data[offset] !== series.data[offset]) throw new Error(`Benchmark changed b0 frame ${frame}.`);
-        }
+      for (const [frame, originalHash] of originalB0Hashes) {
+        const writtenHash = await hash(written.data.subarray(frame * voxels, (frame + 1) * voxels));
+        if (writtenHash !== originalHash) throw new Error(`Benchmark changed b0 frame ${frame}.`);
       }
       const required = [result.names.image, result.names.bval, result.names.bvec, result.names.motion, result.names.sidecar,
         ...Array.from({ length: series.frames }, (_, frame) => result.names.transform(frame))];

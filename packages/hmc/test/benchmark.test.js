@@ -111,6 +111,21 @@ test('finite completed benchmark outputs pass all artifact checks', async () => 
   assert.equal(Object.keys(result.hashes).length, VOLUMES.length + 5);
 });
 
+test('benchmark verification preserves original b0 evidence when the pipeline mutates its input', async () => {
+  let mutated = false;
+  const task = await injectedBenchmark({ hmcOptions: hmc => ({
+    ...hmc,
+    createNifreezeModel(options) {
+      options.data[0] += 1;
+      mutated = true;
+      return hmc.createNifreezeModel(options);
+    },
+  }) });
+  await task.run();
+  assert.equal(mutated, true);
+  await assert.rejects(task.verify(), /changed b0 frame 0/);
+});
+
 
 test('benchmark verification rejects a corrected series on a shifted grid', async () => {
   const task = await injectedBenchmark({ image(bytes) {
