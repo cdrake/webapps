@@ -1,5 +1,18 @@
 # dwi2trx
 
+## 0.7.20261024
+
+### Patch Changes
+
+- Updated dependencies [14a8b29]
+- Updated dependencies [a028e96]
+- Updated dependencies [650ce5f]
+- Updated dependencies [343c256]
+- Updated dependencies [941884c]
+  - @neurodesk/webapp-components@0.20.0
+  - @neurodesk/dwi2trx@0.7.20261024
+  - @neurodesk/runtime-support@0.9.12
+
 ## 0.6.20261024
 
 ### Patch Changes

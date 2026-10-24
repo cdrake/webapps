@@ -4,6 +4,18 @@
 
 ### Patch Changes
 
+- Updated dependencies [14a8b29]
+- Updated dependencies [a028e96]
+- Updated dependencies [650ce5f]
+- Updated dependencies [343c256]
+- Updated dependencies [941884c]
+  - @neurodesk/webapp-components@0.20.0
+  - @neurodesk/runtime-support@0.9.12
+  - @neurodesk/synthsr@0.6.20261024
+  - @neurodesk/synthstrip@0.2.0
+  - @neurodesk/brain-extraction@0.5.20261024
+  - @neurodesk/greedy@0.6.20261024
+  - @neurodesk/syncro@0.7.20261024
 - Updated dependencies
   - @neurodesk/webapp-components@0.19.3
   - @neurodesk/runtime-support@0.9.11
