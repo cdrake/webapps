@@ -8,6 +8,8 @@
 
 ### Patch Changes
 
+- 3e7ff03: Keep HMC's loaded files synchronized with page-drop routing and Undo. Serialize paired imports, preserve the last valid input after failures, and cancel pending imports together while retaining the prior mask. Cite MindGrab's method paper. Run the full pinned dmipy white-matter slab through production browser downloads in CI, with all 19 reference files verified by size and checksum.
+  - @neurodesk/hmc@0.4.20261024
 - d73bb8b: Use the shared scan picker and DICOM conversion for supplied brain masks, rejecting selections containing more than one mask image.
   - @neurodesk/hmc@0.4.20261024
 - 3e93e32: Restore the previous BIDS run selection when loading another run fails, preserving the retained input, supplied mask and completed results.
