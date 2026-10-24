@@ -30,18 +30,19 @@ export async function createRegistration({createModule,wasmBinary,onLog=()=>{}})
     const stack = module.stackSave();
     let code;
     let trapped = false;
+    let failure;
     try {
       code = module.callMain(args);
     } catch (error) {
       trapped = true;
-      throw error;
-    } finally {
-      try {
-        module.stackRestore(stack);
-      } catch (error) {
-        if (!trapped) throw error;
-      }
+      failure = error;
     }
+    try {
+      module.stackRestore(stack);
+    } catch (error) {
+      if (!trapped) throw error;
+    }
+    if (trapped) throw failure;
     if(code!==0)throw new Error(`ANTs failed (exit ${code}). See processing log.`);
   }
   let next=0;

@@ -42,18 +42,19 @@ export async function createN4({ createModule, wasmBinary, onLog = () => {} }) {
         const stack = module.stackSave();
         let code;
         let trapped = false;
+        let failure;
         try {
           code = module.callMain(n4Arguments({ ...paths, ...settings }));
         } catch (error) {
           trapped = true;
-          throw error;
-        } finally {
-          try {
-            module.stackRestore(stack);
-          } catch (error) {
-            if (!trapped) throw error;
-          }
+          failure = error;
         }
+        try {
+          module.stackRestore(stack);
+        } catch (error) {
+          if (!trapped) throw error;
+        }
+        if (trapped) throw failure;
         if (code !== 0) throw new Error(`N4 failed (exit ${code}). See the technical log.`);
         return { corrected: module.FS.readFile(paths.corrected), bias: module.FS.readFile(paths.bias) };
       } finally {
