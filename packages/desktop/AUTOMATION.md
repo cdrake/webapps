@@ -193,7 +193,10 @@ without an answer. An approved URL is added to the window's grants. An
 approved file is served on its own at the window's address. Approvals last
 until the session closes and never reach another window. Another session's
 `grantedUrl` is a URL like any other, and a relative URL into `../_local/`
-must name one of this session's own files.
+must name one of this session's own files. An address with a user name or
+password is refused before anyone is asked, however it is written,
+`//user:password@host/…` included, and so is a label table or font address
+that has one.
 
 To approve a source ahead of time, call
 `sessions_grant { sessionId, path }` or `sessions_grant { sessionId, url }`.

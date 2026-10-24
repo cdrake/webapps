@@ -1,5 +1,5 @@
 import { Bridge } from '@niivue/nv-mcp/server';
-import { grantSources, sourceOf } from './source-approval.js';
+import { addressesIn, grantSources, refuseCredentials, sourceOf } from './source-approval.js';
 
 // Above a 30 s approval wait plus the session's own 30 s command limit, so a stalled page is reported by the
 // session, which also closes it.
@@ -26,6 +26,8 @@ export function createNiivueBridge(service, { log = message => console.error(mes
         const { state } = await service.viewerCommand(sessionId, 'viewers.niivue', { viewerId });
         response = { id, result, state };
       } else {
+        // Every address is checked before any is put to a person, so no password reaches a dialog, a record or the page.
+        for (const address of addressesIn(params ?? {})) refuseCredentials(address);
         // A source the run was not given is loaded only once a person approves it, and then by the address granted.
         const granted = await grantSources(params ?? {}, async value => {
           const source = sourceOf(value);

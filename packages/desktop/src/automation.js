@@ -3,6 +3,7 @@ import { mkdir, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
 import { operationFor, parseContract, validateRequest } from './contracts.js';
 import { describeFile } from './reports.js';
+import { refuseCredentials } from './source-approval.js';
 import { createViewerSessions } from './viewer-sessions.js';
 
 export async function loadAutomationContracts(root, bundle) {
@@ -189,9 +190,7 @@ export function createAutomationService({ contracts, outputRoot, execute, native
      */
     async grantSource(sessionId, source) {
       // Refused before anyone is asked, like input URLs, so neither the dialog nor the run record shows a password.
-      // A relative address carries none.
-      const url = source.url && URL.parse(source.url);
-      if (url && (url.username || url.password)) throw new Error('Source URLs must not contain credentials');
+      refuseCredentials(source.url ?? source.path);
       const requestedAt = new Date().toISOString();
       let granted;
       try {

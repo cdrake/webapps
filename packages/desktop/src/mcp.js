@@ -5,6 +5,7 @@ import { registerCoreTools, toolContext } from '@niivue/nv-mcp/server';
 import * as z from 'zod/v4';
 import { requestSchema } from './contracts.js';
 import { createNiivueBridge } from './niivue-bridge.js';
+import { refuseCredentials } from './source-approval.js';
 
 const app = z.string().regex(/^[a-z][a-z0-9-]*$/);
 const run = z.strictObject({ runId: z.string().min(1) });
@@ -86,6 +87,7 @@ export async function createMcpServer(service, { version, niivue }) {
     { ...startsRun, idempotentHint: true },
     async ({ sessionId, path, url }) => {
       if (Boolean(path) === Boolean(url)) throw new Error('Give exactly one of path or url');
+      refuseCredentials(path ?? url);
       if (path && !isAbsolute(path)) throw new Error(`path must be absolute: ${path}`);
       const source = path ? { path } : { url };
       const { url: grantedUrl, approval } = await service.grantSource(sessionId, source);

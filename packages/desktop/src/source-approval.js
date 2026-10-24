@@ -3,13 +3,39 @@ import { isAbsolute, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createSourceGrants } from './source-grants.js';
 
+// A page in an app, as far as reading an address goes: plain http, below the root of its server.
+const page = 'http://viewer.invalid/app/';
+
 /** Whether a relative address climbs into the local server's mounts, wherever in the app the page sits. */
 function reachesMounts(value) {
   try {
-    return decodeURIComponent(new URL(value, 'http://viewer.invalid/app/').pathname).startsWith('/_local/');
+    return decodeURIComponent(new URL(value, page).pathname).startsWith('/_local/');
   } catch {
     return false;
   }
+}
+
+/**
+ * Refuses an address the page would send with a user name or password, however it is written: //user:password@host
+ * and \\user:password@host name a host as much as http://user:password@host does. An address the page cannot read
+ * at all is refused when it has an @, which may end a password. The error never repeats the address.
+ */
+export function refuseCredentials(value) {
+  const address = URL.parse(value, page);
+  if (address ? address.username || address.password : value.includes('@')) throw new Error('Source URLs must not contain credentials');
+}
+
+// The arguments of nv-mcp's tools that the page fetches: each source's url, a label table and a font's two files.
+const addressKeys = new Set(['url', 'labels', 'atlas', 'metrics']);
+
+/** Every address the page fetches in a tool's arguments, at any depth. */
+export function addressesIn(value) {
+  if (Array.isArray(value)) return value.flatMap(addressesIn);
+  if (!value || typeof value !== 'object') return [];
+  return Object.entries(value).flatMap(([key, item]) => {
+    if (addressKeys.has(key) && typeof item === 'string') return [item];
+    return addressesIn(item);
+  });
 }
 
 /**

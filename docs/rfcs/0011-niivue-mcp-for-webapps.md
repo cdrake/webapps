@@ -282,6 +282,10 @@ Phase 1 runs on branch `feat/nv-mcp-bridge` against `@niivue/nv-mcp`
   - The bridge finds every `url` argument in a call. An absolute path, a
     `file:` URL or an http(s) URL outside the window's grants is approved
     first, then rewritten to the granted address. Relative URLs pass through.
+    Before any of them is approved, every address the page would fetch (each
+    `url`, a `labels` table, `set_font`'s `atlas` and `metrics`) is read as
+    the page would read it, and the call is refused if one carries a user
+    name or password, however it is written.
   - Approval comes from `NEURODESK_APPROVED_SOURCES`, a comma-separated list
     of absolute directories and http(s) URL prefixes, or from an
     **Allow**/**Deny** dialog on the viewer window. The dialog waits 30 s and
