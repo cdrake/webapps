@@ -150,7 +150,7 @@ All datasets are OpenNeuro, CC0, one subject each. Decided 18 October 2026 after
 | --- | --- | --- |
 | Primary: NODDI, HMC, SDC, N4 and the `noddi` example | ds005134 sub-01 | One run (Siemens Skyra, 2 mm, TE 91 ms): 13 b0, b = 500 ×12, 1000 ×48, 2000 ×64; 8 PA b0 volumes; T1w; `PhaseEncodingDirection`, `TotalReadoutTime` and `SliceTiming` in the sidecars |
 | `degibbs` gate | ds005577 sub-107 | Full Fourier (ds005134 uses partial Fourier 0.75, which weakens Gibbs unringing); b = 1000 ×30, 3000 ×60, 11 b0 |
-| Vendor check, no gate | ds007522 sub-HML0001 (Philips), ds006837 sub-15464 (GE) | The apps must run on other vendors' files and sidecars |
+| Vendor check, no gate | ds007522 sub-HML0001 (Philips), ds006837 sub-15464 (GE) | The apps must run on other vendors' files and sidecars; results in [dwi-vendor-checks.md](dwi-vendor-checks.md) |
 | AMICO parity, recorded above | ds001226 sub-CON01 | One run, b = 0 ×6, 700 ×16, 1200 ×30, 2800 ×50, 2.5 mm |
 | Later: full blip-up/down | ds004146 | Full AP and PA DWI |
 
