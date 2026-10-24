@@ -90,9 +90,12 @@ uses 0.69 and keeps the existing adapter.
 `automation/nv-mcp.js`, the only module that loads `@niivue/nv-mcp/browser`,
 and builds `coreHandlers({ view: nv })` once. Apps pay for the code only when
 an agent calls it, and an app without a NiiVue adapter does not bundle it. The
-viewer registry adds one command, `viewers.niivue`, with `{ viewerId, method,
-params }`. It returns `{ result, state }`, where `state` is nv-mcp's
-`sceneState`. A request without `method` returns only the state.
+components list nv-mcp as an exact devDependency, so app builds bundle the
+client, and a production install of the components does not include nv-mcp.
+In such an install, a call to `niivue()` from Node fails because the module
+is missing. The viewer registry adds one command, `viewers.niivue`, with
+`{ viewerId, method, params }`. It returns `{ result, state }`, where `state`
+is nv-mcp's `sceneState`. A request without `method` returns only the state.
 
 `viewers.list` reports a `niivue` capability. The command is added to the
 two desktop allowlists: the page dispatcher in `browser-automation.js` and the
@@ -238,14 +241,20 @@ page handlers above can be registered there once browsers support it.
   `NEURODESK_SOURCE_APPROVAL=deny`. The **Allow** scope is still open.
 - **Duplicate MCP SDK.** nv-mcp depends on `@modelcontextprotocol/sdk` 1.x.
   Only the processes that serve tools need it: the desktop, which installs it
-  beside 2.1, and `neurodesk-mcp`. Pages use only nv-mcp's browser entry, so
-  the components package must not bring the SDK and its server dependencies
-  into the command-line archives built from it. Ask upstream to make the SDK
-  a peer dependency or move to 2.x.
+  beside 2.1, and `neurodesk-mcp`. Both list nv-mcp as a dependency. Pages use
+  only nv-mcp's browser entry, which the components list as an exact
+  devDependency for app builds to bundle. `pnpm deploy --prod` therefore leaves
+  nv-mcp, the SDK and its server dependencies out of the command-line archives
+  built from the components. Ask upstream to make the SDK a peer dependency or
+  move to 2.x.
 - **Prerelease pin.** The proof of concept pins `1.0.0-rc.7`, the release it
-  was tested against. To adopt a later release candidate, change the pin, the
-  `nv-mcp` family's version in `runtime-assets/manifest.json` and that
-  family's sha256 together.
+  was tested against. To adopt a later release candidate, change four pins
+  together: the components' devDependency, the desktop's and
+  `@neurodesk/agent-server`'s dependencies, and the `nv-mcp` family's version,
+  target and sha256 in `runtime-assets/manifest.json`.
+  `test/nv-mcp-dependencies.test.mjs` fails when the versions differ, and the
+  composite build fails when the bundled chunk's sha256 differs from the
+  family's.
 - **Local network access.** Tested with Playwright on macOS, a page on
   `https://webapps.neurodesk.org` opening `ws://127.0.0.1`:
   - Chromium 156 and Chrome 155 fail with
@@ -309,10 +318,15 @@ Phase 1 runs on branch `feat/nv-mcp-bridge` against `@niivue/nv-mcp`
     prerelease entries.
   - nv-mcp's `@modelcontextprotocol/sdk` 1.x brings express, hono, cors, jose
     and their dependencies into the lockfile. The desktop and
-    `neurodesk-mcp` ship them, because they serve the tools. No page loads
-    them, and the command-line archives built from the components package
-    must not include them. Making the SDK a peer dependency upstream would
-    remove them from the lockfile.
+    `neurodesk-mcp` depend on nv-mcp and ship them, because they serve the
+    tools. No page loads them.
+  - The components list nv-mcp only as a devDependency. `pnpm deploy --prod`
+    leaves nv-mcp, its server dependencies and the NiiVue release that pnpm
+    installs as nv-mcp's peer out of every command-line archive.
+    `test/nv-mcp-dependencies.test.mjs` walks each release target's
+    production dependencies in the lockfile and fails if MCP code is among
+    them. Making the SDK a peer dependency upstream would remove the stack
+    from the lockfile.
 - **Source approval.** Phase 2 is in the same branch.
   - The bridge finds every `url` argument in a call. An absolute path, a
     `file:` URL or an http(s) URL outside the window's grants is approved

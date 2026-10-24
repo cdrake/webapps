@@ -21,7 +21,7 @@ choose **Connect an agent**. The status bar at the bottom of the page says when
 it is connected and which tab ID it is.
 
 - **Chrome** asks to allow access to devices on your local network. Allow it.
-- **Firefox** connects without asking.
+- **Firefox** connected without asking in the one test so far, on macOS.
 - **Safari** cannot connect to a local server from an HTTPS page. Use the
   desktop app, Chrome or Firefox.
 
