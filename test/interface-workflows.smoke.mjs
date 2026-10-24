@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { chromium, expect } from '@playwright/test';
 import { loadAppsRegistry, repoRoot } from '../scripts/lib/apps-registry.mjs';
@@ -474,6 +475,63 @@ try {
     await expect(page.locator('#reference')).toHaveValue('0');
     await expect(page.locator('#fileInfo')).toHaveText('Image 1: sub-01_dir-PA_epi.nii · j');
     await expect(page.locator('#outputSection')).not.toHaveAttribute('open', '');
+  });
+  await check('dwicorrect', async page => {
+    await expect(page.locator('#statusText')).toHaveText('Drag and drop files', { timeout: 60000 });
+    await expect(page.locator('#technicalLog')).toHaveClass(/collapsed/);
+    const sidecar = { name: 'sub-01_dir-AP_dwi.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ PhaseEncodingDirection: 'j-', TotalReadoutTime: 0.05 })) };
+    await page.locator('#imageInput').setInputFiles([...dwiSeries('sub-01_dir-AP_dwi'), sidecar]);
+    await expect(page.locator('#fileInfo')).toHaveText('sub-01_dir-AP_dwi.nii');
+    await expect(page.locator('#runButton')).toBeEnabled();
+    // 13 volumes are too few for 3dSHORE, and without a reverse b0 there is no field.
+    await expect(page.locator('#model')).toHaveValue('gp');
+    await expect(page.locator('#fieldSource')).toHaveValue('none');
+    // The sidecar has no multiband factor, so the input section asks; the answer must survive closing it.
+    await page.locator('#multiband').fill('2');
+    const input = page.locator('#inputSection > summary');
+    await input.tap();
+    await expect(page.locator('#multiband')).toBeHidden();
+    await input.tap();
+    await expect(page.locator('#multiband')).toHaveValue('2');
+    const advanced = page.locator('#advancedSettings > summary');
+    await advanced.tap();
+    await page.locator('#iterations').fill('3');
+    await advanced.tap();
+    await expect(page.locator('#iterations')).toBeHidden();
+    await advanced.tap();
+    await expect(page.locator('#iterations')).toHaveValue('3');
+    await expect(page.locator('#outlierType')).toHaveValue('both');
+    const task = page.locator('#taskSection > summary');
+    await task.tap();
+    await expect(page.locator('#iterations')).toBeHidden();
+    await task.tap();
+    await expect(page.locator('#iterations')).toHaveValue('3');
+    await expect(page.locator('#outputSection')).not.toHaveAttribute('open', '');
+  });
+  await check('pipeline-builder', async page => {
+    await expect(page.locator('#statusText')).toContainText('operations from the Neurodesk catalog', { timeout: 60000 });
+    await expect(page.locator('#technicalLog')).toHaveClass(/collapsed/);
+    await page.getByRole('combobox', { name: 'Input', exact: true }).selectOption('t1-segmentation');
+    await expect(page.locator('[data-neurodesk-examples]')).toHaveAttribute('data-example-state', 'ready', { timeout: 60000 });
+    await expect(page.locator('#validationSummary')).toHaveText('Valid · 3 steps.');
+    await page.getByRole('button', { name: 'brain', exact: true }).tap();
+    const parameters = page.locator('#stepEditor details');
+    await parameters.locator('summary').tap();
+    await page.locator('#param-param_threshold').fill('0.3');
+    await page.locator('#param-param_threshold').press('Enter');
+    await expect(parameters).toHaveAttribute('open', '');
+    const step = page.locator('#stepSection > summary');
+    await step.tap();
+    await expect(page.locator('#param-param_threshold')).toBeHidden();
+    await step.tap();
+    await expect(page.locator('#param-param_threshold')).toHaveValue('0.3');
+    const pending = page.waitForEvent('download');
+    await page.locator('#runButton').tap();
+    const download = await pending;
+    expect(download.suggestedFilename()).toBe('t1-segmentation.workflow.json');
+    const template = JSON.parse(await readFile(join(repoRoot, 'apps/pipeline-builder/src/workflows/t1-segmentation.workflow.json'), 'utf8'));
+    template.steps.brain.inputs.param_threshold = { constant: 0.3 };
+    expect(JSON.parse(await readFile(await download.path(), 'utf8'))).toEqual(template);
   });
 } finally { await browser.close(); await site.close(); }
 if (failures.length) throw new Error(failures.join('\n'));
