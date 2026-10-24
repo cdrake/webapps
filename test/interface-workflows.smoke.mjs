@@ -505,6 +505,7 @@ try {
     await expect(page.locator('#maskInfo')).toBeHidden();
     await task.tap();
     await expect(page.locator('#maskInfo')).toHaveText('interface-mask.nii · 4096 voxels');
+    await checkBidsRun(page);
     await expect(page.locator('#runButton')).toBeEnabled();
     await expect(page.locator('#outputSection')).not.toHaveAttribute('open', '');
   });

@@ -22,6 +22,7 @@ import {
 } from "@neurodesk/webapp-components/file-io";
 import { derivativeSidecar, gzipFile, sidecarText } from "@neurodesk/webapp-components/file-io/bids-derivatives";
 import { binaryMask, readBrainMask } from "@neurodesk/webapp-components/file-io/brain-mask";
+import { bidsDiffusionSeries, chooseBidsRun, chosenBidsRun } from "@neurodesk/webapp-components/file-io/bids";
 import { registerAppAutomation } from "@neurodesk/webapp-components/automation";
 import { readDiffusionSeries, runDcm2niix } from "@neurodesk/runtime-support/dcm2niix-client";
 import { brainMask, mindgrab } from "@neurodesk/runtime-support/mindgrab";
@@ -74,6 +75,8 @@ let mask = null;
 let loading = null;
 let running = null;
 let outputs = {};
+// The loaded BIDS folder's files and runs, so another run can be chosen without a new drop.
+let folder = null;
 
 function status(message, error = false) {
   $("statusText").textContent = message;
@@ -105,12 +108,25 @@ function clearOutputs() {
 function setBusy(busy) {
   results.inert = busy;
   $("imageInput").disabled = busy;
+  $("runSelect").disabled = busy;
   $("maskInput").disabled = busy;
   exampleControl?.setDisabled(busy);
   $("runButton").disabled = busy || !input;
 }
 
-async function loadFiles(filesPromise, signal) {
+/** Show the run selector for a BIDS folder with more than one DWI run. A run without its gradient tables is disabled. */
+function showRuns(runs, index) {
+  const option = (run, i) => {
+    const text = run.missing.length ? `${run.label} (no ${run.missing.join(", ")})` : run.label;
+    const item = new Option(text, String(i), false, i === index);
+    item.disabled = run.missing.length > 0;
+    return item;
+  };
+  $("runSelect").replaceChildren(...(runs ?? []).map(option));
+  $("runField").hidden = !runs || runs.length < 2;
+}
+
+async function loadFiles(filesPromise, signal, runIndex = null) {
   if (loading || running) throw new Error("Wait for the current operation to finish, or cancel it.");
   const controller = new AbortController();
   const abort = () => controller.abort();
@@ -123,7 +139,10 @@ async function loadFiles(filesPromise, signal) {
   status("Reading image…");
   try {
     const files = await filesPromise;
-    const series = await readDiffusionSeries(files, { signal: controller.signal, anonymizeSidecar: true });
+    const runs = await bidsDiffusionSeries(files, { require: [] });
+    // A folder loads the run last chosen from the same files (Undo gives them back), else its first complete run.
+    const index = runs ? (runIndex ?? chosenBidsRun(runs)) : 0;
+    const series = runs ? [runs[index]] : await readDiffusionSeries(files, { signal: controller.signal, anonymizeSidecar: true });
     controller.signal.throwIfAborted();
     if (series.length !== 1) throw new Error(`Choose one image; this selection has ${series.length}.`);
     const [{ image, bval, bvec, sidecar }] = series;
@@ -136,6 +155,9 @@ async function loadFiles(filesPromise, signal) {
     await showVolume({ file: image }, { signal: controller.signal });
     controller.signal.throwIfAborted();
     input = { name: image.name, file: image, buffer, ...frames, bval, bvec, sidecar, bvals, reference };
+    if (runs) chooseBidsRun(runs, index);
+    folder = runs ? { files, runs, index } : null;
+    showRuns(runs, index);
     mask = null;
     $("imageInput").dispatchEvent(new CustomEvent("nd-files", { bubbles: true, detail: { files } }));
     $("maskInput").dispatchEvent(new CustomEvent("nd-files", { bubbles: true, detail: { files: [] } }));
@@ -320,6 +342,15 @@ $("maskInput").addEventListener("change", (event) => {
   if (file) void loadMask(file).catch(report);
 });
 bindFileDrop($("dropZone"), importFiles);
+$("runSelect").addEventListener("change", (event) => {
+  if (!folder) return;
+  const loaded = folder.index;
+  exampleControl.cancel();
+  void loadFiles(Promise.resolve(folder.files), undefined, Number(event.target.value)).catch((error) => {
+    event.target.value = String(loaded);
+    report(error);
+  });
+});
 bindFileDrop($("maskDrop"), async (files) => {
   const [file] = await files;
   if (file) await loadMask(file).catch(report);
