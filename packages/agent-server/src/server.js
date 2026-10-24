@@ -142,6 +142,9 @@ function send(res, code, text) {
   res.writeHead(code, { 'content-type': 'text/plain' }).end(text);
 }
 
+// Closed once the answer is sent, as ws closes a handshake it refuses. Otherwise a client that never closes its side
+// keeps the socket, and with it the server, open.
 function refuse(socket, code, reason) {
+  socket.once('finish', socket.destroy);
   socket.end(`HTTP/1.1 ${code} ${reason}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
 }

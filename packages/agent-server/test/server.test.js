@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
 import { request } from 'node:http';
 import { connect } from 'node:net';
 import { after, before, test } from 'node:test';
+import { setTimeout as delay } from 'node:timers/promises';
+import { fileURLToPath } from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import WebSocket from 'ws';
@@ -113,4 +116,35 @@ test('a client that resets a refused socket does not stop the server', { timeout
     [`GET http://[ HTTP/1.1\r\nHost: ${host}\r\n${upgrade}\r\n`, 'HTTP/1.1 404 Not Found'],
   ]) assert.equal(await raw(request, { reset: true }), status);
   assert.equal((await get('/', host)).status, 200);
+});
+
+test('a client that keeps a refused socket half open does not hold up shutdown', { timeout: 10000 }, async () => {
+  const cli = spawn(process.execPath, [fileURLToPath(new URL('../src/cli.js', import.meta.url)), '--port', '0'], { stdio: ['ignore', 'ignore', 'pipe'] });
+  const exited = new Promise(resolve => cli.once('exit', (code, signal) => resolve({ code, signal })));
+  let held;
+  try {
+    let stderr = '';
+    const port = await new Promise((resolve, reject) => {
+      cli.stderr.on('data', chunk => {
+        stderr += chunk;
+        const listening = /on http:\/\/127\.0\.0\.1:(\d+)\/mcp/.exec(stderr);
+        if (listening) resolve(Number(listening[1]));
+      });
+      exited.then(status => reject(new Error(`neurodesk-mcp exited ${JSON.stringify(status)}: ${stderr}`)));
+    });
+    const answer = await new Promise((resolve, reject) => {
+      held = connect({ port, host: '127.0.0.1', allowHalfOpen: true }, () => {
+        held.write(`GET /app HTTP/1.1\r\nHost: 127.0.0.1:${port}\r\nOrigin: https://evil.example\r\n${upgrade}\r\n`);
+      });
+      held.once('data', data => resolve(data.toString().split('\r\n')[0]));
+      held.once('error', reject);
+    });
+    assert.equal(answer, 'HTTP/1.1 403 Forbidden');
+    cli.kill('SIGTERM');
+    const status = await Promise.race([exited, delay(3000, 'still running')]);
+    assert.deepEqual(status, { code: 0, signal: null }, 'neurodesk-mcp exits while the client still holds its side open');
+  } finally {
+    held?.destroy();
+    cli.kill('SIGKILL');
+  }
 });
