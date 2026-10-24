@@ -7,8 +7,6 @@ on:
       - 'packages/dwidenoise/**'
       - 'packages/components/package.json'
       - 'packages/components/src/file-io/**'
-      - 'packages/dwi2trx/package.json'
-      - 'packages/dwi2trx/src/gradients.js'
       - 'apps/dwidenoise/**'
   push:
     branches: [main]
@@ -19,8 +17,6 @@ on:
       - 'packages/dwidenoise/**'
       - 'packages/components/package.json'
       - 'packages/components/src/file-io/**'
-      - 'packages/dwi2trx/package.json'
-      - 'packages/dwi2trx/src/gradients.js'
       - 'apps/dwidenoise/**'
   workflow_dispatch:
     inputs:

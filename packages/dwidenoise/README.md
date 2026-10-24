@@ -41,7 +41,7 @@ It writes the predictions into the `output` array it is given (for example the v
 The web app runs it in Web Workers, the command line in worker threads.
 `@neurodesk/dwidenoise/gzip` (`gzipInWorker`, `gzipWorkerHandler`) compresses the output in a worker that loads no WebAssembly; the web app uses it, and the command line uses Node's zlib.
 `@neurodesk/dwidenoise/pipeline` holds the chunk helpers and the BIDS output names (from the DWI apps' shared `bids-derivatives` module) that both use.
-Both read the .bval with `parseBval` from `@neurodesk/dwi2trx/gradients`.
+Both read the .bval with `parseBval` from `@neurodesk/webapp-components/file-io/gradients`.
 
 ## Command line
 

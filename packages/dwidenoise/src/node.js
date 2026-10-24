@@ -7,7 +7,7 @@ import { availableParallelism } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { Worker } from 'node:worker_threads';
 import { gzipSync } from 'node:zlib';
-import { parseBval } from '@neurodesk/dwi2trx/gradients';
+import { parseBval } from '@neurodesk/webapp-components/file-io/gradients';
 import {
   allocateNifti,
   createNiftiFromData,
