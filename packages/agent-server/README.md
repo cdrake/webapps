@@ -21,7 +21,7 @@ choose **Connect an agent**. The status bar at the bottom of the page says when
 it is connected and which tab ID it is.
 
 - **Chrome** asks to allow access to devices on your local network. Allow it.
-- **Firefox** connects without asking.
+- **Firefox** connected without asking in the one test so far, on macOS.
 - **Safari** cannot connect to a local server from an HTTPS page. Use the
   desktop app, Chrome or Firefox.
 
@@ -38,6 +38,13 @@ refused; the page cannot tell which.
 
 The server listens on `127.0.0.1` only, and `/mcp` refuses requests whose
 `Host` is not this server's, against DNS rebinding.
+
+## What a connected agent receives
+
+A connected page answers the agent's tool calls with screenshots of its
+viewer and details of the loaded images, such as their names, dimensions and
+intensity statistics. The server passes these answers to the agent on your
+computer. An agent that runs on a cloud model sends them to its provider.
 
 ## What an agent can load
 
