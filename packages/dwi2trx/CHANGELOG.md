@@ -1,5 +1,16 @@
 # @neurodesk/dwi2trx
 
+## 0.8.20261024
+
+### Minor Changes
+
+- 25f296e: NODDI names the niimath build in its provenance when it fits the tensor with niimath dtifit, in the app and in the `noddi` command line. `@neurodesk/dwi2trx/niimath-version` gives the version of the pinned niimath build; DWI2TRX and the `dwi2trx` command line now read it from there.
+
+### Patch Changes
+
+- Updated dependencies [328cb77]
+  - @neurodesk/webapp-components@0.20.1
+
 ## 0.7.20261024
 
 ### Minor Changes

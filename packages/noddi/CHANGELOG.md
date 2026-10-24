@@ -6,6 +6,15 @@
 
 - Offer the pinned dmipy nonlinear Watson NODDI fit alongside the unchanged AMICO default in the shared WASM pipeline and command line. Record method and optimizer diagnostics, include source licences, and require independent native/WASM WM-reference gates in CI.
 
+### Patch Changes
+
+- 25f296e: NODDI names the niimath build in its provenance when it fits the tensor with niimath dtifit, in the app and in the `noddi` command line. `@neurodesk/dwi2trx/niimath-version` gives the version of the pinned niimath build; DWI2TRX and the `dwi2trx` command line now read it from there.
+- fa60404: Ignore queued worker messages after fitting is cancelled, and reject nonfinite selected dmipy samples before entering WASM. Preserve masked-out and finite nonpositive reference skipping, AMICO defaults and caller ownership of returned maps.
+- Updated dependencies [328cb77]
+- Updated dependencies [25f296e]
+  - @neurodesk/webapp-components@0.20.1
+  - @neurodesk/dwi2trx@0.8.20261024
+
 ## 0.5.20261024
 
 ### Patch Changes

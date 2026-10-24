@@ -8,6 +8,8 @@
 
 ### Patch Changes
 
+- Updated dependencies [328cb77]
+  - @neurodesk/webapp-components@0.20.1
 - Report a valid workflow in the console after its errors are corrected, while retaining warnings that require a runtime check.
 - Reject imported workflow bindings whose known gradient format is incompatible with the input. Validate the full document before enabling export, so a bvec file cannot feed a bval input or vice versa.
 - Updated dependencies [14a8b29]

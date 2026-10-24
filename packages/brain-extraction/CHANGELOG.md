@@ -8,6 +8,8 @@
 - @neurodesk/synthstrip@0.2.0
 - @neurodesk/synthsr@0.6.20261024
 - @neurodesk/synthstrip@0.2.0
+- @neurodesk/synthsr@0.6.20261024
+- @neurodesk/synthstrip@0.2.0
 - Updated dependencies
 - Updated dependencies [5b5ff35]
   - @neurodesk/synthsr@0.6.20261024

@@ -1,5 +1,11 @@
 # @neurodesk/webapp-components
 
+## 0.20.1
+
+### Patch Changes
+
+- 328cb77: Add a browser workspace and Node command line for GP and trivial diffusion head-motion correction, with pinned CPU brain masking, explicit worker controls, BIDS derivatives and effective-mask provenance. Verify the hosts against actual production-browser reference outputs.
+
 ## 0.20.0
 
 ### Minor Changes

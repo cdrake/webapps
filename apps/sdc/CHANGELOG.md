@@ -4,6 +4,10 @@
 
 ### Patch Changes
 
+- Updated dependencies [328cb77]
+  - @neurodesk/webapp-components@0.20.1
+  - @neurodesk/runtime-support@0.9.13
+  - @neurodesk/sdc@0.2.20261024
 - Document the decision not to offer ANTs reverse-PE correction after its six-subject image-gate failure, without implying single-PE ANTs is available. Keep About content in the canonical registry. Correct fastprep's browser PEPOLAR description and bundled GPL solver license metadata.
   - @neurodesk/sdc@0.2.20261024
 - Updated dependencies
