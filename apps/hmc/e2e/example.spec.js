@@ -2,6 +2,10 @@ import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { fetchPinnedExample } from "../../../test-utils/registration-similarity.mjs";
 import { bidsTree, dropFolder } from "../../../test-utils/bids-folder-drop.mjs";
+import { dicomSeries } from "../../../test-utils/dicom-fixture.mjs";
+import { convertDicom } from "../../../packages/node-drivers/src/dcm2niix.js";
+import createDcm2niix from "../../../packages/runtime-support/src/dcm2niix/dcm2niix.js";
+import { createNiftiFromData, decodeNiftiBuffer, readNiftiFrames } from "@neurodesk/webapp-components/file-io/nifti";
 import { fixture } from "./fixtures.mjs";
 
 const [example] = JSON.parse(await readFile(new URL("../examples.json", import.meta.url), "utf8"));
@@ -105,4 +109,37 @@ test("a failed BIDS run selection restores the previous input, mask and complete
   expect(downloaded.suggestedFilename()).toContain("run-1");
   const metadata = JSON.parse(await readFile(await downloaded.path(), "utf8"));
   expect(metadata.HeadMotionCorrection.Mask.Source).toBe("supplied");
+});
+
+
+test("the mask picker accepts one extensionless DICOM series and rejects independent masks", async ({ page }) => {
+  const dicom = dicomSeries({ extension: "" });
+  const [converted] = await convertDicom(dicom.map(file => ({ name: file.name, bytes: file.buffer })), createDcm2niix);
+  const header = await decodeNiftiBuffer(converted.bytes);
+  const image = readNiftiFrames(header);
+  const frames = new Float32Array(image.data.length * 2).fill(100);
+  const nifti = createNiftiFromData(frames, header, { dims: [...image.dims, 2] });
+  await page.goto("./");
+  await page.locator("#imageInput").setInputFiles([
+    { name: "image.nii", mimeType: "application/octet-stream", buffer: Buffer.from(nifti) },
+    { name: "image.bval", mimeType: "text/plain", buffer: Buffer.from("0 1000") },
+    { name: "image.bvec", mimeType: "text/plain", buffer: Buffer.from("0 1\n0 0\n0 0") },
+  ]);
+  await expect(page.locator("#statusText")).toHaveText("Diffusion image loaded");
+  await page.locator("#advancedSettings > summary").click();
+  const picker = page.locator("#maskInput");
+  await expect(picker).not.toHaveAttribute("accept");
+  await expect(picker).toHaveJSProperty("multiple", true);
+  await picker.setInputFiles(dicom);
+  await expect(page.locator("#statusText")).toHaveText("Brain mask loaded");
+  await expect(page.locator("#clearMask")).toBeVisible();
+  const mask = { name: "mask.nii", mimeType: "application/octet-stream", buffer: Buffer.from(header) };
+  await picker.setInputFiles([mask, { ...mask, name: "other-mask.nii" }]);
+  await expect(page.locator("#statusText")).toHaveText("Choose one NIfTI mask or one DICOM mask series.");
+  await expect(page.locator("#clearMask")).toBeHidden();
+  await picker.setInputFiles([...dicom, ...dicomSeries({ extension: "", series: 2 })]);
+  await expect(page.locator("#statusText")).toHaveText("Choose one NIfTI mask or one DICOM mask series.");
+  await expect(page.locator("#clearMask")).toBeHidden();
+  await picker.setInputFiles(mask);
+  await expect(page.locator("#statusText")).toHaveText("Brain mask loaded");
 });

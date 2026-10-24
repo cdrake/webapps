@@ -7,7 +7,7 @@ import { readBrainMask } from "@neurodesk/webapp-components/file-io/brain-mask";
 import { bidsDiffusionSeries, chooseBidsRun, chosenBidsRun } from "@neurodesk/webapp-components/file-io/bids";
 import { meanVolumes } from "@neurodesk/webapp-components/volume/mean";
 import { imageFiles, registerAppAutomation } from "@neurodesk/webapp-components/automation";
-import { readDiffusionSeries, runDcm2niix } from "@neurodesk/runtime-support/dcm2niix-client";
+import { readDiffusionSeries, readImageFiles, runDcm2niix } from "@neurodesk/runtime-support/dcm2niix-client";
 import { brainMask, mindgrab } from "@neurodesk/runtime-support/mindgrab";
 import { parseBvalBvec } from "@neurodesk/dwi2trx/gradients";
 import { readSeries } from "@neurodesk/hmc";
@@ -38,7 +38,7 @@ let input = null;
 let folder = null;
 let mask = null;
 let active = null;
-const maskField = createFileField({ id: "maskInput", label: "Brain mask (optional)", accept: ".nii,.nii.gz", kind: "image", multiple: false, text: "Drop a brain mask" });
+const maskField = createFileField({ id: "maskInput", label: "Brain mask (optional)", kind: "image", text: "Drop a brain mask" });
 $("maskField").append(maskField);
 const results = createResultList({ element: $("resultList"), onView: (_stage, row) => { void show(row.file).catch(report); }, onDownload: (_stage, row) => downloadFile(row.file) });
 bindInfoTooltips(document);
@@ -192,9 +192,12 @@ $("imageInput").addEventListener("change", event => {
 });
 maskField.onFiles(async files => {
   try {
-    const [file] = await files;
+    const selected = await files;
     if (!input) throw new Error("Load diffusion data before its mask.");
     await operation("Reading brain mask…", undefined, async signal => {
+      const images = await readImageFiles(selected, { signal });
+      if (images.length !== 1) throw new Error("Choose one NIfTI mask or one DICOM mask series.");
+      const [file] = images;
       mask = file ? await readBrainMask(await file.arrayBuffer(), input.buffer, { grid: "DWI", signal }) : null;
       maskField.setText(file?.name ?? "Drop a brain mask");
       maskField.setHasFiles(Boolean(mask));
