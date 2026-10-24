@@ -19,8 +19,9 @@ import {
   decodeNiftiBuffer,
   downloadFile,
   readNiftiFrames,
-  sameNiftiGrid,
 } from "@neurodesk/webapp-components/file-io";
+import { gzipFile } from "@neurodesk/webapp-components/file-io/bids-derivatives";
+import { binaryMask, readBrainMask } from "@neurodesk/webapp-components/file-io/brain-mask";
 import { registerAppAutomation } from "@neurodesk/webapp-components/automation";
 import { readDiffusionSeries, runDcm2niix } from "@neurodesk/runtime-support/dcm2niix-client";
 import { brainMask, mindgrab } from "@neurodesk/runtime-support/mindgrab";
@@ -97,11 +98,6 @@ const showVolume = createNiivueVolumePreview({
   emptyState: $("emptyState"),
 });
 
-async function niftiFile(buffer, name) {
-  const stream = new Blob([buffer]).stream().pipeThrough(new CompressionStream("gzip"));
-  return new File([await new Response(stream).arrayBuffer()], name, { type: "application/gzip" });
-}
-
 function clearOutputs() {
   outputs = {};
   results.render();
@@ -144,7 +140,7 @@ async function loadFiles(filesPromise, signal) {
     const files = await filesPromise;
     const dwi = await readDwi(files, controller.signal);
     controller.signal.throwIfAborted();
-    const b0 = await niftiFile(createNiftiFromData(dwi.meanB0, dwi.buffer, { dims: dwi.dims }), `${bidsStem(dwi.name)}_desc-meanb0.nii.gz`);
+    const b0 = await gzipFile(createNiftiFromData(dwi.meanB0, dwi.buffer, { dims: dwi.dims }), `${bidsStem(dwi.name)}_desc-meanb0.nii.gz`);
     controller.signal.throwIfAborted();
     await showVolume({ file: b0 }, { signal: controller.signal });
     controller.signal.throwIfAborted();
@@ -188,12 +184,7 @@ async function loadMask(file, signal) {
   progress.setCancellable(true);
   status("Reading mask…");
   try {
-    const buffer = await decodeNiftiBuffer(await file.arrayBuffer());
-    controller.signal.throwIfAborted();
-    if (!sameNiftiGrid(buffer, input.buffer)) throw new Error(`${file.name} is not on the DWI grid.`);
-    const volume = readNiftiFrames(buffer);
-    if (volume.frames !== 1) throw new Error("The brain mask must be a single 3D image.");
-    mask = Uint8Array.from(volume.data, (value) => (value > 0 ? 1 : 0));
+    mask = await readBrainMask(await file.arrayBuffer(), input.buffer, { name: file.name, grid: "DWI", signal: controller.signal });
     $("maskInput").dispatchEvent(new CustomEvent("nd-files", { bubbles: true, detail: { files: [file] } }));
     clearOutputs();
     $("maskInfo").hidden = false;
@@ -238,7 +229,7 @@ async function fitModels(signal) {
       status("Extracting the brain from the mean b0 with MindGrab");
       const meanB0 = createNiftiFromData(input.meanB0, input.buffer, { dims: input.dims });
       const extracted = await brainMask(new Uint8Array(meanB0), { assetPath: `${import.meta.env.BASE_URL}mindgrab/`, signal: controller.signal });
-      brain = Uint8Array.from(readNiftiFrames(extracted.mask).data, (value) => (value > 0 ? 1 : 0));
+      brain = binaryMask(readNiftiFrames(extracted.mask).data);
       maskSource = `mindgrab-${mindgrab.version}-${extracted.backend}`;
       log.log(`MindGrab ${mindgrab.version} brain mask on ${extracted.backend}`, "info");
     }
@@ -265,7 +256,7 @@ async function fitModels(signal) {
     const artifacts = [];
     for (const entry of outputEntries(fit, brain, stem)) {
       const nifti = createNiftiFromData(entry.data, input.buffer, { dims: [...dims, entry.frames] });
-      const file = await niftiFile(nifti, entry.name);
+      const file = await gzipFile(nifti, entry.name);
       controller.signal.throwIfAborted();
       const range = entry.frames === 1 ? rangeOf(entry.model, entry.param) : undefined;
       rows[entry.role] = { description: entry.label, file, range, viewable: entry.frames === 1 };
