@@ -2,6 +2,7 @@
 // removal in workers with gradient pass-through, the hosted example and its failure, retry and
 // cancel paths, and the automation operation.
 import { test, expect } from "@playwright/test";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
 import { readNiftiFrames } from "@neurodesk/webapp-components/file-io";
@@ -134,14 +135,22 @@ for (const example of examples) {
     test.setTimeout(180000);
     await page.goto("/");
     await page.locator("select[data-neurodesk-example]").selectOption(example.id);
-    await expect(page.locator("#fileInfo")).toContainText("dwi.nii.gz", { timeout: 120000 });
+    await expect(page.locator("#fileInfo")).toContainText("sub-107_dir-AP_desc-slab_dwi.nii.gz · 120×120×8×101 · bval, bvec", { timeout: 120000 });
     await page.locator("#runButton").click();
-    await expect(page.locator("#statusText")).toContainText("Ringing removed", { timeout: 120000 });
+    await expect(page.locator("#statusText")).toHaveText("Ringing removed from 101 volumes", { timeout: 120000 });
     await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(4);
     const image = await download(page, "Corrected image");
-    expect(image.suggestedFilename()).toBe("dwi_desc-degibbs.nii.gz");
+    expect(image.suggestedFilename()).toBe("sub-107_dir-AP_desc-degibbs_dwi.nii.gz");
     const out = readNiftiFrames(gunzipSync(readFileSync(await image.path())));
-    expect(out.frames).toBe(21);
+    expect(out.dims).toEqual([120, 120, 8]);
+    expect(out.frames).toBe(101);
+    const bval = await download(page, "b-values");
+    expect(bval.suggestedFilename()).toBe("sub-107_dir-AP_desc-degibbs_dwi.bval");
+    const input = example.files.find((file) => file.role === "bval");
+    expect(createHash("sha256").update(readFileSync(await bval.path())).digest("hex")).toBe(input.sha256);
+    const sidecar = await download(page, "Sidecar");
+    expect(sidecar.suggestedFilename()).toBe("sub-107_dir-AP_desc-degibbs_dwi.json");
+    expect(JSON.parse(readFileSync(await sidecar.path(), "utf8"))).toMatchObject({ PhaseEncodingDirection: "j-", PartialFourier: 1 });
   });
 }
 
