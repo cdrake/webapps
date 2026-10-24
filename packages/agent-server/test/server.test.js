@@ -79,26 +79,38 @@ test('the status page and /mcp answer only to this server’s own host names', a
   assert.equal((await get('/mcp', 'rebound.example')).status, 403);
 });
 
-/** Writes `text` to the server as it is and resolves with the status line it answers. */
-function raw(text) {
+/** Writes `text` to the server as it is, resolves with the status line it answers, then closes or resets the connection. */
+function raw(text, { reset = false } = {}) {
   return new Promise((resolve, reject) => {
     const socket = connect(server.port, '127.0.0.1', () => socket.write(text));
     socket.once('data', data => {
       resolve(data.toString().split('\r\n')[0]);
-      socket.destroy();
+      if (reset) socket.resetAndDestroy();
+      else socket.destroy();
     });
     socket.once('error', reject);
   });
 }
 
+const upgrade = 'Connection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n';
+
 test('a malformed request or frame is refused without stopping the server', { timeout: 5000 }, async () => {
   const host = `127.0.0.1:${server.port}`;
   assert.equal(await raw(`GET http://[ HTTP/1.1\r\nHost: ${host}\r\n\r\n`), 'HTTP/1.1 404 Not Found');
-  const upgrade = 'Connection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n';
   assert.equal(await raw(`GET http://[ HTTP/1.1\r\nHost: ${host}\r\n${upgrade}\r\n`), 'HTTP/1.1 404 Not Found');
   const page = await openPage('https://webapps.neurodesk.org');
   const closed = new Promise(resolve => page.once('close', resolve));
   page.send(Buffer.from([0xff, 0xfe]), { binary: false });
   assert.equal(await closed, 1007, 'a text frame that is not UTF-8 closes that socket');
+  assert.equal((await get('/', host)).status, 200);
+});
+
+test('a client that resets a refused socket does not stop the server', { timeout: 5000 }, async () => {
+  const host = `127.0.0.1:${server.port}`;
+  for (const [request, status] of [
+    [`GET /elsewhere HTTP/1.1\r\nHost: ${host}\r\n${upgrade}\r\n`, 'HTTP/1.1 404 Not Found'],
+    [`GET /app HTTP/1.1\r\nHost: ${host}\r\nOrigin: https://evil.example\r\n${upgrade}\r\n`, 'HTTP/1.1 403 Forbidden'],
+    [`GET http://[ HTTP/1.1\r\nHost: ${host}\r\n${upgrade}\r\n`, 'HTTP/1.1 404 Not Found'],
+  ]) assert.equal(await raw(request, { reset: true }), status);
   assert.equal((await get('/', host)).status, 200);
 });
