@@ -58,7 +58,9 @@ test("dmipy browser downloads match the pinned full-slab white-matter reference"
     const differences = selected.map(i => Math.abs(actual.data[i] - reference.data[i])).sort((a, b) => a - b);
     const median = (differences[differences.length / 2 - 1] + differences[differences.length / 2]) / 2;
     expect(median, `${metric} median absolute difference`).toBeLessThan(0.02);
-    comparison[metric] = { median, max: differences.at(-1) };
+    const maximum = differences.at(-1);
+    expect(maximum, `${metric} maximum absolute difference`).toBeLessThan(0.02);
+    comparison[metric] = { median, max: maximum };
   }
   await info.attach("dmipy-wm-comparison", { body: JSON.stringify({ comparison, diagnostics: report.provenance.noddiDiagnostics }, null, 2), contentType: "application/json" });
 });
