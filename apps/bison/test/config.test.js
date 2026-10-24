@@ -10,7 +10,6 @@ import {
   MIN_DEVICE_MEMORY_GB,
   STATUS_MAX_CHARS,
   classifyFraction,
-  heldBaseUrl,
   inputMode,
   labelColormap,
   legendOf,
@@ -102,18 +101,11 @@ test("progress moves through the stages in pipeline order and the classifier fil
 
 test("long messages are cut to one sentence for the status line", () => {
   assert.equal(statusLine("Short."), "Short.");
-  const message = "The BISON model files are not published yet, so this app cannot segment images. Their authors must first allow publication.";
-  assert.equal(statusLine(message), "The BISON model files are not published yet, so this app cannot segment images.");
+  const message = "This device reports 4 GB of memory, and BISON needs 8 GB or more to segment one image. Close other tabs or use another device.";
+  assert.equal(statusLine(message), "This device reports 4 GB of memory, and BISON needs 8 GB or more to segment one image.");
   const long = statusLine("x".repeat(200));
   assert.equal(long.length, STATUS_MAX_CHARS - 1);
   assert.ok(long.endsWith("…"));
-});
-
-test("the held-asset base becomes an absolute directory URL, and none is null", () => {
-  assert.equal(heldBaseUrl(undefined, "http://127.0.0.1:4197"), null);
-  assert.equal(heldBaseUrl("", "http://127.0.0.1:4197"), null);
-  assert.equal(heldBaseUrl("/bison/bison-assets", "http://127.0.0.1:4197"), "http://127.0.0.1:4197/bison/bison-assets/");
-  assert.equal(heldBaseUrl("https://example.org/assets/", "http://127.0.0.1:4197"), "https://example.org/assets/");
 });
 
 test("the Output rows follow the pipeline's file names: labels, one probability per class, mask", () => {

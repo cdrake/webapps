@@ -3,8 +3,7 @@ import { defineConfig } from "@playwright/test";
 import { e2eTier } from "../../test-utils/e2e-tier.mjs";
 
 // Serves the BUILT output so the shared preview headers and the worker and kernel paths are
-// exercised. BISON_ASSET_DIR (a local copy of the held model files) is served by the preview
-// server at /bison/bison-assets/ (vite.config.js) for the full-pipeline test.
+// exercised.
 export default defineConfig({
   ...e2eTier,
   testDir: "./e2e",

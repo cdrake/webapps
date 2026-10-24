@@ -1,24 +1,13 @@
-// BISON's assets: the ICBM 2009c template and mask (published), and the BISON priors, average
-// FLAIR, histogram tables and classifiers (held until the authors allow publication). Every file is
-// checked against the manifest's size and sha256, whatever it is read from. No DOM, no Node imports.
+// BISON's assets: the ICBM 2009c template and mask, and the BISON priors, average FLAIR, histogram
+// tables and classifiers, each at a pinned URL. Every file is checked against the manifest's size
+// and sha256, whatever it is read from. No DOM, no Node imports.
 import manifest from '../model.manifest.json' with { type: 'json' };
 
 export { manifest };
 
-/** The held assets have no URL until they are uploaded; read them from a local directory. */
-export const HELD_PENDING = manifest.held_assets.base_url === 'PENDING';
-
-function entry(asset, held) {
-  let url = asset.url ?? null;
-  if (!url && !held) url = manifest.base_url + asset.filename;
-  if (!url && held && !HELD_PENDING) url = manifest.held_assets.base_url + asset.filename;
-  return Object.freeze({ ...asset, held, url });
-}
-
-export const ASSETS = Object.freeze([
-  ...manifest.assets.map((asset) => entry(asset, false)),
-  ...manifest.held_assets.assets.map((asset) => entry(asset, true)),
-]);
+export const ASSETS = Object.freeze(
+  manifest.assets.map((asset) => Object.freeze({ ...asset, url: asset.url ?? manifest.base_url + asset.filename })),
+);
 
 export const TEMPLATE_T1 = 'templates/mni_icbm152_t1_tal_nlin_sym_09c.nii.gz';
 export const TEMPLATE_MASK = 'templates/mni_icbm152_t1_tal_nlin_sym_09c_mask.nii.gz';
@@ -95,7 +84,6 @@ export async function loadAssets(assets, { read, onProgress = () => {} }) {
 export function fetchReader({ baseUrl = null, fetch = globalThis.fetch } = {}) {
   return async (asset) => {
     const url = baseUrl ? new URL(asset.filename, baseUrl).href : asset.url;
-    if (!url) throw new Error(`${asset.filename} is not published yet (held: ${manifest.held_assets.status}). Use a local BISON asset directory.`);
     const response = await fetch(url);
     if (!response.ok) throw new Error(`Failed to download ${asset.filename}: HTTP ${response.status}`);
     return response.arrayBuffer();

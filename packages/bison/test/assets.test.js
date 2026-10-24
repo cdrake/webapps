@@ -6,7 +6,6 @@ import { join } from 'node:path';
 import {
   ASSETS,
   AV_FLAIR,
-  HELD_PENDING,
   MODE_ASSETS,
   TEMPLATE_MASK,
   TEMPLATE_T1,
@@ -28,7 +27,7 @@ test('the package manifest and models/bison.manifest.json are identical', async 
 });
 
 test('every asset has a size, a sha256 and a unique name', () => {
-  const all = [...manifest.assets, ...manifest.held_assets.assets, ...manifest.examples, ...manifest.validation];
+  const all = [...manifest.assets, ...manifest.examples, ...manifest.validation];
   assert.equal(new Set(all.map((asset) => asset.filename)).size, all.length);
   for (const asset of all) {
     assert.ok(Number.isSafeInteger(asset.bytes) && asset.bytes > 0, asset.filename);
@@ -37,27 +36,21 @@ test('every asset has a size, a sha256 and a unique name', () => {
   }
 });
 
-test('published assets are pinned to a dataset commit', () => {
+test('every asset is pinned to a dataset commit, at its own path', () => {
   assert.match(manifest.base_url, PINNED);
   assert.ok(manifest.base_url.includes(`/resolve/${manifest.revision}/`));
-  for (const asset of ASSETS.filter((candidate) => !candidate.held)) assert.match(asset.url, PINNED, asset.filename);
-});
-
-// Placeholder: the BISON priors, average FLAIR, histograms and classifiers wait on the authors'
-// permission. When they are uploaded, set held_assets.base_url to the pinned folder and remove
-// this test's pending branch.
-test('held assets are marked pending and have no URL', () => {
-  assert.equal(HELD_PENDING, true, 'held assets were published: pin held_assets.base_url and update this test');
-  assert.match(manifest.held_assets.status, /^PENDING/);
-  for (const asset of ASSETS.filter((candidate) => candidate.held)) {
-    assert.equal(asset.url, null, asset.filename);
-    assert.ok(asset.filename.startsWith('models/'), asset.filename);
+  for (const asset of ASSETS) {
+    assert.match(asset.url, PINNED, asset.filename);
+    assert.ok(asset.url.endsWith(`/bison/${asset.filename}`), asset.filename);
   }
+  assert.equal(ASSETS.filter((asset) => asset.filename.startsWith('models/')).length, 24);
 });
 
-test('a pending asset cannot be fetched without a local directory', async () => {
-  const read = fetchReader({ fetch: () => assert.fail('no fetch for a pending asset') });
-  await assert.rejects(read(findAsset(AV_FLAIR)), /not published yet/);
+test('an asset is fetched from its pinned URL', async () => {
+  const urls = [];
+  const read = fetchReader({ fetch: async (url) => (urls.push(url), new Response(new Uint8Array([1, 2]))) });
+  assert.deepEqual([...new Uint8Array(await read(findAsset(AV_FLAIR)))], [1, 2]);
+  assert.deepEqual(urls, [findAsset(AV_FLAIR).url]);
 });
 
 test('each mode lists its classifier, priors and histograms', () => {

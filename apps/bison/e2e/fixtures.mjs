@@ -71,7 +71,7 @@ export async function useFakeWorker(page, result = null) {
         window.bisonWorkers.push(this.record);
       }
       postMessage(message) {
-        this.record.messages.push({ type: message.type, t1Name: message.t1Name, flair: Boolean(message.flair), heldBaseUrl: message.heldBaseUrl });
+        this.record.messages.push({ type: message.type, t1Name: message.t1Name, flair: Boolean(message.flair) });
         const reply = (data) => setTimeout(() => !this.record.terminated && this.onmessage?.({ data }), 50);
         reply({ type: "progress", message: "Registering T1 to the template (affine)", fraction: 0.04 });
         reply({ type: "log", line: "stand-in worker" });

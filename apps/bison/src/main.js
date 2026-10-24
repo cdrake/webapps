@@ -24,7 +24,6 @@ import { registerAppAutomation, runAbortable } from "@neurodesk/webapp-component
 import { MAX_T1_VOXEL_MM } from "@neurodesk/bison";
 import {
   APP,
-  heldBaseUrl,
   inputMode,
   labelColormap,
   legendOf,
@@ -37,11 +36,6 @@ import {
 import examples from "../examples.json";
 
 const $ = (id) => document.getElementById(id);
-
-// The URL of a local copy of the held model files (vite.config.js); null on the deployed site.
-const HELD_BASE_URL = heldBaseUrl(import.meta.env.VITE_BISON_ASSET_BASE, location.origin);
-// The worker refuses a run whose held files have no URL; the status line says so in one sentence.
-const NOT_PUBLISHED = "The BISON model files are not published yet, so this app cannot segment images. Their authors must first allow publication.";
 
 const workspace = mountImagingWorkspace({
   controls: "#controls",
@@ -393,9 +387,7 @@ async function segment(onProgress = () => {}) {
       } else if (data.type === "log") {
         log.log(data.line, "info", "technical");
       } else if (data.type === "error") {
-        const held = data.message.startsWith("The BISON models are not published yet");
-        if (held) log.log(data.message, "info", "technical");
-        end(current, held ? NOT_PUBLISHED : data.message, { success: false, error: true });
+        end(current, data.message, { success: false, error: true });
       } else if (data.type === "result") {
         finish(current, data, t1.file.name);
       }
@@ -405,7 +397,7 @@ async function segment(onProgress = () => {}) {
       end(current, event.message || "The BISON worker failed. Reload the page and try again.", { success: false, error: true });
     };
     const transfer = [t1Bytes.buffer, ...(flairBytes ? [flairBytes.buffer] : [])];
-    current.worker.postMessage({ type: "run", t1: t1Bytes, flair: flairBytes, t1Name: t1.file.name, heldBaseUrl: HELD_BASE_URL }, transfer);
+    current.worker.postMessage({ type: "run", t1: t1Bytes, flair: flairBytes, t1Name: t1.file.name }, transfer);
   } catch (error) {
     end(current, error.message, { success: false, error: true });
   }

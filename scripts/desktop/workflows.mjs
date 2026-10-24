@@ -107,13 +107,15 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     await expect(page.locator('[data-neurodesk-examples]')).toHaveAttribute('data-example-state', 'ready', { timeout: 120000 });
   }
   if (id === 'bison') {
-    // The BISON models are held until their authors allow publication, so the offline bundle
-    // cannot classify. Check that the example T1 loads offline and that Run refuses clearly.
+    // A whole run takes 15 to 20 minutes. The registration starts only after every model file
+    // has come from the offline bundle and passed its checksum, so stop the run there.
     await expect(page.locator('#fileInfo')).toContainText('sub-HML0541_ses-01_rec-defaced_T1w.nii.gz', { timeout: 120000 });
     await expect(page.locator('#runButton')).toBeEnabled({ timeout: 60000 });
     await page.locator('#runButton').click();
-    await expect(page.locator('#statusText')).toHaveText('The BISON model files are not published yet, so this app cannot segment images.', { timeout: 120000 });
-    return { refused: 'held model files' };
+    await expect(page.locator('#statusText')).toHaveText(/^Registering T1 to the template \(affine\)/, { timeout: 300000 });
+    await page.locator('#cancelButton').click();
+    await expect(page.locator('#statusText')).toHaveText('Segmentation cancelled');
+    return { modelsVerified: true };
   }
   if (id === 'dcm2niix') {
     await expect(page.locator('#seriesRows tr')).toHaveCount(1, { timeout: 120000 });

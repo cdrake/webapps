@@ -1,7 +1,7 @@
 // The BISON worker: downloads and checks the model files, then runs runBison with the browser
 // drivers. antsRegistration and DenoiseImage start nested module workers from the kernels that
 // scripts/copy-runtime.mjs stages in public/bison-runtime/; terminating this worker ends them too.
-//   in:  { type: 'run', t1, flair, t1Name, heldBaseUrl }
+//   in:  { type: 'run', t1, flair, t1Name }
 //   out: { type: 'progress', message, fraction } | { type: 'log', line }
 //        | { type: 'result', mode, files, volumes, timings, memory } | { type: 'error', message }
 import ortWasmUrl from "onnxruntime-web/ort-wasm-simd-threaded.wasm?url";
@@ -27,12 +27,11 @@ function progress(message, fraction) {
   post({ type: "progress", message, fraction: reached });
 }
 
-async function run({ t1, flair, t1Name, heldBaseUrl }) {
+async function run({ t1, flair, t1Name }) {
   const mode = modeFor({ t1, flair });
   log(`Mode: ${mode === "t1-flair" ? "BISON-WMH (T1 + FLAIR)" : "BISON (T1)"}`);
   const assets = await loadBrowserAssets({
     modes: [mode],
-    heldBaseUrl,
     onProgress: (message, fraction) => progress(message || "Downloading the BISON model files", DOWNLOAD_SHARE * fraction),
   });
   const drivers = createBrowserDrivers({ runtime: RUNTIME, onLog: log });

@@ -27,7 +27,7 @@ test("a BISON-WMH run fills Output with the labels, 9 probability maps, the mask
   await page.locator("#runButton").click();
   await expect(page.locator("#statusText")).toHaveText("Segmentation complete · 9 classes with WMH");
   const sent = await page.evaluate(() => window.bisonWorkers[0].messages[0]);
-  expect(sent).toEqual({ type: "run", t1Name: T1.name, flair: true, heldBaseUrl: null });
+  expect(sent).toEqual({ type: "run", t1Name: T1.name, flair: true });
   await expect(page.locator("#outputSection")).toHaveJSProperty("open", true);
   const rows = page.locator("#resultList .nd-stage-label");
   await expect(rows).toHaveCount(2 + 1 + 9 + 1);

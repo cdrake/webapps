@@ -6,8 +6,8 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { runNiimath as runNodeNiimath } from '@neurodesk/node-drivers/niimath';
 import createNiimath from '@niivue/niimath/niimath.js';
-import { ASSETS, HELD_PENDING, assetsFor, loadAssets, manifest } from '../src/assets.js';
-import { MAX_ORT_THREADS, assetUrl, configureOrt, createBrowserDrivers, denoiseError, loadBrowserAssets, registrationError, runNiimath } from '../src/browser.js';
+import { ASSETS, assetsFor, manifest } from '../src/assets.js';
+import { MAX_ORT_THREADS, configureOrt, createBrowserDrivers, denoiseError, loadBrowserAssets, registrationError, runNiimath } from '../src/browser.js';
 import { n4Arguments, registrationSession } from '../src/preprocess.js';
 
 const RUNTIME = Object.freeze({
@@ -224,53 +224,29 @@ function fakeFetch(files) {
   return { urls, fetch };
 }
 
-test('held assets without a base URL are refused before any download', { skip: !HELD_PENDING && 'the held assets are published' }, async () => {
-  const { urls, fetch } = fakeFetch(() => new Uint8Array(1));
-  await assert.rejects(loadBrowserAssets({ modes: ['t1'], fetch, cache: null }), (error) => {
-    assert.match(error.message, /not published yet/);
-    assert.match(error.message, /models\/bison-t1\.onnx/);
-    assert.doesNotMatch(error.message, /templates\//);
-    return true;
-  });
-  assert.deepEqual(urls, []);
-});
-
-test('published assets use their pinned URL and held assets the base URL', async () => {
+test('assets download from their pinned URLs and a checksum mismatch is refused', async () => {
   const { urls, fetch } = fakeFetch((url) => {
     const asset = ASSETS.find((candidate) => url.endsWith(candidate.filename));
     return asset ? new Uint8Array(asset.bytes) : null;
   });
-  await assert.rejects(loadBrowserAssets({ modes: ['t1'], heldBaseUrl: 'https://assets.test/bison', fetch, cache: null }), /^Error: templates\/COPYING: Model SHA-256 mismatch/);
+  await assert.rejects(loadBrowserAssets({ modes: ['t1'], fetch, cache: null }), /^Error: templates\/COPYING: Model SHA-256 mismatch/);
   assert.deepEqual(urls, [assetsFor(['t1'])[0].url]);
   assert.ok(urls[0].startsWith(manifest.base_url));
-
-  const held = assetsFor(['t1']).find((asset) => asset.held);
-  const { urls: heldUrls, fetch: heldFetch } = fakeFetch((url) => (url.includes('assets.test') ? new Uint8Array(held.bytes + 1) : null));
-  assert.equal(assetUrl(held, 'https://assets.test/bison/'), `https://assets.test/bison/${held.filename}`);
-  await assert.rejects(
-    loadAssets([held], { read: async (asset) => (await heldFetch(assetUrl(asset, 'https://assets.test/bison/'))).arrayBuffer() }),
-    /has \d+ bytes, not \d+/,
-  );
-  assert.deepEqual(heldUrls, [`https://assets.test/bison/${held.filename}`]);
 });
 
 test('a size mismatch is refused, and an abort stops the download', async () => {
   const { fetch } = fakeFetch((url) => (url.endsWith('COPYING') ? new Uint8Array(3) : new Uint8Array(1)));
-  await assert.rejects(loadBrowserAssets({ modes: ['t1'], heldBaseUrl: 'https://assets.test/', fetch, cache: null }), /size mismatch/);
+  await assert.rejects(loadBrowserAssets({ modes: ['t1'], fetch, cache: null }), /size mismatch/);
   const controller = new AbortController();
   controller.abort();
-  await assert.rejects(loadBrowserAssets({ modes: ['t1'], heldBaseUrl: 'https://assets.test/', fetch, cache: null, signal: controller.signal }), { name: 'AbortError' });
+  await assert.rejects(loadBrowserAssets({ modes: ['t1'], fetch, cache: null, signal: controller.signal }), { name: 'AbortError' });
 });
 
 test('the local asset directory loads and verifies through the browser loader', { skip: !process.env.BISON_ASSET_DIR && 'set BISON_ASSET_DIR' }, async () => {
   const dir = process.env.BISON_ASSET_DIR;
-  const base = 'https://assets.test/bison/';
-  const fetch = async (url) => {
-    const name = String(url).startsWith(base) ? String(url).slice(base.length) : ASSETS.find((asset) => asset.url === String(url))?.filename;
-    return new Response(await readFile(join(dir, name)));
-  };
+  const fetch = async (url) => new Response(await readFile(join(dir, ASSETS.find((asset) => asset.url === String(url)).filename)));
   const progress = [];
-  const assets = await loadBrowserAssets({ modes: ['t1-flair'], heldBaseUrl: base, fetch, cache: null, onProgress: (message, fraction) => progress.push([message, fraction]) });
+  const assets = await loadBrowserAssets({ modes: ['t1-flair'], fetch, cache: null, onProgress: (message, fraction) => progress.push([message, fraction]) });
   assert.deepEqual([...assets.keys()], assetsFor(['t1-flair']).map((asset) => asset.filename));
   assert.equal(progress[0][1], 0);
   assert.ok(progress.every(([, fraction], i) => fraction >= (progress[i - 1]?.[1] ?? 0) && fraction <= 1));

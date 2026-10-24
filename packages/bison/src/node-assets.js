@@ -1,6 +1,5 @@
 // BISON assets in Node: from a local directory laid out as the dataset's bison/ folder
-// (`BISON_ASSET_DIR`, needed while the held assets are unpublished), or downloaded once into a
-// cache. Every file is verified against the manifest, the local directory's included.
+// (`BISON_ASSET_DIR`), or downloaded once into a cache. Every file is verified against the manifest, the local directory's included.
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';

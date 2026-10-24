@@ -29,8 +29,8 @@ The command line writes the same files as the web app:
 
 A run takes about 15 to 20 minutes and 3 GB of memory on 8 cores.
 
-The trained classifiers, priors, histograms and average FLAIR are held until the BISON authors
-allow their publication. Until then, give a local copy with `--asset-dir DIR` or `BISON_ASSET_DIR`.
+The model files download once from their pinned URLs into a cache (`bison download-models`). To
+read a local copy instead, give `--asset-dir DIR` or `BISON_ASSET_DIR`.
 `validation/cli-check.mjs` holds the command line to the web app's files, which a browser recorded
 in `validation/browser-reference.json`:
 - the labels and the mask must be byte for byte the same;
@@ -39,10 +39,10 @@ in `validation/browser-reference.json`:
 The probability maps are not byte for byte the same: ONNX Runtime Web and ONNX Runtime for Node add
 the forest's votes in a different order, so a voxel can differ by up to 4.2e-7. On both examples the
 means agree within 8e-10, and the labels and mask are identical. Rerecord the reference with
-`apps/bison/e2e/pipeline.spec.js` (`BISON_BROWSER_OUTPUT=DIR`, `@slow`), then
+`apps/bison/e2e/pipeline.spec.js` (`BISON_BROWSER_OUTPUT=DIR`), then
 `node validation/browser-reference.mjs --from DIR`.
 
-There is no release archive yet. `release.json` comes after the model files are published.
+There is no release archive yet.
 
 ## Validation
 

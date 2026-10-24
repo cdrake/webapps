@@ -1912,7 +1912,7 @@ apps:
     about:
       - "BISON classifies brain tissue into 8 classes from a T1-weighted image: ventricles, CSF, cerebellar grey and white matter, brainstem, deep grey matter, cortical grey matter and white matter. With a FLAIR image as well, BISON-WMH adds a ninth class, white matter hyperintensities. A random forest classifies each voxel from its intensities after denoising, N4 bias correction and registration to the ICBM 2009c template, and from template tissue priors. The labels, one probability map per class and the mask are on the grid of your T1; the class volumes are given in millilitres."
       - "Everything runs in your browser on the CPU. A run takes several minutes; the nonlinear registration is the slowest step."
-      - "The trained classifiers, tissue priors and intensity histograms are not published yet. They become available when the BISON authors allow their publication; until then the app cannot classify."
+      - "The first run downloads the template, the trained classifier, tissue priors and intensity histograms: 41 MB for a T1, 48 MB with a FLAIR. They are published with the permission of the BISON authors, and your browser keeps them for later runs."
       - "Outputs are research estimates, not a diagnosis. Check them against the image."
     packages:
       - { name: "@neurodesk/bison", url: https://github.com/neurodesk/webapps/tree/main/packages/bison, role: BISON preprocessing, features and outputs, shared by the browser worker and the command line }

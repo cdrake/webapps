@@ -110,14 +110,6 @@ export function statusLine(message, limit = STATUS_MAX_CHARS) {
   return first && first.length <= limit ? first : `${message.slice(0, limit - 2).trimEnd()}…`;
 }
 
-/** The held-asset base URL from the build's VITE_BISON_ASSET_BASE, absolute; null when unset. */
-export function heldBaseUrl(value, origin) {
-  if (!value) return null;
-  const url = new URL(value, origin);
-  if (!url.pathname.endsWith("/")) url.pathname += "/";
-  return url.href;
-}
-
 const OUTPUT = /_bison-(labels|mask|prob-([a-z-]+))\.nii\.gz$/;
 
 /**

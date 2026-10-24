@@ -22,7 +22,7 @@ import createBundledNiimath from '@niivue/niimath/niimath.js';
 import * as ort from 'onnxruntime-web/wasm';
 import { getOptimalWasmThreads } from '@neurodesk/webapp-components/worker';
 
-export { assetUrl, heldAssetError, loadBrowserAssets } from './browser-assets.js';
+export { loadBrowserAssets } from './browser-assets.js';
 
 // ONNX Runtime Web gains little from more threads on the forest; it uses at most 4.
 export const MAX_ORT_THREADS = 4;

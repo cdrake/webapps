@@ -376,7 +376,7 @@ The production workspace passed desktop and phone interface audits, mobile
 navigation and disclosure checks. Desktop and phone screenshots were reviewed.
 The shared layout, console and status bar need no app-specific styling.
 
-Publication remains blocked: required BISON model files are unpublished, so the
-public examples cannot complete processing and downloads. Both complete model
-tests remain untagged and data-gated until authorized, pinned assets and CI
-provisioning are available. Keep the app unmerged until those workflows pass.
+The BISON model files are published at a pinned dataset revision, with the
+permission of the BISON authors (2026-10-24). Both complete model tests are
+untagged and need no data gate, so they run in the PR suite, and the examples
+complete processing and downloads.

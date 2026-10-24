@@ -1,9 +1,8 @@
 // The whole BISON pipeline in the browser on both examples: registration, denoising, N4 and the
-// forest, with the held model files served from BISON_ASSET_DIR (vite.config.js). With
-// BISON_BROWSER_OUTPUT set, each output is also written to <it>/<example id>/, which
-// packages/bison/validation/browser-reference.mjs records for the command line's check.
-// These are the only completed runs of each model, so both remain in the PR suite. The held
-// files are not public, so CI cannot run them until publication.
+// forest, with the model files from their pinned URLs. With BISON_BROWSER_OUTPUT set, each output
+// is also written to <it>/<example id>/, which packages/bison/validation/browser-reference.mjs
+// records for the command line's check. These are the only completed runs of each model, so both
+// remain in the PR suite.
 import { test, expect } from "@playwright/test";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -49,6 +48,10 @@ async function checkDownloads(page, example, slugs) {
 }
 
 async function runExample(page, example, status) {
+  // A run peaks near 3 GB, but some hosted runners make Chromium report 4 GB, which the app refuses.
+  await page.addInitScript(() => {
+    Object.defineProperty(Navigator.prototype, "deviceMemory", { configurable: true, get: () => 8 });
+  });
   await page.goto("./");
   await page.getByLabel("Input", { exact: true }).selectOption(example.id);
   await expect(page.locator("[data-neurodesk-examples]")).toHaveAttribute("data-example-state", "ready", { timeout: 300000 });
@@ -59,7 +62,6 @@ async function runExample(page, example, status) {
 }
 
 test("the T1 example segments into 8 classes on the T1 grid, and a second run cancels", async ({ page }) => {
-  test.skip(!process.env.BISON_ASSET_DIR, "BISON_ASSET_DIR is not set; the BISON model files are not published");
   test.setTimeout(RUN_TIMEOUT);
   await runExample(page, examples[0], "Segmentation complete · 8 classes");
   await expect(page.locator("#classLegend .nd-legend-item")).toHaveCount(8);
@@ -75,7 +77,6 @@ test("the T1 example segments into 8 classes on the T1 grid, and a second run ca
 });
 
 test("the T1 + FLAIR example segments into 9 classes, with white matter hyperintensities", async ({ page }) => {
-  test.skip(!process.env.BISON_ASSET_DIR, "BISON_ASSET_DIR is not set; the BISON model files are not published");
   test.setTimeout(RUN_TIMEOUT);
   await runExample(page, examples[1], "Segmentation complete · 9 classes with WMH");
   await expect(page.locator("#classLegend .nd-legend-item")).toHaveCount(9);

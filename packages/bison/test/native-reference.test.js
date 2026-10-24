@@ -1,5 +1,5 @@
 // Parity with the native MINC reference (validation/native): run_native.sh's ref-masked tree for one
-// subject, and the held BISON assets. BISON_NATIVE_REFERENCE is the ref-masked directory,
+// subject, and the BISON assets. BISON_NATIVE_REFERENCE is the ref-masked directory,
 // BISON_ASSET_DIR the directory that holds models/. The inputs are the export's NIfTI checkpoints
 // (T1_VP, FLAIR_CR, the warped priors and average images on the native T1 grid), so features,
 // classifier and writer are checked apart from preprocessing.

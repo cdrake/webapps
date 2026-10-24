@@ -1,6 +1,5 @@
 // The workspace, the examples and the refusals, against the built app (vite preview). The real
-// BISON worker starts here; it refuses before any download, because the held model files have no
-// URL in this build.
+// BISON worker starts here; the model downloads are refused, so no test runs the pipeline.
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { gunzipSync } from "node:zlib";
@@ -9,8 +8,6 @@ import { dicomSeries } from "../../../test-utils/dicom-fixture.mjs";
 import { T1, downloaded } from "./fixtures.mjs";
 
 const examples = JSON.parse(await readFile(new URL("../examples.json", import.meta.url), "utf8"));
-const held = Boolean(process.env.BISON_ASSET_DIR);
-const NOT_PUBLISHED = "The BISON model files are not published yet, so this app cannot segment images.";
 
 // Hosted runners have 7 GB, so their Chromium reports 4 GB; the refusal tests choose the value.
 const reportMemory = (page, gigabytes) => page.addInitScript((value) => {
@@ -136,28 +133,26 @@ test("Run refuses on a device that reports less memory than BISON needs", async 
   await expect(page.locator("#runButton")).toBeEnabled();
 });
 
-test("Run says the held model files are not published, before any download", async ({ page }) => {
-  test.skip(held, "BISON_ASSET_DIR serves the held files to this build");
+// The model files come from the dataset; a refused download ends the run, and Run tries again.
+const refuseModels = (page) => page.route(/huggingface\.co\/.*\/bison\/(templates|models)\//, (route) => route.fulfill({ status: 503 }));
+
+test("a failed model download ends the run with the file's name, and Run tries again", async ({ page }) => {
   await reportMemory(page, 8);
-  const downloads = [];
-  page.on("request", (request) => {
-    if (/huggingface\.co\/.*\/bison\/(templates|models)\//.test(request.url())) downloads.push(request.url());
-  });
+  await refuseModels(page);
   await page.goto("./");
   await page.locator("#imageInput").setInputFiles(T1);
   await page.locator("#runButton").click();
-  await expect(page.locator("#statusText")).toHaveText(NOT_PUBLISHED, { timeout: 60000 });
+  await expect(page.locator("#statusText")).toHaveText(/^templates\/COPYING.* did not download/, { timeout: 60000 });
   await expect(page.locator("#statusText")).toHaveClass(/error/);
   await expect(page.locator("#cancelButton")).toBeHidden();
   await expect(page.locator("#runButton")).toBeEnabled();
-  await page.locator("#technicalLog").getByRole("tab", { name: "Technical" }).click();
-  await expect(page.locator("#technicalLog")).toContainText("Give the URL of a local BISON asset directory");
-  expect(downloads).toEqual([]);
+  await page.locator("#runButton").click();
+  await expect(page.locator("#statusText")).toHaveText(/^templates\/COPYING.* did not download/, { timeout: 60000 });
 });
 
-test("automation reports the held model files as a failed run", async ({ page }) => {
-  test.skip(held, "BISON_ASSET_DIR serves the held files to this build");
+test("automation reports a failed model download as a failed run", async ({ page }) => {
   await reportMemory(page, 8);
+  await refuseModels(page);
   await page.goto("./");
   await page.locator("#neurodesk-input-transfer").setInputFiles(T1);
   await page.evaluate(async () => {
@@ -166,5 +161,5 @@ test("automation reports the held model files as a failed run", async ({ page })
   });
   await expect.poll(() => page.evaluate(async () => (await globalThis.neurodeskAutomation.dispatch("snapshot")).state), { timeout: 60000 }).toBe("failed");
   const snapshot = await page.evaluate(() => globalThis.neurodeskAutomation.dispatch("snapshot"));
-  expect(snapshot.error.message).toMatch(/not published yet/);
+  expect(snapshot.error.message).toMatch(/did not download/);
 });

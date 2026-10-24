@@ -7,8 +7,7 @@
 //
 //   node validation/cli-check.mjs [--executable PATH] [--asset-dir DIR]
 //
-// The model files are held until the BISON authors allow publication, so give --asset-dir (or
-// BISON_ASSET_DIR) until then.
+// Without --asset-dir (or BISON_ASSET_DIR), the command line downloads the model files once.
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
