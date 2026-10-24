@@ -17,7 +17,10 @@ fn cases(text: &str) -> Vec<(Vec<f64>, Vec<usize>)> {
                 .split_whitespace()
                 .map(|v| v.parse().unwrap())
                 .collect();
-            let b0 = b0.split_whitespace().map(|v| v.parse().unwrap()).collect();
+            let b0 = match b0 {
+                "none" => Vec::new(),
+                b0 => b0.split_whitespace().map(|v| v.parse().unwrap()).collect(),
+            };
             (bvals, b0)
         })
         .collect()

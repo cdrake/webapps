@@ -9,7 +9,7 @@ const b0Cases = (text) =>
   text
     .split('\n')
     .filter((line) => line.trim() && !line.startsWith('#'))
-    .map((line) => line.split('\t').map((field) => field.split(/\s+/).filter(Boolean).map(Number)));
+    .map((line) => line.split('\t').map((field) => (field === 'none' ? [] : field.split(/\s+/).filter(Boolean).map(Number))));
 
 test('b-values must be finite, non-negative and, with a volume count, one per volume', () => {
   assert.deepEqual(parseBval('0 1000\t1000\n2000\n', 4), [0, 1000, 1000, 2000]);
