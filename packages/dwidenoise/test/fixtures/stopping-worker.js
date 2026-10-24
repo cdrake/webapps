@@ -12,7 +12,7 @@ const handle = denoiseWorkerHandler(
   },
 );
 
-parentPort.on('message', (message) => {
+parentPort.once('message', (message) => {
   if (workerData === 'exit-on-message') process.exit(3);
   handle(message);
 });
