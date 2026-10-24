@@ -1,6 +1,6 @@
 {
   "name": "@neurodesk/webapp-components",
-  "version": "0.20.1",
+  "version": "0.21.1",
   "description": "Framework-free ESM components for static Neurodesk neuroimaging webapps.",
   "type": "module",
   "types": "./src/index.d.ts",
@@ -135,6 +135,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@niivue/nv-mcp": "1.0.0-rc.7",
     "@playwright/test": "1.64.0",
     "jsdom": "24.1.3"
   }

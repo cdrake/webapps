@@ -8,6 +8,10 @@
 
 ### Patch Changes
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.21.1
+  - @neurodesk/dwidenoise@0.4.20261024
+  - @neurodesk/runtime-support@0.9.14
 - Updated dependencies [da92d32]
 - Updated dependencies [328cb77]
   - @neurodesk/dwidenoise@0.4.20261024
@@ -19,6 +23,7 @@
 ### Minor Changes
 
 - b3889f9: Accept a BIDS folder. A dropped folder gives each DWI run with its bval, bvec and inherited JSON sidecar. When the folder has more than one run, choose the run in the input section. The sidecar goes through to the outputs, as it does for NIfTI input.
+- da92d32: Add the `dwidenoise` command line. It runs the web app's Patch2Self (the same `dwidenoise.wasm`, DIPY 1.12.1 version 1 port) on a NIfTI series and writes the app's four downloads. The worker pool (the three passes with one solve per volume), the worker handler, the gzip worker and the output names move to `@neurodesk/dwidenoise` (`./pool`, `./worker`, `./gzip`, `./pipeline`), so the app's Web Workers and the command line's worker threads run the same messages, and the output is the same for any number of threads. Like the app, the command line writes the result straight into the output NIfTI and takes `cal_max` from the workers, and it reads the .bval with the shared `parseBval`. Its release check holds every output to the downloads that the production app records.
 
 ### Patch Changes
 
@@ -30,10 +35,16 @@
 
   `@neurodesk/webapp-components/file-io` adds `allocateNifti`, the file `createNiftiFromData` writes with a typed view of its voxels to fill in place, so a page that writes a large image holds one copy of it. Its declaration types `ArrayType` as a view constructor (`NiftiViewConstructor`), as the function calls it.
 
-- Updated dependencies [14a8b29]
+- Updated dependencies [941884c]
 - Updated dependencies [a028e96]
 - Updated dependencies [650ce5f]
+- Updated dependencies [da92d32]
 - Updated dependencies [343c256]
+- Updated dependencies [941884c]
+  - @neurodesk/webapp-components@0.21.0
+  - @neurodesk/dwidenoise@0.3.20261024
+  - @neurodesk/runtime-support@0.9.11
+- Updated dependencies [14a8b29]
 - Updated dependencies [941884c]
   - @neurodesk/webapp-components@0.20.0
   - @neurodesk/dwi2trx@0.7.20261024
@@ -44,6 +55,16 @@
 
 ### Patch Changes
 
+- Updated dependencies [3a7e5bb]
+- Updated dependencies [72cbb8d]
+  - @neurodesk/webapp-components@0.20.0
+  - @neurodesk/dwi2trx@0.6.20261024
+  - @neurodesk/runtime-support@0.9.10
+  - @neurodesk/dwidenoise@0.2.20261024
+- Updated dependencies [3fc9cf2]
+  - @neurodesk/webapp-components@0.19.1
+  - @neurodesk/runtime-support@0.9.9
+  - @neurodesk/dwidenoise@0.2.20261024
 - Updated dependencies
   - @neurodesk/webapp-components@0.19.3
   - @neurodesk/runtime-support@0.9.11
@@ -52,10 +73,6 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.19.2
   - @neurodesk/runtime-support@0.9.10
-  - @neurodesk/dwidenoise@0.2.20261024
-- Updated dependencies [3fc9cf2]
-  - @neurodesk/webapp-components@0.19.1
-  - @neurodesk/runtime-support@0.9.9
   - @neurodesk/dwidenoise@0.2.20261024
 
 ## 0.2.20261022
@@ -114,20 +131,12 @@
   - @neurodesk/runtime-support@0.9.5
   - @neurodesk/webapp-components@0.17.1
   - @neurodesk/dwidenoise@0.2.20261020
-- Updated dependencies [14db080]
-
 - Updated dependencies [4b40da1]
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.17.2
   - @neurodesk/runtime-support@0.9.6
   - @neurodesk/dwidenoise@0.2.20261020
-- Updated dependencies
-  - @neurodesk/runtime-support@0.9.5
-  - @neurodesk/webapp-components@0.17.1
-  - @neurodesk/dwidenoise@0.2.20261020
-- Updated dependencies [14db080]
-
 - Updated dependencies [d1fa022]
 
   - @neurodesk/webapp-components@0.16.3
@@ -180,12 +189,6 @@
 
 - Updated dependencies [c288832]
 
-  - @neurodesk/dwidenoise@0.2.20261018
-
-- Updated dependencies [7c0d201]
-
-  - @neurodesk/webapp-components@0.16.2
-  - @neurodesk/runtime-support@0.9.1
   - @neurodesk/dwidenoise@0.2.20261018
 
 - Updated dependencies [c288832]

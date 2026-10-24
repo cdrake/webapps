@@ -8,6 +8,9 @@
 
 ### Patch Changes
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.21.1
+  - @neurodesk/dwi2trx@0.8.20261024
 - 14d97d8: Reject registration tasks cancelled while their inputs are prepared, without posting to terminated workers or leaving the caller waiting. Preserve benchmark trial receipts and support validated resume with matching runtime sources, inputs, settings and machine identity.
 - Updated dependencies [328cb77]
 - Updated dependencies [25f296e]
@@ -47,10 +50,27 @@
 
 - Add the NiFreeze trivial and GP estimator loops using the existing Rust model, mask, median and registration-argument ports. Preserve in-place clipping and explicit visit order, prepare targets lazily, and add a pinned full-reference Node validation harness that retains the required Q53 gate.
 
+## 0.2.3
+
+### Patch Changes
+
+- a028e96: Add `@neurodesk/webapp-components/file-io/bids-derivatives`: one module for the BIDS-derivative names (`splitName`, `sourceStem`, `outputNames(fileName, desc)`, `maskName`), the derivative sidecar (`derivativeSidecar(sidecar, description)`, `sidecarText`) and `gzipFile` of the DWI apps. degibbs, dwidenoise, n4, noddi and hmc use it in place of their own copies. Every output name and every file byte stays the same.
+- Updated dependencies [941884c]
+- Updated dependencies [a028e96]
+- Updated dependencies [650ce5f]
+- Updated dependencies [343c256]
+- Updated dependencies [e2476e7]
+- Updated dependencies [941884c]
+  - @neurodesk/webapp-components@0.21.0
+  - @neurodesk/hmc-registration@0.2.1
+
 ## 0.2.2
 
 ### Patch Changes
 
+- Updated dependencies [3a7e5bb]
+- Updated dependencies [72cbb8d]
+  - @neurodesk/webapp-components@0.20.0
 - Updated dependencies
   - @neurodesk/webapp-components@0.19.2
 

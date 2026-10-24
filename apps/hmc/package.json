@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node scripts/copy-runtime.mjs && vite",
-    "build": "node scripts/copy-runtime.mjs && vite build && node ../../scripts/theme-app-dist.mjs --app hmc",
+    "dev": "node scripts/clean-runtime.mjs && vite",
+    "build": "node scripts/clean-runtime.mjs && vite build && node ../../scripts/theme-app-dist.mjs --app hmc",
     "preview": "vite preview",
     "test": "node --test test/*.test.js",
     "test:e2e": "playwright test",

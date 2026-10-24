@@ -102,6 +102,8 @@ export const provisioners = {
   dwidenoise: { env: ['DWIDENOISE_BROWSER_REFERENCE'], provision: async () => ({ DWIDENOISE_BROWSER_REFERENCE: 'check' }) },
   // The browser reference runs the app's 14 commands on both examples, about 3 min.
   niimath: { env: ['NIIMATH_BROWSER_REFERENCE'], provision: async () => ({ NIIMATH_BROWSER_REFERENCE: 'check' }) },
+  // The browser reference runs the app's three examples, each after the command line's CPU MindGrab, about 4 min.
+  n4: { env: ['N4_BROWSER_REFERENCE'], provision: async () => ({ N4_BROWSER_REFERENCE: 'check' }) },
   // The browser reference runs MindGrab on the CPU once and fits the example and the phantom, about 1 min.
   noddi: {
     env: ['NODDI_BROWSER_REFERENCE', 'NODDI_DMIPY_REFERENCE'],

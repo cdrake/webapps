@@ -177,8 +177,7 @@ async function run(signal, parameters = {}) {
       maskProvenance = { Source: "mindgrab", Model: "mindgrab", Version: mindgrab.version, Backend: extracted.backend };
     }
     if (!brain.some(Boolean)) throw new Error("The brain mask is empty.");
-    const base = new URL("registration/", new URL(import.meta.env.BASE_URL, location.href)).href;
-    const runtime = browserRuntime({ workerUrl: registrationWorker, workers, kernel: { module: `${base}hmc-registration.mjs`, wasm: `${base}hmc-registration.wasm` } });
+    const runtime = browserRuntime({ workerUrl: registrationWorker, workers });
     const series = { ...input.series, data: input.series.data.slice() };
     const corrected = await correctNiFreeze({ ...input, series, mask: brain, maskProvenance, hmc, runtime, model, seed, signal: current,
       onProgress: ({ stage, done, total }) => progress.setProgress(total ? done / total : 0, `${stage}: ${done}/${total}`),
