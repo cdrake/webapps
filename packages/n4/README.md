@@ -44,4 +44,7 @@ The build is byte-reproducible: a rebuild gives the committed `n4-bias.wasm` and
 The `n4-wasm-source` workflow runs `--check` each week and by hand (Actions, "Run workflow"); it fails when either file differs and keeps the rebuilt files as the `n4-rebuilt` artifact.
 The one cause of difference was ANTs' `ANTsVersion.cxx`, which compiles in `__DATE__ " " __TIME__`.
 The script sets `SOURCE_DATE_EPOCH=1792348789` (Oct 18 2026 18:39:49 UTC, when the committed module was built), which Clang uses for both macros.
-The sources and the build tree are mounted at the same container paths on every host, and the build tree starts empty each time, so the host and the directory do not change the bytes.
+The sources and the build tree are mounted at the same container paths on every host, and the build tree starts empty each time.
+Rebuilds in different directories on two Linux x86-64 Docker hosts gave the same bytes.
+We did not test an arm64 host or amd64 emulation (for example Docker Desktop on Apple silicon).
+Use the workflow's x86-64 runner as the reference.
