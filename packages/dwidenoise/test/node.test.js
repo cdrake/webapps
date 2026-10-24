@@ -7,7 +7,8 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { gunzipSync, gzipSync } from "node:zlib";
 import { readNiftiFrames } from "@neurodesk/webapp-components/file-io/nifti";
-import { checkInstallation, companions, denoise, phantomSeries, threadCount } from "../src/node.js";
+import { checkInstallation, companions, denoise, phantomSeries, spawnThread, threadCount } from "../src/node.js";
+import { denoiseSeries } from "../src/pool.js";
 import { loadDwidenoise } from "../src/wasm.js";
 
 const bin = fileURLToPath(new URL("../bin/dwidenoise.js", import.meta.url));
@@ -93,6 +94,49 @@ test("FSL bvals and bvecs pair by stem, and --bval names another file", async ()
     assert.deepEqual(result.files.map((file) => file.name).sort(), ["data_desc-denoised.bval", "data_desc-denoised.bvec", "data_desc-denoised.json", "data_desc-denoised.nii.gz"]);
   } finally {
     await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("FSL's data.nii.gz with bvals and bvecs pairs as the web app pairs a one-image selection", async () => {
+  const dir = await scratch();
+  try {
+    const input = await writeSeries(dir, "data", { bval: null, bvec: null });
+    await writeFile(join(dir, "bvals"), `${input.bvals.join(" ")}\n`);
+    await writeFile(join(dir, "bvecs"), "0 1 0 0 1 0\n0 0 1 0 0 1\n0 0 0 1 0 0\n");
+    await mkdir(join(dir, "nodif.bval"));
+    assert.deepEqual(await companions(input.image), { bval: join(dir, "bvals"), bvec: join(dir, "bvecs"), json: null });
+    const result = await denoise({ input: input.image, output: join(dir, "out"), threads: 1 });
+    assert.equal(await readFile(join(dir, "out", "data_desc-denoised.bval"), "utf8"), await readFile(join(dir, "bvals"), "utf8"));
+    assert.equal(result.files.length, 4);
+
+    // A second image makes the unmatched files ambiguous: the app leaves them unpaired.
+    await writeFile(join(dir, "other.nii.gz"), gzipSync(input.nifti));
+    assert.deepEqual(await companions(input.image), { bval: null, bvec: null, json: null });
+    await assert.rejects(denoise({ input: input.image, output: join(dir, "out2"), threads: 1 }), /--bval FILE/);
+    // A file of the image's stem still pairs, and wins over a sole unmatched file.
+    await writeFile(join(dir, "data.bval"), `${input.bvals.join(" ")}\n`);
+    assert.equal((await companions(input.image)).bval, join(dir, "data.bval"));
+    await rm(join(dir, "other.nii.gz"));
+    assert.equal((await companions(input.image)).bval, join(dir, "data.bval"));
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("a worker thread that stops before it replies fails the run instead of hanging it", async () => {
+  const fixture = new URL("./fixtures/stopping-worker.js", import.meta.url);
+  const phantom = phantomSeries({ nx: 8, ny: 8, nz: 4 });
+  const groups = p2s.fittedGroups(phantom.bvals);
+  for (const mode of ["exit-on-message", "exit-after-reply"]) {
+    const run = denoiseSeries({
+      data: phantom.data,
+      nvox: phantom.nvox,
+      frames: phantom.frames,
+      groups,
+      spawn: () => spawnThread(fixture, { workerData: mode }),
+      workers: 1,
+    });
+    await assert.rejects(run, /worker thread stopped \(exit code [34]\)/, mode);
   }
 });
 

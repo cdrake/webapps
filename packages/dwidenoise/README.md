@@ -56,6 +56,7 @@ The command line writes the web app's four downloads:
 - `.json`: the sidecar, with the step's `Description`.
 
 It reads the `.bval` (required), `.bvec` and `.json` with the image's stem (FSL `.bvals` and `.bvecs` too).
+When the image is the only image in its directory, a sole gradient file there pairs whatever its name (FSL `data.nii.gz` with `bvals` and `bvecs`), as the web app pairs a one-image selection.
 `--bval`, `--bvec` and `--json` name other files.
 `--threads N` sets the worker threads (default: one per core). The output is the same for any number.
 The output directory must be new or empty.

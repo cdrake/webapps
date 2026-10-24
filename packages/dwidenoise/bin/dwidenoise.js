@@ -19,7 +19,9 @@ app's downloads:
   <name>_desc-denoised_<suffix>.json     the sidecar, with the step's Description
 
 The .bval (required), .bvec and .json beside IMAGE with the same name are
-used unless another file is given. OUTPUT_DIR must be new or empty.
+used unless another file is given. When IMAGE is the only image in its
+directory, a sole bval(s) or bvec(s) file there is used whatever its name
+(FSL data.nii.gz, bvals, bvecs). OUTPUT_DIR must be new or empty.
 
 Options:
   --bval FILE      b-values (FSL); required when none is beside IMAGE

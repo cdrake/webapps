@@ -24,17 +24,36 @@ import { loadDwidenoise } from './wasm.js';
 
 const patch2self = loadDwidenoise(readFile(new URL('./dwidenoise.wasm', import.meta.url)));
 
-// Wraps a worker thread in the Web Worker interface the shared pool drives.
-function spawnThread() {
-  const thread = new Worker(new URL('./node-worker.js', import.meta.url));
+/**
+ * Wraps a worker thread in the Web Worker interface the shared pool drives. A thread that stops
+ * before terminate() (an exit, an error or a message it cannot read) reports onerror, also on a
+ * later postMessage, so a pass never waits for a reply that cannot come.
+ */
+export function spawnThread(url = new URL('./node-worker.js', import.meta.url), options = {}) {
+  const thread = new Worker(url, options);
+  let terminated = false;
+  let failure = null;
   const worker = {
-    postMessage: (message, transfer) => thread.postMessage(message, transfer),
-    terminate: () => thread.terminate(),
+    postMessage: (message, transfer) => {
+      if (failure) setImmediate(() => worker.onerror?.({ message: failure }));
+      else thread.postMessage(message, transfer);
+    },
+    terminate: () => {
+      terminated = true;
+      return thread.terminate();
+    },
     onmessage: null,
     onerror: null,
   };
+  const fail = (message) => {
+    if (terminated || failure) return;
+    failure = message;
+    worker.onerror?.({ message });
+  };
   thread.on('message', (data) => worker.onmessage?.({ data }));
-  thread.on('error', (error) => worker.onerror?.({ message: error.message }));
+  thread.on('error', (error) => fail(error.message));
+  thread.on('messageerror', (error) => fail(`A denoising worker thread could not read a message: ${error.message}`));
+  thread.on('exit', (code) => fail(`A denoising worker thread stopped (exit code ${code}) before the run finished.`));
   return worker;
 }
 
@@ -51,26 +70,37 @@ const stem = (name) => name.replace(/\.(nii\.gz|[^.]*)$/i, '');
 
 const exists = (path) => access(path).then(() => true, () => false);
 
+// FSL gradient files, as the web app matches them: dwi.bval, dwi.bvals, or FSL's bvals.
+const BVAL_FILE = /(^|\.)bvals?$/i;
+const BVEC_FILE = /(^|\.)bvecs?$/i;
+const NIFTI_FILE = /\.nii(\.gz)?$/i;
+
 /**
- * The input's .bval, .bvec and .json: those given, else the files of the same stem beside it
- * (FSL's .bvals and .bvecs too), as the web app pairs a dropped selection.
+ * The input's .bval, .bvec and .json: those given, else those beside it, paired as the web app
+ * pairs a dropped selection (readDiffusionSeries) with the input's directory as the selection.
+ * A gradient file pairs by the image's stem (FSL .bvals and .bvecs too); when the directory holds
+ * one image, its sole gradient file pairs whatever its name (FSL data.nii.gz with bvals and
+ * bvecs). The sidecar pairs by stem only.
  */
 export async function companions(input, { bval, bvec, json } = {}) {
-  const base = join(dirname(input), stem(basename(input)));
-  const pick = async (given, extensions) => {
-    if (given !== undefined) {
-      if (!await exists(given)) throw new Error(`${given} does not exist.`);
-      return given;
-    }
-    for (const extension of extensions) {
-      if (await exists(`${base}${extension}`)) return `${base}${extension}`;
-    }
-    return null;
+  const directory = dirname(input);
+  const imageStem = stem(basename(input));
+  const entries = (await readdir(directory, { withFileTypes: true })).filter((entry) => entry.isFile()).map((entry) => entry.name).sort();
+  const singleImage = entries.filter((name) => NIFTI_FILE.test(name)).length === 1;
+  const beside = (pattern) => {
+    const files = entries.filter((name) => pattern.test(name));
+    const match = files.find((name) => stem(name) === imageStem) ?? (singleImage && files.length === 1 ? files[0] : null);
+    return match === null ? null : join(directory, match);
+  };
+  const pick = async (given, found) => {
+    if (given === undefined) return found();
+    if (!await exists(given)) throw new Error(`${given} does not exist.`);
+    return given;
   };
   return {
-    bval: await pick(bval, ['.bval', '.bvals']),
-    bvec: await pick(bvec, ['.bvec', '.bvecs']),
-    json: await pick(json, ['.json']),
+    bval: await pick(bval, () => beside(BVAL_FILE)),
+    bvec: await pick(bvec, () => beside(BVEC_FILE)),
+    json: await pick(json, () => (entries.includes(`${imageStem}.json`) ? join(directory, `${imageStem}.json`) : null)),
   };
 }
 
@@ -122,7 +152,7 @@ async function denoiseVolumes({ data, nvox, frames, bvals, threads, output, onPr
     frames,
     groups,
     output,
-    spawn: spawnThread,
+    spawn: () => spawnThread(),
     workers: threads,
     onProgress,
   });
