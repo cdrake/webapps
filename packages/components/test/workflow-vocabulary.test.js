@@ -20,6 +20,12 @@ test('sidebar grids let long result labels shrink within their available width',
   assert.match(css, /\.nd-imaging-controls \.nd-section-content\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/);
 });
 
+test('numeric table cells keep each number on one line and scroll instead', async () => {
+  const css = await readFile(new URL('../src/styles/imaging-workspace.css', import.meta.url), 'utf8');
+  assert.match(css, /\.nd-data-table \.nd-numeric \{[^}]*white-space: nowrap/);
+  assert.match(css, /\.nd-table-scroll \{[^}]*overflow-x: auto/);
+});
+
 test('createFileField produces the shared scan picker contract', () => {
   const document = dom();
   const field = createFileField({ id: 'imageInput', text: 'Drop NIfTI or DICOM files' }, document);
@@ -175,6 +181,15 @@ test('imaging workspace provides a reusable three-panel viewer layout', async ()
   // Phones: the panels size the viewer (page scrolls) and switch to three columns in landscape.
   assert.match(css, /\.nd-viewer-canvas-wrapper \{ flex: none; min-height: 0; height: calc\(3 \* min\(100vw, 360px\)\); \}/);
   assert.match(css, /orientation: landscape\) \{\s*\.nd-imaging-viewer:has\([^)]*\) \.nd-viewer-canvas-wrapper \{ height: calc\(100vw \/ 3\); \}/);
+});
+
+test('imaging workspace shows an image in place of the canvas, and file information in lines', async () => {
+  const css = await readFile(new URL('../src/styles/imaging-workspace.css', import.meta.url), 'utf8');
+  assert.match(css, /\.nd-viewer-image \{ position: absolute; inset: 0;[^}]*object-fit: contain;[^}]*background: var\(--nd-color-bg\); \}/);
+  assert.match(css, /\.nd-viewer-image\[hidden\] \{ display: none; \}/);
+  assert.match(css, /\.nd-file-info-lines > span \{ display: block; \}/);
+  assert.match(css, /\.nd-file-info-lines > span\[hidden\] \{ display: none; \}/);
+  assert.match(css, /\.nd-file-info-lines > \.nd-file-info-gap \{ margin-top: 1lh; \}/);
 });
 
 test('imaging workspace provides a session comparison grid with a marked active panel', async () => {
