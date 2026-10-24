@@ -136,7 +136,7 @@ test('composite apps import one nv-mcp browser client from the shared store', as
   const components = JSON.parse(await readFile(join(repoRoot, 'packages/components/package.json'), 'utf8'));
   const family = manifest.families.find(family => family.id === 'nv-mcp');
   assert.ok(family?.deduplicate, 'the nv-mcp client must declare physical deduplication');
-  assert.equal(family.target, `nv-mcp/${components.dependencies['@niivue/nv-mcp']}`,
+  assert.equal(family.target, `nv-mcp/${components.devDependencies['@niivue/nv-mcp']}`,
     'the shared path must name the nv-mcp version the components bundle');
   const runtimePath = `_runtime/${family.target}/${family.files[0].name}`;
   let consumers = 0;
