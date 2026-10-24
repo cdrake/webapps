@@ -160,7 +160,7 @@ jobs:
           N4_REQUIRE_REFERENCE: '1'
         run: node --test test/*.test.js
 
-  # The AMICO 1.5.4 and DIPY Patch2Self oracle tests on the pinned Hugging Face data
+  # The AMICO 1.5.4, DIPY Patch2Self and MRtrix 3.0.8 mrdegibbs oracle tests on the pinned Hugging Face data
   # (exes/dwi/validation/oracle.manifest.json). The fetch checks the size and sha256 of every
   # file, also on a cache hit, and DWI_REQUIRE_ORACLE turns each missing-data skip into a failure.
   oracle:
@@ -190,3 +190,8 @@ jobs:
         env:
           DWI_REQUIRE_ORACLE: '1'
         run: cargo +1.98.0 test --release --locked -p dwi-denoise --test oracle -- --nocapture
+      - name: MRtrix 3.0.8 mrdegibbs oracle on the ds005577 slab, release build
+        working-directory: exes/dwi
+        env:
+          DWI_REQUIRE_ORACLE: '1'
+        run: cargo +1.98.0 test --release --locked -p dwi-degibbs --test oracle -- --nocapture

@@ -3552,6 +3552,34 @@
       "contentType": "application/gzip",
       "kind": "example",
       "dependencies": []
+    },
+    "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/d950cc4c8371d2c1fb04ac9f823c1b14502fcb8f/degibbs/examples/sub-107_dir-AP_desc-slab_dwi.nii.gz": {
+      "sha256": "d72d28a4bc8e897e093547b6915cb3eb49f0da3e8b4fbb2233377c5be32c0c4b",
+      "bytes": 10344195,
+      "contentType": "application/octet-stream",
+      "kind": "example",
+      "dependencies": []
+    },
+    "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/d950cc4c8371d2c1fb04ac9f823c1b14502fcb8f/degibbs/examples/sub-107_dir-AP_desc-slab_dwi.bval": {
+      "sha256": "da890b74d0a531fda05d164ad12600aec9507cf42854bc04303b0f29b62f70f1",
+      "bytes": 472,
+      "contentType": "application/octet-stream",
+      "kind": "example",
+      "dependencies": []
+    },
+    "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/d950cc4c8371d2c1fb04ac9f823c1b14502fcb8f/degibbs/examples/sub-107_dir-AP_desc-slab_dwi.bvec": {
+      "sha256": "6f8270c6568dd1b6e781bfb746ec221a2e4e484be0950a4a7c4deaed35303794",
+      "bytes": 2630,
+      "contentType": "application/octet-stream",
+      "kind": "example",
+      "dependencies": []
+    },
+    "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/d950cc4c8371d2c1fb04ac9f823c1b14502fcb8f/degibbs/examples/sub-107_dir-AP_desc-slab_dwi.json": {
+      "sha256": "85cab96a1aa3b9edcdcd22e7699262ec7bc4c9d6abebe79635db5eb177524af6",
+      "bytes": 2586,
+      "contentType": "application/octet-stream",
+      "kind": "example",
+      "dependencies": []
     }
   },
   "apps": {
@@ -4351,9 +4379,10 @@
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/ce028ecca10e9abe7988f965e03ad51627ca9c52/noddi/examples/sub-01_dir-AP_desc-slab_dwi.json"
     ],
     "degibbs": [
-      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/4247dd46949521cf9cc21399c6015b41c0ca176f/dwi2trx/fixtures/dwi.nii.gz",
-      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/4247dd46949521cf9cc21399c6015b41c0ca176f/dwi2trx/fixtures/dwi.bval",
-      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/4247dd46949521cf9cc21399c6015b41c0ca176f/dwi2trx/fixtures/dwi.bvec"
+      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/d950cc4c8371d2c1fb04ac9f823c1b14502fcb8f/degibbs/examples/sub-107_dir-AP_desc-slab_dwi.nii.gz",
+      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/d950cc4c8371d2c1fb04ac9f823c1b14502fcb8f/degibbs/examples/sub-107_dir-AP_desc-slab_dwi.bval",
+      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/d950cc4c8371d2c1fb04ac9f823c1b14502fcb8f/degibbs/examples/sub-107_dir-AP_desc-slab_dwi.bvec",
+      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/d950cc4c8371d2c1fb04ac9f823c1b14502fcb8f/degibbs/examples/sub-107_dir-AP_desc-slab_dwi.json"
     ],
     "n4": [
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/4247dd46949521cf9cc21399c6015b41c0ca176f/dwi2trx/fixtures/dwi.nii.gz",
