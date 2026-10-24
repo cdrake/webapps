@@ -92,7 +92,7 @@ jobs:
   hmc-reference:
     name: exes/dwi tests on the pinned hmc reference data
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -118,6 +118,28 @@ jobs:
         env:
           HMC_REQUIRE_REFERENCE: '1'
         run: cargo +1.98.0 test --release --workspace --locked -- --nocapture
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - name: Install the complete estimator dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts --filter @neurodesk/hmc...
+      - name: Run the complete GP estimator and require the native-float world-centre gate
+        run: node packages/hmc/validation/nifreeze-loop.mjs "$HMC_REFERENCE" "$RUNNER_TEMP/hmc-gp" gp 2
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: '3.12'
+      - name: Compare image quality with native float and double
+        env:
+          OPENBLAS_NUM_THREADS: '1'
+          OMP_NUM_THREADS: '1'
+        run: |
+          python -m pip install nitransforms==25.1.0 nibabel==5.3.3 numpy==2.3.5 scipy==1.16.3 h5py==3.15.1
+          python packages/hmc/validation/nifreeze-native-quality.py "$HMC_REFERENCE" "$RUNNER_TEMP/hmc-gp" "$RUNNER_TEMP/hmc-gp/native-quality.json"
+      - name: Preserve motion and image-quality reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: hmc-native-float-gate
+          path: ${{ runner.temp }}/hmc-gp/*.json
+          if-no-files-found: warn
 
   sdc-field-fit-reference:
     name: deterministic SDC field fitting on the pinned native reference
@@ -213,6 +235,42 @@ jobs:
       - name: SDC field-fit tests on the committed module
         working-directory: packages/sdc
         run: node --test test/field-fit.test.js
+
+  dmipy-reference:
+    name: nonlinear NODDI native and WASM maps on the pinned WM reference
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install 1.98.0 --profile minimal
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: '3.11'
+      - name: Install NIfTI reference staging dependencies
+        run: python -m pip install numpy==1.26.4 nibabel==5.3.2
+      - name: Cache pinned reference downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ~/dmipy-reference
+          key: dmipy-reference-${{ hashFiles('exes/dwi/dmipy/validation/reference.manifest.json') }}
+      - name: Verify source maps, DWI and WM selection; stage all fitted voxels
+        run: |
+          python exes/dwi/dmipy/validation/fetch_reference.py "$HOME/dmipy-reference" >> "$GITHUB_ENV"
+          python exes/dwi/dmipy/validation/prepare_reference.py "$HOME/dmipy-reference" "$RUNNER_TEMP/dmipy-prepared"
+          echo "NODDI_DMIPY_PREPARED=$RUNNER_TEMP/dmipy-prepared" >> "$GITHUB_ENV"
+      - name: Require the native nonlinear NODDI WM gate
+        working-directory: exes/dwi
+        env:
+          DMIPY_REQUIRE_REFERENCE: '1'
+        run: cargo +1.98.0 test --release --locked -p dwi-dmipy --test reference -- --nocapture
+      - name: Require the committed WebAssembly nonlinear NODDI WM gate
+        run: node exes/dwi/dmipy/validation/wasm-reference.mjs "$RUNNER_TEMP/dmipy-wasm-report.json"
 
   oracle:
     name: exes/dwi oracle tests on the pinned AMICO, Patch2Self and mrdegibbs data
