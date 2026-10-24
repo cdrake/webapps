@@ -29,6 +29,9 @@ if (process.env.NEURODESK_SOFTWARE_RENDERING === '1' || process.argv.includes('-
 let server;
 let window;
 let mcpServer;
+// Viewer session clears still running. Quitting waits for them: a clear still running when Electron quits finishes
+// after V8 is gone and crashes the process.
+const clearing = new Set();
 const mcpMode = process.argv.includes('--mcp');
 const argument = name => {
   const index = process.argv.indexOf(name);
@@ -154,10 +157,12 @@ try {
       site.close();
       if (!target.isDestroyed()) target.destroy();
       // The session goes back to the pool only once nothing of this viewer is left in it.
-      Promise.all([viewerSession.clearStorageData(), viewerSession.clearCache()]).then(
+      const cleared = Promise.all([viewerSession.clearStorageData(), viewerSession.clearCache()]).then(
         () => partitions.push(viewerSession),
         error => console.error(`A viewer session could not be cleared and is not reused: ${error.message}`),
       );
+      clearing.add(cleared);
+      void cleared.finally(() => clearing.delete(cleared));
     };
     target.once('closed', () => {
       windowClosed.abort();
@@ -326,3 +331,8 @@ try {
 });
 app.on('window-all-closed', () => { if (!mcpMode) app.quit(); });
 app.on('before-quit', () => { server?.close(); void mcpServer?.close(); });
+app.on('will-quit', event => {
+  if (!clearing.size) return;
+  event.preventDefault();
+  void Promise.all(clearing).then(() => app.quit());
+});
