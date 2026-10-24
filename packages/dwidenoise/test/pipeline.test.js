@@ -1,12 +1,11 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { loadDwidenoise } from "@neurodesk/dwidenoise";
+import { loadDwidenoise } from "../src/wasm.js";
 import {
   derivativeSidecar,
   gatherChunk,
   outputNames,
-  parseBvals,
   scatterChunk,
   splitName,
   voxelRanges,
@@ -31,14 +30,6 @@ test("the derivative sidecar keeps the input's fields and names the method", () 
   assert.match(derivativeSidecar(null).Description, /DIPY 1\.12\.1/);
 });
 
-test("b-values must be numbers, one per volume", () => {
-  assert.deepEqual(parseBvals("0 1000\t1000\n2000\n", 4), [0, 1000, 1000, 2000]);
-  assert.throws(() => parseBvals("  ", 1), /empty/);
-  assert.throws(() => parseBvals("0 abc", 2), /not a b-value/);
-  assert.throws(() => parseBvals("0 -5", 2), /not a b-value/);
-  assert.throws(() => parseBvals("0 1000", 3), /3 volumes but the bval file lists 2/);
-});
-
 test("voxel ranges cover every voxel once", () => {
   assert.deepEqual(voxelRanges(10, 4), [[0, 4], [4, 4], [8, 2]]);
   assert.deepEqual(voxelRanges(3, 16), [[0, 3]]);
@@ -60,7 +51,7 @@ test("a chunk gathered from every volume scatters back to the same place", () =>
 
 test("chunked Gram sums with one solve equal the package's one-pass denoise", async () => {
   // The pool's arithmetic without workers: Gram per chunk, sums in chunk order, apply per chunk.
-  const p2s = await loadDwidenoise(readFileSync(new URL("../../../packages/dwidenoise/src/dwidenoise.wasm", import.meta.url)));
+  const p2s = await loadDwidenoise(readFileSync(new URL("../src/dwidenoise.wasm", import.meta.url)));
   const nvox = 300;
   const bvals = [0, 1000, 1000, 1000, 5, 1000];
   const frames = bvals.length;

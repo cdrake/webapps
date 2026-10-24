@@ -42,6 +42,22 @@
       ]
     },
     "lint": {},
+    "pipeline-builder#build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/apps/*/automation.json",
+        "$TURBO_ROOT$/apps/*/package.json",
+        "$TURBO_ROOT$/registry/apps.yml",
+        "$TURBO_ROOT$/scripts/lib/apps-registry.mjs",
+        "$TURBO_ROOT$/scripts/lib/neuroflow-bundle.mjs"
+      ],
+      "outputs": [
+        "dist/**"
+      ]
+    },
     "nesvor#build": {
       "dependsOn": [
         "^build"

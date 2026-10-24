@@ -559,6 +559,34 @@ importers:
         specifier: ^6.3.2
         version: 6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.14)(yaml@2.9.0)
 
+  apps/dwicorrect:
+    dependencies:
+      '@neurodesk/runtime-support':
+        specifier: workspace:*
+        version: link:../../packages/runtime-support
+      '@neurodesk/sdc':
+        specifier: workspace:*
+        version: link:../../packages/sdc
+      '@neurodesk/shoreline':
+        specifier: workspace:*
+        version: link:../../packages/shoreline
+      '@neurodesk/webapp-components':
+        specifier: workspace:*
+        version: link:../../packages/components
+      '@niivue/niivue':
+        specifier: 1.0.0-rc.14
+        version: 1.0.0-rc.14
+      fflate:
+        specifier: ^0.8.3
+        version: 0.8.3
+    devDependencies:
+      '@playwright/test':
+        specifier: 1.64.0
+        version: 1.64.0
+      vite:
+        specifier: ^5.0.0
+        version: 5.4.21(@types/node@24.13.3)(lightningcss@1.32.0)
+
   apps/dwidenoise:
     dependencies:
       '@neurodesk/dwidenoise':
@@ -930,6 +958,22 @@ importers:
         specifier: 1.0.0-rc.14
         version: 1.0.0-rc.14
     devDependencies:
+      '@playwright/test':
+        specifier: 1.64.0
+        version: 1.64.0
+      vite:
+        specifier: ^5.0.0
+        version: 5.4.21(@types/node@24.13.3)(lightningcss@1.32.0)
+
+  apps/pipeline-builder:
+    dependencies:
+      '@neurodesk/webapp-components':
+        specifier: workspace:*
+        version: link:../../packages/components
+    devDependencies:
+      '@neurodesk/desktop':
+        specifier: workspace:*
+        version: link:../../packages/desktop
       '@playwright/test':
         specifier: 1.64.0
         version: 1.64.0
@@ -1431,7 +1475,11 @@ importers:
         specifier: file:../../apps/dwi2trx/vendor/niimath
         version: file:apps/dwi2trx/vendor/niimath
 
-  packages/dwidenoise: {}
+  packages/dwidenoise:
+    dependencies:
+      '@neurodesk/webapp-components':
+        specifier: workspace:*
+        version: link:../components
 
   packages/easy-mp2rage:
     dependencies:
@@ -1680,6 +1728,8 @@ importers:
       '@playwright/test':
         specifier: 1.64.0
         version: 1.64.0
+
+  packages/shoreline: {}
 
   packages/spinalcordtoolbox:
     dependencies:

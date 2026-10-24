@@ -40,6 +40,11 @@ const GITATTRIBUTES = '.gitattributes';
 // reaches one of them. test/app-plan.test.mjs fails on a new reader.
 const RUNTIME_MANIFEST = 'runtime-assets/manifest.json';
 export const RUNTIME_MANIFEST_READERS = ['scripts/fetch-app-runtime.mjs'];
+// Root files that generate NeuroFlow tools from every app's automation.json,
+// through paths built from the registry that the workspace graph cannot see.
+// An app that reaches one also tests a change to any app's contract.
+export const AUTOMATION_CATALOG_READERS = ['scripts/lib/neuroflow-bundle.mjs'];
+const AUTOMATION_CONTRACT = /^apps\/[^/]+\/automation\.json$/;
 // site/ files only the composite build copies: the landing page, its
 // analytics settings, the Pages 404 page and the dicompare route shim. The
 // app shell, theme, fonts and logo go into every app and stay shared.
@@ -200,6 +205,9 @@ export function selectAffectedApps(registry, changedPaths = [], graph = null, ma
     const appId = path.match(/^apps\/([^/]+)\//)?.[1] ?? path.match(MODEL_MANIFEST)?.[1];
     if (appIds.has(appId)) {
       select(appId, path);
+      if (graph && AUTOMATION_CONTRACT.test(path)) {
+        for (const reader of AUTOMATION_CATALOG_READERS) selectReaching(reader, `${path}: ${reader} generates tools from every app's contract`);
+      }
       continue;
     }
     if (

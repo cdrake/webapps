@@ -9,6 +9,7 @@ import { parseBvalBvec } from "@neurodesk/dwi2trx/gradients";
 import { runNiimath } from "@neurodesk/dwi2trx/runner";
 import { MAPS, bidsStem, gradientText, mapName, maskName } from "@neurodesk/noddi/pipeline";
 import { oversizedHeaderDwi, syntheticDwi, syntheticMask } from "./fixtures.mjs";
+import { dropFolder, exampleBidsTree } from "../../../test-utils/bids-folder-drop.mjs";
 
 const examples = JSON.parse(readFileSync(new URL("../examples.json", import.meta.url), "utf8"));
 const slab = examples.find((example) => example.id === "ds005134-slab");
@@ -499,4 +500,50 @@ test("example with niimath dtifit downloads FA and MD equal to DWI2TRX's fit of 
   expect(values(fa.bytes)).toEqual(values(reference.FA));
   expect(values(md.bytes)).toEqual(values(reference.MD));
   expect(values(fa.bytes).filter((value) => value > 0).length).toBeGreaterThan(1000);
+});
+
+test("a dropped BIDS folder fits the tensor to the chosen run", async ({ page }) => {
+  test.setTimeout(180000);
+  const tree = await exampleBidsTree(page.request, singleShell, { runs: 2 });
+  await page.goto("/");
+  await expect(page.locator("#statusText")).toHaveText("Drag and drop files");
+  await expect(page.getByRole("combobox", { name: "DWI run" })).toBeHidden();
+  await dropFolder(page, tree);
+  await expect(page.locator("#fileInfo")).toContainText("sub-01_run-1_dwi.nii.gz", { timeout: 120000 });
+  const runs = page.getByRole("combobox", { name: "DWI run" });
+  await expect(runs.locator("option")).toHaveText(["sub-01_run-1_dwi", "sub-01_run-2_dwi"]);
+  await runs.selectOption({ label: "sub-01_run-2_dwi" });
+  await expect(page.locator("#fileInfo")).toHaveText("sub-01_run-2_dwi.nii.gz · 1×b0, 20×b2500", { timeout: 120000 });
+  await expect(page.locator("#fitNoddi")).toBeDisabled();
+  // Undo after another drop gives back the folder with the chosen run, not its first run.
+  const other = Object.fromEntries(["nii.gz", "bval", "bvec"].map((ext) => [`ds/sub-01/dwi/sub-01_dwi.${ext}`, tree[`ds/sub-01/dwi/sub-01_run-1_dwi.${ext}`]]));
+  await dropFolder(page, other);
+  await expect(page.locator("#fileInfo")).toContainText("sub-01_dwi.nii.gz", { timeout: 60000 });
+  await expect(runs).toBeHidden();
+  await page.locator(".nd-status-undo").click();
+  await expect(page.locator("#fileInfo")).toContainText("sub-01_run-2_dwi.nii.gz", { timeout: 60000 });
+  await expect(runs).toHaveValue("1");
+  await page.locator("#runButton").click();
+  await expect(page.locator("#statusText")).toContainText("Fitted", { timeout: 120000 });
+  await expect(page.locator("#resultList .nd-volume-toggle")).toHaveCount(7);
+  const event = page.waitForEvent("download");
+  await page.locator("#resultList .nd-volume-toggle").filter({ hasText: /^ViewFADownload$/ }).getByRole("button", { name: "Download" }).click();
+  const download = await event;
+  expect(download.suggestedFilename()).toBe(mapName("sub-01_run-2", "tensor", "fa"));
+  const fa = await readDownload(download);
+  expect(Array.from(fa.data).filter((value) => value > 0).length).toBeGreaterThan(1000);
+});
+
+test("a BIDS run without its gradient tables shows as a disabled choice", async ({ page }) => {
+  const tree = await exampleBidsTree(page.request, singleShell, { runs: 2 });
+  delete tree["ds/sub-01/dwi/sub-01_run-1_dwi.bval"];
+  delete tree["ds/sub-01/dwi/sub-01_run-1_dwi.bvec"];
+  await page.goto("/");
+  await expect(page.locator("#statusText")).toHaveText("Drag and drop files");
+  await dropFolder(page, tree);
+  await expect(page.locator("#fileInfo")).toContainText("sub-01_run-2_dwi.nii.gz", { timeout: 120000 });
+  const runs = page.getByRole("combobox", { name: "DWI run" });
+  await expect(runs.locator("option")).toHaveText(["sub-01_run-1_dwi (no .bval, .bvec)", "sub-01_run-2_dwi"]);
+  await expect(runs.locator("option:disabled")).toHaveText(["sub-01_run-1_dwi (no .bval, .bvec)"]);
+  await expect(runs).toHaveValue("1");
 });

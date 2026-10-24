@@ -57,6 +57,7 @@ Paths in this table are relative to the repository root. Existing implementation
 | `degibbs` | Gibbs-ringing removal (MRtrix mrdegibbs port) | `packages/degibbs` holds the WebAssembly port built from `exes/dwi/degibbs`; a Node command line over the same module follows, as for noddi. |
 | `sdc` | Reverse phase-encoding distortion correction (PyHySCO port) | `packages/sdc` holds the WebAssembly build of `exes/sdc`, which also builds the native `sdc` command line; its release packaging follows. |
 | `n4` | N4 bias-field correction (ANTs) with the MRtrix dwibiascorrect procedure | `packages/n4` holds ANTs N4BiasFieldCorrection in WebAssembly, separate from `packages/registration`; a Node command line over the same module follows, as for noddi. |
+| `dwicorrect` | Motion, eddy-current and susceptibility correction (FSL eddy/topup method) | `exes/dwi/shoreline` builds the native `shoreline` command line on the core that `packages/shoreline` runs in WebAssembly; its release packaging follows. MindGrab masking and the PyHySCO field estimate stay in the app. |
 | `dwidenoise` | Patch2Self denoising (DIPY 1.12.1 version 1 port) | `packages/dwidenoise` holds the WebAssembly port built from `exes/dwi/denoise`; a Node command line over the same module follows, as for noddi. |
 | `brain2print` | Segmentation to printable mesh | `apps/brain2print/src/mesh.js` has pure mesh validation. Extract the `src/main.js` pipeline with headless MindGrab and niimath meshing. |
 | `brain-extraction` | BET, MindGrab and SynthStrip brain extraction | Packaged in suite 0.4.20260915 with pinned models, the shared extraction adapters and an offline BET extraction/export check. |
@@ -69,6 +70,7 @@ Paths in this table are relative to the repository root. Existing implementation
 | `surfannotate` | No default batch equivalent | Manual surface ROI drawing and vertex selection. Excluded from this rollout. |
 | `zarro` | No default batch equivalent | Interactive OME-Zarr exploration. Conversion or extraction would be a separately scoped command. |
 | `dicomview` | No default batch equivalent | Interactive DICOM browsing. Its batch steps already ship as command lines: dcm2niix for conversion and dicompare for protocol summaries and checks. |
+| `pipeline-builder` | No default batch equivalent | Writes NeuroFlow workflows rather than processing images. `neuroflow-mcp` validates and runs exported workflows from the command line. |
 | `dcm2niix` | No default batch equivalent | Interactive BIDS curation: scan types, fieldmap targets and metadata are user decisions. Upstream dcm2niix already ships the converter command line. |
 
 ## Greedy release gates
