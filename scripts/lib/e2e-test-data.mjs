@@ -95,7 +95,8 @@ export const provisioners = {
       return { NESVOR_MASK_FIXTURE_DIR: directory };
     },
   },
-  // The browser reference runs the app's example through its degibbs automation, about 10 s.
+  // The browser reference runs the app's example (the pinned ds005577 slab, downloaded and
+  // checksummed by packages/degibbs/validation/reference.mjs) through its degibbs automation, about 10 s.
   degibbs: { env: ['DEGIBBS_BROWSER_REFERENCE'], provision: async () => ({ DEGIBBS_BROWSER_REFERENCE: 'check' }) },
   // The browser reference runs the app's two examples through its denoise automation, about 10 s.
   dwidenoise: { env: ['DWIDENOISE_BROWSER_REFERENCE'], provision: async () => ({ DWIDENOISE_BROWSER_REFERENCE: 'check' }) },
