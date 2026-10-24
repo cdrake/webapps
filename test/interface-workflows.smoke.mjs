@@ -122,17 +122,6 @@ try {
     await expect(page.locator('#fCsf')).toHaveValue('0.1');
     await expect(page.locator('#viewerNotice')).toBeHidden();
   });
-  await check('noddi', async page => {
-    const settings = page.locator('#advancedSettings > summary');
-    await expect(page.locator('#tensorFit')).toBeHidden();
-    await settings.tap();
-    await expect(page.locator('#tensorFit')).toHaveValue('wls');
-    await page.locator('#tensorFit').selectOption('niimath-dtifit');
-    await settings.tap();
-    await expect(page.locator('#tensorFit')).toBeHidden();
-    await settings.tap();
-    await expect(page.locator('#tensorFit')).toHaveValue('niimath-dtifit');
-  });
   await check('seedseg', async page => {
     const settings = page.locator('#seedseg-section-2 [data-disclosure-toggle]');
     await settings.tap();
@@ -445,12 +434,59 @@ try {
     await expect(page.locator('#noddiNote')).toHaveText('');
     await expect(page.locator('#runButton')).toBeEnabled();
     const advanced = page.locator('#advancedSettings > summary');
+    await expect(page.locator('#tensorFit')).toBeHidden();
     await advanced.tap();
+    await expect(page.locator('#tensorFit')).toHaveValue('wls');
     await page.locator('#tensorFit').selectOption('ols');
     await advanced.tap();
     await expect(page.locator('#tensorFit')).toBeHidden();
     await advanced.tap();
     await expect(page.locator('#tensorFit')).toHaveValue('ols');
+    await expect(page.locator('#outputSection')).not.toHaveAttribute('open', '');
+  });
+  // dwidenoise has no option to set: Patch2Self takes only the DWI and its bval.
+  await check('dwidenoise', async page => {
+    await expect(page.locator('#statusText')).toHaveText('Drag and drop files', { timeout: 60000 });
+    await expect(page.locator('#technicalLog')).toHaveClass(/collapsed/);
+    await page.locator('#imageInput').setInputFiles(dwiSeries());
+    const info = 'interface-dwi.nii · 16×16×16×13 · 1 b0, 12 weighted · bval, bvec';
+    await expect(page.locator('#fileInfo')).toHaveText(info);
+    await expect(page.locator('#runButton')).toBeEnabled();
+    const input = page.locator('#inputSection > summary');
+    await input.tap();
+    await expect(page.locator('#fileInfo')).toBeHidden();
+    await input.tap();
+    await expect(page.locator('#fileInfo')).toHaveText(info);
+    const task = page.locator('#taskSection > summary');
+    await task.tap();
+    await expect(page.locator('#runButton')).toBeHidden();
+    await task.tap();
+    await expect(page.locator('#runButton')).toBeEnabled();
+    await expect(page.locator('#outputSection')).not.toHaveAttribute('open', '');
+  });
+  await check('n4', async page => {
+    await expect(page.locator('#statusText')).toHaveText('Drag and drop files', { timeout: 60000 });
+    await expect(page.locator('#technicalLog')).toHaveClass(/collapsed/);
+    await page.locator('#imageInput').setInputFiles(dwiSeries());
+    await expect(page.locator('#fileInfo')).toHaveText('interface-dwi.nii · 16×16×16×13 · bval, bvec');
+    await expect(page.locator('#modeNote')).toHaveText('DWI: the field is fitted to the b0 volume.');
+    await expect(page.locator('#runButton')).toBeEnabled();
+    // The optional mask chosen in Advanced settings must survive closing that section and its parent.
+    const advanced = page.locator('#advancedSettings > summary');
+    await expect(page.locator('#maskInput')).toBeHidden();
+    await advanced.tap();
+    await page.locator('#maskInput').setInputFiles(nifti('interface-mask.nii', 1));
+    await expect(page.locator('#maskInfo')).toHaveText('interface-mask.nii · 4096 voxels');
+    await advanced.tap();
+    await expect(page.locator('#maskInfo')).toBeHidden();
+    await advanced.tap();
+    await expect(page.locator('#maskInfo')).toHaveText('interface-mask.nii · 4096 voxels');
+    const task = page.locator('#taskSection > summary');
+    await task.tap();
+    await expect(page.locator('#maskInfo')).toBeHidden();
+    await task.tap();
+    await expect(page.locator('#maskInfo')).toHaveText('interface-mask.nii · 4096 voxels');
+    await expect(page.locator('#runButton')).toBeEnabled();
     await expect(page.locator('#outputSection')).not.toHaveAttribute('open', '');
   });
   await check('sdc', async page => {
