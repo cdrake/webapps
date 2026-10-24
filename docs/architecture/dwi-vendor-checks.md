@@ -22,7 +22,7 @@ Data: OpenNeuro [ds007522](https://openneuro.org/datasets/ds007522) v2.0.1 (CC0)
 | `SliceEncodingDirection` | absent; `dim_info` gives slice = k |
 | `TotalReadoutTime` | DWI 0.0332897 s; reverse b0 0.0332836 s |
 | Reverse b0 | 8 volumes (b=0 and 7×b=1), `IntendedFor` the DWI |
-| b-vector convention | FSL, image axes. MRtrix `dwigradcheck` (MindGrab mask) selects the table as given: no flip, no permutation, mean length 80.5 against 44.3 for the next option |
+| b-vector convention | FSL, image axes. MRtrix `dwigradcheck` (MindGrab mask) selects the table as given: no flip, no permutation. Mean length 80.5 (79.4 for the same table in the image basis) against 44.3 for the best flipped table |
 
 All apps treat the b=1 volumes as b0 (threshold 50 s/mm²). All apps apply `scl_slope`. In the MindGrab mask of the N4 run, the median of the first b0 in the output, divided by the scaled input, is 1.003–1.010 for degibbs, dwidenoise, n4 and dwicorrect.
 
@@ -74,7 +74,7 @@ Data: OpenNeuro [ds006837](https://openneuro.org/datasets/ds006837) v1.0.1 (CC0)
 | `SliceEncodingDirection`, `PartialFourier` | absent; `dim_info` gives slice = k | absent; `dim_info` gives slice = k |
 | `TotalReadoutTime` | 0.04788 s, DWI and reverse b0 | 0.036036 s, DWI and reverse b0 |
 | Reverse b0 | 7 volumes, no bval or bvec file, same grid and affine as the DWI, `IntendedFor` the DWI | the same |
-| b-vector convention | FSL, image axes. `dwigradcheck` (MRtrix 3.0.8, MindGrab mask) selects the table as given: no flip, no permutation, mean length 64.0 against 38.2 for the next option | as given: mean length 46.0 against 33.5 |
+| b-vector convention | FSL, image axes. `dwigradcheck` (MRtrix 3.0.8, MindGrab mask) selects the table as given: no flip, no permutation. Mean length 64.0 (63.1 for the same table in the image basis) against 38.2 for the best flipped table | as given: mean length 46.0 (45.8 in the image basis) against 33.5 for the best flipped table |
 
 The two acquisitions have byte-identical bval and bvec files. All apps find 10 b0 volumes (threshold 50 s/mm²). In the MindGrab mask of the N4 run, the median of the first b0 in the output, divided by the input, is 0.996–1.006 (HB) and 1.000–1.020 (MUSE) for degibbs, dwidenoise, n4 and dwicorrect.
 
