@@ -135,7 +135,9 @@ async function deduplicateSources({ manifest, files, siteDist, registry }) {
     for (const asset of family.files) {
       const targetPath = join(siteDist, '_runtime', family.target, asset.name);
       for (const app of registry.apps) {
-        const appFiles = files.filter(file => file.startsWith(join(siteDist, app.path) + sep));
+        // An app's vendored components are not its own copies: removeAppCopies replaces them with the shared store.
+        const vendored = join(siteDist, app.path, 'vendor', 'webapp-components') + sep;
+        const appFiles = files.filter(file => file.startsWith(join(siteDist, app.path) + sep) && !file.startsWith(vendored));
         const copies = appFiles.filter(file => unhashedName(file) === unhashedName(asset.source));
         if (!copies.length) continue;
         if (app.app_scoped_runtime_families?.includes(family.id)) throw new Error(`Cannot deduplicate scoped runtime ${family.id}`);
