@@ -80,6 +80,9 @@ export function startAgentServer({
   });
 
   server.on('upgrade', (req, socket, head) => {
+    // Node stops handling a socket's errors once it is upgraded, so a client that resets a refused socket would
+    // otherwise end the process.
+    socket.on('error', () => socket.destroy());
     const pathname = pathOf(req);
     const origin = req.headers.origin;
     if (pathname !== '/app') return refuse(socket, 404, 'Not Found');
