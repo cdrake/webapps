@@ -1076,7 +1076,7 @@ apps:
       release: false
   - id: pipeline-builder
     path: pipeline-builder
-    title: Pipeline Builder
+    title: Pipeline builder
     description: Chain apps into a NeuroFlow workflow.
     categories: [pipelines]
     keywords: [pipeline, workflow, neuroflow, batch, desktop]

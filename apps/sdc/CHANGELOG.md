@@ -4,6 +4,15 @@
 
 ### Patch Changes
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.19.3
+  - @neurodesk/runtime-support@0.9.11
+  - @neurodesk/sdc@0.2.20261024
+- Pair acquisition JSON and gradient inputs by automation role so metadata survives diffusion pipelines. Split DWI Correct and SDC inputs into single-image roles, require explicit acquisition values for automated correction, and expose correction settings. Export a corrected mean-b0 image for downstream brain masks. Use a generic single-volume error for shared image readers.
+- Updated dependencies
+  - @neurodesk/webapp-components@0.19.2
+  - @neurodesk/runtime-support@0.9.10
+  - @neurodesk/sdc@0.2.20261024
 - Updated dependencies [3fc9cf2]
   - @neurodesk/webapp-components@0.19.1
   - @neurodesk/runtime-support@0.9.9

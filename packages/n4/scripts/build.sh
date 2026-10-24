@@ -16,7 +16,9 @@ if [ ! -f "$build/ants-$commit/Examples/N4BiasFieldCorrection.cxx" ]; then
   tar -xzf "$build/ants.tar.gz" --strip-components=1 -C "$build/ants-$commit"
 fi
 # One compile job; the container memory limit keeps a large ITK translation unit from exhausting the host.
+# Keep the original ANTs build timestamp stable across rebuilds.
 docker run --rm --network none --memory "${N4_BUILD_MEMORY:-8g}" --entrypoint bash \
+  -e SOURCE_DATE_EPOCH=1792348789 \
   -v "$build:/build" -v "$root/packages/n4:/source:ro" \
   "$toolchain" -c "emcmake cmake -S /source -B /build/wasm -DITK_DIR=/ITK-build -DANTS_SOURCE_DIR=/build/ants-$commit -DCMAKE_BUILD_TYPE=Release && cmake --build /build/wasm -j 1"
 cp "$build/wasm/n4-bias.mjs" "$build/wasm/n4-bias.wasm" "$root/packages/n4/wasm/"

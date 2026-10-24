@@ -44,7 +44,7 @@
         },
         "mask": {
           "source": "files",
-          "type": "neuro:volume",
+          "type": "neuro:mask",
           "formats": [
             "nifti"
           ],
@@ -81,7 +81,7 @@
         "noddi-isovf": { "type": "neuro:volume", "mediaType": "application/gzip", "space": "input", "minimum": 0, "maximum": 1 },
         "noddi-odi": { "type": "neuro:volume", "mediaType": "application/gzip", "space": "input", "minimum": 0, "maximum": 1 },
         "noddi-direction": { "type": "neuro:volume", "mediaType": "application/gzip", "space": "input", "minimum": 0, "maximum": 1 },
-        "mask": { "type": "neuro:volume", "mediaType": "application/gzip", "space": "input", "minimum": 1, "maximum": 1 }
+        "mask": { "type": "neuro:mask", "mediaType": "application/gzip", "space": "input", "minimum": 1, "maximum": 1 }
       },
       "engines": [
         "browser"

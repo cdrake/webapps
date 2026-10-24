@@ -2,6 +2,10 @@
 
 ## 0.4.20261024
 
+### Patch Changes
+
+- Restore the WebAssembly stack after each kernel call so repeated corrections and transform applications do not exhaust the stack. Export the stack functions from the pinned builds and verify 200 runs on one instance.
+
 ## 0.4.20261022
 
 ## 0.3.20261022

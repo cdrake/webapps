@@ -5174,6 +5174,12 @@
         "sha256": "5513cd2f32e3e533ca1b9f768f92f1b1d232ab6cbf558552a4ea71dfcc965c63",
         "bytes": 1007,
         "kind": "example"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/5fefd28435b9dde73b63629ee4de1381a962de8a/pipeline-builder/examples/dwi-preprocessing.workflow.json",
+        "sha256": "c47a4024d6fb542ae719cdda6de08474b34a683d00c269dfbbc79a66fc161c88",
+        "bytes": 4986,
+        "kind": "example"
       }
     ]
   },

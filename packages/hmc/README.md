@@ -3,7 +3,7 @@
 DWI head-motion correction for the `hmc` web app and command line: a pool of `@neurodesk/hmc-registration` kernels that registers each volume to a target, one resampling of the series with the per-volume transforms, and the BIDS-derivative outputs.
 It also holds `src/hmc.wasm`, the WebAssembly build of the `exes/dwi/hmc` crate (`exes/dwi/hmc-wasm`): ITK `.mat` files, motion parameters and the motion TSV, b-vector rotation and NiFreeze's `advanced_clip`.
 
-This package has no estimator loop. The caller gives the target of each volume (a b0 template, a model prediction) and the registration argv. The NiFreeze loop (#450) and SHORELine (#458) use it.
+The lower-level `correctHeadMotion` accepts caller-supplied targets and registration arguments. `correctNiFreeze` adds the NiFreeze trivial and GP estimators. SHORELine (#458) can use the same lower-level path.
 
 ## Use
 
@@ -42,6 +42,34 @@ const hmc = await loadHmcBrowser(new URL('@neurodesk/hmc/hmc.wasm', import.meta.
 ```
 
 The kernel is linked with `-pthread`: the page must be cross-origin isolated.
+
+## NiFreeze estimator
+
+```js
+import { correctNiFreeze } from '@neurodesk/hmc/nifreeze';
+
+const result = await correctNiFreeze({
+  series, bvals, bvecs, mask, hmc,
+  model: 'gp', // or 'trivial'
+  seed: 1234,
+  fileName: 'sub-01_dwi.nii.gz',
+  runtime: nodeRuntime({ workers: 4 }),
+});
+```
+
+The input split, float64 median of the b0 volumes, GP fit and prediction, GP mask reduction and registration argv use the existing `dwi-hmc` Rust ports through `hmc.wasm`. The GP mask excludes voxels whose median b0 is below `1e-5`. The trivial model keeps the supplied mask. Both keep b0 frames unchanged and write identity transforms and motion rows for them.
+
+Targets are prepared when a registration worker becomes free. The trivial model repeatedly clips its shared float64 bzero in visit order, including NiFreeze's in-place state change. Once an exact clip leaves it unchanged, later visits reuse that fixed point. Float input samples are clipped in place; integer source samples are left unchanged, as NiFreeze's `_to_nifti` does when it ignores `advanced_clip`'s return value. Resampling still uses each volume only once.
+
+The default seeded visit order is the port's recorded permutation, not NumPy's. `visitOrder` can supply NiFreeze's DWI-only indices explicitly. The output sidecar records the model, seed and visit order. GP targets are fitted from the initial series and do not depend on the order.
+
+`validation/nifreeze-loop.mjs ROOT OUT trivial|gp [WORKERS]` runs the complete estimator on the pinned ds005577 reference, rather than replaying saved targets. It verifies every consumed file against `exes/dwi/hmc/validation/reference.manifest.json`, checks volume/gradient/table counts and unchanged b0 frames, and writes the actual files and `estimator-report.json` outside this repository.
+
+The completed trivial run writes 101 volumes, transforms and motion rows, including 11 unchanged b0 volumes. All 90 prepared targets equal NiFreeze's kept prediction exactly. This is a loop/software check, not a quality claim. Native NiFreeze's trivial model itself degrades the high-b shell on this data, as the HMC plan records.
+
+The GP acceptance gate remains Q53, per volume and axis. The existing replay report (`exes/dwi/hmc/validation/q53-replay.json`) already records 48 of 90 failing GP volumes and 77 failing cells, with 87 transforms equal to native float byte for byte. The three differing volumes are 31, 52 and 88, the same set as the complete estimator run. The complete-loop harness reports its own measurements separately and exits unsuccessfully if the required gate fails. No tolerance is relaxed because the model target agrees.
+
+The complete ds005577 GP run produces all 90 predictions exactly equal to the native targets and reproduces the replay's 48 failing volumes and 77 failing axis checks. The recorded shell-mean Pearson correlations, within the 161,668-voxel GP mask, are 0.894919 → 0.902327 for b1000 and 0.626808 → 0.635975 for b3000. The native-double figures are 0.910 and 0.674 after correction. These measurements establish neither the Q53 gate nor native-double image parity. `validation/nifreeze-quality.mjs ROOT OUT gp` repeats the pinned QC script's correlation definition, and `validation/check-nifreeze-outputs.mjs` compares all 90 command lines and writes each native-motion difference into the saved report.
 
 ## Pool
 

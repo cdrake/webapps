@@ -1894,6 +1894,11 @@ apps:
         url: https://github.com/niivue/niivue
 
   pipeline-builder:
+    about:
+      - Build and export a NeuroFlow workflow that connects Neurodesk app operations. Image data stays outside the workflow file.
+      - To run an export, install the Neurodesk desktop suite and Node.js, then build neuroflow-mcp v0.2.0 from https://github.com/cdrake/neuroflow at commit fc6ec6075108306a588d48e2c1b66ffb924284a6 with cargo build --release --locked -p neuroflow-mcp. This release has no downloadable binaries.
+      - Generate a matching tool registry with node scripts/generate-neuroflow.mjs --out /absolute/path/to/registry from the Webapps source checkout. Set NEURODESK_WEBAPPS to the desktop executable, then configure your MCP client to start neuroflow-mcp --registry /absolute/path/to/registry --data-root /absolute/path/to/data. Call neuroflow_run with the exported document as workflow and absolute image paths under inputs, keyed by the workflow input names. The T1 example uses the input name t1 and requires hardware WebGPU for SynthSeg.
+      - Execution happens in the desktop suite on your computer. NeuroFlow v0.2.0 runs synchronously and cannot cancel a workflow while keeping the server alive. Release binaries and cancellation are tracked at https://github.com/cdrake/neuroflow/issues/30 and https://github.com/cdrake/neuroflow/issues/31.
     privacy: Workflow files you open are read on this page and never uploaded. The tool catalog is fetched from this site, and the example workflow from the Neurodesk dataset on Hugging Face. Exported workflows name tools and bindings only, never image data.
     packages:
       - { name: NeuroFlow Rust core (WebAssembly), url: https://github.com/cdrake/neuroflow, role: workflow validation against the tool catalog }

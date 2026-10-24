@@ -1,5 +1,17 @@
 # @neurodesk/webapp-components
 
+## 0.19.3
+
+### Patch Changes
+
+- Keep selected secondary buttons readable when hovered in light and dark themes.
+
+## 0.19.2
+
+### Patch Changes
+
+- Pair acquisition JSON and gradient inputs by automation role so metadata survives diffusion pipelines. Split DWI Correct and SDC inputs into single-image roles, require explicit acquisition values for automated correction, and expose correction settings. Export a corrected mean-b0 image for downstream brain masks. Use a generic single-volume error for shared image readers.
+
 ## 0.19.1
 
 ### Patch Changes

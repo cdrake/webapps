@@ -14,7 +14,7 @@ import {
   ProgressManager,
 } from "@neurodesk/webapp-components/ui";
 import { assertNiftiDecodedSize, createNiftiFromData, decodeNiftiBuffer, downloadFile, readNiftiFrames } from "@neurodesk/webapp-components/file-io";
-import { registerAppAutomation } from "@neurodesk/webapp-components/automation";
+import { imageFiles, registerAppAutomation } from "@neurodesk/webapp-components/automation";
 import { readDiffusionSeries, runDcm2niix } from "@neurodesk/runtime-support/dcm2niix-client";
 import { sliceAxes } from "@neurodesk/degibbs";
 import { derivativeSidecar, outputNames } from "@neurodesk/degibbs/outputs";
@@ -240,8 +240,7 @@ registerAppAutomation({
   convertDicom: runDcm2niix,
   operations: {
     degibbs: async ({ inputs, inputDetails, parameters, signal }) => {
-      const sidecars = inputDetails.image?.sidecars ?? [];
-      await loadFiles(Promise.resolve([...inputs.image, ...sidecars, ...(inputs.bval ?? []), ...(inputs.bvec ?? [])]), signal);
+      await loadFiles(Promise.resolve(imageFiles(inputs, inputDetails)), signal);
       if (parameters.sliceAxes) $("sliceAxes").value = parameters.sliceAxes;
       return removeRinging(signal);
     },

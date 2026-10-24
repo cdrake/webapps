@@ -22,6 +22,9 @@ export async function inflateNifti(bytes) {
 
 export async function createN4({ createModule, wasmBinary, onLog = () => {} }) {
   const module = await createModule({ noInitialRun: true, wasmBinary, print: onLog, printErr: onLog });
+  if (typeof module.stackSave !== "function" || typeof module.stackRestore !== "function") {
+    throw new Error("The N4 kernel does not export stackSave and stackRestore.");
+  }
   let next = 0;
   return {
     /**
@@ -36,7 +39,21 @@ export async function createN4({ createModule, wasmBinary, onLog = () => {} }) {
       try {
         module.FS.writeFile(paths.input, await inflateNifti(image));
         if (weight) module.FS.writeFile(paths.weight, await inflateNifti(weight));
-        const code = module.callMain(n4Arguments({ ...paths, ...settings }));
+        const stack = module.stackSave();
+        let code;
+        let trapped = false;
+        try {
+          code = module.callMain(n4Arguments({ ...paths, ...settings }));
+        } catch (error) {
+          trapped = true;
+          throw error;
+        } finally {
+          try {
+            module.stackRestore(stack);
+          } catch (error) {
+            if (!trapped) throw error;
+          }
+        }
         if (code !== 0) throw new Error(`N4 failed (exit ${code}). See the technical log.`);
         return { corrected: module.FS.readFile(paths.corrected), bias: module.FS.readFile(paths.bias) };
       } finally {

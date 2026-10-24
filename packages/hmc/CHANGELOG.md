@@ -1,5 +1,25 @@
 # @neurodesk/hmc
 
+## 0.3.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.19.3
+
+## 0.3.0
+
+### Minor Changes
+
+- Add the NiFreeze trivial and GP estimator loops using the existing Rust model, mask, median and registration-argument ports. Preserve in-place clipping and explicit visit order, prepare targets lazily, and add a pinned full-reference Node validation harness that retains the required Q53 gate.
+
+## 0.2.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.19.2
+
 ## 0.2.1
 
 ### Patch Changes

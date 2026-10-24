@@ -4,6 +4,15 @@
 
 ### Patch Changes
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.19.3
+  - @neurodesk/dwi2trx@0.6.20261024
+  - @neurodesk/runtime-support@0.9.11
+- Generate artifact format qualifiers from MIME types and gradient roles, and preserve explicit artifact encodings. Keep gradient input formats in contract metadata until NeuroFlow gains inspectors. Type DWI brain masks as masks so pipeline bindings reject scalar images.
+- Updated dependencies
+  - @neurodesk/webapp-components@0.19.2
+  - @neurodesk/dwi2trx@0.6.20261024
+  - @neurodesk/runtime-support@0.9.10
 - Updated dependencies [3fc9cf2]
   - @neurodesk/webapp-components@0.19.1
   - @neurodesk/dwi2trx@0.6.20261024

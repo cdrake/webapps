@@ -4,6 +4,12 @@
 
 ### Patch Changes
 
+- Updated dependencies
+  - @neurodesk/webapp-components@0.19.3
+- Updated dependencies
+- Updated dependencies [5b5ff35]
+  - @neurodesk/webapp-components@0.19.2
+  - @neurodesk/node-drivers@0.3.0
 - Updated dependencies [3fc9cf2]
   - @neurodesk/webapp-components@0.19.1
 
