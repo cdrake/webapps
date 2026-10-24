@@ -1,5 +1,17 @@
 # @neurodesk/desktop
 
+## 0.40.20261024
+
+### Patch Changes
+
+- 37a1791: Ask for source approval before loading custom label tables and font atlas or metrics files through the NiiVue MCP tools.
+- Updated dependencies [941884c]
+- Updated dependencies [a028e96]
+- Updated dependencies [650ce5f]
+- Updated dependencies [343c256]
+- Updated dependencies [941884c]
+  - @neurodesk/webapp-components@0.21.0
+
 ## 0.39.20261024
 
 ### Minor Changes

@@ -20,17 +20,16 @@ import {
   readNiftiFrames,
   readNiftiImageData,
 } from "@neurodesk/webapp-components/file-io";
-import { derivativeSidecar, gzipFile, sidecarText } from "@neurodesk/webapp-components/file-io/bids-derivatives";
+import { gzipFile, sidecarText } from "@neurodesk/webapp-components/file-io/bids-derivatives";
 import { binaryMask, readBrainMask } from "@neurodesk/webapp-components/file-io/brain-mask";
 import { bidsDiffusionSeries, chooseBidsRun, chosenBidsRun } from "@neurodesk/webapp-components/file-io/bids";
 import { registerAppAutomation } from "@neurodesk/webapp-components/automation";
 import { readDiffusionSeries, runDcm2niix } from "@neurodesk/runtime-support/dcm2niix-client";
 import { brainMask, mindgrab } from "@neurodesk/runtime-support/mindgrab";
-import { b0Volumes, parseBval } from "@neurodesk/dwi2trx/gradients";
 import { divideVolumes, rescaleBias } from "@neurodesk/n4";
 import { APP } from "./config.js";
+import { METHOD, b0Volumes, n4Sidecar, outputNames, parseBval } from "@neurodesk/n4/pipeline";
 import { meanVolumes } from "@neurodesk/webapp-components/volume/mean";
-import { outputNames } from "./pipeline.js";
 import examples from "../examples.json";
 
 const $ = (id) => document.getElementById(id);
@@ -293,8 +292,7 @@ async function correct(signal) {
     if (input.bval) rows.bval = { description: "b-values (unchanged)", file: new File([input.bval], names.bval), viewable: false };
     if (input.bvec) rows.bvec = { description: "b-vectors (unchanged)", file: new File([input.bvec], names.bvec), viewable: false };
     if (input.sidecar) {
-      const sidecar = derivativeSidecar(input.sidecar, "Bias-field correction with ANTs N4 (MRtrix dwibiascorrect ants procedure)");
-      rows.sidecar = { description: "Sidecar", file: new File([sidecarText(sidecar)], names.sidecar, { type: "application/json" }), viewable: false };
+      rows.sidecar = { description: "Sidecar", file: new File([sidecarText(n4Sidecar(input.sidecar))], names.sidecar, { type: "application/json" }), viewable: false };
     }
     await showVolume({ file: rows.image.file }, { signal: controller.signal });
     controller.signal.throwIfAborted();
@@ -306,7 +304,7 @@ async function correct(signal) {
     status("Bias field corrected");
     return {
       artifacts: Object.entries(rows).map(([role, row]) => ({ role, file: row.file })),
-      provenance: { method: "ants-n4-2.6.2-wasm", procedure: input.frames > 1 ? "mrtrix-dwibiascorrect-ants" : "n4", mask: maskSource, shrink: 4, bspline: [100, 3], convergence: [1000, 0] },
+      provenance: { method: METHOD, procedure: input.frames > 1 ? "mrtrix-dwibiascorrect-ants" : "n4", mask: maskSource, shrink: 4, bspline: [100, 3], convergence: [1000, 0] },
     };
   } catch (error) {
     progress.reset();

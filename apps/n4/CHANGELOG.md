@@ -1,5 +1,28 @@
 # n4
 
+## 0.5.20261024
+
+### Minor Changes
+
+- 941884c: Accept a BIDS folder. A dropped folder gives each DWI run with its bval, bvec and inherited JSON sidecar. When the folder has more than one run, choose the run in the input section. The sidecar goes through to the outputs, as it does for NIfTI input.
+- 9eef4c7: Add a portable `n4` command line for Linux, Windows and macOS. It runs the app's ANTs N4 WebAssembly module with the `dwibiascorrect ants` options (`-s 4 -b [100,3] -c [1000,0.0]`): it corrects a 3D image directly, and for a DWI it fits the field to the mean b0, rescales it and divides every volume by it. The fit is weighted by a MindGrab brain mask of the mean b0 (or the image) on the CPU, through `@neurodesk/node-drivers/mindgrab`; `--mask FILE` gives another mask. It writes the app's downloads: the corrected image, the bias field, the brain mask, and the passed-through bval, bvec and sidecar. It pairs `<stem>.bval`/`.bvals`, `<stem>.bvec`/`.bvecs` and `<stem>.json` beside the image, and for a series FSL's `bvals` and `bvecs`; a sidecar named with `--json` must hold a JSON object. The b-value rules, output names and sidecar live in `@neurodesk/n4/pipeline` and the mean b0 and mask reader in `@neurodesk/webapp-components`, shared by the app and the command line. Its release check runs the three pinned examples and holds every output to the web app's recorded download: each image by its decompressed bytes, the other files byte for byte.
+
+### Patch Changes
+
+- a028e96: Add `@neurodesk/webapp-components/file-io/bids-derivatives`: one module for the BIDS-derivative names (`splitName`, `sourceStem`, `outputNames(fileName, desc)`, `maskName`), the derivative sidecar (`derivativeSidecar(sidecar, description)`, `sidecarText`) and `gzipFile` of the DWI apps. degibbs, dwidenoise, n4, noddi and hmc use it in place of their own copies. Every output name and every file byte stays the same.
+- 650ce5f: Share the DWI apps' input helpers. `@neurodesk/webapp-components/file-io/brain-mask` reads a user's brain mask (`readBrainMask`: decode, same grid as the image, one 3D volume, binarised) for noddi, n4 and the noddi command line, and `@neurodesk/webapp-components/volume/mean` holds `meanVolumes`. `@neurodesk/dwi2trx/gradients` adds `parseBval` (the bval half of `parseBvalBvec`, with an optional volume-count check), `B0_THRESHOLD`, `isB0` and `b0Volumes` (b < 50 s/mm², the rule of the `exes/dwi/gradients` crate, which a shared test case file now checks on both sides). dwidenoise and n4 parse their b-values with it, and dwidenoise's own `parseBvals` is removed. Outputs are unchanged; some bval error messages now use the shared wording.
+- Updated dependencies [941884c]
+- Updated dependencies [a028e96]
+- Updated dependencies [650ce5f]
+- Updated dependencies [343c256]
+- Updated dependencies [9f46059]
+- Updated dependencies [9eef4c7]
+- Updated dependencies [00005df]
+- Updated dependencies [941884c]
+  - @neurodesk/webapp-components@0.21.0
+  - @neurodesk/n4@0.5.20261024
+  - @neurodesk/runtime-support@0.9.11
+
 ## 0.4.20261024
 
 ### Patch Changes

@@ -948,7 +948,7 @@ apps:
       toolchains: [node]
       shared_runtime: false
       browser_test: true
-      release: false
+      release: true
   - id: dcm2niix
     path: dcm2niix
     title: dcm2niix

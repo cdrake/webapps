@@ -1,5 +1,24 @@
 # @neurodesk/n4
 
+## 0.5.20261024
+
+### Minor Changes
+
+- 9eef4c7: Add a portable `n4` command line for Linux, Windows and macOS. It runs the app's ANTs N4 WebAssembly module with the `dwibiascorrect ants` options (`-s 4 -b [100,3] -c [1000,0.0]`): it corrects a 3D image directly, and for a DWI it fits the field to the mean b0, rescales it and divides every volume by it. The fit is weighted by a MindGrab brain mask of the mean b0 (or the image) on the CPU, through `@neurodesk/node-drivers/mindgrab`; `--mask FILE` gives another mask. It writes the app's downloads: the corrected image, the bias field, the brain mask, and the passed-through bval, bvec and sidecar. It pairs `<stem>.bval`/`.bvals`, `<stem>.bvec`/`.bvecs` and `<stem>.json` beside the image, and for a series FSL's `bvals` and `bvecs`; a sidecar named with `--json` must hold a JSON object. The b-value rules, output names and sidecar live in `@neurodesk/n4/pipeline` and the mean b0 and mask reader in `@neurodesk/webapp-components`, shared by the app and the command line. Its release check runs the three pinned examples and holds every output to the web app's recorded download: each image by its decompressed bytes, the other files byte for byte.
+
+### Patch Changes
+
+- 9f46059: Create a fresh N4 kernel for each command-line correction and self-check so repeated API calls cannot exhaust the WebAssembly argument stack. Use the shared b-value parser in the app and command line.
+- 00005df: `scripts/build.sh --check` rebuilds the N4 WebAssembly module and fails unless `n4-bias.wasm` and `n4-bias.mjs` equal the committed files. The build sets `SOURCE_DATE_EPOCH`, so ANTs' compiled-in build date no longer changes the bytes, and the weekly `n4-wasm-source` workflow runs the check. The committed module is unchanged.
+- Updated dependencies [941884c]
+- Updated dependencies [a028e96]
+- Updated dependencies [650ce5f]
+- Updated dependencies [343c256]
+- Updated dependencies [5b5ff35]
+- Updated dependencies [941884c]
+  - @neurodesk/webapp-components@0.21.0
+  - @neurodesk/node-drivers@0.3.0
+
 ## 0.4.20261024
 
 ## 0.4.20261022
