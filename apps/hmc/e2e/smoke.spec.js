@@ -5,6 +5,84 @@ import { unzipSync } from "fflate";
 import { loadHmcNode, nodeRuntime } from "@neurodesk/hmc/node";
 import { correctNiFreeze } from "@neurodesk/hmc/nifreeze";
 import { fixture } from "./fixtures.mjs";
+import { dropFolder } from "../../../test-utils/bids-folder-drop.mjs";
+import { fetchPinnedExample } from "../../../test-utils/registration-similarity.mjs";
+import { createNiftiFromData, decodeNiftiBuffer } from "@neurodesk/webapp-components/file-io/nifti";
+import { readSeries } from "@neurodesk/hmc";
+
+test("example inputs and mask resets preserve page-drop routing", async ({ page }) => {
+  test.setTimeout(90000);
+  const examples = JSON.parse(await readFile(new URL("../examples.json", import.meta.url), "utf8"));
+  const bytes = new Map(await Promise.all(examples[0].files.map(async file => [file.url, await fetchPinnedExample(file.url)])));
+  const image = examples[0].files.find(file => file.role === "image");
+  const buffer = await decodeNiftiBuffer(bytes.get(image.url));
+  const { dims } = await readSeries(buffer);
+  const maskNifti = new Uint8Array(createNiftiFromData(new Float32Array(dims.reduce((a, b) => a * b, 1)).fill(1), buffer, { dims }));
+  for (const file of examples[0].files) {
+    await page.route(file.url, route => route.fulfill({ body: bytes.get(file.url), headers: { "access-control-allow-origin": "*", "cross-origin-resource-policy": "cross-origin" } }));
+  }
+  await page.goto("./");
+  const selector = page.getByRole("combobox", { name: "Input", exact: true });
+  const loadExample = async () => {
+    await selector.selectOption(examples[0].id);
+    await expect(page.locator("[data-neurodesk-examples]")).toHaveAttribute("data-example-state", "ready", { timeout: 30000 });
+  };
+  const dropMask = async () => {
+    await dropFolder(page, { "mask/routing-mask.nii": Buffer.from(maskNifti) });
+    await expect(page.locator("#statusText")).toHaveText("Brain mask loaded");
+    await expect(page.locator("#clearMask")).toBeVisible();
+  };
+  await loadExample();
+  await page.locator("#advancedSettings > summary").click();
+  await dropMask();
+  await page.locator("#clearMask").click();
+  await dropMask();
+  await loadExample();
+  await expect(page.locator("#clearMask")).toBeHidden();
+  await dropMask();
+  const invalidMask = Buffer.from(maskNifti);
+  invalidMask.writeInt16LE(3, 42);
+  await page.locator("#maskInput").setInputFiles({ name: "wrong-grid.nii", mimeType: "application/octet-stream", buffer: invalidMask });
+  await expect(page.locator("#statusText")).toHaveClass(/error/);
+  await expect(page.locator("#clearMask")).toBeHidden();
+  await dropMask();
+  await expect(page.locator("#fileInfo")).toContainText(examples[0].files.find(file => file.role === "image").name);
+  await page.locator("#imageInput").setInputFiles({ name: "missing-gradients.nii", mimeType: "application/octet-stream", buffer: Buffer.from("not a diffusion series") });
+  await expect(page.locator("#statusText")).toHaveClass(/error/);
+  await expect(page.locator("#fileInfo")).toContainText(image.name);
+  const replacement = Object.fromEntries(examples[0].files.map(file => [`replacement/${file.name.replace("sub-01", "sub-02")}`, bytes.get(file.url)]));
+  replacement["replacement/replacement-mask.nii"] = Buffer.from(maskNifti);
+  await dropFolder(page, replacement);
+  await expect(page.locator("#fileInfo")).toContainText("sub-02");
+  await expect(page.locator("#maskField")).toContainText("replacement-mask.nii");
+  await page.locator(".nd-status-undo").click();
+  await expect(page.locator("#fileInfo")).toContainText(image.name);
+  await expect(page.locator("#clearMask")).toBeVisible();
+  await expect(page.locator("#maskField")).toContainText("routing-mask.nii");
+  await page.evaluate(() => {
+    const read = File.prototype.arrayBuffer;
+    let held = false;
+    File.prototype.arrayBuffer = function (...args) {
+      if (!held && this.name.startsWith("sub-02") && this.name.endsWith(".nii.gz")) {
+        held = true;
+        window.hmcReadHeld = true;
+        return new Promise(resolve => { window.releaseHmcRead = async () => resolve(await read.apply(this, args)); });
+      }
+      return read.apply(this, args);
+    };
+  });
+  await dropFolder(page, replacement);
+  await expect.poll(() => page.evaluate(() => Boolean(window.hmcReadHeld))).toBe(true);
+  await expect(page.locator(".nd-status-undo")).toBeDisabled();
+  await page.locator("#cancelButton").click();
+  await page.evaluate(() => window.releaseHmcRead());
+  await expect(page.locator("#statusText")).toHaveText("Cancelled");
+  await expect(page.locator("#fileInfo")).toContainText(image.name);
+  await expect(page.locator("#maskField")).toContainText("routing-mask.nii");
+  await page.locator(".nd-status-undo").click();
+  await expect(page.locator("#clearMask")).toBeVisible();
+  await expect(page.locator("#maskField")).toContainText("routing-mask.nii");
+});
 
 test("workspace boots with shared information and GP as default", async ({ page }) => {
   await page.goto("./");
