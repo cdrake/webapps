@@ -107,7 +107,10 @@ The times include the CPU initialization and the copies between WebAssembly and 
 
 Second vendor, ds005134 sub-01 (AMD Radeon RDNA 2 integrated GPU of a Ryzen 9 9950X, Mesa RADV, `VK_DRIVER_FILES` set to the RADV driver, same spec and Chromium build): 5 and 5 Gauss-Newton iterations, a median of 1.8e-5 Hz from the native PyHySCO field (maximum 0.066 Hz), 1.3e-5 Hz from the CUDA field, 0.50 s on WebGPU and 1.10 s on the CPU path. Two WebGPU runs give the same field. The app's example on WebGPU differs from the native command line by a median of 2.4e-6 Hz (maximum 0.0089 Hz).
 On the same host, Chromium gave only a fallback adapter with the NVIDIA Vulkan driver (RTX 5080, driver 615.78.08, no display), so the spec refused the run and NVIDIA is not validated.
-Apple Metal is not validated yet, because CI does not run this gate.
+Apple Metal, 25 October 2026: Chromium on GitHub's `macos-15` runner, using a hardware Apple adapter, passes all 25 browser tests in [the SDC Metal job](https://github.com/neurodesk/webapps/actions/runs/40177274663/job/121142517985) at source `b74db0fca`.
+On ds005134 sub-01, CPU and WebGPU both take five Gauss-Newton iterations. The raw median difference from native PyHySCO's float32 CPU field is 1.8521e-5 Hz and the maximum is 0.06639 Hz over 199,566 brain voxels.
+Within that brain mask, the two WebGPU runs give identical fields. The app's example runs on WebGPU and differs from the native command line by a median of 2.3842e-6 Hz and a maximum of 0.008884 Hz over 134,560 voxels.
+These are correctness results from one hosted run; they do not establish a performance comparison.
 
 `estimate` in `packages/sdc` picks WebGPU only on a hardware adapter and when the engine has JSPI.
 It does not pick software adapters (SwiftShader, llvmpipe, WARP), because they are slower than the CPU path.
