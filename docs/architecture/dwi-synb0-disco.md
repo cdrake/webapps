@@ -104,7 +104,7 @@ AP-PA agreement uses the real PA b0 of these subjects. A real Synb0-DisCo user h
 
 | Step | Wall time | Peak RSS |
 | --- | --- | --- |
-| Synb0-DisCo `--notopup` (8 threads) | 5:58 to 6:54 | 18.8 GB (PyTorch 1.1 inference on the CPU) |
+| Synb0-DisCo `--notopup` (8 threads requested) | 5:58 to 6:54 | 18.8 GB (PyTorch 1.1 inference on the CPU) |
 | `topup`, `synb0.cnf`, one thread | 108 to 121 s | 0.33 GB |
 | `sdc` command line | 1.3 to 1.6 s | 0.38 GB |
 
@@ -248,11 +248,11 @@ export SYNB0_IMAGE=$ROOT/containers/synb0-disco_v3.1.sif
 apptainer pull "$SYNB0_IMAGE" docker://leonyichencai/synb0-disco@sha256:98ba3915316f5adda1f23f3531f49f307d9a49fc0e8fcb26e34d7506bc297c0c
 export FS_LICENSE_FILE=/path/to/freesurfer/license.txt
 export SDC=/path/to/exes/sdc/target/release/sdc   # make -C exes/sdc build
-bash docs/architecture/dwi-synb0-disco/run_all.sh   # synb0.sh, solve.sh, post.sh, compare.py per subject
+ALPHA=1 bash docs/architecture/dwi-synb0-disco/run_all.sh   # synb0.sh, solve.sh, run_alpha.py, post.sh, compare.py per subject
 python3 docs/architecture/dwi-synb0-disco/report.py "$ROOT/runs"
 ```
 
-`run_alpha.py` (PyHySCO 0.0.4 in the options document's `venv-main`) makes the diagnostic rows.
+`ALPHA=1` adds the diagnostic rows (`run_alpha.py`, PyHySCO 0.0.4 in the options document's `venv-main`).
 The model checks need PyTorch, ONNX and ONNX Runtime in a Python environment, and `onnxruntime-web@1.29.0` in a scratch Node project:
 
 ```bash
