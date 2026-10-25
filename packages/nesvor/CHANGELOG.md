@@ -1,9 +1,19 @@
 # @neurodesk/nesvor
 
+## 0.3.20261025
+
+### Patch Changes
+
+- Updated dependencies [99037b6]
+  - @neurodesk/synthsr@0.6.20261025
+
 ## 0.3.20261024
 
 ### Patch Changes
 
+- Updated dependencies [0066f60]
+  - @neurodesk/webapp-components@0.21.1
+  - @neurodesk/synthsr@0.6.20261024
 - Updated dependencies [941884c]
 - Updated dependencies [a028e96]
 - Updated dependencies [650ce5f]
@@ -17,6 +27,22 @@
   - @neurodesk/synthsr@0.6.20261024
 - Updated dependencies [3fc9cf2]
   - @neurodesk/webapp-components@0.19.1
+  - @neurodesk/synthsr@0.6.20261024
+- Updated dependencies
+  - @neurodesk/webapp-components@0.21.1
+  - @neurodesk/synthsr@0.6.20261024
+- Updated dependencies [328cb77]
+  - @neurodesk/webapp-components@0.20.1
+  - @neurodesk/synthsr@0.6.20261024
+- Updated dependencies [14a8b29]
+- Updated dependencies [941884c]
+  - @neurodesk/webapp-components@0.20.0
+  - @neurodesk/synthsr@0.6.20261024
+- Updated dependencies
+  - @neurodesk/webapp-components@0.19.3
+  - @neurodesk/synthsr@0.6.20261024
+- Updated dependencies
+  - @neurodesk/webapp-components@0.19.2
   - @neurodesk/synthsr@0.6.20261024
 
 ## 0.3.20261022
@@ -36,7 +62,6 @@
   - @neurodesk/webapp-components@0.17.1
   - @neurodesk/synthsr@0.6.20261020
 - Updated dependencies [a36fde4]
-- Updated dependencies
 - Updated dependencies
 - Updated dependencies
   - @neurodesk/webapp-components@0.17.0
@@ -82,17 +107,7 @@
 
 - Updated dependencies [d1fa022]
 
-  - @neurodesk/webapp-components@0.16.0
-  - @neurodesk/synthsr@0.6.20261020
-
-- Updated dependencies [d1fa022]
-
   - @neurodesk/webapp-components@0.16.3
-  - @neurodesk/synthsr@0.6.20261020
-
-- Updated dependencies [d1fa022]
-
-  - @neurodesk/webapp-components@0.16.0
   - @neurodesk/synthsr@0.6.20261020
 
 - Updated dependencies [4b40da1]
@@ -120,15 +135,10 @@
 - Updated dependencies
   - @neurodesk/webapp-components@0.17.1
   - @neurodesk/synthsr@0.6.20261020
-- Updated dependencies [14db080]
-
 - Updated dependencies [4b40da1]
 
 - Updated dependencies
   - @neurodesk/webapp-components@0.17.2
-  - @neurodesk/synthsr@0.6.20261020
-- Updated dependencies
-  - @neurodesk/webapp-components@0.17.1
   - @neurodesk/synthsr@0.6.20261020
 - Updated dependencies [14db080]
 
@@ -192,35 +202,6 @@
 
 - Updated dependencies [ccb2970]
 
-- Updated dependencies [67a5a8f]
-
-  - @neurodesk/webapp-components@0.14.4
-  - @neurodesk/synthsr@0.6.20261018
-
-- Updated dependencies [b68209b]
-
-  - @neurodesk/webapp-components@0.15.0
-  - @neurodesk/synthsr@0.6.20261018
-
-- Updated dependencies [67a5a8f]
-
-  - @neurodesk/webapp-components@0.14.4
-  - @neurodesk/synthsr@0.6.20261018
-
-- Updated dependencies [7c0d201]
-
-  - @neurodesk/webapp-components@0.16.2
-  - @neurodesk/synthsr@0.6.20261018
-
-- Updated dependencies [46935f7]
-
-  - @neurodesk/webapp-components@0.16.1
-  - @neurodesk/synthsr@0.6.20261018
-
-- Updated dependencies [3329c39]
-
-  - @neurodesk/webapp-components@0.16.0
-
 - Updated dependencies [b67e4e9]
   - @neurodesk/webapp-components@0.15.1
   - @neurodesk/synthsr@0.6.20261018
@@ -251,16 +232,6 @@
   - @neurodesk/synthsr@0.6.20261016
 
 - Updated dependencies [7443048]
-
-  - @neurodesk/webapp-components@0.14.1
-  - @neurodesk/synthsr@0.6.20261016
-
-- Updated dependencies
-
-  - @neurodesk/webapp-components@0.14.2
-  - @neurodesk/synthsr@0.6.20261016
-
-- Updated dependencies [7443048]
   - @neurodesk/webapp-components@0.14.1
   - @neurodesk/synthsr@0.6.20261016
 
@@ -280,15 +251,6 @@
 - @neurodesk/synthsr@0.6.20261015
 
 - Updated dependencies [dd65e6a]
-
-- Updated dependencies [dcc74e7]
-
-  - @neurodesk/webapp-components@0.14.0
-  - @neurodesk/synthsr@0.6.20261015
-
-- Updated dependencies [84d192a]
-
-  - @neurodesk/synthsr@0.6.20261015
 
 - Updated dependencies [dcc74e7]
 

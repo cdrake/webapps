@@ -6,6 +6,17 @@ import { createSourceGrants } from './source-grants.js';
 // A page in an app, as far as reading an address goes: plain http, below the root of its server.
 const page = 'http://viewer.invalid/app/';
 
+function nativeWindowsPath(value) {
+  // Only canonical backslash paths: URL parsers also accept mixed/protocol-relative slashes.
+  if (value.includes('/') || Array.from(value).some(character => character.charCodeAt(0) < 32)) return false;
+  if (/^\\\\\?\\[a-z]:\\/i.test(value)) return true;
+  // WebDAV's native server syntax is server[@SSL][@port], not URL user information.
+  // https://learn.microsoft.com/en-us/windows/win32/api/davclnt/nf-davclnt-davgethttpfromuncpath
+  const unc = /^\\\\(?:\?\\UNC\\)?([a-z0-9_.-]+)(?:@(SSL))?(?:@([0-9]+))?\\[^\\]+(?:\\|$)/i.exec(value);
+  if (!unc || (!/^\\\\\?\\UNC\\/i.test(value) && !unc[2] && !unc[3])) return false;
+  return !unc[3] || (Number(unc[3]) > 0 && Number(unc[3]) <= 65535);
+}
+
 /** Whether a relative address climbs into the local server's mounts, wherever in the app the page sits. */
 function reachesMounts(value) {
   try {
@@ -20,7 +31,9 @@ function reachesMounts(value) {
  * and \\user:password@host name a host as much as http://user:password@host does. An address the page cannot read
  * at all is refused when it has an @, which may end a password. The error never repeats the address.
  */
-export function refuseCredentials(value) {
+export function refuseCredentials(value, platform = process.platform) {
+  // These sources are mounted as native files before the page ever receives their address.
+  if (platform === 'win32' && nativeWindowsPath(value)) return;
   const address = URL.parse(value, page);
   if (address ? address.username || address.password : value.includes('@')) throw new Error('Source URLs must not contain credentials');
 }

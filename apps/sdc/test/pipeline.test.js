@@ -75,3 +75,9 @@ test("the downloaded sidecar preserves the actual backend, adapter and fallback 
     assert.deepEqual(JSON.parse(JSON.stringify(meta)).Execution, execution);
   }
 });
+
+test("explicit image roles preserve image1 as the field reference despite sorting and b-values", () => {
+  const first = entry("z.nii.gz", "j-");
+  const second = entry("a.nii.gz", "j", {});
+  assert.deepEqual(selectPair([first, second], { ordered: true }).map(value => value.image.name), ["z.nii.gz", "a.nii.gz"]);
+});
