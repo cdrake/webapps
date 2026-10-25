@@ -126,10 +126,14 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     }
     const archive = await download('#zipButton');
     assert.equal(archive.filename, 'me-ica_outputs.zip');
-    assert.equal(archive.bytes.readUInt32LE(0), 0x04034b50, 'ME-ICA export must be a ZIP archive');
-    for (const name of ['desc-tedana_registry.json', 'desc-ICA_status_table.tsv']) {
-      assert.ok(archive.bytes.includes(Buffer.from(name)), `ME-ICA archive must include ${name}`);
+    const { unzipSync } = createRequire(join(root, 'apps/dcm2niix/package.json'))('fflate');
+    const entries = unzipSync(archive.bytes);
+    for (const [name, expected] of Object.entries(reference.sha256)) {
+      assert.ok(entries[name]?.length, `ME-ICA archive must include ${name}`);
+      assert.equal(createHash('sha256').update(entries[name]).digest('hex'), expected, `${name} in the archive must equal the native ME-ICA reference`);
     }
+    const registry = JSON.parse(Buffer.from(entries['desc-tedana_registry.json']).toString('utf8'));
+    assert.ok(registry && typeof registry === 'object' && Object.keys(registry).length > 0, 'ME-ICA registry must contain output metadata');
     return { filename: archive.filename, bytes: archive.bytes.length, components, accepted, rejected, outputs };
   }
   if (id === 'dcm2niix') {
