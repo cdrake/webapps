@@ -68,6 +68,18 @@ test('scientific workflow triggers cover the actual transitive workspace graph',
   }
 });
 
+test('the DWI job verifies rapid desktop exports before starting expensive scientific processing', () => {
+  const steps = flow.jobs['exported-template'].steps;
+  const install = steps.findIndex(step => step.run?.includes('electron/install.js'));
+  const transport = steps.findIndex(step => step.run === 'node scripts/desktop/artifact-completion-smoke.mjs');
+  const scientific = steps.findIndex(step => step.run?.includes('node scripts/desktop/neuroflow-smoke.mjs'));
+  assert.ok(install >= 0 && transport > install && scientific > transport);
+  assert.equal(steps[transport].if, "matrix.template == 'dwi'");
+  assert.match(steps[transport].env.NEURODESK_TEST_REPORT, /neuroflow-evidence\/artifact-completion$/);
+  const upload = steps.find(step => step.uses?.startsWith('actions/upload-artifact@'));
+  assert.ok(upload.with.path.includes('artifact-completion-smoke.json'));
+});
+
 
 test('the DWI job installs the toolchain that the real shoreline build requires', async () => {
   const build = await readFile(new URL('packages/shoreline/scripts/build-wasm.mjs', root), 'utf8');
