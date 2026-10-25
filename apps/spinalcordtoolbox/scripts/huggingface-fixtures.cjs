@@ -83,7 +83,8 @@ function downloadSctTestingDataFile(relativePath, destination) {
 function download(url, destination, options = {}) {
   const settings = {
     maxRetries: options.maxRetries ?? DEFAULT_MAX_DOWNLOAD_RETRIES,
-    retryBaseDelayMs: options.retryBaseDelayMs ?? DEFAULT_RETRY_BASE_DELAY_MS
+    retryBaseDelayMs: options.retryBaseDelayMs ?? DEFAULT_RETRY_BASE_DELAY_MS,
+    timeoutMs: options.timeoutMs
   };
   return downloadAttempt(url, destination, 0, 0, settings);
 }
@@ -141,7 +142,16 @@ function downloadAttempt(url, destination, redirectCount, retryCount, settings) 
         reject(error);
       });
     });
+    let timeout;
+    if (settings.timeoutMs !== undefined) {
+      timeout = setTimeout(() => {
+        request.destroy(Object.assign(new Error(`Download timed out: ${url}`), { code: 'ETIMEDOUT' }));
+      }, settings.timeoutMs);
+      timeout.unref();
+      request.once('close', () => clearTimeout(timeout));
+    }
     request.on('error', error => {
+      clearTimeout(timeout);
       if (retryCount < settings.maxRetries) {
         retryDownload(url, destination, redirectCount, retryCount, settings, resolve, reject);
         return;
