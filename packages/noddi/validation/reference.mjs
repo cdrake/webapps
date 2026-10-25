@@ -98,6 +98,23 @@ export function inputChecksums(inputs) {
   ]));
 }
 
+/** Compare exact input names and hashes independently of object insertion order. */
+export function compareInputChecksums(actual, expected) {
+  const checks = [];
+  for (const id of new Set([...Object.keys(expected), ...Object.keys(actual)])) {
+    const names = new Set([...Object.keys(expected[id] ?? {}), ...Object.keys(actual[id] ?? {})]);
+    for (const name of names) {
+      const is = actual[id]?.[name];
+      const was = expected[id]?.[name];
+      checks.push([
+        is !== undefined && was !== undefined && is === was,
+        `input ${id}/${name}: expected ${was ?? '<missing>'}, actual ${is ?? '<missing>'}`,
+      ]);
+    }
+  }
+  return checks;
+}
+
 // What the checks compare about one download: its name, its decompressed NIfTI bytes (header and
 // voxels) and the voxel statistics a reader of a failure needs. The browser and Node gzip with
 // different zlib builds, so the compressed bytes may differ.
