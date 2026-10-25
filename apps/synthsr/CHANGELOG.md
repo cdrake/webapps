@@ -4,6 +4,9 @@
 
 ### Patch Changes
 
+- Updated dependencies [74b9c63]
+  - @neurodesk/runtime-support@0.9.16
+  - @neurodesk/synthsr@0.6.20261025
 - 99037b6: Submit and await each WebGPU U-Net layer separately so a full-volume inference does not occupy one long command buffer. Preserve shader arithmetic and graph order, report the recorded device-loss reason instead of a generic readback failure, and check actual submission boundaries in SynthSeg's unchanged native-parity tests.
 - Updated dependencies [99037b6]
   - @neurodesk/runtime-support@0.9.15

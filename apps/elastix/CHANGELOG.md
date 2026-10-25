@@ -4,6 +4,9 @@
 
 ### Patch Changes
 
+- Updated dependencies [74b9c63]
+  - @neurodesk/runtime-support@0.9.16
+  - @neurodesk/elastix@0.5.20261025
 - Updated dependencies [99037b6]
   - @neurodesk/runtime-support@0.9.15
   - @neurodesk/elastix@0.5.20261025

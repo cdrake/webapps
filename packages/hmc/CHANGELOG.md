@@ -4,6 +4,7 @@
 
 ### Patch Changes
 
+- @neurodesk/dwi2trx@0.8.20261025
 - Updated dependencies [3226bb7]
   - @neurodesk/hmc-registration@0.3.0
 - @neurodesk/dwi2trx@0.8.20261025

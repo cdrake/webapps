@@ -265,11 +265,9 @@ test("a GPU failure remains visible in the CPU fallback's report, sidecar and co
     await route.fulfill({ response, body: setup + await response.text() });
   });
   await page.goto("/");
-  await page.locator("#neurodesk-input-transfer").setInputFiles(syntheticPair().filter(file => !file.name.endsWith(".bval")));
-  await page.evaluate(async () => {
-    await globalThis.neurodeskAutomation.dispatch("adopt", { role: "images" });
-    await globalThis.neurodeskAutomation.dispatch("start", {});
-  });
+  await page.locator("#imageInput").setInputFiles(syntheticPair());
+  await expect(page.locator("#runButton")).toBeEnabled();
+  await page.evaluate(() => globalThis.neurodeskAutomation.dispatch("start", {}));
   await expect.poll(() => page.evaluate(async () => (await globalThis.neurodeskAutomation.dispatch("snapshot")).state), { timeout: 60000 }).toBe("succeeded");
   const report = await page.evaluate(async () => (await globalThis.neurodeskAutomation.dispatch("snapshot")).report);
   const execution = { backend: "cpu", gpuError: "forced GPU device failure" };

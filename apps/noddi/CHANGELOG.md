@@ -4,6 +4,10 @@
 
 ### Patch Changes
 
+- Updated dependencies [74b9c63]
+  - @neurodesk/runtime-support@0.9.16
+  - @neurodesk/dwi2trx@0.8.20261025
+  - @neurodesk/noddi@0.6.20261025
 - @neurodesk/dwi2trx@0.8.20261025
 - @neurodesk/noddi@0.6.20261025
 - aab06fb: Set WLS and OLS fractional anisotropy to zero for tensors with a negative eigenvalue, preserving the remaining fitted maps and shell selection. Apply the same rule in the browser and command line.
