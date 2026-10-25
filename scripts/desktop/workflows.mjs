@@ -106,6 +106,36 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     await selector.selectOption(examples[0].id);
     await expect(page.locator('[data-neurodesk-examples]')).toHaveAttribute('data-example-state', 'ready', { timeout: 120000 });
   }
+  if (id === 'me-ica') {
+    const reference = JSON.parse(await readFile(join(root, 'apps/me-ica/e2e/expected.json')));
+    const { n_components: components, accepted, rejected } = reference.summary;
+    await expect(page.locator('#runButton')).toBeEnabled();
+    await page.locator('#runButton').click();
+    await expect(page.locator('#statusText')).toContainText(`${components} components, ${accepted} accepted, ${rejected} rejected`, { timeout: 300000 });
+    const outputs = [];
+    for (const [label, name] of [
+      ['Denoised series', 'desc-denoised_bold.nii.gz'],
+      ['Optimally combined series', 'desc-optcom_bold.nii.gz'],
+      ['T2* map (s)', 'T2starmap.nii.gz'],
+      ['Component metrics (table)', 'desc-tedana_metrics.tsv'],
+    ]) {
+      const result = await download(`#resultList .nd-volume-toggle:has-text("${label}") button:has-text("Download")`);
+      assert.equal(result.filename, name);
+      assert.equal(createHash('sha256').update(result.bytes).digest('hex'), reference.sha256[name], `${name} must equal the native ME-ICA reference`);
+      outputs.push({ filename: result.filename, bytes: result.bytes.length });
+    }
+    const archive = await download('#zipButton');
+    assert.equal(archive.filename, 'me-ica_outputs.zip');
+    const { unzipSync } = createRequire(join(root, 'apps/dcm2niix/package.json'))('fflate');
+    const entries = unzipSync(archive.bytes);
+    for (const [name, expected] of Object.entries(reference.sha256)) {
+      assert.ok(entries[name]?.length, `ME-ICA archive must include ${name}`);
+      assert.equal(createHash('sha256').update(entries[name]).digest('hex'), expected, `${name} in the archive must equal the native ME-ICA reference`);
+    }
+    const registry = JSON.parse(Buffer.from(entries['desc-tedana_registry.json']).toString('utf8'));
+    assert.ok(registry && typeof registry === 'object' && Object.keys(registry).length > 0, 'ME-ICA registry must contain output metadata');
+    return { filename: archive.filename, bytes: archive.bytes.length, components, accepted, rejected, outputs };
+  }
   if (id === 'dcm2niix') {
     await expect(page.locator('#seriesRows tr')).toHaveCount(1, { timeout: 120000 });
     await page.locator('#subject').fill('01');
