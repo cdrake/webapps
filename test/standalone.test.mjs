@@ -125,6 +125,10 @@ test('fastprep is in the hosted desktop workflow selection', async () => {
   assert.ok(ciWorkflowApps(await loadAppsRegistry()).includes('fastprep'), 'fastprep completed its offline workflow on every hosted runner (standalone-validation.md, 19 October 2026)');
 });
 
+test('SDC retains its CPU-compatible hosted desktop workflow alongside its hardware browser gate', async () => {
+  assert.ok(ciWorkflowApps(await loadAppsRegistry()).includes('sdc'), 'SDC completed its offline workflow on all three hosted runners (standalone-validation.md, 21 October 2026)');
+});
+
 test('compute server setup leads with download, startup and pairing for the current webapp origin', async () => {
   const catalog = await loadStandalone(await loadAppsRegistry());
   const app = structuredClone(catalog.apps.nesvor);
