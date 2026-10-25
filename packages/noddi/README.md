@@ -108,6 +108,7 @@ Daducci A, Canales-Rodriguez EJ, Zhang H, Dyrby TB, Alexander DC, Thiran JP. Acc
 ## Tensor fit
 
 `--tensor-fit` selects `wls` (the default), `ols` or `niimath-dtifit`, as in the browser.
+WLS and OLS set FA to zero when any fitted eigenvalue is strictly negative. Zero eigenvalues remain valid; the other maps retain the unconstrained fit. The tensor fit still uses b0 and shells at or below 1200 s/mm², or the lowest shell if none qualifies: a small direction count alone does not establish a validated alternative shell policy.
 The niimath option runs DWI2TRX's corrected vendored dtifit build; the package injects a fresh Node module through `@neurodesk/dwi2trx/node-runner`, while the browser uses a cancellable worker.
 Both hosts use the same tensor volumes and map conversion. NODDI runs afterward when selected.
 

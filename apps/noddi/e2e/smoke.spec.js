@@ -344,13 +344,11 @@ test("the single-shell example fits the tensor, refuses NODDI and downloads FA",
   const fa = await readDownload(download);
   const inMask = Array.from(fa.data).filter((value) => value > 0);
   expect(inMask.length).toBeGreaterThan(1000);
-  // As FSL dtifit, FA is not clipped: a voxel with a negative eigenvalue (at the mask edge) can
-  // exceed 1. A brain's FA is mostly between 0.1 and 0.6.
   const sorted = inMask.sort((a, b) => a - b);
   const median = sorted[sorted.length >> 1];
   expect(median).toBeGreaterThan(0.1);
   expect(median).toBeLessThan(0.6);
-  expect(sorted.filter((value) => value > 1).length / sorted.length).toBeLessThan(0.01);
+  expect(Array.from(fa.data).every((value) => Number.isFinite(value) && value >= 0 && value <= 1)).toBe(true);
 });
 
 test("cancelling default MindGrab extraction permits a complete retry", async ({ page }) => {
