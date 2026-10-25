@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import { gunzipSync } from 'node:zlib';
 import { verifyNiftiOffset } from './check-nifti.mjs';
 import { dicomSeries } from '../../test-utils/dicom-fixture.mjs';
+import { syntheticNifti } from '../../test-utils/nifti-fixture.mjs';
 import { expect } from '@playwright/test';
 import { verifyMuscleMapFullPipeline, createSyntheticMuscleMapNifti } from '../../test/musclemap-full-pipeline-smoke.mjs';
 import { startReferenceServer } from '../../test-utils/compute-reference-server.mjs';
@@ -344,15 +345,42 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     return { loadedSurface: 'tetrahedron.obj', filename: result.filename, vertices: Number(lines[1]) };
   }
   if (id === 'qsmbly') {
-    const result = await page.evaluate(async () => {
+    const fixture = value => Array.from(syntheticNifti({
+      dims: [16, 16, 16],
+      spacing: [1, 1, 1],
+      value: () => value,
+      gzip: false,
+    }));
+    const result = await page.evaluate(async ({ phase, magnitude, mask }) => {
       const qsm = await import(new URL('wasm/qsm_wasm.js', location.href).href);
+      const { createVolumeStore, engineConfigJson, engineSidecars } = await import(new URL('js/worker/EngineRelay.js', location.href).href);
+      const { PIPELINE_DEFAULTS } = await import(new URL('js/app/config.js', location.href).href);
       await qsm.default();
-      const values = qsm.calculate_swi_wasm(new Float64Array(4096), new Float64Array(4096).fill(100), new Uint8Array(4096).fill(1), 16, 16, 16, 1, 1, 1, 2, 2, 2, 2, 4);
-      return { voxels: values.length, min: Math.min(...values), max: Math.max(...values) };
-    });
+      const volumes = createVolumeStore();
+      volumes.put('AcquiredPhase(1)', { nifti: new Uint8Array(phase) });
+      volumes.put('AcquiredMagnitude(1)', { nifti: new Uint8Array(magnitude) });
+      const echoes = engineSidecars([20], 3).map(sidecar => ({ sidecar }));
+      const engine = new qsm.Engine(volumes, JSON.stringify({ echoes }), 'offline-swi');
+      try {
+        engine.supplyMask(new Uint8Array(mask), 'offline supplied mask');
+        const config = engineConfigJson(PIPELINE_DEFAULTS, {
+          suppliedMask: true,
+          outputs: { qsm: false, swi: true },
+        });
+        engine.run(config, { stage() {}, progress() {}, log() {}, output() {} });
+        const values = volumes.get('Swi');
+        if (!(values instanceof Float32Array)) throw new Error('SWI output is missing');
+        return { voxels: values.length, min: Math.min(...values), max: Math.max(...values) };
+      } finally {
+        engine.free();
+      }
+    }, { phase: fixture(0), magnitude: fixture(100), mask: fixture(1) });
     assert.equal(result.voxels, 4096);
-    assert.equal(result.min, 100);
-    assert.equal(result.max, 100);
+    // Current CLEAR-SWI defaults sensitivity-correct a constant magnitude to one,
+    // softplus scales it to 0.5, and zero phase gives (1 + tanh(1)) / 2.
+    const expected = Math.fround(0.25 * (1 + Math.tanh(1)));
+    assert.equal(result.min, expected);
+    assert.equal(result.max, expected);
     return result;
   }
   if (id === 'mri2vid') {
