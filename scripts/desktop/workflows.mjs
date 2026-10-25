@@ -12,7 +12,7 @@ import { expect } from '@playwright/test';
 import { verifyMuscleMapFullPipeline, createSyntheticMuscleMapNifti } from '../../test/musclemap-full-pipeline-smoke.mjs';
 import { startReferenceServer } from '../../test-utils/compute-reference-server.mjs';
 
-export const workflowApps = ['nesvor', 'musclemap', 'vesselboost', 'spinalcordtoolbox', 'calmar', 'qsmbly', 'seedseg', 'dicompare', 'deface', 'easy-mp2rage', 'niimath', 'mri2vid', 'browserqc', 'surfannotate', 'zarro', 'synthsr', 'synthseg', 'syncro', 'dwi2trx', 'edgereg', 'greedy', 'ants', 'brain2print', 'topofit', 'fireants', 'brain-extraction', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel', 'elastix', 'dicomview', 'fastprep', 'hmc', 'noddi', 'degibbs', 'n4', 'dcm2niix', 'dwidenoise', 'sdc', 'dwicorrect', 'me-ica', 'pipeline-builder'];
+export const workflowApps = ['nesvor', 'musclemap', 'vesselboost', 'spinalcordtoolbox', 'calmar', 'qsmbly', 'seedseg', 'dicompare', 'deface', 'easy-mp2rage', 'niimath', 'mri2vid', 'browserqc', 'surfannotate', 'zarro', 'synthsr', 'synthseg', 'syncro', 'dwi2trx', 'edgereg', 'greedy', 'ants', 'brain2print', 'topofit', 'fireants', 'brain-extraction', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel', 'elastix', 'dicomview', 'fastprep', 'hmc', 'noddi', 'degibbs', 'n4', 'dcm2niix', 'dwidenoise', 'sdc', 'dwicorrect', 'me-ica', 'pipeline-builder', 'bison'];
 
 /**
  * Anything a workflow needs before the desktop app starts. NeSVoR computes on a
@@ -100,12 +100,23 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     assert.ok(bytes.length > 352, 'Output must contain image data');
     return { filename: data.filename, bytes: data.bytes.length };
   };
-  if (['deface', 'brain2print', 'dwi2trx', 'ants', 'greedy', 'edgereg', 'fireants', 'elastix', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel', 'dicomview', 'fastprep', 'hmc', 'noddi', 'degibbs', 'n4', 'dcm2niix', 'dwidenoise', 'sdc', 'dwicorrect', 'me-ica', 'pipeline-builder'].includes(id)) {
+  if (['deface', 'brain2print', 'dwi2trx', 'ants', 'greedy', 'edgereg', 'fireants', 'elastix', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel', 'dicomview', 'fastprep', 'hmc', 'noddi', 'degibbs', 'n4', 'dcm2niix', 'dwidenoise', 'sdc', 'dwicorrect', 'me-ica', 'pipeline-builder', 'bison'].includes(id)) {
     const examples = JSON.parse(await readFile(join(root, 'apps', id, 'examples.json')));
     const selector = page.getByRole('combobox', { name: 'Input', exact: true });
     await expect(selector).toBeEnabled({ timeout: 120000 });
     await selector.selectOption(examples[0].id);
     await expect(page.locator('[data-neurodesk-examples]')).toHaveAttribute('data-example-state', 'ready', { timeout: 120000 });
+  }
+  if (id === 'bison') {
+    // A whole run takes 15 to 20 minutes. The registration starts only after every model file
+    // has come from the offline bundle and passed its checksum, so stop the run there.
+    await expect(page.locator('#fileInfo')).toContainText('sub-HML0541_ses-01_rec-defaced_T1w.nii.gz', { timeout: 120000 });
+    await expect(page.locator('#runButton')).toBeEnabled({ timeout: 60000 });
+    await page.locator('#runButton').click();
+    await expect(page.locator('#statusText')).toHaveText(/^Registering T1 to the template \(affine\)/, { timeout: 300000 });
+    await page.locator('#cancelButton').click();
+    await expect(page.locator('#statusText')).toHaveText('Segmentation cancelled');
+    return { modelsVerified: true };
   }
   if (id === 'me-ica') {
     const reference = JSON.parse(await readFile(join(root, 'apps/me-ica/e2e/expected.json')));

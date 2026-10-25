@@ -65,6 +65,7 @@ export async function runBrowserOperation(contents, { contract, operation, reque
   const browserInputs = {};
   let snapshot;
   let runId;
+  let exportMessage;
   async function observe() {
     signal?.throwIfAborted();
     artifacts.assertHealthy();
@@ -76,7 +77,7 @@ export async function runBrowserOperation(contents, { contract, operation, reque
       error.candidates = snapshot.error?.candidates;
       throw error;
     }
-    onProgress(snapshot);
+    onProgress(exportMessage ? { ...snapshot, message: exportMessage } : snapshot);
     return snapshot;
   }
   const pause = () => page.bounded(new Promise(resolve => setTimeout(resolve, 100)));
@@ -109,9 +110,12 @@ export async function runBrowserOperation(contents, { contract, operation, reque
     if (!runId) throw new Error('App did not return an operation ID');
     while ((await observe()).state !== 'succeeded') await pause();
     const ids = [...Object.keys(snapshot.report?.artifacts ?? {}), 'report'];
-    for (const artifactId of ids) {
+    for (const [index, artifactId] of ids.entries()) {
+      exportMessage = `Exporting ${artifactId} (${index + 1}/${ids.length})`;
+      onProgress({ ...snapshot, message: exportMessage });
       await artifacts.download(artifactId, () => page.call('download', { artifactId }), observe);
     }
+    exportMessage = 'Verifying exported artifacts';
     await observe();
     return await artifacts.verify(({ output, downloads }) =>
       page.bounded(verifyOperationReport({ operation, snapshot, downloads, output, inputs, parameters: request.parameters })));
