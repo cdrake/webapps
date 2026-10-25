@@ -1,2 +1,2 @@
 // The SHA-256 of wasm/hmc-registration.wasm. Node and the worker refuse any other bytes.
-export const HMC_REGISTRATION_WASM_SHA256 = "d552ee295d79cd1722ced2c13c58d9afa0a5008275bbe70593d8caf9243de9ef";
+export const HMC_REGISTRATION_WASM_SHA256 = "53779fcd0064a8394aa42ca2e82c5f8b33cf4aebbe98e3a43af6212e558ccf86";
