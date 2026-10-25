@@ -64,7 +64,12 @@ ants.run(['--apply', 'template.nii', 'template.nii', 'updated.nii', 'HammingWind
 `interpolation` is `Linear`, `NearestNeighbor`, `BSpline` (order 3), `BSpline[0]` to `BSpline[5]`, `HammingWindowedSinc` or `LanczosWindowedSinc`, as antsApplyTransforms names them (case does not matter).
 `fill` is the value of voxels that map outside `moving`.
 A transform written `inverse:name` is inverted, as `[name,1]` in antsApplyTransforms.
-The last transform listed acts first on a point, as on the antsApplyTransforms command line.
+The last transform listed acts first on an **output-to-input sampling point**.
+This positional list is the reverse of native antsApplyTransforms' `-t` list:
+`--apply ... A B` corresponds to `antsApplyTransforms ... -t B -t A`.
+For example, `--apply ... rot.mat trans.mat` samples at `R(T(p))`, not `T(R(p))`.
+Apparent movement of image content uses the inverse mapping; it must not be used to name the sampling-point order.
+The independent [native/WASM transform-order check](validation/transform-order.md) covers both orders and an inverse affine.
 Pixels are float32 in and out; interpolation and transforms are double, as antsApplyTransforms without `--float`.
 The interpolators are the ones antsApplyTransforms builds (`make_interpolator_snip.tmpl`): windowed sinc with radius 3 and a constant (zero) boundary, B-spline with double coefficients.
 `packages/registration`'s `--apply` (SYNcro, ANTs) does not change: it still has only linear and nearest.
