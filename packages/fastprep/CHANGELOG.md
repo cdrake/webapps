@@ -1,5 +1,12 @@
 # @neurodesk/fastprep
 
+## 0.2.5
+
+### Patch Changes
+
+- Updated dependencies [4bc35f7]
+  - @neurodesk/sdc@0.3.20261025
+
 ## 0.2.4
 
 ### Patch Changes

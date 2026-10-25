@@ -1,5 +1,11 @@
 # @neurodesk/desktop
 
+## 0.46.20261025
+
+### Patch Changes
+
+- Pace automated artifact exports to respect Chromium's ten-download burst limit, which could leave completed model and tractography runs waiting until their deadline. Report the current exported artifact and verify rapid multi-file completion in real Electron before the full scientific CI workflow.
+
 ## 0.45.20261025
 
 ### Patch Changes

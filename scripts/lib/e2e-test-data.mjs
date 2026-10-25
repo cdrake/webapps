@@ -37,10 +37,40 @@ function synthsrModels() {
   return join(root, 'exes/synthsr/models');
 }
 
+async function sdcExample(cache) {
+  const directory = join(cache, 'sdc-example');
+  await mkdir(directory, { recursive: true });
+  const examples = JSON.parse(await readFile(join(root, 'apps/sdc/examples.json'), 'utf8'));
+  for (const file of examples.flatMap(example => example.files)) {
+    await fetchChecked(file.url, join(directory, file.name), file);
+  }
+  const native = JSON.parse(await readFile(join(root, 'apps/sdc/e2e/native-reference.json'), 'utf8'));
+  await fetchChecked(native.url, join(directory, new URL(native.url).pathname.split('/').pop()), native);
+  return { SDC_EXAMPLE_DIR: directory };
+}
+
 // Apps that fetch their own pinned data once a flag is set.
 const flag = (name) => ({ env: [name], provision: async () => ({ [name]: '1' }) });
 
 export const provisioners = {
+  sdc: {
+    env: ['SDC_EXAMPLE_DIR', 'SDC_WEBGPU_REFERENCE_DIR'],
+    provision: async (cache) => {
+      const example = await sdcExample(cache);
+      const manifest = JSON.parse(await readFile(join(root, 'docs/architecture/dwi-reverse-pe-options/results.manifest.json'), 'utf8'));
+      const directory = join(cache, 'sdc-webgpu-reference', manifest.revision);
+      for (const path of ['prep/prep.json', 'prep/ap_mean.nii.gz', 'prep/pa_mean_reg.nii.gz', 'mask/b0_mask.nii.gz', 'pyhysco/field_hz.nii.gz', 'pyhysco-gpu/field_hz.nii.gz']) {
+        const relative = `ds005134-sub-01/${path}`;
+        const file = manifest.files.find(entry => entry.path === relative);
+        if (!file) throw new Error(`Missing SDC hardware reference pin: ${relative}`);
+        const target = join(directory, relative);
+        await mkdir(join(target, '..'), { recursive: true });
+        await fetchChecked(manifest.base + relative, target, file);
+      }
+      return { ...example, SDC_WEBGPU_REFERENCE_DIR: directory };
+    },
+    cpu: { env: ['SDC_EXAMPLE_DIR'], provision: sdcExample },
+  },
   // Public enhanced Philips DWI and native dcm2niix references, pinned by commit
   // and checksum. No image data is committed to the source repository.
   dcm2niix: {

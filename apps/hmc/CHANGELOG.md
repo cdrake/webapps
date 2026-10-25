@@ -4,6 +4,10 @@
 
 ### Patch Changes
 
+- Updated dependencies [74b9c63]
+  - @neurodesk/runtime-support@0.9.16
+  - @neurodesk/dwi2trx@0.8.20261025
+  - @neurodesk/hmc@0.4.20261025
 - Updated dependencies [3226bb7]
   - @neurodesk/hmc-registration@0.3.0
   - @neurodesk/hmc@0.4.20261025

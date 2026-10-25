@@ -1,5 +1,11 @@
 # @neurodesk/runtime-support
 
+## 0.9.16
+
+### Patch Changes
+
+- 74b9c63: The software-adapter check of `mindgrab/backend` now also refuses WARP and adapters named `cpu`. The sdc WebGPU path and the hardware-GPU test helper use this one check.
+
 ## 0.9.15
 
 ### Patch Changes

@@ -138,12 +138,13 @@ export function outputNames(name1, name2) {
 }
 
 /** The field map's sidecar. */
-export function fieldSidecar({ image1, image2, phaseEncodingDirection, totalReadoutTime, iterations }) {
+export function fieldSidecar({ image1, image2, phaseEncodingDirection, totalReadoutTime, iterations, execution }) {
   return {
     Units: "Hz",
     Sources: [image1, image2],
     PhaseEncodingDirection: phaseEncodingDirection,
     TotalReadoutTime: totalReadoutTime,
+    Execution: execution,
     Description: `Susceptibility field from a reverse phase-encoding pair: PyHySCO 0.0.4 defaults (sdc app port), ${iterations} Gauss-Newton iterations. Sign as FSL topup: image 1 corrected is image1(x + field * TotalReadoutTime * PE sign) voxels.`,
   };
 }

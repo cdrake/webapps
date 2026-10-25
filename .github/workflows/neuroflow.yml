@@ -90,6 +90,11 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: node packages/desktop/node_modules/electron/install.js
+      - name: Verify rapid desktop artifact exports
+        if: matrix.template == 'dwi'
+        run: node scripts/desktop/artifact-completion-smoke.mjs
+        env:
+          NEURODESK_TEST_REPORT: ${{ runner.temp }}/neuroflow-evidence/artifact-completion
       - name: Install Chromium and prove hardware GPU access
         run: |
           node node_modules/@playwright/test/cli.js install chromium
@@ -122,6 +127,7 @@ jobs:
             ${{ runner.temp }}/neuroflow-evidence/**/run.json
             ${{ runner.temp }}/neuroflow-evidence/**/run.provenance.json
             ${{ runner.temp }}/neuroflow-evidence/**/report.json
+            ${{ runner.temp }}/neuroflow-evidence/**/artifact-completion-smoke.json
             ${{ runner.temp }}/neuroflow-evidence/**/logs/*
           if-no-files-found: warn
           retention-days: 7

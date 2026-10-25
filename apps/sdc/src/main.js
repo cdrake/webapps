@@ -201,6 +201,11 @@ async function estimate(signal) {
     });
     const seconds = (performance.now() - started) / 1000;
     log.log(`PyHySCO: ${out.iterations} Gauss-Newton iterations in ${seconds.toFixed(1)} s`);
+    const execution = { backend: out.backend };
+    if (out.adapter) execution.adapter = out.adapter;
+    if (out.gpuError) execution.gpuError = out.gpuError;
+    log.log(`PyHySCO backend: ${execution.backend}${execution.adapter ? ` (${execution.adapter})` : ""}`);
+    if (execution.gpuError) log.log(`WebGPU failed. CPU fallback: ${execution.gpuError}`, "warning");
     const names = outputNames(first.name, second.name);
     const volume = (data, name) => gzipFile(createNiftiFromData(Float32Array.from(data), first.buffer, { dims: first.dims, range: "auto", clampCalMax: false }), name);
     const field = await volume(out.field, names.field);
@@ -209,7 +214,7 @@ async function estimate(signal) {
     controller.signal.throwIfAborted();
     const corrected2 = await volume(out.corrected2, names.corrected2);
     controller.signal.throwIfAborted();
-    const meta = fieldSidecar({ image1: first.name, image2: second.name, phaseEncodingDirection, totalReadoutTime, iterations: out.iterations });
+    const meta = fieldSidecar({ image1: first.name, image2: second.name, phaseEncodingDirection, totalReadoutTime, iterations: out.iterations, execution });
     const sidecar = new File([`${JSON.stringify(meta, null, 2)}\n`], names.sidecar, { type: "application/json" });
     const rows = {
       field: { description: "Field map (Hz)", file: field },
@@ -226,7 +231,7 @@ async function estimate(signal) {
     status(`Field estimated in ${out.iterations} iterations`);
     return {
       artifacts: Object.entries(rows).map(([role, row]) => ({ role, file: row.file })),
-      provenance: { method: "pyhysco-0.0.4-port", alpha: 300, beta: 1e-4, maxIterations: 50, iterations: out.iterations, reference: first.name, phaseEncodingDirection, totalReadoutTime },
+      provenance: { method: "pyhysco-0.0.4-port", alpha: 300, beta: 1e-4, maxIterations: 50, iterations: out.iterations, reference: first.name, phaseEncodingDirection, totalReadoutTime, execution },
     };
   } catch (error) {
     progress.reset();
