@@ -6,6 +6,12 @@
 
 - bd5f3a8: Style the `LabelLegend` rows in the shared imaging workspace: a colour swatch, the label name and its volume on one line, from tokens only.
 
+## 0.21.1
+
+### Patch Changes
+
+- 0066f60: Reject missing, empty, or non-string step labels in `outputNames` and `derivativeSidecar` with a `TypeError`. Valid labels keep the same filenames and sidecar content.
+
 ## 0.21.0
 
 ### Minor Changes
