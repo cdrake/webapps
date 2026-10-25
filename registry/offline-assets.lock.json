@@ -3873,6 +3873,13 @@
       "kind": "model",
       "license": "Redistribution permitted by Mahsa Dadar (2026-10-24); BISON-WMH has no licence file, and its CITATION.cff says Apache-2.0",
       "dependencies": []
+    },
+    "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/5fefd28435b9dde73b63629ee4de1381a962de8a/pipeline-builder/examples/dwi-preprocessing.workflow.json": {
+      "sha256": "c47a4024d6fb542ae719cdda6de08474b34a683d00c269dfbbc79a66fc161c88",
+      "bytes": 4986,
+      "contentType": "application/json",
+      "kind": "example",
+      "dependencies": []
     }
   },
   "apps": {
@@ -4852,7 +4859,8 @@
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/ef3e1da9f96a2e79d347333354d8c6bdb68f1f37/dwicorrect/examples/ds006676-sub-001-S3P1/sub-001_ses-001_acq-S3P1_dir-PA_dwi.json"
     ],
     "pipeline-builder": [
-      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/19e3b7602d4e70abc740bc8fe1288ef01848a8db/pipeline-builder/examples/t1-segmentation.workflow.json"
+      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/19e3b7602d4e70abc740bc8fe1288ef01848a8db/pipeline-builder/examples/t1-segmentation.workflow.json",
+      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/5fefd28435b9dde73b63629ee4de1381a962de8a/pipeline-builder/examples/dwi-preprocessing.workflow.json"
     ],
     "bison": [
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/d7d841013bc7c46caaf6c8c7fc9b9f0323c8e4a9/bison/templates/COPYING",
@@ -4884,6 +4892,12 @@
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/b901c5f3ca8f66960564c253a3b428fc37a00aa9/bison/models/t1/SP_7.nii.gz",
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/b901c5f3ca8f66960564c253a3b428fc37a00aa9/bison/models/t1/SP_8.nii.gz",
       "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/b901c5f3ca8f66960564c253a3b428fc37a00aa9/bison/models/t1/t1-histogram.json"
+    ],
+    "hmc": [
+      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/ce028ecca10e9abe7988f965e03ad51627ca9c52/noddi/examples/sub-01_dir-AP_desc-slab_dwi.bval",
+      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/ce028ecca10e9abe7988f965e03ad51627ca9c52/noddi/examples/sub-01_dir-AP_desc-slab_dwi.bvec",
+      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/ce028ecca10e9abe7988f965e03ad51627ca9c52/noddi/examples/sub-01_dir-AP_desc-slab_dwi.json",
+      "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/ce028ecca10e9abe7988f965e03ad51627ca9c52/noddi/examples/sub-01_dir-AP_desc-slab_dwi.nii.gz"
     ]
   }
 }

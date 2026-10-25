@@ -1,5 +1,22 @@
 # @neurodesk/n4
 
+## 0.6.20261025
+
+### Patch Changes
+
+- 0813685: Preserve LF line endings in the checksum-pinned N4 factory on Windows checkouts so portable validation uses the exact reviewed module bytes.
+
+## 0.6.20261024
+
+### Minor Changes
+
+- Add the niworkflows EPI-reference N4 argv builder and allow the existing runtime to select it without changing the default MRtrix profile or WASM bytes. This is independent entry-point wiring; the full SyN-SDC accuracy and memory gates remain pending.
+
+### Patch Changes
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.21.1
+
 ## 0.5.20261024
 
 ### Minor Changes
@@ -22,6 +39,10 @@
   - @neurodesk/node-drivers@0.3.0
 
 ## 0.4.20261024
+
+### Patch Changes
+
+- Restore the WebAssembly stack after each kernel call so repeated corrections and transform applications do not exhaust the stack. Export the stack functions from the pinned builds and verify 200 runs on one instance.
 
 ## 0.4.20261022
 

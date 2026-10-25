@@ -114,7 +114,8 @@
     "./elements/compute-connection": {
       "types": "./src/elements/compute-connection.d.ts",
       "default": "./src/elements/compute-connection.js"
-    }
+    },
+    "./file-io/hash": "./src/file-io/hash.js"
   },
   "scripts": {
     "build:showcase": "node scripts/build-showcase.mjs",

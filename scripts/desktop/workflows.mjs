@@ -11,7 +11,7 @@ import { expect } from '@playwright/test';
 import { verifyMuscleMapFullPipeline, createSyntheticMuscleMapNifti } from '../../test/musclemap-full-pipeline-smoke.mjs';
 import { startReferenceServer } from '../../test-utils/compute-reference-server.mjs';
 
-export const workflowApps = ['nesvor', 'musclemap', 'vesselboost', 'spinalcordtoolbox', 'calmar', 'qsmbly', 'seedseg', 'dicompare', 'deface', 'easy-mp2rage', 'niimath', 'mri2vid', 'browserqc', 'surfannotate', 'zarro', 'synthsr', 'synthseg', 'syncro', 'dwi2trx', 'edgereg', 'greedy', 'ants', 'brain2print', 'topofit', 'fireants', 'brain-extraction', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel', 'elastix', 'dicomview', 'fastprep', 'noddi', 'degibbs', 'n4', 'dcm2niix', 'dwidenoise', 'sdc', 'dwicorrect', 'me-ica', 'pipeline-builder', 'bison'];
+export const workflowApps = ['nesvor', 'musclemap', 'vesselboost', 'spinalcordtoolbox', 'calmar', 'qsmbly', 'seedseg', 'dicompare', 'deface', 'easy-mp2rage', 'niimath', 'mri2vid', 'browserqc', 'surfannotate', 'zarro', 'synthsr', 'synthseg', 'syncro', 'dwi2trx', 'edgereg', 'greedy', 'ants', 'brain2print', 'topofit', 'fireants', 'brain-extraction', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel', 'elastix', 'dicomview', 'fastprep', 'hmc', 'noddi', 'degibbs', 'n4', 'dcm2niix', 'dwidenoise', 'sdc', 'dwicorrect', 'me-ica', 'pipeline-builder', 'bison'];
 
 /**
  * Anything a workflow needs before the desktop app starts. NeSVoR computes on a
@@ -99,7 +99,7 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     assert.ok(bytes.length > 352, 'Output must contain image data');
     return { filename: data.filename, bytes: data.bytes.length };
   };
-  if (['deface', 'brain2print', 'dwi2trx', 'ants', 'greedy', 'edgereg', 'fireants', 'elastix', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel', 'dicomview', 'fastprep', 'noddi', 'degibbs', 'n4', 'dcm2niix', 'dwidenoise', 'sdc', 'dwicorrect', 'me-ica', 'pipeline-builder', 'bison'].includes(id)) {
+  if (['deface', 'brain2print', 'dwi2trx', 'ants', 'greedy', 'edgereg', 'fireants', 'elastix', 'disconnectome', 'carotid-flow', 'white-matter-lesions', 'lcmodel', 'dicomview', 'fastprep', 'hmc', 'noddi', 'degibbs', 'n4', 'dcm2niix', 'dwidenoise', 'sdc', 'dwicorrect', 'me-ica', 'pipeline-builder', 'bison'].includes(id)) {
     const examples = JSON.parse(await readFile(join(root, 'apps', id, 'examples.json')));
     const selector = page.getByRole('combobox', { name: 'Input', exact: true });
     await expect(selector).toBeEnabled({ timeout: 120000 });
@@ -116,6 +116,36 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     await page.locator('#cancelButton').click();
     await expect(page.locator('#statusText')).toHaveText('Segmentation cancelled');
     return { modelsVerified: true };
+  }
+  if (id === 'me-ica') {
+    const reference = JSON.parse(await readFile(join(root, 'apps/me-ica/e2e/expected.json')));
+    const { n_components: components, accepted, rejected } = reference.summary;
+    await expect(page.locator('#runButton')).toBeEnabled();
+    await page.locator('#runButton').click();
+    await expect(page.locator('#statusText')).toContainText(`${components} components, ${accepted} accepted, ${rejected} rejected`, { timeout: 300000 });
+    const outputs = [];
+    for (const [label, name] of [
+      ['Denoised series', 'desc-denoised_bold.nii.gz'],
+      ['Optimally combined series', 'desc-optcom_bold.nii.gz'],
+      ['T2* map (s)', 'T2starmap.nii.gz'],
+      ['Component metrics (table)', 'desc-tedana_metrics.tsv'],
+    ]) {
+      const result = await download(`#resultList .nd-volume-toggle:has-text("${label}") button:has-text("Download")`);
+      assert.equal(result.filename, name);
+      assert.equal(createHash('sha256').update(result.bytes).digest('hex'), reference.sha256[name], `${name} must equal the native ME-ICA reference`);
+      outputs.push({ filename: result.filename, bytes: result.bytes.length });
+    }
+    const archive = await download('#zipButton');
+    assert.equal(archive.filename, 'me-ica_outputs.zip');
+    const { unzipSync } = createRequire(join(root, 'apps/dcm2niix/package.json'))('fflate');
+    const entries = unzipSync(archive.bytes);
+    for (const [name, expected] of Object.entries(reference.sha256)) {
+      assert.ok(entries[name]?.length, `ME-ICA archive must include ${name}`);
+      assert.equal(createHash('sha256').update(entries[name]).digest('hex'), expected, `${name} in the archive must equal the native ME-ICA reference`);
+    }
+    const registry = JSON.parse(Buffer.from(entries['desc-tedana_registry.json']).toString('utf8'));
+    assert.ok(registry && typeof registry === 'object' && Object.keys(registry).length > 0, 'ME-ICA registry must contain output metadata');
+    return { filename: archive.filename, bytes: archive.bytes.length, components, accepted, rejected, outputs };
   }
   if (id === 'dcm2niix') {
     await expect(page.locator('#seriesRows tr')).toHaveCount(1, { timeout: 120000 });
@@ -489,6 +519,15 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     await expect(page.locator('#statusText')).toHaveText('Denoised 137 volumes', { timeout: 600000 });
     const image = nifti(await download('#resultList .nd-volume-toggle:nth-child(1) .nd-download-btn'));
     assert.equal(image.filename, 'sub-01_dir-AP_desc-denoised_dwi.nii.gz');
+    return image;
+  }
+  if (id === 'hmc') {
+    await expect(page.locator('#runButton')).toBeEnabled({ timeout: 120000 });
+    await page.locator('#method').selectOption('trivial');
+    await page.locator('#runButton').click();
+    await expect(page.locator('#statusText')).toHaveText('Head motion corrected', { timeout: 900000 });
+    const image = nifti(await download('#resultList .nd-volume-toggle:has-text("Corrected diffusion image") .nd-download-btn'));
+    assert.equal(image.filename, 'sub-01_dir-AP_desc-hmc_dwi.nii.gz');
     return image;
   }
   if (id === 'noddi') {
