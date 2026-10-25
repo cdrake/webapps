@@ -16,7 +16,7 @@ import { fileURLToPath } from "node:url";
 import { gunzipSync } from "node:zlib";
 import { readNifti, readNiftiFrames } from "@neurodesk/webapp-components/file-io";
 import { assertHardwareAdapter, gpuBrowser, hardwareGpu, readAdapterInfo } from "../../../test-utils/hardware-gpu.mjs";
-import { pinnedBytes, routeExample, syntheticPair } from "./fixtures.mjs";
+import { adoptPair, pinnedBytes, routeExample } from "./fixtures.mjs";
 
 test.use(gpuBrowser);
 
@@ -265,8 +265,7 @@ test("a GPU failure remains visible in the CPU fallback's report, sidecar and co
     await route.fulfill({ response, body: setup + await response.text() });
   });
   await page.goto("/");
-  await page.locator("#imageInput").setInputFiles(syntheticPair());
-  await expect(page.locator("#runButton")).toBeEnabled();
+  await adoptPair(page);
   await page.evaluate(() => globalThis.neurodeskAutomation.dispatch("start", {}));
   await expect.poll(() => page.evaluate(async () => (await globalThis.neurodeskAutomation.dispatch("snapshot")).state), { timeout: 60000 }).toBe("succeeded");
   const report = await page.evaluate(async () => (await globalThis.neurodeskAutomation.dispatch("snapshot")).report);
