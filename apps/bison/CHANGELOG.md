@@ -4,6 +4,7 @@
 
 ### Patch Changes
 
+- Share the pinned ANTs registration WebAssembly binary with HMC in the composite site, keeping worker modules local and standalone builds self-contained. This removes a duplicate 15 MB kernel and keeps the site within its existing artifact budget.
 - 718e8bb: Download the BISON and BISON-WMH classifiers, tissue priors, histograms and average FLAIR from their pinned dataset URLs, now published with the permission of the BISON authors. The app segments images without a local model folder, and the full example runs are in the browser tests.
 - Updated dependencies [718e8bb]
   - @neurodesk/bison@0.2.1
