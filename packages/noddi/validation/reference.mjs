@@ -63,8 +63,12 @@ async function pinnedExample() {
   return { id: example.id, files };
 }
 
-/** The phantom's files, and a mask of every voxel on its grid (the app's form of --no-mask). */
-async function phantomFiles() {
+/**
+ * The phantom's files, and an all-voxel mask (the app's form of --no-mask).
+ * Keep the recorded gradient text: Math.sin rounding differs between x64 and arm64 even when
+ * the generated float32 image and all fitted maps agree byte for byte.
+ */
+export async function phantomFiles() {
   const phantom = multiShellPhantom();
   const directory = join(scratch(), 'neurodesk-noddi-validation', 'phantom');
   await mkdir(directory, { recursive: true });
@@ -79,7 +83,7 @@ async function phantomFiles() {
     files: {
       image: await write('sub-phantom_dwi.nii', phantom.nifti),
       bval: await write('sub-phantom_dwi.bval', Buffer.from(phantom.bval)),
-      bvec: await write('sub-phantom_dwi.bvec', Buffer.from(phantom.bvec)),
+      bvec: await write('sub-phantom_dwi.bvec', await readFile(new URL('./phantom.bvec', import.meta.url))),
     },
     everyVoxel: await write('sub-phantom_mask.nii', new Uint8Array(everyVoxel)),
   };

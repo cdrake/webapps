@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { gunzipSync, gzipSync } from 'node:zlib';
 import { createNiftiFromData } from '@neurodesk/webapp-components/file-io/nifti';
 import { multiShellPhantom } from '../src/phantom.js';
-import { CASES, compareInputChecksums, compareOutputs, readReference, summarize } from '../validation/reference.mjs';
+import { CASES, compareInputChecksums, compareOutputs, phantomFiles, readReference, summarize } from '../validation/reference.mjs';
 
 const template = multiShellPhantom({ size: 4 }).nifti.buffer;
 const map = (values) => gzipSync(new Uint8Array(createNiftiFromData(Float32Array.from(values), template, { dims: [4, 4, 4] })));
@@ -26,6 +27,20 @@ test('missing and renamed inputs fail with their exact names and expected hashes
     [false, 'input example/image.nii: expected 456, actual <missing>'],
     [false, 'input phantom/renamed.nii: expected <missing>, actual 123'],
   ]);
+});
+
+test('the reference phantom uses pinned gradient bytes despite platform math rounding', async () => {
+  const sin = Math.sin;
+  let input;
+  try {
+    Math.sin = (angle) => sin(angle) * (1 + Number.EPSILON);
+    input = await phantomFiles();
+  } finally {
+    Math.sin = sin;
+  }
+  const reference = await readReference();
+  assert.equal(input.files.bvec.sha256, reference.inputs.phantom['sub-phantom_dwi.bvec']);
+  assert.equal(await readFile(input.files.bvec.path, 'utf8'), await readFile(new URL('../validation/phantom.bvec', import.meta.url), 'utf8'));
 });
 
 test('identical decompressed files pass, whatever their compression', () => {
