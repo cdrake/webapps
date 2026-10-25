@@ -48,6 +48,8 @@ workspaces['site/easter-eggs/vessel-surfer-leaderboard'].entry.push('src/worker.
 // The reverse-PE validation shell invokes this checked-in Node command by filename.
 workspaces['.'].entry.push('docs/architecture/dwi-reverse-pe-options/mindgrab-mask.mjs');
 workspaces['.'].project.push('docs/architecture/dwi-reverse-pe-options/mindgrab-mask.mjs');
+workspaces['.'].entry.push('docs/architecture/dwi-synb0-disco/ort_web_check.mjs');
+workspaces['.'].project.push('docs/architecture/dwi-synb0-disco/ort_web_check.mjs');
 
 for (const app of ['seedseg', 'musclemap', 'vesselboost', 'spinalcordtoolbox']) {
   workspaces[`apps/${app}`].entry.push('web/js/inference-worker.js');
