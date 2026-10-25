@@ -1,5 +1,7 @@
 # @neurodesk/noddi
 
+## 0.6.20261025
+
 ## 0.6.20261024
 
 ### Minor Changes

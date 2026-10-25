@@ -1,5 +1,11 @@
 # @neurodesk/hmc
 
+## 0.4.20261025
+
+### Patch Changes
+
+- ab5824c: Default the app, automation and command line to two registration workers based on the completed GP benchmark. Keep explicit worker overrides and the same default for both estimators.
+
 ## 0.4.20261024
 
 ### Minor Changes
