@@ -1,5 +1,7 @@
 # Philips and GE DWI vendor checks
 
+The FA observations below predate the 25 October correction. WLS/OLS now set FA to zero for negative fitted eigenvalues; [the full GE validation](noddi-tensor-fa-2026-10.md) records the new outputs and unchanged non-FA maps. The original measurements remain below.
+
 These checks address [#419](https://github.com/neurodesk/webapps/issues/419)
 and [#420](https://github.com/neurodesk/webapps/issues/420). They test loading,
 processing and output on the requested public acquisitions. They apply no

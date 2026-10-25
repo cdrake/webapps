@@ -1,5 +1,7 @@
 # DWI vendor checks
 
+The FA observations below predate the 25 October correction. WLS/OLS now set FA to zero for negative fitted eigenvalues; [the full GE validation](../quality/noddi-tensor-fa-2026-10.md) records the new outputs and unchanged non-FA maps. The original measurements remain below.
+
 The [design](dwi-microstructure-design.md#data) asks each DWI app to run on the files and sidecars of other scanner vendors. These checks have no numeric gate. Each section records the input facts and the result of each app. GE follows in [#420](https://github.com/neurodesk/webapps/issues/420).
 
 PR [#596](https://github.com/neurodesk/webapps/pull/596) (open) adds `docs/quality/dwi-vendor-checks-2026-10.md`, a scripted check of the same Philips series and of GE ds006837. It runs the browser checks on a 64×64×10 slab. This section adds full-volume browser runs, dwicorrect with the reverse b0, dwi2trx and a b-vector check. Where both reports measure the same item, the results agree. Merge the two reports when both are on `main`.
