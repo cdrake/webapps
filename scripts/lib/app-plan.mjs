@@ -294,7 +294,7 @@ export function selectAffectedApps(registry, changedPaths = [], graph = null, ma
         const catalogScripts = scripts.filter((name) => graph.rootScriptsRun.get(CATALOG).has(name));
         const siteScripts = scripts.filter((name) => graph.rootScriptsRun.get(SITE).has(name));
         if (catalogScripts.length) shared(`${path}: ci.yml's per-app jobs run root scripts ${catalogScripts.join(', ')}`);
-        if (siteScripts.length) siteBuild(`${path}: the composite-site job runs root scripts ${siteScripts.join(', ')}`);
+        if (siteScripts.length) siteBuild(`${path}: the site CI jobs run root scripts ${siteScripts.join(', ')}`);
         continue;
       }
     }
