@@ -21,3 +21,23 @@ The [DWI Correct browser test](../../apps/dwicorrect/e2e/smoke.spec.js) sends th
 The denoising, Gibbs removal, N4 and SDC browser automation tests supply JSON through its own role under an unrelated filename and check the resulting workflow or downloaded sidecar. Unit tests exercise independent gradient names, converted DICOM sidecars, explicit acquisition overrides and SDC's image1 reference ordering.
 
 Template validation and individual app browser tests do not prove execution of the complete exported chain. The exported workflow runner must complete on a hardware WebGPU adapter with subgroup support and retain its reports and output hashes before reporting that result. NODDI and tractography cannot be validated by a CPU-only browser run.
+
+## Diagnose a models-stage failure
+
+Dispatch `neuroflow` with `diagnostic_models: true` to run the same pinned DWI
+inputs and settings through denoising, Gibbs removal, correction, masking and
+model fitting, followed by the exact independent models comparison. This manual
+mode omits tractography and the other independent comparisons. Its evidence sets
+`diagnosticModels: true` and `fullWorkflowAcceptance: false`; it cannot satisfy
+the complete exported-workflow gate. The default dispatch, push, pull-request and
+nightly routes retain both complete templates and all DWI comparisons.
+
+The equivalent local command, with the runtime and hardware environment above,
+is `node scripts/desktop/neuroflow-smoke.mjs --dwi --diagnostic-models`.
+Comparison logs retain changed run snapshots, the desktop's last 64 KiB of stderr,
+its parent PID and joined exit status, and any forced termination signals.
+NODDI reports input loading, fitting progress and output stages through automation.
+A renderer exit rejects pending browser calls with its actual reason and exit
+code. These diagnostics distinguish failures without increasing the timeout or
+accepting incomplete or unequal scientific outputs. They do not establish the
+cause of a previous timeout or prove that no orphaned child process remains.
