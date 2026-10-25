@@ -1,17 +1,22 @@
 # @neurodesk/white-matter-lesions
 
+## 0.5.20261025
+
+### Patch Changes
+
+- Updated dependencies [99037b6]
+  - @neurodesk/synthsr@0.6.20261025
+  - @neurodesk/synthstrip@0.2.0
+
 ## 0.5.20261024
 
 ### Patch Changes
 
 - @neurodesk/synthsr@0.6.20261024
 - @neurodesk/synthstrip@0.2.0
-- @neurodesk/synthsr@0.6.20261024
-- @neurodesk/synthstrip@0.2.0
-- @neurodesk/synthsr@0.6.20261024
-- @neurodesk/synthstrip@0.2.0
-- @neurodesk/synthsr@0.6.20261024
-- @neurodesk/synthstrip@0.2.0
+- Updated dependencies
+  - @neurodesk/synthsr@0.6.20261024
+  - @neurodesk/synthstrip@0.2.0
 
 ## 0.5.20261022
 
@@ -30,9 +35,6 @@
 
 - @neurodesk/synthsr@0.6.20261020
 - @neurodesk/synthstrip@0.2.0
-- @neurodesk/synthsr@0.6.20261020
-- @neurodesk/synthstrip@0.1.5
-- @neurodesk/synthsr@0.6.20261020
 - @neurodesk/synthstrip@0.1.5
 - Updated dependencies [d1fa022]
 
@@ -41,10 +43,6 @@
 
 - Updated dependencies
   - @neurodesk/synthstrip@0.2.0
-- @neurodesk/synthsr@0.6.20261020
-- @neurodesk/synthstrip@0.1.5
-- @neurodesk/synthsr@0.6.20261020
-- @neurodesk/synthstrip@0.1.5
 - @neurodesk/synthsr@0.6.20261020
 
 - @neurodesk/synthstrip@0.1.5
@@ -101,12 +99,9 @@
 
 - @neurodesk/synthsr@0.6.20261016
 - @neurodesk/synthstrip@0.1.5
-- @neurodesk/synthsr@0.6.20261016
 - @neurodesk/synthstrip@0.1.5
 
 - @neurodesk/synthsr@0.6.20261016
-
-- @neurodesk/synthstrip@0.1.5
 
 ## 0.3.20261015
 
@@ -210,7 +205,3 @@
 - @neurodesk/synthsr@0.6.20261007
 
 - @neurodesk/synthstrip@0.1.3
-
-- @neurodesk/synthsr@0.6.20261007
-
-- @neurodesk/synthstrip@0.1.2

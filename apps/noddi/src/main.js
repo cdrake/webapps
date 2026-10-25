@@ -1,4 +1,4 @@
-// NODDI: diffusion tensor and NODDI (AMICO) maps from a DWI series, fitted in this browser.
+// NODDI: diffusion tensor and NODDI maps from a DWI series, fitted in this browser.
 import "@neurodesk/webapp-components/styles/imaging-workspace.css";
 import NiiVueGPU, { SLICE_TYPE } from "@niivue/niivue";
 import { mountImagingWorkspace } from "@neurodesk/webapp-components/core/mount-imaging-workspace";
@@ -43,7 +43,7 @@ const workspace = mountImagingWorkspace({
   status: "#status",
   title: "NODDI",
   subtitle: "Diffusion tensor and NODDI maps",
-  controlsContract: { about: "#aboutBtn", privacy: "#privacyBtn" },
+  controlsContract: { privacy: "#privacyBtn" },
 });
 
 const SLICE_TYPES = {
@@ -69,7 +69,6 @@ const progress = new ProgressManager();
 bindInfoTooltips(document);
 
 const info = createInfoDialog();
-$("aboutBtn").onclick = () => info.open("About NODDI", $("aboutContent"));
 $("privacyBtn").onclick = () => info.open("Privacy", $("privacyContent"));
 
 const noddiApi = loadNoddi(fetch(wasmUrl));
@@ -227,11 +226,12 @@ function setBusy(busy) {
   $("imageInput").disabled = busy;
   $("runSelect").disabled = busy;
   $("maskInput").disabled = busy;
+  $("noddiMethod").disabled = busy || !input || Boolean(input.table.noddiError) || !$("fitNoddi").checked;
   exampleControl?.setDisabled(busy);
   $("runButton").disabled = busy || !input;
 }
 
-async function fitModels(signal) {
+async function fitModels(signal, reportProgress = () => {}) {
   if (!input || loading || fitting) throw new Error("Load diffusion data before fitting.");
   signal?.throwIfAborted();
   const controller = new AbortController();
@@ -242,11 +242,13 @@ async function fitModels(signal) {
   clearOutputs();
   const withNoddi = $("fitNoddi").checked && !input.table.noddiError;
   const tensorFit = $("tensorFit").value;
+  const method = $("noddiMethod").value;
   progress.setCancellable(true);
   try {
     let brain = mask;
     let maskSource = "supplied";
     if (!brain) {
+      reportProgress("Extracting the brain from the mean b0");
       progress.begin("Extracting the brain from the mean b0 with MindGrab…");
       progress.setCancellable(true);
       status("Extracting the brain from the mean b0 with MindGrab");
@@ -263,20 +265,30 @@ async function fitModels(signal) {
       mask: brain,
       tensorFit,
       noddi: withNoddi,
+      method,
       signal: controller.signal,
       onStage: (stage) => {
         const model = stage === "dtifit" ? "tensor with niimath dtifit" : tensorFit === "niimath-dtifit" ? "NODDI" : withNoddi ? "tensor and NODDI" : "tensor";
         progress.begin(`Fitting ${model}…`);
         progress.setCancellable(true);
         status(`Fitting ${model} to ${indices.length} voxels`);
+        reportProgress({ message: `Fitting ${model} to ${indices.length} voxels`, value: 0 });
       },
-      onProgress: (fraction) => progress.setProgress(fraction),
+      onProgress: (fraction) => {
+        progress.setProgress(fraction);
+        reportProgress({ message: `Fitting models: ${Math.round(fraction * 100)}%`, value: fraction });
+      },
     });
     if (tensorFit === "niimath-dtifit") log.log(`niimath dtifit on ${input.table.dtiVolumes.length} of ${input.bvals.length} volumes`, "info");
+    if (fit.noddiDiagnostics) {
+      const { fitted, skipped, nonconverged, failed } = fit.noddiDiagnostics;
+      log.log(`Nonlinear NODDI: ${fitted} fitted, ${skipped} skipped, ${nonconverged} nonconverged, ${failed} failed voxels.`, nonconverged || failed ? "warn" : "info");
+    }
     const stem = bidsStem(input.name);
     const dims = input.dims;
     const rows = {};
     const artifacts = [];
+    reportProgress("Writing fitted parameter maps");
     for (const entry of outputEntries(fit, brain, stem)) {
       const nifti = createNiftiFromData(entry.data, input.buffer, { dims: [...dims, entry.frames] });
       const file = await gzipFile(nifti, entry.name);
@@ -286,6 +298,7 @@ async function fitModels(signal) {
       artifacts.push({ role: entry.role, file });
     }
     const first = rows["noddi-icvf"] ?? rows["tensor-fa"];
+    reportProgress("Loading fitted parameter map in the viewer");
     await showVolume({ file: first.file, range: first.range }, { signal: controller.signal });
     controller.signal.throwIfAborted();
     outputs = rows;
@@ -296,11 +309,12 @@ async function fitModels(signal) {
     return {
       artifacts,
       provenance: {
-        method: withNoddi ? "dti+noddi-amico" : "dti",
+        method: withNoddi ? `dti+noddi-${method}` : "dti",
         tensorFit,
         niimath: tensorFit === "niimath-dtifit" ? NIIMATH_VERSION : null,
         maskVoxels: indices.length,
         mask: maskSource,
+        ...(fit.noddiDiagnostics && { noddiDiagnostics: fit.noddiDiagnostics }),
       },
     };
   } catch (error) {
@@ -335,6 +349,7 @@ $("cancelButton").onclick = () => {
 };
 $("fitNoddi").addEventListener("change", () => {
   noddiRequested = $("fitNoddi").checked;
+  setBusy(Boolean(loading || fitting));
 });
 $("imageInput").addEventListener("change", (event) => {
   const files = Array.from(event.target.files);
@@ -380,15 +395,20 @@ registerAppAutomation({
   app: APP.id,
   convertDicom: runDcm2niix,
   operations: {
-    fit: async ({ inputs, inputDetails, parameters, signal }) => {
+    fit: async ({ inputs, inputDetails, parameters, signal, progress: reportProgress }) => {
+      reportProgress("Loading diffusion inputs");
       // DICOM is converted before this call; its bval and bvec arrive as sidecars of the image.
       const gradients = (inputDetails.image?.sidecars ?? []).filter((file) => /\.(bval|bvec)$/i.test(file.name));
       await loadFiles(Promise.resolve([...inputs.image, ...gradients, ...(inputs.bval ?? []), ...(inputs.bvec ?? [])]), signal);
-      if (inputs.mask?.length) await loadMask(inputs.mask[0], signal);
+      if (inputs.mask?.length) {
+        reportProgress("Loading supplied brain mask");
+        await loadMask(inputs.mask[0], signal);
+      }
       $("tensorFit").value = parameters.tensorFit;
+      $("noddiMethod").value = parameters.method;
       noddiRequested = parameters.noddi;
       $("fitNoddi").checked = noddiRequested && !input.table.noddiError;
-      return fitModels(signal);
+      return fitModels(signal, reportProgress);
     },
   },
 });
