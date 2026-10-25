@@ -10,7 +10,8 @@ script. Then
 
     python3 report.py DEST
 
-prints the tables of dwi-synb0-disco.md. Standard library only.
+prints the tables of dwi-synb0-disco.md (add --alpha for the run_alpha.py rows).
+Standard library only.
 """
 
 import json

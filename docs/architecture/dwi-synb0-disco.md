@@ -61,6 +61,7 @@ Issue #508 stays open for the solver change and the browser work.
 
 FreeSurfer needs a licence file. The image has an empty one.
 The runs here bind the licence file that Neurodesk's `freesurfer_8.2.0_20261019` container ships. It is not in the repository or on Hugging Face.
+The issue owner must confirm that this use is acceptable. If not, rerun `synb0.sh` with the owner's own licence file and record that file here.
 
 ### Network
 
@@ -167,12 +168,17 @@ Reference: `topup` with the real reverse-PE pair. AP-PA and BBR are ratios to it
 
 ### Means over the six subjects
 
-| Method | Δfield demeaned from synb0-topup (Hz) | r with synb0-topup | AP-PA ratio | BBR ratio | Δfield demeaned from topup (Hz) | Time (s) |
-| --- | --- | --- | --- | --- | --- | --- |
-| uncorrected | 11.5 | n/a | 2.54 | 1.143 | 11 | n/a |
-| synb0-topup | 0 | 1 | 2.43 | 1.063 | 8.99 | 118 |
-| synb0-sdc | 6.11 | 0.869 | 2.21 | 1.121 | 11 | 1.54 |
-| synb0-sdc-raw | 5.64 | 0.876 | 2.08 | 1.101 | 10 | 1.45 |
+| Method | Δfield demeaned from synb0-topup (Hz) | r with synb0-topup | AP-PA ratio | BBR ratio | Δfield demeaned from topup (Hz) | Δfield from topup (Hz) | Absolute offset from topup (Hz) | Time (s) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| uncorrected | 11.5 | n/a | 2.54 | 1.143 | 11 | 11.1 | 1.81 | n/a |
+| synb0-topup | 0 | 1 | 2.43 | 1.063 | 8.99 | 13.7 | 11.3 | 118 |
+| synb0-sdc | 6.11 | 0.869 | 2.21 | 1.121 | 11 | 14 | 8.87 | 1.54 |
+| synb0-sdc-raw | 5.64 | 0.876 | 2.08 | 1.101 | 10 | 12.7 | 7.8 | 1.45 |
+
+"Δfield from topup" is the median absolute difference before demeaning; the offset is the median difference, as an absolute value per subject.
+Without demeaning, every field from the synthetic b0 is farther from `topup` with the real pair than a zero field is (`synb0-topup` 13.7 Hz, `synb0-sdc` 14.0 Hz, `synb0-sdc-raw` 12.7 Hz, against 11.1 Hz), because each has a constant offset of 4 to 16 Hz.
+On sub-01 the solver's offset is -11.7 Hz (13.4 Hz before demeaning, against 11.1 Hz for the zero field).
+A constant offset only moves the whole image along the PE axis, so the demeaned columns are the main metric, as in the options document. The raw columns do not change the result.
 
 ### Diagnostic: the regularization weight
 
@@ -253,6 +259,7 @@ python3 docs/architecture/dwi-synb0-disco/report.py "$ROOT/runs"
 ```
 
 `ALPHA=1` adds the diagnostic rows (`run_alpha.py`, PyHySCO 0.0.4 in the options document's `venv-main`).
+`report.py` prints the tables of this document. `report.py --alpha` also prints the `synb0-pyhysco-a300` and `synb0-pyhysco-a1200` rows in each table; the numbers in the α = 1200 table above come from those rows.
 The model checks need PyTorch, ONNX and ONNX Runtime in a Python environment, and `onnxruntime-web@1.29.0` in a scratch Node project:
 
 ```bash
@@ -261,10 +268,14 @@ python model_check.py <synb0 OUTPUTS> <dir with fold1-5.onnx> model_check.json
 node ort_web_check.mjs fold1.onnx 8 fold1.real
 ```
 
-The script checks need no imaging tools:
+The script checks need no imaging tools.
+The check of the midpoint-to-full conversion (`MidpointTests`) needs numpy, scipy and nibabel, and is skipped without them.
+`SYNB0_REQUIRE_NUMERICS=1` makes that skip a failure:
 
 ```bash
-python3 -m unittest discover -s docs/architecture/dwi-synb0-disco -p 'test_*.py'
+uv venv /var/tmp/synb0-test-venv
+uv pip install --python /var/tmp/synb0-test-venv numpy scipy nibabel
+SYNB0_REQUIRE_NUMERICS=1 /var/tmp/synb0-test-venv/bin/python -m unittest discover -s docs/architecture/dwi-synb0-disco -p 'test_*.py'
 ```
 
 ### Pinned results
@@ -272,6 +283,7 @@ python3 -m unittest discover -s docs/architecture/dwi-synb0-disco -p 'test_*.py'
 The synthetic b0 images, the network inputs and the five fold outputs on the 2.5 mm grid, every field, every `metrics.json` and `synb0-compare.json`, and sub-01's `model_check.json` are on the Hugging Face dataset `neurodeskorg/webapps`, `sdc/synb0-disco/`, at commit `0820b48a` (165 files, 336 MB, CC0 sources).
 [`results.manifest.json`](dwi-synb0-disco/results.manifest.json) pins each file's size and SHA-256, and the folder's `README.md` describes each file.
 The ONNX exports are not published, because of the data-use check in "Plan", step 2.
+For α = 300 only the rows in `synb0-compare.json` are pinned, not `synb0-pyhysco-a300/field_hz.nii.gz` or its `metrics.json`. Those rows agree with `synb0-sdc` to within 0.002 Hz and 0.001 in the BBR ratio on every subject, so `synb0-sdc/field_hz.nii.gz` is the pinned field for α = 300.
 The tables above come back without OpenNeuro, the containers or `epic`:
 
 ```bash

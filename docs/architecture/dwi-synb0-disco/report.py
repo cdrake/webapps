@@ -1,9 +1,11 @@
 """Print the Markdown tables of the Synb0-DisCo comparison.
 
-Usage: report.py <results-dir>
+Usage: report.py [--alpha] <results-dir>
 
 Reads <results-dir>/<subject>/synb0-compare.json (compare.py) for every
-subject that has one. Standard library only.
+subject that has one. Without --alpha the output is the tables of
+dwi-synb0-disco.md. --alpha also prints the run_alpha.py rows
+(synb0-pyhysco-a300, synb0-pyhysco-a1200) in each table. Standard library only.
 """
 
 import json
@@ -41,8 +43,8 @@ def diagnostics(rows):
     return sorted(set.intersection(*names)) if names else []
 
 
-def tables(rows):
-    extra = diagnostics(rows)
+def tables(rows, alpha=False):
+    extra = diagnostics(rows) if alpha else []
     out = []
     out.append("### Field difference from topup with the same synthetic b0 (Hz)\n")
     out.append(
@@ -76,9 +78,10 @@ def tables(rows):
     out.append("")
     out.append("### Means over the subjects\n")
     out.append(
-        "| Method | Δfield demeaned from synb0-topup (Hz) | r with synb0-topup | AP-PA ratio | BBR ratio | Δfield demeaned from topup (Hz) | Time (s) |"
+        "| Method | Δfield demeaned from synb0-topup (Hz) | r with synb0-topup | AP-PA ratio | BBR ratio "
+        "| Δfield demeaned from topup (Hz) | Δfield from topup (Hz) | Absolute offset from topup (Hz) | Time (s) |"
     )
-    out.append("| --- | --- | --- | --- | --- | --- | --- |")
+    out.append("| --- | --- | --- | --- | --- | --- | --- | --- | --- |")
     for m in (*METHODS, *extra):
         rs = [row["methods"][m] for row in rows]
         out.append(
@@ -87,12 +90,17 @@ def tables(rows):
             f"| {fmt(mean([r['appa_ratio_topup'] for r in rs]))} "
             f"| {fmt(mean([r['bbr_ratio_topup'] for r in rs]), 4)} "
             f"| {fmt(mean([r['vs_topup']['mad_demeaned_hz'] for r in rs]))} "
+            f"| {fmt(mean([r['vs_topup']['mad_hz'] for r in rs]))} "
+            f"| {fmt(mean([abs(r['vs_topup']['offset_hz']) for r in rs]))} "
             f"| {fmt(mean([r.get('wall_s') for r in rs]))} |"
         )
     return "\n".join(out) + "\n"
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
+    args = sys.argv[1:]
+    alpha = "--alpha" in args
+    args = [a for a in args if a != "--alpha"]
+    if len(args) != 1:
         raise SystemExit(__doc__)
-    sys.stdout.write(tables(load(sys.argv[1])))
+    sys.stdout.write(tables(load(args[0]), alpha=alpha))

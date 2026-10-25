@@ -1,10 +1,14 @@
 """Checks of the Synb0-DisCo comparison scripts that need no imaging tools.
 
 python3 -m unittest discover -s docs/architecture/dwi-synb0-disco -p 'test_*.py'
+
+MidpointTests needs numpy, scipy and nibabel. Without them it is skipped;
+SYNB0_REQUIRE_NUMERICS=1 makes that skip a failure.
 """
 
 import importlib.util
 import json
+import os
 import sys
 import tempfile
 import unittest
@@ -19,6 +23,8 @@ import report
 HAVE_NUMERICS = all(
     importlib.util.find_spec(name) for name in ("numpy", "scipy", "nibabel")
 )
+if not HAVE_NUMERICS and os.environ.get("SYNB0_REQUIRE_NUMERICS") == "1":
+    raise ImportError("SYNB0_REQUIRE_NUMERICS=1: needs numpy, scipy and nibabel")
 
 
 def method(mad, r=0.9):
@@ -50,6 +56,19 @@ class ReportTests(unittest.TestCase):
         self.assertIn("| sub-b | synb0-sdc-raw |", text)
         self.assertIn("| uncorrected |", text)
         self.assertIn("n/a", text)
+        self.assertIn("| Absolute offset from topup (Hz) |", text)
+
+    def test_alpha_rows_only_on_request(self):
+        with tempfile.TemporaryDirectory() as directory:
+            (Path(directory) / "sub-a").mkdir()
+            names = (*report.METHODS, "synb0-pyhysco-a1200")
+            row = {"subject": "sub-a", "methods": {m: method(1.0) for m in names}}
+            (Path(directory) / "sub-a" / "synb0-compare.json").write_text(
+                json.dumps(row)
+            )
+            rows = report.load(directory)
+            self.assertNotIn("synb0-pyhysco", report.tables(rows))
+            self.assertIn("| sub-a | synb0-pyhysco-a1200 |", report.tables(rows, True))
 
     def test_missing_results_fail(self):
         with tempfile.TemporaryDirectory() as directory, self.assertRaises(SystemExit):
