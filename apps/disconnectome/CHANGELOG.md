@@ -1,5 +1,13 @@
 # disconnectome
 
+## 0.3.20261025
+
+### Patch Changes
+
+- Updated dependencies [99037b6]
+  - @neurodesk/runtime-support@0.9.15
+  - @neurodesk/nii2tvx@0.3.20261025
+
 ## 0.3.20261024
 
 ### Patch Changes

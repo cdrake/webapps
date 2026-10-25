@@ -1,5 +1,11 @@
 # @neurodesk/fastprep
 
+## 0.2.4
+
+### Patch Changes
+
+- @neurodesk/sdc@0.2.20261025
+
 ## 0.2.3
 
 ### Patch Changes

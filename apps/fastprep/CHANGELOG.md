@@ -1,5 +1,16 @@
 # fastprep
 
+## 0.2.20261025
+
+### Patch Changes
+
+- Updated dependencies [99037b6]
+  - @neurodesk/runtime-support@0.9.15
+  - @neurodesk/synthsr@0.6.20261025
+  - @neurodesk/greedy@0.6.20261025
+  - @neurodesk/sdc@0.2.20261025
+  - @neurodesk/fastprep@0.2.4
+
 ## 0.2.20261024
 
 ### Minor Changes

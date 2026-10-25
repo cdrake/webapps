@@ -4,6 +4,14 @@
 
 ### Patch Changes
 
+- @neurodesk/dwi2trx@0.8.20261025
+- @neurodesk/noddi@0.6.20261025
+- aab06fb: Set WLS and OLS fractional anisotropy to zero for tensors with a negative eigenvalue, preserving the remaining fitted maps and shell selection. Apply the same rule in the browser and command line.
+- Updated dependencies [99037b6]
+- Updated dependencies [aab06fb]
+  - @neurodesk/runtime-support@0.9.15
+  - @neurodesk/noddi@0.6.20261025
+  - @neurodesk/dwi2trx@0.8.20261025
 - eaf21e9: Fail automation promptly when its browser renderer exits, retaining the exit reason. Preserve independent NeuroFlow comparison snapshots and desktop stderr/shutdown diagnostics, and report NODDI loading, fitting and output stages through automation without changing numerical outputs or timeouts.
 
   Add an explicitly diagnostic DWI models-only workflow replay with original preprocessing/model settings and exact independent model comparisons. Default full T1/DWI validation remains unchanged.

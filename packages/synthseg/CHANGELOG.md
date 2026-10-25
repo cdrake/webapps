@@ -1,5 +1,11 @@
 # @neurodesk/synthseg
 
+## 0.11.20261025
+
+### Patch Changes
+
+- 99037b6: Submit and await each WebGPU U-Net layer separately so a full-volume inference does not occupy one long command buffer. Preserve shader arithmetic and graph order, report the recorded device-loss reason instead of a generic readback failure, and check actual submission boundaries in SynthSeg's unchanged native-parity tests.
+
 ## 0.11.20261024
 
 ### Patch Changes
@@ -338,43 +344,23 @@
 
 ## 0.5.20261003
 
-
-
 ## 0.5.20260930
-
-
 
 ## 0.5.20260928
 
-
-
 ## 0.4.20260928
-
-
 
 ## 0.3.20260924
 
-
-
 ## 0.3.20260923
-
-
 
 ## 0.3.20260920
 
-
-
 ## 0.3.20260918
-
-
 
 ## 0.3.20260916
 
-
-
 ## 0.3.20260915
-
-
 
 ## 0.2.20260914
 

@@ -1,5 +1,13 @@
 # lcmodel
 
+## 0.8.20261025
+
+### Patch Changes
+
+- Updated dependencies [99037b6]
+  - @neurodesk/runtime-support@0.9.15
+  - @neurodesk/lcmodel@0.8.20261025
+
 ## 0.8.20261024
 
 ### Patch Changes

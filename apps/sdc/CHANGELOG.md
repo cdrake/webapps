@@ -1,5 +1,13 @@
 # sdc
 
+## 0.2.20261025
+
+### Patch Changes
+
+- Updated dependencies [99037b6]
+  - @neurodesk/runtime-support@0.9.15
+  - @neurodesk/sdc@0.2.20261025
+
 ## 0.2.20261024
 
 ### Patch Changes

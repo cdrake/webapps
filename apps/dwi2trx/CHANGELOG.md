@@ -1,5 +1,15 @@
 # dwi2trx
 
+## 0.8.20261025
+
+### Patch Changes
+
+- Declare the vendored tractography writer's exact fflate 0.8.3 runtime dependency in the app so tracked vendor sources resolve it from their owning workspace during dependency validation.
+  - @neurodesk/dwi2trx@0.8.20261025
+- Updated dependencies [99037b6]
+  - @neurodesk/runtime-support@0.9.15
+  - @neurodesk/dwi2trx@0.8.20261025
+
 ## 0.8.20261024
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # browserqc
 
+## 1.6.20261025
+
+### Patch Changes
+
+- Updated dependencies [99037b6]
+  - @neurodesk/runtime-support@0.9.15
+  - @neurodesk/browserqc@1.6.20261025
+
 ## 1.6.20261024
 
 ### Patch Changes

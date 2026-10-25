@@ -1,5 +1,7 @@
 # @neurodesk/lcmodel
 
+## 0.8.20261025
+
 ## 0.8.20261024
 
 ### Patch Changes
@@ -283,8 +285,6 @@
   - @neurodesk/webapp-components@0.12.2
 
 ## 0.6.20261010
-
-
 
 ## 0.6.20261009
 

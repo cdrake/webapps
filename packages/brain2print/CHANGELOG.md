@@ -1,5 +1,7 @@
 # @neurodesk/brain2print
 
+## 0.5.20261025
+
 ## 0.5.20261024
 
 ### Patch Changes

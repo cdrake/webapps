@@ -1,5 +1,7 @@
 # @neurodesk/sdc
 
+## 0.2.20261025
+
 ## 0.2.20261024
 
 ### Patch Changes

@@ -1,5 +1,17 @@
 # syncro
 
+## 0.7.20261025
+
+### Patch Changes
+
+- Updated dependencies [99037b6]
+  - @neurodesk/runtime-support@0.9.15
+  - @neurodesk/synthsr@0.6.20261025
+  - @neurodesk/synthstrip@0.2.0
+  - @neurodesk/brain-extraction@0.5.20261025
+  - @neurodesk/syncro@0.7.20261025
+  - @neurodesk/greedy@0.6.20261025
+
 ## 0.7.20261024
 
 ### Patch Changes
@@ -704,7 +716,6 @@
   - @neurodesk/syncro@0.6.20261012
 
 - @neurodesk/greedy@0.5.20261012
-
 
 ## 0.6.20261010
 

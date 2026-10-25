@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- @neurodesk/dwi2trx@0.8.20261025
+- @neurodesk/dwi2trx@0.8.20261025
 - ab5824c: Default the app, automation and command line to two registration workers based on the completed GP benchmark. Keep explicit worker overrides and the same default for both estimators.
 
 ## 0.4.20261024

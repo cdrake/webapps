@@ -1,5 +1,12 @@
 # spinalcordtoolbox
 
+## 0.9.20261025
+
+### Patch Changes
+
+- 853ff13: Retry transient downloads while staging pinned browser-analysis runtime assets, with bounded attempts and unchanged size and SHA-256 checks. Do not publish failed or corrupt downloads into the runtime cache.
+  - @neurodesk/spinalcordtoolbox@0.9.20261025
+
 ## 0.9.20261024
 
 ### Patch Changes

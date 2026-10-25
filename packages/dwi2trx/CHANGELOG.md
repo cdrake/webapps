@@ -1,5 +1,7 @@
 # @neurodesk/dwi2trx
 
+## 0.8.20261025
+
 ## 0.8.20261024
 
 ### Minor Changes
