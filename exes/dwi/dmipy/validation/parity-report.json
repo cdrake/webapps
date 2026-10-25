@@ -389,5 +389,38 @@
     },
     "receiptSHA256": "38f6de7ce38ef9c35373065a319ad067ebc682eea2f7aefa846f80a13edbbf74",
     "mode": "correctness on production browser, not a performance benchmark"
+  },
+  "wasmWMAfterFaPolicy": {
+    "reference": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/7597121ce25529f9a819c0635da88fee6f2ac73c/noddi/validation/dmipy/",
+    "wmSelection": "Pinned FA >= 0.4 AND MindGrab brain mask, excluding dmipy-unfitted voxels; HF295e32650e9e28397909caff4b9741ee95a422c0",
+    "voxels": 13324,
+    "wasmSHA256": "c50a0f7f41b5987a0de590f82db8b1750fd429595f933b9ca8c160b9c6e21182",
+    "diagnostics": {
+      "fitted": 13324,
+      "skipped": 0,
+      "nonconverged": 4,
+      "failed": 0
+    },
+    "maps": {
+      "ICVF": {
+        "medianAbsoluteDifference": 2.364565199197699e-08,
+        "maxAbsoluteDifference": 0.001774351079627201,
+        "voxelsAtOrAbove002": 0
+      },
+      "ISOVF": {
+        "medianAbsoluteDifference": 1.932181220229423e-08,
+        "maxAbsoluteDifference": 0.0016265463872149125,
+        "voxelsAtOrAbove002": 0
+      },
+      "ODI": {
+        "medianAbsoluteDifference": 7.706365767745638e-09,
+        "maxAbsoluteDifference": 0.002244513770531309,
+        "voxelsAtOrAbove002": 0
+      }
+    },
+    "reason": "Revalidate the rebuilt shared NODDI module after the FA-only negative-eigenvalue tensor policy change (#600). The published WM mask and prepared input/reference arrays are unchanged.",
+    "preparedMetadataSHA256": "e301e39d2970aa5e8c30ba000a083e5c1b82b364606026a541c34dd8204b6b0b",
+    "wmMaskSHA256": "81dc930221f88dbea1b9717673576c154d62ce62cf78f025e7d72097837bf44b",
+    "comparisonToHistorical": "Diagnostics and all reported per-map summary statistics exactly match wasmWM. This checker does not retain complete output-map bytes for a historical byte comparison."
   }
 }

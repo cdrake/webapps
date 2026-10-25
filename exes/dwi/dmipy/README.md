@@ -57,6 +57,8 @@ Both runtimes pass the accepted median absolute difference < 0.02 WM gate. Every
 | --- | --- | --- | --- | --- |
 | Native Rust | 1.81e-8 / 0.001777 | 1.82e-8 / 0.000508 | 6.31e-9 / 0.002330 | 7 / 0 |
 | Actual WASM | 2.36e-8 / 0.001775 | 1.93e-8 / 0.001627 | 7.71e-9 / 0.002245 | 4 / 0 |
+
+The FA-only tensor policy rebuild for #600 was rechecked with the same published WM mask and prepared reference arrays. `validation/parity-report.json` preserves the historical `wasmWM` receipt and records the new binary under `wasmWMAfterFaPolicy`. All 13,324 fits, four nonconverged fits, zero failures and the reported per-map differences match the historical summaries. The check does not retain complete old map bytes, so this is a repeated reference gate and summary comparison rather than a historical byte comparison.
 | Production browser downloads | 0 / 0.001775 | 1.49e-8 / 0.001627 | 7.45e-9 / 0.002245 | 4 / 0 |
 
 The production browser comparison uses the published float32 NIfTI reference maps; native and standalone WASM checks use the float64 fitted parameters. The browser runs the full pinned slab with the supplied WM mask, fits 13,324 voxels, skips dmipy's 8 unfitted WM voxels and downloads the maps. Its source-file provisioner verifies all 19 input/reference pins. The untagged test is `apps/noddi/e2e/dmipy-reference.spec.js`; `scripts/e2e-test-data.mjs noddi` provisions `NODDI_DMIPY_REFERENCE` for local and CI runs.
