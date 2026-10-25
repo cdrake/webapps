@@ -260,6 +260,19 @@ test('a deadline cancels scientific execution and removes partial outputs', { ti
     NEURODESK_FIXTURE_MODE: 'wait', NEURODESK_TIMEOUT_MS: '2500' }, timeout: 15000 }), /timeout|timed out/i);
   assert.match(await readFile(data.env.NEURODESK_FIXTURE_TRACE, 'utf8'), /cancelled/);
   assert.deepEqual(await readdir(data.output), []);
+  const work = join(data.session, 'work');
+  const diagnostics = (await readdir(work)).filter(name => name.startsWith('neurodesk-diagnostics-'));
+  assert.equal(diagnostics.length, 1);
+  const diagnostic = JSON.parse(await readFile(join(work, diagnostics[0], 'run.json'), 'utf8'));
+  assert.equal(diagnostic.tool, 'neurodesk.webapps/synthseg/run');
+  assert.equal(diagnostic.run.state, 'running');
+  assert.equal(diagnostic.run.phase, 'processing');
+  assert.equal(diagnostic.run.message, 'Waiting for fixture compute');
+  assert.match(diagnostic.error.message, /timeout|timed out/i);
+  assert.match(diagnostic.desktop.beforeClose.stderr, /Fixture executor is waiting/);
+  assert.match(diagnostic.desktop.afterClose.stderr, /Fixture executor is waiting/);
+  assert.equal(diagnostic.desktop.afterClose.exit.code, 0);
+  assert.deepEqual(diagnostic.desktop.afterClose.terminationSignals, []);
 });
 
 

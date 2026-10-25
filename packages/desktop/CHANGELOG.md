@@ -1,5 +1,11 @@
 # @neurodesk/desktop
 
+## 0.45.20261025
+
+### Patch Changes
+
+- Keep the last run phase and message, desktop stderr, and process-exit diagnostics when an exported NeuroFlow operation fails or times out. Save this evidence outside temporary desktop scratch without publishing partial scientific results or changing the execution deadline.
+
 ## 0.44.20261025
 
 ### Patch Changes
