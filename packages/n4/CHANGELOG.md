@@ -2,6 +2,10 @@
 
 ## 0.6.20261025
 
+### Patch Changes
+
+- 0813685: Preserve LF line endings in the checksum-pinned N4 factory on Windows checkouts so portable validation uses the exact reviewed module bytes.
+
 ## 0.6.20261024
 
 ### Minor Changes
