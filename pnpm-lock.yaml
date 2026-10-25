@@ -80,6 +80,9 @@ importers:
       knip:
         specifier: 6.41.0
         version: 6.41.0
+      onnxruntime-web:
+        specifier: 1.29.0
+        version: 1.29.0
       playwright:
         specifier: 1.64.0
         version: 1.64.0

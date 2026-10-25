@@ -132,6 +132,7 @@ Every other method gets the same mean AP and aligned mean PA pair.
 ### One field convention and one resampler
 
 Every method's output becomes a field in Hz with topup's sign on the AP b0 grid (`fields.py`).
+`fields.py` also converts the fields of the Synb0-DisCo comparison (`synb0-topup`, `synb0-sdc`, `synb0-sdc-raw`, `synb0-pyhysco-*` and the zero field `uncorrected`; see [Synb0-DisCo front end](dwi-synb0-disco.md)).
 `calibrate.py` finds the sign that relates topup's field to the sampling displacement: it corrects the first AP b0 with topup's field and keeps the sign that reproduces topup's own `--iout`.
 `correct.py` then applies every field the same way: linear interpolation along the PE axis and Jacobian modulation.
 Thus the metrics compare fields, not each tool's resampler.
@@ -320,6 +321,7 @@ A field closer to topup's (1.40 Hz) does not give a better T1w alignment than to
 3. **WebGPU path for PyHySCO** ([#506](https://github.com/neurodesk/webapps/issues/506)). Done: the Gauss-Newton and PCG steps run as WebGPU kernels, held to the native PyHySCO field by the port gate. See [the implementation and hardware results](../../exes/sdc/README.md#webgpu).
 4. **ANTs restricted SyN** ([#507](https://github.com/neurodesk/webapps/issues/507)). It failed the gate on every subject with the SyN-SDC schedule. Decision: do not offer ANTs for reverse-PE data; see [the recorded decision](#ants-reverse-pe-decision-507). Single-PE SyN-SDC remains pending #462.
 5. **Synb0-DisCo front end** ([#508](https://github.com/neurodesk/webapps/issues/508)). Its `--notopup` output (a synthetic undistorted b0) as the second image for the chosen solver, for data without a reverse-PE b0. Needs its own check against topup with the same synthetic image.
+   Measured in [Synb0-DisCo front end](dwi-synb0-disco.md): on the six subjects, the PyHySCO field with the synthetic b0 differs from topup with the same synthetic b0 by 6.11 Hz (demeaned), and it is no closer to topup with the real pair than a zero field. No browser front end yet.
 6. **fastprep PEPOLAR** ([#509](https://github.com/neurodesk/webapps/issues/509)). Use the `sdc` solver package in fastprep for reverse-PE field estimation.
 
 ## Reproduce
