@@ -1,5 +1,46 @@
 # @neurodesk/desktop
 
+## 0.44.20261025
+
+### Patch Changes
+
+- eaf21e9: Fail automation promptly when its browser renderer exits, retaining the exit reason. Preserve independent NeuroFlow comparison snapshots and desktop stderr/shutdown diagnostics, and report NODDI loading, fitting and output stages through automation without changing numerical outputs or timeouts.
+
+  Add an explicitly diagnostic DWI models-only workflow replay with original preprocessing/model settings and exact independent model comparisons. Default full T1/DWI validation remains unchanged.
+
+## 0.44.20261024
+
+### Patch Changes
+
+- d9c35b4: Recognize canonical Windows extended paths and WebDAV UNC server suffixes containing @ before URL credential checks. Keep credential-bearing URL refusals on every platform, and exercise a real extended-path file approval on Windows.
+
+## 0.43.20261024
+
+### Patch Changes
+
+- Updated dependencies
+  - @neurodesk/webapp-components@0.21.1
+
+## 0.42.20261024
+
+### Patch Changes
+
+- Updated dependencies [328cb77]
+  - @neurodesk/webapp-components@0.20.1
+
+## 0.41.20261024
+
+### Patch Changes
+
+- Updated dependencies [0066f60]
+  - @neurodesk/webapp-components@0.21.1
+- Updated dependencies [14a8b29]
+- Updated dependencies [a028e96]
+- Updated dependencies [650ce5f]
+- Updated dependencies [343c256]
+- Updated dependencies [941884c]
+  - @neurodesk/webapp-components@0.20.0
+
 ## 0.40.20261024
 
 ### Patch Changes
@@ -11,6 +52,8 @@
 - Updated dependencies [343c256]
 - Updated dependencies [941884c]
   - @neurodesk/webapp-components@0.21.0
+- Updated dependencies
+  - @neurodesk/webapp-components@0.19.3
 
 ## 0.39.20261024
 
@@ -25,6 +68,11 @@
 - Updated dependencies [3a7e5bb]
 - Updated dependencies [72cbb8d]
   - @neurodesk/webapp-components@0.20.0
+- Keep shared example and runtime assets in the edition without models when a model has identical bytes, so model-pack builds verify successfully and examples remain available offline.
+- Pair acquisition JSON and gradient inputs by automation role so metadata survives diffusion pipelines. Split DWI Correct and SDC inputs into single-image roles, require explicit acquisition values for automated correction, and expose correction settings. Export a corrected mean-b0 image for downstream brain masks. Use a generic single-volume error for shared image readers.
+- Generate artifact format qualifiers from MIME types and gradient roles, and preserve explicit artifact encodings. Keep gradient input formats in contract metadata until NeuroFlow gains inspectors. Type DWI brain masks as masks so pipeline bindings reject scalar images.
+- Updated dependencies
+  - @neurodesk/webapp-components@0.19.2
 
 ## 0.38.20261024
 
@@ -150,7 +198,6 @@
 - Updated dependencies [a36fde4]
 - Updated dependencies
 - Updated dependencies
-- Updated dependencies
 
   - @neurodesk/webapp-components@0.17.0
 
@@ -176,10 +223,6 @@
 - Updated dependencies [b67e4e9]
 
   - @neurodesk/webapp-components@0.15.1
-
-- Updated dependencies [3329c39]
-
-  - @neurodesk/webapp-components@0.16.0
 
 - Updated dependencies [b67e4e9]
 

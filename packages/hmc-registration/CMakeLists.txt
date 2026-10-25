@@ -20,8 +20,10 @@ include_directories(${ANTS_SOURCE_DIR}/Examples ${ANTS_SOURCE_DIR}/Examples/incl
   ${ANTS_SOURCE_DIR}/Tensor ${ANTS_SOURCE_DIR}/Temporary)
 # Only the 3D float implementation of antsRegistration is compiled; src/unsupported.cxx refuses
 # every other mode. AverageImages and AverageAffineTransform are ANTs's own sources, unchanged;
-# src/apply.cxx is the --apply resampler.
-add_executable(hmc-registration src/main.cxx src/unsupported.cxx src/apply.cxx
+# src/apply.cxx keeps the legacy --apply resampler; the full antsApplyTransforms CLI is
+# linked unchanged. The small Laplacian entry avoids compiling all of ImageMath.
+add_executable(hmc-registration src/main.cxx src/unsupported.cxx src/apply.cxx src/laplacian.cxx
+  ${ANTS_SOURCE_DIR}/Examples/antsApplyTransforms.cxx
   ${ANTS_SOURCE_DIR}/Examples/AverageImages.cxx
   ${ANTS_SOURCE_DIR}/Examples/AverageAffineTransform.cxx
   ${ANTS_SOURCE_DIR}/Examples/antsRegistration.cxx

@@ -33,14 +33,16 @@ test("b0Volumes selects and refuses what dwi2trx's b0Volumes does", () => {
 });
 
 test("b0Volumes agrees with the gradients crate on its shared cases", () => {
-  const cases = read("tests/data/b0-rule.tsv")
-    .split("\n")
-    .filter((line) => line.trim() && !line.startsWith("#"))
-    .map((line) => line.split("\t").map((field) => field.split(/\s+/).filter(Boolean).map(Number)));
-  assert.ok(cases.length > 0);
-  for (const [bvals, b0] of cases) {
-    if (b0.length) assert.deepEqual(b0Volumes(bvals, bvals.length), b0, bvals.join(" "));
-    else assert.throws(() => b0Volumes(bvals, bvals.length), /no b0 volume/, bvals.join(" "));
+  for (const ending of ["\n", "\r\n"]) {
+    const cases = read("tests/data/b0-rule.tsv").replace(/\r?\n/g, ending)
+      .split(/\r?\n/)
+      .filter((line) => line.trim() && !line.startsWith("#"))
+      .map((line) => line.split("\t").map((field) => (field === "none" ? [] : field.split(/\s+/).filter(Boolean).map(Number))));
+    assert.equal(cases.length, 6);
+    for (const [bvals, b0] of cases) {
+      if (b0.length) assert.deepEqual(b0Volumes(bvals, bvals.length), b0, bvals.join(" "));
+      else assert.throws(() => b0Volumes(bvals, bvals.length), /no b0 volume/, bvals.join(" "));
+    }
   }
   const sub107 = parseBval(read("tests/data/sub-107_dir-AP_dwi.bval"), 101);
   assert.deepEqual(b0Volumes(sub107, sub107.length), shared.b0Volumes(sub107, sub107.length));

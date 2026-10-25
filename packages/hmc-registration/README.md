@@ -1,6 +1,6 @@
 # @neurodesk/hmc-registration
 
-ANTs `antsRegistration`, `AverageImages`, `AverageAffineTransform` and an antsApplyTransforms-style `--apply`, compiled to WebAssembly with a generic `run(argv)`, for DWI head-motion correction (and later susceptibility distortion correction).
+ANTs `antsRegistration`, `antsApplyTransforms`, `AverageImages`, `AverageAffineTransform`, a small `ImageMath ... Laplacian` entry and the legacy antsApplyTransforms-style `--apply`, compiled to WebAssembly with a generic `run(argv)`, for DWI head-motion correction (and later susceptibility distortion correction).
 It is a separate module from `@neurodesk/registration`, at the same pinned ANTs commit and ITK-Wasm toolchain, so the SYNcro and ANTs kernels do not change.
 
 ## Use
@@ -51,6 +51,8 @@ The worker takes the same argv.
 | `AverageImages` | `3 output.nii normalize image...` | ANTs `Examples/AverageImages.cxx`, unchanged |
 | `AverageAffineTransform` | `3 output.mat [-R reference] {[-i] transform [weight]}...` | ANTs `Examples/AverageAffineTransform.cxx`, unchanged |
 | `--apply` | `fixed moving output interpolation fill transform...` | `src/apply.cxx` |
+| `antsApplyTransforms` | Native CLI argv, including `-n MultiLabel`, BSpline, `.h5` composites and inverse flags | Unmodified ANTs `Examples/antsApplyTransforms.cxx` |
+| `ImageMath` | `3 output.nii Laplacian input.nii [sigma [normalize]]` | Small copy of pinned `LaplacianImage`, `src/laplacian.cxx` |
 
 The SHORELine template step of QSIPrep, in this module:
 
@@ -64,7 +66,12 @@ ants.run(['--apply', 'template.nii', 'template.nii', 'updated.nii', 'HammingWind
 `interpolation` is `Linear`, `NearestNeighbor`, `BSpline` (order 3), `BSpline[0]` to `BSpline[5]`, `HammingWindowedSinc` or `LanczosWindowedSinc`, as antsApplyTransforms names them (case does not matter).
 `fill` is the value of voxels that map outside `moving`.
 A transform written `inverse:name` is inverted, as `[name,1]` in antsApplyTransforms.
-The last transform listed acts first on a point, as on the antsApplyTransforms command line.
+The last transform listed acts first on an **output-to-input sampling point**.
+This positional list is the reverse of native antsApplyTransforms' `-t` list:
+`--apply ... A B` corresponds to `antsApplyTransforms ... -t B -t A`.
+For example, `--apply ... rot.mat trans.mat` samples at `R(T(p))`, not `T(R(p))`.
+Apparent movement of image content uses the inverse mapping; it must not be used to name the sampling-point order.
+The independent [native/WASM transform-order check](validation/transform-order.md) covers both orders and an inverse affine.
 Pixels are float32 in and out; interpolation and transforms are double, as antsApplyTransforms without `--float`.
 The interpolators are the ones antsApplyTransforms builds (`make_interpolator_snip.tmpl`): windowed sinc with radius 3 and a constant (zero) boundary, B-spline with double coefficients.
 `packages/registration`'s `--apply` (SYNcro, ANTs) does not change: it still has only linear and nearest.
@@ -131,6 +138,22 @@ bash packages/hmc-registration/scripts/build.sh /var/tmp/hmc-registration-build
 ```
 
 The script downloads ANTs at `52bc0ab588102682587303d31c720de94e6ef6c1` and compiles in `itkwasm/emscripten@sha256:d6c35290a9f1c5cfeb8168c18bbf64d78394cd111b6a19c6091921e98a3aaa1d`, one job, with an 8 GB container limit (`HMC_REGISTRATION_BUILD_MEMORY`).
-`SOURCE_DATE_EPOCH` fixes the `__DATE__` and `__TIME__` that `ANTsVersion.cxx` embeds at the ANTs commit time. The committed `.wasm` is 12,096,141 bytes, SHA-256 `d552ee295d79cd1722ced2c13c58d9afa0a5008275bbe70593d8caf9243de9ef`; two builds of the same source gave the same bytes.
+`SOURCE_DATE_EPOCH` fixes the `__DATE__` and `__TIME__` that `ANTsVersion.cxx` embeds at the ANTs commit time. The committed SDC entry-point `.wasm` is 15,382,571 bytes, SHA-256 `53779fcd0064a8394aa42ca2e82c5f8b33cf4aebbe98e3a43af6212e558ccf86`.
 A build took about 2.6 minutes.
 When a source or the toolchain changes, put the printed SHA-256 in `src/pin.js`.
+
+## SDC entry-point foundation (#462)
+
+The full `antsApplyTransforms` entry retains native `-t` ordering. Its list is the reverse of the legacy `--apply` positional list when comparing output-to-input sampling transforms. For example, native `-t rot.mat -t trans.mat` matches legacy `--apply ... trans.mat rot.mat`. Noncommuting rotation/translation tests distinguish both orders and compare with independently generated single-affine transforms; see `validation/transform-order.md`. The full CLI also reads HDF5 composite transforms and native `[file,1]` inversion flags. No interpolation is substituted for MultiLabel.
+
+The Laplacian entry copies the float-image computation of `ImageMath_Templates.hxx:9183–9230` at ANTs `52bc0ab`. It deliberately preserves the pinned parser quirk: both sigma and normalization read the sigma argument; the final normalization argument is ignored. Thus `ImageMath 3 lap.nii Laplacian input.nii 1.5 1` normalizes to [0,1], as SDC requires, and changing its final argument to 0 gives the same output. Sigma 0.5 does not normalize even with a final 1. Only this 3D operation is exposed; unsupported ImageMath operations are rejected before ITK. Missing inputs and paths outside the private run directory are also refused before calling ITK.
+
+`test/sdc-programs.test.js` compares thirteen complete output images, including decompressed warp images, byte for byte with native ANTs 2.6.2 at the exact pinned commit. The fixture includes an oblique label grid, distinct MultiLabel/nearest-neighbor results, BSpline through an HDF5/inverse transform chain, native transform order, Laplacian parsing, and two restricted-SyN stages with `--restrict-deformation 0.1x1.0x0.1` and fixed/moving masks. The displacement is nonzero, so this is not an identity registration test. `validation/sdc-entry-reference.json` records every input/output digest and the native executable identities. Regenerate with:
+
+```bash
+node packages/hmc-registration/validation/sdc-native-reference.mjs ANTS_BIN_DIRECTORY "$TMPDIR/sdc-entry-reference"
+```
+
+Use the immutable Ubuntu 22.04 ANTs v2.6.2 release archive recorded in that manifest. Its verified SHA256 is `650ac1827939ec4dd5438f4154ba08ed97065557a85b04707bc1e5ba4eb99a43`; the annotated v2.6.2 tag resolves to `52bc0ab588102682587303d31c720de94e6ef6c1`, and `antsRegistration --version` reports `2.6.2-g52bc0ab`. The generator rejects different executable digests. The build command and pinned ITK-Wasm image above apply to these entry points too.
+
+This is additive entry-point validation, not full SyN-SDC acceptance. The full-volume target-grid/precision decision and the field gate `d <= max(spread, 0.05 Hz)` and `d < 0.5 Hz` remain open under #462/#464/#465/#466. No `antsRegistration3DDouble` implementation is built. DenoiseImage is owned by the separate `ants-denoise` work in PR #597. The EPI-reference N4 argv builder already exists in `packages/n4/src/epi-reference.js`; its WASM is unchanged by this work. `packages/registration` is untouched.
