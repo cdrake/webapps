@@ -7,7 +7,7 @@ const crate = new URL('../../../exes/dwi/gradients/', import.meta.url);
 const read = (path) => readFileSync(new URL(path, crate), 'utf8');
 const b0Cases = (text) =>
   text
-    .split('\n')
+    .split(/\r?\n/)
     .filter((line) => line.trim() && !line.startsWith('#'))
     .map((line) => line.split('\t').map((field) => (field === 'none' ? [] : field.split(/\s+/).filter(Boolean).map(Number))));
 
@@ -55,6 +55,16 @@ test('the shared b0 cases survive a trailing-whitespace trim', () => {
   const text = read('tests/data/b0-rule.tsv');
   const trimmed = text.replace(/[ \t]+$/gm, '');
   assert.deepEqual(b0Cases(trimmed), b0Cases(text));
+});
+
+test('the shared b0 cases preserve the empty set with Windows line endings', () => {
+  const cases = b0Cases(read('tests/data/b0-rule.tsv').replace(/\r?\n/g, '\r\n'));
+  assert.equal(cases.length, 6);
+  assert.deepEqual(cases[2], [[50, 1000, 3000], []]);
+  for (const [bvals, b0] of cases) {
+    if (b0.length) assert.deepEqual(b0Volumes(bvals, bvals.length), b0, bvals.join(' '));
+    else assert.throws(() => b0Volumes(bvals, bvals.length), /no b0 volume/, bvals.join(' '));
+  }
 });
 
 test('the b0 selection splits OpenNeuro ds005577 sub-107 as the gradients crate does', () => {
