@@ -1617,8 +1617,10 @@ apps:
         url: https://github.com/niivue/niivue
 
   sdc:
+    about:
+      - PyHySCO uses float32 WebGPU on a hardware adapter when the browser supports WebAssembly JSPI, and CPU WebAssembly otherwise. A failed GPU run falls back to the CPU. Saved sidecars and automation provenance record the actual backend, adapter and any GPU failure.
     packages:
-      - name: PyHySCO 0.0.4 (Rust and WebAssembly port)
+      - name: PyHySCO 0.0.4 (Rust, WebAssembly and WebGPU port)
         url: https://github.com/EmoryMLIP/PyHySCO
         role: susceptibility field estimation, ported under the GPL-3.0
       - name: NiiVue

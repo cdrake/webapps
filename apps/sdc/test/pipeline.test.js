@@ -64,3 +64,14 @@ test("outputs are named from image 1's BIDS stem", () => {
   assert.equal(meta.Units, "Hz");
   assert.deepEqual(meta.Sources, ["a.nii.gz", "b.nii.gz"]);
 });
+
+test("the downloaded sidecar preserves the actual backend, adapter and fallback reason", () => {
+  for (const execution of [
+    { backend: "cpu" },
+    { backend: "webgpu", adapter: "intel xe-2lpg" },
+    { backend: "cpu", gpuError: "WebGPU device was lost" },
+  ]) {
+    const meta = fieldSidecar({ image1: "ap.nii.gz", image2: "pa.nii.gz", phaseEncodingDirection: "j-", totalReadoutTime: 0.05, iterations: 5, execution });
+    assert.deepEqual(JSON.parse(JSON.stringify(meta)).Execution, execution);
+  }
+});

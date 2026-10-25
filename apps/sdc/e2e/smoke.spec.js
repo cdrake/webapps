@@ -238,6 +238,7 @@ test("the automation operation estimates the field from two images", async ({ pa
   await expect.poll(() => page.evaluate(async () => (await globalThis.neurodeskAutomation.dispatch("snapshot")).state), { timeout: 60000 }).toBe("succeeded");
   const report = await page.evaluate(async () => (await globalThis.neurodeskAutomation.dispatch("snapshot")).report);
   expect(report.provenance).toMatchObject({ method: "pyhysco-0.0.4-port", reference: "sub-01_dir-AP_dwi.nii.gz" });
+  expect(["cpu", "webgpu"]).toContain(report.provenance.execution.backend);
   expect(Object.keys(report.artifacts).sort()).toEqual(["corrected1", "corrected2", "field", "sidecar"]);
 });
 

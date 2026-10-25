@@ -66,12 +66,13 @@ test("a failing WebGPU run falls back to the CPU under auto and fails under webg
 
 // A navigator.gpu whose adapter reports `info` and opens fake devices; `lost` resolves each
 // device's lost promise at once.
-function fakeGpu(info, { lost = false } = {}) {
+function fakeGpu(info, { lost = false, isFallbackAdapter } = {}) {
   const gpu = { adapters: 0 };
   gpu.requestAdapter = async () => {
     gpu.adapters++;
     return {
       info,
+      isFallbackAdapter,
       limits: {},
       requestDevice: async () => ({ ...fakeGpuDevice(), lost: lost ? Promise.resolve({ reason: "destroyed" }) : new Promise(() => {}) }),
     };
@@ -84,6 +85,13 @@ test("auto does not pick a software adapter (the shared runtime-support check)",
   assert.equal(await requestHardwareAdapter(fakeGpu({ vendor: "intel", architecture: "xe-2lpg", isFallbackAdapter: true })), null);
   assert.equal(await requestHardwareAdapter(fakeGpu({ vendor: "microsoft", architecture: "warp" })), null);
   assert.ok(await requestHardwareAdapter(fakeGpu({ vendor: "intel", architecture: "xe-2lpg" })));
+});
+
+test("auto honors the browser's fallback flag when adapter info has no name", async () => {
+  assert.equal(await requestHardwareAdapter(fakeGpu({}, { isFallbackAdapter: true })), null);
+  assert.equal(await requestHardwareAdapter(fakeGpu({ isFallbackAdapter: true }, { isFallbackAdapter: false })), null);
+  assert.equal(await requestHardwareAdapter(fakeGpu({ isFallbackAdapter: false }, { isFallbackAdapter: true })), null);
+  assert.ok(await requestHardwareAdapter(fakeGpu({}, { isFallbackAdapter: false })));
 });
 
 test("auto opens a new device after the browser loses one, and stays on the CPU after other failures", { skip: typeof WebAssembly.Suspending !== "function" && "needs JSPI" }, async () => {

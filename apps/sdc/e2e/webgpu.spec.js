@@ -16,7 +16,7 @@ import { fileURLToPath } from "node:url";
 import { gunzipSync } from "node:zlib";
 import { readNifti, readNiftiFrames } from "@neurodesk/webapp-components/file-io";
 import { assertHardwareAdapter, gpuBrowser, hardwareGpu, readAdapterInfo } from "../../../test-utils/hardware-gpu.mjs";
-import { pinnedBytes, routeExample } from "./fixtures.mjs";
+import { pinnedBytes, routeExample, syntheticPair } from "./fixtures.mjs";
 
 test.use(gpuBrowser);
 
@@ -149,7 +149,8 @@ test("WebGPU agrees with the CPU path, and auto keeps the CPU path on a software
 async function pinned(path) {
   const entry = manifest.files.find((file) => file.path === path);
   if (!entry) throw new Error(`${path} is not in results.manifest.json`);
-  const cache = join(process.env.TMPDIR ?? "/var/tmp", "sdc-webgpu-reference", manifest.revision, path);
+  const directory = process.env.SDC_WEBGPU_REFERENCE_DIR ?? join(process.env.TMPDIR ?? "/var/tmp", "sdc-webgpu-reference", manifest.revision);
+  const cache = join(directory, path);
   const verified = (bytes) => createHash("sha256").update(bytes).digest("hex") === entry.sha256;
   if (existsSync(cache)) {
     const bytes = readFileSync(cache);
@@ -244,4 +245,37 @@ test("the app's worker picks the backend and its example field agrees with the n
   const differences = absoluteDifferences(field.data, reference.data, reference.data.map((v) => (v !== 0 ? 1 : 0)));
   console.log(`app example on ${hardwareGpu ? "webgpu" : "cpu"}: median |field - native| ${median(differences)} Hz, max ${differences.at(-1)} Hz over ${differences.length} voxels`);
   expect(median(differences)).toBeLessThan(0.1);
+  const metadataEvent = page.waitForEvent("download");
+  await page.locator("#resultList .nd-volume-toggle").filter({ hasText: "Field map sidecar" }).getByRole("button", { name: "Download" }).click();
+  const metadata = JSON.parse(readFileSync(await (await metadataEvent).path(), "utf8"));
+  expect(metadata.Execution.backend).toBe(hardwareGpu ? "webgpu" : "cpu");
+  if (hardwareGpu) expect(metadata.Execution.adapter).toBeTruthy();
+  await expect(page.locator("#technicalLog")).toContainText(`PyHySCO backend: ${metadata.Execution.backend}`);
+});
+
+test("a GPU failure remains visible in the CPU fallback's report, sidecar and console", async ({ page }) => {
+  test.setTimeout(120000);
+  await page.context().route("**/assets/worker-*.js", async (route) => {
+    const response = await route.fetch();
+    const setup = `Object.defineProperty(navigator, "gpu", { configurable: true, value: {
+      requestAdapter: async () => ({ info: { vendor: "test hardware" }, limits: {},
+        requestDevice: async () => { throw new Error("forced GPU device failure"); }
+      })
+    } });\n`;
+    await route.fulfill({ response, body: setup + await response.text() });
+  });
+  await page.goto("/");
+  await page.locator("#neurodesk-input-transfer").setInputFiles(syntheticPair().filter(file => !file.name.endsWith(".bval")));
+  await page.evaluate(async () => {
+    await globalThis.neurodeskAutomation.dispatch("adopt", { role: "images" });
+    await globalThis.neurodeskAutomation.dispatch("start", {});
+  });
+  await expect.poll(() => page.evaluate(async () => (await globalThis.neurodeskAutomation.dispatch("snapshot")).state), { timeout: 60000 }).toBe("succeeded");
+  const report = await page.evaluate(async () => (await globalThis.neurodeskAutomation.dispatch("snapshot")).report);
+  const execution = { backend: "cpu", gpuError: "forced GPU device failure" };
+  expect(report.provenance.execution).toEqual(execution);
+  const event = page.waitForEvent("download");
+  await page.locator("#resultList .nd-volume-toggle").filter({ hasText: "Field map sidecar" }).getByRole("button", { name: "Download" }).click();
+  expect(JSON.parse(readFileSync(await (await event).path(), "utf8")).Execution).toEqual(execution);
+  await expect(page.locator("#technicalLog")).toContainText("CPU fallback: forced GPU device failure");
 });

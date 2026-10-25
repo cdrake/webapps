@@ -348,7 +348,15 @@ export const shaders = SHADERS;
 export async function requestHardwareAdapter(gpu = globalThis.navigator?.gpu) {
   if (!gpu) return null;
   const adapter = await gpu.requestAdapter({ powerPreference: "high-performance" });
-  if (!adapter || isSoftwareAdapter(adapter.info)) return null;
+  if (!adapter) return null;
+  const info = adapter.info ?? {};
+  if (isSoftwareAdapter({
+    vendor: info.vendor,
+    architecture: info.architecture,
+    device: info.device,
+    description: info.description,
+    isFallbackAdapter: adapter.isFallbackAdapter || info.isFallbackAdapter,
+  })) return null;
   return adapter;
 }
 
