@@ -1,6 +1,13 @@
 # @neurodesk/ants
 
+## 0.5.20261025
+
 ## 0.5.20261024
+
+### Patch Changes
+
+- Updated dependencies
+  - @neurodesk/registration@0.1.2
 
 ## 0.5.20261022
 

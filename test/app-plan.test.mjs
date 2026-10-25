@@ -749,6 +749,23 @@ test('unparsed root source retains uncertain comment references', async (t) => {
   assert.deepEqual(plan.selected.map((app) => app.id), ['lcmodel']);
 });
 
+test('changing or removing the catalog interaction root script still selects only the site', async () => {
+  const registry = await loadAppsRegistry();
+  const before = JSON.parse(await readFile(join(repoRoot, 'package.json'), 'utf8'));
+  for (const replacement of ['node scripts/changed-agent-runner.mjs', undefined]) {
+    const after = structuredClone(before);
+    if (replacement === undefined) delete after.scripts['test:e2e:agent'];
+    else after.scripts['test:e2e:agent'] = replacement;
+    const manifests = new Map([
+      ['package.json', manifest(before, after)],
+      ['pnpm-lock.yaml', manifest(baseLock, baseLock)],
+    ]);
+    const plan = createAppPlan(registry, ['package.json'], await graph, manifests);
+    assert.deepEqual(plan.selected, []);
+    assert.equal(plan.site, true, `interaction script ${replacement === undefined ? 'removed' : 'changed'}`);
+  }
+});
+
 test('removing a root script still selects the CI job that calls it', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'app-plan-deleted-script-'));
   t.after(() => rm(root, { recursive: true, force: true }));
