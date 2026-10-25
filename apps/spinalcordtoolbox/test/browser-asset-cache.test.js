@@ -19,6 +19,7 @@ test('a transient connection failure retries and caches only verified runtime by
     https.get = (url, callback) => {
         assert.equal(url, entry.url);
         const request = new EventEmitter();
+    request.destroy = () => request.emit('close');
         calls += 1;
         process.nextTick(() => {
             if (calls === 1) request.emit('error', Object.assign(new Error('connect timed out'), { code: 'ETIMEDOUT' }));
@@ -65,7 +66,10 @@ async function withResponses(replies, check) {
             response.headers = {};
             response.on('end', () => request.emit('close'));
             callback(response);
-            response.end(reply.body ?? bytes);
+            if (reply.abort) {
+                response.write(Buffer.from('partial'));
+                process.nextTick(() => response.destroy(new Error('response body interrupted')));
+            } else if (!reply.stallBody) response.end(reply.body ?? bytes);
         });
         return request;
     };
@@ -113,5 +117,29 @@ test('a connection deadline aborts the stalled attempt before retrying', async (
         } finally {
             clearTimeout(keepAlive);
         }
+    });
+});
+
+
+test('a stalled error response cannot schedule a second retry after its deadline', async () => {
+    await withResponses([{ status: 503, stallBody: true }], async (cache, calls) => {
+        const keepAlive = setTimeout(() => {}, 100);
+        try {
+            await assert.rejects(browserAssetPath(entry, cache, { timeoutMs: 5, maxRetries: 1, retryBaseDelayMs: 0 }), /HTTP 503/);
+            await new Promise(resolve => setTimeout(resolve, 30));
+            assert.equal(calls(), 2);
+            assert.deepEqual(await readdir(cache), []);
+        } finally {
+            clearTimeout(keepAlive);
+        }
+    });
+});
+
+test('an interrupted successful response retries without publishing partial bytes', async () => {
+    await withResponses([{ abort: true }, {}], async (cache, calls) => {
+        const path = await browserAssetPath(entry, cache, { maxRetries: 1, retryBaseDelayMs: 0 });
+        assert.deepEqual(await readFile(path), bytes);
+        assert.equal(calls(), 2);
+        assert.deepEqual(await readdir(cache), [entry.sha256]);
     });
 });

@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Stop each failed runtime download before retrying, handle interrupted response bodies, and discard partial files so transient network failures cannot exceed the retry bound or publish incomplete runtime assets.
+  - @neurodesk/spinalcordtoolbox@0.9.20261025
 - 853ff13: Retry transient downloads while staging pinned browser-analysis runtime assets, with bounded attempts and unchanged size and SHA-256 checks. Do not publish failed or corrupt downloads into the runtime cache.
   - @neurodesk/spinalcordtoolbox@0.9.20261025
 

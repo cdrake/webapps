@@ -11,6 +11,8 @@
 
 ## Development
 
+- Runtime and fixture downloads must settle each attempt once, stop its transport and remove partial files before retrying. `test:downloads` covers interrupted bodies and stalled error responses as well as connection failures.
+
 - **Start dev server**: `pnpm --filter spinalcordtoolbox dev` (serves on http://localhost:8080 with the shared shell; `web/run.sh` serves the page unthemed for tests)
 - `web/run.sh` stops an existing SCT dev server on the requested port before starting a replacement and serves local development files with no-store cache headers; use an alternate port argument when another non-SCT process owns `8080`
 - `web/run.sh` uses `ThreadingHTTPServer`; keep it threaded so one idle browser/devtools connection cannot block the whole local server. `npm run test:server` holds an idle TCP connection open and verifies a second request still succeeds.
