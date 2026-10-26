@@ -266,7 +266,7 @@ export function workflowIssues(doc, tools) {
       const path = `steps.${id}.inputs.${name}`;
       const binding = step.inputs?.[name];
       const source = declaration(binding?.ref);
-      // Gradient input formats stay in metadata until the runtime has inspectors.
+      // The bval-bvec pair token stays in metadata because the runtime cannot inspect it.
       // Known bindings still need the same checks when imported or edited.
       const expected = gradientFormats(input);
       const provided = gradientFormats(source);
