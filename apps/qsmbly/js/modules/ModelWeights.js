@@ -11,6 +11,52 @@ import { fetchModel } from '../../vendor/webapp-components/src/worker/fetchModel
  * Runs in the Web Worker.
  */
 
+<<<<<<< monorepo
+=======
+const DB_NAME = 'qsmbly-model-weights';
+const STORE = 'weights';
+
+function openDb() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbGet(key) {
+  const db = await openDb();
+  try {
+    return await new Promise((resolve, reject) => {
+      const req = db.transaction(STORE, 'readonly').objectStore(STORE).get(key);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error);
+    });
+  } finally { db.close(); }
+}
+
+async function idbPut(key, value) {
+  const db = await openDb();
+  try {
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).put(value, key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+      // A write over the storage quota aborts the transaction, which may fire only `abort`: without
+      // this the download never finished (seen with SUSEP-Net's 206 MB in a fresh profile).
+      tx.onabort = () => reject(tx.error ?? new Error('the cache write was aborted'));
+    });
+  } finally { db.close(); }
+}
+
+// Cache key = file name + sha256, so re-hosted/updated weights bust the cache automatically.
+function cacheKey(file) {
+  return `${file.name}:${file.sha256 || 'nohash'}`;
+}
+
+>>>>>>> upstream
 /** Parse the JSON from `get_model_registry_wasm()` into `{ id: modelSpec }`. */
 export function parseRegistry(json) {
   const byId = {};

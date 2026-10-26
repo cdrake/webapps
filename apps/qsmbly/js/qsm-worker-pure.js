@@ -7,6 +7,7 @@
 
 // Import utilities - no fallbacks
 import { ppmFieldToPhase } from './worker/utils/PhaseUtils.js';
+import { describeFailure } from './next/engine/engine-call.js';
 import { createThresholdMask } from './worker/utils/MaskUtils.js';
 import { resolveTgvParams } from './worker/utils/TgvParams.js';
 import { clampTileConfig, MAX_WASM_PATCH_EDGE } from './worker/utils/DlTiling.js';
@@ -381,9 +382,17 @@ async function runEnginePipeline(data, outputs = { qsm: true }) {
       const geometry = engine.geometry(key);
       if (geometry) show(key, JSON.parse(geometry));
     }
-  } finally {
-    engine.free();
+  } catch (e) {
+    // A call that died inside the module (a panic) leaves the engine borrowed, and freeing it
+    // then throws about that instead: report what happened (js/next/engine/engine-call.js).
+    try {
+      engine.free();
+    } catch {
+      // left allocated
+    }
+    throw new Error(describeFailure(e, { mod }).message);
   }
+  engine.free();
   postLog(`Volumes held during the run: ${(volumes.bytes() / 1e6).toFixed(0)} MB`);
 
   postProgress(1.0, 'Pipeline complete!');
@@ -605,7 +614,6 @@ async function runQsmartCore({
   const sdf_sigma2_stage1 = qsmartSettings.sdf_sigma2_stage1;
   const sdf_sigma1_stage2 = qsmartSettings.sdf_sigma1_stage2;
   const sdf_sigma2_stage2 = qsmartSettings.sdf_sigma2_stage2;
-  const sdf_spatial_radius = qsmartSettings.sdf_spatial_radius;
   const sdf_lower_lim = qsmartSettings.sdf_lower_lim;
   const sdf_curv_constant = qsmartSettings.sdf_curv_constant;
   const useCurvature = qsmartSettings.useCurvature !== false;
@@ -715,7 +723,6 @@ async function runQsmartCore({
       fieldPpm, weightedMask, onesArray,
       nx, ny, nz,
       sdf_sigma1_stage1, sdf_sigma2_stage1,
-      sdf_spatial_radius,
       sdf_lower_lim, sdf_curv_constant,
       useCurvature,
       sdfProgress1
@@ -764,7 +771,6 @@ async function runQsmartCore({
       tfsWeighted, weightedMask, vascOnly,
       nx, ny, nz,
       sdf_sigma1_stage2, sdf_sigma2_stage2,
-      sdf_spatial_radius,
       sdf_lower_lim, sdf_curv_constant,
       useCurvature,
       sdfProgress2
