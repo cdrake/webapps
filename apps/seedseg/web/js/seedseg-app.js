@@ -1000,6 +1000,7 @@ class SeedSegApp {
       const { DicompareController } = await import('https://webapps.neurodesk.org/dicompare/embed/DicompareController.js');
       this.dicompareController ||= new DicompareController({
         schemaUrl: 'https://webapps.neurodesk.org/dicompare/schemas/SeedSeg_Prostate_T1w_v1.0.json',
+        workerUrl: 'https://webapps.neurodesk.org/dicompare/embed/dicompare-worker.js',
         updateOutput: (msg) => this.updateOutput(msg)
       });
       if (!this.dicompareController.hasFiles()) {

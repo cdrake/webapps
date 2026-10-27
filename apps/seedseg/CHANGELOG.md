@@ -16,6 +16,8 @@
 
 ### Patch Changes
 
+- Use the registered report worker so optional DICOM reporting resolves from the SeedSeg offline inventory.
+  - @neurodesk/seedseg@0.7.20261027
 - Updated dependencies [7019541]
   - @neurodesk/seedseg@0.7.20261027
 
