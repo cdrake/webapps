@@ -56,6 +56,26 @@ env:
   ONNXRUNTIME_NODE_INSTALL: skip
 
 jobs:
+  wasm-single:
+    name: committed single-threaded WASM equals a rebuild from source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+      - name: Install the pinned nightly toolchain and wasm-pack 0.13.1
+        run: |
+          rustup toolchain install nightly-2025-11-15 --profile minimal --target wasm32-unknown-unknown
+          cargo install wasm-pack --version 0.13.1 --locked
+      - name: Set up wasm-opt
+        uses: ./.github/actions/setup-wasm-opt
+      - name: Rebuild and compare
+        run: node packages/greedy/scripts/build-wasm-single.mjs --check
+
   native:
     strategy:
       fail-fast: false

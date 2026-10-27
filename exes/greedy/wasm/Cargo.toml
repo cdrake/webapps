@@ -11,6 +11,10 @@ rust-version.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-greedy-rs-core = { path = "../core", default-features = false, features = ["ssd", "nmi", "parallel"] }
+greedy-rs-core = { path = "../core", default-features = false, features = ["ssd", "nmi"] }
 wasm-bindgen = "0.2"
-wasm-bindgen-rayon = { version = "1.3", features = ["no-bundler"] }
+wasm-bindgen-rayon = { version = "1.3", features = ["no-bundler"], optional = true }
+
+[features]
+default = ["threads"]
+threads = ["greedy-rs-core/parallel", "dep:wasm-bindgen-rayon"]

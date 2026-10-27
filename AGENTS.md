@@ -161,6 +161,7 @@ An app can set `ci.e2e_shards` to 2-4 in `registry/apps.yml`. The CPU browser jo
 - The pipeline (denoise, N4, `volume_pol`, registration to ICBM 2009c, features, random forest, outputs) lives in `packages/bison`, shared by the app's worker (`src/browser.js` drivers) and the Node code (`src/node.js`, `src/node-workers.js`). It is pure: the tools are injected (header of `src/preprocess.js`). Change outputs there so both stay identical.
 - The classifiers, tissue priors, histograms and `Av_FLAIR` are published under `bison/models/` with the permission of Mahsa Dadar (2026-10-24, `models_permission` in `models/bison.manifest.json`). They are at a later dataset revision than the templates, so each has its own pinned `url`. Node tests and `bin/bison.js` can read a local copy from `BISON_ASSET_DIR` (`--asset-dir`).
 - The reference is the upstream BISON and BISON-WMH scripts on MINC preprocessing, run on epic with the MINC toolkit (`packages/bison/validation/native`, its `README.md`). Its "Divergences from upstream" section and `docs/preprocessing.md` map every step; add any new divergence there.
+- Registration stays on ANTs: Greedy (NMI only, no cross-correlation) failed the native-agreement gates on CSF and the cerebellum even when it was no faster (`docs/preprocessing.md#greedy`). Retry only with a metric or engine that changes that.
 - N4 replaces `nu_correct` with its own four-level schedule (`N4_OPTIONS`), not a one-to-one option translation: the direct translation stops early and brightens deep grey matter ([preprocessing.md#n4](packages/bison/docs/preprocessing.md#n4)). Keep it unless a new comparison against N3 on every validation subject shows better.
 - Each registration group and each denoised image gets a new WebAssembly instance, in its own Worker in the browser and worker thread in Node, so its memory is freed when it ends; one hmc kernel instance also aborts on its 27th run (#537, `REGISTRATION_RUNS_PER_INSTANCE`). Do not reuse an instance across stages.
 - Outputs are on the native T1 grid: uint8 labels, one float32 probability per class and the uint8 mask, gzip level 9 with mtime 0 (`src/outputs.js`), so the bytes are the same in every browser and on the command line.
@@ -342,6 +343,13 @@ relative URLs and must remain adjacent. The versioned Greedy web release carries
 that generated runtime; it is never committed or npm-published. Greedy's app
 manifest is the release version source; the release tooling keeps its package
 and Rust workspace at the same `MAJOR.MINOR.YYYYMMDD` version.
+
+`packages/greedy/wasm-single` is a single-threaded build of the same crate, which SYNcro's command
+line runs in Node (`@neurodesk/greedy/single`). It gives the threaded browser build's results byte
+for byte (checked in Chromium on a BISON pair), and it is committed so that every platform runs the
+same bytes. After changing `exes/greedy/core` or `exes/greedy/wasm`, run
+`pnpm --filter @neurodesk/greedy build:wasm-single` on Linux and commit the result; the
+`wasm-single` job in `greedy-native.yml` fails when a rebuild differs.
 
 `exes/fastprep` and `exes/glm` are Cargo workspaces (`make build test lint`) with `cli`, `core` and `wasm` crates. `pnpm --filter @neurodesk/fastprep build:wasm` builds both WASM crates into the gitignored `packages/fastprep/wasm`. There is no bundled CLI release yet: fastprep is in `registry/standalone-exceptions.json` until niimath, brainchop, greedy-rs, synthsr, topofit and glm are packaged and TopoFit's licence allows it.
 
