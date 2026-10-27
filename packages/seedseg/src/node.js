@@ -4,13 +4,13 @@ import { availableParallelism, homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { gunzipSync } from 'node:zlib';
 import { runInference } from './pipeline.js';
-import { MODEL_ASSETS, MODEL_SEEDS, resolveModels, validateSelection } from './assets.js';
+import { DEFAULT_FOLDS, FOLDS, LEGACY_ASSETS, MODEL_ASSETS, MODEL_SEEDS, resolveFolds, resolveModels, validateSelection } from './assets.js';
 import { outputNames } from './results.js';
 import runtimeManifest from '../runtime.manifest.json' with { type: 'json' };
 import { fileURLToPath, pathToFileURL } from 'node:url';
 process.env.ORT_DISABLE_TELEMETRY ??= '1';
 const ort = await import('onnxruntime-node');
-export { MODEL_ASSETS, MODEL_SEEDS };
+export { FOLDS, MODEL_ASSETS, MODEL_SEEDS };
 // A one-node ONNX graph (Identity, float32[1], opset 13) proves the native CPU runtime executes.
 const IDENTITY_MODEL = Buffer.from('CAc6NwoQCgF4EgF5IghJZGVudGl0eRIBZ1oPCgF4EgoKCAgBEgQKAggBYg8KAXkSCgoICAESBAoCCAFCAhAN', 'base64');
 
@@ -127,13 +127,21 @@ function integer(value, name, maximum = Infinity) {
   return number;
 }
 
-export function resolveSettings({ models, ensemble, threshold = 0.1, nMarkers = 3, threads } = {}) {
-  if (models !== undefined && ensemble !== undefined) throw new Error('Choose --models or --ensemble, not both.');
-  const selected = ensemble === undefined ? resolveModels(models) : MODEL_ASSETS.slice(0, integer(ensemble, 'Ensemble', 4));
+export function resolveSettings({ model = 'v2', folds, mirror = false, models, ensemble, threshold = 0.1, nMarkers = 3, threads } = {}) {
+  if (!['v2', 'v1'].includes(model)) throw new Error(`Unknown SeedSeg model "${model}". Choose v2 or v1.`);
+  let selected;
+  if (model === 'v2') {
+    if (models !== undefined || ensemble !== undefined) throw new Error('--models and --ensemble select v1 checkpoints; use --folds with v2.');
+    selected = resolveFolds(folds ?? DEFAULT_FOLDS);
+  } else {
+    if (folds !== undefined || mirror) throw new Error('--folds and --mirror apply to v2; use --models or --ensemble with v1.');
+    if (models !== undefined && ensemble !== undefined) throw new Error('Choose --models or --ensemble, not both.');
+    selected = ensemble === undefined ? resolveModels(models) : LEGACY_ASSETS.slice(0, integer(ensemble, 'Ensemble', 4));
+  }
   const probability = typeof threshold === 'string' && threshold.trim() ? Number(threshold) : threshold;
   const markers = integer(nMarkers, 'Top-N markers', 10);
   validateSelection({ threshold: probability, nMarkers: markers });
-  return { models: selected, threshold: probability, nMarkers: markers,
+  return { model, models: selected, mirror: model === 'v2' && mirror === true, threshold: probability, nMarkers: markers,
     threads: integer(threads ?? process.env.SLURM_CPUS_PER_TASK ?? Math.min(4, availableParallelism()), 'Threads') };
 }
 
@@ -148,34 +156,37 @@ async function assertNewOutput(directory) {
   if (entries.length) throw new Error(`Output directory ${directory} is not empty. Choose a new or empty directory.`);
 }
 
-export async function segment({ input, output, models, ensemble, threshold, nMarkers, threads,
+export async function segment({ input, output, model, folds, mirror, models, ensemble, threshold, nMarkers, threads,
   cacheDir = defaultCacheDir(), offline = offlineByDefault(), onProgress = () => {} } = {}) {
   if (!input || !output) throw new Error('An input image and an output directory are required.');
-  const settings = resolveSettings({ models, ensemble, threshold, nMarkers, threads });
+  const settings = resolveSettings({ model, folds, mirror, models, ensemble, threshold, nMarkers, threads });
   const destination = resolve(output);
   await assertNewOutput(destination);
   const inputData = arrayBuffer(await readFile(input));
-  const verified = new Map();
-  for (const asset of settings.models) {
-    verified.set(asset.id, await loadAsset(asset, { cacheDir, offline, onProgress: message => onProgress(undefined, message) }));
-  }
+  const log = message => onProgress(undefined, message);
+  // Check every selected network before the run, then read each one again only while it runs,
+  // so memory holds one network at a time (upstream's lazy sessions).
+  for (const asset of settings.models) await loadAsset(asset, { cacheDir, offline, onProgress: log });
   const qsm = await loadQsm();
   const started = performance.now();
   const result = await runInference(inputData, {
-    selectedModels: settings.models.map(asset => asset.id), threshold: settings.threshold,
-    nMarkers: settings.nMarkers, qsm, Tensor: ort.Tensor, decompress: gunzipSync,
+    model: settings.model, selectedModels: settings.models.map(asset => asset.id), folds: settings.models.map(asset => asset.fold),
+    mirror: settings.mirror, threshold: settings.threshold, nMarkers: settings.nMarkers, qsm, Tensor: ort.Tensor, decompress: gunzipSync,
+    backends: ['cpu'],
     createSession: bytes => ort.InferenceSession.create(bytes, { executionProviders: ['cpu'],
       graphOptimizationLevel: 'all', intraOpNumThreads: settings.threads, interOpNumThreads: 1 }),
-    loadModel: async asset => verified.get(asset.id),
-    events: { progress: onProgress, log: message => onProgress(undefined, message) },
+    loadModel: asset => loadAsset(asset, { cacheDir, offline, onProgress: log }),
+    events: { progress: onProgress, log },
   });
-  const names = outputNames(settings.models.length);
+  const names = outputNames(settings.model, settings.models.length);
   await mkdir(destination, { recursive: true });
   for (const [stage, { niftiData }] of Object.entries(result.stages)) {
     await writeAtomically(join(destination, names[stage]), new Uint8Array(niftiData));
   }
-  return { output: destination, files: Object.values(names), markerVoxels: result.markerVoxels,
-    models: result.models, threshold: settings.threshold, nMarkers: settings.nMarkers,
+  const detections = result.detections && (({ timing, backend, ...rest }) => rest)(result.detections);
+  return { output: destination, model: settings.model, files: Object.values(names), markerVoxels: result.markerVoxels,
+    models: result.models, ...(settings.model === 'v2' ? { mirror: settings.mirror, detections } : {}),
+    threshold: settings.threshold, nMarkers: settings.nMarkers,
     threads: settings.threads, onnxRuntime: ort.env.versions.node, executionProvider: 'cpu',
     qsmVersion: runtimeManifest.version, seconds: (performance.now() - started) / 1000 };
 }

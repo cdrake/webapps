@@ -2,12 +2,12 @@
   "schemaVersion": 2,
   "app": "seedseg",
   "title": "SeedSeg",
-  "description": "Segment prostate fiducial markers using the existing SeedSeg model ensemble.",
+  "description": "Detect prostate fiducial markers with the SeedSeg nnU-Net networks or the legacy v1 ensemble.",
   "defaultOperation": "segment",
   "operations": {
     "segment": {
       "title": "Segment fiducial markers",
-      "description": "Run bias correction, selected ONNX models, probability averaging and marker selection.",
+      "description": "Run bias correction, the selected v2 networks (or the legacy v1 models), probability averaging and marker selection.",
       "mode": "batch",
       "inputs": {
         "image": {
@@ -24,9 +24,41 @@
         }
       },
       "parameters": {
+        "model": {
+          "type": "string",
+          "description": "v2: nnU-Net 5-fold networks; v1: legacy 4-network U-Net consensus",
+          "enum": [
+            "v2",
+            "v1"
+          ],
+          "default": "v2"
+        },
+        "folds": {
+          "type": "array",
+          "description": "v2 networks (cross-validation folds) to average; [0,1,2,3,4] is the evaluated ensemble",
+          "items": {
+            "type": "integer",
+            "description": "Fold",
+            "enum": [
+              0,
+              1,
+              2,
+              3,
+              4
+            ]
+          },
+          "default": [
+            0
+          ]
+        },
+        "mirror": {
+          "type": "boolean",
+          "description": "v2 test-time mirroring (about 8 times slower)",
+          "default": false
+        },
         "models": {
           "type": "array",
-          "description": "One or more distinct model seeds",
+          "description": "v1: one or more distinct model seeds",
           "items": {
             "type": "integer",
             "description": "Model seed",
@@ -53,7 +85,7 @@
         },
         "markers": {
           "type": "integer",
-          "description": "Maximum number of marker components retained",
+          "description": "Implanted markers K: the K candidates with the highest mean probability are kept",
           "minimum": 1,
           "maximum": 10,
           "default": 3
@@ -71,7 +103,7 @@
           "type": "neuro:volume",
           "mediaType": "application/x-nifti",
           "space": "native",
-          "minimum": 2,
+          "minimum": 1,
           "maximum": 5
         }
       },

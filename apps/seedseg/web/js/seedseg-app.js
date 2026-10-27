@@ -17,6 +17,7 @@ import { SeedSegPipeline } from './controllers/SeedSegPipeline.js';
 import { ConsoleOutput, ProgressManager, ModalManager, bindWindowControls, createMaskEditor } from '@neurodesk/webapp-components/ui';
 import { createNiftiFromVolume } from '@neurodesk/webapp-components/file-io';
 import * as Config from './app/config.js';
+import { MODEL_SEEDS } from '../vendor/seedseg/src/assets.js';
 import { clearResultsAfterEditing, isEditableStage, replaceWithEdit, stageLabel } from './app/mask-edit.js';
 
 class SeedSegApp {
@@ -101,18 +102,8 @@ class SeedSegApp {
       onComplete: () => this.onInferenceComplete(),
       onError: (msg) => this.onInferenceError(msg),
       onInitialized: () => {},
-      onDetections: (det) => this.showDetections(det)
+      onMetrics: (det) => this.showDetections(det)
     });
-    // Legacy v1 consensus, separate worker, created on first use
-    this.legacyExecutor = new InferenceExecutor({
-      workerPath: 'js/legacy-v1-worker.js',
-      updateOutput: (msg) => this.updateOutput(msg),
-      setProgress: (val, text) => this.setProgress(val, text),
-      onStageData: (data) => this.handleStageData(data),
-      onComplete: () => this.onInferenceComplete(),
-      onError: (msg) => this.onInferenceError(msg)
-    });
-    this.activeExecutor = this.inferenceExecutor;
 
     // Modals
     this.aboutModal = new ModalManager('aboutModal');
@@ -151,13 +142,19 @@ class SeedSegApp {
     this._setupUnifiedDropZone();
 
     document.getElementById('selectAllFolds')?.addEventListener('click', () => {
-      Config.FOLDS.forEach((f) => { const cb = document.getElementById(`fold${f}`); if (cb) cb.checked = true; });
+      Config.FOLDS.forEach((f) => {
+        const cb = document.getElementById(`fold${f}`);
+        if (cb) cb.checked = true;
+      });
     });
 
     // The legacy v1 model ignores the network and mirroring settings
     document.getElementById('legacyModel')?.addEventListener('change', (e) => {
       const ids = [...Config.FOLDS.map((f) => `fold${f}`), 'mirrorTTA', 'selectAllFolds'];
-      ids.forEach((id) => { const el = document.getElementById(id); if (el) el.disabled = e.target.checked; });
+      ids.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = e.target.checked;
+      });
     });
 
     // Run button
@@ -673,7 +670,8 @@ class SeedSegApp {
 
   // ==================== Inference ====================
 
-  async runSegmentation() {
+  // `legacyModels` selects v1 checkpoints for automation; the page always runs all four.
+  async runSegmentation({ legacyModels = MODEL_SEEDS } = {}) {
     if (!this.fileIOController.hasValidData()) {
       this.updateOutput('No input volume loaded');
       return;
@@ -682,22 +680,24 @@ class SeedSegApp {
     const file = this.fileIOController.getActiveFile();
 
     // Gather settings
-    const folds = Config.FOLDS.filter((f) => document.getElementById(`fold${f}`)?.checked);
-    if (folds.length === 0) {
-      this.updateOutput('No model folds selected');
+    const legacy = Boolean(document.getElementById('legacyModel')?.checked);
+    const folds = Config.FOLDS.filter((f) => document.getElementById(`fold${f}`)?.checked).map(Number);
+    if (!legacy && folds.length === 0) {
+      this.updateOutput('No networks selected');
       return;
     }
-    const mirror = !!document.getElementById('mirrorTTA')?.checked;
-    const backend = Config.INFERENCE_DEFAULTS.backend;
     const threshold = parseFloat(document.getElementById('probThreshold')?.value || String(Config.INFERENCE_DEFAULTS.threshold));
     const nMarkers = parseInt(document.getElementById('nMarkers')?.value || String(Config.INFERENCE_DEFAULTS.nMarkers));
-    const modelBaseUrl = new URL(Config.MODEL_BASE_URL, window.location.href).href;
+    // The legacy v1 model ignores the network and mirroring settings and runs all four checkpoints.
+    const settings = legacy
+      ? { model: 'v1', selectedModels: legacyModels, threshold, nMarkers }
+      : { model: 'v2', folds, mirror: Boolean(document.getElementById('mirrorTTA')?.checked),
+          backend: Config.INFERENCE_DEFAULTS.backend, threshold, nMarkers };
 
     // Read file
     const inputData = await file.arrayBuffer();
 
     // Clear previous results
-<<<<<<< monorepo
     await clearResultsAfterEditing(this.maskEditor, this.inferenceExecutor);
     this.disableAllResultTabs();
 
@@ -705,45 +705,14 @@ class SeedSegApp {
     const runBtn = document.getElementById('runSegmentation');
     if (runBtn) runBtn.disabled = true;
     document.getElementById('statusText')?.classList.remove('error');
-    this.progress.begin('Starting segmentation...');
-=======
-    this.inferenceExecutor.clearResults();
-    this.legacyExecutor.clearResults();
-    this.disableAllResultTabs();
-
-    if (document.getElementById('legacyModel')?.checked) {
-      this.activeExecutor = this.legacyExecutor;
-      this.updateOutput('Running the legacy v1 model (4-network U-Net consensus)');
-      await this.legacyExecutor.run({
-        inputData,
-        settings: {
-          selectedModels: Config.LEGACY_MODELS, sha256: Config.LEGACY_SHA256, threshold, nMarkers,
-          modelBaseUrl: new URL(Config.LEGACY_MODEL_BASE_URL, window.location.href).href
-        }
-      });
-      return;
-    }
-    this.activeExecutor = this.inferenceExecutor;
->>>>>>> upstream
+    this.progress.begin(legacy ? 'Starting the legacy v1 model...' : 'Starting segmentation...');
 
     // Run
-    await this.inferenceExecutor.run({
-      inputData,
-      settings: {
-        folds,
-        mirror,
-        backend,
-        model: Config.INFERENCE_DEFAULTS.model,
-        modelDir: Config.MODEL_DIRS[Config.INFERENCE_DEFAULTS.model],
-        threshold,
-        nMarkers,
-        modelBaseUrl
-      }
-    });
+    await this.inferenceExecutor.run({ inputData, settings });
   }
 
   cancelSegmentation() {
-    this.activeExecutor.cancel();
+    this.inferenceExecutor.cancel();
     const runBtn = document.getElementById('runSegmentation');
     if (runBtn) runBtn.disabled = false;
     this.progress.reset('Cancelled');
@@ -755,8 +724,12 @@ class SeedSegApp {
     input: 'Input',
     probability: 'Probability',
     markers: 'Markers',
-    model1: 'v1 net 1', model2: 'v1 net 2', model3: 'v1 net 3', model4: 'v1 net 4',
-    avgProb: 'v1 average', consensus: 'v1 consensus'
+    model1: 'v1 net 1',
+    model2: 'v1 net 2',
+    model3: 'v1 net 3',
+    model4: 'v1 net 4',
+    avgProb: 'v1 average',
+    consensus: 'v1 consensus'
   };
 
   handleStageData(data) {
@@ -813,7 +786,7 @@ class SeedSegApp {
       dlBtn.className = 'download-btn';
       dlBtn.title = `Download ${displayName}`;
       dlBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
-      dlBtn.addEventListener('click', () => this.activeExecutor.downloadStage(stage));
+      dlBtn.addEventListener('click', () => this.inferenceExecutor.downloadStage(stage));
       item.appendChild(dlBtn);
     }
 
@@ -866,15 +839,6 @@ class SeedSegApp {
   }
 
   onInferenceComplete() {
-    if (this.activeExecutor === this.legacyExecutor) {
-      const panel = document.getElementById('detectionsPanel');
-      const k = document.getElementById('nMarkers')?.value;
-      if (panel) {
-        panel.innerHTML = `<div class="detections-meta">Configuration: legacy model (v1, 4-network U-Net consensus), K = ${k}. ` +
-          'See the v1 consensus result for the selected markers.</div>';
-        panel.classList.remove('hidden');
-      }
-    }
     const runBtn = document.getElementById('runSegmentation');
     if (runBtn) runBtn.disabled = false;
     this.progress.end('Complete');
@@ -918,7 +882,7 @@ class SeedSegApp {
       return;
     }
 
-    const result = this.activeExecutor.getResult(stage);
+    const result = this.inferenceExecutor.getResult(stage);
     if (!result?.file || !this.inputFile) return;
 
     // Show overlay controls
@@ -940,39 +904,53 @@ class SeedSegApp {
     const container = document.getElementById('stageButtons');
     if (container) container.innerHTML = '';
     const panel = document.getElementById('detectionsPanel');
-    if (panel) { panel.innerHTML = ''; panel.classList.add('hidden'); }
+    if (panel) {
+      panel.replaceChildren();
+      panel.hidden = true;
+    }
   }
 
   /** Marker list: rank, mean probability, position; count flag when fewer than K were found. */
   showDetections(det) {
     const panel = document.getElementById('detectionsPanel');
     if (!panel) return;
-    const n = det.markers.length;
+    const element = (tag, attributes = {}, text = '') => Object.assign(document.createElement(tag), attributes, text ? { textContent: text } : {});
+    const found = `${det.markers.length} of ${det.k} markers found`;
     const flag = det.countFlag
-      ? `<div class="detections-flag warn"><strong>Check:</strong> ${n} of ${det.k} markers found (${det.nCandidates} candidate${det.nCandidates === 1 ? '' : 's'}). Review the image.</div>`
-      : `<div class="detections-flag">${n} of ${det.k} markers found.</div>`;
-    const rows = det.markers.map((m) => {
-      const w = m.centroidWorldMm.map((v) => v.toFixed(1)).join(', ');
-      return `<tr class="clickable" data-vox="${m.centroidVox.join(',')}" title="Voxel ${m.centroidVox.map((v) => v.toFixed(1)).join(', ')}">
-        <td>${m.rank}</td><td>${m.meanProb.toFixed(3)}</td><td>${m.volumeMm3.toFixed(0)}</td><td>${w}</td></tr>`;
-    }).join('');
-    const next = det.others.length ? `Next candidate: mean probability ${det.others[0].meanProb.toFixed(3)}.` : '';
-    const nets = det.folds.length === 5 ? '5-network ensemble' : `network${det.folds.length > 1 ? 's' : ''} ${det.folds.map((f) => Number(f) + 1).join(', ')} of 5`;
-    const t = ` Configuration: ${nets}, mirroring ${det.mirror ? 'on' : 'off'}, K = ${det.k}, ${det.backend === 'webgpu' ? 'WebGPU' : det.backend === 'wasm' ? 'WebAssembly' : det.backend}` +
-      (det.timing?.total ? `, ${det.timing.total.toFixed(0)} s.` : '.');
-    panel.innerHTML = `${flag}<table class="detections-table"><thead><tr><th>#</th><th>Mean p</th><th>mm³</th><th>Position (mm)</th></tr></thead>
-      <tbody>${rows}</tbody></table><div class="detections-meta">${next}${t}</div>`;
-    panel.classList.remove('hidden');
-    panel.querySelectorAll('tr.clickable').forEach((tr) => {
-      tr.addEventListener('click', () => {
-        const v = tr.dataset.vox.split(',').map(Number);
-        const vol = this.nv.volumes?.[0];
-        if (!vol) return;
-        const frac = [0, 1, 2].map((i) => (v[i] + 0.5) / vol.dims[i + 1]);
-        this.nv.scene.crosshairPos = frac;
-        this.nv.updateGLVolume();
-      });
-    });
+      ? element('p', { className: 'nd-message warning' }, `Check: ${found} (${det.nCandidates} candidate${det.nCandidates === 1 ? '' : 's'}). Review the image.`)
+      : element('p', { className: 'nd-message success' }, `${found}.`);
+    const table = element('table', { className: 'nd-data-table' });
+    const head = table.createTHead().insertRow();
+    for (const [label, numeric] of [['#', false], ['Mean p', true], ['mm³', true], ['Position (mm)', true]]) {
+      head.append(element('th', { scope: 'col', className: numeric ? 'nd-numeric' : '' }, label));
+    }
+    const body = table.createTBody();
+    for (const marker of det.markers) {
+      const row = body.insertRow();
+      const show = element('button', { type: 'button', className: 'nd-btn nd-btn-secondary nd-btn-sm',
+        title: `Voxel ${marker.centroidVox.map((v) => v.toFixed(1)).join(', ')}` }, String(marker.rank));
+      show.setAttribute('aria-label', `Show marker ${marker.rank}`);
+      show.addEventListener('click', () => this.showMarker(marker.centroidVox));
+      row.insertCell().append(show);
+      for (const value of [marker.meanProb.toFixed(3), marker.volumeMm3.toFixed(0), marker.centroidWorldMm.map((v) => v.toFixed(1)).join(', ')]) {
+        row.append(element('td', { className: 'nd-numeric' }, value));
+      }
+    }
+    const scroll = element('div', { className: 'nd-table-scroll' });
+    scroll.append(table);
+    const networks = det.folds.length === 5 ? '5-network ensemble' : `network${det.folds.length > 1 ? 's' : ''} ${det.folds.map((f) => f + 1).join(', ')} of 5`;
+    const backend = { webgpu: 'WebGPU', wasm: 'WebAssembly' }[det.backend] || det.backend;
+    const next = det.others.length ? `Next candidate p ${det.others[0].meanProb.toFixed(3)}. ` : '';
+    const meta = element('p', { className: 'nd-hint' }, `${next}${networks}, mirroring ${det.mirror ? 'on' : 'off'}, ${backend}, ${det.timing.total.toFixed(0)} s`);
+    panel.replaceChildren(flag, scroll, meta);
+    panel.hidden = false;
+  }
+
+  showMarker(voxel) {
+    const vol = this.nv.volumes?.[0];
+    if (!vol) return;
+    this.nv.scene.crosshairPos = [0, 1, 2].map((i) => (voxel[i] + 0.5) / vol.dims[i + 1]);
+    this.nv.updateGLVolume();
   }
 
   async clearResults() {

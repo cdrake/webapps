@@ -1,9 +1,8 @@
-// Wiring tests for the browser pipeline (node --test web/tests/). Tiny volumes and a fake
+// Wiring tests for the v2 pipeline, ported from upstream web/tests/pipeline.test.mjs. Tiny volumes and a fake
 // network; the numerics are checked against nnUNetv2_predict by scripts/deploy/compare_parity.py.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
-const P = createRequire(import.meta.url)('../js/modules/inference/nnunet-pipeline.js');
+import * as P from '../src/nnunet.js';
 
 test('sliding-window steps match nnU-Net for the SeedSeg grid', () => {
   assert.deepEqual(P.windowSteps([40, 320, 320], [32, 256, 224]), [[0, 8], [0, 64], [0, 96]]);

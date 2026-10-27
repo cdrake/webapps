@@ -1,6 +1,7 @@
 import { createNiftiFromData, parseNiftiVolume } from '@neurodesk/webapp-components/file-io/nifti';
 import { connectedComponents3D, cOrderToNifti, niftiToCOrder, zScoreNormalize, cropCenteredVolume, padVolumeCentered } from '@neurodesk/webapp-components/volume';
-import { resolveModels, validateSelection } from './assets.js';
+import { V2_PLAN, resolveFolds, resolveModels, validateSelection } from './assets.js';
+import * as nn from './nnunet.js';
 
 function findPaddedDims(dims, factor) {
   return dims.map(d => Math.ceil(d / factor) * factor);
@@ -86,7 +87,8 @@ function averageProbabilityMaps(maps) {
   return result;
 }
 
-export async function runInference(inputData, { selectedModels, threshold = 0.1, nMarkers = 3, Tensor, createSession, qsm, loadModel, decompress, events = {} }) {
+/** v1 (legacy): consensus of the four 3D U-Nets. */
+export async function runLegacyInference(inputData, { selectedModels, threshold = 0.1, nMarkers = 3, Tensor, createSession, qsm, loadModel, decompress, events = {} }) {
   const models = resolveModels(selectedModels);
   validateSelection({ threshold, nMarkers });
   const postLog = events.log || (() => {});
@@ -211,5 +213,152 @@ export async function runInference(inputData, { selectedModels, threshold = 0.1,
   postLog(`Consensus: ${markerVoxels} voxels in final segmentation`);
 
   postProgress(1.0, 'Complete');
-  return { stages, markerVoxels, dims, models: models.map(({ id, sha256 }) => ({ id, sha256 })) };
+  return { model: 'v1', stages, markerVoxels, dims, models: models.map(({ id, sha256 }) => ({ id, sha256 })) };
+}
+
+const errorMessage = error => error?.message || String(error);
+
+/**
+ * v2: nnU-Net v2 (ResEnc) fold ensemble, following upstream scripts/deploy/seedseg_onnx.py:
+ * bias field correction -> crop to nonzero -> z-score -> [resample] -> Gaussian sliding window
+ * (optional test-time mirroring) per network -> softmax -> mean over networks -> candidates
+ * (components of p > threshold, ranked by mean probability) -> top K markers + count flag.
+ * Each network's session exists only while that network runs, so memory holds one at a time.
+ * `backends` are tried in order per network; a failure falls back to the next one.
+ */
+export async function runNetworkInference(inputData, { folds, mirror = false, threshold = 0.1, nMarkers = 3,
+  backends = ['wasm'], Tensor, createSession, qsm, loadModel, decompress, events = {} }) {
+  const networks = resolveFolds(folds);
+  validateSelection({ threshold, nMarkers });
+  if (typeof mirror !== 'boolean') throw new Error('Mirroring must be true or false.');
+  const plan = V2_PLAN;
+  const postLog = events.log || (() => {});
+  const postProgress = events.progress || (() => {});
+  const stages = {};
+  const postStageData = (stage, niftiData, description) => {
+    stages[stage] = { niftiData, description };
+    events.stageData?.(stage, niftiData, description);
+  };
+  const started = performance.now();
+  const timing = { folds: [] };
+
+  postProgress(0.02, 'Reading NIfTI...');
+  const { imageData, dims: niftiDims, voxelSize, headerBytes, affine } = parseNiftiVolume(inputData, { decompress });
+  const [nx, ny, nz] = niftiDims;
+  const [vx, vy, vz] = voxelSize;
+  const dims = [nz, ny, nx];
+  const spacing = [vz, vy, vx];
+  postLog(`Volume ${nx} x ${ny} x ${nz}, voxel ${voxelSize.map(v => v.toFixed(3)).join(' x ')} mm`);
+
+  // 1. Bias field correction. The training images were N4-corrected; N4 is not available in
+  // the browser, so makehomogeneous (QSM.rs) is used instead, as upstream does.
+  postProgress(0.04, 'Bias field correction...');
+  let t = performance.now();
+  const vol = new Float32Array(qsm.makehomogeneous_wasm(new Float64Array(imageData), nx, ny, nz, vx, vy, vz, 7.0, 15));
+  timing.biasCorrection = (performance.now() - t) / 1000;
+  postLog(`Bias field correction (makehomogeneous): ${timing.biasCorrection.toFixed(1)} s`);
+
+  // 2. nnU-Net preprocessing: crop to nonzero, z-score, resample if needed, pad to patch.
+  const patch = plan.patch_size;
+  const box = nn.nonzeroBBox(vol, dims);
+  const cropped = nn.cropBox(vol, dims, box);
+  nn.zscoreInPlace(cropped.data);
+  let work = cropped.data;
+  let workDims = cropped.dims;
+  const resampledDims = nn.newShape(workDims, spacing, plan.spacing_zyx);
+  const resampled = resampledDims.some((n, i) => n !== workDims[i]);
+  if (resampled) {
+    postLog(`Warning: spacing ${spacing.join('x')} differs from the training spacing ${plan.spacing_zyx.join('x')}; `
+      + `resampling ${workDims.join('x')} -> ${resampledDims.join('x')} (linear)`);
+    work = nn.resampleLinear(work, workDims, resampledDims);
+    workDims = resampledDims;
+  }
+  const padded = nn.padToPatch(work, workDims, patch);
+  const gaussian = nn.gaussianMap(patch, plan.gaussian.sigma_scale, plan.gaussian.value_scaling_factor);
+  const mirrorAxes = mirror ? plan.mirror_axes : [];
+  const steps = nn.windowSteps(padded.dims, patch, plan.tile_step_size);
+  const tiles = steps[0].length * steps[1].length * steps[2].length;
+  postLog(`Sliding window: ${tiles} patches x ${nn.mirrorSets(mirrorAxes).length} mirrorings x ${networks.length} network(s)`);
+
+  // 3. Networks, one session at a time.
+  const voxels = padded.dims[0] * padded.dims[1] * padded.dims[2];
+  const ensemble = new Float32Array(voxels);
+  const span = 0.85 / networks.length;
+  let available = backends.slice();
+  for (let i = 0; i < networks.length; i++) {
+    const asset = networks[i];
+    const name = `network ${asset.fold + 1}`;
+    const base = 0.08 + i * span;
+    const modelData = await loadModel(asset, name, base, span * 0.3);
+    let result = null;
+    for (const backend of available) {
+      postProgress(base + span * 0.3, `Loading ${name}...`);
+      const t0 = performance.now();
+      let session = null;
+      try {
+        session = await createSession(modelData, backend);
+        const t1 = performance.now();
+        const runNet = async (x) => {
+          const input = new Tensor('float32', x, [1, 1, ...patch]);
+          try {
+            const output = (await session.run({ [plan.input]: input }))[plan.output];
+            const data = output.location && output.location !== 'cpu' ? await output.getData() : output.data;
+            output.dispose?.();
+            return data;
+          } finally {
+            input.dispose?.();
+          }
+        };
+        const onTile = (tile, total) => postProgress(base + span * (0.3 + 0.7 * tile / total), `Network ${asset.fold + 1}: patch ${tile}/${total}`);
+        result = await nn.slidingWindowLogits(padded.data, padded.dims, patch, runNet,
+          { mirrorAxes, gaussian, step: plan.tile_step_size, onTile });
+        const t2 = performance.now();
+        timing.folds.push({ fold: asset.fold, backend, sessionCreate: (t1 - t0) / 1000, inference: (t2 - t1) / 1000 });
+        postLog(`Network ${asset.fold + 1} (${backend}): session ${((t1 - t0) / 1000).toFixed(1)} s, inference ${((t2 - t1) / 1000).toFixed(1)} s`);
+        break;
+      } catch (error) {
+        if (backend === available.at(-1)) throw error;
+        available = available.slice(available.indexOf(backend) + 1);
+        postLog(`${backend} failed (${errorMessage(error)}); using ${available[0]}`);
+      } finally {
+        await session?.release();
+      }
+    }
+    const p = nn.softmaxClass(result.logits, result.C, voxels, plan.marker_class);
+    for (let v = 0; v < voxels; v++) ensemble[v] += p[v] / networks.length;
+  }
+
+  // 4. Back to the input grid: unpad, (resample back), uncrop (outside the crop: probability 0).
+  let probability = nn.unpad(ensemble, padded.dims, workDims, padded.lo);
+  if (resampled) probability = nn.resampleLinear(probability, workDims, cropped.dims);
+  probability = nn.uncropBox(probability, dims, box);
+
+  // 5. Candidates.
+  postProgress(0.95, 'Selecting markers...');
+  const detected = nn.detect(probability, dims, nMarkers, threshold, vx * vy * vz);
+  const world = c => [0, 1, 2].map(r => affine[r][0] * c[0] + affine[r][1] * c[1] + affine[r][2] * c[2] + affine[r][3]);
+  for (const marker of detected.markers.concat(detected.others)) marker.centroidWorldMm = world(marker.centroidVox);
+  timing.total = (performance.now() - started) / 1000;
+
+  postStageData('probability', createNiftiFromData(probability, headerBytes), `Marker probability (mean of ${networks.length} network(s))`);
+  postStageData('markers', createNiftiFromData(detected.markerMap, headerBytes), `Top ${nMarkers} markers (value = rank)`);
+  const { markerMap, ...summary } = detected;
+  let markerVoxels = 0;
+  for (let v = 0; v < markerMap.length; v++) if (markerMap[v] > 0) markerVoxels++;
+  const detections = { ...summary, folds: networks.map(asset => asset.fold), mirror,
+    backend: [...new Set(timing.folds.map(entry => entry.backend))].join('+'), timing };
+  events.detections?.(detections);
+  postLog(`Detected ${detected.markers.length}/${nMarkers} markers (${detected.nCandidates} candidates)`
+    + (detected.countFlag ? ': fewer than the implant count, review the image' : ''));
+  postLog(`Total time ${timing.total.toFixed(1)} s`);
+  postProgress(1.0, 'Complete');
+  return { model: 'v2', stages, detections, markerVoxels, dims: niftiDims,
+    models: networks.map(({ id, sha256 }) => ({ id, sha256 })) };
+}
+
+/** Runs v2 (`model: 'v2'`, the default) or the legacy v1 consensus (`model: 'v1'`). */
+export async function runInference(inputData, { model = 'v2', ...options }) {
+  if (model === 'v1') return runLegacyInference(inputData, options);
+  if (model === 'v2') return runNetworkInference(inputData, options);
+  throw new Error(`Unknown SeedSeg model "${model}". Choose v2 or v1.`);
 }

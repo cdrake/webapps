@@ -11,13 +11,24 @@ import { resolveModels } from '../src/assets.js';
 const cli = fileURLToPath(new URL('../bin/seedseg.js', import.meta.url));
 
 test('model and numeric guards preserve published order and reject invalid selections', () => {
-  assert.equal(MODEL_ASSETS.length, 4);
+  assert.equal(MODEL_ASSETS.length, 9);
   assert.deepEqual(resolveModels([789, 42]).map(asset => asset.seed), [42, 789]);
-  for (const models of [[], [42, 42], [42, 'seed42'], [1], [42, 123, 456, 789, 42]]) {
-    assert.throws(() => resolveSettings({ models }), /distinct|Unknown|four/);
+  assert.deepEqual(resolveSettings().models.map(asset => asset.fold), [0]);
+  assert.deepEqual(resolveSettings({ folds: ['4', '1'] }).models.map(asset => asset.fold), [1, 4]);
+  assert.equal(resolveSettings({ mirror: true }).mirror, true);
+  assert.deepEqual(resolveSettings({ model: 'v1' }).models.map(asset => asset.seed), [42, 123, 456, 789]);
+  for (const folds of [[], [0, 0], [5], ['x'], [0, 1, 2, 3, 4, 0]]) {
+    assert.throws(() => resolveSettings({ folds }), /network/);
   }
-  assert.throws(() => resolveSettings({ models: [42], ensemble: 1 }), /Choose/);
-  for (const ensemble of [0, 5, 1.5, 'abc']) assert.throws(() => resolveSettings({ ensemble }), /Ensemble/);
+  for (const models of [[], [42, 42], [42, 'seed42'], [1], [42, 123, 456, 789, 42]]) {
+    assert.throws(() => resolveSettings({ model: 'v1', models }), /distinct|Unknown|four/);
+  }
+  assert.throws(() => resolveSettings({ model: 'v3' }), /Unknown SeedSeg model/);
+  assert.throws(() => resolveSettings({ ensemble: 1 }), /v1 checkpoints/);
+  assert.throws(() => resolveSettings({ model: 'v1', folds: [0] }), /apply to v2/);
+  assert.throws(() => resolveSettings({ model: 'v1', mirror: true }), /apply to v2/);
+  assert.throws(() => resolveSettings({ model: 'v1', models: [42], ensemble: 1 }), /Choose/);
+  for (const ensemble of [0, 5, 1.5, 'abc']) assert.throws(() => resolveSettings({ model: 'v1', ensemble }), /Ensemble/);
   for (const threshold of [-0.1, 1.1, NaN, Infinity, '', 'abc']) assert.throws(() => resolveSettings({ threshold }), /Threshold/);
   for (const nMarkers of [0, 11, 1.5, 'abc']) assert.throws(() => resolveSettings({ nMarkers }), /Top-N/);
   for (const threads of [0, -1, 1.5, 'abc']) assert.throws(() => resolveSettings({ threads }), /Threads/);
@@ -45,16 +56,17 @@ test('offline missing and corrupt models, and nonempty outputs, fail without cha
     const originalFetch = globalThis.fetch;
     try {
       globalThis.fetch = () => { throw new Error('Offline command attempted a network request'); };
-      await assert.rejects(segment({ input, output, ensemble: 1, cacheDir, offline: true }), /missing from the offline/);
+      await assert.rejects(segment({ input, output, cacheDir, offline: true }), /missing from the offline/);
+      await assert.rejects(segment({ input, output, model: 'v1', ensemble: 1, cacheDir, offline: true }), /missing from the offline/);
     } finally {
       globalThis.fetch = originalFetch;
     }
     await assert.rejects(readdir(output), { code: 'ENOENT' });
     await writeFile(join(cacheDir, MODEL_ASSETS[0].filename), 'corrupt');
-    await assert.rejects(segment({ input, output, ensemble: 1, cacheDir, offline: true }), /checksum/);
+    await assert.rejects(segment({ input, output, cacheDir, offline: true }), /checksum/);
     await mkdir(output);
     await writeFile(join(output, 'keep.txt'), 'original');
-    await assert.rejects(segment({ input, output, ensemble: 1, cacheDir, offline: true }), /not empty/);
+    await assert.rejects(segment({ input, output, cacheDir, offline: true }), /not empty/);
     assert.equal(await readFile(join(output, 'keep.txt'), 'utf8'), 'original');
     assert.deepEqual(await readdir(output), ['keep.txt']);
   } finally {

@@ -496,7 +496,7 @@ apps:
 
   seedseg:
     packages:
-      - { name: ONNX Runtime Web, url: https://onnxruntime.ai, role: runs the four 3D UNet models in the browser }
+      - { name: ONNX Runtime Web, url: https://onnxruntime.ai, role: runs the nnU-Net networks (and the legacy 3D U-Nets) in the browser }
       - { name: NiiVue, url: https://github.com/niivue/niivue, role: image viewer }
       - { name: dcm2niix (WebAssembly), url: https://github.com/rordenlab/dcm2niix, role: DICOM to NIfTI conversion }
       - { name: dicompare, url: https://github.com/astewartau/dicompare, role: acquisition protocol validation report }
@@ -511,7 +511,15 @@ apps:
         reference: "Eckstein K, Trattnig S, Robinson SD. A simple homogeneity correction for neuroimaging at 7T. Proceedings of the ISMRM 27th Annual Meeting. 2019."
         url: https://github.com/korbinian90/MriResearchTools.jl
       - group: Segmentation networks
-        title: 3D U-Net
+        title: nnU-Net
+        reference: "Isensee F, Jaeger PF, Kohl SAA, Petersen J, Maier-Hein KH. nnU-Net: a self-configuring method for deep learning-based biomedical image segmentation. Nature Methods. 2021;18:203–211."
+        doi: 10.1038/s41592-020-01008-z
+      - group: Segmentation networks
+        title: nnU-Net residual encoder (v2 model)
+        reference: "Isensee F, Wald T, Ulrich C, Baumgartner M, Roy S, Maier-Hein K, Jaeger PF. nnU-Net revisited: a call for rigorous validation in 3D medical image segmentation. Medical Image Computing and Computer-Assisted Intervention. 2024:488–498."
+        doi: 10.1007/978-3-031-72114-4_47
+      - group: Segmentation networks
+        title: 3D U-Net (legacy v1 model)
         reference: "Çiçek Ö, Abdulkadir A, Lienkamp SS, Brox T, Ronneberger O. 3D U-Net: learning dense volumetric segmentation from sparse annotation. Medical Image Computing and Computer-Assisted Intervention. 2016:424–432."
         doi: 10.1007/978-3-319-46723-8_49
       - group: Browser inference

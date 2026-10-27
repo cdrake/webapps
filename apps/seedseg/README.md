@@ -19,21 +19,13 @@ The `web/` directory contains a browser-based version of the inference pipeline.
 # 1. Download ONNX Runtime WASM files
 cd web && bash setup.sh
 
-<<<<<<< monorepo
-# 2. Convert PyTorch models to ONNX (from project root)
-cd .. && python scripts/convert_models.py
-
-# 3. Start development server
-pnpm --filter seedseg dev
-=======
 # 2. Start development server
-bash run.sh
->>>>>>> upstream
+pnpm --filter seedseg dev
 ```
 
 Then open http://localhost:8080 and upload a T1-weighted prostate MRI (NIfTI or DICOM).
 
-The model weights are downloaded on first use from the Hugging Face model repository [ash347/seedseg](https://huggingface.co/ash347/seedseg) and cached in the browser. To use your own exported models, point `MODEL_BASE_URL` in `web/js/app/config.js` at a folder containing `seedseg-v2.json` and the networks (`scripts/deploy/export_onnx.py`, then `scripts/deploy/make_w16.py` and `scripts/deploy/rewrite_for_webgpu.py`).
+The model weights are downloaded on first use from the Hugging Face model repository [ash347/seedseg](https://huggingface.co/ash347/seedseg) at a pinned commit, checked against the sizes and SHA-256 digests in `models/seedseg.manifest.json`, and cached in the browser. The v2 preprocessing and sliding-window settings (`v2/seedseg-v2.json`) are copied into the same manifest under `v2_plan`. To use your own exported models (`scripts/deploy/export_onnx.py`, then `scripts/deploy/make_w16.py` and `scripts/deploy/rewrite_for_webgpu.py`), change the manifest's pins.
 
 ## Python pipeline
 
@@ -55,7 +47,7 @@ python scripts/deploy/seedseg_onnx.py --models <dir with seedseg-v2.json> --inpu
 
 Outputs: `results/sub_marker_prob.nii.gz` and `results/sub_detections.json` (top-K markers with mean probability, centroid in voxel and world coordinates, and `count_flag` when fewer than K candidates were found).
 
-Tests (wiring only, tiny data): `pytest scripts/deploy/tests` and `node --test web/tests/*.test.mjs`.
+Tests (wiring only, tiny data): `pytest scripts/deploy/tests` upstream; in this monorepo the browser pipeline's tests are `packages/seedseg/test/nnunet.test.js`.
 
 ## Training and evaluation (nnU-Net model)
 
@@ -77,8 +69,9 @@ Stewart et al. "Deep-Learning-Enabled Differentiation between Intraprostatic Gol
 ## Portable command line
 
 `packages/seedseg` contains the runtime-injected pipeline shared by this app and
-`seedseg image.nii.gz results --ensemble 4 --top-n 3`. Portable releases include
-all four verified checkpoints and run offline on Linux x64, Windows x64 and
+`seedseg image.nii.gz results --folds 0,1,2,3,4 --top-n 3` (v2) or
+`seedseg image.nii.gz results --model v1 --ensemble 4` (legacy). Portable releases include
+all five v2 networks and the four v1 checkpoints, verified, and run offline on Linux x64, Windows x64 and
 Apple silicon. See [the command-line README](../../packages/seedseg/README.md)
 for options, matching download names and validation limits. A representative
 clinical reference is pending; the synthetic transport fixture is not an app

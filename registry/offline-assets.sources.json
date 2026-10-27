@@ -769,6 +769,41 @@
         "license": "NOASSERTION"
       },
       {
+        "url": "https://huggingface.co/ash347/seedseg/resolve/ef4fb8f11a126425cde4b87e5fdca924032626b2/v2/browser/seedseg-v2_fold0.wg16.onnx",
+        "sha256": "c0a52e89279d27231bff814de7cedda5d5de98548e47fc82173ba4a2ea4f7237",
+        "bytes": 203899373,
+        "kind": "model",
+        "license": "NOASSERTION"
+      },
+      {
+        "url": "https://huggingface.co/ash347/seedseg/resolve/ef4fb8f11a126425cde4b87e5fdca924032626b2/v2/browser/seedseg-v2_fold1.wg16.onnx",
+        "sha256": "b2f43e87dc99a3253ec911d6bd928429336934afaa3bb3f460ab8652a483161e",
+        "bytes": 203899373,
+        "kind": "model",
+        "license": "NOASSERTION"
+      },
+      {
+        "url": "https://huggingface.co/ash347/seedseg/resolve/ef4fb8f11a126425cde4b87e5fdca924032626b2/v2/browser/seedseg-v2_fold2.wg16.onnx",
+        "sha256": "99244d0f73753ec84d8e9d15ecd163a1fa5ac937d971294e79152013e042e677",
+        "bytes": 203899373,
+        "kind": "model",
+        "license": "NOASSERTION"
+      },
+      {
+        "url": "https://huggingface.co/ash347/seedseg/resolve/ef4fb8f11a126425cde4b87e5fdca924032626b2/v2/browser/seedseg-v2_fold3.wg16.onnx",
+        "sha256": "57d2add24a99ce86855bcc362d459419a40846e90590a0c42cdc26a02f16f119",
+        "bytes": 203899373,
+        "kind": "model",
+        "license": "NOASSERTION"
+      },
+      {
+        "url": "https://huggingface.co/ash347/seedseg/resolve/ef4fb8f11a126425cde4b87e5fdca924032626b2/v2/browser/seedseg-v2_fold4.wg16.onnx",
+        "sha256": "fa577b9e8502d91862e25fef9645bae82df58454a6e061951c2dc292d209c171",
+        "bytes": 203899373,
+        "kind": "model",
+        "license": "NOASSERTION"
+      },
+      {
         "url": "https://dicompare.neurodesk.org/embed/DicompareController.js",
         "path": "apps/dicompare/public/embed/DicompareController.js",
         "contentType": "text/javascript",

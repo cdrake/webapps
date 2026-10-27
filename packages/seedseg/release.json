@@ -7,9 +7,10 @@
   "readme": {
     "run": "Segment prostate fiducial markers",
     "notes": [
-      "All four pinned ensemble checkpoints are included and verified locally.",
+      "All five pinned v2 networks and the four legacy v1 checkpoints are included and verified locally (about 1.4 GB).",
       "No network connection or populated cache is required.",
-      "Use --ensemble 1 through 4, or --models 42,123,456,789.",
+      "v2 (default) runs network 1; use --folds 0,1,2,3,4 for the evaluated 5-network ensemble and --mirror for test-time mirroring.",
+      "Use --model v1 with --ensemble 1 through 4, or --models 42,123,456,789, for the legacy U-Net consensus.",
       "Use --top-n and --threshold to match the browser automation settings.",
       "DICOM input and manual mask editing use the web app.",
       "Software parity uses a synthetic fixture; a representative clinical reference is pending."

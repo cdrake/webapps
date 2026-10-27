@@ -1,4 +1,4 @@
-export const EDITABLE_STAGES = Object.freeze(['consensus']);
+export const EDITABLE_STAGES = Object.freeze(['markers', 'consensus']);
 
 export function isEditableStage(stage) {
   return EDITABLE_STAGES.includes(stage);

@@ -7,7 +7,7 @@ import { extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { chromium } from '@playwright/test';
-import { MODEL_ASSETS } from '../src/assets.js';
+import { LEGACY_ASSETS, MODEL_ASSETS, NETWORK_ASSETS } from '../src/assets.js';
 import { outputNames } from '../src/results.js';
 import { createProstateFixture } from '../../../apps/seedseg/test/prostate-fixture.mjs';
 import { resolveSiteFile } from './site-path.mjs';
@@ -15,8 +15,16 @@ import { resolveSiteFile } from './site-path.mjs';
 const repository = fileURLToPath(new URL('../../../', import.meta.url));
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.wasm': 'application/wasm' };
 
+// The automation parameters and model pins of a CLI case: v2 `folds` (+ `mirror`) or v1 `ensemble`.
+export function caseParameters({ folds, mirror = false, ensemble, threshold, topN }) {
+  return ensemble === undefined
+    ? { parameters: { model: 'v2', folds, mirror, threshold, markers: topN }, assets: NETWORK_ASSETS.filter(asset => folds.includes(asset.fold)) }
+    : { parameters: { model: 'v1', models: LEGACY_ASSETS.slice(0, ensemble).map(asset => asset.seed), threshold, markers: topN }, assets: LEGACY_ASSETS.slice(0, ensemble) };
+}
+
 // Stream models through HTTP rather than base64-encoding them into CDP frames.
-export async function browserReference({ modelsDirectory, ensemble, threshold, topN, composite = false }) {
+export async function browserReference({ modelsDirectory, composite = false, screenshots = false, browserArgs = [], ...spec }) {
+  const { parameters, assets } = caseParameters(spec);
   const root = join(repository, composite ? 'dist' : 'apps/seedseg/dist');
   const prefix = composite ? '/seedseg/' : '/';
   const server = createServer(async (request, response) => {
@@ -40,13 +48,18 @@ export async function browserReference({ modelsDirectory, ensemble, threshold, t
   try {
     const browserEnv = { ...process.env };
     for (const key of ['HOME', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'XDG_CACHE_HOME', 'XDG_CONFIG_HOME', 'XDG_DATA_HOME']) browserEnv[key] = browserHome;
-    browser = await chromium.launch({ headless: true, env: browserEnv });
+    browser = await chromium.launch({ headless: true, env: browserEnv, args: browserArgs });
     const context = await browser.newContext({ acceptDownloads: true });
     const origin = `http://127.0.0.1:${server.address().port}`;
     await context.route(/cloudflareinsights\.com|googletagmanager\.com|google-analytics\.com/, route => route.fulfill({ body: '' }));
-    await context.route('**/seedseg-model-*.onnx', route => {
-      const asset = MODEL_ASSETS.find(candidate => route.request().url().endsWith(`/${candidate.filename}`));
-      assert.ok(asset, 'Only published checkpoint requests are allowed');
+    // The page imports dicompare's embed from its site; serve the monorepo's copy, as the standalone bundle does.
+    await context.route('https://dicompare.neurodesk.org/embed/**', route => route.fulfill({
+      path: join(repository, 'apps/dicompare/public/embed', new URL(route.request().url()).pathname.slice('/embed/'.length)),
+      headers: { 'Access-Control-Allow-Origin': '*', 'Cross-Origin-Resource-Policy': 'cross-origin' },
+    }));
+    await context.route(/\/seedseg-(?:model-seed\d+|v2_fold\d\.wg16)\.onnx$/, route => {
+      const asset = MODEL_ASSETS.find(candidate => route.request().url() === candidate.url);
+      assert.ok(asset, `Only pinned model URLs are allowed: ${route.request().url()}`);
       return route.fulfill({ status: 302, headers: { Location: `${origin}/validation-models/${asset.filename}`, 'Access-Control-Allow-Origin': '*' } });
     });
     const page = await context.newPage();
@@ -66,9 +79,7 @@ export async function browserReference({ modelsDirectory, ensemble, threshold, t
     await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
     await page.locator('#neurodesk-input-transfer').setInputFiles({ name: 'synthetic-prostate-t1.nii', mimeType: 'application/x-nifti', buffer: createProstateFixture() });
     await page.evaluate(() => neurodeskAutomation.dispatch('adopt', { role: 'image' }));
-    await page.evaluate(parameters => neurodeskAutomation.dispatch('start', { operation: 'segment', parameters }), {
-      models: MODEL_ASSETS.slice(0, ensemble).map(asset => asset.seed), threshold, markers: topN,
-    });
+    await page.evaluate(values => neurodeskAutomation.dispatch('start', { operation: 'segment', parameters: values }), parameters);
     let snapshot;
     const deadline = performance.now() + 600_000;
     do {
@@ -78,9 +89,9 @@ export async function browserReference({ modelsDirectory, ensemble, threshold, t
       await new Promise(accept => setTimeout(accept, 250));
     } while (!/succeeded|failed/.test(snapshot.state));
     assert.equal(snapshot.state, 'succeeded', JSON.stringify({ snapshot, errors }));
-    assert.deepEqual(snapshot.report.provenance.models.map(model => model.sha256), MODEL_ASSETS.slice(0, ensemble).map(asset => asset.sha256));
+    assert.deepEqual(snapshot.report.provenance.models.map(model => model.sha256), assets.map(asset => asset.sha256));
     const files = {};
-    const names = outputNames(ensemble);
+    const names = outputNames(parameters.model, assets.length);
     for (const id of Object.keys(snapshot.report.artifacts)) {
       const waiting = page.waitForEvent('download');
       await page.evaluate(artifactId => neurodeskAutomation.dispatch('download', { artifactId }), id);
@@ -89,7 +100,7 @@ export async function browserReference({ modelsDirectory, ensemble, threshold, t
       files[id] = await readFile(await download.path());
       assert.equal(createHash('sha256').update(files[id]).digest('hex'), snapshot.report.artifacts[id].sha256);
     }
-    if (process.env.SEEDSEG_VALIDATION_ARTIFACTS && ensemble === 4 && topN === 3 && threshold === 0.1) {
+    if (process.env.SEEDSEG_VALIDATION_ARTIFACTS && screenshots) {
       await mkdir(process.env.SEEDSEG_VALIDATION_ARTIFACTS, { recursive: true });
       for (const width of [1440, 390]) {
         await page.setViewportSize({ width, height: 900 });
@@ -99,7 +110,8 @@ export async function browserReference({ modelsDirectory, ensemble, threshold, t
     assert.equal(errors.length, 0, errors.join('\n'));
     const ortWeb = await runtimeVersion;
     assert.equal(ortWeb, '1.21.0', 'Actual worker runtime agrees with the pinned ORT Web release');
-    return { files, provenance: snapshot.report.provenance, chromium: browser.version(), ortWeb, composite };
+    return { files, provenance: snapshot.report.provenance, measurements: snapshot.report.measurements,
+      chromium: browser.version(), ortWeb, composite };
   } finally {
     await browser?.close();
     await new Promise(accept => server.close(accept));
