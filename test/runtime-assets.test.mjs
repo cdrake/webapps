@@ -63,7 +63,11 @@ test('only declared app-scoped runtime families remain in composite app copies',
       const wasm = await readdir(join(appDist, 'wasm'));
       const ortFiles = wasm.filter((name) => name.startsWith('ort')).sort();
       if (ortFamily) {
-        for (const { name } of ortFamily.files) {
+        // The shared 1.21 family also catalogs alternative loaders that not every app ships.
+        const requiredFiles = ortFamily.id === 'ort-web'
+          ? ['ort-wasm-simd-threaded.jsep.mjs', 'ort-wasm-simd-threaded.jsep.wasm', 'ort.webgpu.bundle.min.mjs']
+          : ortFamily.files.map(({ name }) => name);
+        for (const name of requiredFiles) {
           assert.ok(ortFiles.includes(name), `${app.id}: missing ${name}`);
         }
         const standaloneWasm = await readdir(join(repoRoot, 'apps', app.id, 'dist', 'wasm'));
