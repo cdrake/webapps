@@ -16,6 +16,8 @@
 
 ### Patch Changes
 
+- Record the ONNX WebGPU device limits, uncaptured errors and unexpected device-loss reason in the technical log without blocking inference or changing backend fallback.
+  - @neurodesk/seedseg@0.7.20261027
 - Preserve WebAssembly fallback when a failed WebGPU session also rejects cleanup. Validate the five-fold ensemble and mirroring against WebAssembly on a verified hardware adapter in full Chromium.
 - Updated dependencies
   - @neurodesk/seedseg@0.7.20261027

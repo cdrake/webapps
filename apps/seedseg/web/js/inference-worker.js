@@ -5,9 +5,31 @@ import runtime from '../vendor/seedseg/browser-runtime.manifest.json' with { typ
 import { runWithFallback } from '../vendor/seedseg/src/session.js';
 
 const messages = createWorkerEmitter(self);
+const observedGpuDevices = new WeakSet();
 let niftiReady;
 let qsm;
 const loadDependencies = () => niftiReady ||= import('../nifti-js/index.js');
+
+function observeGpuDevice() {
+  Promise.resolve().then(() => ort.env.webgpu.device).then(device => {
+    if (observedGpuDevices.has(device)) return;
+    observedGpuDevices.add(device);
+    messages.log(`WebGPU device: ${JSON.stringify({
+      vendor: device.adapterInfo?.vendor,
+      architecture: device.adapterInfo?.architecture,
+      shaderF16: device.features.has('shader-f16'),
+      maxBufferSize: device.limits.maxBufferSize,
+      maxStorageBufferBindingSize: device.limits.maxStorageBufferBindingSize,
+      maxComputeWorkgroupsPerDimension: device.limits.maxComputeWorkgroupsPerDimension,
+    })}`);
+    device.addEventListener('uncapturederror', event => {
+      messages.log(`WebGPU ${event.error.constructor.name}: ${event.error.message}`);
+    });
+    device.lost.then(info => {
+      if (info.reason !== 'destroyed') messages.log(`WebGPU device lost (${info.reason}): ${info.message}`);
+    });
+  }).catch(error => messages.log(`WebGPU diagnostics unavailable: ${error.message}`));
+}
 
 installWorkerRouter({
   scope: self,
@@ -42,9 +64,13 @@ installWorkerRouter({
         }),
         runSession: (bytes, execute) => runWithFallback({
           backend, execute,
-          createSession: provider => ort.InferenceSession.create(bytes, {
-            executionProviders: [provider], graphOptimizationLevel: 'all',
-          }),
+          createSession: async provider => {
+            const session = await ort.InferenceSession.create(bytes, {
+              executionProviders: [provider], graphOptimizationLevel: 'all',
+            });
+            if (provider === 'webgpu') observeGpuDevice();
+            return session;
+          },
           onFallback: error => {
             backend = 'wasm';
             messages.log(`WebGPU failed (${error.message}); retrying this network with WebAssembly`);
