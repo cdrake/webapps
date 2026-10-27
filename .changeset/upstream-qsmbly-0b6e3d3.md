@@ -2,30 +2,12 @@
 "qsmbly": patch
 ---
 
-Merge upstream astewartau/qsmbly cf88ee3..0b6e3d3:
+Merge upstream astewartau/qsmbly cf88ee3..0b6e3d3, with qsmxt-engine at QSMxT 1f72772 and QSM.rs 95be94b:
 
-- Run worker: a run that dies in the engine says why, not "attempted to take ownership" (#177)
-- CI: reuse the deploy bundle when its inputs are unchanged, and keep its compiled dependencies (#176)
-- Repin qsmxt-engine: SynthSeg runs in windows in the browser, so segmentation fits the heap (#178)
-- CI: parity with qsmxt run — every option without running, and a tiny phantom end to end (3.7) (#179)
-- next.html: SWI/SMWI and relaxometry shown as what they are — colormaps and windows per output, wiring tests
-- next.html: R2′ and the settings the engine turns on — pin QSMxT main e426923
-- next.html: segmentation, region referencing and the per-structure statistics table
-- next.html: motion correction — the motion report per echo, wiring tests
-- next.html: χ-separation, classical and deep-learning, at patches that fit the heap
-- next.html: real and imaginary parts (GE's phase sign), uncombined coils and a MESE for R2
-- Model weights: a file too big to cache no longer hangs the download
-- Redesign plan: U8 status, open items after it, and the switch checklist
-- Merge pull request #181 from astewartau/next-swi-relax
-- Merge pull request #182 from astewartau/next-seg-stats
-- Merge pull request #183 from astewartau/next-motion
-- Merge pull request #184 from astewartau/next-input-types
-- Merge pull request #185 from astewartau/next-chisep
-- Pipeline tab live during a run (parity plan G5) (#188)
-- next.html: QSMART's BET mask from the engine, and a chosen threshold kept — pin QSMxT #405
-- Repin qsmxt-engine to QSMxT main 837cb25
-- Merge pull request #187 from astewartau/next-qsmart-mask
-- next.html: each step's memory in the plan drawer and pipeline, and a run the heap may not hold says which step (E3) (#189)
-- Repin qsmxt-engine to QSMxT main 36f1492 (#190)
-- Repin qsmxt-engine to QSMxT main 49b6f2d (#191)
-- Repin qsmxt-engine to QSMxT 1f72772: TFI MERIT and QSMART's SDF spatial radius removed (#192)
+- A run that dies inside the engine reports the panic's message instead of "attempted to take ownership of Rust value while it was borrowed".
+- SynthSeg segmentation runs in sliding windows, and BFRnet, iQFM, iQSM and iQSM+ run tiled with the deep-learning tiling setting, so they fit the browser's WASM heap.
+- QSMART's BET mask is applied as a normalisation rule and a threshold you chose is kept.
+- MEDI filters the dipole kernel with the SMV kernel's k-space response; χ-separation (MEDI) weights the R2′ term as Shin et al. 2021 do and its TV weights default to 30 instead of 1000, so χ+ and χ− now separate instead of both following R2′; AutoQSM negates the field into the network's training convention; TGV's oblique stencil uses a fast DST-I (about 10× faster).
+- χ-sepnet runs in a 192×192×128 sliding-window patch.
+- TFI's MERIT switch and QSMART's SDF spatial radius are removed: both had no effect on the result.
+- The default real-brain reconstruction (ROMEO, V-SHARP, RTS) is unchanged: its recorded χ map and mask are identical to the previous release's.
