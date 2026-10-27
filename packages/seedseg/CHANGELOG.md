@@ -14,6 +14,16 @@
   Load the optional acquisition report on demand so an unavailable report host does
   not block segmentation. Add detection reports and browser/CLI parity coverage.
 
+## 0.6.20261027
+
+### Patch Changes
+
+- Use the checked-in Dicompare runtime during native/browser parity validation so an unrelated remote script outage cannot prevent the reference app from starting.
+- Updated dependencies
+  - @neurodesk/webapp-components@0.22.2
+- Updated dependencies
+  - @neurodesk/webapp-components@0.22.1
+
 ## 0.6.20261024
 
 ### Patch Changes

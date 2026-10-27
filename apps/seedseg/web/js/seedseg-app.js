@@ -49,6 +49,7 @@ class SeedSegApp {
     this.inputFile = null;
     this.currentResultTab = 'input';
     this._buckets = { t1w: [], other: [] };
+    this.dicompareFiles = [];
 
     this.init();
   }
@@ -72,7 +73,6 @@ class SeedSegApp {
       onFilesRetained: (files) => this._onDicomFilesRetained(files)
     });
 
-    this.retainedDicomFiles = [];
     this.dicompareRenderer = new DicompareReportRenderer();
 
     this.viewerController = new ViewerController({
@@ -934,8 +934,8 @@ class SeedSegApp {
    * Callback when DICOM files are retained for validation.
    */
   _onDicomFilesRetained(files) {
-    this.retainedDicomFiles = [...files];
-    this.dicompareController = null;
+    this.dicompareFiles = Array.from(files);
+    this.dicompareController?.clearFiles();
     const btn = document.getElementById('dicompareReportBtn');
     if (btn) {
       btn.disabled = files.length === 0;
@@ -946,23 +946,8 @@ class SeedSegApp {
    * Run dicompare validation and display results in modal.
    */
   async runDicompareReport() {
-    if (!this.retainedDicomFiles.length) {
+    if (!this.dicompareFiles.length) {
       this.updateOutput('No DICOM files available for validation.');
-      return;
-    }
-
-    try {
-      if (!this.dicompareController) {
-        const { DicompareController } = await import('https://dicompare.neurodesk.org/embed/DicompareController.js');
-        const controller = new DicompareController({
-          schemaUrl: 'https://dicompare.neurodesk.org/schemas/SeedSeg_Prostate_T1w_v1.0.json',
-          updateOutput: message => this.updateOutput(message)
-        });
-        await controller.retainDicomFiles(this.retainedDicomFiles);
-        this.dicompareController = controller;
-      }
-    } catch (error) {
-      this.progress.end(`Report unavailable: ${error.message}`, { success: false });
       return;
     }
 
@@ -970,7 +955,7 @@ class SeedSegApp {
     const footer = document.getElementById('dicompareModalFooter');
 
     // If results are already cached, just re-display them
-    const cached = this.dicompareController.getCachedResults();
+    const cached = this.dicompareController?.getCachedResults();
     if (cached) {
       this.dicompareModal.open();
       this.dicompareRenderer.render(body, cached);
@@ -994,6 +979,14 @@ class SeedSegApp {
     if (footer) footer.style.display = 'none';
 
     try {
+      const { DicompareController } = await import('https://dicompare.neurodesk.org/embed/DicompareController.js');
+      this.dicompareController ||= new DicompareController({
+        schemaUrl: 'https://dicompare.neurodesk.org/schemas/SeedSeg_Prostate_T1w_v1.0.json',
+        updateOutput: (msg) => this.updateOutput(msg)
+      });
+      if (!this.dicompareController.hasFiles()) {
+        await this.dicompareController.retainDicomFiles(this.dicompareFiles);
+      }
       const result = await this.dicompareController.runValidation((progress) => {
         const textEl = document.getElementById('dicompareLoadingText');
         const fillEl = document.getElementById('dicompareProgressFill');
@@ -1020,7 +1013,7 @@ class SeedSegApp {
    * Print the dicompare report in a new window.
    */
   printDicompareReport() {
-    if (!this.dicompareController.complianceResults) return;
+    if (!this.dicompareController?.complianceResults) return;
     const html = this.dicompareRenderer.generatePrintHtml({
       acquisitions: this.dicompareController.acquisitions,
       complianceResults: this.dicompareController.complianceResults,

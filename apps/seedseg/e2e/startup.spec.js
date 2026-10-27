@@ -24,7 +24,7 @@ test('DICOM conversion completes while the optional report host remains stalled'
     await expect(page.locator('#runSegmentation')).toBeEnabled({ timeout: 90000 });
     const converted = await page.evaluate(async () => {
       const file = window.app.fileIOController.getActiveFile();
-      return { name: file.name, bytes: Array.from(new Uint8Array(await file.arrayBuffer())), retained: window.app.retainedDicomFiles.length };
+      return { name: file.name, bytes: Array.from(new Uint8Array(await file.arrayBuffer())), retained: window.app.dicompareFiles.length };
     });
     expect(converted.name).toMatch(/\.nii(\.gz)?$/);
     expect(converted.retained).toBe(4);

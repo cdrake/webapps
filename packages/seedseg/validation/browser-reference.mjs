@@ -50,12 +50,18 @@ export async function browserReference({ modelsDirectory, pipeline = 'legacy-v1'
     const context = await browser.newContext({ acceptDownloads: true });
     const origin = `http://127.0.0.1:${server.address().port}`;
     await context.route(/cloudflareinsights\.com|googletagmanager\.com|google-analytics\.com/, route => route.fulfill({ body: '' }));
+    await context.route('https://dicompare.neurodesk.org/**', route => route.abort());
+    // Use the same repository-owned runtime as the offline asset catalog.
+    await context.route('https://dicompare.neurodesk.org/embed/DicompareController.js', route => route.fulfill({
+      path: join(repository, 'apps/dicompare/public/embed/DicompareController.js'),
+      contentType: 'text/javascript',
+      headers: { 'Access-Control-Allow-Origin': '*' },
+    }));
     await context.route('**/*.onnx', route => {
       const asset = MODEL_ASSETS.find(candidate => route.request().url().endsWith(`/${candidate.filename}`));
       assert.ok(asset, 'Only published checkpoint requests are allowed');
       return route.fulfill({ status: 302, headers: { Location: `${origin}/validation-models/${asset.filename}`, 'Access-Control-Allow-Origin': '*' } });
     });
-    await context.route('https://dicompare.neurodesk.org/**', route => route.abort());
     await context.route(runtime.url, route => route.fulfill({ status: 302, headers: { Location: `${origin}/validation-runtime.wasm`, 'Access-Control-Allow-Origin': '*' } }));
     const page = await context.newPage();
     let runtimeVersion;
