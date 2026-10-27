@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures.js';
 import { dicomSeries } from '../../../test-utils/dicom-fixture.mjs';
 
 test.use({ serviceWorkers: 'block', userAgent: 'NeurodeskOffline/1' });

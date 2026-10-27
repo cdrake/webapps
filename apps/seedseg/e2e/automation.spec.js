@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures.js';
 import { dicomSeries } from '../../../test-utils/dicom-fixture.mjs';
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -12,24 +12,6 @@ import { assertHardwareAdapter, hardwareGpu, readAdapterInfo } from '../../../te
 import { createProstateFixture, createProstateSeedMask, PROSTATE_FIXTURE_DIMS, PROSTATE_FIXTURE_SEEDS } from '../test/prostate-fixture.mjs';
 
 const image = createProstateFixture();
-
-test.beforeEach(({ page }) => {
-  page.on('pageerror', error => console.error(`[seedseg-page-error] ${error.stack ?? error.message}`));
-  page.on('console', message => {
-    if (message.type() === 'error') console.error(`[seedseg-browser-error] ${message.text()}`);
-  });
-});
-
-test.afterEach(async ({ page }, testInfo) => {
-  if (testInfo.status === testInfo.expectedStatus) return;
-  const log = await page.locator('#consoleOutput').textContent({ timeout: 5000 })
-    .catch(error => `Technical log unavailable: ${error.message}`);
-  const path = testInfo.outputPath('seedseg-technical-log.txt');
-  await mkdir(testInfo.outputDir, { recursive: true });
-  await writeFile(path, log ?? '');
-  await testInfo.attach('seedseg-technical-log', { path, contentType: 'text/plain' });
-  console.log(`SeedSeg technical log after ${testInfo.title}:\n${log}`);
-});
 
 // Ground truth is the fixture's own geometry (three planted cylinders), not an earlier app output.
 // Measured 2026-10-03 (ONNX Runtime Web 1.21.0, WASM): three components of 280, 233 and 280 voxels,

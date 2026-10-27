@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures.js';
 import { dicomSeries } from '../../../test-utils/dicom-fixture.mjs';
 import { readNifti } from '../../../packages/components/src/file-io/NiftiUtils.js';
 
