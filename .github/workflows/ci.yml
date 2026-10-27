@@ -155,6 +155,13 @@ jobs:
         run: pnpm --filter "$APP" run "$TEST_SCRIPT"
       - name: Build ${{ matrix.app }}
         run: pnpm --filter ${{ matrix.app }} build
+      # The ConfigBridge round trip skips when rust-wasm/pkg is absent, as it is
+      # before the build; rerun it against the bundle just built.
+      - name: Test qsmbly against its built WASM
+        if: matrix.app == 'qsmbly'
+        env:
+          QSMBLY_REQUIRE_WASM: '1'
+        run: pnpm --filter qsmbly test -- js/modules/ConfigBridge.roundtrip.test.js
 
   composite-site:
     needs: app-plan
