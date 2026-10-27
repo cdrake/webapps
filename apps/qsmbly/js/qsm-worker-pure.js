@@ -7,7 +7,7 @@
 
 // Import utilities - no fallbacks
 import { ppmFieldToPhase } from './worker/utils/PhaseUtils.js';
-import { describeFailure } from './next/engine/engine-call.js';
+import { describeFailure } from './worker/utils/EngineFailure.js';
 import { createThresholdMask } from './worker/utils/MaskUtils.js';
 import { resolveTgvParams } from './worker/utils/TgvParams.js';
 import { clampTileConfig, MAX_WASM_PATCH_EDGE } from './worker/utils/DlTiling.js';
@@ -384,7 +384,7 @@ async function runEnginePipeline(data, outputs = { qsm: true }) {
     }
   } catch (e) {
     // A call that died inside the module (a panic) leaves the engine borrowed, and freeing it
-    // then throws about that instead: report what happened (js/next/engine/engine-call.js).
+    // then throws about that instead: report what happened (worker/utils/EngineFailure.js).
     try {
       engine.free();
     } catch {
