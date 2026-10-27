@@ -775,26 +775,8 @@
         "license": "NOASSERTION"
       },
       {
-        "url": "https://webapps.neurodesk.org/dicompare/embed/DicompareController.js",
-        "path": "apps/dicompare/public/embed/DicompareController.js",
-        "contentType": "text/javascript",
-        "kind": "built-runtime"
-      },
-      {
-        "url": "https://webapps.neurodesk.org/dicompare/embed/dicompare-worker.js",
-        "path": "apps/dicompare/public/embed/dicompare-worker.js",
-        "contentType": "text/javascript",
-        "kind": "built-runtime"
-      },
-      {
         "url": "https://unpkg.com/@niivue/niivue@0.68.2/dist/niivue.umd.js",
         "kind": "runtime-cdn"
-      },
-      {
-        "url": "https://webapps.neurodesk.org/dicompare/schemas/SeedSeg_Prostate_T1w_v1.0.json",
-        "path": "apps/dicompare/public/schemas/SeedSeg_Prostate_T1w_v1.0.json",
-        "contentType": "application/json",
-        "kind": "built-schema"
       },
       {
         "url": "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/attrs-23.2.0-py3-none-any.whl",

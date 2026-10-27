@@ -844,13 +844,6 @@
           "filename": "seedseg-model-seed789.onnx"
         },
         {
-          "url": "https://webapps.neurodesk.org/dicompare/embed/DicompareController.js",
-          "kind": "runtime",
-          "sources": [
-            "apps/seedseg/web/js/seedseg-app.js"
-          ]
-        },
-        {
           "url": "https://cdn.jsdelivr.net/npm/localforage@1.10.0/+esm",
           "kind": "runtime-cdn",
           "sources": [
@@ -865,13 +858,6 @@
             "apps/seedseg/web/index.html"
           ],
           "verification": "source reference; production bundling may rewrite it"
-        },
-        {
-          "url": "https://webapps.neurodesk.org/dicompare/schemas/SeedSeg_Prostate_T1w_v1.0.json",
-          "kind": "schema",
-          "sources": [
-            "apps/seedseg/web/js/seedseg-app.js"
-          ]
         }
       ],
       "url_mappings": [
