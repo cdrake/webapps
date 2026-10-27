@@ -1,4 +1,4 @@
-import { bindSectionDisclosures } from '@neurodesk/webapp-components/ui';
+import { bindSectionDisclosures, bindInfoTooltips } from '@neurodesk/webapp-components/ui';
 bindSectionDisclosures(document);
 
 /**
@@ -110,7 +110,7 @@ class SeedSegApp {
     // Setup
     await this.setupViewer();
     this.setupEventListeners();
-    this.setupInfoTooltips();
+    bindInfoTooltips(document);
 
     // Log threading support
     if (crossOriginIsolated) {
@@ -550,38 +550,6 @@ class SeedSegApp {
     });
   }
 
-  setupInfoTooltips() {
-    document.querySelectorAll('.info-icon').forEach(icon => {
-      const tooltip = icon.querySelector('.info-tooltip');
-      if (!tooltip) return;
-
-      icon.addEventListener('mouseenter', () => {
-        tooltip.style.display = 'block';
-        const iconRect = icon.getBoundingClientRect();
-        const tipRect = tooltip.getBoundingClientRect();
-
-        // Position above the icon, centered horizontally
-        let top = iconRect.top - tipRect.height - 6;
-        let left = iconRect.left + iconRect.width / 2 - tipRect.width / 2;
-
-        // If it would go above viewport, show below instead
-        if (top < 4) {
-          top = iconRect.bottom + 6;
-        }
-
-        // Clamp horizontal to stay within viewport
-        left = Math.max(4, Math.min(left, window.innerWidth - tipRect.width - 4));
-
-        tooltip.style.top = `${top}px`;
-        tooltip.style.left = `${left}px`;
-      });
-
-      icon.addEventListener('mouseleave', () => {
-        tooltip.style.display = 'none';
-      });
-    });
-  }
-
   // ==================== Viewer Controls ====================
 
   setupWindowControls() {
@@ -814,6 +782,7 @@ class SeedSegApp {
 
   async onMaskApplied(stage, file, original) {
     replaceWithEdit(this.inferenceExecutor, stage, file, original);
+    if (stage === 'markers') document.getElementById('detectionsPanel').classList.add('hidden');
     const showBtn = document.querySelector(`#stage-item-${stage} .stage-btn`);
     if (showBtn) showBtn.textContent = stageLabel(SeedSegApp.STAGE_NAMES[stage] || stage, this.inferenceExecutor.getResult(stage));
     this.updateOutput(`Applied manual edits to ${file.name}`);
@@ -918,7 +887,7 @@ class SeedSegApp {
     const rows = det.markers.map((m) => {
       const w = m.centroidWorldMm.map((v) => v.toFixed(1)).join(', ');
       return `<tr>
-        <td>${m.rank}</td><td>${m.meanProb.toFixed(3)}</td><td>${m.volumeMm3.toFixed(0)}</td><td><button type="button" class="nd-btn nd-btn-secondary nd-btn-sm" data-vox="${m.centroidVox.join(',')}" aria-label="Show marker ${m.rank} at ${w} mm">${w}</button></td></tr>`;
+        <td>${m.rank}</td><td>${m.meanProb.toFixed(3)}</td><td>${m.volumeMm3.toFixed(0)}</td><td><button type="button" class="nd-btn nd-btn-secondary nd-btn-sm" data-world="${m.centroidWorldMm.join(',')}" aria-label="Show marker ${m.rank} at ${w} mm">${w}</button></td></tr>`;
     }).join('');
     const next = det.others.length ? `Next candidate: mean probability ${det.others[0].meanProb.toFixed(3)}.` : '';
     const nets = det.folds.length === 5 ? '5-network ensemble' : `network${det.folds.length > 1 ? 's' : ''} ${det.folds.map((f) => Number(f) + 1).join(', ')} of 5`;
@@ -927,13 +896,12 @@ class SeedSegApp {
     panel.innerHTML = `${flag}<div class="nd-table-scroll"><table class="nd-data-table"><thead><tr><th>#</th><th>Mean p</th><th>mm³</th><th>Position (mm)</th></tr></thead>
       <tbody>${rows}</tbody></table></div><div class="nd-message">${next}${t}</div>`;
     panel.classList.remove('hidden');
-    panel.querySelectorAll('button[data-vox]').forEach((tr) => {
+    panel.querySelectorAll('button[data-world]').forEach((tr) => {
       tr.addEventListener('click', () => {
-        const v = tr.dataset.vox.split(',').map(Number);
+        const position = tr.dataset.world.split(',').map(Number);
         const vol = this.nv.volumes?.[0];
         if (!vol) return;
-        const frac = [0, 1, 2].map((i) => (v[i] + 0.5) / vol.dims[i + 1]);
-        this.nv.scene.crosshairPos = frac;
+        this.nv.scene.crosshairPos = this.nv.mm2frac(position);
         this.nv.updateGLVolume();
       });
     });

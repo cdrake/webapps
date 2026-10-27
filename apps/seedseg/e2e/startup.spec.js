@@ -36,3 +36,18 @@ test('DICOM conversion completes while the optional report host remains stalled'
     await Promise.all(pending.map(route => route.abort().catch(() => {})));
   }
 });
+
+
+test('inference help opens from the keyboard through shared tooltips', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForFunction(() => Boolean(globalThis.neurodeskAutomation));
+  await page.locator('#seedseg-section-2 [data-disclosure-toggle]').click();
+  const icon = page.getByLabel('About networks', { exact: true });
+  const tooltip = icon.getByRole('tooltip');
+  await icon.focus();
+  await expect(tooltip).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(tooltip).toBeHidden();
+  await page.locator('#probThreshold').focus();
+  await expect(tooltip).toBeHidden();
+});

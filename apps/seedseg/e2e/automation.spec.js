@@ -136,9 +136,18 @@ test('default nnU-Net v2 produces native-grid probabilities, ranked markers and 
   const snapshot = await page.evaluate(() => neurodeskAutomation.dispatch('snapshot'));
   expect(snapshot.state, JSON.stringify(snapshot.error)).toBe('succeeded');
   expect(snapshot.report.provenance.pipeline).toBe('nnunet-v2');
+  const gpu = await page.evaluate(async () => {
+    const adapter = await navigator.gpu?.requestAdapter().catch(() => null);
+    return { exposed: Boolean(navigator.gpu), adapter: Boolean(adapter), fallback: adapter?.info?.isFallbackAdapter ?? adapter?.isFallbackAdapter ?? null };
+  });
+  console.log(JSON.stringify({ seedsegBackend: snapshot.report.provenance.executionProvider, onnxRuntime: snapshot.report.provenance.onnxRuntime, gpu }));
+  if (process.env.NEURODESK_HARDWARE_GPU === '1') expect(snapshot.report.provenance.executionProvider).toBe('webgpu');
   expect(snapshot.report.provenance.models.map(model => model.id)).toEqual(['fold0-web']);
   expect(snapshot.report.measurements.detections.folds).toEqual(['0']);
   expect(Object.keys(snapshot.report.artifacts).sort()).toEqual(['detections', 'markers', 'probability']);
+  await page.locator('#detectionsPanel button[data-world]').first().click();
+  const position = await page.evaluate(() => Array.from(window.app.nv.frac2mm(window.app.nv.scene.crosshairPos)));
+  snapshot.report.measurements.detections.markers[0].centroidWorldMm.forEach((value, axis) => expect(position[axis]).toBeCloseTo(value, 3));
   for (const id of ['markers', 'probability', 'detections']) {
     const waiting = page.waitForEvent('download');
     await page.evaluate(artifactId => neurodeskAutomation.dispatch('download', { artifactId }), id);
@@ -152,4 +161,25 @@ test('default nnU-Net v2 produces native-grid probabilities, ranked markers and 
       expect(volume.data.every(value => Number.isFinite(value) && value >= 0 && value <= (id === 'markers' ? 3 : 1))).toBe(true);
     }
   }
+  const row = page.locator('#stage-item-markers');
+  const original = await downloadRow(page, row);
+  await page.locator('.view-tab[data-view="axial"]').click();
+  await row.getByRole('button', { name: 'Edit', exact: true }).click();
+  const editor = page.locator('nd-mask-editor');
+  await expect(editor).toBeVisible();
+  const box = await page.locator('#gl1').boundingBox();
+  await page.mouse.move(box.x + box.width / 2 - 60, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 + 60, box.y + box.height / 2, { steps: 12 });
+  await page.mouse.up();
+  await editor.getByRole('button', { name: 'Apply' }).click();
+  await expect(editor).toBeHidden();
+  await expect(row.locator('.stage-btn')).toHaveText('Markers (edited)');
+  await expect(page.locator('#detectionsPanel')).toBeHidden();
+  const edited = await downloadRow(page, row);
+  expect(edited.name).toBe(original.name);
+  const before = await readNifti(original.bytes);
+  const after = await readNifti(edited.bytes);
+  expect(after.dims).toEqual(before.dims);
+  expect(after.data.some((value, index) => value !== before.data[index])).toBe(true);
 });
