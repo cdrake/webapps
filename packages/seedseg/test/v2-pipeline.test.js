@@ -70,7 +70,7 @@ test('fold ensemble averages per-fold probabilities, in published order, with on
   assert.ok(probability.data.every((value) => Math.abs(value - 0.625) < 1e-6));
 });
 
-for (const failure of ['create', 'run']) {
+for (const failure of ['create', 'run', 'run-and-release']) {
   test(`WebGPU ${failure} failure retries the complete network on WASM and releases sessions`, async () => {
     const created = [],
       released = [],
@@ -80,7 +80,10 @@ for (const failure of ['create', 'run']) {
       createSession: async (provider) => {
         created.push(provider);
         if (failure === 'create' && provider === 'webgpu') throw new Error('GPU create failed');
-        return { provider, release: async () => released.push(provider) };
+        return { provider, release: async () => {
+          released.push(provider);
+          if (failure === 'run-and-release' && provider === 'webgpu') throw new Error('GPU release failed');
+        } };
       },
       execute: async (session) => {
         executed.push(session.provider);
@@ -96,6 +99,16 @@ for (const failure of ['create', 'run']) {
     assert.deepEqual(executed, failure === 'create' ? ['wasm'] : ['webgpu', 'wasm']);
   });
 }
+
+test('WASM inference errors survive a second failure during cleanup', async () => {
+  const inferenceError = new Error('WASM inference failed');
+  await assert.rejects(runWithFallback({
+    backend: 'wasm',
+    createSession: async () => ({ release: async () => { throw new Error('WASM release failed'); } }),
+    execute: async () => { throw inferenceError; },
+    onFallback: () => assert.fail('WASM has no further fallback'),
+  }), error => error === inferenceError);
+});
 
 test('v2 fold and variant guards reject unknown and duplicate selections before work', () => {
   assert.deepEqual(

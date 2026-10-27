@@ -1,4 +1,5 @@
 import { defineConfig } from '@playwright/test';
+import { gpuBrowser, hardwareGpu } from '../../test-utils/hardware-gpu.mjs';
 
 const port = process.env.SEEDSEG_E2E_PORT || '4327';
 
@@ -10,5 +11,5 @@ export default defineConfig({
     url: `http://localhost:${port}/`,
     reuseExistingServer: !process.env.CI,
   },
-  use: { baseURL: `http://localhost:${port}/` },
+  use: { baseURL: `http://localhost:${port}/`, ...(hardwareGpu ? gpuBrowser : {}) },
 });

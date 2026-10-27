@@ -28,6 +28,8 @@ It also checks keyboard access to the shared inference tooltips.
 The macOS GPU CI job sets `NEURODESK_HARDWARE_GPU=1`. In that mode the default
 test requires actual WebGPU execution, reruns on WASM and compares detections
 with the upstream one-voxel criterion used by the command-line validation.
+Separate hardware cases compare all five folds and mirrored fold 0 with WASM.
+The hardware configuration uses full Chromium and verifies the adapter identity.
 On a machine with a hardware WebGPU adapter, run:
 
 ```sh

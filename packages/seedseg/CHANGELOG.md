@@ -14,6 +14,10 @@
   Load the optional acquisition report on demand so an unavailable report host does
   not block segmentation. Add detection reports and browser/CLI parity coverage.
 
+### Patch Changes
+
+- Preserve WebAssembly fallback when a failed WebGPU session also rejects cleanup. Validate the five-fold ensemble and mirroring against WebAssembly on a verified hardware adapter in full Chromium.
+
 ## 0.6.20261027
 
 ### Patch Changes

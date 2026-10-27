@@ -16,6 +16,9 @@
 
 ### Patch Changes
 
+- Preserve WebAssembly fallback when a failed WebGPU session also rejects cleanup. Validate the five-fold ensemble and mirroring against WebAssembly on a verified hardware adapter in full Chromium.
+- Updated dependencies
+  - @neurodesk/seedseg@0.7.20261027
 - Use the registered report worker so optional DICOM reporting resolves from the SeedSeg offline inventory.
   - @neurodesk/seedseg@0.7.20261027
 - Updated dependencies [7019541]

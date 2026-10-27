@@ -6,6 +6,8 @@ import { createNiftiFromVolume, readNifti } from '../../../packages/components/s
 import { dice, maskVoxels } from '../../../test-utils/dice.mjs';
 import { markerComponents, matchComponentsToSeeds } from '../test/marker-components.mjs';
 import { compareDetections } from '../../../packages/seedseg/validation/detection-parity.mjs';
+import { compareV2Outputs } from '../../../packages/seedseg/validation/v2-parity.mjs';
+import { assertHardwareAdapter, hardwareGpu, readAdapterInfo } from '../../../test-utils/hardware-gpu.mjs';
 import { createProstateFixture, createProstateSeedMask, PROSTATE_FIXTURE_DIMS, PROSTATE_FIXTURE_SEEDS } from '../test/prostate-fixture.mjs';
 
 const image = createProstateFixture();
@@ -150,7 +152,10 @@ test('default nnU-Net v2 produces native-grid probabilities, ranked markers and 
     return { exposed: Boolean(navigator.gpu), adapter: Boolean(adapter), fallback: adapter?.info?.isFallbackAdapter ?? adapter?.isFallbackAdapter ?? null };
   });
   console.log(JSON.stringify({ seedsegBackend: snapshot.report.provenance.executionProvider, onnxRuntime: snapshot.report.provenance.onnxRuntime, gpu }));
-  if (process.env.NEURODESK_HARDWARE_GPU === '1') expect(snapshot.report.provenance.executionProvider).toBe('webgpu');
+  if (process.env.NEURODESK_HARDWARE_GPU === '1') {
+    assertHardwareAdapter(await readAdapterInfo(page));
+    expect(snapshot.report.provenance.executionProvider).toBe('webgpu');
+  }
   expect(snapshot.report.provenance.models.map(model => model.id)).toEqual(['fold0-web']);
   expect(snapshot.report.measurements.detections.folds).toEqual(['0']);
   expect(Object.keys(snapshot.report.artifacts).sort()).toEqual(['detections', 'markers', 'probability']);
@@ -220,6 +225,51 @@ test('default nnU-Net v2 produces native-grid probabilities, ranked markers and 
     await page.screenshot({ path: testInfo.outputPath(`seedseg-v2-edited-${width}.png`), fullPage: true });
   }
 });
+
+for (const settings of [
+  { name: 'five-fold ensemble', folds: [0, 1, 2, 3, 4], mirror: false },
+  { name: 'mirrored fold', folds: [0], mirror: true },
+]) {
+  test(`hardware WebGPU and WASM agree for the ${settings.name}`, async ({ page }) => {
+    test.skip(!hardwareGpu, 'Requires a hardware WebGPU adapter.');
+    test.setTimeout(1200000);
+    await page.goto('/');
+    await page.waitForFunction(() => Boolean(globalThis.neurodeskAutomation));
+    assertHardwareAdapter(await readAdapterInfo(page));
+    await page.locator('#neurodesk-input-transfer').setInputFiles({ name: 'synthetic-prostate-t1.nii', mimeType: 'application/x-nifti', buffer: image });
+    await page.evaluate(() => neurodeskAutomation.dispatch('adopt', { role: 'image' }));
+    const reports = [];
+    const outputs = [];
+    for (const backend of ['auto', 'wasm']) {
+      await page.evaluate(parameters => neurodeskAutomation.dispatch('start', { operation: 'segment', parameters }), {
+        folds: settings.folds, mirror: settings.mirror, backend,
+      });
+      await expect.poll(() => page.evaluate(async () => (await neurodeskAutomation.dispatch('snapshot')).state), { timeout: 540000 }).toMatch(/succeeded|failed/);
+      const snapshot = await page.evaluate(() => neurodeskAutomation.dispatch('snapshot'));
+      expect(snapshot.state, JSON.stringify(snapshot.error)).toBe('succeeded');
+      expect(snapshot.report.provenance.executionProvider).toBe(backend === 'auto' ? 'webgpu' : 'wasm');
+      expect(snapshot.report.provenance.models.map(model => model.id)).toEqual(settings.folds.map(fold => `fold${fold}-web`));
+      expect(snapshot.report.measurements.detections.folds).toEqual(settings.folds.map(String));
+      expect(snapshot.report.measurements.detections.mirror).toBe(settings.mirror);
+      expect(snapshot.report.measurements.detections.markers.length).toBeGreaterThan(0);
+      reports.push(snapshot.report.measurements.detections);
+      const output = {};
+      for (const artifactId of ['probability', 'markers']) {
+        const waiting = page.waitForEvent('download');
+        await page.evaluate(id => neurodeskAutomation.dispatch('download', { artifactId: id }), artifactId);
+        const volume = await readNifti(await readFile(await (await waiting).path()));
+        expect(volume.dims).toEqual(PROSTATE_FIXTURE_DIMS);
+        output[artifactId] = volume.data;
+      }
+      outputs.push(output);
+    }
+    const parity = compareDetections(reports[0], reports[1]);
+    console.log(JSON.stringify({ hardwareCase: settings.name, hardwareDetectionParity: parity }));
+    expect(parity.sameTopK && parity.sameOrder && parity.sameCandidateCount && parity.sameCountFlag).toBe(true);
+    const agreement = compareV2Outputs({ native: outputs[1], browser: outputs[0], dims: PROSTATE_FIXTURE_DIMS, mirror: settings.mirror });
+    console.log(JSON.stringify({ hardwareCase: settings.name, hardwareOutputParity: agreement }));
+  });
+}
 
 // NiiVue shows volumes reoriented to RAS. On an x-flipped image, native voxel x = 10 is displayed at
 // x = 53 of 64, so marker navigation must go through world millimetres.
