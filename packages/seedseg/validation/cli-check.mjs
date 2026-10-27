@@ -85,6 +85,8 @@ try {
     assert.deepEqual((await readdir(output)).sort(), Object.values(names).sort());
     let maximumProbabilityDifference = 0;
     let markers;
+    const markerAgreement = [];
+    let probability;
     for (const [stage, name] of Object.entries(names)) {
       const native = await readNifti(await readFile(join(output, name)));
       const browser = await readNifti(web.files[stage]);
@@ -93,11 +95,38 @@ try {
       const range = stage === markerStage ? spec.topN : 1;
       assert.ok(native.data.every(value => Number.isFinite(value) && value >= 0 && value <= range));
       assert.equal(native.data.length, browser.data.length);
-      if (stage === markerStage) {
+      if (stage === markerStage && parameters.model === 'v1') {
         assert.deepEqual(native.data, browser.data, `${spec.id}: exact native/browser marker mask`);
+        markers = native.data;
+      } else if (stage === markerStage) {
+        // v2's fp16-stored weights run through ONNX Runtime Node 1.29 and Web 1.21 differ by up to
+        // 0.036 in probability (0.16 with mirroring; measured 2026-10-27), which moves voxels at the
+        // threshold: 1 of 323 marker voxels with five networks, 4 of 93 at threshold 0.5, 3 of 55
+        // with mirroring. Gate that every voxel where
+        // the masks disagree lies within the measured probability difference of the threshold, and
+        // that each ranked marker's centroid moves by at most 0.25 voxel.
+        assert.ok(probability, `${spec.id}: the probability map is compared before the markers`);
+        const ranks = native.data.reduce((top, value) => Math.max(top, value), 0);
+        assert.equal(browser.data.reduce((top, value) => Math.max(top, value), 0), ranks, `${spec.id}: native and browser report the same number of markers`);
+        let disagreeing = 0;
+        for (let index = 0; index < native.data.length; index++) {
+          if (native.data[index] === browser.data[index]) continue;
+          disagreeing++;
+          const margin = Math.abs(probability[index] - spec.threshold);
+          assert.ok(margin <= maximumProbabilityDifference, `${spec.id}: voxel ${index} disagrees ${margin} from the threshold`);
+        }
+        for (let rank = 1; rank <= ranks; rank++) {
+          const [left] = markerComponents(native.data.map(value => (value === rank ? 1 : 0)), PROSTATE_FIXTURE_DIMS);
+          const [right] = markerComponents(browser.data.map(value => (value === rank ? 1 : 0)), PROSTATE_FIXTURE_DIMS);
+          const shift = Math.hypot(...left.centroid.map((value, axis) => value - right.centroid[axis]));
+          assert.ok(shift <= 0.25, `${spec.id}: marker ${rank} native/browser centroid shift ${shift}`);
+          markerAgreement.push({ rank, voxels: [left.voxels, right.voxels], centroidShift: shift });
+        }
+        markerAgreement.push({ disagreeingVoxels: disagreeing });
         markers = native.data;
       } else {
         for (let index = 0; index < native.data.length; index++) maximumProbabilityDifference = Math.max(maximumProbabilityDifference, Math.abs(native.data[index] - browser.data[index]));
+        if (stage === 'probability') probability = native.data;
       }
     }
     const components = markerComponents(markers, PROSTATE_FIXTURE_DIMS);
@@ -106,7 +135,7 @@ try {
       // The fixture is 1 mm isotropic and not N4-corrected, off v2's training protocol: v2 finds a
       // subset of the planted seeds (1 with network 1, 2 with all five, measured 2026-10-27).
       // Gate what it reports: at least one marker, each on a distinct planted seed, the count flag
-      // and ranks consistent with the native report, and the browser's list equal to it.
+      // and ranks consistent with the native report, and the browser's list as long, with the same flag.
       const { detections } = report;
       assert.ok(detections.markers.length >= 1, `${spec.id}: at least one marker`);
       assert.equal(detections.countFlag, detections.nCandidates < spec.topN);
@@ -118,7 +147,8 @@ try {
       for (const [rank, marker] of detections.markers.entries()) {
         assert.equal(markers.filter(value => value === rank + 1).length, marker.nVoxels);
       }
-      assert.deepEqual(web.measurements.detections.markers.map(marker => marker.nVoxels), detections.markers.map(marker => marker.nVoxels));
+      assert.equal(web.measurements.detections.markers.length, detections.markers.length);
+      assert.equal(web.measurements.detections.countFlag, detections.countFlag);
     }
     if (spec.id === 'ensemble-4') {
       assert.equal(components.length, 3);
@@ -131,7 +161,7 @@ try {
       console.log(`PASS independent planted geometry: centroid <= 1 voxel, recall=${recall}, mask <= ${10 * count} voxels`);
     }
     const receipt = { ...spec, nativeSeconds: report.seconds, ortNode: report.onnxRuntime, ortWeb: web.ortWeb, chromium: web.chromium,
-      components, maximumProbabilityDifference, maskSha256: sha256(new Uint8Array(markers.buffer)), composite: web.composite };
+      components, maximumProbabilityDifference, ...(markerAgreement.length ? { markerAgreement } : {}), maskSha256: sha256(new Uint8Array(markers.buffer)), composite: web.composite };
     receipts.push(receipt);
     console.log(`PASS ${JSON.stringify(receipt)}`);
     assert.deepEqual(await readdir(isolated, { recursive: true }), [], 'No runtime/cache/telemetry writes outside output');
