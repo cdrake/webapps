@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Wait until the Report button is pressed before loading optional DICOM reporting, so a stalled report host cannot delay scan conversion.
+  - @neurodesk/seedseg@0.6.20261027
 - Load optional DICOM reporting on demand so an unavailable report host cannot prevent NIfTI input or segmentation.
   - @neurodesk/seedseg@0.6.20261027
 
