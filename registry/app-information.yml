@@ -1165,7 +1165,7 @@ apps:
   brain-extraction:
     packages:
     - name: QSM.rs BET
-      url: https://github.com/astewartau/QSM.rs/tree/8a3afda3716a859d93f1d41f1c8993335cc80c57
+      url: https://github.com/astewartau/QSM.rs/tree/95be94b83b43e80329b4ecfe8a74cf8114ea927a
       role: compact brain extraction kernel shared by browser and command line
     - name: MindGrab (brainchop)
       url: https://github.com/neuroneural/brainchop

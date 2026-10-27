@@ -86,7 +86,7 @@
   },
   {
     "from": "apps/qsmbly/js/qsm-app-romeo.js",
-    "to": "https://dicompare.neurodesk.org/embed/DicompareController.js",
+    "to": "https://webapps.neurodesk.org/dicompare/embed/DicompareController.js",
     "reason": "Established upstream embed contract. registry/offline-assets.sources.json mirrors it and the composite/offline assembly rewrites the URL."
   },
   {

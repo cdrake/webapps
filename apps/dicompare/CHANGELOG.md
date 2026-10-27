@@ -4,6 +4,7 @@
 
 ### Patch Changes
 
+- fd54995: Load the dicompare protocol checker, its worker and schemas from webapps.neurodesk.org/dicompare instead of the unavailable dicompare.neurodesk.org deployment. Keep QSMbly's worker in single-app offline bundles and preserve the URL adaptations during upstream sync. SeedSeg continues to use its locally staged report assets.
 - Updated dependencies
   - @neurodesk/webapp-components@0.22.2
 - Updated dependencies

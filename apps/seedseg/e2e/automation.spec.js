@@ -50,7 +50,7 @@ test('NIfTI inputs remain usable when the optional DICOM report host is unavaila
 test('DICOM conversion completes while the optional report host stalls', async ({ page }) => {
   test.setTimeout(60000);
   const held = [];
-  await page.route('https://dicompare.neurodesk.org/**', route => { held.push(route); });
+  await page.route('https://webapps.neurodesk.org/dicompare/**', route => { held.push(route); });
   try {
     await page.goto('/');
     await page.waitForFunction(() => Boolean(globalThis.neurodeskAutomation));
@@ -66,7 +66,7 @@ test('DICOM reports load local assets and show a recoverable error when Python i
   test.setTimeout(60000);
   const remoteRequests = [];
   const localResponses = new Map();
-  await page.context().route('https://dicompare.neurodesk.org/**', route => {
+  await page.context().route('https://webapps.neurodesk.org/dicompare/**', route => {
     remoteRequests.push(route.request().url());
     return route.abort();
   });
