@@ -1878,8 +1878,8 @@ importers:
         specifier: workspace:*
         version: link:../components
       onnxruntime-node:
-        specifier: 1.29.0
-        version: 1.29.0
+        specifier: 1.30.0
+        version: 1.30.0
     devDependencies:
       '@playwright/test':
         specifier: 1.64.0
@@ -7933,12 +7933,19 @@ packages:
   onnxruntime-common@1.29.0:
     resolution: {integrity: sha512-/F63/e2VJoaVXGGNu6S5QH7jivBThGO95OzAVXXQ8hTta/b1QxI8udHa6cI3+3mAb5WWIIaMMwfZw01oivjJ1g==}
 
+  onnxruntime-common@1.30.0:
+    resolution: {integrity: sha512-7fdVWjAID1dVhH/G8qK3APARunV4VkBFoCQAP7qp4Wkab0mrorvmc+sqiT+mKXOzDqdjN5j+/Z9nb4gzNPWcyA==}
+
   onnxruntime-node@1.27.0:
     resolution: {integrity: sha512-QEzGwrvNBgv4uPVdnbHsOGG4G6T96mdlcFI8aAKPjMU8wOPpVocPXb6k3QGkaZagVTv2G9Bnnbo6Z3JdXr1fQw==}
     os: [win32, darwin, linux]
 
   onnxruntime-node@1.29.0:
     resolution: {integrity: sha512-WjiVVB72riILz8HbYvxvmjKyE/WmkYoSfKY++axo5jAR609HQg8MwiG/HhShpTcJfmmAdzxxmB+MMST3A+SiPA==}
+    os: [win32, darwin, linux]
+
+  onnxruntime-node@1.30.0:
+    resolution: {integrity: sha512-twhs1C2C/BFkz1yc5OY0KIU2GUq6DURO7hD4bx5Q2Qy3nAMJwRXW8xU3NVczE29VA9lolLOYepoD8fjTGOfIqw==}
     os: [win32, darwin, linux]
 
   onnxruntime-web@1.29.0:
@@ -15943,7 +15950,7 @@ snapshots:
 
   nifti-reader-js@0.8.1:
     dependencies:
-      fflate: 0.8.2
+      fflate: 0.8.3
 
   node-abi@4.33.0:
     dependencies:
@@ -16026,6 +16033,8 @@ snapshots:
 
   onnxruntime-common@1.29.0: {}
 
+  onnxruntime-common@1.30.0: {}
+
   onnxruntime-node@1.27.0:
     dependencies:
       adm-zip: 0.5.18
@@ -16037,6 +16046,12 @@ snapshots:
       adm-zip: 0.6.0
       global-agent: 4.1.3
       onnxruntime-common: 1.29.0
+
+  onnxruntime-node@1.30.0:
+    dependencies:
+      adm-zip: 0.6.0
+      global-agent: 4.1.3
+      onnxruntime-common: 1.30.0
 
   onnxruntime-web@1.29.0:
     dependencies:

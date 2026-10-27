@@ -2,11 +2,14 @@
 // network; the numerics are checked against nnUNetv2_predict by scripts/deploy/compare_parity.py.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
-const P = createRequire(import.meta.url)('../js/modules/inference/nnunet-pipeline.js');
+import * as P from '../src/nnunet.js';
 
 test('sliding-window steps match nnU-Net for the SeedSeg grid', () => {
-  assert.deepEqual(P.windowSteps([40, 320, 320], [32, 256, 224]), [[0, 8], [0, 64], [0, 96]]);
+  assert.deepEqual(P.windowSteps([40, 320, 320], [32, 256, 224]), [
+    [0, 8],
+    [0, 64],
+    [0, 96],
+  ]);
   assert.deepEqual(P.windowSteps([32, 256, 224], [32, 256, 224]), [[0], [0], [0]]);
 });
 
@@ -19,20 +22,31 @@ test('mirroring uses all 8 axis combinations, identity first', () => {
 });
 
 test('flipping twice is the identity and accumulation adds', () => {
-  const patch = [2, 3, 4], n = 24, a = Float32Array.from({ length: 2 * n }, (_, i) => i);
+  const patch = [2, 3, 4],
+    n = 24,
+    a = Float32Array.from({ length: 2 * n }, (_, i) => i);
   const once = P.flipBlocks(a, 2, patch, [0, 2]);
   assert.notDeepEqual(Array.from(once), Array.from(a));
   assert.deepEqual(Array.from(P.flipBlocks(once, 2, patch, [0, 2])), Array.from(a));
   const acc = new Float32Array(2 * n).fill(1);
   P.flipBlocks(once, 2, patch, [0, 2], acc);
-  assert.deepEqual(Array.from(acc), Array.from(a, (v) => v + 1));
+  assert.deepEqual(
+    Array.from(acc),
+    Array.from(a, (v) => v + 1),
+  );
 });
 
 test('crop to nonzero and back, z-score', () => {
-  const dims = [3, 4, 5], v = new Float32Array(60);
-  v[1 * 20 + 2 * 5 + 3] = 2; v[2 * 20 + 1 * 5 + 1] = 4;
+  const dims = [3, 4, 5],
+    v = new Float32Array(60);
+  v[1 * 20 + 2 * 5 + 3] = 2;
+  v[2 * 20 + 1 * 5 + 1] = 4;
   const box = P.nonzeroBBox(v, dims);
-  assert.deepEqual(box, [[1, 3], [1, 3], [1, 4]]);
+  assert.deepEqual(box, [
+    [1, 3],
+    [1, 3],
+    [1, 4],
+  ]);
   const c = P.cropBox(v, dims, box);
   assert.deepEqual(Array.from(P.uncropBox(c.data, dims, box)), Array.from(v));
   const { mean } = P.zscoreInPlace(c.data);
@@ -40,18 +54,25 @@ test('crop to nonzero and back, z-score', () => {
 });
 
 test('mirrored sliding window of an identity network returns the input', async () => {
-  const patch = [4, 6, 6], dims = [6, 9, 7];
+  const patch = [4, 6, 6],
+    dims = [6, 9, 7];
   const data = Float32Array.from({ length: 6 * 9 * 7 }, (_, i) => Math.sin(i));
-  const { logits, C } = await P.slidingWindowLogits(data, dims, patch, async (x) => x, { mirrorAxes: [0, 1, 2] });
+  const { logits, C } = await P.slidingWindowLogits(data, dims, patch, async (x) => x, {
+    mirrorAxes: [0, 1, 2],
+  });
   assert.equal(C, 1);
   for (let i = 0; i < data.length; i++) assert.ok(Math.abs(logits[i] - data[i]) < 1e-5);
 });
 
 test('candidates are ranked by mean probability; count flag when fewer than K', () => {
-  const dims = [5, 10, 10], p = new Float32Array(500);
-  const put = (z, y, x, v) => { p[(z * 10 + y) * 10 + x] = v; };
-  put(1, 1, 1, 0.5); put(1, 1, 2, 0.7);  // mean 0.6
-  put(3, 7, 7, 0.9);                      // mean 0.9
+  const dims = [5, 10, 10],
+    p = new Float32Array(500);
+  const put = (z, y, x, v) => {
+    p[(z * 10 + y) * 10 + x] = v;
+  };
+  put(1, 1, 1, 0.5);
+  put(1, 1, 2, 0.7); // mean 0.6
+  put(3, 7, 7, 0.9); // mean 0.9
   const d = P.detect(p, dims, 3, 0.1, 2);
   assert.equal(d.nCandidates, 2);
   assert.equal(d.countFlag, true);

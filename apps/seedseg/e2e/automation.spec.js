@@ -23,7 +23,7 @@ async function runEnsemble(page) {
   await page.waitForFunction(() => Boolean(globalThis.neurodeskAutomation));
   await page.locator('#neurodesk-input-transfer').setInputFiles({ name: 'synthetic-prostate-t1.nii', mimeType: 'application/x-nifti', buffer: image });
   await page.evaluate(() => neurodeskAutomation.dispatch('adopt', { role: 'image' }));
-  await page.evaluate(() => neurodeskAutomation.dispatch('start', { operation: 'segment' }));
+  await page.evaluate(() => neurodeskAutomation.dispatch('start', { operation: 'segment', parameters: { pipeline: 'legacy-v1', backend: 'wasm' } }));
   await expect.poll(() => page.evaluate(async () => (await neurodeskAutomation.dispatch('snapshot')).state), { timeout: 540000 }).toMatch(/succeeded|failed/);
   return page.evaluate(() => neurodeskAutomation.dispatch('snapshot'));
 }
@@ -35,7 +35,7 @@ async function downloadRow(page, row) {
   return { name: download.suggestedFilename(), bytes: await readFile(await download.path()) };
 }
 
-test('real SeedSeg ensemble finds the three planted fiducials of the synthetic prostate fixture', async ({ page }) => {
+test('real legacy SeedSeg ensemble finds the three planted fiducials of the synthetic prostate fixture', async ({ page }) => {
   test.setTimeout(600000);
   const snapshot = await runEnsemble(page);
   expect(snapshot.error).toBeUndefined();
@@ -121,4 +121,35 @@ test('the consensus mask can be corrected in the viewer and downloads edited', a
   await page.locator('#clearResults').click();
   await expect(editor).toBeHidden();
   await expect(row).toHaveCount(0);
+});
+
+
+test('default nnU-Net v2 produces native-grid probabilities, ranked markers and a detection report', async ({ page }) => {
+  test.setTimeout(600000);
+  await page.route('https://dicompare.neurodesk.org/**', route => route.abort());
+  await page.goto('/');
+  await page.waitForFunction(() => Boolean(globalThis.neurodeskAutomation));
+  await page.locator('#neurodesk-input-transfer').setInputFiles({ name: 'synthetic-prostate-t1.nii', mimeType: 'application/x-nifti', buffer: image });
+  await page.evaluate(() => neurodeskAutomation.dispatch('adopt', { role: 'image' }));
+  await page.evaluate(() => neurodeskAutomation.dispatch('start', { operation: 'segment' }));
+  await expect.poll(() => page.evaluate(async () => (await neurodeskAutomation.dispatch('snapshot')).state), { timeout: 540000 }).toMatch(/succeeded|failed/);
+  const snapshot = await page.evaluate(() => neurodeskAutomation.dispatch('snapshot'));
+  expect(snapshot.state, JSON.stringify(snapshot.error)).toBe('succeeded');
+  expect(snapshot.report.provenance.pipeline).toBe('nnunet-v2');
+  expect(snapshot.report.provenance.models.map(model => model.id)).toEqual(['fold0-web']);
+  expect(snapshot.report.measurements.detections.folds).toEqual(['0']);
+  expect(Object.keys(snapshot.report.artifacts).sort()).toEqual(['detections', 'markers', 'probability']);
+  for (const id of ['markers', 'probability', 'detections']) {
+    const waiting = page.waitForEvent('download');
+    await page.evaluate(artifactId => neurodeskAutomation.dispatch('download', { artifactId }), id);
+    const bytes = await readFile(await (await waiting).path());
+    expect(createHash('sha256').update(bytes).digest('hex')).toBe(snapshot.report.artifacts[id].sha256);
+    if (id === 'detections') {
+      expect(JSON.parse(bytes).countFlag).toBe(snapshot.report.measurements.detections.countFlag);
+    } else {
+      const volume = await readNifti(bytes);
+      expect(volume.dims).toEqual(PROSTATE_FIXTURE_DIMS);
+      expect(volume.data.every(value => Number.isFinite(value) && value >= 0 && value <= (id === 'markers' ? 3 : 1))).toBe(true);
+    }
+  }
 });

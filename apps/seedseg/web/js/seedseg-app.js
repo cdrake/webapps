@@ -10,13 +10,13 @@ bindSectionDisclosures(document);
 import { registerSeedSegAutomation } from './automation.js';
 import { SeedSegInputSet } from './controllers/SeedSegInputSet.js';
 import { SeedSegDicomInput } from './controllers/SeedSegDicomInput.js';
-import { DicompareController } from 'https://dicompare.neurodesk.org/embed/DicompareController.js';
 import { DicompareReportRenderer } from '@neurodesk/webapp-components/ui';
 import { ViewerController } from '@neurodesk/webapp-components';
 import { SeedSegPipeline } from './controllers/SeedSegPipeline.js';
 import { ConsoleOutput, ProgressManager, ModalManager, bindWindowControls, createMaskEditor } from '@neurodesk/webapp-components/ui';
 import { createNiftiFromVolume } from '@neurodesk/webapp-components/file-io';
 import * as Config from './app/config.js';
+import { resolveModels, validateSelection } from '../vendor/seedseg/src/assets.js';
 import { clearResultsAfterEditing, isEditableStage, replaceWithEdit, stageLabel } from './app/mask-edit.js';
 
 class SeedSegApp {
@@ -72,11 +72,7 @@ class SeedSegApp {
       onFilesRetained: (files) => this._onDicomFilesRetained(files)
     });
 
-    // dicompare validation
-    this.dicompareController = new DicompareController({
-      schemaUrl: 'https://dicompare.neurodesk.org/schemas/SeedSeg_Prostate_T1w_v1.0.json',
-      updateOutput: (msg) => this.updateOutput(msg)
-    });
+    this.retainedDicomFiles = [];
     this.dicompareRenderer = new DicompareReportRenderer();
 
     this.viewerController = new ViewerController({
@@ -98,22 +94,14 @@ class SeedSegApp {
       updateOutput: (msg) => this.updateOutput(msg),
       setProgress: (val, text) => this.setProgress(val, text),
       onStageData: (data) => this.handleStageData(data),
-      onComplete: () => this.onInferenceComplete(),
+      onComplete: data => {
+        this.inferenceExecutor.report = data.report;
+        if (data.report?.detections) this.showDetections(data.report.detections);
+        this.onInferenceComplete();
+      },
       onError: (msg) => this.onInferenceError(msg),
-      onInitialized: () => {},
-      onDetections: (det) => this.showDetections(det)
+      onInitialized: () => {}
     });
-    // Legacy v1 consensus, separate worker, created on first use
-    this.legacyExecutor = new InferenceExecutor({
-      workerPath: 'js/legacy-v1-worker.js',
-      updateOutput: (msg) => this.updateOutput(msg),
-      setProgress: (val, text) => this.setProgress(val, text),
-      onStageData: (data) => this.handleStageData(data),
-      onComplete: () => this.onInferenceComplete(),
-      onError: (msg) => this.onInferenceError(msg)
-    });
-    this.activeExecutor = this.inferenceExecutor;
-
     // Modals
     this.aboutModal = new ModalManager('aboutModal');
     this.privacyModal = new ModalManager('privacyModal');
@@ -132,7 +120,7 @@ class SeedSegApp {
     }
 
     // Start ONNX initialization in background
-    this.inferenceExecutor.initialize();
+    this.inferenceExecutor.initialize().catch(error => this.onInferenceError(error.message));
     this.automation = registerSeedSegAutomation(this);
   }
 
@@ -156,6 +144,7 @@ class SeedSegApp {
 
     // The legacy v1 model ignores the network and mirroring settings
     document.getElementById('legacyModel')?.addEventListener('change', (e) => {
+      this.legacyModels = undefined;
       const ids = [...Config.FOLDS.map((f) => `fold${f}`), 'mirrorTTA', 'selectAllFolds'];
       ids.forEach((id) => { const el = document.getElementById(id); if (el) el.disabled = e.target.checked; });
     });
@@ -681,23 +670,23 @@ class SeedSegApp {
 
     const file = this.fileIOController.getActiveFile();
 
-    // Gather settings
-    const folds = Config.FOLDS.filter((f) => document.getElementById(`fold${f}`)?.checked);
-    if (folds.length === 0) {
-      this.updateOutput('No model folds selected');
+    const pipeline = document.getElementById('legacyModel').checked ? 'legacy-v1' : 'nnunet-v2';
+    const folds = Config.FOLDS.filter(fold => document.getElementById(`fold${fold}`).checked);
+    const threshold = document.getElementById('probThreshold').valueAsNumber;
+    const nMarkers = document.getElementById('nMarkers').valueAsNumber;
+    const mirror = document.getElementById('mirrorTTA').checked;
+    try {
+      resolveModels(pipeline === 'legacy-v1' ? this.legacyModels : folds, { pipeline });
+      validateSelection({ threshold, nMarkers, mirror });
+    } catch (error) {
+      this.onInferenceError(error.message);
       return;
     }
-    const mirror = !!document.getElementById('mirrorTTA')?.checked;
-    const backend = Config.INFERENCE_DEFAULTS.backend;
-    const threshold = parseFloat(document.getElementById('probThreshold')?.value || String(Config.INFERENCE_DEFAULTS.threshold));
-    const nMarkers = parseInt(document.getElementById('nMarkers')?.value || String(Config.INFERENCE_DEFAULTS.nMarkers));
-    const modelBaseUrl = new URL(Config.MODEL_BASE_URL, window.location.href).href;
 
     // Read file
     const inputData = await file.arrayBuffer();
 
     // Clear previous results
-<<<<<<< monorepo
     await clearResultsAfterEditing(this.maskEditor, this.inferenceExecutor);
     this.disableAllResultTabs();
 
@@ -706,44 +695,28 @@ class SeedSegApp {
     if (runBtn) runBtn.disabled = true;
     document.getElementById('statusText')?.classList.remove('error');
     this.progress.begin('Starting segmentation...');
-=======
-    this.inferenceExecutor.clearResults();
-    this.legacyExecutor.clearResults();
-    this.disableAllResultTabs();
 
-    if (document.getElementById('legacyModel')?.checked) {
-      this.activeExecutor = this.legacyExecutor;
-      this.updateOutput('Running the legacy v1 model (4-network U-Net consensus)');
-      await this.legacyExecutor.run({
+    try {
+      await this.inferenceExecutor.run({
         inputData,
         settings: {
-          selectedModels: Config.LEGACY_MODELS, sha256: Config.LEGACY_SHA256, threshold, nMarkers,
-          modelBaseUrl: new URL(Config.LEGACY_MODEL_BASE_URL, window.location.href).href
+          pipeline,
+          folds,
+          mirror,
+          threshold,
+          nMarkers,
+          selectedModels: this.legacyModels,
+          model: this.model ?? Config.INFERENCE_DEFAULTS.model,
+          backend: this.backend ?? 'auto'
         }
       });
-      return;
+    } catch (error) {
+      this.onInferenceError(error.message);
     }
-    this.activeExecutor = this.inferenceExecutor;
->>>>>>> upstream
-
-    // Run
-    await this.inferenceExecutor.run({
-      inputData,
-      settings: {
-        folds,
-        mirror,
-        backend,
-        model: Config.INFERENCE_DEFAULTS.model,
-        modelDir: Config.MODEL_DIRS[Config.INFERENCE_DEFAULTS.model],
-        threshold,
-        nMarkers,
-        modelBaseUrl
-      }
-    });
   }
 
   cancelSegmentation() {
-    this.activeExecutor.cancel();
+    this.inferenceExecutor.cancel();
     const runBtn = document.getElementById('runSegmentation');
     if (runBtn) runBtn.disabled = false;
     this.progress.reset('Cancelled');
@@ -755,8 +728,8 @@ class SeedSegApp {
     input: 'Input',
     probability: 'Probability',
     markers: 'Markers',
-    model1: 'v1 net 1', model2: 'v1 net 2', model3: 'v1 net 3', model4: 'v1 net 4',
-    avgProb: 'v1 average', consensus: 'v1 consensus'
+    model1: 'Model 1', model2: 'Model 2', model3: 'Model 3', model4: 'Model 4',
+    avgProb: 'Average probability', consensus: 'Consensus'
   };
 
   handleStageData(data) {
@@ -813,7 +786,7 @@ class SeedSegApp {
       dlBtn.className = 'download-btn';
       dlBtn.title = `Download ${displayName}`;
       dlBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
-      dlBtn.addEventListener('click', () => this.activeExecutor.downloadStage(stage));
+      dlBtn.addEventListener('click', () => this.inferenceExecutor.downloadStage(stage));
       item.appendChild(dlBtn);
     }
 
@@ -866,15 +839,6 @@ class SeedSegApp {
   }
 
   onInferenceComplete() {
-    if (this.activeExecutor === this.legacyExecutor) {
-      const panel = document.getElementById('detectionsPanel');
-      const k = document.getElementById('nMarkers')?.value;
-      if (panel) {
-        panel.innerHTML = `<div class="detections-meta">Configuration: legacy model (v1, 4-network U-Net consensus), K = ${k}. ` +
-          'See the v1 consensus result for the selected markers.</div>';
-        panel.classList.remove('hidden');
-      }
-    }
     const runBtn = document.getElementById('runSegmentation');
     if (runBtn) runBtn.disabled = false;
     this.progress.end('Complete');
@@ -918,7 +882,7 @@ class SeedSegApp {
       return;
     }
 
-    const result = this.activeExecutor.getResult(stage);
+    const result = this.inferenceExecutor.getResult(stage);
     if (!result?.file || !this.inputFile) return;
 
     // Show overlay controls
@@ -949,21 +913,21 @@ class SeedSegApp {
     if (!panel) return;
     const n = det.markers.length;
     const flag = det.countFlag
-      ? `<div class="detections-flag warn"><strong>Check:</strong> ${n} of ${det.k} markers found (${det.nCandidates} candidate${det.nCandidates === 1 ? '' : 's'}). Review the image.</div>`
-      : `<div class="detections-flag">${n} of ${det.k} markers found.</div>`;
+      ? `<div class="nd-message warning"><strong>Check:</strong> ${n} of ${det.k} markers found (${det.nCandidates} candidate${det.nCandidates === 1 ? '' : 's'}). Review the image.</div>`
+      : `<div class="nd-message success">${n} of ${det.k} markers found.</div>`;
     const rows = det.markers.map((m) => {
       const w = m.centroidWorldMm.map((v) => v.toFixed(1)).join(', ');
-      return `<tr class="clickable" data-vox="${m.centroidVox.join(',')}" title="Voxel ${m.centroidVox.map((v) => v.toFixed(1)).join(', ')}">
-        <td>${m.rank}</td><td>${m.meanProb.toFixed(3)}</td><td>${m.volumeMm3.toFixed(0)}</td><td>${w}</td></tr>`;
+      return `<tr>
+        <td>${m.rank}</td><td>${m.meanProb.toFixed(3)}</td><td>${m.volumeMm3.toFixed(0)}</td><td><button type="button" class="nd-btn nd-btn-secondary nd-btn-sm" data-vox="${m.centroidVox.join(',')}" aria-label="Show marker ${m.rank} at ${w} mm">${w}</button></td></tr>`;
     }).join('');
     const next = det.others.length ? `Next candidate: mean probability ${det.others[0].meanProb.toFixed(3)}.` : '';
     const nets = det.folds.length === 5 ? '5-network ensemble' : `network${det.folds.length > 1 ? 's' : ''} ${det.folds.map((f) => Number(f) + 1).join(', ')} of 5`;
     const t = ` Configuration: ${nets}, mirroring ${det.mirror ? 'on' : 'off'}, K = ${det.k}, ${det.backend === 'webgpu' ? 'WebGPU' : det.backend === 'wasm' ? 'WebAssembly' : det.backend}` +
       (det.timing?.total ? `, ${det.timing.total.toFixed(0)} s.` : '.');
-    panel.innerHTML = `${flag}<table class="detections-table"><thead><tr><th>#</th><th>Mean p</th><th>mm³</th><th>Position (mm)</th></tr></thead>
-      <tbody>${rows}</tbody></table><div class="detections-meta">${next}${t}</div>`;
+    panel.innerHTML = `${flag}<div class="nd-table-scroll"><table class="nd-data-table"><thead><tr><th>#</th><th>Mean p</th><th>mm³</th><th>Position (mm)</th></tr></thead>
+      <tbody>${rows}</tbody></table></div><div class="nd-message">${next}${t}</div>`;
     panel.classList.remove('hidden');
-    panel.querySelectorAll('tr.clickable').forEach((tr) => {
+    panel.querySelectorAll('button[data-vox]').forEach((tr) => {
       tr.addEventListener('click', () => {
         const v = tr.dataset.vox.split(',').map(Number);
         const vol = this.nv.volumes?.[0];
@@ -1001,8 +965,9 @@ class SeedSegApp {
   /**
    * Callback when DICOM files are retained for validation.
    */
-  async _onDicomFilesRetained(files) {
-    await this.dicompareController.retainDicomFiles(files);
+  _onDicomFilesRetained(files) {
+    this.retainedDicomFiles = [...files];
+    this.dicompareController = null;
     const btn = document.getElementById('dicompareReportBtn');
     if (btn) {
       btn.disabled = files.length === 0;
@@ -1013,8 +978,23 @@ class SeedSegApp {
    * Run dicompare validation and display results in modal.
    */
   async runDicompareReport() {
-    if (!this.dicompareController.hasFiles()) {
+    if (!this.retainedDicomFiles.length) {
       this.updateOutput('No DICOM files available for validation.');
+      return;
+    }
+
+    try {
+      if (!this.dicompareController) {
+        const { DicompareController } = await import('https://dicompare.neurodesk.org/embed/DicompareController.js');
+        const controller = new DicompareController({
+          schemaUrl: 'https://dicompare.neurodesk.org/schemas/SeedSeg_Prostate_T1w_v1.0.json',
+          updateOutput: message => this.updateOutput(message)
+        });
+        await controller.retainDicomFiles(this.retainedDicomFiles);
+        this.dicompareController = controller;
+      }
+    } catch (error) {
+      this.progress.end(`Report unavailable: ${error.message}`, { success: false });
       return;
     }
 

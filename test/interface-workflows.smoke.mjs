@@ -166,13 +166,17 @@ try {
     await settings.tap();
     await page.locator('#probThreshold').fill('0.25');
     await page.locator('#nMarkers').fill('2');
-    await page.locator('#model3').uncheck();
+    await page.locator('#fold0').uncheck();
+    await page.locator('#fold4').check();
+    await page.locator('#mirrorTTA').check();
     await settings.tap();
     await expect(page.locator('#probThreshold')).toBeHidden();
     await settings.tap();
     await expect(page.locator('#probThreshold')).toHaveValue('0.25');
     await expect(page.locator('#nMarkers')).toHaveValue('2');
-    await expect(page.locator('#model3')).not.toBeChecked();
+    await expect(page.locator('#fold0')).not.toBeChecked();
+    await expect(page.locator('#fold4')).toBeChecked();
+    await expect(page.locator('#mirrorTTA')).toBeChecked();
     await expect(page.locator('#seedseg-log')).toHaveClass(/collapsed/);
   });
   await check('vesselboost', async page => {

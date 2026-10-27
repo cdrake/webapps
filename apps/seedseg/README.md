@@ -1,85 +1,44 @@
 # Prostate gold seed segmentation
 
-Detection of gold fiducial markers in T1-weighted prostate MRI. The deployed model is an nnU-Net v2 (residual encoder, 3d_fullres) 5-fold ensemble exported to ONNX; the web app and the OpenRecon container run the same pipeline (`scripts/deploy/seedseg_onnx.py`).
+SeedSeg detects gold fiducial markers in T1-weighted prostate MRI. The browser
+and portable command line use the same scientific pipeline in
+[`packages/seedseg`](../../packages/seedseg/README.md).
 
-## Structure
+The default is nnU-Net v2 network 1, without test-time mirroring. Select all five
+networks for the upstream evaluated ensemble. Advanced settings retain the
+legacy v1 four-network 3D U-Net consensus. Browser inference tries WebGPU first
+and retries a failed network on WebAssembly. The command line runs on the CPU.
 
-- `scripts/` - Python pipeline: preprocessing, training, inference, evaluation, analysis
-- `web/` - Browser-based inference app (ONNX Runtime Web + NiiVue)
-- `models/` - PyTorch model checkpoints (not tracked)
-- `paper_draft/` - Manuscript and figures
+From the repository root, run:
 
-## Web app
-
-The `web/` directory contains a browser-based version of the inference pipeline. All computation runs locally in the browser using ONNX Runtime Web (WebGPU where available, otherwise WebAssembly). No data is uploaded to any server.
-
-### Setup
-
-```bash
-# 1. Download ONNX Runtime WASM files
-cd web && bash setup.sh
-
-<<<<<<< monorepo
-# 2. Convert PyTorch models to ONNX (from project root)
-cd .. && python scripts/convert_models.py
-
-# 3. Start development server
+```sh
 pnpm --filter seedseg dev
-=======
-# 2. Start development server
-bash run.sh
->>>>>>> upstream
+pnpm --filter seedseg build
+pnpm --filter seedseg test
+pnpm --filter seedseg test:e2e
 ```
 
-Then open http://localhost:8080 and upload a T1-weighted prostate MRI (NIfTI or DICOM).
+The development server listens on port 8080 with cross-origin isolation. The
+build stages the shared components, scientific package and checksum-pinned
+ONNX Runtime 1.30.0 and QSM WASM files. Models and the inference WASM binary download on first use through
+the shared verified cache. The pinned binary stays outside the site artifact
+because it exceeds the hosting per-file limit. Their URLs, sizes and SHA-256 hashes are recorded in
+`models/seedseg.manifest.json` and the offline inventories.
 
-The model weights are downloaded on first use from the Hugging Face model repository [ash347/seedseg](https://huggingface.co/ash347/seedseg) and cached in the browser. To use your own exported models, point `MODEL_BASE_URL` in `web/js/app/config.js` at a folder containing `seedseg-v2.json` and the networks (`scripts/deploy/export_onnx.py`, then `scripts/deploy/make_w16.py` and `scripts/deploy/rewrite_for_webgpu.py`).
+V2 crops to nonzero voxels, normalizes, resamples when needed, and runs Gaussian
+sliding windows with optional mirroring. It averages per-fold probabilities,
+then ranks 26-connected marker candidates by mean probability. Output NIfTI
+files retain the input grid and affine. The detection report contains marker
+ranks, probabilities, volumes, weighted centroids and a count flag.
 
-## Python pipeline
+This ports [upstream commit c9b328a](https://github.com/astewartau/prostate/tree/c9b328a2e0bc1768c0b75640f5532e2853e7ef31).
+Training and evaluation code remains upstream. Both local adapters use QSM
+homogeneity correction, while training used N4. Off-protocol resampling uses
+linear interpolation, as in the upstream browser. These choices need clinical
+validation against the upstream reference; software parity alone does not
+establish clinical accuracy. The app has no public example because the existing
+synthetic fixture is unsuitable as an example.
 
-### Training
-
-```bash
-python scripts/training/train_one_model.py T1 --mode production --seed 42 \
-    --data-dir data/train --val-dir data/test/prepared \
-    --val-subjects data/val_subjects.txt --output-dir models/
-```
-
-### Inference
-
-```bash
-# ONNX Runtime (CPU or --device cuda); input: T1 NIfTI without bias correction
-python scripts/deploy/seedseg_onnx.py --models <dir with seedseg-v2.json> --input t1.nii --out results/sub \
-    [--k 3] [--folds 0 1 2 3 4] [--no-mirror]
-```
-
-Outputs: `results/sub_marker_prob.nii.gz` and `results/sub_detections.json` (top-K markers with mean probability, centroid in voxel and world coordinates, and `count_flag` when fewer than K candidates were found).
-
-Tests (wiring only, tiny data): `pytest scripts/deploy/tests` and `node --test web/tests/*.test.mjs`.
-
-## Training and evaluation (nnU-Net model)
-
-| Folder | Contents |
-|---|---|
-| `scripts/labels/` | Reference labels from the clinical DICOM data, and automatic labels from planning CT ([README](scripts/labels/README.md)) |
-| `scripts/nnunet/` | nnU-Net dataset conversion, cross-validation splits, training and probability export ([README](scripts/nnunet/README.md)) |
-| `scripts/evaluation/` | Marker detection evaluation: top-K candidates, one-to-one matching within 5 mm, confidence intervals, paired comparisons |
-| `scripts/deploy/` | ONNX export and the ONNX Runtime inference pipeline used by the web app and the OpenRecon container |
-| `scripts/paper/` | Manuscript figures |
-| `scripts/synth/`, `scripts/rerank/` | Synthetic marker insertion and candidate re-ranking |
-
-Patient identifiers in these files are replaced by study codes (S001–S127, E01–E09).
-
-## Citation
-
-Stewart et al. "Deep-Learning-Enabled Differentiation between Intraprostatic Gold Fiducial Markers and Calcification in Quantitative Susceptibility Mapping." bioRxiv (2023). https://doi.org/10.1101/2023.10.26.564293
-
-## Portable command line
-
-`packages/seedseg` contains the runtime-injected pipeline shared by this app and
-`seedseg image.nii.gz results --ensemble 4 --top-n 3`. Portable releases include
-all four verified checkpoints and run offline on Linux x64, Windows x64 and
-Apple silicon. See [the command-line README](../../packages/seedseg/README.md)
-for options, matching download names and validation limits. A representative
-clinical reference is pending; the synthetic transport fixture is not an app
-example or a clinical accuracy claim.
+For offline installation, options, output names and validation commands, see
+the [command-line reference](../../packages/seedseg/README.md). Cite the methods
+from the shared application bar.

@@ -47,9 +47,10 @@ test('composite site contains one checksum-verified runtime store', async () => 
 test('only declared app-scoped runtime families remain in composite app copies', async () => {
   const registry = await loadAppsRegistry();
   const manifest = JSON.parse(await readFile(join(repoRoot, 'runtime-assets', 'manifest.json'), 'utf8'));
-  const ortHashes = new Map(manifest.families.find(family => family.id === 'ort-web').files.map(file => [file.name, file.sha256]));
   for (const app of registry.apps) {
     const appDist = join(dist, app.path);
+    const ortFamily = manifest.families.find(family => app.app_scoped_runtime_families.includes(family.id) && family.files.some(file => file.name === 'ort.webgpu.bundle.min.mjs'));
+    const ortHashes = new Map((ortFamily?.files ?? []).map(file => [file.name, file.sha256]));
     if (app.app_scoped_runtime_families.includes('dcm2niix')) {
       for (const file of ['index.js', 'worker.js', 'dcm2niix.js', 'dcm2niix.wasm']) {
         assert.deepEqual(await readFile(join(appDist, 'dcm2niix', file)),
@@ -61,8 +62,8 @@ test('only declared app-scoped runtime families remain in composite app copies',
     try {
       const wasm = await readdir(join(appDist, 'wasm'));
       const ortFiles = wasm.filter((name) => name.startsWith('ort')).sort();
-      if (app.app_scoped_runtime_families.includes('ort-web')) {
-        for (const name of ['ort-wasm-simd-threaded.jsep.mjs', 'ort-wasm-simd-threaded.jsep.wasm', 'ort.webgpu.bundle.min.mjs']) {
+      if (ortFamily) {
+        for (const { name } of ortFamily.files) {
           assert.ok(ortFiles.includes(name), `${app.id}: missing ${name}`);
         }
         const standaloneWasm = await readdir(join(repoRoot, 'apps', app.id, 'dist', 'wasm'));
@@ -78,7 +79,7 @@ test('only declared app-scoped runtime families remain in composite app copies',
         assert.deepEqual(ortFiles, [], `${app.id} retains app-local ORT files`);
       }
     } catch (error) {
-      if (error.code !== 'ENOENT' || app.app_scoped_runtime_families.includes('ort-web')) throw error;
+      if (error.code !== 'ENOENT' || ortFamily) throw error;
     }
   }
 });
@@ -96,7 +97,7 @@ test('composite references shared runtimes from the root store', async () => {
     }
     workers += 1;
     assert.match(source, /_runtime\/(?:ort-web|nifti-reader)\//, `${app.id} worker does not use shared runtime`);
-    if (app.app_scoped_runtime_families.includes('ort-web')) {
+    if (app.app_scoped_runtime_families.some(id => id === 'ort-web' || id.startsWith('ort-web-'))) {
       assert.match(source, /\.\.\/wasm\/ort\.webgpu\.bundle\.min\.mjs/);
       assert.doesNotMatch(source, /_runtime\/ort-web/);
     }

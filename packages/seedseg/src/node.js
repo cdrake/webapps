@@ -66,9 +66,11 @@ async function loadAsset(asset, { cacheDir, offline, onProgress }) {
   return bytes;
 }
 
-export async function downloadModels({ cacheDir = defaultCacheDir(), offline = offlineByDefault(), onProgress = () => {} } = {}) {
-  for (const asset of MODEL_ASSETS) await loadAsset(asset, { cacheDir, offline, onProgress });
-  return { directory: resolve(cacheDir), count: MODEL_ASSETS.length, installedSha256: installedSha256(MODEL_ASSETS) };
+export async function downloadModels({ cacheDir = defaultCacheDir(), model = 'web', offline = offlineByDefault(), onProgress = () => {} } = {}) {
+  resolveModels(undefined, { model });
+  const assets = MODEL_ASSETS.filter(asset => asset.pipeline === 'legacy-v1' || asset.model === model);
+  for (const asset of assets) await loadAsset(asset, { cacheDir, offline, onProgress });
+  return { directory: resolve(cacheDir), count: assets.length, installedSha256: installedSha256(assets) };
 }
 
 export async function checkInstallation() {
@@ -127,13 +129,19 @@ function integer(value, name, maximum = Infinity) {
   return number;
 }
 
-export function resolveSettings({ models, ensemble, threshold = 0.1, nMarkers = 3, threads } = {}) {
+export function resolveSettings({ pipeline, models, ensemble, folds, model = 'web', mirror = false, threshold = 0.1, nMarkers = 3, threads } = {}) {
   if (models !== undefined && ensemble !== undefined) throw new Error('Choose --models or --ensemble, not both.');
-  const selected = ensemble === undefined ? resolveModels(models) : MODEL_ASSETS.slice(0, integer(ensemble, 'Ensemble', 4));
+  const method = pipeline ?? (models !== undefined || ensemble !== undefined ? 'legacy-v1' : 'nnunet-v2');
+  if (method === 'nnunet-v2' && (models !== undefined || ensemble !== undefined)) throw new Error('Legacy --models/--ensemble require legacy-v1.');
+  if (method === 'legacy-v1' && (folds !== undefined || mirror || model !== 'web')) throw new Error('Folds, mirroring and model variants apply to nnunet-v2.');
+  const selection = ensemble === undefined
+    ? (method === 'legacy-v1' ? models : folds)
+    : MODEL_SEEDS.slice(0, integer(ensemble, 'Ensemble', 4));
+  const selected = resolveModels(selection, { pipeline: method, model });
   const probability = typeof threshold === 'string' && threshold.trim() ? Number(threshold) : threshold;
   const markers = integer(nMarkers, 'Top-N markers', 10);
-  validateSelection({ threshold: probability, nMarkers: markers });
-  return { models: selected, threshold: probability, nMarkers: markers,
+  validateSelection({ threshold: probability, nMarkers: markers, mirror });
+  return { pipeline: method, model, mirror, models: selected, threshold: probability, nMarkers: markers,
     threads: integer(threads ?? process.env.SLURM_CPUS_PER_TASK ?? Math.min(4, availableParallelism()), 'Threads') };
 }
 
@@ -148,10 +156,10 @@ async function assertNewOutput(directory) {
   if (entries.length) throw new Error(`Output directory ${directory} is not empty. Choose a new or empty directory.`);
 }
 
-export async function segment({ input, output, models, ensemble, threshold, nMarkers, threads,
+export async function segment({ input, output, pipeline, models, ensemble, folds, model, mirror, threshold, nMarkers, threads,
   cacheDir = defaultCacheDir(), offline = offlineByDefault(), onProgress = () => {} } = {}) {
   if (!input || !output) throw new Error('An input image and an output directory are required.');
-  const settings = resolveSettings({ models, ensemble, threshold, nMarkers, threads });
+  const settings = resolveSettings({ pipeline, models, ensemble, folds, model, mirror, threshold, nMarkers, threads });
   const destination = resolve(output);
   await assertNewOutput(destination);
   const inputData = arrayBuffer(await readFile(input));
@@ -162,19 +170,22 @@ export async function segment({ input, output, models, ensemble, threshold, nMar
   const qsm = await loadQsm();
   const started = performance.now();
   const result = await runInference(inputData, {
-    selectedModels: settings.models.map(asset => asset.id), threshold: settings.threshold,
+    pipeline: settings.pipeline, model: settings.model, mirror: settings.mirror,
+    folds: settings.models.map(asset => asset.id), selectedModels: settings.models.map(asset => asset.id), threshold: settings.threshold,
     nMarkers: settings.nMarkers, qsm, Tensor: ort.Tensor, decompress: gunzipSync,
     createSession: bytes => ort.InferenceSession.create(bytes, { executionProviders: ['cpu'],
       graphOptimizationLevel: 'all', intraOpNumThreads: settings.threads, interOpNumThreads: 1 }),
     loadModel: async asset => verified.get(asset.id),
     events: { progress: onProgress, log: message => onProgress(undefined, message) },
   });
-  const names = outputNames(settings.models.length);
+  const names = outputNames(settings.models.length, settings.pipeline);
   await mkdir(destination, { recursive: true });
   for (const [stage, { niftiData }] of Object.entries(result.stages)) {
     await writeAtomically(join(destination, names[stage]), new Uint8Array(niftiData));
   }
-  return { output: destination, files: Object.values(names), markerVoxels: result.markerVoxels,
+  if (result.detections) await writeAtomically(join(destination, 'detections.json'), JSON.stringify(result.detections, null, 2) + '\n');
+  return { pipeline: settings.pipeline, model: settings.model, mirror: settings.mirror, detections: result.detections,
+    output: destination, files: [...Object.values(names), ...(result.detections ? ['detections.json'] : [])], markerVoxels: result.markerVoxels,
     models: result.models, threshold: settings.threshold, nMarkers: settings.nMarkers,
     threads: settings.threads, onnxRuntime: ort.env.versions.node, executionProvider: 'cpu',
     qsmVersion: runtimeManifest.version, seconds: (performance.now() - started) / 1000 };

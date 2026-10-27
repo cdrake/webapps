@@ -223,7 +223,7 @@ export async function verifyWorkflow(id, page, { root, resources, desktop, compu
     }
     await expect(page.locator('#runSegmentation')).toBeEnabled({ timeout: 60000 });
     await page.locator('#runSegmentation').click();
-    const stage = id === 'seedseg' ? 'consensus' : 'segmentation';
+    const stage = id === 'seedseg' ? 'markers' : 'segmentation';
     await page.waitForFunction(stage => Boolean(window.app?.inferenceExecutor?.getResult(stage)?.file), stage, { timeout: 600000 });
     const result = await page.evaluate(async stage => {
       const file = window.app.inferenceExecutor.getResult(stage).file;

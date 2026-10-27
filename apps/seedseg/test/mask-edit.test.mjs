@@ -9,9 +9,10 @@ function executorWith(stages) {
   return executor;
 }
 
-test('only the consensus marker mask is editable', () => {
+test('only the legacy consensus and v2 marker masks are editable', () => {
   assert.equal(isEditableStage('consensus'), true);
-  for (const stage of ['input', 'model1', 'model2', 'model3', 'model4', 'avgProb']) assert.equal(isEditableStage(stage), false, stage);
+  assert.equal(isEditableStage('markers'), true);
+  for (const stage of ['input', 'model1', 'model2', 'model3', 'model4', 'avgProb', 'probability']) assert.equal(isEditableStage(stage), false, stage);
 });
 
 test('applying an edit replaces the downloaded file and keeps the pipeline original', () => {

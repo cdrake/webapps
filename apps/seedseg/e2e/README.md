@@ -1,11 +1,11 @@
 Run `pnpm --filter seedseg build` then `pnpm --filter seedseg exec playwright test`.
-The test starts the app locally and runs all four published SeedSeg ONNX models.
+The tests start the production app locally and run the default v2 network and all four legacy SeedSeg models.
 Runtime and model files remain generated assets outside source control.
 
 The synthetic fixture represents a cropped T1 prostate: a uniform body ellipse, a brighter
 prostate ellipsoid and three dark cylindrical fiducials at known voxel coordinates. Besides
 transport, completion, geometry, finite probability maps and downloaded file checksums, the
-test requires exactly three marker components, each centred within one voxel of a planted
+legacy test requires exactly three marker components, each centred within one voxel of a planted
 fiducial and together covering at least 90 % of the planted voxels. An empty or displaced
 marker mask fails. The planted geometry is the reference; no earlier app output is.
 
@@ -14,3 +14,8 @@ region than the planted void (Dice 0.26 against the planted voxels), and on this
 consensus rests mainly on one of the four models; two stay silent. Clinical sensitivity and
 specificity remain unverified: SeedSeg has no public clinical reference case. The fixture is
 not offered as an app example.
+
+The v2 test checks default model identity, native-grid outputs, ranked marker labels,
+detection reports and download checksums. It also blocks the optional dicompare
+host to verify that segmentation starts without it. V2 accuracy needs its own
+clinical reference; the legacy phantom tolerances remain unchanged.

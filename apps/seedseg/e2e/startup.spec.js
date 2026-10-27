@@ -1,0 +1,38 @@
+import { expect, test } from '@playwright/test';
+import { dicomSeries } from '../../../test-utils/dicom-fixture.mjs';
+import { readNifti } from '../../../packages/components/src/file-io/NiftiUtils.js';
+
+test.use({ serviceWorkers: 'block' });
+
+test('DICOM conversion completes while the optional report host remains stalled', async ({ page }) => {
+  test.setTimeout(120000);
+  const pending = [];
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.route('https://dicompare.neurodesk.org/**', route => {
+    pending.push(route);
+  });
+  try {
+    await page.goto('/');
+    await page.waitForFunction(() => Boolean(globalThis.neurodeskAutomation));
+    // Keep a real request to the report's module unresolved during conversion.
+    await page.evaluate(() => {
+      fetch('https://dicompare.neurodesk.org/embed/DicompareController.js').catch(() => {});
+    });
+    await expect.poll(() => pending.length).toBe(1);
+    await page.locator('#unifiedFiles').setInputFiles(dicomSeries({ series: 609, extension: '' }));
+    await expect(page.locator('#runSegmentation')).toBeEnabled({ timeout: 90000 });
+    const converted = await page.evaluate(async () => {
+      const file = window.app.fileIOController.getActiveFile();
+      return { name: file.name, bytes: Array.from(new Uint8Array(await file.arrayBuffer())), retained: window.app.retainedDicomFiles.length };
+    });
+    expect(converted.name).toMatch(/\.nii(\.gz)?$/);
+    expect(converted.retained).toBe(4);
+    expect((await readNifti(Uint8Array.from(converted.bytes))).dims).toEqual([16, 16, 4]);
+    expect(pending).toHaveLength(1);
+    await expect(page.locator('#dicompareReportBtn')).toBeEnabled();
+    expect(errors).toEqual([]);
+  } finally {
+    await Promise.all(pending.map(route => route.abort().catch(() => {})));
+  }
+});

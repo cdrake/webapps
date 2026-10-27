@@ -100,15 +100,9 @@
         <h2 class="section-title"><button type="button" class="section-toggle" data-disclosure-toggle>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           Inference Settings
-<<<<<<< monorepo
         </button></h2>
         <div class="section-content" data-disclosure-panel>
           <!-- Model selection -->
-=======
-        </h2>
-        <div class="section-content">
-          <!-- Network selection -->
->>>>>>> upstream
           <div class="param-group">
             <label class="param-label">Networks <span class="info-icon">i<span class="info-tooltip">The model consists of 5 networks from 5-fold cross-validation. Select one network, or several to average their probability maps. The 5-network ensemble is the configuration that was evaluated on independent patients; a single network is faster. Each network is downloaded once (about 200 MB) and cached by the browser.</span></span></label>
             <div class="model-checkbox-group" id="foldCheckboxes">
@@ -127,8 +121,8 @@
           </div>
 
           <!-- Advanced -->
-          <details class="param-group advanced-settings">
-            <summary class="param-label">Advanced</summary>
+          <details class="nd-sidebar-section">
+            <summary class="nd-section-title">Advanced</summary>
             <label class="checkbox-label"><input type="checkbox" id="legacyModel"> Legacy model (v1, 4-network U-Net) <span class="info-icon">i<span class="info-tooltip">The previously released model: a consensus of four 3D U-Nets. Kept for comparison; the network and mirroring settings above do not apply to it.</span></span></label>
           </details>
 
@@ -166,14 +160,9 @@
         <h2 class="section-title"><button type="button" class="section-toggle" data-disclosure-toggle>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
           Results
-<<<<<<< monorepo
         </button></h2>
         <div class="section-content" data-disclosure-panel>
-=======
-        </h2>
-        <div class="section-content">
-          <div class="detections-panel hidden" id="detectionsPanel"></div>
->>>>>>> upstream
+          <div id="detectionsPanel" class="hidden"></div>
           <div class="stage-buttons-grid" id="stageButtons"></div>
           <button class="btn btn-secondary btn-sm" id="clearResults" style="width: 100%; margin-top: var(--nd-space-sm);">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
@@ -362,16 +351,16 @@
       <h4>What this means</h4>
       <ul class="privacy-list">
         <li>No data is uploaded to any server or cloud service</li>
-        <li>No internet connection is required after the page loads</li>
+        <li>Runtime and model downloads are cached for reuse</li>
         <li>Sensitive patient data remains on your computer at all times</li>
         <li>There is no need to anonymise or de-identify your data before use</li>
       </ul>
 
       <h4>How it works</h4>
-      <p>SeedSeg uses ONNX Runtime Web to run deep learning models directly in the browser via WebAssembly. Your NIfTI or DICOM files are read into browser memory, processed locally, and results are displayed without any network transfer.</p>
+      <p>SeedSeg uses ONNX Runtime Web to run deep learning models directly in the browser via WebGPU or WebAssembly. Your NIfTI or DICOM files are read into browser memory, processed locally, and results are displayed without any network transfer.</p>
 
       <h4>Third-party services</h4>
-      <p>SeedSeg does not use analytics, tracking, cookies, or any external services. The only network requests are loading the application itself and downloading model files (which are cached locally).</p>
+      <p>The website downloads application assets and pinned models, and counts page views using the shared site analytics. The optional dicompare report loads its tools when requested. These requests contain no input images or DICOM metadata.</p>
     </div>
   </div>
 </div>
