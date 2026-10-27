@@ -13,12 +13,13 @@ import { SeedSegDicomInput } from './controllers/SeedSegDicomInput.js';
 import { DicompareReportRenderer } from '@neurodesk/webapp-components/ui';
 import { ViewerController } from '@neurodesk/webapp-components';
 import { SeedSegPipeline } from './controllers/SeedSegPipeline.js';
-import { ConsoleOutput, ProgressManager, ModalManager, bindWindowControls, createMaskEditor } from '@neurodesk/webapp-components/ui';
+import { ConsoleOutput, ProgressManager, ModalManager, bindWindowControls, createMaskEditor, renderInfoIcon } from '@neurodesk/webapp-components/ui';
 import { createNiftiFromVolume, readNifti } from '@neurodesk/webapp-components/file-io';
 import * as Config from './app/config.js';
 import { resolveModels, validateSelection } from '../vendor/seedseg/src/assets.js';
 import { summarizeMarkers } from '../vendor/seedseg/src/nnunet.js';
-import { clearResultsAfterEditing, isEditableStage, replaceWithEdit, stageLabel } from './app/mask-edit.js';
+import { detectionsHint } from './app/detections.js';
+import { clearResultsAfterEditing, isEditableStage, markerLabelNames, replaceWithEdit, stageLabel } from './app/mask-edit.js';
 
 class SeedSegApp {
   constructor() {
@@ -81,12 +82,13 @@ class SeedSegApp {
       updateOutput: (msg) => this.updateOutput(msg)
     });
 
-    this.maskEditor = createMaskEditor({
+    this.maskEditorOptions = {
       nv: this.nv,
       onApply: (stage, file, { original }) => this.onMaskApplied(stage, file, original),
       onCancel: () => this.onMaskEditClosed(),
       onError: (_stage, error) => this.onMaskEditError(error)
-    });
+    };
+    this.maskEditor = createMaskEditor(this.maskEditorOptions);
     this.maskEditor.addEventListener('nd-mask-edit-end', () => this.setEditButtonsEnabled(true));
     this.maskEditor.addEventListener('nd-mask-edit-start', (event) => this.progress.setText(event.detail.message));
     document.querySelector('main.app-main > .viewer-toolbar').after(this.maskEditor);
@@ -769,6 +771,8 @@ class SeedSegApp {
     document.getElementById('statusText')?.classList.remove('error');
     try {
       await this.showResult(stage);
+      const labelNames = markerLabelNames(stage, this.inferenceExecutor.report?.detections?.k);
+      this.maskEditor.configure({ ...this.maskEditorOptions, labelNames });
       const started = await this.maskEditor.start({
         stage,
         file: result.file,
@@ -901,12 +905,14 @@ class SeedSegApp {
       return `<tr>
         <td>${m.rank}</td><td>${m.meanProb.toFixed(3)}</td><td>${m.volumeMm3.toFixed(0)}</td><td><button type="button" class="nd-btn nd-btn-secondary nd-btn-sm" data-world="${m.centroidWorldMm.join(',')}" aria-label="Show marker ${m.rank} at ${w} mm">${w}</button></td></tr>`;
     }).join('');
-    const next = det.edited ? 'From the edited mask.' : det.others.length ? `Next candidate: mean probability ${det.others[0].meanProb.toFixed(3)}.` : '';
-    const nets = det.folds.length === 5 ? '5-network ensemble' : `network${det.folds.length > 1 ? 's' : ''} ${det.folds.map((f) => Number(f) + 1).join(', ')} of 5`;
-    const t = ` Configuration: ${nets}, mirroring ${det.mirror ? 'on' : 'off'}, K = ${det.k}, ${det.backend === 'webgpu' ? 'WebGPU' : det.backend === 'wasm' ? 'WebAssembly' : det.backend}` +
-      (det.timing?.total ? `, ${det.timing.total.toFixed(0)} s.` : '.');
+    const hint = detectionsHint(det);
     panel.innerHTML = `${flag}<div class="nd-table-scroll"><table class="nd-data-table"><thead><tr><th>#</th><th>Mean p</th><th>mm³</th><th>Position (mm)</th></tr></thead>
-      <tbody>${rows}</tbody></table></div><div class="nd-message">${next}${t}</div>`;
+      <tbody>${rows}</tbody></table></div>`;
+    const meta = document.createElement('p');
+    meta.className = 'nd-hint';
+    meta.append(hint.text, ' ', renderInfoIcon(hint.details, { label: 'Inference settings' }));
+    panel.append(meta);
+    bindInfoTooltips(meta);
     panel.classList.remove('hidden');
     panel.querySelectorAll('button[data-world]').forEach((tr) => {
       tr.addEventListener('click', () => {
@@ -991,9 +997,9 @@ class SeedSegApp {
     if (footer) footer.style.display = 'none';
 
     try {
-      const { DicompareController } = await import('https://dicompare.neurodesk.org/embed/DicompareController.js');
+      const { DicompareController } = await import('https://webapps.neurodesk.org/dicompare/embed/DicompareController.js');
       this.dicompareController ||= new DicompareController({
-        schemaUrl: 'https://dicompare.neurodesk.org/schemas/SeedSeg_Prostate_T1w_v1.0.json',
+        schemaUrl: 'https://webapps.neurodesk.org/dicompare/schemas/SeedSeg_Prostate_T1w_v1.0.json',
         updateOutput: (msg) => this.updateOutput(msg)
       });
       if (!this.dicompareController.hasFiles()) {

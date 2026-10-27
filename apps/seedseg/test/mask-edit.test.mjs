@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { PipelineExecutor } from '../../../packages/components/src/inference/PipelineExecutor.js';
-import { clearResultsAfterEditing, isEditableStage, replaceWithEdit, stageLabel } from '../web/js/app/mask-edit.js';
+import { clearResultsAfterEditing, isEditableStage, markerLabelNames, replaceWithEdit, stageLabel } from '../web/js/app/mask-edit.js';
 
 function executorWith(stages) {
   const executor = new PipelineExecutor({ workerUrl: 'unused.js' });
@@ -37,4 +37,10 @@ test('clearing results closes the open edit session before the results go', asyn
   await clearResultsAfterEditing(editor, executor);
   assert.deepEqual(calls, [['cancel', 1]]);
   assert.deepEqual(executor.results, {});
+});
+
+test('the ranked marker mask offers one label per implanted marker', () => {
+  assert.deepEqual(markerLabelNames('markers', 3), { 1: 'Marker 1', 2: 'Marker 2', 3: 'Marker 3' });
+  assert.equal(markerLabelNames('consensus', 3), undefined);
+  assert.equal(markerLabelNames('markers', undefined), undefined);
 });

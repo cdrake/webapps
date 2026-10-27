@@ -9,7 +9,7 @@ test('DICOM conversion completes while the optional report host remains stalled'
   const pending = [];
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
-  await page.route('https://dicompare.neurodesk.org/**', route => {
+  await page.route('https://webapps.neurodesk.org/dicompare/**', route => {
     pending.push(route);
   });
   try {
@@ -17,7 +17,7 @@ test('DICOM conversion completes while the optional report host remains stalled'
     await page.waitForFunction(() => Boolean(globalThis.neurodeskAutomation));
     // Keep a real request to the report's module unresolved during conversion.
     await page.evaluate(() => {
-      fetch('https://dicompare.neurodesk.org/embed/DicompareController.js').catch(() => {});
+      fetch('https://webapps.neurodesk.org/dicompare/embed/DicompareController.js').catch(() => {});
     });
     await expect.poll(() => pending.length).toBe(1);
     await page.locator('#unifiedFiles').setInputFiles(dicomSeries({ series: 609, extension: '' }));

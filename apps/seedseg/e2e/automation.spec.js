@@ -37,7 +37,7 @@ async function downloadRow(page, row) {
 }
 
 test('NIfTI inputs remain usable when the optional DICOM report host is unavailable', async ({ page }) => {
-  await page.route('https://dicompare.neurodesk.org/**', route => route.abort());
+  await page.route('https://webapps.neurodesk.org/dicompare/**', route => route.abort());
   await page.goto('/');
   await page.waitForFunction(() => Boolean(globalThis.neurodeskAutomation), undefined, { timeout: 15000 });
   await page.locator('#unifiedFiles').setInputFiles({ name: 'synthetic-prostate-T1w.nii', mimeType: 'application/x-nifti', buffer: image });
@@ -135,7 +135,7 @@ test('the consensus mask can be corrected in the viewer and downloads edited', a
 
 test('default nnU-Net v2 produces native-grid probabilities, ranked markers and a detection report', async ({ page }, testInfo) => {
   test.setTimeout(600000);
-  await page.route('https://dicompare.neurodesk.org/**', route => route.abort());
+  await page.route('https://webapps.neurodesk.org/dicompare/**', route => route.abort());
   await page.goto('/');
   await page.waitForFunction(() => Boolean(globalThis.neurodeskAutomation));
   await page.locator('#neurodesk-input-transfer').setInputFiles({ name: 'synthetic-prostate-t1.nii', mimeType: 'application/x-nifti', buffer: image });
@@ -186,6 +186,10 @@ test('default nnU-Net v2 produces native-grid probabilities, ranked markers and 
   await row.getByRole('button', { name: 'Edit', exact: true }).click();
   const editor = page.locator('nd-mask-editor');
   await expect(editor).toBeVisible();
+  const labels = editor.getByLabel('Label');
+  await expect(labels.locator('option')).toHaveText(['1 — Marker 1', '2 — Marker 2', '3 — Marker 3']);
+  await labels.selectOption('3');
+
   const box = await page.locator('#gl1').boundingBox();
   await page.mouse.move(box.x + box.width / 2 - 60, box.y + box.height / 2);
   await page.mouse.down();
@@ -206,6 +210,7 @@ test('default nnU-Net v2 produces native-grid probabilities, ranked markers and 
   const counts = new Map();
   for (const value of after.data) if (value > 0) counts.set(value, (counts.get(value) ?? 0) + 1);
   const ranks = [...counts.keys()].sort((a, b) => a - b);
+  expect(ranks).toContain(3);
   await expect(panel.locator('tbody tr')).toHaveCount(ranks.length);
   for (const [index, rank] of ranks.entries()) await expect(panel.locator('tbody tr').nth(index).locator('td').nth(2)).toHaveText(String(counts.get(rank)));
   const editedDetections = await page.evaluate(() => window.app.inferenceExecutor.report.detections);
