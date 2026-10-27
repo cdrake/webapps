@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { dicomSeries } from '../../../test-utils/dicom-fixture.mjs';
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -23,7 +24,7 @@ const MAX_MARKER_VOXELS_PER_PLANTED_VOXEL = 10;
 
 async function runEnsemble(page) {
   await page.goto('/');
-  await page.waitForFunction(() => Boolean(globalThis.neurodeskAutomation));
+  await page.waitForFunction(() => Boolean(globalThis.neurodeskAutomation), undefined, { timeout: 30000 });
   await page.locator('#neurodesk-input-transfer').setInputFiles({ name: 'synthetic-prostate-t1.nii', mimeType: 'application/x-nifti', buffer: image });
   await page.evaluate(() => neurodeskAutomation.dispatch('adopt', { role: 'image' }));
   await page.evaluate(() => neurodeskAutomation.dispatch('start', { operation: 'segment', parameters: { pipeline: 'legacy-v1', backend: 'wasm' } }));
@@ -44,6 +45,47 @@ test('NIfTI inputs remain usable when the optional DICOM report host is unavaila
   await page.waitForFunction(() => Boolean(globalThis.neurodeskAutomation), undefined, { timeout: 15000 });
   await page.locator('#unifiedFiles').setInputFiles({ name: 'synthetic-prostate-T1w.nii', mimeType: 'application/x-nifti', buffer: image });
   await expect(page.locator('#runSegmentation')).toBeEnabled();
+});
+
+test('DICOM conversion completes while the optional report host stalls', async ({ page }) => {
+  test.setTimeout(60000);
+  const held = [];
+  await page.route('https://dicompare.neurodesk.org/**', route => { held.push(route); });
+  try {
+    await page.goto('/');
+    await page.waitForFunction(() => Boolean(globalThis.neurodeskAutomation));
+    await page.locator('#unifiedFiles').setInputFiles(dicomSeries());
+    await expect(page.locator('#runSegmentation')).toBeEnabled({ timeout: 30000 });
+    await expect(page.locator('#dicompareReportBtn')).toBeEnabled();
+  } finally {
+    await Promise.all(held.map(route => route.abort().catch(() => {})));
+  }
+});
+
+test('DICOM reports load local assets and show a recoverable error when Python is unavailable', async ({ page }) => {
+  test.setTimeout(60000);
+  const remoteRequests = [];
+  const localResponses = new Map();
+  await page.context().route('https://dicompare.neurodesk.org/**', route => {
+    remoteRequests.push(route.request().url());
+    return route.abort();
+  });
+  await page.context().route('https://cdn.jsdelivr.net/pyodide/**', route => route.abort());
+  page.on('response', response => {
+    if (response.url().includes('/vendor/dicompare/')) localResponses.set(new URL(response.url()).pathname.split('/').at(-1), response.status());
+  });
+  await page.goto('/');
+  await page.waitForFunction(() => Boolean(globalThis.neurodeskAutomation), undefined, { timeout: 15000 });
+  await page.locator('#unifiedFiles').setInputFiles(dicomSeries());
+  await expect(page.locator('#runSegmentation')).toBeEnabled({ timeout: 30000 });
+  await page.locator('#dicompareReportBtn').click();
+  await expect(page.locator('#dicompareModalBody')).toContainText('Validation failed', { timeout: 15000 });
+  expect(localResponses.get('DicompareController.js')).toBe(200);
+  expect(localResponses.get('dicompare-worker.js')).toBe(200);
+  expect(remoteRequests).toEqual([]);
+  const schema = await page.request.get('/vendor/dicompare/SeedSeg_Prostate_T1w_v1.0.json');
+  expect(schema.status()).toBe(200);
+  expect((await schema.json()).name).toBe('SeedSeg Prostate T1-Weighted Protocol');
 });
 
 test('real legacy SeedSeg ensemble finds the three planted fiducials of the synthetic prostate fixture', async ({ page }) => {

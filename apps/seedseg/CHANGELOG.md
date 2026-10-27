@@ -28,6 +28,10 @@
 
 ### Patch Changes
 
+- Stage the canonical Dicompare controller, worker and SeedSeg schema locally. Keep optional reporting lazy while removing the remote report host from its code and schema loading path. Bound browser-test startup waits independently of scientific processing.
+  - @neurodesk/seedseg@0.6.20261027
+- Load optional DICOM reporting only when requested so an unavailable or stalled report host cannot block startup or scan conversion.
+  - @neurodesk/seedseg@0.6.20261027
 - Wait until the Report button is pressed before loading optional DICOM reporting, so a stalled report host cannot delay scan conversion.
   - @neurodesk/seedseg@0.6.20261027
 - Updated dependencies

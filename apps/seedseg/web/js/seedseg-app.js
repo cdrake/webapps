@@ -997,10 +997,10 @@ class SeedSegApp {
     if (footer) footer.style.display = 'none';
 
     try {
-      const { DicompareController } = await import('https://webapps.neurodesk.org/dicompare/embed/DicompareController.js');
+      const { DicompareController } = await import('../vendor/dicompare/DicompareController.js');
       this.dicompareController ||= new DicompareController({
-        schemaUrl: 'https://webapps.neurodesk.org/dicompare/schemas/SeedSeg_Prostate_T1w_v1.0.json',
-        workerUrl: 'https://webapps.neurodesk.org/dicompare/embed/dicompare-worker.js',
+        schemaUrl: new URL('../vendor/dicompare/SeedSeg_Prostate_T1w_v1.0.json', import.meta.url).href,
+        workerUrl: new URL('../vendor/dicompare/dicompare-worker.js', import.meta.url).href,
         updateOutput: (msg) => this.updateOutput(msg)
       });
       if (!this.dicompareController.hasFiles()) {
