@@ -1308,6 +1308,23 @@ mod tests {
         assert_eq!(section.refinements.len(), 1);
     }
 
+    // The browser made its mask with this recipe, so exports must describe it even where it
+    // equals the general default and the inversion (QSMART) has a default mask of its own.
+    #[test]
+    fn a_qsmart_export_keeps_the_mask_recipe_the_browser_used() {
+        let mut config = qsmxt_engine::PipelineConfig::default();
+        config.inversion.algorithm = qsmxt_engine::QsmAlgorithm::Qsmart;
+        apply_mask_section(&mut config, "phase-quality,threshold:otsu,dilate:1,fill-holes:0,erode:1").unwrap();
+        let command = qsmxt_engine::generate_command(&config);
+        assert!(command.contains("--mask-preset robust-threshold"), "{command}");
+        let back = qsmxt_engine::PipelineConfig::from_toml(&config.to_toml().unwrap()).unwrap();
+        assert_eq!(back.normalised().0.masking.sections, config.masking.sections);
+        // Where the mark decides nothing it is not set, so the settings file does not carry it.
+        let mut rts = qsmxt_engine::PipelineConfig::default();
+        apply_mask_section(&mut rts, "phase-quality,threshold:otsu,dilate:1,fill-holes:0,erode:1").unwrap();
+        assert!(!rts.masking.recipe_chosen);
+    }
+
     #[test]
     fn apply_mask_section_rejects_what_it_cannot_parse() {
         let mut config = qsmxt_engine::PipelineConfig::default();
@@ -1436,6 +1453,11 @@ fn apply_mask_section(
         generator,
         refinements: ops,
     }];
+    // The browser made its mask with this recipe, so it is chosen: without the mark the engine
+    // swaps the general default for the inversion's own (QSMART's BET) in command and methods.
+    // Keep the mark only where normalising does, so other runs' settings files do not carry it.
+    config.masking.recipe_chosen = true;
+    config.masking.recipe_chosen = config.normalised().0.masking.recipe_chosen;
     Ok(())
 }
 

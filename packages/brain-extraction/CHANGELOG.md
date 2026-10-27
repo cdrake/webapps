@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- c85586a: Rebuild the BET kernel from QSM.rs 95be94b, the commit QSMbly's browser bundle now locks. BET's source is unchanged between the two commits and the mask on the test image is identical; only embedded source paths differ.
+- c85586a: Rebuild the BET kernel from QSM.rs 95be94b, the commit QSMbly's browser bundle now locks. BET's source is unchanged between the two commits and the mask on the test image is identical. The module stays 84,345 bytes, with different embedded source paths and code layout.
 
 ## 0.5.20261025
 
