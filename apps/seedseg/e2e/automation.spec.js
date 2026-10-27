@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readNifti } from '../../../packages/components/src/file-io/NiftiUtils.js';
+import { createNiftiFromVolume, readNifti } from '../../../packages/components/src/file-io/NiftiUtils.js';
 import { dice, maskVoxels } from '../../../test-utils/dice.mjs';
 import { markerComponents, matchComponentsToSeeds } from '../test/marker-components.mjs';
 import { createProstateFixture, createProstateSeedMask, PROSTATE_FIXTURE_DIMS, PROSTATE_FIXTURE_SEEDS } from '../test/prostate-fixture.mjs';
@@ -163,6 +163,18 @@ test('the v2 marker mask can be corrected in the viewer and downloads edited', a
 
   const edited = await downloadRow(page, row);
   expect(edited.name).toBe(original.name);
+  // The marker list is recomputed from the edited mask: one row per rank, its volume the rank's voxels.
+  const editedMask = await readNifti(edited.bytes);
+  const counts = new Map();
+  for (const value of editedMask.data) if (value > 0) counts.set(value, (counts.get(value) || 0) + 1);
+  const panel = page.locator('#detectionsPanel');
+  await expect(panel.locator('.nd-hint')).toContainText('From the edited mask');
+  const ranks = [...counts.keys()].sort((a, b) => a - b);
+  await expect(panel.locator('tbody tr')).toHaveCount(ranks.length);
+  for (const [row, rank] of ranks.entries()) {
+    await expect(panel.locator('tbody tr').nth(row).locator('td').nth(2)).toHaveText(String(counts.get(rank)));
+  }
+  expect((await page.evaluate(() => window.app.inferenceExecutor.metrics.markers.map(marker => marker.nVoxels)))).toEqual(ranks.map(rank => counts.get(rank)));
   const header = new DataView(edited.bytes.buffer, edited.bytes.byteOffset, edited.bytes.byteLength);
   expect(header.getInt16(70, true)).toBe(2);
   const before = await readNifti(original.bytes);
@@ -175,4 +187,28 @@ test('the v2 marker mask can be corrected in the viewer and downloads edited', a
   await page.locator('#clearResults').click();
   await expect(editor).toBeHidden();
   await expect(row).toHaveCount(0);
+});
+
+// NiiVue shows volumes reoriented to RAS. On an x-flipped image, native voxel x = 10 is displayed at
+// x = 53 of 64, so marker navigation must go through world millimetres.
+test('Show marker places the crosshair on the marker of an oriented image', async ({ page }) => {
+  const n = 64;
+  const img = new Float32Array(n ** 3).map((_, index) => 100 + (index % n));
+  const affine = [[-1, 0, 0, 31], [0, 0, 1.5, -40], [0, 2, 0, -60], [0, 0, 0, 1]];
+  const bytes = Buffer.from(createNiftiFromVolume({ img, hdr: { dims: [n, n, n], pixDims: [1, 2, 1.5], affine } }));
+  await page.goto('/');
+  await page.waitForFunction(() => Boolean(globalThis.neurodeskAutomation));
+  await page.evaluate(data => window.app.fileIOController.setFile(new File([new Uint8Array(data)], 'oriented.nii')), [...bytes]);
+  await page.waitForFunction(() => window.app.nv.volumes?.length === 1);
+  const voxel = [10, 20, 30];
+  const mm = [0, 1, 2].map(r => affine[r][0] * voxel[0] + affine[r][1] * voxel[1] + affine[r][2] * voxel[2] + affine[r][3]);
+  await page.evaluate(([centroidVox, centroidWorldMm]) => window.app.showDetections({
+    k: 1, nCandidates: 1, countFlag: false, others: [], folds: [0], mirror: false, backend: 'wasm', timing: { total: 1 },
+    markers: [{ rank: 1, meanProb: 0.9, nVoxels: 1, volumeMm3: 3, centroidVox, centroidWorldMm }],
+  }), [voxel, mm]);
+  // A run reveals the Results section before its detections arrive.
+  await page.evaluate(() => document.getElementById('resultsSection').classList.remove('hidden'));
+  await page.locator('#detectionsPanel').getByRole('button', { name: 'Show marker 1' }).click();
+  const crosshair = await page.evaluate(() => Array.from(window.app.nv.frac2mm(window.app.nv.scene.crosshairPos)).slice(0, 3));
+  for (let axis = 0; axis < 3; axis++) expect(Math.abs(crosshair[axis] - mm[axis]), `axis ${axis}: ${crosshair} vs ${mm}`).toBeLessThan(0.01);
 });

@@ -24,7 +24,10 @@ test('model and numeric guards preserve published order and reject invalid selec
     assert.throws(() => resolveSettings({ model: 'v1', models }), /distinct|Unknown|four/);
   }
   assert.throws(() => resolveSettings({ model: 'v3' }), /Unknown SeedSeg model/);
-  assert.throws(() => resolveSettings({ ensemble: 1 }), /v1 checkpoints/);
+  assert.throws(() => resolveSettings({ model: 'v2', ensemble: 1 }), /v1 checkpoints/);
+  assert.throws(() => resolveSettings({ model: 'v2', models: [42] }), /v1 checkpoints/);
+  assert.throws(() => resolveSettings({ models: [42], folds: [0] }), /choose one model/);
+  assert.throws(() => resolveSettings({ ensemble: 2, mirror: true }), /choose one model/);
   assert.throws(() => resolveSettings({ model: 'v1', folds: [0] }), /apply to v2/);
   assert.throws(() => resolveSettings({ model: 'v1', mirror: true }), /apply to v2/);
   assert.throws(() => resolveSettings({ model: 'v1', models: [42], ensemble: 1 }), /Choose/);
@@ -32,6 +35,16 @@ test('model and numeric guards preserve published order and reject invalid selec
   for (const threshold of [-0.1, 1.1, NaN, Infinity, '', 'abc']) assert.throws(() => resolveSettings({ threshold }), /Threshold/);
   for (const nMarkers of [0, 11, 1.5, 'abc']) assert.throws(() => resolveSettings({ nMarkers }), /Top-N/);
   for (const threads of [0, -1, 1.5, 'abc']) assert.throws(() => resolveSettings({ threads }), /Threads/);
+});
+
+test('v1 checkpoint selections without a model keep running the legacy v1 consensus', () => {
+  const byModels = resolveSettings({ models: [123] });
+  assert.equal(byModels.model, 'v1');
+  assert.deepEqual(byModels.models.map(asset => asset.seed), [123]);
+  const byEnsemble = resolveSettings({ ensemble: 2 });
+  assert.equal(byEnsemble.model, 'v1');
+  assert.deepEqual(byEnsemble.models.map(asset => asset.seed), [42, 123]);
+  assert.equal(resolveSettings({ folds: [1] }).model, 'v2');
 });
 
 test('CLI rejects unknown, repeated and command-inapplicable options before work', () => {

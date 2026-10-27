@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { readNifti } from '@neurodesk/webapp-components/file-io/nifti';
 import { browserReference, caseParameters } from './browser-reference.mjs';
+import { compareV2Outputs } from './v2-parity.mjs';
 import { outputNames } from '../src/results.js';
 import { MODEL_ASSETS } from '../src/assets.js';
 import { createProstateFixture, createProstateSeedMask, PROSTATE_FIXTURE_DIMS, PROSTATE_FIXTURE_SEEDS } from '../../../apps/seedseg/test/prostate-fixture.mjs';
@@ -55,7 +56,8 @@ try {
   await mkdir(emptyModels);
   failed([input, guardedOutput, '--model', 'v1', '--ensemble', '5'], /positive integer.*4/);
   failed([input, guardedOutput, '--folds', '5'], /Unknown SeedSeg network/);
-  failed([input, guardedOutput, '--ensemble', '2'], /use --folds with v2/);
+  failed([input, guardedOutput, '--model', 'v2', '--ensemble', '2'], /use folds with model v2/);
+  failed([input, guardedOutput, '--models', '42', '--folds', '0'], /choose one model/);
   failed([input, guardedOutput, '--threshold', 'NaN'], /finite number/);
   failed([input, guardedOutput, '--top-n', '0'], /positive integer/);
   failed([input, guardedOutput, '--cache-dir', emptyModels, '--offline'], /missing.*offline model/);
@@ -86,7 +88,7 @@ try {
     let maximumProbabilityDifference = 0;
     let markers;
     const markerAgreement = [];
-    let probability;
+    const v2 = { native: {}, browser: {} };
     for (const [stage, name] of Object.entries(names)) {
       const native = await readNifti(await readFile(join(output, name)));
       const browser = await readNifti(web.files[stage]);
@@ -99,35 +101,21 @@ try {
         assert.deepEqual(native.data, browser.data, `${spec.id}: exact native/browser marker mask`);
         markers = native.data;
       } else if (stage === markerStage) {
-        // v2's fp16-stored weights run through ONNX Runtime Node 1.29 and Web 1.21 differ by up to
-        // 0.036 in probability (0.16 with mirroring; measured 2026-10-27), which moves voxels at the
-        // threshold: 1 of 323 marker voxels with five networks, 4 of 93 at threshold 0.5, 3 of 55
-        // with mirroring. Gate that every voxel where
-        // the masks disagree lies within the measured probability difference of the threshold, and
-        // that each ranked marker's centroid moves by at most 0.25 voxel.
-        assert.ok(probability, `${spec.id}: the probability map is compared before the markers`);
-        const ranks = native.data.reduce((top, value) => Math.max(top, value), 0);
-        assert.equal(browser.data.reduce((top, value) => Math.max(top, value), 0), ranks, `${spec.id}: native and browser report the same number of markers`);
-        let disagreeing = 0;
-        for (let index = 0; index < native.data.length; index++) {
-          if (native.data[index] === browser.data[index]) continue;
-          disagreeing++;
-          const margin = Math.abs(probability[index] - spec.threshold);
-          assert.ok(margin <= maximumProbabilityDifference, `${spec.id}: voxel ${index} disagrees ${margin} from the threshold`);
-        }
-        for (let rank = 1; rank <= ranks; rank++) {
-          const [left] = markerComponents(native.data.map(value => (value === rank ? 1 : 0)), PROSTATE_FIXTURE_DIMS);
-          const [right] = markerComponents(browser.data.map(value => (value === rank ? 1 : 0)), PROSTATE_FIXTURE_DIMS);
-          const shift = Math.hypot(...left.centroid.map((value, axis) => value - right.centroid[axis]));
-          assert.ok(shift <= 0.25, `${spec.id}: marker ${rank} native/browser centroid shift ${shift}`);
-          markerAgreement.push({ rank, voxels: [left.voxels, right.voxels], centroidShift: shift });
-        }
-        markerAgreement.push({ disagreeingVoxels: disagreeing });
+        v2.native.markers = native.data;
+        v2.browser.markers = browser.data;
         markers = native.data;
       } else {
         for (let index = 0; index < native.data.length; index++) maximumProbabilityDifference = Math.max(maximumProbabilityDifference, Math.abs(native.data[index] - browser.data[index]));
-        if (stage === 'probability') probability = native.data;
+        if (stage === 'probability') {
+          v2.native.probability = native.data;
+          v2.browser.probability = browser.data;
+        }
       }
+    }
+    if (parameters.model === 'v2') {
+      // Fixed limits, not this run's own differences: see V2_PARITY_LIMITS.
+      const agreement = compareV2Outputs({ native: v2.native, browser: v2.browser, dims: PROSTATE_FIXTURE_DIMS, mirror: Boolean(spec.mirror) });
+      markerAgreement.push(...agreement.markers);
     }
     const components = markerComponents(markers, PROSTATE_FIXTURE_DIMS);
     assert.ok(components.length <= spec.topN);

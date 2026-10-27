@@ -15,9 +15,10 @@ import { DicompareReportRenderer } from '@neurodesk/webapp-components/ui';
 import { ViewerController } from '@neurodesk/webapp-components';
 import { SeedSegPipeline } from './controllers/SeedSegPipeline.js';
 import { ConsoleOutput, ProgressManager, ModalManager, bindWindowControls, createMaskEditor } from '@neurodesk/webapp-components/ui';
-import { createNiftiFromVolume } from '@neurodesk/webapp-components/file-io';
+import { createNiftiFromVolume, readNifti } from '@neurodesk/webapp-components/file-io';
 import * as Config from './app/config.js';
 import { MODEL_SEEDS } from '../vendor/seedseg/src/assets.js';
+import { summarizeMarkers } from '../vendor/seedseg/src/nnunet.js';
 import { clearResultsAfterEditing, isEditableStage, replaceWithEdit, stageLabel } from './app/mask-edit.js';
 
 class SeedSegApp {
@@ -818,7 +819,21 @@ class SeedSegApp {
     if (showBtn) showBtn.textContent = stageLabel(SeedSegApp.STAGE_NAMES[stage] || stage, this.inferenceExecutor.getResult(stage));
     this.updateOutput(`Applied manual edits to ${file.name}`);
     this.onMaskEditClosed();
+    if (stage === 'markers') await this.refreshDetections(file);
     await this.renderResult(stage);
+  }
+
+  /** Recomputes the marker list from an edited marker mask and the run's probability map. */
+  async refreshDetections(file) {
+    const detections = this.inferenceExecutor.metrics;
+    const probabilityFile = this.inferenceExecutor.getResult('probability')?.file;
+    if (!detections || !probabilityFile) return;
+    const [mask, probability] = await Promise.all([file, probabilityFile].map(async (item) => readNifti(await item.arrayBuffer())));
+    const [nx, ny, nz] = mask.dims;
+    const voxelVolume = mask.header.voxelSize.reduce((product, value) => product * Math.abs(value), 1);
+    const edited = summarizeMarkers(mask.data, probability.data, [nz, ny, nx], { k: detections.k, voxelVolume, affine: mask.header.affine });
+    this.inferenceExecutor.metrics = { ...detections, ...edited, nCandidates: edited.markers.length, others: [], edited: true };
+    this.showDetections(this.inferenceExecutor.metrics);
   }
 
   onMaskEditClosed() {
@@ -930,7 +945,7 @@ class SeedSegApp {
       const show = element('button', { type: 'button', className: 'nd-btn nd-btn-secondary nd-btn-sm',
         title: `Voxel ${marker.centroidVox.map((v) => v.toFixed(1)).join(', ')}` }, String(marker.rank));
       show.setAttribute('aria-label', `Show marker ${marker.rank}`);
-      show.addEventListener('click', () => this.showMarker(marker.centroidVox));
+      show.addEventListener('click', () => this.showMarker(marker.centroidWorldMm));
       row.insertCell().append(show);
       for (const value of [marker.meanProb.toFixed(3), marker.volumeMm3.toFixed(0), marker.centroidWorldMm.map((v) => v.toFixed(1)).join(', ')]) {
         row.append(element('td', { className: 'nd-numeric' }, value));
@@ -941,16 +956,19 @@ class SeedSegApp {
     const networks = det.folds.length === 5 ? '5-network ensemble' : `network${det.folds.length > 1 ? 's' : ''} ${det.folds.map((f) => f + 1).join(', ')} of 5`;
     const backend = { webgpu: 'WebGPU', wasm: 'WebAssembly' }[det.backend] || det.backend;
     const next = det.others.length ? `Next candidate p ${det.others[0].meanProb.toFixed(3)}. ` : '';
-    const meta = element('p', { className: 'nd-hint' }, `${next}${networks}, mirroring ${det.mirror ? 'on' : 'off'}, ${backend}, ${det.timing.total.toFixed(0)} s`);
+    const run = `${networks}, mirroring ${det.mirror ? 'on' : 'off'}, ${backend}, ${det.timing.total.toFixed(0)} s`;
+    const meta = element('p', { className: 'nd-hint' }, det.edited ? `From the edited mask. Inference: ${run}` : `${next}${run}`);
     panel.replaceChildren(flag, scroll, meta);
     panel.hidden = false;
   }
 
-  showMarker(voxel) {
-    const vol = this.nv.volumes?.[0];
-    if (!vol) return;
-    this.nv.scene.crosshairPos = [0, 1, 2].map((i) => (voxel[i] + 0.5) / vol.dims[i + 1]);
-    this.nv.updateGLVolume();
+  // Positions are world millimetres; NiiVue displays the volume reoriented to RAS, so the
+  // crosshair is placed through its mm-to-fraction mapping, not the file's voxel grid.
+  showMarker(mm) {
+    if (!this.nv.volumes?.[0]) return;
+    this.nv.scene.crosshairPos = this.nv.mm2frac(mm);
+    this.nv.createOnLocationChange();
+    this.nv.drawScene();
   }
 
   async clearResults() {

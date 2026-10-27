@@ -350,17 +350,22 @@
 
       <h4>What this means</h4>
       <ul class="privacy-list">
-        <li>No data is uploaded to any server or cloud service</li>
-        <li>No internet connection is required after the page loads</li>
+        <li>No image or DICOM data is uploaded to any server or cloud service</li>
         <li>Sensitive patient data remains on your computer at all times</li>
         <li>There is no need to anonymise or de-identify your data before use</li>
       </ul>
 
       <h4>How it works</h4>
-      <p>SeedSeg uses ONNX Runtime Web to run deep learning models directly in the browser via WebAssembly. Your NIfTI or DICOM files are read into browser memory, processed locally, and results are displayed without any network transfer.</p>
+      <p>SeedSeg uses ONNX Runtime Web to run deep learning models directly in the browser via WebAssembly or WebGPU. Your NIfTI or DICOM files are read into browser memory, processed locally, and results are displayed without any network transfer.</p>
 
-      <h4>Third-party services</h4>
-      <p>SeedSeg does not use analytics, tracking, cookies, or any external services. The only network requests are loading the application itself and downloading model files (which are cached locally).</p>
+      <h4>Network requests</h4>
+      <p>SeedSeg adds no tracking or cookies of its own. Besides the application itself, the page downloads code and data from these services; none of them receives your images or DICOM headers:</p>
+      <ul class="privacy-list">
+        <li>The NiiVue viewer from the unpkg CDN</li>
+        <li>The model networks from Hugging Face, the first time each is used (then cached in your browser): the v2 networks you select, about 200 MB each, from huggingface.co/ash347/seedseg, and the four legacy v1 networks, if you choose that model</li>
+        <li>The dicompare protocol checker from Neurodesk's dicompare site: its controller with the page, and its worker and the SeedSeg protocol schema when you open the dicompare report, which then loads the Pyodide runtime and Python packages from jsDelivr and PyPI; it reads your DICOM headers locally</li>
+      </ul>
+      <p>Because of these downloads, SeedSeg needs an internet connection the first time a network or the dicompare report is used. The offline Standalone version bundles them.</p>
     </div>
   </div>
 </div>

@@ -26,16 +26,15 @@
       "parameters": {
         "model": {
           "type": "string",
-          "description": "v2: nnU-Net 5-fold networks; v1: legacy 4-network U-Net consensus",
+          "description": "v2: nnU-Net 5-fold networks (default); v1: legacy 4-network U-Net consensus (default when only models is given)",
           "enum": [
             "v2",
             "v1"
-          ],
-          "default": "v2"
+          ]
         },
         "folds": {
           "type": "array",
-          "description": "v2 networks (cross-validation folds) to average; [0,1,2,3,4] is the evaluated ensemble",
+          "description": "v2 networks (cross-validation folds) to average, default [0]; [0,1,2,3,4] is the evaluated ensemble",
           "items": {
             "type": "integer",
             "description": "Fold",
@@ -46,10 +45,7 @@
               3,
               4
             ]
-          },
-          "default": [
-            0
-          ]
+          }
         },
         "mirror": {
           "type": "boolean",
@@ -58,7 +54,7 @@
         },
         "models": {
           "type": "array",
-          "description": "v1: one or more distinct model seeds",
+          "description": "v1: one or more distinct model seeds, default all four",
           "items": {
             "type": "integer",
             "description": "Model seed",
@@ -68,13 +64,7 @@
               456,
               789
             ]
-          },
-          "default": [
-            42,
-            123,
-            456,
-            789
-          ]
+          }
         },
         "threshold": {
           "type": "number",

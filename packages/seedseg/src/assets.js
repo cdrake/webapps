@@ -56,3 +56,21 @@ export function validateSelection({ threshold = 0.1, nMarkers = 3 } = {}) {
     throw new Error('Top-N markers must be an integer from 1 to 10.');
   }
 }
+
+/**
+ * Which model a request runs. v1 checkpoint selections (`models`, `ensemble`) without a `model`
+ * keep their meaning from before v2 existed and run the legacy v1 consensus; without either, v2
+ * runs. Mixing v1 selections with v2 (explicit `model: 'v2'`, `folds` or `mirror`) is an error.
+ */
+export function resolveModelChoice({ model, folds, mirror = false, models, ensemble } = {}) {
+  if (model !== undefined && !['v2', 'v1'].includes(model)) throw new Error(`Unknown SeedSeg model "${model}". Choose v2 or v1.`);
+  const legacySelection = models !== undefined || ensemble !== undefined;
+  const networkSelection = folds !== undefined || mirror === true;
+  if (legacySelection && networkSelection) {
+    throw new Error('models/ensemble select v1 checkpoints and folds/mirror select v2 networks; choose one model.');
+  }
+  const chosen = model ?? (legacySelection ? 'v1' : 'v2');
+  if (chosen === 'v2' && legacySelection) throw new Error('models/ensemble select v1 checkpoints; use folds with model v2.');
+  if (chosen === 'v1' && networkSelection) throw new Error('folds and mirror apply to v2; use models or ensemble with model v1.');
+  return chosen;
+}

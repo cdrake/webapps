@@ -4,7 +4,7 @@ import { availableParallelism, homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { gunzipSync } from 'node:zlib';
 import { runInference } from './pipeline.js';
-import { DEFAULT_FOLDS, FOLDS, LEGACY_ASSETS, MODEL_ASSETS, MODEL_SEEDS, resolveFolds, resolveModels, validateSelection } from './assets.js';
+import { DEFAULT_FOLDS, FOLDS, LEGACY_ASSETS, MODEL_ASSETS, MODEL_SEEDS, resolveFolds, resolveModelChoice, resolveModels, validateSelection } from './assets.js';
 import { outputNames } from './results.js';
 import runtimeManifest from '../runtime.manifest.json' with { type: 'json' };
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -127,14 +127,12 @@ function integer(value, name, maximum = Infinity) {
   return number;
 }
 
-export function resolveSettings({ model = 'v2', folds, mirror = false, models, ensemble, threshold = 0.1, nMarkers = 3, threads } = {}) {
-  if (!['v2', 'v1'].includes(model)) throw new Error(`Unknown SeedSeg model "${model}". Choose v2 or v1.`);
+export function resolveSettings({ model: requested, folds, mirror = false, models, ensemble, threshold = 0.1, nMarkers = 3, threads } = {}) {
+  const model = resolveModelChoice({ model: requested, folds, mirror, models, ensemble });
   let selected;
   if (model === 'v2') {
-    if (models !== undefined || ensemble !== undefined) throw new Error('--models and --ensemble select v1 checkpoints; use --folds with v2.');
     selected = resolveFolds(folds ?? DEFAULT_FOLDS);
   } else {
-    if (folds !== undefined || mirror) throw new Error('--folds and --mirror apply to v2; use --models or --ensemble with v1.');
     if (models !== undefined && ensemble !== undefined) throw new Error('Choose --models or --ensemble, not both.');
     selected = ensemble === undefined ? resolveModels(models) : LEGACY_ASSETS.slice(0, integer(ensemble, 'Ensemble', 4));
   }

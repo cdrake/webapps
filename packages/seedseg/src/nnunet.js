@@ -378,3 +378,36 @@ export function detect(p, dims, k = 3, threshold = 0.1, voxelVolume = 1) {
   for (let i = 0; i < p.length; i++) if (labels[i]) markerMap[i] = rankOf.get(labels[i]) || 0;
   return { k, threshold, nCandidates: list.length, countFlag: list.length < k, markers, others: list.slice(k, k + 5), markerMap };
 }
+
+/**
+ * The marker list of a ranked marker map (value r on the r-th marker), e.g. after manual editing:
+ * per rank the voxel count, volume, mean probability and probability-weighted centroid in voxel
+ * and world coordinates. Voxels with zero probability count with equal weight, so painted voxels
+ * outside the model's support still move the centroid.
+ */
+export function summarizeMarkers(markerMap, probability, dims, { k, voxelVolume = 1, affine }) {
+  const [, ny, nx] = dims;
+  const ranks = new Map();
+  for (let i = 0; i < markerMap.length; i++) {
+    const rank = markerMap[i];
+    if (!(rank > 0)) continue;
+    let entry = ranks.get(rank);
+    if (!entry) ranks.set(rank, entry = { voxels: 0, sum: 0, max: 0, weight: 0, c: [0, 0, 0] });
+    const p = probability[i];
+    const w = p > 0 ? p : Number.MIN_VALUE;
+    entry.voxels++;
+    entry.sum += p;
+    entry.max = Math.max(entry.max, p);
+    entry.weight += w;
+    entry.c[0] += w * (i % nx);
+    entry.c[1] += w * (Math.floor(i / nx) % ny);
+    entry.c[2] += w * Math.floor(i / (nx * ny));
+  }
+  const world = c => [0, 1, 2].map(r => affine[r][0] * c[0] + affine[r][1] * c[1] + affine[r][2] * c[2] + affine[r][3]);
+  const markers = [...ranks].sort(([a], [b]) => a - b).map(([rank, entry]) => {
+    const centroidVox = entry.c.map(value => value / entry.weight);
+    return { rank, meanProb: entry.sum / entry.voxels, maxProb: entry.max, nVoxels: entry.voxels,
+      volumeMm3: entry.voxels * voxelVolume, centroidVox, centroidWorldMm: world(centroidVox) };
+  });
+  return { k, markers, countFlag: markers.length < k };
+}

@@ -67,3 +67,17 @@ test('Gaussian importance map peaks at 10 in the patch centre', () => {
   assert.ok(Math.abs(g[(2 * 8 + 4) * 8 + 4] - 10) < 1e-5);
   assert.ok(g.every((v) => v > 0));
 });
+
+test('an edited marker map is summarised per rank: volume, mean probability, weighted centroid', () => {
+  const dims = [2, 4, 4], map = new Float32Array(32), p = new Float32Array(32);
+  const at = (z, y, x) => (z * 4 + y) * 4 + x;
+  map[at(0, 0, 0)] = 2; p[at(0, 0, 0)] = 0.5;
+  map[at(1, 3, 3)] = 1; p[at(1, 3, 3)] = 0.75;
+  map[at(1, 3, 1)] = 1; p[at(1, 3, 1)] = 0.25;
+  const affine = [[-2, 0, 0, 10], [0, 1, 0, 0], [0, 0, 3, 0], [0, 0, 0, 1]];
+  const s = P.summarizeMarkers(map, p, dims, { k: 3, voxelVolume: 6, affine });
+  assert.equal(s.countFlag, true);
+  assert.deepEqual(s.markers.map(m => [m.rank, m.nVoxels, m.volumeMm3, m.meanProb]), [[1, 2, 12, 0.5], [2, 1, 6, 0.5]]);
+  assert.deepEqual(s.markers[0].centroidVox, [2.5, 3, 1]);
+  assert.deepEqual(s.markers[0].centroidWorldMm, [5, 3, 3]);
+});
