@@ -12,11 +12,16 @@
     "Keep packages/seedseg as the shared scientific pipeline and the app worker as a browser adapter; port upstream scientific changes into the shared package.",
     "Keep `@playwright/test` declared as exact devDependencies for the monorepo e2e suite; the dependency checker rejects tooling resolved through another workspace's or the root's node_modules.",
     "Keep Cite owned by the shared shell. Move new upstream citations from web/index.html#citationsModal into registry/app-information.yml and test/app-information.test.mjs; do not restore the local Cite button, modal or handlers. The sync refreshes upstream-citations.json from its target commit and contract tests require every recorded DOI in the registry.",
-    "Keep the monorepo idle status: #statusText starts as \"Drag and drop files\" (design system); the window-wide drop comes from the shared components."
+    "Keep the monorepo idle status: #statusText starts as \"Drag and drop files\" (design system); the window-wide drop comes from the shared components.",
+    "Load dicompare's embed, worker and schemas from https://webapps.neurodesk.org/dicompare/ (this repository's deployment of apps/dicompare/public), not dicompare.neurodesk.org, whose GitHub Pages site stopped serving in October 2026; the rewrite keeps upstream's URLs pointed there."
   ],
   "citationSnapshot": {
     "file": "web/index.html",
     "selector": "#citationsModal",
     "output": "upstream-citations.json"
+  },
+  "rewrite": {
+    "https://dicompare.neurodesk.org/": "https://webapps.neurodesk.org/dicompare/",
+    "from dicompare.neurodesk.org": "from webapps.neurodesk.org/dicompare"
   }
 }

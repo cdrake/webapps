@@ -10,7 +10,7 @@ bindSectionDisclosures(document);
 import { registerSeedSegAutomation } from './automation.js';
 import { SeedSegInputSet } from './controllers/SeedSegInputSet.js';
 import { SeedSegDicomInput } from './controllers/SeedSegDicomInput.js';
-import { DicompareController } from 'https://dicompare.neurodesk.org/embed/DicompareController.js';
+import { DicompareController } from 'https://webapps.neurodesk.org/dicompare/embed/DicompareController.js';
 import { DicompareReportRenderer } from '@neurodesk/webapp-components/ui';
 import { ViewerController } from '@neurodesk/webapp-components';
 import { SeedSegPipeline } from './controllers/SeedSegPipeline.js';
@@ -74,7 +74,7 @@ class SeedSegApp {
 
     // dicompare validation
     this.dicompareController = new DicompareController({
-      schemaUrl: 'https://dicompare.neurodesk.org/schemas/SeedSeg_Prostate_T1w_v1.0.json',
+      schemaUrl: 'https://webapps.neurodesk.org/dicompare/schemas/SeedSeg_Prostate_T1w_v1.0.json',
       updateOutput: (msg) => this.updateOutput(msg)
     });
     this.dicompareRenderer = new DicompareReportRenderer();

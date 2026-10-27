@@ -15,11 +15,14 @@
     "When the pinned qsmxt-engine or its transitive qsm-core changes, rerecord packages/qsmbly/validation/browser-reference.json from the canonical production app. Replay the exact exported command with unchanged inputs against a checksum-pinned published native release under the existing numerical tolerances before changing packages/qsmbly/qsmxt.json. Browser and native core revisions may differ only with recorded compatibility evidence; test/node.test.js ties the reference to the actual Cargo commits and measured native version. Read the command from #commandPreviewText after app.showCommandPreview().",
     "Keep `@playwright/test` and `yaml` declared as exact devDependencies for the monorepo e2e suite; the dependency checker rejects tooling resolved through another workspace's or the root's node_modules.",
     "Keep the monorepo idle status: #statusText starts as \"Drag and drop files\" (design system); the window-wide drop comes from the shared components.",
-    "Keep the canonical Neurodesk workspace and shared controls. The upstream next.html/Preact preview is not imported; run its engine oracle separately against the pinned source when validating scientific changes."
+    "Keep the canonical Neurodesk workspace and shared controls. The upstream next.html/Preact preview is not imported; run its engine oracle separately against the pinned source when validating scientific changes.",
+    "Load dicompare's embed, worker and schemas from https://webapps.neurodesk.org/dicompare/ (this repository's deployment of apps/dicompare/public), not dicompare.neurodesk.org, whose GitHub Pages site stopped serving in October 2026; the rewrite keeps upstream's URLs pointed there."
   ],
   "branch": "main",
   "rewrite": {
-    "PipelineExecutor": "QsmPipelineController"
+    "PipelineExecutor": "QsmPipelineController",
+    "https://dicompare.neurodesk.org/": "https://webapps.neurodesk.org/dicompare/",
+    "from dicompare.neurodesk.org": "from webapps.neurodesk.org/dicompare"
   },
   "ignore": [
     ".github/**",
