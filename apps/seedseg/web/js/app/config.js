@@ -1,4 +1,4 @@
-export const VERSION = '0.6.20261024';
+export const VERSION = '0.6.20261027';
 
 // Model weights and their pins live in packages/seedseg/model.manifest.json (= models/seedseg.manifest.json):
 // v2, the nnU-Net ResEnc networks of the five cross-validation folds, at a pinned commit of the

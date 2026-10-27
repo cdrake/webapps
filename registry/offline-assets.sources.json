@@ -804,8 +804,14 @@
         "license": "NOASSERTION"
       },
       {
-        "url": "https://dicompare.neurodesk.org/embed/DicompareController.js",
+        "url": "https://webapps.neurodesk.org/dicompare/embed/DicompareController.js",
         "path": "apps/dicompare/public/embed/DicompareController.js",
+        "contentType": "text/javascript",
+        "kind": "built-runtime"
+      },
+      {
+        "url": "https://webapps.neurodesk.org/dicompare/embed/dicompare-worker.js",
+        "path": "apps/dicompare/public/embed/dicompare-worker.js",
         "contentType": "text/javascript",
         "kind": "built-runtime"
       },
@@ -814,7 +820,7 @@
         "kind": "runtime-cdn"
       },
       {
-        "url": "https://dicompare.neurodesk.org/schemas/SeedSeg_Prostate_T1w_v1.0.json",
+        "url": "https://webapps.neurodesk.org/dicompare/schemas/SeedSeg_Prostate_T1w_v1.0.json",
         "path": "apps/dicompare/public/schemas/SeedSeg_Prostate_T1w_v1.0.json",
         "contentType": "application/json",
         "kind": "built-schema"

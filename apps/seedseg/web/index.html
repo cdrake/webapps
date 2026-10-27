@@ -363,7 +363,7 @@
       <ul class="privacy-list">
         <li>The NiiVue viewer from the unpkg CDN</li>
         <li>The model networks from Hugging Face, the first time each is used (then cached in your browser): the v2 networks you select, about 200 MB each, from huggingface.co/ash347/seedseg, and the four legacy v1 networks, if you choose that model</li>
-        <li>The dicompare protocol checker from Neurodesk's dicompare site: its controller with the page, and its worker and the SeedSeg protocol schema when you open the dicompare report, which then loads the Pyodide runtime and Python packages from jsDelivr and PyPI; it reads your DICOM headers locally</li>
+        <li>Only when you open the dicompare report: the dicompare protocol checker (its controller, worker and the SeedSeg protocol schema) from webapps.neurodesk.org/dicompare, which then loads the Pyodide runtime and Python packages from jsDelivr and PyPI; it reads your DICOM headers locally</li>
       </ul>
       <p>Because of these downloads, SeedSeg needs an internet connection the first time a network or the dicompare report is used. The offline Standalone version bundles them.</p>
     </div>

@@ -52,10 +52,11 @@ export async function browserReference({ modelsDirectory, composite = false, scr
     const context = await browser.newContext({ acceptDownloads: true });
     const origin = `http://127.0.0.1:${server.address().port}`;
     await context.route(/cloudflareinsights\.com|googletagmanager\.com|google-analytics\.com/, route => route.fulfill({ body: '' }));
-    // The page imports dicompare's embed from its site; serve the monorepo's copy, as the standalone bundle does.
-    await context.route('https://dicompare.neurodesk.org/embed/**', route => route.fulfill({
-      path: join(repository, 'apps/dicompare/public/embed', new URL(route.request().url()).pathname.slice('/embed/'.length)),
-      headers: { 'Access-Control-Allow-Origin': '*', 'Cross-Origin-Resource-Policy': 'cross-origin' },
+    // Use the same repository-owned runtime as the offline asset catalog.
+    await context.route('https://webapps.neurodesk.org/dicompare/embed/DicompareController.js', route => route.fulfill({
+      path: join(repository, 'apps/dicompare/public/embed/DicompareController.js'),
+      contentType: 'text/javascript',
+      headers: { 'Access-Control-Allow-Origin': '*' },
     }));
     await context.route(/\/seedseg-(?:model-seed\d+|v2_fold\d\.wg16)\.onnx$/, route => {
       const asset = MODEL_ASSETS.find(candidate => route.request().url() === candidate.url);

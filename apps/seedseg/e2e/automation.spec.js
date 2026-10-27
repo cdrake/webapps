@@ -2,10 +2,10 @@ import { expect, test } from '@playwright/test';
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { createNiftiFromVolume, readNifti } from '../../../packages/components/src/file-io/NiftiUtils.js';
 import { dice, maskVoxels } from '../../../test-utils/dice.mjs';
 import { markerComponents, matchComponentsToSeeds } from '../test/marker-components.mjs';
+import { dicomSeries } from '../../../test-utils/dicom-fixture.mjs';
 import { createProstateFixture, createProstateSeedMask, PROSTATE_FIXTURE_DIMS, PROSTATE_FIXTURE_SEEDS } from '../test/prostate-fixture.mjs';
 
 const image = createProstateFixture();
@@ -18,16 +18,6 @@ const image = createProstateFixture();
 const MAX_CENTROID_DISTANCE_VOXELS = 1;
 const MIN_PLANTED_RECALL = 0.9;
 const MAX_MARKER_VOXELS_PER_PLANTED_VOXEL = 10;
-
-const dicompareEmbed = fileURLToPath(new URL('../../dicompare/public/embed/', import.meta.url));
-
-// The page imports dicompare's embed from its site; serve the monorepo's copy, as the standalone bundle does.
-test.beforeEach(async ({ context }) => {
-  await context.route('https://dicompare.neurodesk.org/embed/**', route => route.fulfill({
-    path: join(dicompareEmbed, new URL(route.request().url()).pathname.slice('/embed/'.length)),
-    headers: { 'Access-Control-Allow-Origin': '*', 'Cross-Origin-Resource-Policy': 'cross-origin' },
-  }));
-});
 
 async function runSegmentation(page, parameters = {}) {
   await page.goto('/');
@@ -45,6 +35,29 @@ async function downloadRow(page, row) {
   const download = await waiting;
   return { name: download.suggestedFilename(), bytes: await readFile(await download.path()) };
 }
+
+test('NIfTI inputs remain usable when the optional DICOM report host is unavailable', async ({ page }) => {
+  await page.route('https://webapps.neurodesk.org/dicompare/**', route => route.abort());
+  await page.goto('/');
+  await page.waitForFunction(() => Boolean(globalThis.neurodeskAutomation), undefined, { timeout: 15000 });
+  await page.locator('#unifiedFiles').setInputFiles({ name: 'synthetic-prostate-T1w.nii', mimeType: 'application/x-nifti', buffer: image });
+  await expect(page.locator('#runSegmentation')).toBeEnabled();
+});
+
+test('DICOM conversion completes while the optional report host stalls', async ({ page }) => {
+  test.setTimeout(60000);
+  const held = [];
+  await page.route('https://webapps.neurodesk.org/dicompare/**', route => { held.push(route); });
+  try {
+    await page.goto('/');
+    await page.waitForFunction(() => Boolean(globalThis.neurodeskAutomation));
+    await page.locator('#unifiedFiles').setInputFiles(dicomSeries());
+    await expect(page.locator('#runSegmentation')).toBeEnabled({ timeout: 30000 });
+    await expect(page.locator('#dicompareReportBtn')).toBeEnabled();
+  } finally {
+    await Promise.all(held.map(route => route.abort().catch(() => {})));
+  }
+});
 
 // v2 is trained on N4-corrected clinical T1 at 0.6875 x 0.6875 x 2 mm; this 1 mm phantom is off its
 // protocol. Measured 2026-10-27 (ONNX Runtime Web 1.21.0, WASM): network 1 marks one of the three
@@ -150,6 +163,10 @@ test('the v2 marker mask can be corrected in the viewer and downloads edited', a
   await page.locator('.view-tab[data-view="axial"]').click();
   await edit.click();
   await expect(editor).toBeVisible();
+  // One label per implanted marker, so a missed marker can be painted as its own marker.
+  const labels = editor.getByLabel('Label');
+  await expect(labels.locator('option')).toHaveText(['1 — Marker 1', '2 — Marker 2', '3 — Marker 3']);
+  await labels.selectOption('3');
   const box = await page.locator('#gl1').boundingBox();
   const centre = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
   await page.mouse.move(centre.x - 60, centre.y);
@@ -170,6 +187,7 @@ test('the v2 marker mask can be corrected in the viewer and downloads edited', a
   const panel = page.locator('#detectionsPanel');
   await expect(panel.locator('.nd-hint')).toContainText('From the edited mask');
   const ranks = [...counts.keys()].sort((a, b) => a - b);
+  expect(ranks).toContain(3);
   await expect(panel.locator('tbody tr')).toHaveCount(ranks.length);
   for (const [row, rank] of ranks.entries()) {
     await expect(panel.locator('tbody tr').nth(row).locator('td').nth(2)).toHaveText(String(counts.get(rank)));

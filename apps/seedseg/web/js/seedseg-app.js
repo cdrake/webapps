@@ -10,16 +10,16 @@ bindSectionDisclosures(document);
 import { registerSeedSegAutomation } from './automation.js';
 import { SeedSegInputSet } from './controllers/SeedSegInputSet.js';
 import { SeedSegDicomInput } from './controllers/SeedSegDicomInput.js';
-import { DicompareController } from 'https://dicompare.neurodesk.org/embed/DicompareController.js';
 import { DicompareReportRenderer } from '@neurodesk/webapp-components/ui';
 import { ViewerController } from '@neurodesk/webapp-components';
 import { SeedSegPipeline } from './controllers/SeedSegPipeline.js';
-import { ConsoleOutput, ProgressManager, ModalManager, bindWindowControls, createMaskEditor } from '@neurodesk/webapp-components/ui';
+import { ConsoleOutput, ProgressManager, ModalManager, bindWindowControls, createMaskEditor, renderInfoIcon, bindInfoTooltips } from '@neurodesk/webapp-components/ui';
 import { createNiftiFromVolume, readNifti } from '@neurodesk/webapp-components/file-io';
 import * as Config from './app/config.js';
 import { MODEL_SEEDS } from '../vendor/seedseg/src/assets.js';
 import { summarizeMarkers } from '../vendor/seedseg/src/nnunet.js';
-import { clearResultsAfterEditing, isEditableStage, replaceWithEdit, stageLabel } from './app/mask-edit.js';
+import { detectionsHint } from './app/detections.js';
+import { clearResultsAfterEditing, isEditableStage, markerLabelNames, replaceWithEdit, stageLabel } from './app/mask-edit.js';
 
 class SeedSegApp {
   constructor() {
@@ -51,6 +51,7 @@ class SeedSegApp {
     this.inputFile = null;
     this.currentResultTab = 'input';
     this._buckets = { t1w: [], other: [] };
+    this.dicompareFiles = [];
 
     this.init();
   }
@@ -74,11 +75,6 @@ class SeedSegApp {
       onFilesRetained: (files) => this._onDicomFilesRetained(files)
     });
 
-    // dicompare validation
-    this.dicompareController = new DicompareController({
-      schemaUrl: 'https://dicompare.neurodesk.org/schemas/SeedSeg_Prostate_T1w_v1.0.json',
-      updateOutput: (msg) => this.updateOutput(msg)
-    });
     this.dicompareRenderer = new DicompareReportRenderer();
 
     this.viewerController = new ViewerController({
@@ -86,12 +82,13 @@ class SeedSegApp {
       updateOutput: (msg) => this.updateOutput(msg)
     });
 
-    this.maskEditor = createMaskEditor({
+    this.maskEditorOptions = {
       nv: this.nv,
       onApply: (stage, file, { original }) => this.onMaskApplied(stage, file, original),
       onCancel: () => this.onMaskEditClosed(),
       onError: (_stage, error) => this.onMaskEditError(error)
-    });
+    };
+    this.maskEditor = createMaskEditor(this.maskEditorOptions);
     this.maskEditor.addEventListener('nd-mask-edit-end', () => this.setEditButtonsEnabled(true));
     this.maskEditor.addEventListener('nd-mask-edit-start', (event) => this.progress.setText(event.detail.message));
     document.querySelector('main.app-main > .viewer-toolbar').after(this.maskEditor);
@@ -801,6 +798,9 @@ class SeedSegApp {
     document.getElementById('statusText')?.classList.remove('error');
     try {
       await this.showResult(stage);
+      // Labels 1..K for the ranked marker mask, K from the run (or the edited list).
+      const labelNames = markerLabelNames(stage, this.inferenceExecutor.metrics?.k);
+      this.maskEditor.configure({ ...this.maskEditorOptions, labelNames });
       const started = await this.maskEditor.start({
         stage,
         file: result.file,
@@ -953,11 +953,10 @@ class SeedSegApp {
     }
     const scroll = element('div', { className: 'nd-table-scroll' });
     scroll.append(table);
-    const networks = det.folds.length === 5 ? '5-network ensemble' : `network${det.folds.length > 1 ? 's' : ''} ${det.folds.map((f) => f + 1).join(', ')} of 5`;
-    const backend = { webgpu: 'WebGPU', wasm: 'WebAssembly' }[det.backend] || det.backend;
-    const next = det.others.length ? `Next candidate p ${det.others[0].meanProb.toFixed(3)}. ` : '';
-    const run = `${networks}, mirroring ${det.mirror ? 'on' : 'off'}, ${backend}, ${det.timing.total.toFixed(0)} s`;
-    const meta = element('p', { className: 'nd-hint' }, det.edited ? `From the edited mask. Inference: ${run}` : `${next}${run}`);
+    const hint = detectionsHint(det);
+    const meta = element('p', { className: 'nd-hint' }, hint.text);
+    meta.append(' ', renderInfoIcon(hint.details, { label: 'Inference settings' }));
+    bindInfoTooltips(meta);
     panel.replaceChildren(flag, scroll, meta);
     panel.hidden = false;
   }
@@ -997,8 +996,9 @@ class SeedSegApp {
   /**
    * Callback when DICOM files are retained for validation.
    */
-  async _onDicomFilesRetained(files) {
-    await this.dicompareController.retainDicomFiles(files);
+  _onDicomFilesRetained(files) {
+    this.dicompareFiles = Array.from(files);
+    this.dicompareController?.clearFiles();
     const btn = document.getElementById('dicompareReportBtn');
     if (btn) {
       btn.disabled = files.length === 0;
@@ -1009,7 +1009,7 @@ class SeedSegApp {
    * Run dicompare validation and display results in modal.
    */
   async runDicompareReport() {
-    if (!this.dicompareController.hasFiles()) {
+    if (!this.dicompareFiles.length) {
       this.updateOutput('No DICOM files available for validation.');
       return;
     }
@@ -1018,7 +1018,7 @@ class SeedSegApp {
     const footer = document.getElementById('dicompareModalFooter');
 
     // If results are already cached, just re-display them
-    const cached = this.dicompareController.getCachedResults();
+    const cached = this.dicompareController?.getCachedResults();
     if (cached) {
       this.dicompareModal.open();
       this.dicompareRenderer.render(body, cached);
@@ -1042,6 +1042,14 @@ class SeedSegApp {
     if (footer) footer.style.display = 'none';
 
     try {
+      const { DicompareController } = await import('https://webapps.neurodesk.org/dicompare/embed/DicompareController.js');
+      this.dicompareController ||= new DicompareController({
+        schemaUrl: 'https://webapps.neurodesk.org/dicompare/schemas/SeedSeg_Prostate_T1w_v1.0.json',
+        updateOutput: (msg) => this.updateOutput(msg)
+      });
+      if (!this.dicompareController.hasFiles()) {
+        await this.dicompareController.retainDicomFiles(this.dicompareFiles);
+      }
       const result = await this.dicompareController.runValidation((progress) => {
         const textEl = document.getElementById('dicompareLoadingText');
         const fillEl = document.getElementById('dicompareProgressFill');
@@ -1068,7 +1076,7 @@ class SeedSegApp {
    * Print the dicompare report in a new window.
    */
   printDicompareReport() {
-    if (!this.dicompareController.complianceResults) return;
+    if (!this.dicompareController?.complianceResults) return;
     const html = this.dicompareRenderer.generatePrintHtml({
       acquisitions: this.dicompareController.acquisitions,
       complianceResults: this.dicompareController.complianceResults,
