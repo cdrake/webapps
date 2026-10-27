@@ -421,6 +421,12 @@
         "kind": "built-runtime"
       },
       {
+        "url": "https://webapps.neurodesk.org/dicompare/embed/dicompare-worker.js",
+        "path": "apps/dicompare/public/embed/dicompare-worker.js",
+        "contentType": "text/javascript",
+        "kind": "built-runtime"
+      },
+      {
         "url": "https://unpkg.com/@yaireo/tagify@4.39.0/dist/tagify.js",
         "sha256": "a4e16ccd7c4ec09c9fc37ca4b2d48fe4de4c60945b4ba019822560780916f0ec",
         "kind": "runtime-cdn"
@@ -771,6 +777,12 @@
       {
         "url": "https://webapps.neurodesk.org/dicompare/embed/DicompareController.js",
         "path": "apps/dicompare/public/embed/DicompareController.js",
+        "contentType": "text/javascript",
+        "kind": "built-runtime"
+      },
+      {
+        "url": "https://webapps.neurodesk.org/dicompare/embed/dicompare-worker.js",
+        "path": "apps/dicompare/public/embed/dicompare-worker.js",
         "contentType": "text/javascript",
         "kind": "built-runtime"
       },

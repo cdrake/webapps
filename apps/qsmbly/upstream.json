@@ -21,8 +21,9 @@
   "branch": "main",
   "rewrite": {
     "PipelineExecutor": "QsmPipelineController",
-    "https://dicompare.neurodesk.org/": "https://webapps.neurodesk.org/dicompare/",
-    "from dicompare.neurodesk.org": "from webapps.neurodesk.org/dicompare"
+    "from dicompare.neurodesk.org": "from webapps.neurodesk.org/dicompare",
+    "https://dicompare.neurodesk.org": "https://webapps.neurodesk.org/dicompare",
+    "`dicompare.neurodesk.org`": "`webapps.neurodesk.org/dicompare`"
   },
   "ignore": [
     ".github/**",

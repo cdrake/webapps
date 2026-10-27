@@ -94,7 +94,7 @@ All files are served from `https://webapps.neurodesk.org/dicompare/embed/`:
 
 ### Available schemas
 
-Schemas from the [dicompare schema library](https://dicompare.neurodesk.org) are served at `https://webapps.neurodesk.org/dicompare/schemas/`. See [`public/schemas/index.json`](public/schemas/index.json) for the full list. Examples:
+Schemas from the [dicompare schema library](https://webapps.neurodesk.org/dicompare) are served at `https://webapps.neurodesk.org/dicompare/schemas/`. See [`public/schemas/index.json`](public/schemas/index.json) for the full list. Examples:
 
 - `https://webapps.neurodesk.org/dicompare/schemas/QSM_Consensus_Guidelines_v1.0.json`
 - `https://webapps.neurodesk.org/dicompare/schemas/SeedSeg_Prostate_T1w_v1.0.json`
