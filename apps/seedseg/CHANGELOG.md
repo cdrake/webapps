@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- fd54995: Load the dicompare protocol checker, its worker and schemas from webapps.neurodesk.org/dicompare instead of the unavailable dicompare.neurodesk.org deployment. Keep QSMbly's worker in single-app offline bundles and preserve the URL adaptations during upstream sync. SeedSeg continues to use its locally staged report assets.
+  - @neurodesk/seedseg@0.6.20261027
 - Stage the canonical Dicompare controller, worker and SeedSeg schema locally. Keep optional reporting lazy while removing the remote report host from its code and schema loading path. Bound browser-test startup waits independently of scientific processing.
   - @neurodesk/seedseg@0.6.20261027
 - Load optional DICOM reporting only when requested so an unavailable or stalled report host cannot block startup or scan conversion.
