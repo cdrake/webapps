@@ -14,6 +14,10 @@
   - χ-sepnet runs in a 192×192×128 sliding-window patch.
   - TFI's MERIT switch and QSMART's SDF spatial radius are removed: both had no effect on the result.
   - The default real-brain reconstruction (ROMEO, V-SHARP, RTS) is unchanged: its recorded χ map and mask are identical to the previous release's.
+- Updated dependencies
+  - @neurodesk/webapp-components@0.22.2
+- Updated dependencies
+  - @neurodesk/webapp-components@0.22.1
 
 ## 0.31.20261024
 
