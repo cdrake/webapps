@@ -90,6 +90,8 @@ export const provisioners = {
   // on the CPU backend, about 12 min on eight cores.
   browserqc: { env: ['BROWSERQC_BROWSER_REFERENCE'], provision: async () => ({ BROWSERQC_BROWSER_REFERENCE: 'check' }) },
   brain2print: { env: [], provision: async () => ({}) },
+  // Synthetic NIfTI/DICOM fixtures are generated in the suite; the worker verifies pinned models.
+  seedseg: { env: [], provision: async () => ({}) },
   calmar: { env: ['CALMAR_AUTOMATION_IMAGE'], provision: async () => ({ CALMAR_AUTOMATION_IMAGE: 'example' }) },
   disconnectome: flag('DISCONNECTOME_LIVE_DATA'),
   // The full pipeline fetches the pinned example and template itself: about 2.5 min on an M-series GPU.

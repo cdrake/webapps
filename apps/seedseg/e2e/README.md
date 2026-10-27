@@ -19,3 +19,16 @@ The v2 test checks default model identity, native-grid outputs, ranked marker la
 detection reports and download checksums. It also blocks the optional dicompare
 host to verify that segmentation starts without it. V2 accuracy needs its own
 clinical reference; the legacy phantom tolerances remain unchanged.
+
+The startup test converts generated DICOM files while a report-host request stays
+unresolved, then reads the converted NIfTI and checks that the files were retained.
+It also checks keyboard access to the shared inference tooltips.
+
+The macOS GPU CI job sets `NEURODESK_HARDWARE_GPU=1`. In that mode the default
+test requires actual WebGPU execution, reruns on WASM and compares detections
+with the upstream one-voxel criterion used by the command-line validation.
+On a machine with a hardware WebGPU adapter, run:
+
+```sh
+NEURODESK_HARDWARE_GPU=1 pnpm --filter seedseg exec playwright test
+```

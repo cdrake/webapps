@@ -194,6 +194,7 @@ apps:
       toolchains: [node]
       shared_runtime: true
       browser_test: true
+      hardware_gpu: true
       release: true
   - id: dicompare
     path: dicompare

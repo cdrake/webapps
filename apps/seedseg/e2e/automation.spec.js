@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { readNifti } from '../../../packages/components/src/file-io/NiftiUtils.js';
 import { dice, maskVoxels } from '../../../test-utils/dice.mjs';
 import { markerComponents, matchComponentsToSeeds } from '../test/marker-components.mjs';
+import { compareDetections } from '../../../packages/seedseg/validation/detection-parity.mjs';
 import { createProstateFixture, createProstateSeedMask, PROSTATE_FIXTURE_DIMS, PROSTATE_FIXTURE_SEEDS } from '../test/prostate-fixture.mjs';
 
 const image = createProstateFixture();
@@ -168,6 +169,16 @@ test('default nnU-Net v2 produces native-grid probabilities, ranked markers and 
       expect(volume.dims).toEqual(PROSTATE_FIXTURE_DIMS);
       expect(volume.data.every(value => Number.isFinite(value) && value >= 0 && value <= (id === 'markers' ? 3 : 1))).toBe(true);
     }
+  }
+  if (process.env.NEURODESK_HARDWARE_GPU === '1') {
+    await page.evaluate(() => neurodeskAutomation.dispatch('start', { operation: 'segment', parameters: { backend: 'wasm' } }));
+    await expect.poll(() => page.evaluate(async () => (await neurodeskAutomation.dispatch('snapshot')).state), { timeout: 540000 }).toMatch(/succeeded|failed/);
+    const cpu = await page.evaluate(() => neurodeskAutomation.dispatch('snapshot'));
+    expect(cpu.state, JSON.stringify(cpu.error)).toBe('succeeded');
+    expect(cpu.report.provenance.executionProvider).toBe('wasm');
+    const parity = compareDetections(cpu.report.measurements.detections, snapshot.report.measurements.detections);
+    console.log(JSON.stringify({ hardwareDetectionParity: parity }));
+    expect(parity.sameTopK && parity.sameOrder && parity.sameCandidateCount && parity.sameCountFlag).toBe(true);
   }
   const row = page.locator('#stage-item-markers');
   const original = await downloadRow(page, row);
