@@ -39,3 +39,22 @@ export function describeFailure(e, { mod = null } = {}) {
   const message = panic ? `The engine panicked: ${panic}` : `The engine stopped (${err.message})`;
   return { message, kind: panic ? 'panic' : 'abort', fatal: true };
 }
+
+/** Run a call and free the engine without letting cleanup replace a trap's cause. */
+export function withEngine(engine, use, mod) {
+  let result;
+  try {
+    result = use(engine);
+  } catch (error) {
+    const failure = describeFailure(error, { mod });
+    try {
+      engine.free();
+    } catch {
+      // A trapped call leaves the Rust value borrowed; preserve the failure for the controller.
+    }
+    const reported = failure.fatal || !(error instanceof Error) ? new Error(failure.message, { cause: error }) : error;
+    throw Object.assign(reported, failure);
+  }
+  engine.free();
+  return result;
+}

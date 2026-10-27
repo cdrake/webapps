@@ -1,5 +1,13 @@
 # syncro
 
+## 0.7.20261027
+
+### Patch Changes
+
+- Updated dependencies [c85586a]
+  - @neurodesk/brain-extraction@0.5.20261027
+  - @neurodesk/syncro@0.7.20261027
+
 ## 0.7.20261025
 
 ### Patch Changes

@@ -1,10 +1,10 @@
 {
   "browser": "chromium 156.0.8078.4",
-  "app": "qsmbly 0.31.20261024",
+  "app": "qsmbly 0.31.20261027",
   "qsmCore": "git 95be94b",
   "qsmCoreCommit": "95be94b83b43e80329b4ecfe8a74cf8114ea927a",
   "qsmxtEngineCommit": "1f72772d4ae1ed7264a19c65ce1053ca05a8663d",
-  "seconds": 33,
+  "seconds": 93,
   "example": {
     "id": "real-brain-qsm",
     "sha256": {

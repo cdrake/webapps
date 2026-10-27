@@ -1,5 +1,11 @@
 # @neurodesk/qsmbly
 
+## 0.31.20261027
+
+### Patch Changes
+
+- Preserve engine panic diagnostics during cleanup and replace a trapped worker before retry. Keep verified model downloads usable when cache writes exceed quota. Verify the updated production browser pipeline and its exported command against the pinned native release under the existing tolerances.
+
 ## 0.31.20261024
 
 ## 0.31.20261022
