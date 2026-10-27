@@ -68,6 +68,7 @@ try {
                 const bytes = await fetchModel({url: binary.url, cacheKey: binary.url,
                   integrity: {bytes: binary.bytes, sha256: binary.sha256}});
                 ort.env.wasm.wasmBinary = new Uint8Array(bytes);
+                postMessage({type: 'runtime-ready'});
               }
               const model = Uint8Array.from(atob(data.modelBase64), c => c.charCodeAt(0));
               const session = await ort.InferenceSession.create(model, {executionProviders: ['wasm']});
@@ -80,9 +81,15 @@ try {
         const worker = new Worker(url, { type: 'module' });
         try {
           return await new Promise((resolve, reject) => {
-            const timer = setTimeout(() => reject(new Error('Threaded model loading timed out after 20s')), 20_000);
+            let timer = setTimeout(() => reject(new Error(settings.runtimeBinary
+              ? 'Pinned runtime download timed out after 120s'
+              : 'Threaded model loading timed out after 20s')), settings.runtimeBinary ? 120_000 : 20_000);
             worker.onmessage = ({data}) => {
               clearTimeout(timer);
+              if (data.type === 'runtime-ready') {
+                timer = setTimeout(() => reject(new Error('Threaded model loading timed out after 20s')), 20_000);
+                return;
+              }
               data.error ? reject(new Error(data.error)) : resolve(data);
             };
             worker.onerror = event => {
