@@ -12,6 +12,7 @@ import { browserReference } from './browser-reference.mjs';
 import { outputNames } from '../src/results.js';
 import { MODEL_ASSETS, resolveModels } from '../src/assets.js';
 import { compareDetections } from './detection-parity.mjs';
+import { compareV2Outputs } from './v2-parity.mjs';
 import { createProstateFixture, createProstateSeedMask, PROSTATE_FIXTURE_DIMS, PROSTATE_FIXTURE_SEEDS } from '../../../apps/seedseg/test/prostate-fixture.mjs';
 import { markerComponents, matchComponentsToSeeds } from '../../../apps/seedseg/test/marker-components.mjs';
 const { values } = parseArgs({ options: { executable: { type: 'string' }, composite: { type: 'boolean' }, case: { type: 'string' } } });
@@ -27,6 +28,8 @@ cases.unshift(
   { id: 'ensemble-v2', pipeline: 'nnunet-v2', folds: [0, 1, 2, 3, 4], threshold: 0.1, topN: 3 },
   { id: 'mirrored-v2', pipeline: 'nnunet-v2', folds: [0], mirror: true, threshold: 0.1, topN: 3 },
   { id: 'fp32-v2', pipeline: 'nnunet-v2', folds: [0], model: 'fp32', threshold: 0.1, topN: 3 },
+  { id: 'top-1-v2', pipeline: 'nnunet-v2', folds: [0, 1, 2, 3, 4], threshold: 0.1, topN: 1 },
+  { id: 'threshold-v2', pipeline: 'nnunet-v2', folds: [0, 1, 2, 3, 4], threshold: 0.5, topN: 3 },
 );
 if (values.executable) cases.splice(cases.findIndex(spec => spec.id === 'fp32-v2'), 1);
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -93,9 +96,14 @@ try {
     }
     let maximumProbabilityDifference = 0;
     let consensus;
+    const v2 = { native: {}, browser: {} };
     for (const [stage, name] of Object.entries(names)) {
       const native = await readNifti(await readFile(join(output, name)));
       const browser = await readNifti(web.files[stage]);
+      if (spec.pipeline === 'nnunet-v2') {
+        v2.native[stage] = native.data;
+        v2.browser[stage] = browser.data;
+      }
       assert.deepEqual(native.dims, PROSTATE_FIXTURE_DIMS);
       assert.deepEqual(native.header.affine, browser.header.affine);
       assert.ok(native.data.every(value => Number.isFinite(value) && value >= 0 && value <= (stage === 'markers' ? spec.topN : 1)));
@@ -110,6 +118,19 @@ try {
     }
     const components = markerComponents(consensus, PROSTATE_FIXTURE_DIMS);
     assert.ok(components.length <= spec.topN);
+    let markerAgreement;
+    if (spec.pipeline === 'nnunet-v2') {
+      markerAgreement = compareV2Outputs({ ...v2, dims: PROSTATE_FIXTURE_DIMS, mirror: Boolean(spec.mirror) });
+      const detections = report.detections;
+      assert.ok(detections.markers.length >= 1, `${spec.id}: at least one marker`);
+      assert.equal(detections.countFlag, detections.nCandidates < spec.topN);
+      assert.equal(components.length, detections.markers.length);
+      const nearest = components.map(component => PROSTATE_FIXTURE_SEEDS.map((seed, index) => ({ index,
+        distance: Math.hypot(...component.centroid.map((value, axis) => value - seed[axis])) })).sort((a, b) => a.distance - b.distance)[0]);
+      assert.equal(new Set(nearest.map(match => match.index)).size, nearest.length, `${spec.id}: distinct planted seeds`);
+      for (const match of nearest) assert.ok(match.distance <= 1, `${spec.id}: marker within one voxel of a planted seed`);
+      for (const marker of detections.markers) assert.equal(consensus.filter(value => value === marker.rank).length, marker.nVoxels);
+    }
     if (spec.id === 'ensemble-4') {
       assert.equal(components.length, 3);
       for (const match of matchComponentsToSeeds(components, PROSTATE_FIXTURE_SEEDS)) assert.ok(match.distance <= 1);
@@ -121,7 +142,7 @@ try {
       console.log(`PASS independent planted geometry: centroid <= 1 voxel, recall=${recall}, mask <= ${10 * count} voxels`);
     }
     const receipt = { ...spec, nativeSeconds: report.seconds, ortNode: report.onnxRuntime, ortWeb: web.ortWeb, chromium: web.chromium,
-      components, detectionParity, maximumProbabilityDifference, maskSha256: sha256(new Uint8Array(consensus.buffer)), composite: web.composite };
+      components, detectionParity, markerAgreement, maximumProbabilityDifference, maskSha256: sha256(new Uint8Array(consensus.buffer)), composite: web.composite };
     receipts.push(receipt);
     console.log(`PASS ${JSON.stringify(receipt)}`);
     assert.deepEqual(await readdir(isolated, { recursive: true }), [], 'No runtime/cache/telemetry writes outside output');
@@ -130,6 +151,9 @@ try {
   if (!values.case) {
     const baseline = receipts.find(item => item.id === 'ensemble-4');
     for (const id of ['top-1', 'top-2', 'threshold']) assert.notEqual(receipts.find(item => item.id === id).maskSha256, baseline.maskSha256, `${id} must change the output`);
+    for (const [base, ids] of [['ensemble-v2', ['top-1-v2', 'threshold-v2']], ['default-v2', ['ensemble-v2', 'mirrored-v2']]]) {
+      for (const id of ids) assert.notEqual(receipts.find(item => item.id === id).maskSha256, receipts.find(item => item.id === base).maskSha256, `${id} must change the output`);
+    }
   }
   console.log(`PASS SeedSeg offline software parity; elapsed ${(performance.now() - started) / 1000}s. Synthetic fixture, no clinical accuracy claim.`);
 } finally {

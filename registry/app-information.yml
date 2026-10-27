@@ -516,6 +516,10 @@ apps:
         doi: 10.1038/s41592-020-01008-z
         code: https://github.com/MIC-DKFZ/nnUNet
       - group: Segmentation networks
+        title: nnU-Net residual encoder (v2 model)
+        reference: "Isensee F, Wald T, Ulrich C, Baumgartner M, Roy S, Maier-Hein K, Jaeger PF. nnU-Net revisited: a call for rigorous validation in 3D medical image segmentation. Medical Image Computing and Computer-Assisted Intervention. 2024:488–498."
+        doi: 10.1007/978-3-031-72114-4_47
+      - group: Segmentation networks
         title: 3D U-Net
         reference: "Çiçek Ö, Abdulkadir A, Lienkamp SS, Brox T, Ronneberger O. 3D U-Net: learning dense volumetric segmentation from sparse annotation. Medical Image Computing and Computer-Assisted Intervention. 2016:424–432."
         doi: 10.1007/978-3-319-46723-8_49

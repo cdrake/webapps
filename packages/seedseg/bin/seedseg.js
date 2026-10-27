@@ -13,6 +13,7 @@ Options:
   --pipeline METHOD  nnunet-v2 (default) or legacy-v1
   --folds FOLDS      Distinct comma-separated v2 folds 0,1,2,3,4 (default 0)
   --model VARIANT    web (default, fp16-stored/fp32 compute) or fp32
+                     v1 and v2 are aliases for --pipeline legacy-v1 and nnunet-v2
   --mirror           Average all eight mirrorings of each v2 patch
   --ensemble N       Legacy v1: first N published models, 1 through 4
   --models SEEDS     Legacy v1: distinct comma-separated seeds: ${MODEL_SEEDS.join(', ')}

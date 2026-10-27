@@ -18,7 +18,13 @@ test('model and numeric guards preserve published order and reject invalid selec
   assert.equal(resolveSettings({ models: [42] }).pipeline, 'legacy-v1');
   assert.deepEqual(resolveSettings({ folds: [4, 0] }).models.map(asset => asset.id), ['fold0-web', 'fold4-web']);
   assert.throws(() => resolveSettings({ pipeline: 'unknown', ensemble: 1 }), /Unknown/);
-  assert.throws(() => resolveSettings({ pipeline: 'nnunet-v2', models: [42] }), /Legacy/);
+  assert.throws(() => resolveSettings({ pipeline: 'nnunet-v2', models: [42] }), /v1 checkpoints/);
+  assert.deepEqual(resolveSettings({ model: 'v1', models: [123] }).models.map(asset => asset.seed), [123]);
+  assert.equal(resolveSettings({ model: 'v2' }).pipeline, 'nnunet-v2');
+  assert.throws(() => resolveSettings({ models: [42], folds: [0] }), /choose one model/);
+  assert.throws(() => resolveSettings({ ensemble: 2, mirror: true }), /choose one model/);
+  assert.throws(() => resolveSettings({ pipeline: 'legacy-v1', mirror: true }), /apply to v2/);
+  assert.throws(() => resolveSettings({ pipeline: 'legacy-v1', model: 'v2' }), /same method/);
   assert.deepEqual(resolveModels([789, 42]).map(asset => asset.seed), [42, 789]);
   for (const models of [[], [42, 42], [42, 'seed42'], [1], [42, 123, 456, 789, 42]]) {
     assert.throws(() => resolveSettings({ models }), /distinct|Unknown|4/);

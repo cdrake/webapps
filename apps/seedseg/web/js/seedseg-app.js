@@ -14,9 +14,10 @@ import { DicompareReportRenderer } from '@neurodesk/webapp-components/ui';
 import { ViewerController } from '@neurodesk/webapp-components';
 import { SeedSegPipeline } from './controllers/SeedSegPipeline.js';
 import { ConsoleOutput, ProgressManager, ModalManager, bindWindowControls, createMaskEditor } from '@neurodesk/webapp-components/ui';
-import { createNiftiFromVolume } from '@neurodesk/webapp-components/file-io';
+import { createNiftiFromVolume, readNifti } from '@neurodesk/webapp-components/file-io';
 import * as Config from './app/config.js';
 import { resolveModels, validateSelection } from '../vendor/seedseg/src/assets.js';
+import { summarizeMarkers } from '../vendor/seedseg/src/nnunet.js';
 import { clearResultsAfterEditing, isEditableStage, replaceWithEdit, stageLabel } from './app/mask-edit.js';
 
 class SeedSegApp {
@@ -630,7 +631,7 @@ class SeedSegApp {
 
   // ==================== Inference ====================
 
-  async runSegmentation() {
+  async runSegmentation({ legacyModels, model = Config.INFERENCE_DEFAULTS.model, backend = 'auto' } = {}) {
     if (!this.fileIOController.hasValidData()) {
       this.updateOutput('No input volume loaded');
       return;
@@ -639,12 +640,12 @@ class SeedSegApp {
     const file = this.fileIOController.getActiveFile();
 
     const pipeline = document.getElementById('legacyModel').checked ? 'legacy-v1' : 'nnunet-v2';
-    const folds = Config.FOLDS.filter(fold => document.getElementById(`fold${fold}`).checked);
+    const folds = pipeline === 'legacy-v1' ? [] : Config.FOLDS.filter(fold => document.getElementById(`fold${fold}`).checked);
     const threshold = document.getElementById('probThreshold').valueAsNumber;
     const nMarkers = document.getElementById('nMarkers').valueAsNumber;
-    const mirror = document.getElementById('mirrorTTA').checked;
+    const mirror = pipeline !== 'legacy-v1' && document.getElementById('mirrorTTA').checked;
     try {
-      resolveModels(pipeline === 'legacy-v1' ? this.legacyModels : folds, { pipeline });
+      resolveModels(pipeline === 'legacy-v1' ? legacyModels : folds, { pipeline, model });
       validateSelection({ threshold, nMarkers, mirror });
     } catch (error) {
       this.onInferenceError(error.message);
@@ -673,9 +674,9 @@ class SeedSegApp {
           mirror,
           threshold,
           nMarkers,
-          selectedModels: this.legacyModels,
-          model: this.model ?? Config.INFERENCE_DEFAULTS.model,
-          backend: this.backend ?? 'auto'
+          selectedModels: legacyModels,
+          model,
+          backend
         }
       });
     } catch (error) {
@@ -782,7 +783,7 @@ class SeedSegApp {
 
   async onMaskApplied(stage, file, original) {
     replaceWithEdit(this.inferenceExecutor, stage, file, original);
-    if (stage === 'markers') document.getElementById('detectionsPanel').classList.add('hidden');
+    if (stage === 'markers') await this.refreshDetections(file);
     const showBtn = document.querySelector(`#stage-item-${stage} .stage-btn`);
     if (showBtn) showBtn.textContent = stageLabel(SeedSegApp.STAGE_NAMES[stage] || stage, this.inferenceExecutor.getResult(stage));
     this.updateOutput(`Applied manual edits to ${file.name}`);
@@ -793,6 +794,17 @@ class SeedSegApp {
   onMaskEditClosed() {
     this.setEditButtonsEnabled(true);
     this.progress.setText('Ready');
+  }
+
+  async refreshDetections(file) {
+    const detections = this.inferenceExecutor.report?.detections;
+    const probabilityFile = this.inferenceExecutor.getResult('probability')?.file;
+    if (!detections || !probabilityFile) return;
+    const [mask, probability] = await Promise.all([file, probabilityFile].map(async item => readNifti(await item.arrayBuffer())));
+    const voxelVolume = mask.header.voxelSize.reduce((product, value) => product * Math.abs(value), 1);
+    const edited = summarizeMarkers(mask.data, probability.data, [...mask.dims].reverse(), { k: detections.k, voxelVolume, affine: mask.header.affine });
+    this.inferenceExecutor.report.detections = { ...detections, ...edited, nCandidates: edited.markers.length, others: [], edited: true };
+    this.showDetections(this.inferenceExecutor.report.detections);
   }
 
   onMaskEditError(error) {
@@ -889,7 +901,7 @@ class SeedSegApp {
       return `<tr>
         <td>${m.rank}</td><td>${m.meanProb.toFixed(3)}</td><td>${m.volumeMm3.toFixed(0)}</td><td><button type="button" class="nd-btn nd-btn-secondary nd-btn-sm" data-world="${m.centroidWorldMm.join(',')}" aria-label="Show marker ${m.rank} at ${w} mm">${w}</button></td></tr>`;
     }).join('');
-    const next = det.others.length ? `Next candidate: mean probability ${det.others[0].meanProb.toFixed(3)}.` : '';
+    const next = det.edited ? 'From the edited mask.' : det.others.length ? `Next candidate: mean probability ${det.others[0].meanProb.toFixed(3)}.` : '';
     const nets = det.folds.length === 5 ? '5-network ensemble' : `network${det.folds.length > 1 ? 's' : ''} ${det.folds.map((f) => Number(f) + 1).join(', ')} of 5`;
     const t = ` Configuration: ${nets}, mirroring ${det.mirror ? 'on' : 'off'}, K = ${det.k}, ${det.backend === 'webgpu' ? 'WebGPU' : det.backend === 'wasm' ? 'WebAssembly' : det.backend}` +
       (det.timing?.total ? `, ${det.timing.total.toFixed(0)} s.` : '.');

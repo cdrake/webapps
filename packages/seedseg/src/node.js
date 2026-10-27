@@ -4,7 +4,7 @@ import { availableParallelism, homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { gunzipSync } from 'node:zlib';
 import { runInference } from './pipeline.js';
-import { MODEL_ASSETS, MODEL_SEEDS, resolveModels, validateSelection } from './assets.js';
+import { MODEL_ASSETS, MODEL_SEEDS, resolveModelChoice, resolveModels, validateSelection } from './assets.js';
 import { outputNames } from './results.js';
 import runtimeManifest from '../runtime.manifest.json' with { type: 'json' };
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -129,11 +129,10 @@ function integer(value, name, maximum = Infinity) {
   return number;
 }
 
-export function resolveSettings({ pipeline, models, ensemble, folds, model = 'web', mirror = false, threshold = 0.1, nMarkers = 3, threads } = {}) {
+export function resolveSettings({ pipeline, models, ensemble, folds, model: requested, mirror = false, threshold = 0.1, nMarkers = 3, threads } = {}) {
   if (models !== undefined && ensemble !== undefined) throw new Error('Choose --models or --ensemble, not both.');
-  const method = pipeline ?? (models !== undefined || ensemble !== undefined ? 'legacy-v1' : 'nnunet-v2');
-  if (method === 'nnunet-v2' && (models !== undefined || ensemble !== undefined)) throw new Error('Legacy --models/--ensemble require legacy-v1.');
-  if (method === 'legacy-v1' && (folds !== undefined || mirror || model !== 'web')) throw new Error('Folds, mirroring and model variants apply to nnunet-v2.');
+  const method = resolveModelChoice({ pipeline, model: requested, models, ensemble, folds, mirror }) === 'v1' ? 'legacy-v1' : 'nnunet-v2';
+  const model = ['web', 'fp32'].includes(requested) ? requested : 'web';
   const selection = ensemble === undefined
     ? (method === 'legacy-v1' ? models : folds)
     : MODEL_SEEDS.slice(0, integer(ensemble, 'Ensemble', 4));

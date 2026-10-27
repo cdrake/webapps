@@ -81,7 +81,8 @@ export async function browserReference({ modelsDirectory, pipeline = 'legacy-v1'
     await page.locator('#neurodesk-input-transfer').setInputFiles({ name: 'synthetic-prostate-t1.nii', mimeType: 'application/x-nifti', buffer: createProstateFixture() });
     await page.evaluate(() => neurodeskAutomation.dispatch('adopt', { role: 'image' }));
     await page.evaluate(parameters => neurodeskAutomation.dispatch('start', { operation: 'segment', parameters }), {
-      pipeline, models: pipeline === 'legacy-v1' ? selected.map(asset => asset.seed) : [42, 123, 456, 789], folds: folds.map(Number), model, mirror, threshold, markers: topN, backend: 'wasm',
+      pipeline, models: pipeline === 'legacy-v1' ? selected.map(asset => asset.seed) : undefined,
+      folds: pipeline === 'legacy-v1' ? undefined : folds.map(Number), model, mirror, threshold, markers: topN, backend: 'wasm',
     });
     let snapshot;
     const deadline = performance.now() + (mirror ? 1_800_000 : 900_000);

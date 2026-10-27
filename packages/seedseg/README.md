@@ -18,7 +18,8 @@ optional full-precision weights. Download those separately with
 
 `--pipeline legacy-v1` runs the previous four-network consensus. The existing
 `--ensemble 1` through `4` and `--models 42,456` options also select legacy v1.
-They are mutually exclusive. V2 fold and mirror settings do not apply to legacy
+`--model v1` and `--model v2` also select those pipelines for compatibility.
+The legacy `--models` and `--ensemble` selections are mutually exclusive. V2 fold and mirror settings do not apply to legacy
 v1. Both methods accept `--top-n` or its alias `--markers` from 1 through 10 and
 `--threshold` from 0 through 1. The defaults are 3 and 0.1. `--threads` defaults
 to `SLURM_CPUS_PER_TASK`, or at most four local cores.
@@ -53,7 +54,10 @@ the optional fp32 weights. Legacy marker masks must agree exactly. V2 follows
 [upstream's parity criteria](https://github.com/astewartau/prostate/blob/c9b328a2e0bc1768c0b75640f5532e2853e7ef31/scripts/deploy/compare_parity.py):
 the same top-K components in the same order, centroids within one voxel, and
 matching candidate count and count flag. Probability differences are reported
-without adding a new tolerance.
+alongside the fixed limits retained from the intervening repair: maximum
+probability difference 0.05 (0.2 with mirroring); per-rank disagreement at most
+five voxels, Dice at least 0.9 and geometric-centroid shift at most 0.25 voxel.
+These limits supplement the upstream detection criterion.
 
 The legacy four-model case retains the existing independent fixture gates:
 three components, centroids within one voxel of planted seeds, at least 90%

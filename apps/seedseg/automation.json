@@ -26,12 +26,11 @@
       "parameters": {
         "pipeline": {
           "type": "string",
-          "description": "Scientific pipeline",
+          "description": "Scientific pipeline (defaults to v2, or legacy v1 when models is supplied)",
           "enum": [
             "nnunet-v2",
             "legacy-v1"
-          ],
-          "default": "nnunet-v2"
+          ]
         },
         "folds": {
           "type": "array",
@@ -46,10 +45,7 @@
               3,
               4
             ]
-          },
-          "default": [
-            0
-          ]
+          }
         },
         "mirror": {
           "type": "boolean",
@@ -67,7 +63,7 @@
         },
         "models": {
           "type": "array",
-          "description": "Legacy v1 model seeds (only used with legacy-v1)",
+          "description": "Legacy v1 model seeds; supplying models without a pipeline retains legacy behavior",
           "items": {
             "type": "integer",
             "description": "Model seed",
@@ -77,13 +73,7 @@
               456,
               789
             ]
-          },
-          "default": [
-            42,
-            123,
-            456,
-            789
-          ]
+          }
         },
         "threshold": {
           "type": "number",
@@ -101,12 +91,13 @@
         },
         "model": {
           "type": "string",
-          "description": "ONNX weight variant (web uses fp16 storage and fp32 compute)",
+          "description": "Weight variant web or fp32; v1 and v2 are pipeline aliases",
           "enum": [
             "web",
-            "fp32"
-          ],
-          "default": "web"
+            "fp32",
+            "v1",
+            "v2"
+          ]
         }
       },
       "artifacts": {

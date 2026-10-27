@@ -1,6 +1,6 @@
 // Adapted from astewartau/prostate c9b328a2e0bc1768c0b75640f5532e2853e7ef31.
 // Volumes use NIfTI memory order (x fastest), with dimensions in z,y,x order.
-import { connectedComponents3D } from '@neurodesk/webapp-components/volume';
+import { connectedComponents3D } from "@neurodesk/webapp-components/volume";
 
 // ---------- preprocessing ----------
 
@@ -128,7 +128,9 @@ export function resampleLinear(src, sd, td) {
         const c01 = at(z0, y1, x0) * (1 - wx) + at(z0, y1, x1) * wx;
         const c10 = at(z1, y0, x0) * (1 - wx) + at(z1, y0, x1) * wx;
         const c11 = at(z1, y1, x0) * (1 - wx) + at(z1, y1, x1) * wx;
-        out[o] = (c00 * (1 - wy) + c01 * wy) * (1 - wz) + (c10 * (1 - wy) + c11 * wy) * wz;
+        out[o] =
+          (c00 * (1 - wy) + c01 * wy) * (1 - wz) +
+          (c10 * (1 - wy) + c11 * wy) * wz;
       }
     }
   }
@@ -144,7 +146,10 @@ export function padToPatch(data, dims, patch) {
   for (let z = 0; z < dims[0]; z++) {
     for (let y = 0; y < dims[1]; y++) {
       const s = (z * dims[1] + y) * dims[2];
-      out.set(data.subarray(s, s + dims[2]), ((z + lo[0]) * pd[1] + y + lo[1]) * pd[2] + lo[2]);
+      out.set(
+        data.subarray(s, s + dims[2]),
+        ((z + lo[0]) * pd[1] + y + lo[1]) * pd[2] + lo[2],
+      );
     }
   }
   return { data: out, dims: pd, lo };
@@ -171,11 +176,13 @@ export function gaussian1d(n, sigma) {
   const r = Math.floor(4 * sigma + 0.5),
     c = Math.floor(n / 2);
   let sum = 0;
-  for (let k = -r; k <= r; k++) sum += Math.exp((-0.5 * k * k) / (sigma * sigma));
+  for (let k = -r; k <= r; k++)
+    sum += Math.exp((-0.5 * k * k) / (sigma * sigma));
   const g = new Float64Array(n);
   for (let i = 0; i < n; i++) {
     const k = i - c;
-    g[i] = Math.abs(k) <= r ? Math.exp((-0.5 * k * k) / (sigma * sigma)) / sum : 0;
+    g[i] =
+      Math.abs(k) <= r ? Math.exp((-0.5 * k * k) / (sigma * sigma)) / sum : 0;
   }
   return g;
 }
@@ -284,8 +291,19 @@ export function flipBlocks(src, nch, patch, axes, acc) {
  * runNet(Float32Array tile(s), nBatch) -> Promise<Float32Array logits (nBatch*C*P)>.
  * Returns { logits: Float32Array(C * N), C }.
  */
-export async function slidingWindowLogits(data, dims, patch, runNet, opts = {}) {
-  const { mirrorAxes = [], gaussian = gaussianMap(patch), step = 0.5, onTile = null } = opts;
+export async function slidingWindowLogits(
+  data,
+  dims,
+  patch,
+  runNet,
+  opts = {},
+) {
+  const {
+    mirrorAxes = [],
+    gaussian = gaussianMap(patch),
+    step = 0.5,
+    onTile = null,
+  } = opts;
   const P = patch[0] * patch[1] * patch[2];
   const N = dims[0] * dims[1] * dims[2];
   const flips = mirrorSets(mirrorAxes);
@@ -327,7 +345,8 @@ export async function slidingWindowLogits(data, dims, patch, runNet, opts = {}) 
           }
         }
       }
-  for (let c = 0; c < C; c++) for (let i = 0; i < N; i++) acc[c * N + i] /= norm[i];
+  for (let c = 0; c < C; c++)
+    for (let i = 0; i < N; i++) acc[c * N + i] /= norm[i];
   return { logits: acc, C };
 }
 
@@ -348,7 +367,10 @@ export function softmaxClass(logits, C, N, cls) {
 
 /** Shared components use xyz dimensions; this module uses zyx dimensions. */
 export function label26(mask, dims) {
-  const { labels, numComponents } = connectedComponents3D(mask, [...dims].reverse());
+  const { labels, numComponents } = connectedComponents3D(
+    mask,
+    [...dims].reverse(),
+  );
   return { labels, n: numComponents };
 }
 
@@ -406,7 +428,8 @@ export function detect(p, dims, k = 3, threshold = 0.1, voxelVolume = 1) {
   const markers = list.slice(0, k);
   const rankOf = new Map(markers.map((c, r) => [c.label, r + 1]));
   const markerMap = new Float32Array(p.length);
-  for (let i = 0; i < p.length; i++) if (labels[i]) markerMap[i] = rankOf.get(labels[i]) || 0;
+  for (let i = 0; i < p.length; i++)
+    if (labels[i]) markerMap[i] = rankOf.get(labels[i]) || 0;
   return {
     k,
     threshold,
@@ -416,4 +439,63 @@ export function detect(p, dims, k = 3, threshold = 0.1, voxelVolume = 1) {
     others: list.slice(k, k + 5),
     markerMap,
   };
+}
+
+/** Recomputes a ranked mask's marker list after editing, preserving rank identities.
+ * Centroids use probability weights, or a geometric centroid for a zero-probability rank.
+ */
+export function summarizeMarkers(
+  markerMap,
+  probability,
+  dims,
+  { k, voxelVolume = 1, affine },
+) {
+  const [, ny, nx] = dims;
+  const ranks = new Map();
+  for (let i = 0; i < markerMap.length; i++) {
+    const rank = markerMap[i];
+    if (!(rank > 0)) continue;
+    let entry = ranks.get(rank);
+    if (!entry) {
+      entry = {
+        voxels: 0,
+        sum: 0,
+        max: 0,
+        weighted: [0, 0, 0],
+        geometric: [0, 0, 0],
+      };
+      ranks.set(rank, entry);
+    }
+    const p = probability[i];
+    const voxel = [i % nx, Math.floor(i / nx) % ny, Math.floor(i / (nx * ny))];
+    entry.voxels++;
+    entry.sum += p;
+    entry.max = Math.max(entry.max, p);
+    for (let axis = 0; axis < 3; axis++) {
+      entry.weighted[axis] += p * voxel[axis];
+      entry.geometric[axis] += voxel[axis];
+    }
+  }
+  const world = (c) =>
+    affine
+      .slice(0, 3)
+      .map((row) => row[0] * c[0] + row[1] * c[1] + row[2] * c[2] + row[3]);
+  const markers = [...ranks]
+    .sort(([a], [b]) => a - b)
+    .map(([rank, entry]) => {
+      const centroidVox =
+        entry.sum > 0
+          ? entry.weighted.map((value) => value / entry.sum)
+          : entry.geometric.map((value) => value / entry.voxels);
+      return {
+        rank,
+        meanProb: entry.sum / entry.voxels,
+        maxProb: entry.max,
+        nVoxels: entry.voxels,
+        volumeMm3: entry.voxels * voxelVolume,
+        centroidVox,
+        centroidWorldMm: world(centroidVox),
+      };
+    });
+  return { k, markers, countFlag: markers.length < k };
 }

@@ -16,7 +16,8 @@ specificity remain unverified: SeedSeg has no public clinical reference case. Th
 not offered as an app example.
 
 The v2 test checks default model identity, native-grid outputs, ranked marker labels,
-detection reports and download checksums. It also blocks the optional dicompare
+detection reports, download checksums and recomputed marker summaries after editing.
+An oriented-image case checks navigation through world coordinates. It also blocks the optional dicompare
 host to verify that segmentation starts without it. V2 accuracy needs its own
 clinical reference; the legacy phantom tolerances remain unchanged.
 
