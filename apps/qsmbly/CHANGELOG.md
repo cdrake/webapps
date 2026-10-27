@@ -4,6 +4,7 @@
 
 ### Patch Changes
 
+- fd54995: Load the dicompare protocol checker, its worker and schemas from webapps.neurodesk.org/dicompare instead of the unavailable dicompare.neurodesk.org deployment. Keep QSMbly's worker in single-app offline bundles and preserve the URL adaptations during upstream sync. SeedSeg continues to use its locally staged report assets.
 - Preserve engine panic diagnostics during cleanup and replace a trapped worker before retry. Keep verified model downloads usable when cache writes exceed quota. Verify the updated production browser pipeline and its exported command against the pinned native release under the existing tolerances.
 - 80c3d01: Merge upstream astewartau/qsmbly cf88ee3..0b6e3d3, with qsmxt-engine at QSMxT 1f72772 and QSM.rs 95be94b:
 
@@ -14,6 +15,7 @@
   - χ-sepnet runs in a 192×192×128 sliding-window patch.
   - TFI's MERIT switch and QSMART's SDF spatial radius are removed: both had no effect on the result.
   - The default real-brain reconstruction (ROMEO, V-SHARP, RTS) is unchanged: its recorded χ map and mask are identical to the previous release's.
+
 - Updated dependencies
   - @neurodesk/webapp-components@0.22.2
 - Updated dependencies

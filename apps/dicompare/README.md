@@ -6,7 +6,7 @@ The app provides a visual interface for building, viewing, and validating imagin
 
 dicompare is a collaboration between the [Neurodesk](https://www.neurodesk.org/) and [Brainlife](https://brainlife.io/) groups.
 
-**Live app:** [dicompare.neurodesk.org](https://webapps.neurodesk.org/dicompare/) | [brainlife.io/dicompare](https://brainlife.io/dicompare)
+**Live app:** [webapps.neurodesk.org/dicompare](https://webapps.neurodesk.org/dicompare/) | [brainlife.io/dicompare](https://brainlife.io/dicompare)
 
 <img width="1386" height="844" alt="image" src="https://github.com/user-attachments/assets/1fc347ab-4daa-43a8-ab16-6a6013f33dd3" />
 
