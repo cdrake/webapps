@@ -342,13 +342,15 @@ directory because its Rayon worker helper, JavaScript glue and WASM binary use
 relative URLs and must remain adjacent. The versioned Greedy web release carries
 that generated runtime; it is never committed or npm-published. Greedy's app
 manifest is the release version source; the release tooling keeps its package
-and Rust workspace at the same `MAJOR.MINOR.YYYYMMDD` version.
+and Rust workspace at the same `MAJOR.MINOR.YYYYMMDD` version, except the `greedy-rs-core` and
+`greedy-rs-wasm` crates, which stay at `0.0.0` because their versions end up in the committed
+`wasm-single` bytes.
 
 `packages/greedy/wasm-single` is a single-threaded build of the same crate, which SYNcro's command
 line runs in Node (`@neurodesk/greedy/single`). It gives the threaded browser build's results byte
 for byte (checked in Chromium on a BISON pair), and it is committed so that every platform runs the
 same bytes. After changing `exes/greedy/core` or `exes/greedy/wasm`, run
-`pnpm --filter @neurodesk/greedy build:wasm-single` on Linux and commit the result; the
+`pnpm --filter @neurodesk/greedy build:wasm-single` on Linux (binaryen `version_117` wasm-opt on `PATH`) and commit the result; the
 `wasm-single` job in `greedy-native.yml` fails when a rebuild differs.
 
 `exes/fastprep` and `exes/glm` are Cargo workspaces (`make build test lint`) with `cli`, `core` and `wasm` crates. `pnpm --filter @neurodesk/fastprep build:wasm` builds both WASM crates into the gitignored `packages/fastprep/wasm`. There is no bundled CLI release yet: fastprep is in `registry/standalone-exceptions.json` until niimath, brainchop, greedy-rs, synthsr, topofit and glm are packaged and TopoFit's licence allows it.

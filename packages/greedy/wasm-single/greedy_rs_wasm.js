@@ -251,7 +251,7 @@ export function reslice_warp_affine_options(fixed, moving, warp, matrix, precedi
 function __wbg_get_imports() {
     const import0 = {
         __proto__: null,
-        __wbg_error_ee2ead4bf2d31d6f: function(arg0, arg1) {
+        __wbg_error_b186ceda640066df: function(arg0, arg1) {
             console.error(getStringFromWasm0(arg0, arg1));
         },
         __wbindgen_generic_0000000000000001: function(arg0, arg1) {

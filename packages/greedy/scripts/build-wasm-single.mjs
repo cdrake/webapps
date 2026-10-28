@@ -1,7 +1,7 @@
 // Builds the committed single-threaded Greedy WebAssembly (wasm-single/) that SYNcro's command line
 // runs in Node. LLVM folds math constants with the host's libm, so it is built on Linux with the threaded
-// build's pinned nightly and wasm-pack 0.13.1, and committed: every platform then runs the same bytes.
-// --check rebuilds and fails when the committed files differ.
+// build's pinned nightly, wasm-pack 0.13.1 and binaryen version_117, and committed: every platform then
+// runs the same bytes. --check rebuilds and fails when the committed files differ.
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -13,6 +13,10 @@ const committed = fileURLToPath(new URL("../wasm-single", import.meta.url));
 const target = fileURLToPath(new URL("../../../exes/greedy/target/wasm-single", import.meta.url));
 const FILES = ["greedy_rs_wasm.js", "greedy_rs_wasm_bg.wasm"];
 const check = process.argv.includes("--check");
+
+// wasm-pack runs the wasm-opt on PATH; CI's setup-wasm-opt action installs this version.
+const wasmOpt = execFileSync("wasm-opt", ["--version"], { encoding: "utf8" });
+if (!wasmOpt.includes("version_117")) throw new Error(`Need binaryen version_117 wasm-opt on PATH, found: ${wasmOpt.trim()}`);
 
 const output = mkdtempSync(join(tmpdir(), "greedy-wasm-single-"));
 try {
