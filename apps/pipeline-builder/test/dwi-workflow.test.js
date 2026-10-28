@@ -18,8 +18,8 @@ test('DWI preprocessing has valid bindings and warns about its conditional ICVF 
   assert.deepEqual(validate(workflow), {
     ok: true,
     issues: [runtimeCheck('bval'), runtimeCheck('bvec'), {
-      severity: 'warning', code: 'optional-output', path: 'outputs.icvf',
-      message: 'steps.models.outputs.output_noddi-icvf is optional and may not produce this workflow output.',
+      severity: 'warning', path: 'outputs.icvf.ref',
+      message: 'Output output_noddi-icvf of neurodesk.webapps/noddi/fit is optional, so workflow output icvf may have no value when the step finishes.',
     }],
   });
   assert.deepEqual(Object.keys(workflow.steps), ['denoise', 'degibbs', 'correct', 'brain', 'models', 'tractography']);

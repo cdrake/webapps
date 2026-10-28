@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import * as model from "../src/model.js";
+import { createValidator } from "../src/validator.js";
 
 const source = {
   id: "lab/source",
@@ -104,6 +106,17 @@ test("optional outputs warn on required consumers and workflow outputs", () => {
   ]);
   doc.outputs.result.optional = true;
   assert.equal(model.workflowIssues(doc, tools).filter(issue => issue.code === "optional-output").length, 1);
+});
+
+test("an optional output warning reported by the NeuroFlow core is not repeated", async () => {
+  const validate = await createValidator(tools, await readFile(new URL("../vendor/neuroflow/neuroflow_wasm_bg.wasm", import.meta.url)));
+  const doc = workflow({ ref: "steps.source.outputs.conditional" });
+  doc.outputs.result = { type: "neuro:volume", ref: "steps.source.outputs.conditional" };
+  const optional = validate(doc).issues.filter(issue => /is optional/.test(issue.message));
+  assert.deepEqual(optional.map(issue => [issue.path, issue.code]), [
+    ["steps.target.inputs.input_images", undefined],
+    ["outputs.result.ref", undefined],
+  ]);
 });
 
 test("required outputs and unbounded inputs need no additional warnings", () => {
