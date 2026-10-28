@@ -32,12 +32,6 @@ async function runEnsemble(page) {
   return page.evaluate(() => neurodeskAutomation.dispatch('snapshot'));
 }
 
-// GitHub's macOS runners give Chromium a virtualised Metal GPU. The nnU-Net v2 networks outlast its
-// command-buffer watchdog: WebGPU loses the device, and at times the whole GPU process, which then
-// leaves the shared browser without WebGPU or WebGL2 for every later test. There, v2 runs on
-// WebAssembly and its WebGPU parity waits for a real Mac (NEURODESK_HARDWARE_GPU=1 outside Actions).
-const virtualGpu = hardwareGpu && process.env.GITHUB_ACTIONS === 'true';
-
 async function downloadRow(page, row) {
   const waiting = page.waitForEvent('download');
   await row.locator('.download-btn').click();
@@ -190,7 +184,7 @@ test('default nnU-Net v2 produces native-grid probabilities, ranked markers and 
   await page.waitForFunction(() => Boolean(globalThis.neurodeskAutomation));
   await page.locator('#neurodesk-input-transfer').setInputFiles({ name: 'synthetic-prostate-t1.nii', mimeType: 'application/x-nifti', buffer: image });
   await page.evaluate(() => neurodeskAutomation.dispatch('adopt', { role: 'image' }));
-  await page.evaluate(parameters => neurodeskAutomation.dispatch('start', { operation: 'segment', parameters }), virtualGpu ? { backend: 'wasm' } : {});
+  await page.evaluate(() => neurodeskAutomation.dispatch('start', { operation: 'segment' }));
   await expect.poll(() => page.evaluate(async () => (await neurodeskAutomation.dispatch('snapshot')).state), { timeout: 540000 }).toMatch(/succeeded|failed/);
   const snapshot = await page.evaluate(() => neurodeskAutomation.dispatch('snapshot'));
   expect(snapshot.state, JSON.stringify(snapshot.error)).toBe('succeeded');
@@ -200,7 +194,7 @@ test('default nnU-Net v2 produces native-grid probabilities, ranked markers and 
     return { exposed: Boolean(navigator.gpu), adapter: Boolean(adapter), fallback: adapter?.info?.isFallbackAdapter ?? adapter?.isFallbackAdapter ?? null };
   });
   console.log(JSON.stringify({ seedsegBackend: snapshot.report.provenance.executionProvider, onnxRuntime: snapshot.report.provenance.onnxRuntime, gpu }));
-  if (hardwareGpu && !virtualGpu) {
+  if (process.env.NEURODESK_HARDWARE_GPU === '1') {
     assertHardwareAdapter(await readAdapterInfo(page));
     expect(snapshot.report.provenance.executionProvider).toBe('webgpu');
   }
@@ -223,7 +217,7 @@ test('default nnU-Net v2 produces native-grid probabilities, ranked markers and 
       expect(volume.data.every(value => Number.isFinite(value) && value >= 0 && value <= (id === 'markers' ? 3 : 1))).toBe(true);
     }
   }
-  if (hardwareGpu && !virtualGpu) {
+  if (process.env.NEURODESK_HARDWARE_GPU === '1') {
     await page.evaluate(() => neurodeskAutomation.dispatch('start', { operation: 'segment', parameters: { backend: 'wasm' } }));
     await expect.poll(() => page.evaluate(async () => (await neurodeskAutomation.dispatch('snapshot')).state), { timeout: 540000 }).toMatch(/succeeded|failed/);
     const cpu = await page.evaluate(() => neurodeskAutomation.dispatch('snapshot'));
@@ -280,7 +274,6 @@ for (const settings of [
 ]) {
   test(`hardware WebGPU and WASM agree for the ${settings.name}`, async ({ page }) => {
     test.skip(!hardwareGpu, 'Requires a hardware WebGPU adapter.');
-    test.skip(virtualGpu, "GitHub's virtual Metal GPU cannot run nnU-Net v2; run on a real Mac.");
     test.setTimeout(1200000);
     await page.goto('/');
     await page.waitForFunction(() => Boolean(globalThis.neurodeskAutomation));
