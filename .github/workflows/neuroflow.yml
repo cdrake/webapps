@@ -58,8 +58,8 @@ jobs:
       NEURODESK_HARDWARE_GPU: '1'
       NEURODESK_HARDWARE_GPU_VENDOR: apple
       ONNXRUNTIME_NODE_INSTALL: skip
-      # v0.2.0, the first released runtime with scalar-to-array bindings.
-      NEUROFLOW_COMMIT: fc6ec6075108306a588d48e2c1b66ffb924284a6
+      # v0.2.1: scalar-to-array bindings (v0.2.0) and gradient-table inspectors.
+      NEUROFLOW_COMMIT: 2a844009fb135311cada8161c0dcd658df9d5833
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -67,7 +67,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           repository: cdrake/neuroflow
-          ref: fc6ec6075108306a588d48e2c1b66ffb924284a6 # v0.2.0
+          ref: 2a844009fb135311cada8161c0dcd658df9d5833 # v0.2.1
           path: .audit/neuroflow-runtime
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable

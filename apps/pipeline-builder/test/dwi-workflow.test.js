@@ -10,9 +10,14 @@ const tools = (await loadCatalogContracts()).flatMap(generateTools);
 const validate = await createValidator(tools, await readFile(new URL('../vendor/neuroflow/neuroflow_wasm_bg.wasm', import.meta.url)));
 
 test('DWI preprocessing has valid bindings and warns about its conditional ICVF output', () => {
+  // The template's gradient inputs declare no formats, so neuroflow-mcp inspects those files at run time.
+  const runtimeCheck = role => ({
+    severity: 'warning', outcome: 'requires-runtime-check', path: `steps.denoise.inputs.input_${role}`,
+    message: `formats requires a runtime check: source null, target ["${role}"].`,
+  });
   assert.deepEqual(validate(workflow), {
     ok: true,
-    issues: [{
+    issues: [runtimeCheck('bval'), runtimeCheck('bvec'), {
       severity: 'warning', code: 'optional-output', path: 'outputs.icvf',
       message: 'steps.models.outputs.output_noddi-icvf is optional and may not produce this workflow output.',
     }],
