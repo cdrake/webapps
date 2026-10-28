@@ -32,23 +32,11 @@ async function runEnsemble(page) {
   return page.evaluate(() => neurodeskAutomation.dispatch('snapshot'));
 }
 
-// GitHub's macOS runners give Chromium a virtualised Metal GPU. On it the nnU-Net v2 networks
-// outlast Metal's command-buffer watchdog: the device is lost and the worker reruns the network
-// with WebAssembly, as upstream SeedSeg does. Accept that one recorded fallback; any other WebGPU
-// failure, or a WASM result without it, still fails.
-const GPU_TIMEOUT_FALLBACK = /WebGPU device lost \(unknown\): Metal command buffer failed: Caused GPU Timeout Error[\s\S]*?WebGPU failed \([\s\S]*?\); retrying this network with WebAssembly/;
-
-async function consoleText(page) {
-  return (await page.locator('#consoleOutput').textContent()) ?? '';
-}
-
-function expectWebgpuOrTimeoutFallback(snapshot, log, testInfo) {
-  const provider = snapshot.report.provenance.executionProvider;
-  if (provider === 'webgpu') return;
-  expect(log, `executionProvider ${provider} without a recorded Metal timeout`).toMatch(GPU_TIMEOUT_FALLBACK);
-  expect(provider).toMatch(/^(webgpu\+)?wasm$/);
-  testInfo.annotations.push({ type: 'webgpu-fallback', description: 'Metal command-buffer timeout; ran on WebAssembly' });
-}
+// GitHub's macOS runners give Chromium a virtualised Metal GPU. The nnU-Net v2 networks outlast its
+// command-buffer watchdog: WebGPU loses the device, and at times the whole GPU process, which then
+// leaves the shared browser without WebGPU or WebGL2 for every later test. There, v2 runs on
+// WebAssembly and its WebGPU parity waits for a real Mac (NEURODESK_HARDWARE_GPU=1 outside Actions).
+const virtualGpu = hardwareGpu && process.env.GITHUB_ACTIONS === 'true';
 
 async function downloadRow(page, row) {
   const waiting = page.waitForEvent('download');
@@ -202,7 +190,7 @@ test('default nnU-Net v2 produces native-grid probabilities, ranked markers and 
   await page.waitForFunction(() => Boolean(globalThis.neurodeskAutomation));
   await page.locator('#neurodesk-input-transfer').setInputFiles({ name: 'synthetic-prostate-t1.nii', mimeType: 'application/x-nifti', buffer: image });
   await page.evaluate(() => neurodeskAutomation.dispatch('adopt', { role: 'image' }));
-  await page.evaluate(() => neurodeskAutomation.dispatch('start', { operation: 'segment' }));
+  await page.evaluate(parameters => neurodeskAutomation.dispatch('start', { operation: 'segment', parameters }), virtualGpu ? { backend: 'wasm' } : {});
   await expect.poll(() => page.evaluate(async () => (await neurodeskAutomation.dispatch('snapshot')).state), { timeout: 540000 }).toMatch(/succeeded|failed/);
   const snapshot = await page.evaluate(() => neurodeskAutomation.dispatch('snapshot'));
   expect(snapshot.state, JSON.stringify(snapshot.error)).toBe('succeeded');
@@ -212,9 +200,9 @@ test('default nnU-Net v2 produces native-grid probabilities, ranked markers and 
     return { exposed: Boolean(navigator.gpu), adapter: Boolean(adapter), fallback: adapter?.info?.isFallbackAdapter ?? adapter?.isFallbackAdapter ?? null };
   });
   console.log(JSON.stringify({ seedsegBackend: snapshot.report.provenance.executionProvider, onnxRuntime: snapshot.report.provenance.onnxRuntime, gpu }));
-  if (process.env.NEURODESK_HARDWARE_GPU === '1') {
+  if (hardwareGpu && !virtualGpu) {
     assertHardwareAdapter(await readAdapterInfo(page));
-    expectWebgpuOrTimeoutFallback(snapshot, await consoleText(page), testInfo);
+    expect(snapshot.report.provenance.executionProvider).toBe('webgpu');
   }
   expect(snapshot.report.provenance.models.map(model => model.id)).toEqual(['fold0-web']);
   expect(snapshot.report.measurements.detections.folds).toEqual(['0']);
@@ -235,7 +223,7 @@ test('default nnU-Net v2 produces native-grid probabilities, ranked markers and 
       expect(volume.data.every(value => Number.isFinite(value) && value >= 0 && value <= (id === 'markers' ? 3 : 1))).toBe(true);
     }
   }
-  if (process.env.NEURODESK_HARDWARE_GPU === '1') {
+  if (hardwareGpu && !virtualGpu) {
     await page.evaluate(() => neurodeskAutomation.dispatch('start', { operation: 'segment', parameters: { backend: 'wasm' } }));
     await expect.poll(() => page.evaluate(async () => (await neurodeskAutomation.dispatch('snapshot')).state), { timeout: 540000 }).toMatch(/succeeded|failed/);
     const cpu = await page.evaluate(() => neurodeskAutomation.dispatch('snapshot'));
@@ -290,8 +278,9 @@ for (const settings of [
   { name: 'five-fold ensemble', folds: [0, 1, 2, 3, 4], mirror: false },
   { name: 'mirrored fold', folds: [0], mirror: true },
 ]) {
-  test(`hardware WebGPU and WASM agree for the ${settings.name}`, async ({ page }, testInfo) => {
+  test(`hardware WebGPU and WASM agree for the ${settings.name}`, async ({ page }) => {
     test.skip(!hardwareGpu, 'Requires a hardware WebGPU adapter.');
+    test.skip(virtualGpu, "GitHub's virtual Metal GPU cannot run nnU-Net v2; run on a real Mac.");
     test.setTimeout(1200000);
     await page.goto('/');
     await page.waitForFunction(() => Boolean(globalThis.neurodeskAutomation));
@@ -301,19 +290,13 @@ for (const settings of [
     const reports = [];
     const outputs = [];
     for (const backend of ['auto', 'wasm']) {
-      const logBefore = await consoleText(page);
       await page.evaluate(parameters => neurodeskAutomation.dispatch('start', { operation: 'segment', parameters }), {
         folds: settings.folds, mirror: settings.mirror, backend,
       });
       await expect.poll(() => page.evaluate(async () => (await neurodeskAutomation.dispatch('snapshot')).state), { timeout: 540000 }).toMatch(/succeeded|failed/);
       const snapshot = await page.evaluate(() => neurodeskAutomation.dispatch('snapshot'));
       expect(snapshot.state, JSON.stringify(snapshot.error)).toBe('succeeded');
-      if (backend === 'auto') {
-        const log = await consoleText(page);
-        expectWebgpuOrTimeoutFallback(snapshot, log.startsWith(logBefore) ? log.slice(logBefore.length) : log, testInfo);
-      } else {
-        expect(snapshot.report.provenance.executionProvider).toBe('wasm');
-      }
+      expect(snapshot.report.provenance.executionProvider).toBe(backend === 'auto' ? 'webgpu' : 'wasm');
       expect(snapshot.report.provenance.models.map(model => model.id)).toEqual(settings.folds.map(fold => `fold${fold}-web`));
       expect(snapshot.report.measurements.detections.folds).toEqual(settings.folds.map(String));
       expect(snapshot.report.measurements.detections.mirror).toBe(settings.mirror);
