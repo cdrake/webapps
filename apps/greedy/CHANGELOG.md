@@ -1,5 +1,17 @@
 # greedy
 
+## 0.7.20261029
+
+### Minor Changes
+
+- 207df76: `greedy-rs -a` accepts Greedy's `-ia FILE` (start from an affine matrix) and `-ia-identity`; `register_affine_masked_wasm` takes the matrix text as an optional last argument. Starting a masked (`-gm`) NMI affine from the unmasked affine converges on BISON T1s where the identity start still collapses (#623).
+
+### Patch Changes
+
+- 4761b2c: Fix the masked (`-gm`) NMI affine diverging on a whole-head T1 to template pair (#623). The fixed pyramid now applies Greedy's masked downsampling, so the masked objective matches Greedy's, and the command line starts from the physical identity unless `-ia-image-centers` is given, as Greedy does; the WebAssembly affine functions take that choice as an argument and the app wrappers keep starting from image centres.
+- Updated dependencies [4761b2c]
+  - @neurodesk/greedy@0.7.20261029
+
 ## 0.6.20261027
 
 ### Patch Changes
