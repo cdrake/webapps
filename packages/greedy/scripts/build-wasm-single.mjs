@@ -30,6 +30,34 @@ const remap = [
   [join(rustc("--print", "sysroot"), "lib/rustlib/src/rust"), `/rustc/${commit}`],
 ].map(([from, to]) => `--remap-path-prefix=${from}=${to}`);
 
+// The producers section names the wasm-bindgen build ("0.2.128" from cargo install, "0.2.128 (246946fdd)"
+// from the release binary wasm-pack downloads). It is metadata only, so drop it.
+function withoutProducers(wasm) {
+  const leb = (at) => {
+    let value = 0;
+    let shift = 0;
+    let length = 0;
+    let byte;
+    do {
+      byte = wasm[at + length++];
+      value += (byte & 0x7f) * 2 ** shift;
+      shift += 7;
+    } while (byte & 0x80);
+    return { value, length };
+  };
+  const kept = [wasm.subarray(0, 8)];
+  for (let at = 8; at < wasm.length;) {
+    const size = leb(at + 1);
+    const end = at + 1 + size.length + size.value;
+    const body = at + 1 + size.length;
+    const name = wasm[at] === 0 ? leb(body) : null;
+    const producers = name && wasm.subarray(body + name.length, body + name.length + name.value).toString("utf8") === "producers";
+    if (!producers) kept.push(wasm.subarray(at, end));
+    at = end;
+  }
+  return Buffer.concat(kept);
+}
+
 const output = mkdtempSync(join(tmpdir(), "greedy-wasm-single-"));
 try {
   execFileSync("rustup", [
@@ -53,6 +81,7 @@ try {
   for (const file of FILES) {
     let bytes = readFileSync(join(output, file));
     if (file.endsWith(".js")) bytes = Buffer.from(bytes.toString("utf8").replaceAll("\r\n", "\n"));
+    else bytes = withoutProducers(bytes);
     if (!check) writeFileSync(join(committed, file), bytes);
     else if (!bytes.equals(readFileSync(join(committed, file)))) {
       stale.push(file);
