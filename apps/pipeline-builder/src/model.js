@@ -401,16 +401,10 @@ export function workflowIssues(doc, tools) {
           warn("input-count", path, `Item count needs a run-time check (${bounds.join(", ")}).`);
         }
       }
-      if (source?.optional && !input.optional && binding.ref.startsWith("steps.")) {
-        warn("optional-output", path, `${binding.ref} is optional and may be absent when this required input runs.`);
-      }
     }
   }
   for (const [name, output] of Object.entries(doc.outputs ?? {})) {
     undeclared(`outputs.${name}`, output?.ref);
-    if (declaration(output.ref)?.optional && !output.optional) {
-      warn("optional-output", `outputs.${name}`, `${output.ref} is optional and may not produce this workflow output.`);
-    }
   }
   return issues;
 }
