@@ -209,6 +209,33 @@ test("editing a step keeps its sections as the user left them and keeps focus", 
   expect(doc.steps["brain-extraction"].inputs).toMatchObject({ param_threshold: { constant: 0.4 }, param_method: { constant: "bet" } });
 });
 
+test("array parameters export as typed arrays and reject invalid entries in place", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("#toolSelect")).toBeEnabled();
+  await page.locator("#toolSelect").selectOption("neurodesk.webapps/qsmbly/reconstruct");
+  await page.locator("#addStepButton").click();
+  await page.locator("#stepEditor details summary").click();
+  const echoes = page.locator("#param-param_echoTimesMs");
+  const error = page.locator("#param-param_echoTimesMs-error");
+  await echoes.fill("10, 20");
+  await echoes.press("Tab");
+  await expect(error).toBeHidden();
+  await echoes.fill("10, abc");
+  await echoes.press("Tab");
+  await expect(error).toHaveText('Expected a number, got "abc".');
+  await expect(echoes).toHaveAttribute("aria-invalid", "true");
+  await page.locator("#workflowDescription").fill("Reconstruct susceptibility from multi-echo phase.");
+  await page.locator("#workflowDescription").press("Tab");
+  await expect(echoes).toHaveValue("10, abc");
+  const doc = await exported(page);
+  expect(doc.steps.qsmbly.inputs.param_echoTimesMs).toEqual({ constant: [10, 20] });
+  await echoes.fill("[10, 20, 30]");
+  await echoes.press("Tab");
+  await expect(error).toBeHidden();
+  await expect(echoes).not.toHaveAttribute("aria-invalid");
+  expect((await exported(page)).steps.qsmbly.inputs.param_echoTimesMs).toEqual({ constant: [10, 20, 30] });
+});
+
 test("validation diagnostics reach the console as the workflow is edited", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("#toolSelect")).toBeEnabled();

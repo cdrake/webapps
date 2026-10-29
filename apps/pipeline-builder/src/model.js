@@ -211,7 +211,77 @@ export function autoBind(doc, stepId, tools, validate) {
 export function setParameter(doc, stepId, name, value, tool) {
   const decl = tool.inputs[name];
   const unset = value === undefined || value === "" || (typeof value === "number" && Number.isNaN(value));
-  return withBinding(doc, stepId, name, unset || value === decl?.default ? null : { constant: value });
+  const isDefault = JSON.stringify(value) === JSON.stringify(decl?.default);
+  return withBinding(doc, stepId, name, unset || isDefault ? null : { constant: value });
+}
+
+const isArray = decl => elementType(decl.type) !== decl.type;
+
+/** Value constraints: an array's per-item schema, else the scalar declaration. */
+function itemLimits(decl) {
+  if (!isArray(decl)) return { enum: decl.enum, minimum: decl.min, maximum: decl.max };
+  const { enum: allowed, minimum, maximum } = decl.extensions?.["neurodesk/parameter"]?.items ?? {};
+  return { enum: allowed, minimum, maximum };
+}
+
+function itemError(value, type, limits) {
+  const shown = JSON.stringify(value);
+  if (type === "core:number" && !Number.isFinite(value)) return `Expected a number, got ${shown}.`;
+  if (type === "core:integer" && !Number.isInteger(value)) return `Expected an integer, got ${shown}.`;
+  if (type === "core:boolean" && typeof value !== "boolean") return `Expected true or false, got ${shown}.`;
+  if (!["core:number", "core:integer", "core:boolean", "core:json"].includes(type) && typeof value !== "string") {
+    return `Expected text, got ${shown}.`;
+  }
+  if (limits.enum && !limits.enum.includes(value)) return `${shown} is not one of ${limits.enum.join(", ")}.`;
+  if (limits.minimum !== undefined && value < limits.minimum) return `${shown} is below the minimum ${limits.minimum}.`;
+  if (limits.maximum !== undefined && value > limits.maximum) return `${shown} is above the maximum ${limits.maximum}.`;
+}
+
+/** Why a parameter constant does not match its declaration, if it does not. */
+export function parameterError(value, decl) {
+  if (!isArray(decl)) return itemError(value, decl.type, itemLimits(decl));
+  if (!Array.isArray(value)) return `Expected an array, got ${JSON.stringify(value)}.`;
+  const { minItems, maxItems } = decl.extensions?.["neurodesk/parameter"] ?? {};
+  if (minItems !== undefined && value.length < minItems) return `Expected at least ${minItems} values, got ${value.length}.`;
+  if (maxItems !== undefined && value.length > maxItems) return `Expected at most ${maxItems} values, got ${value.length}.`;
+  for (const item of value) {
+    const error = itemError(item, elementType(decl.type), itemLimits(decl));
+    if (error) return error;
+  }
+}
+
+function fromText(text, type) {
+  if (type === "core:boolean") return text === "true" ? true : text === "false" ? false : text;
+  if (["core:number", "core:integer"].includes(type)) return text !== "" && Number.isFinite(Number(text)) ? Number(text) : text;
+  return text;
+}
+
+/**
+ * A parameter's value from control text. Arrays read JSON (`[10, 20]`) or
+ * comma-separated values. Empty text, or an empty array, clears the parameter.
+ */
+export function parseParameter(text, decl) {
+  const trimmed = text.trim();
+  if (!trimmed) return { value: undefined };
+  let value;
+  if (!isArray(decl)) value = fromText(trimmed, decl.type);
+  else if (trimmed.startsWith("[")) {
+    try { value = JSON.parse(trimmed); } catch { value = undefined; }
+    if (!Array.isArray(value)) return { error: "Enter a JSON array or comma-separated values." };
+  } else {
+    value = trimmed.split(",").map(item => item.trim());
+    if (value.includes("")) return { error: "A value is missing between commas." };
+    value = value.map(item => fromText(item, elementType(decl.type)));
+  }
+  if (Array.isArray(value) && !value.length) return { value: undefined };
+  const error = parameterError(value, decl);
+  return error ? { error } : { value };
+}
+
+/** Control text for a parameter value; arrays use the JSON form `parseParameter` reads. */
+export function parameterText(value) {
+  if (value === undefined || value === null) return "";
+  return Array.isArray(value) ? `[${value.map(item => JSON.stringify(item)).join(", ")}]` : String(value);
 }
 
 export function outputKey(doc, stepId, name) {
@@ -270,6 +340,10 @@ export function workflowIssues(doc, tools) {
       const path = `steps.${id}.inputs.${name}`;
       const binding = step.inputs?.[name];
       const source = declaration(binding?.ref);
+      // NeuroFlow does not type-check constants; the desktop request validator does.
+      const invalid = binding && "constant" in binding && (name.startsWith("param_") || name === "engine")
+        && parameterError(binding.constant, input);
+      if (invalid) issues.push({ severity: "error", code: "constant-invalid", path, message: invalid });
       // The bval-bvec pair token stays in metadata because the runtime cannot inspect it.
       // Known bindings still need the same checks when imported or edited.
       const expected = gradientFormats(input);
