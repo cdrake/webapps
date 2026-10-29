@@ -57,6 +57,17 @@ GREEDY_BENCH_DIR=/path/to/allineate-benchmark \
   cargo test -p greedy-rs --test workflows nmi_affine_2mm_matches_greedy_within_float_double_spread -- --ignored
 ```
 
+The whole-head regression gate for issue #623 (a masked and an unmasked NMI
+affine of a defaced 1 mm T1 to ICBM 2009c) is also ignored by default. The
+`whole-head-reference` job of `greedy-native.yml` runs it on every change;
+locally, fetch the pair with the pins BISON carries and run it by name:
+
+```sh
+python3 scripts/fetch_t1_template.py /path/to/greedy-t1-template
+GREEDY_T1_TEMPLATE_DIR=/path/to/greedy-t1-template \
+  cargo test --release -p greedy-rs --test workflows masked_nmi_affine_on_a_whole_head_pair_matches_greedy -- --ignored
+```
+
 Build the threaded browser runtime through the workspace package, which selects
 the pinned nightly and shared-memory flags:
 

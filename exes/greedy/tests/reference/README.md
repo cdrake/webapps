@@ -19,5 +19,9 @@ The whole-head gate (`masked_nmi_affine_on_a_whole_head_pair_matches_greedy`,
 issue #623) runs when `GREEDY_T1_TEMPLATE_DIR` holds, decompressed to `.nii`,
 `bison/examples/ds007522/sub-HML0541/ses-01/anat/sub-HML0541_ses-01_rec-defaced_T1w.nii.gz`
 and `bison/templates/mni_icbm152_t1_tal_nlin_sym_09c{,_mask}.nii.gz` from the
-Hugging Face dataset `neurodeskorg/webapps`. Greedy 1.4 gives a determinant of
-0.73 with the mask and 0.62 without; the bounds are a few percent around them.
+Hugging Face dataset `neurodeskorg/webapps`. `scripts/fetch_t1_template.py DEST`
+downloads them at the revision and sha256 pinned in `apps/bison/examples.json`
+and `models/bison.manifest.json` and decompresses them into `DEST`; the
+`whole-head-reference` job of `greedy-native.yml` does the same and runs the
+gate with `--ignored`. Greedy 1.4 gives a determinant of 0.73 with the mask and
+0.62 without; the bounds are a few percent around them.
