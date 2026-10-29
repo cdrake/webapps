@@ -34,10 +34,26 @@ function plain(value, limit = 250) {
   return sanitize(value, limit).replace(/[\r\n]/g, ' ').replace(/[\\`*_{}[\]()!|#]/g, '\\$&');
 }
 
-export function createGitHubClient({ token, repository, fetchImpl = fetch }) {
+function transient(error) {
+  return error instanceof TypeError || ['TimeoutError', 'AbortError'].includes(error?.name) || error?.status === 429 || error?.status >= 500;
+}
+
+export function createGitHubClient({ token, repository, fetchImpl = fetch, sleep = ms => new Promise(resolve => setTimeout(resolve, ms)) }) {
   if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)) throw new Error('Invalid repository');
   const base = `https://api.github.com/repos/${repository}`;
-  async function request(path, { method = 'GET', body, logs = false } = {}) {
+  // Reads retry dropped connections and server errors, including a body cut off mid-download;
+  // writes never retry, so a report or comment cannot be posted twice.
+  async function request(path, options = {}) {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await requestOnce(path, options);
+      } catch (error) {
+        if ((options.method ?? 'GET') !== 'GET' || attempt === 4 || !transient(error)) throw error;
+        await sleep(1000 * 2 ** (attempt - 1));
+      }
+    }
+  }
+  async function requestOnce(path, { method = 'GET', body, logs = false } = {}) {
     if (path !== '' && (!path.startsWith('/') || path.startsWith('//'))) throw new Error('Expected a repository API path');
     let response = await fetchImpl(`${base}${path}`, {
       method,
@@ -54,7 +70,7 @@ export function createGitHubClient({ token, repository, fetchImpl = fetch }) {
       }
       response = await fetchImpl(location.href, { redirect: 'error', signal: AbortSignal.timeout(30000) });
     }
-    if (!response.ok) throw new Error(`GitHub API ${method} ${path.split('?')[0]} returned ${response.status}`);
+    if (!response.ok) throw Object.assign(new Error(`GitHub API ${method} ${path.split('?')[0]} returned ${response.status}`), { status: response.status });
     if (!logs) return response.status === 204 ? null : response.json();
     const reader = response.body.getReader();
     const decoder = new TextDecoder();

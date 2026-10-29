@@ -196,6 +196,33 @@ test('oversized log downloads stop at the byte budget and identify partial logs'
   assert.equal(cancelled, true);
 });
 
+test('reads retry a dropped connection, including a body cut off mid-download', async () => {
+  const waits = [];
+  let calls = 0;
+  const client = createGitHubClient({ token: 'token', repository: 'owner/repo', sleep: async ms => { waits.push(ms); }, fetchImpl: async () => {
+    calls++;
+    if (calls === 1) throw new TypeError('fetch failed');
+    if (calls === 2) return new Response(new ReadableStream({ start(controller) { controller.enqueue(new TextEncoder().encode('{"id"')); controller.error(new TypeError('terminated')); } }));
+    if (calls === 3) return new Response('busy', { status: 502 });
+    return Response.json({ id: 1 });
+  } });
+  assert.deepEqual(await client.request('/pulls/1'), { id: 1 });
+  assert.deepEqual(waits, [1000, 2000, 4000]);
+});
+
+test('writes, client errors and persistent failures are not retried past their limit', async () => {
+  for (const [options, response, expected] of [
+    [{ method: 'POST', body: {} }, () => { throw new TypeError('fetch failed'); }, 1],
+    [{}, () => new Response('missing', { status: 404 }), 1],
+    [{}, () => new Response('busy', { status: 503 }), 4],
+  ]) {
+    let calls = 0;
+    const client = createGitHubClient({ token: 'token', repository: 'owner/repo', sleep: async () => {}, fetchImpl: async () => { calls++; return response(); } });
+    await assert.rejects(client.request('/issues', options));
+    assert.equal(calls, expected);
+  }
+});
+
 test('dry-run renders the report without any issue or comment writes', async () => {
   const client = fakeClient();
   const result = await reportNightlyFailure({ run, repository: 'owner/repo', defaultBranch: 'main', client, dryRun: true });
