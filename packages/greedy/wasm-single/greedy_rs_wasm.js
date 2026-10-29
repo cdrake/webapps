@@ -5,20 +5,21 @@ export function initialize_diagnostics() {
 }
 
 /**
- * `greedy -a [-gm MASK] [-ia-image-centers]` (12 DOF): the RAS matrix text exactly as the
- * CLI writes `-o aff.mat`. Inputs are raw `.nii` bytes; `mask` restricts the metric to the
- * fixed image's mask.
+ * `greedy -a [-gm MASK] [-ia-image-centers | -ia FILE]` (12 DOF): the RAS matrix text exactly
+ * as the CLI writes `-o aff.mat`. Inputs are raw `.nii` bytes; `mask` restricts the metric to
+ * the fixed image's mask; `initial`, the text of an `-ia` matrix, overrides `image_centers`.
  * @param {Uint8Array} fixed
  * @param {Uint8Array} moving
  * @param {Uint8Array | null | undefined} mask
  * @param {string} metric
  * @param {string} iterations
  * @param {boolean} image_centers
+ * @param {string | null} [initial]
  * @returns {string}
  */
-export function register_affine_masked_wasm(fixed, moving, mask, metric, iterations, image_centers) {
-    let deferred7_0;
-    let deferred7_1;
+export function register_affine_masked_wasm(fixed, moving, mask, metric, iterations, image_centers, initial) {
+    let deferred8_0;
+    let deferred8_1;
     try {
         const ptr0 = passArray8ToWasm0(fixed, wasm.__wbindgen_malloc);
         const len0 = WASM_VECTOR_LEN;
@@ -30,18 +31,20 @@ export function register_affine_masked_wasm(fixed, moving, mask, metric, iterati
         const len3 = WASM_VECTOR_LEN;
         const ptr4 = passStringToWasm0(iterations, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len4 = WASM_VECTOR_LEN;
-        const ret = wasm.register_affine_masked_wasm(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3, ptr4, len4, image_centers);
-        var ptr6 = ret[0];
-        var len6 = ret[1];
+        var ptr5 = isLikeNone(initial) ? 0 : passStringToWasm0(initial, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len5 = WASM_VECTOR_LEN;
+        const ret = wasm.register_affine_masked_wasm(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3, ptr4, len4, image_centers, ptr5, len5);
+        var ptr7 = ret[0];
+        var len7 = ret[1];
         if (ret[3]) {
-            ptr6 = 0; len6 = 0;
+            ptr7 = 0; len7 = 0;
             throw takeFromExternrefTable0(ret[2]);
         }
-        deferred7_0 = ptr6;
-        deferred7_1 = len6;
-        return getStringFromWasm0(ptr6, len6);
+        deferred8_0 = ptr7;
+        deferred8_1 = len7;
+        return getStringFromWasm0(ptr7, len7);
     } finally {
-        wasm.__wbindgen_free(deferred7_0, deferred7_1, 1);
+        wasm.__wbindgen_free(deferred8_0, deferred8_1, 1);
     }
 }
 
