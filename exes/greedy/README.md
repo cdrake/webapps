@@ -138,9 +138,11 @@ greedy-rs -d 3 -rf fixed.nii.gz -rm ct.nii.gz warped-ct.nii.gz -rb auto -r warp.
 
 ## Browser API
 
-`greedy-rs-wasm` exports `register_affine_wasm`, `register_nmi_svf_wasm`,
-`reslice_affine`, `reslice_affine_options`, `reslice_warp_affine`, and
-`reslice_warp_affine_options` over in-memory NIfTI blobs. The option-bearing
+`greedy-rs-wasm` exports `register_affine_wasm`, `register_affine_masked_wasm`,
+`register_rigid_masked_wasm` (`-dof 6`), `register_nmi_svf_wasm`,
+`register_nmi_svf_masked_wasm`, `reslice_affine`, `reslice_affine_options`,
+`reslice_warp_affine`, and `reslice_warp_affine_options` over in-memory NIfTI
+blobs. The option-bearing
 reslicers expose nearest-neighbour interpolation, background fill and SYNcro's
 optional preceding pathological-to-primary affine. The browser host must call
 its async `initThreadPool` export before registration; the WASM build then uses

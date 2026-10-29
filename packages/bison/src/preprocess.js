@@ -1,24 +1,26 @@
 // BISON preprocessing in the order of validation/native/run_native.sh, with browser tools in place
 // of the MINC ones: ANTs DenoiseImage for mincnlm, niimath -n4 for nu_correct, the volume_pol port,
-// antsRegistration for bestlinreg_s2 and nlfit_s, and hmc --apply for mincresample and itk_resample.
-// docs/preprocessing.md gives the mapping of every step and option.
+// Greedy for the linear bestlinreg_s2 runs, antsRegistration for bestlinreg_s2 + nlfit_s, and hmc
+// --apply for mincresample and itk_resample. docs/preprocessing.md gives the mapping of every step
+// and option.
 //
 // Pure: the tools are injected, so the browser worker and the command line run the same steps.
 //   drivers.createRegistration() -> { run(argv, inputs) }            @neurodesk/hmc-registration
 //   drivers.createDenoiser()     -> { denoise({ image, mask }) }     @neurodesk/ants-denoise
-//   Both may add memoryBytes() and dispose() (node-workers.js): each stage ends its instance.
+//   drivers.createGreedy()       -> { affine({ fixed, moving }), rigid({ fixed, moving }) }
+//                                   RAS matrix text from raw .nii bytes  @neurodesk/greedy (wasm-single)
+//   Each may add memoryBytes() and dispose() (node-workers.js): each stage ends its instance.
 //   drivers.niimath(args, { inputs, outputs }) -> { outputs }        @niivue/niimath
 // Hooks: onProgress(message), onLog(line), checkpoint(name, bytes) with every intermediate file.
 import { createFloat32Nifti, decodeNiftiBuffer, extractNiftiHeader, readNiftiImageData } from '@neurodesk/webapp-components/file-io/nifti';
 import { AV_FLAIR, MODE_ASSETS, TEMPLATE_MASK, TEMPLATE_T1, sha256Hex } from './assets.js';
 import {
   DEFAULT_SEED,
-  affineArguments,
   applyTransforms,
   flairToT1,
+  greedyMatrixToMat,
   niftiName,
   nonlinearArguments,
-  rigidArguments,
   runRegistration,
   templateToFlair,
   templateToT1,
@@ -124,6 +126,24 @@ export async function denoise({ image, mask, drivers, memory = {}, name = 'denoi
 }
 
 /**
+ * One Greedy registration (`affine` or `rigid`, NMI) in a new instance, ended afterwards; returns
+ * the transform as an ITK .mat that maps fixed points to moving points, as antsRegistration's does.
+ * memory[name] is the instance's heap in bytes, when reported.
+ */
+export async function greedyRegistration({ method, fixed, moving, drivers, memory = {}, name = method }) {
+  const raw = async (bytes) => new Uint8Array(await decodeNiftiBuffer(bytes));
+  const [fixedBytes, movingBytes] = [await raw(fixed), await raw(moving)];
+  const greedy = await drivers.createGreedy();
+  try {
+    return greedyMatrixToMat(await greedy[method]({ fixed: fixedBytes, moving: movingBytes }));
+  } finally {
+    const heap = greedy.memoryBytes?.() ?? null;
+    if (heap !== null) memory[name] = heap;
+    await greedy.dispose?.();
+  }
+}
+
+/**
  * Runs work(session) on a new registrationSession and ends it afterwards, so a worker driver frees
  * the heap before the next stage. memory[name] is the stage's peak heap in bytes, when reported.
  */
@@ -180,22 +200,14 @@ export async function preprocessT1({ t1, assets, drivers, seed = DEFAULT_SEED, t
   const { onProgress, onLog, checkpoint } = hooksOf(options);
   const template = await templateVolumes(assets);
   const raw = await readVolume(t1, 'T1');
-  const t1Name = niftiName('t1', t1);
   const templateName = niftiName('template', template.t1Bytes);
 
   onProgress('Registering T1 to the template (affine)');
-  const { affine, linearMaskBytes } = await withSession(drivers, memory, 't1_linear', async (linear) => {
-    const affine = await timed(timings, 't1_affine', async () => {
-      const argv = affineArguments({ fixed: templateName, moving: t1Name, output: 'lin_', seed });
-      const outputs = await runRegistration(linear, argv, { [templateName]: template.t1Bytes, [t1Name]: t1 }, ['lin_0GenericAffine.mat'], onLog);
-      return outputs['lin_0GenericAffine.mat'];
-    });
-    const linearMaskBytes = await timed(timings, 't1_mask_lin', () => applyTransforms(linear, {
-      fixed: t1, moving: template.maskBytes, interpolation: 'NearestNeighbor',
-      transforms: templateToT1Linear({ affine: 'lin.mat' }), files: { 'lin.mat': affine }, onLog,
-    }));
-    return { affine, linearMaskBytes };
-  });
+  const affine = await timed(timings, 't1_affine', () => greedyRegistration({ method: 'affine', fixed: template.t1Bytes, moving: t1, drivers, memory, name: 't1_affine' }));
+  const linearMaskBytes = await withSession(drivers, memory, 't1_linear', (session) => timed(timings, 't1_mask_lin', () => applyTransforms(session, {
+    fixed: t1, moving: template.maskBytes, interpolation: 'NearestNeighbor',
+    transforms: templateToT1Linear({ affine: 'lin.mat' }), files: { 'lin.mat': affine }, onLog,
+  })));
   await checkpoint('T1toTemplate0GenericAffine.mat', affine);
   await checkpoint('T1_Mask.nii', linearMaskBytes);
   const linearMask = binaryMask(sameGrid(await readVolume(linearMaskBytes, 'linear mask'), raw, 'The linear mask').data);
@@ -271,7 +283,7 @@ export async function warpTemplateImages({ drivers, grid, images, transforms, ti
  * The FLAIR steps: rigid to the T1, FLAIR mask through the linear transforms, denoise, N4,
  * volume_pol to Av_FLAIR, and FLAIR_VP on the T1 grid (linear interpolation).
  */
-export async function preprocessFlair({ flair, t1, t1Affine, assets, drivers, seed = DEFAULT_SEED, timings = {}, memory = {}, ...options }) {
+export async function preprocessFlair({ flair, t1, t1Affine, assets, drivers, timings = {}, memory = {}, ...options }) {
   const { onProgress, onLog, checkpoint } = hooksOf(options);
   const template = await templateVolumes(assets);
   const avFlairBytes = assets.get(AV_FLAIR);
@@ -279,22 +291,13 @@ export async function preprocessFlair({ flair, t1, t1Affine, assets, drivers, se
   const avFlair = sameGrid(await readVolume(avFlairBytes, 'Av_FLAIR'), template.t1, 'Av_FLAIR');
   const raw = await readVolume(flair, 'FLAIR');
   const t1Raw = await readVolume(t1, 'T1');
-  const t1Name = niftiName('t1', t1);
-  const flairName = niftiName('flair', flair);
 
   onProgress('Registering FLAIR to T1 (rigid)');
-  const { rigid, maskBytes } = await withSession(drivers, memory, 'flair_linear', async (session) => {
-    const rigid = await timed(timings, 'flair_rigid', async () => {
-      const argv = rigidArguments({ fixed: t1Name, moving: flairName, output: 'rigid_', seed });
-      const outputs = await runRegistration(session, argv, { [t1Name]: t1, [flairName]: flair }, ['rigid_0GenericAffine.mat'], onLog);
-      return outputs['rigid_0GenericAffine.mat'];
-    });
-    const maskBytes = await timed(timings, 'flair_mask_lin', () => applyTransforms(session, {
-      fixed: flair, moving: template.maskBytes, interpolation: 'NearestNeighbor',
-      transforms: templateToFlair({ t1Affine: 'lin.mat', rigid: 'rigid.mat' }), files: { 'lin.mat': t1Affine, 'rigid.mat': rigid }, onLog,
-    }));
-    return { rigid, maskBytes };
-  });
+  const rigid = await timed(timings, 'flair_rigid', () => greedyRegistration({ method: 'rigid', fixed: t1, moving: flair, drivers, memory, name: 'flair_rigid' }));
+  const maskBytes = await withSession(drivers, memory, 'flair_linear', (session) => timed(timings, 'flair_mask_lin', () => applyTransforms(session, {
+    fixed: flair, moving: template.maskBytes, interpolation: 'NearestNeighbor',
+    transforms: templateToFlair({ t1Affine: 'lin.mat', rigid: 'rigid.mat' }), files: { 'lin.mat': t1Affine, 'rigid.mat': rigid }, onLog,
+  })));
   await checkpoint('FLAIRtoT10GenericAffine.mat', rigid);
   await checkpoint('FLAIR_Mask.nii', maskBytes);
   const mask = binaryMask(sameGrid(await readVolume(maskBytes, 'FLAIR mask'), raw, 'The FLAIR mask').data);
@@ -356,7 +359,7 @@ export async function preprocess({ t1, flair = null, modes, assets, drivers, see
     memory,
   };
   if (withFlair) {
-    const flairSteps = await preprocessFlair({ flair, t1, t1Affine: t1Steps.affine, assets, drivers, seed, timings, memory, ...hooks });
+    const flairSteps = await preprocessFlair({ flair, t1, t1Affine: t1Steps.affine, assets, drivers, timings, memory, ...hooks });
     result.flair = flairSteps.flair;
     result.avFlair = warped.get('av_flair');
     result.volumePol.flair = { coefficients: flairSteps.vp.coefficients, expression: flairSteps.vp.expression };

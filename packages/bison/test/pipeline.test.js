@@ -80,8 +80,10 @@ test('classVolumes counts each class in millilitres', () => {
   assert.equal(volumes[7].ml, 0.006);
 });
 
-// Placeholder tools: registration returns the moving image, denoise and N4 their input, and the
+// Placeholder tools: registration returns the moving image, Greedy the identity, denoise and N4 their input, and the
 // forest gives every voxel class (prior 1 > 0.5 ? 1 : 2). Checks the wiring, not the numbers.
+const IDENTITY = '1 0 0 0\n0 1 0 0\n0 0 1 0\n0 0 0 1\n';
+
 function fakeDrivers() {
   const calls = { registration: 0, sessions: 0, released: 0 };
   return {
@@ -96,6 +98,7 @@ function fakeDrivers() {
         },
       }),
       createDenoiser: async () => ({ denoise: async ({ image }) => image }),
+      createGreedy: async () => ({ affine: async () => IDENTITY, rigid: async () => IDENTITY }),
       niimath: async (args, { inputs, outputs }) => ({ outputs: { [outputs[0]]: inputs['input.nii'] }, log: [] }),
       ort: {
         Tensor: class {
@@ -161,7 +164,7 @@ for (const mode of ['t1', 't1-flair']) {
     assert.equal(result.files.length, classes + 2);
     assert.equal(result.files[0].name, 'sub-01_T1w_bison-labels.nii.gz');
     assert.equal(result.files.at(-1).name, 'sub-01_T1w_bison-mask.nii.gz');
-    assert.equal(calls.registration, mode === 't1' ? 2 : 3);
+    assert.equal(calls.registration, 1, 'antsRegistration runs only the nonlinear step');
     assert.equal(calls.sessions, 1);
     assert.equal(calls.released, 1);
     const labels = await readNifti(gunzipSync(result.files[0].bytes), Uint8Array);

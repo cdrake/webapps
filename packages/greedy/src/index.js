@@ -35,6 +35,12 @@ export function registerAffineGreedy({ api, fixed, moving, iterations = "100x50x
   return api.register_affine_wasm(bytes(fixed), bytes(moving), "NMI", iterations, true);
 }
 
+// A rigid (6 DOF) NMI registration from the identity, so from the scanner alignment.
+export function registerRigidGreedy({ api, fixed, moving, iterations = "100x50x10" }) {
+  if (!api) throw new Error("Greedy WebAssembly is not initialized.");
+  return api.register_rigid_masked_wasm(bytes(fixed), bytes(moving), null, "NMI", iterations, false, null);
+}
+
 export function resliceGreedy({ api, fixed, moving, registration, precedingMatrix = null, interpolation = "linear", fill = 0 }) {
   if (!api) throw new Error("Greedy WebAssembly is not initialized.");
   if (!registration?.matrix || !registration?.warp) throw new Error("Greedy deformable transforms are required.");

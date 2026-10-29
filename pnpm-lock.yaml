@@ -1381,6 +1381,9 @@ importers:
       '@neurodesk/ants-denoise':
         specifier: workspace:*
         version: link:../ants-denoise
+      '@neurodesk/greedy':
+        specifier: workspace:*
+        version: link:../greedy
       '@neurodesk/hmc-registration':
         specifier: workspace:*
         version: link:../hmc-registration

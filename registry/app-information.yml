@@ -1991,7 +1991,8 @@ apps:
       - "Outputs are research estimates, not a diagnosis. Check them against the image."
     packages:
       - { name: "@neurodesk/bison", url: https://github.com/neurodesk/webapps/tree/main/packages/bison, role: BISON preprocessing, features and outputs, shared by the browser worker and the command line }
-      - { name: antsRegistration (WebAssembly), url: https://github.com/neurodesk/webapps/tree/main/packages/hmc-registration, role: "rigid, affine and SyN registration to the ICBM 2009c template (@neurodesk/hmc-registration)" }
+      - { name: greedy-rs (Rust/WebAssembly), url: https://github.com/neurodesk/webapps/tree/main/exes/greedy, role: "T1 to template affine and FLAIR to T1 rigid registration (@neurodesk/greedy)" }
+      - { name: antsRegistration (WebAssembly), url: https://github.com/neurodesk/webapps/tree/main/packages/hmc-registration, role: "affine and SyN registration of the normalised T1 to the ICBM 2009c template, and resampling (@neurodesk/hmc-registration)" }
       - { name: ANTs DenoiseImage (WebAssembly), url: https://github.com/neurodesk/webapps/tree/main/packages/ants-denoise, role: "adaptive non-local means denoising (@neurodesk/ants-denoise)" }
       - { name: niimath (WebAssembly), url: https://github.com/rordenlab/niimath, role: N4 bias field correction and image maths }
       - { name: ONNX Runtime Web, url: https://onnxruntime.ai, role: runs the BISON random forest classifiers on the CPU }
@@ -2016,6 +2017,11 @@ apps:
         title: ICBM 2009 templates
         reference: "Fonov VS, Evans AC, McKinstry RC, Almli CR, Collins DL. Unbiased nonlinear average age-appropriate brain templates from birth to adulthood. NeuroImage. 2009;47(Suppl 1):S102."
         doi: 10.1016/S1053-8119(09)70884-5
+      - group: Registration
+        title: Greedy
+        reference: "Greedy was created by Paul Yushkevich at the Penn Image Computing and Science Lab and is maintained by contributors to the Greedy C++ project [Computer software]."
+        url: https://sites.google.com/view/greedyreg/about
+        code: https://github.com/pyushkevich/greedy
       - group: Registration
         title: ANTs SyN
         reference: "Avants BB, Epstein CL, Grossman M, Gee JC. Symmetric diffeomorphic image registration with cross-correlation: evaluating automated labeling of elderly and neurodegenerative brain. Medical Image Analysis. 2008;12(1):26–41."

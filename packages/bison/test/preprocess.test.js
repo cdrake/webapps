@@ -84,11 +84,26 @@ test('normalise fits inside the masks and scales every voxel', async () => {
   assert.deepEqual(written, result.data);
 });
 
-// Fake tools on one shared grid: registration writes placeholder transforms, --apply returns the
-// moving image, denoise and N4 return their input. Checks the wiring, not the numbers.
+// Fake tools on one shared grid: registration writes placeholder transforms, Greedy returns the
+// identity, --apply returns the moving image, denoise and N4 return their input. Checks the wiring,
+// not the numbers.
+const IDENTITY = '1 0 0 0\n0 1 0 0\n0 0 1 0\n0 0 0 1\n';
+
 function fakeDrivers() {
-  const calls = { registration: [], apply: [], denoise: 0, niimath: [], loads: 0, disposed: 0 };
+  const calls = { registration: [], greedy: [], apply: [], denoise: 0, niimath: [], loads: 0, disposed: 0 };
+  const greedyMethod = (method) => async ({ fixed, moving }) => {
+    // Raw .nii bytes: decompressed before they reach the module.
+    assert.ok(fixed[0] !== 0x1f && moving[0] !== 0x1f);
+    calls.greedy.push(method);
+    return IDENTITY;
+  };
   const drivers = {
+    createGreedy: async () => ({
+      memoryBytes: () => 300,
+      dispose: async () => { calls.disposed++; },
+      affine: greedyMethod('affine'),
+      rigid: greedyMethod('rigid'),
+    }),
     createRegistration: async () => {
       calls.loads++;
       return {
@@ -155,13 +170,16 @@ test('preprocess runs every step in the native order and returns T1-grid images'
     onProgress: (message) => progress.push(message),
     checkpoint: async (name) => checkpoints.push(name),
   });
-  assert.equal(calls.registration.length, 3);
+  assert.equal(calls.registration.length, 1, 'antsRegistration runs only the nonlinear step');
+  assert.ok(calls.registration[0].includes('--initial-moving-transform'));
+  assert.deepEqual(calls.greedy, ['affine', 'rigid']);
   assert.equal(calls.denoise, 2);
   assert.equal(calls.niimath.length, 2);
   assert.ok(calls.loads >= 3, 'a fresh kernel per stage group');
-  assert.equal(calls.disposed, calls.loads + calls.denoise, 'every instance ends with its stage');
-  assert.deepEqual(Object.keys(result.memory).sort(), ['flair_denoise', 'flair_linear', 'flair_resample', 't1_denoise', 't1_linear', 't1_nonlinear', 'warp']);
+  assert.equal(calls.disposed, calls.loads + calls.denoise + calls.greedy.length, 'every instance ends with its stage');
+  assert.deepEqual(Object.keys(result.memory).sort(), ['flair_denoise', 'flair_linear', 'flair_resample', 'flair_rigid', 't1_affine', 't1_denoise', 't1_linear', 't1_nonlinear', 'warp']);
   assert.equal(result.memory.t1_nonlinear, 1000);
+  assert.equal(result.memory.t1_affine, 300);
   assert.equal(result.memory.t1_denoise, 500);
   // Linear mask, Mask_nl, the distinct priors and averages, FLAIR mask, FLAIR on the T1 grid.
   const interpolations = calls.apply.map((argv) => argv[0]);
