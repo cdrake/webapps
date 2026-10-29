@@ -165,9 +165,11 @@ removes any global scale.
 
 ## Kernel instances
 
-One hmc kernel instance aborts on its 27th run (#537). `registrationSession` loads a new instance
-for each group of runs (T1 affine and linear mask; nonlinear, `Mask_nl` and the template images;
-FLAIR) and after 20 runs or an abort. A new denoiser is loaded for each image.
+`registrationSession` loads a new hmc kernel instance for each group of runs (T1 affine and linear
+mask; nonlinear, `Mask_nl` and the template images; FLAIR), so each group's heap is freed when it
+ends, and after an abort. A new denoiser is loaded for each image. One instance can run every
+command of a group: the kernel restores its stack after each run, and its tests run 200 times on
+one instance (#537, #592).
 
 ## Measured on sub-HML0541
 
