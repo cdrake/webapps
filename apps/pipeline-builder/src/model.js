@@ -20,10 +20,32 @@ export function emptyWorkflow() {
 export function parseWorkflow(text) {
   let doc;
   try { doc = JSON.parse(text); } catch { throw new Error("The file is not JSON."); }
-  if (doc?.kind !== "workflow" || typeof doc.steps !== "object" || !doc.steps) {
+  if (doc?.kind !== "workflow" || !isObject(doc.steps)) {
     throw new Error("The file is not a NeuroFlow workflow.");
   }
+  // The editor walks these maps; anything else would break every render.
+  const misshapen = shapeError(doc);
+  if (misshapen) throw new Error(`The file is not a NeuroFlow workflow: ${misshapen} must be an object.`);
   return { ...emptyWorkflow(), ...doc, neuroflow: workflowVersion(doc.neuroflow) };
+}
+
+const isObject = value => typeof value === "object" && value !== null && !Array.isArray(value);
+
+function shapeError(doc) {
+  for (const key of ["inputs", "outputs"]) {
+    if (doc[key] === undefined) continue;
+    if (!isObject(doc[key])) return key;
+    const bad = Object.keys(doc[key]).find(name => !isObject(doc[key][name]));
+    if (bad !== undefined) return `${key}.${bad}`;
+  }
+  for (const [id, step] of Object.entries(doc.steps)) {
+    if (!isObject(step)) return `steps.${id}`;
+    if (step.inputs === undefined) continue;
+    if (!isObject(step.inputs)) return `steps.${id}.inputs`;
+    const bad = Object.keys(step.inputs).find(name => !isObject(step.inputs[name]));
+    if (bad !== undefined) return `steps.${id}.inputs.${bad}`;
+  }
+  return null;
 }
 
 export function serializeWorkflow(doc) {
@@ -330,11 +352,19 @@ export function workflowIssues(doc, tools) {
   const warn = (code, path, message) => issues.push({ severity: "warning", code, path, message });
   const declaration = ref => {
     const input = /^inputs\.([^.]+)$/.exec(ref ?? "");
-    if (input) return doc.inputs?.[input[1]];
+    if (input) return Object.hasOwn(doc.inputs ?? {}, input[1]) ? doc.inputs[input[1]] : undefined;
     const output = /^steps\.([^.]+)\.outputs\.([^.]+)$/.exec(ref ?? "");
     return output && byId.get(doc.steps[output[1]]?.tool)?.outputs?.[output[2]];
   };
+  // NeuroFlow 0.3.2 checks only the shape of an inputs.<name> reference.
+  const undeclared = (path, ref) => {
+    const input = /^inputs\.([^.]+)$/.exec(ref ?? "");
+    if (input && !Object.hasOwn(doc.inputs ?? {}, input[1])) {
+      issues.push({ severity: "error", code: "input-undeclared", path, message: `${ref} is not a declared workflow input.` });
+    }
+  };
   for (const [id, step] of Object.entries(doc.steps)) {
+    for (const [name, binding] of Object.entries(step.inputs ?? {})) undeclared(`steps.${id}.inputs.${name}`, binding?.ref);
     const tool = byId.get(step.tool);
     for (const [name, input] of Object.entries(tool?.inputs ?? {})) {
       const path = `steps.${id}.inputs.${name}`;
@@ -377,6 +407,7 @@ export function workflowIssues(doc, tools) {
     }
   }
   for (const [name, output] of Object.entries(doc.outputs ?? {})) {
+    undeclared(`outputs.${name}`, output?.ref);
     if (declaration(output.ref)?.optional && !output.optional) {
       warn("optional-output", `outputs.${name}`, `${output.ref} is optional and may not produce this workflow output.`);
     }
