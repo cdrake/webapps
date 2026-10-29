@@ -21,6 +21,18 @@ export function nifreezeOrder(length, seed) {
 }
 
 /**
+ * Throws the message of `nifreezeInputProblem` when the estimator cannot hold this input.
+ * Without `maskVoxels` only the series is checked, so a caller can refuse it before masking.
+ */
+export function assertNifreezeInput({ series, bvals, bvecs, hmc, model = "gp", maskVoxels = null }) {
+  const problem = nifreezeInputProblem({
+    voxels: series.dims.reduce((a, b) => a * b, 1), frames: series.frames, model, maskVoxels,
+    dwiVolumes: hmc.b0Flags("nifreeze", bvals, bvecs).filter(b0 => !b0).length,
+  });
+  if (problem) throw new Error(problem);
+}
+
+/**
  * Runs NiFreeze's gp (default) or trivial estimator on an already-read series and mask.
  * `visitOrder`, when supplied, is a permutation of the DWI-only indices, as NiFreeze records.
  * `onPrediction` observes the prepared target synchronously before transfer to the kernel.
@@ -29,13 +41,8 @@ export function nifreezeOrder(length, seed) {
 export async function correctNiFreeze({ model = "gp", seed = 1234, visitOrder, onPrediction, maskProvenance = { Source: "unspecified" }, ...options }) {
   const { series, bvals, bvecs, mask, hmc, signal } = options;
   signal?.throwIfAborted();
-  const voxels = series.dims.reduce((a, b) => a * b, 1);
-  const problem = nifreezeInputProblem({
-    voxels, frames: series.frames, model,
-    dwiVolumes: hmc.b0Flags("nifreeze", bvals, bvecs).filter(b0 => !b0).length,
-    maskVoxels: mask ? mask.reduce((sum, value) => sum + (value ? 1 : 0), 0) : voxels,
-  });
-  if (problem) throw new Error(problem);
+  const maskVoxels = mask ? mask.reduce((sum, value) => sum + (value ? 1 : 0), 0) : series.dims.reduce((a, b) => a * b, 1);
+  assertNifreezeInput({ series, bvals, bvecs, hmc, model, maskVoxels });
   const argv = hmc.nifreezeArguments(seed);
   const estimator = hmc.createNifreezeModel({ data: series.data, dims: series.dims, frames: series.frames, bvals, bvecs, mask, model });
   try {

@@ -34,7 +34,7 @@ const mark = label => marks.push({ label, seconds: (performance.now() - start) /
 const timer = setInterval(() => {
   const current = Number(read("memory.current") ?? NaN);
   let rss = NaN;
-  try { rss = processTreeRss(child.pid); } catch {}
+  try { rss = processTreeRss(child.pid); } catch { /* The browser has exited: the sample keeps NaN. */ }
   samples.push({ t: (performance.now() - start) / 1000, current, rss });
 }, 100);
 const result = { url, input: inputDir, cycles: Number(cycles), cap, model, workers: Number(workers), unit, cgroup, cgroupMax, swapMax, command: command.slice(0, 9).join(" ") + " ..." };
@@ -109,7 +109,7 @@ try {
   result.maxGapSeconds = Math.max(...samples.slice(1).map((s, i) => s.t - samples[i].t));
   result.browserExit = exited;
   await browser?.close().catch(() => {});
-  try { execFileSync("systemctl", ["--user", "stop", `${unit}.scope`]); } catch {}
+  try { execFileSync("systemctl", ["--user", "stop", `${unit}.scope`]); } catch { /* The scope ended with its last process. */ }
   writeFileSync(outPath, JSON.stringify({ ...result, samples }, null, 1));
   const { samples: _s, ...summary } = result;
   console.log(JSON.stringify(summary));

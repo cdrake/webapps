@@ -27,10 +27,27 @@ test("the series limit applies before a mask exists and the fit limit only to GP
   const reference = { voxels: 1080000, frames: 101, dwiVolumes: 90 };
   assert.equal(estimatorBytes(reference).fit, 0);
   assert.equal(nifreezeInputProblem(reference), null);
-  assert.match(nifreezeInputProblem({ ...reference, voxels: 1411200 }), /^Series too large for motion correction \(1\.09 of 1\.05 GB/);
+  assert.match(nifreezeInputProblem({ ...reference, voxels: 1411200 }), /^Series too large for motion correction \(1\.09 of 1\.05 GB\)/);
   const wide = { ...reference, maskVoxels: 1069861 };
-  assert.match(nifreezeInputProblem(wide), /^Brain mask too large for the GP model/);
+  assert.match(nifreezeInputProblem(wide), /^GP model too large \(1\.92 of 0\.94 GB\)/);
   assert.equal(nifreezeInputProblem({ ...wide, model: "trivial" }), null);
+});
+
+test("the fit limit counts the GP's (DWI − 1)² matrices, whatever the grid and mask", () => {
+  // Review of #631: this passed the earlier estimate (1.28 MB), then trapped in the first prediction.
+  assert.match(nifreezeInputProblem({ voxels: 8, frames: 8001, dwiVolumes: 8000, maskVoxels: 8 }), /^GP model too large \(5\.63 of 0\.94 GB\)/);
+  // validation/gp-quadratic.mjs on the same 2 × 2 × 2 grid: 1,600 DWI volumes completed with the
+  // heap grown by 0.226 GB (estimate 0.225 GB); 3,500 (estimate 1.08 GB) trapped at 0.98 GB.
+  assert.equal(nifreezeInputProblem({ voxels: 8, frames: 1601, dwiVolumes: 1600, maskVoxels: 8 }), null);
+  assert.notEqual(nifreezeInputProblem({ voxels: 8, frames: 3501, dwiVolumes: 3500, maskVoxels: 8 }), null);
+});
+
+test("each message fits the 90-character limit on visible help", () => {
+  const huge = { voxels: 1e9, frames: 400, dwiVolumes: 360, maskVoxels: 1e9 };
+  for (const input of [huge, { ...huge, frames: 101, voxels: 1000, dwiVolumes: 30000 }]) {
+    const message = nifreezeInputProblem(input);
+    assert.ok(message && message.length <= 90, message);
+  }
 });
 
 test("correctNiFreeze refuses an oversized series before the estimator allocates it", async () => {

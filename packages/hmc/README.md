@@ -117,8 +117,10 @@ viewer are excluded. The whole-app runs under 16 GB and 8 GB cgroup caps measure
 `src/limits.js` holds the limits of the estimator's 1 GiB WebAssembly heap, measured by
 `validation/estimator-limits.mjs`. `correctNiFreeze` refuses a series or GP mask over them
 before it allocates the model, so the app and the command line show the same message, not a
-bare `unreachable`. The app also checks the series when it loads. Every input under these
-limits ran in the app under an 8 GiB cap, so host memory has no separate limit.
+bare `unreachable`. The app also checks the series when it loads, and the command line before
+automatic masking. Every tested accepted input ran in the app under an 8 GiB cap. Host memory
+has no separate limit, and whether 8 GB holds every accepted input is not validated (plan,
+section 6).
 
 ## Pool
 
