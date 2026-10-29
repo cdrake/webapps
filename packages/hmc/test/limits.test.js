@@ -36,9 +36,9 @@ test("the series limit applies before a mask exists and the fit limit only to GP
 test("the fit limit counts the GP's (DWI − 1)² matrices, whatever the grid and mask", () => {
   // Review of #631: this passed the earlier estimate (1.28 MB), then trapped in the first prediction.
   assert.match(nifreezeInputProblem({ voxels: 8, frames: 8001, dwiVolumes: 8000, maskVoxels: 8 }), /^GP model too large \(5\.63 of 0\.94 GB\)/);
-  // validation/gp-quadratic.mjs on the same 2 × 2 × 2 grid: 1,600 DWI volumes completed with the
-  // heap grown by 0.226 GB (estimate 0.225 GB); 3,500 (estimate 1.08 GB) trapped at 0.98 GB.
-  assert.equal(nifreezeInputProblem({ voxels: 8, frames: 1601, dwiVolumes: 1600, maskVoxels: 8 }), null);
+  // validation/gp-quadratic.mjs on the same 2 × 2 × 2 grid: 3,200 DWI volumes (estimate 0.901 GB)
+  // completed with the heap grown by 0.901 GB; 3,500 (estimate 1.08 GB) trapped at 0.98 GB.
+  assert.equal(nifreezeInputProblem({ voxels: 8, frames: 3201, dwiVolumes: 3200, maskVoxels: 8 }), null);
   assert.notEqual(nifreezeInputProblem({ voxels: 8, frames: 3501, dwiVolumes: 3500, maskVoxels: 8 }), null);
 });
 
