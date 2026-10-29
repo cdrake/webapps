@@ -310,7 +310,8 @@ pipeline reproduced the documented numbers and passed all ten gates.
 
 Greedy estimated all three registrations, with ANTs `--apply` resampling through them. Its masked
 affine (`-gm`) collapsed on the T1-to-template pair, so the unmasked affine was used
-([#623](https://github.com/neurodesk/webapps/issues/623)). Its linear
+([#623](https://github.com/neurodesk/webapps/issues/623), since fixed by matching Greedy's masked
+downsampling and affine start in #627). Its linear
 steps passed on their own and took a fraction of the time. Its nonlinear registration did not: the
 fast 2 mm schedule failed every subject on CSF, the cerebellum and deep grey matter, and the best
 variant (400x200x100 iterations, linear mask dilated by 4 voxels) still failed two subjects, with

@@ -3,7 +3,7 @@
 // build's pinned nightly, wasm-pack 0.13.1 and binaryen version_117, and committed: every platform then
 // runs the same bytes. --check rebuilds and fails when the committed files differ.
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -54,7 +54,14 @@ try {
     let bytes = readFileSync(join(output, file));
     if (file.endsWith(".js")) bytes = Buffer.from(bytes.toString("utf8").replaceAll("\r\n", "\n"));
     if (!check) writeFileSync(join(committed, file), bytes);
-    else if (!bytes.equals(readFileSync(join(committed, file)))) stale.push(file);
+    else if (!bytes.equals(readFileSync(join(committed, file)))) {
+      stale.push(file);
+      // CI uploads this directory, so a mismatch can be compared with a local build.
+      if (process.env.GREEDY_WASM_SINGLE_REBUILD) {
+        mkdirSync(process.env.GREEDY_WASM_SINGLE_REBUILD, { recursive: true });
+        writeFileSync(join(process.env.GREEDY_WASM_SINGLE_REBUILD, file), bytes);
+      }
+    }
   }
   if (stale.length) {
     console.error(`These committed files differ from a rebuild: ${stale.join(", ")}. Run pnpm --filter @neurodesk/greedy build:wasm-single on Linux and commit the result.`);

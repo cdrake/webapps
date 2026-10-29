@@ -5,16 +5,18 @@ export function initialize_diagnostics() {
 }
 
 /**
- * `greedy -a [-gm MASK]` (12 DOF): the RAS matrix text exactly as the CLI writes `-o aff.mat`.
- * Inputs are raw `.nii` bytes; `mask` restricts the metric to the fixed image's mask.
+ * `greedy -a [-gm MASK] [-ia-image-centers]` (12 DOF): the RAS matrix text exactly as the
+ * CLI writes `-o aff.mat`. Inputs are raw `.nii` bytes; `mask` restricts the metric to the
+ * fixed image's mask.
  * @param {Uint8Array} fixed
  * @param {Uint8Array} moving
  * @param {Uint8Array | null | undefined} mask
  * @param {string} metric
  * @param {string} iterations
+ * @param {boolean} image_centers
  * @returns {string}
  */
-export function register_affine_masked_wasm(fixed, moving, mask, metric, iterations) {
+export function register_affine_masked_wasm(fixed, moving, mask, metric, iterations, image_centers) {
     let deferred7_0;
     let deferred7_1;
     try {
@@ -28,7 +30,7 @@ export function register_affine_masked_wasm(fixed, moving, mask, metric, iterati
         const len3 = WASM_VECTOR_LEN;
         const ptr4 = passStringToWasm0(iterations, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len4 = WASM_VECTOR_LEN;
-        const ret = wasm.register_affine_masked_wasm(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3, ptr4, len4);
+        const ret = wasm.register_affine_masked_wasm(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3, ptr4, len4, image_centers);
         var ptr6 = ret[0];
         var len6 = ret[1];
         if (ret[3]) {
@@ -45,14 +47,16 @@ export function register_affine_masked_wasm(fixed, moving, mask, metric, iterati
 
 /**
  * Register moving to fixed using the light 3-D affine interface. `metric` is
- * `SSD` or `NMI`; `iterations` uses Greedy's `100x50x10` notation.
+ * `SSD` or `NMI`; `iterations` uses Greedy's `100x50x10` notation;
+ * `image_centers` is Greedy's `-ia-image-centers` (otherwise the identity).
  * @param {Uint8Array} fixed
  * @param {Uint8Array} moving
  * @param {string} metric
  * @param {string} iterations
+ * @param {boolean} image_centers
  * @returns {string}
  */
-export function register_affine_wasm(fixed, moving, metric, iterations) {
+export function register_affine_wasm(fixed, moving, metric, iterations, image_centers) {
     let deferred6_0;
     let deferred6_1;
     try {
@@ -64,7 +68,7 @@ export function register_affine_wasm(fixed, moving, metric, iterations) {
         const len2 = WASM_VECTOR_LEN;
         const ptr3 = passStringToWasm0(iterations, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len3 = WASM_VECTOR_LEN;
-        const ret = wasm.register_affine_wasm(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
+        const ret = wasm.register_affine_wasm(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3, image_centers);
         var ptr5 = ret[0];
         var len5 = ret[1];
         if (ret[3]) {

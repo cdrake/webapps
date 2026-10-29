@@ -74,7 +74,15 @@ jobs:
       - name: Set up wasm-opt
         uses: ./.github/actions/setup-wasm-opt
       - name: Rebuild and compare
+        env:
+          GREEDY_WASM_SINGLE_REBUILD: ${{ runner.temp }}/wasm-single-rebuild
         run: node packages/greedy/scripts/build-wasm-single.mjs --check
+      - if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: wasm-single-rebuild
+          path: ${{ runner.temp }}/wasm-single-rebuild
+          if-no-files-found: ignore
 
   native:
     strategy:
