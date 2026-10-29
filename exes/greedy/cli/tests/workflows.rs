@@ -253,7 +253,8 @@ fn rigid_registration_and_four_dimensional_reslice_work() {
     fs::remove_dir_all(directory).unwrap();
 }
 
-/// Without `-ia-image-centers` the affine starts from Greedy's physical identity.
+/// Without `-ia-image-centers` the affine starts from Greedy's physical identity;
+/// `-ia FILE` starts from that matrix, and `-dof 6` from its rotation.
 #[test]
 fn affine_start_follows_the_initialization_flag() {
     let directory = env::temp_dir().join(format!("greedy-rs-cli-start-{}", std::process::id()));
@@ -265,9 +266,23 @@ fn affine_start_follows_the_initialization_flag() {
     let mut shifted = image();
     shifted.grid.lps_from_voxel.0[2][3] = 5.0;
     fs::write(&moving, encode_image(&shifted, true).unwrap()).unwrap();
+    let initial = directory.join("initial.mat");
+    let rotation = "0 -1 0 2\n1 0 0 -3\n0 0 1 4\n0 0 0 1\n";
+    fs::write(&initial, rotation).unwrap();
+    // The same rotation after anisotropic scaling: a rigid start keeps only the
+    // rotation of its polar decomposition, as Greedy's does.
+    let affine = directory.join("affine.mat");
+    fs::write(&affine, "0 -3 0 2\n2 0 0 -3\n0 0 1.5 4\n0 0 0 1\n").unwrap();
+    let starts = [
+        vec![],
+        vec!["-ia-image-centers"],
+        vec!["-ia-identity"],
+        vec!["-ia", initial.to_str().unwrap()],
+        vec!["-ia", affine.to_str().unwrap(), "-dof", "6"],
+    ];
     let mut results = Vec::new();
-    for flag in [None, Some("-ia-image-centers")] {
-        let matrix = directory.join(format!("{}.mat", flag.is_some()));
+    for (index, flags) in starts.iter().enumerate() {
+        let matrix = directory.join(format!("{index}.mat"));
         let mut arguments = vec![
             "-V",
             "0",
@@ -284,13 +299,21 @@ fn affine_start_follows_the_initialization_flag() {
             "-n",
             "0x0x0",
         ];
-        arguments.extend(flag);
+        arguments.extend(flags);
         run(&arguments);
         results.push(greedy_rs_core::read_matrix(&fs::read_to_string(&matrix).unwrap()).unwrap());
     }
     assert_eq!(results[0], Mat4::IDENTITY);
     assert_eq!(results[1].0[2][3], 5.0);
     assert_eq!(results[1].0[0][3], 0.0);
+    assert_eq!(results[2], Mat4::IDENTITY);
+    let rotation = greedy_rs_core::read_matrix(rotation).unwrap();
+    assert_eq!(results[3], rotation);
+    for (row, expected) in results[4].0.iter().zip(rotation.0) {
+        for (value, expected) in row.iter().zip(expected) {
+            assert!((value - expected).abs() < 1e-12, "{:?}", results[4]);
+        }
+    }
     fs::remove_dir_all(directory).unwrap();
 }
 

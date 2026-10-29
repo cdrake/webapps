@@ -111,9 +111,9 @@ pub fn register_nmi_svf_wasm(
     encode_vector_field(&warp, false).map_err(wasm_error)
 }
 
-/// `greedy -a [-gm MASK] [-ia-image-centers]` (12 DOF): the RAS matrix text exactly as the
-/// CLI writes `-o aff.mat`. Inputs are raw `.nii` bytes; `mask` restricts the metric to the
-/// fixed image's mask.
+/// `greedy -a [-gm MASK] [-ia-image-centers | -ia FILE]` (12 DOF): the RAS matrix text exactly
+/// as the CLI writes `-o aff.mat`. Inputs are raw `.nii` bytes; `mask` restricts the metric to
+/// the fixed image's mask; `initial`, the text of an `-ia` matrix, overrides `image_centers`.
 #[wasm_bindgen]
 pub fn register_affine_masked_wasm(
     fixed: &[u8],
@@ -122,7 +122,12 @@ pub fn register_affine_masked_wasm(
     metric: &str,
     iterations: &str,
     image_centers: bool,
+    initial: Option<String>,
 ) -> Result<String, JsValue> {
+    let start = match initial {
+        Some(text) => AffineStart::Matrix(read_matrix(&text).map_err(wasm_error)?),
+        None => affine_start(image_centers),
+    };
     let fixed = decode_image(fixed).map_err(wasm_error)?;
     let moving = decode_image(moving).map_err(wasm_error)?;
     let mask = mask
@@ -133,7 +138,7 @@ pub fn register_affine_masked_wasm(
         fixed,
         moving,
         mask,
-        affine_start(image_centers),
+        start,
         parse_metric(metric)?,
         parse_iterations(iterations)?,
         false,
