@@ -113,11 +113,14 @@ pub fn matrix(parameters: [f64; 12]) -> Mat4 {
 /// `-ia-image-centers`. On a whole-head T1 to template pair the masked NMI
 /// landscape has a degenerate basin that an image-centres start can fall
 /// into while the identity start converges (#623), so the two are not
-/// interchangeable.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+/// interchangeable. Neither converges on every subject; `Matrix` (`-ia FILE`)
+/// starts from a physical RAS matrix as `-o` writes it, such as the unmasked
+/// affine of the same pair.
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum AffineStart {
     Identity,
     ImageCenters,
+    Matrix(Mat4),
 }
 
 /// Greedy's `-ia-image-centers`: voxel coordinates are `dims / 2`, not
@@ -1116,7 +1119,7 @@ pub fn register_rigid_masked(
     jitter: f64,
 ) -> Result<Mat4> {
     let mask = fixed_mask(mask, &fixed.grid, metric)?;
-    let mut transform = start_transform(start, &fixed.grid, &moving.grid);
+    let mut transform = rigid_start(start_transform(start, &fixed.grid, &moving.grid))?;
     if iterations == [0, 0, 0] {
         return Ok(transform);
     }
@@ -1166,6 +1169,45 @@ pub fn register_rigid_masked(
     Ok(transform)
 }
 
+/// Greedy's rigid start keeps the translation and the rotation of the polar
+/// decomposition `A = R S`, dropping the scale and shear of an `-ia` matrix.
+/// `R` is found by Newton's iteration `R <- (R + R^-T) / 2`. Greedy reflects a
+/// negative determinant into a flip parameter that greedy-rs's rigid lacks.
+fn rigid_start(matrix: Mat4) -> Result<Mat4> {
+    let mut rotation = matrix;
+    for row in 0..3 {
+        rotation.0[row][3] = 0.0;
+    }
+    let m = rotation.0;
+    let determinant = m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1])
+        - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
+        + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+    if determinant <= 0.0 {
+        return Err(Error(
+            "a rigid start needs a matrix with a positive determinant".into(),
+        ));
+    }
+    for _ in 0..100 {
+        let inverse = rotation.inverse()?;
+        let mut next = rotation;
+        let mut change: f64 = 0.0;
+        for row in 0..3 {
+            for column in 0..3 {
+                next.0[row][column] = 0.5 * (rotation.0[row][column] + inverse.0[column][row]);
+                change = change.max((next.0[row][column] - rotation.0[row][column]).abs());
+            }
+        }
+        rotation = next;
+        if change < 1e-15 {
+            break;
+        }
+    }
+    for row in 0..3 {
+        rotation.0[row][3] = matrix.0[row][3];
+    }
+    Ok(rotation)
+}
+
 /// Greedy initializes at the coarsest reference spaces, not the original
 /// input grids; the physical matrix is then carried to finer levels.
 fn start_transform(start: AffineStart, fixed: &Grid, moving: &Grid) -> Mat4 {
@@ -1175,6 +1217,7 @@ fn start_transform(start: AffineStart, fixed: &Grid, moving: &Grid) -> Mat4 {
             &downsample_grid(fixed, PYRAMID_FACTORS[0]),
             &downsample_grid(moving, PYRAMID_FACTORS[0]),
         ),
+        AffineStart::Matrix(matrix) => matrix,
     }
 }
 

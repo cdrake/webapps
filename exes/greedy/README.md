@@ -107,6 +107,15 @@ greedy-rs -d 3 -rf fixed.nii.gz -rm ct.nii.gz warped-ct.nii.gz -rb auto -r warp.
   starts from aligned image centres. The two are not interchangeable: on a
   whole-head T1 to template pair with `-gm`, the image-centres start falls into a
   degenerate NMI basin (determinant 4) in Greedy and greedy-rs alike (#623).
+  `-ia FILE` starts from a matrix as `-o` writes it. The identity start still
+  collapses on some subjects (determinants 30 and 2.2 on two of five BISON T1s,
+  as in Greedy); starting the masked affine from the unmasked one converged on
+  all five:
+
+  ```sh
+  greedy-rs -d 3 -a -m NMI -i template.nii.gz t1.nii.gz -o head.mat
+  greedy-rs -d 3 -a -m NMI -i template.nii.gz t1.nii.gz -gm template_mask.nii.gz -ia head.mat -o aff.mat
+  ```
 - Reslicing is linear by default. Use `-ri NN` for masks and label maps.
   Scalar 4-D inputs are resliced volume by volume with one transform chain;
   their number of time points, temporal spacing, and temporal units are kept.
