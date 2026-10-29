@@ -36,7 +36,8 @@ files, and publishes a new bundle only after all documents are valid.
 
 Use `neuroflow-mcp` from NeuroFlow 0.2.1 or later. Releases before 0.2.0 reject a
 single artifact bound to an array input, which workflows exported by Pipeline
-builder use.
+builder use. Pipeline builder keeps an imported workflow's `neuroflow` version on
+export: spec 0.1.2 needs NeuroFlow 0.3.0 or later, and 0.1.3 needs 0.3.2 or later.
 
 Install the Neurodesk desktop suite containing the same contracts. Set
 `NEURODESK_WEBAPPS` to its executable path if it is not named
