@@ -7,9 +7,9 @@ use std::{
 use flate2::{Compression, write::GzEncoder};
 
 use greedy_rs_core::{
-    AffineMetric, DEFAULT_AFFINE_JITTER, Error, Grid, Interpolation, Mat4, NiftiImage, NiftiSeries,
-    ScalarType, Transform, build_pyramid, decode_image, decode_series, decode_vector_field,
-    encode_image, encode_series_header, encode_vector_field, image_centers,
+    AffineMetric, AffineStart, DEFAULT_AFFINE_JITTER, Error, Grid, Interpolation, Mat4, NiftiImage,
+    NiftiSeries, ScalarType, Transform, build_pyramid, decode_image, decode_series,
+    decode_vector_field, encode_image, encode_series_header, encode_vector_field, image_centers,
     nmi_score_gradient_affine, read_matrix, register_affine_masked, register_nmi_svf_masked,
     register_rigid_masked, reslice, reslice_with_background, score_affine, ssd_score_gradient,
     write_scalars,
@@ -156,6 +156,7 @@ fn print_help() {
          Common options:\n\
            -n LEVELS       Iterations at each pyramid level (default: 100x50x10)\n\
            -dof 6|12       Rigid or affine registration (default: 12)\n\
+           -ia-image-centers  Start from aligned image centres (default: the identity)\n\
            -jitter SIGMA   Affine sample jitter in moving voxels (default: 0.5)\n\
            -gm MASK        Fixed-image mask: NMI is scored only inside it (fixed grid)\n\
            -threads N      Limit the Rayon worker pool\n\
@@ -215,10 +216,12 @@ fn run_affine(args: &[String], jitter: f64) {
     let mut verbose = true;
     let mut dof = 12;
     let mut mask = None;
+    let mut start = AffineStart::Identity;
     let mut at = 0;
     while at < args.len() {
         match args[at].as_str() {
-            "-a" | "-ia-image-centers" | "-float" => {}
+            "-a" | "-float" => {}
+            "-ia-image-centers" => start = AffineStart::ImageCenters,
             "-dump-pyramid" => dump_pyramid = true,
             "-dump-prefix" => dump_prefix = take(args, &mut at, "-dump-prefix"),
             "-d" => {
@@ -283,8 +286,8 @@ fn run_affine(args: &[String], jitter: f64) {
     }
     let mask = mask.map(|path| decode_image(&read(&path)).unwrap_or_else(|e| fail(e)));
     let matrix = match dof {
-        6 => register_rigid_masked(fixed, moving, mask, metric, levels, verbose, jitter),
-        _ => register_affine_masked(fixed, moving, mask, metric, levels, verbose, jitter),
+        6 => register_rigid_masked(fixed, moving, mask, start, metric, levels, verbose, jitter),
+        _ => register_affine_masked(fixed, moving, mask, start, metric, levels, verbose, jitter),
     }
     .unwrap_or_else(|e| fail(e));
     let mut text = String::new();
