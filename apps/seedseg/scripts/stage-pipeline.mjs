@@ -7,6 +7,7 @@ await rm(destination, { recursive: true, force: true });
 await mkdir(destination, { recursive: true });
 await cp(join(source, 'src'), join(destination, 'src'), { recursive: true, filter: path => !path.endsWith('/node.js') });
 await cp(join(source, 'model.manifest.json'), join(destination, 'model.manifest.json'));
+await cp(join(source, 'browser-runtime.manifest.json'), join(destination, 'browser-runtime.manifest.json'));
 for (const name of await readdir(join(destination, 'src'))) {
   const path = join(destination, 'src', name);
   let text = await readFile(path, 'utf8');

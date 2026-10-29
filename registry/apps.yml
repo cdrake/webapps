@@ -184,16 +184,17 @@ apps:
     runtime: static-esm
     model_manifest: models/seedseg.manifest.json
     asset_manifest_schema: scientific-assets-v1
-    source: astewartau/prostate@3354f6cc3cf750ada5bd3e25bd0ab6e1712662ab
+    source: astewartau/prostate@c9b328a2e0bc1768c0b75640f5532e2853e7ef31
     license: MIT
     maintainers: [astewartau]
     support_status: active
     shell: static-html
-    app_scoped_runtime_families: [ort-web, dcm2niix]
+    app_scoped_runtime_families: [ort-web-seedseg, dcm2niix]
     ci:
       toolchains: [node]
       shared_runtime: true
       browser_test: true
+      hardware_gpu: true
       release: true
   - id: dicompare
     path: dicompare

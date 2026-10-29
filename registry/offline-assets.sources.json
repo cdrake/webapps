@@ -947,6 +947,83 @@
         "bytes": 396689,
         "kind": "python-wheel",
         "license": null
+      },
+      {
+        "url": "https://huggingface.co/ash347/seedseg/resolve/ef4fb8f11a126425cde4b87e5fdca924032626b2/v2/fp32/seedseg-v2_fold0.onnx",
+        "sha256": "a39969d56053d43b3d76dcea184cc1d5bd7ed95d7306d4ad92c76fb84b7c246f",
+        "bytes": 407508503,
+        "kind": "model",
+        "license": "NOASSERTION"
+      },
+      {
+        "url": "https://huggingface.co/ash347/seedseg/resolve/ef4fb8f11a126425cde4b87e5fdca924032626b2/v2/browser/seedseg-v2_fold0.wg16.onnx",
+        "sha256": "c0a52e89279d27231bff814de7cedda5d5de98548e47fc82173ba4a2ea4f7237",
+        "bytes": 203899373,
+        "kind": "model",
+        "license": "NOASSERTION"
+      },
+      {
+        "url": "https://huggingface.co/ash347/seedseg/resolve/ef4fb8f11a126425cde4b87e5fdca924032626b2/v2/fp32/seedseg-v2_fold1.onnx",
+        "sha256": "bccbf6c373d01b1b9c5f06ffb61d139b3af064616e1c92158c34ff873b89d6f4",
+        "bytes": 407508503,
+        "kind": "model",
+        "license": "NOASSERTION"
+      },
+      {
+        "url": "https://huggingface.co/ash347/seedseg/resolve/ef4fb8f11a126425cde4b87e5fdca924032626b2/v2/browser/seedseg-v2_fold1.wg16.onnx",
+        "sha256": "b2f43e87dc99a3253ec911d6bd928429336934afaa3bb3f460ab8652a483161e",
+        "bytes": 203899373,
+        "kind": "model",
+        "license": "NOASSERTION"
+      },
+      {
+        "url": "https://huggingface.co/ash347/seedseg/resolve/ef4fb8f11a126425cde4b87e5fdca924032626b2/v2/fp32/seedseg-v2_fold2.onnx",
+        "sha256": "d30700090480f64391e38bb8df03ff1f1a121042cc4f8c01a8dfa3ec6e487998",
+        "bytes": 407508503,
+        "kind": "model",
+        "license": "NOASSERTION"
+      },
+      {
+        "url": "https://huggingface.co/ash347/seedseg/resolve/ef4fb8f11a126425cde4b87e5fdca924032626b2/v2/browser/seedseg-v2_fold2.wg16.onnx",
+        "sha256": "99244d0f73753ec84d8e9d15ecd163a1fa5ac937d971294e79152013e042e677",
+        "bytes": 203899373,
+        "kind": "model",
+        "license": "NOASSERTION"
+      },
+      {
+        "url": "https://huggingface.co/ash347/seedseg/resolve/ef4fb8f11a126425cde4b87e5fdca924032626b2/v2/fp32/seedseg-v2_fold3.onnx",
+        "sha256": "ee319bb26726642ce8e8bff89e538a03af0ddba9852094f56b8727d95c5af71e",
+        "bytes": 407508503,
+        "kind": "model",
+        "license": "NOASSERTION"
+      },
+      {
+        "url": "https://huggingface.co/ash347/seedseg/resolve/ef4fb8f11a126425cde4b87e5fdca924032626b2/v2/browser/seedseg-v2_fold3.wg16.onnx",
+        "sha256": "57d2add24a99ce86855bcc362d459419a40846e90590a0c42cdc26a02f16f119",
+        "bytes": 203899373,
+        "kind": "model",
+        "license": "NOASSERTION"
+      },
+      {
+        "url": "https://huggingface.co/ash347/seedseg/resolve/ef4fb8f11a126425cde4b87e5fdca924032626b2/v2/fp32/seedseg-v2_fold4.onnx",
+        "sha256": "7c6b80a183e0ef500903734bfbfe91169ec3441de264a130cb54e8676c6aa0c0",
+        "bytes": 407508503,
+        "kind": "model",
+        "license": "NOASSERTION"
+      },
+      {
+        "url": "https://huggingface.co/ash347/seedseg/resolve/ef4fb8f11a126425cde4b87e5fdca924032626b2/v2/browser/seedseg-v2_fold4.wg16.onnx",
+        "sha256": "fa577b9e8502d91862e25fef9645bae82df58454a6e061951c2dc292d209c171",
+        "bytes": 203899373,
+        "kind": "model",
+        "license": "NOASSERTION"
+      },
+      {
+        "url": "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort-wasm-simd-threaded.asyncify.wasm",
+        "sha256": "39f9f0894d478800487ed9f7dbe92618498db320cf55c8e3d89adff8dce658da",
+        "bytes": 26781914,
+        "kind": "runtime-cdn",
+        "license": "MIT"
       }
     ],
     "dicompare": [

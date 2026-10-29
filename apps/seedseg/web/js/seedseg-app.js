@@ -1,4 +1,4 @@
-import { bindSectionDisclosures } from '@neurodesk/webapp-components/ui';
+import { bindSectionDisclosures, bindInfoTooltips } from '@neurodesk/webapp-components/ui';
 bindSectionDisclosures(document);
 
 /**
@@ -13,10 +13,13 @@ import { SeedSegDicomInput } from './controllers/SeedSegDicomInput.js';
 import { DicompareReportRenderer } from '@neurodesk/webapp-components/ui';
 import { ViewerController } from '@neurodesk/webapp-components';
 import { SeedSegPipeline } from './controllers/SeedSegPipeline.js';
-import { ConsoleOutput, ProgressManager, ModalManager, bindWindowControls, createMaskEditor } from '@neurodesk/webapp-components/ui';
-import { createNiftiFromVolume } from '@neurodesk/webapp-components/file-io';
+import { ConsoleOutput, ProgressManager, ModalManager, bindWindowControls, createMaskEditor, renderInfoIcon } from '@neurodesk/webapp-components/ui';
+import { createNiftiFromVolume, readNifti } from '@neurodesk/webapp-components/file-io';
 import * as Config from './app/config.js';
-import { clearResultsAfterEditing, isEditableStage, replaceWithEdit, stageLabel } from './app/mask-edit.js';
+import { resolveModels, validateSelection } from '../vendor/seedseg/src/assets.js';
+import { summarizeMarkers } from '../vendor/seedseg/src/nnunet.js';
+import { detectionsHint } from './app/detections.js';
+import { clearResultsAfterEditing, isEditableStage, markerLabelNames, replaceWithEdit, stageLabel } from './app/mask-edit.js';
 
 class SeedSegApp {
   constructor() {
@@ -79,12 +82,13 @@ class SeedSegApp {
       updateOutput: (msg) => this.updateOutput(msg)
     });
 
-    this.maskEditor = createMaskEditor({
+    this.maskEditorOptions = {
       nv: this.nv,
       onApply: (stage, file, { original }) => this.onMaskApplied(stage, file, original),
       onCancel: () => this.onMaskEditClosed(),
       onError: (_stage, error) => this.onMaskEditError(error)
-    });
+    };
+    this.maskEditor = createMaskEditor(this.maskEditorOptions);
     this.maskEditor.addEventListener('nd-mask-edit-end', () => this.setEditButtonsEnabled(true));
     this.maskEditor.addEventListener('nd-mask-edit-start', (event) => this.progress.setText(event.detail.message));
     document.querySelector('main.app-main > .viewer-toolbar').after(this.maskEditor);
@@ -93,11 +97,14 @@ class SeedSegApp {
       updateOutput: (msg) => this.updateOutput(msg),
       setProgress: (val, text) => this.setProgress(val, text),
       onStageData: (data) => this.handleStageData(data),
-      onComplete: () => this.onInferenceComplete(),
+      onComplete: data => {
+        this.inferenceExecutor.report = data.report;
+        if (data.report?.detections) this.showDetections(data.report.detections);
+        this.onInferenceComplete();
+      },
       onError: (msg) => this.onInferenceError(msg),
       onInitialized: () => {}
     });
-
     // Modals
     this.aboutModal = new ModalManager('aboutModal');
     this.privacyModal = new ModalManager('privacyModal');
@@ -106,7 +113,7 @@ class SeedSegApp {
     // Setup
     await this.setupViewer();
     this.setupEventListeners();
-    this.setupInfoTooltips();
+    bindInfoTooltips(document);
 
     // Log threading support
     if (crossOriginIsolated) {
@@ -116,7 +123,7 @@ class SeedSegApp {
     }
 
     // Start ONNX initialization in background
-    this.inferenceExecutor.initialize();
+    this.inferenceExecutor.initialize().catch(error => this.onInferenceError(error.message));
     this.automation = registerSeedSegAutomation(this);
   }
 
@@ -133,6 +140,17 @@ class SeedSegApp {
   setupEventListeners() {
     // Unified file input
     this._setupUnifiedDropZone();
+
+    document.getElementById('selectAllFolds')?.addEventListener('click', () => {
+      Config.FOLDS.forEach((f) => { const cb = document.getElementById(`fold${f}`); if (cb) cb.checked = true; });
+    });
+
+    // The legacy v1 model ignores the network and mirroring settings
+    document.getElementById('legacyModel')?.addEventListener('change', (e) => {
+      this.legacyModels = undefined;
+      const ids = [...Config.FOLDS.map((f) => `fold${f}`), 'mirrorTTA', 'selectAllFolds'];
+      ids.forEach((id) => { const el = document.getElementById(id); if (el) el.disabled = e.target.checked; });
+    });
 
     // Run button
     const runBtn = document.getElementById('runSegmentation');
@@ -535,38 +553,6 @@ class SeedSegApp {
     });
   }
 
-  setupInfoTooltips() {
-    document.querySelectorAll('.info-icon').forEach(icon => {
-      const tooltip = icon.querySelector('.info-tooltip');
-      if (!tooltip) return;
-
-      icon.addEventListener('mouseenter', () => {
-        tooltip.style.display = 'block';
-        const iconRect = icon.getBoundingClientRect();
-        const tipRect = tooltip.getBoundingClientRect();
-
-        // Position above the icon, centered horizontally
-        let top = iconRect.top - tipRect.height - 6;
-        let left = iconRect.left + iconRect.width / 2 - tipRect.width / 2;
-
-        // If it would go above viewport, show below instead
-        if (top < 4) {
-          top = iconRect.bottom + 6;
-        }
-
-        // Clamp horizontal to stay within viewport
-        left = Math.max(4, Math.min(left, window.innerWidth - tipRect.width - 4));
-
-        tooltip.style.top = `${top}px`;
-        tooltip.style.left = `${left}px`;
-      });
-
-      icon.addEventListener('mouseleave', () => {
-        tooltip.style.display = 'none';
-      });
-    });
-  }
-
   // ==================== Viewer Controls ====================
 
   setupWindowControls() {
@@ -647,7 +633,7 @@ class SeedSegApp {
 
   // ==================== Inference ====================
 
-  async runSegmentation() {
+  async runSegmentation({ legacyModels, model = Config.INFERENCE_DEFAULTS.model, backend = 'auto' } = {}) {
     if (!this.fileIOController.hasValidData()) {
       this.updateOutput('No input volume loaded');
       return;
@@ -655,21 +641,18 @@ class SeedSegApp {
 
     const file = this.fileIOController.getActiveFile();
 
-    // Gather settings
-    const selectedModels = [];
-    Config.MODELS.forEach((model, i) => {
-      const cb = document.getElementById(`model${i}`);
-      if (!cb || cb.checked) selectedModels.push(model.name);
-    });
-
-    if (selectedModels.length === 0) {
-      this.updateOutput('No models selected');
+    const pipeline = document.getElementById('legacyModel').checked ? 'legacy-v1' : 'nnunet-v2';
+    const folds = pipeline === 'legacy-v1' ? [] : Config.FOLDS.filter(fold => document.getElementById(`fold${fold}`).checked);
+    const threshold = document.getElementById('probThreshold').valueAsNumber;
+    const nMarkers = document.getElementById('nMarkers').valueAsNumber;
+    const mirror = pipeline !== 'legacy-v1' && document.getElementById('mirrorTTA').checked;
+    try {
+      resolveModels(pipeline === 'legacy-v1' ? legacyModels : folds, { pipeline, model });
+      validateSelection({ threshold, nMarkers, mirror });
+    } catch (error) {
+      this.onInferenceError(error.message);
       return;
     }
-
-    const threshold = parseFloat(document.getElementById('probThreshold')?.value || '0.1');
-    const nMarkers = parseInt(document.getElementById('nMarkers')?.value || '3');
-    const modelBaseUrl = new URL(Config.MODEL_BASE_URL, window.location.href).href;
 
     // Read file
     const inputData = await file.arrayBuffer();
@@ -684,16 +667,23 @@ class SeedSegApp {
     document.getElementById('statusText')?.classList.remove('error');
     this.progress.begin('Starting segmentation...');
 
-    // Run
-    await this.inferenceExecutor.run({
-      inputData,
-      settings: {
-        selectedModels,
-        threshold,
-        nMarkers,
-        modelBaseUrl
-      }
-    });
+    try {
+      await this.inferenceExecutor.run({
+        inputData,
+        settings: {
+          pipeline,
+          folds,
+          mirror,
+          threshold,
+          nMarkers,
+          selectedModels: legacyModels,
+          model,
+          backend
+        }
+      });
+    } catch (error) {
+      this.onInferenceError(error.message);
+    }
   }
 
   cancelSegmentation() {
@@ -707,12 +697,10 @@ class SeedSegApp {
 
   static STAGE_NAMES = {
     input: 'Input',
-    model1: 'Model 1',
-    model2: 'Model 2',
-    model3: 'Model 3',
-    model4: 'Model 4',
-    avgProb: 'Average',
-    consensus: 'Consensus'
+    probability: 'Probability',
+    markers: 'Markers',
+    model1: 'Model 1', model2: 'Model 2', model3: 'Model 3', model4: 'Model 4',
+    avgProb: 'Average probability', consensus: 'Consensus'
   };
 
   handleStageData(data) {
@@ -731,9 +719,9 @@ class SeedSegApp {
     // Add stage button if not already present
     this.addStageButton(data.stage);
 
-    // Auto-show consensus when it arrives
-    if (data.stage === 'consensus') {
-      this.showResult('consensus');
+    // Auto-show the detected markers when they arrive
+    if (data.stage === 'markers' || data.stage === 'consensus') {
+      this.showResult(data.stage);
     }
   }
 
@@ -783,6 +771,8 @@ class SeedSegApp {
     document.getElementById('statusText')?.classList.remove('error');
     try {
       await this.showResult(stage);
+      const labelNames = markerLabelNames(stage, this.inferenceExecutor.report?.detections?.k);
+      this.maskEditor.configure({ ...this.maskEditorOptions, labelNames });
       const started = await this.maskEditor.start({
         stage,
         file: result.file,
@@ -797,6 +787,7 @@ class SeedSegApp {
 
   async onMaskApplied(stage, file, original) {
     replaceWithEdit(this.inferenceExecutor, stage, file, original);
+    if (stage === 'markers') await this.refreshDetections(file);
     const showBtn = document.querySelector(`#stage-item-${stage} .stage-btn`);
     if (showBtn) showBtn.textContent = stageLabel(SeedSegApp.STAGE_NAMES[stage] || stage, this.inferenceExecutor.getResult(stage));
     this.updateOutput(`Applied manual edits to ${file.name}`);
@@ -807,6 +798,17 @@ class SeedSegApp {
   onMaskEditClosed() {
     this.setEditButtonsEnabled(true);
     this.progress.setText('Ready');
+  }
+
+  async refreshDetections(file) {
+    const detections = this.inferenceExecutor.report?.detections;
+    const probabilityFile = this.inferenceExecutor.getResult('probability')?.file;
+    if (!detections || !probabilityFile) return;
+    const [mask, probability] = await Promise.all([file, probabilityFile].map(async item => readNifti(await item.arrayBuffer())));
+    const voxelVolume = mask.header.voxelSize.reduce((product, value) => product * Math.abs(value), 1);
+    const edited = summarizeMarkers(mask.data, probability.data, [...mask.dims].reverse(), { k: detections.k, voxelVolume, affine: mask.header.affine });
+    this.inferenceExecutor.report.detections = { ...detections, ...edited, nCandidates: edited.markers.length, others: [], edited: true };
+    this.showDetections(this.inferenceExecutor.report.detections);
   }
 
   onMaskEditError(error) {
@@ -873,7 +875,7 @@ class SeedSegApp {
     if (overlayColormapSelect) overlayColormapSelect.classList.remove('hidden');
 
     // Determine colormap based on stage type
-    const colormap = (stage === 'consensus') ? 'red' : 'warm';
+    const colormap = (stage === 'markers' || stage === 'consensus') ? 'red' : 'warm';
 
     // Sync overlay colormap select
     if (overlayColormapSelect) overlayColormapSelect.value = colormap;
@@ -883,9 +885,44 @@ class SeedSegApp {
   }
 
   disableAllResultTabs() {
-    // Clear dynamically added stage buttons
+    // Clear dynamically added stage buttons and the marker list
     const container = document.getElementById('stageButtons');
     if (container) container.innerHTML = '';
+    const panel = document.getElementById('detectionsPanel');
+    if (panel) { panel.innerHTML = ''; panel.classList.add('hidden'); }
+  }
+
+  /** Marker list: rank, mean probability, position; count flag when fewer than K were found. */
+  showDetections(det) {
+    const panel = document.getElementById('detectionsPanel');
+    if (!panel) return;
+    const n = det.markers.length;
+    const flag = det.countFlag
+      ? `<div class="nd-message warning"><strong>Check:</strong> ${n} of ${det.k} markers found (${det.nCandidates} candidate${det.nCandidates === 1 ? '' : 's'}). Review the image.</div>`
+      : `<div class="nd-message success">${n} of ${det.k} markers found.</div>`;
+    const rows = det.markers.map((m) => {
+      const w = m.centroidWorldMm.map((v) => v.toFixed(1)).join(', ');
+      return `<tr>
+        <td>${m.rank}</td><td>${m.meanProb.toFixed(3)}</td><td>${m.volumeMm3.toFixed(0)}</td><td><button type="button" class="nd-btn nd-btn-secondary nd-btn-sm" data-world="${m.centroidWorldMm.join(',')}" aria-label="Show marker ${m.rank} at ${w} mm">${w}</button></td></tr>`;
+    }).join('');
+    const hint = detectionsHint(det);
+    panel.innerHTML = `${flag}<div class="nd-table-scroll"><table class="nd-data-table"><thead><tr><th>#</th><th>Mean p</th><th>mm³</th><th>Position (mm)</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>`;
+    const meta = document.createElement('p');
+    meta.className = 'nd-hint';
+    meta.append(hint.text, ' ', renderInfoIcon(hint.details, { label: 'Inference settings' }));
+    panel.append(meta);
+    bindInfoTooltips(meta);
+    panel.classList.remove('hidden');
+    panel.querySelectorAll('button[data-world]').forEach((tr) => {
+      tr.addEventListener('click', () => {
+        const position = tr.dataset.world.split(',').map(Number);
+        const vol = this.nv.volumes?.[0];
+        if (!vol) return;
+        this.nv.scene.crosshairPos = this.nv.mm2frac(position);
+        this.nv.updateGLVolume();
+      });
+    });
   }
 
   async clearResults() {

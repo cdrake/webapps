@@ -96,6 +96,11 @@
   },
   {
     "from": "apps/seedseg/web/js/inference-worker.js",
+    "to": "../vendor/seedseg/browser-runtime.manifest.json",
+    "reason": "apps/seedseg/scripts/stage-pipeline.mjs copies the pinned packages/seedseg/browser-runtime.manifest.json into the generated browser package before dev, build and tests."
+  },
+  {
+    "from": "apps/seedseg/web/js/inference-worker.js",
     "to": "../nifti-js/index.js",
     "reason": "scripts/vendor-runtime-support.mjs stages this shared runtime; scripts/lib/runtime-assets.mjs rewrites it in the composite site."
   },

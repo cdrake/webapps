@@ -64,6 +64,10 @@ test('composite rewrite gives ONNX Runtime an absolute WASM base URL', async (t)
         source: `wasm/${loader.name}`,
         sha256: createHash('sha256').update(`placeholder ${loader.name}`).digest('hex'),
       })),
+    }, {
+      id: 'ort-web-seedseg', version: '1.30.0', target: 'ort-web/1.30.0',
+      files: [{ name: 'ort.webgpu.bundle.min.mjs', source_app: 'seedseg', source: 'wasm/ort.webgpu.bundle.min.mjs',
+        sha256: createHash('sha256').update('placeholder ort.webgpu.bundle.min.mjs').digest('hex') }],
     }],
   }));
 

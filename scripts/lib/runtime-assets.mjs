@@ -49,6 +49,10 @@ async function copyVerifiedFamily({ family, repoRoot, siteDist, registry }) {
   }
 }
 
+function hasScopedOrt(app) {
+  return app?.app_scoped_runtime_families?.some(id => id === 'ort-web' || id.startsWith('ort-web-'));
+}
+
 async function rewriteFile(file, runtimeRoot, app, relativePath) {
   const ortDir = join(runtimeRoot, 'ort-web', '1.21.0');
   const dcm2niix = join(runtimeRoot, 'dcm2niix', '1.3.20260724', 'index.js');
@@ -58,11 +62,11 @@ async function rewriteFile(file, runtimeRoot, app, relativePath) {
   const original = source;
 
   if (app && /(['"])(?:\.\.?\/)*wasm\/ort[^'"]+\1/.test(source)
-      && !app.app_scoped_runtime_families?.includes('ort-web')) {
-    throw new Error(`${app.id}: threaded ONNX Runtime requires app_scoped_runtime_families: [ort-web]; shared workers escape the COI service-worker scope`);
+      && !hasScopedOrt(app)) {
+    throw new Error(`${app.id}: threaded ONNX Runtime requires app_scoped_runtime_families to include a pinned ort-web family; shared workers escape the COI service-worker scope`);
   }
 
-  if (app?.app_scoped_runtime_families?.includes('ort-web')) {
+  if (hasScopedOrt(app)) {
     source = source.replace(
       /(ort\.env\.wasm\.wasmPaths\s*=\s*)(['"])((?:\.\.?\/)*wasm\/)\2/g,
       (_match, assignment, _quote, path) => {
@@ -110,7 +114,7 @@ async function removeAppCopies(siteDist, registry) {
     }
     await rm(join(appDist, 'nifti-js'), { recursive: true, force: true });
     await rm(join(appDist, 'vendor', 'webapp-components'), { recursive: true, force: true });
-    if (app.app_scoped_runtime_families?.includes('ort-web')) continue;
+    if (hasScopedOrt(app)) continue;
     const wasmDir = join(appDist, 'wasm');
     try {
       for (const entry of await readdir(wasmDir, { withFileTypes: true })) {
