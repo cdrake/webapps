@@ -25,3 +25,10 @@ and `models/bison.manifest.json` and decompresses them into `DEST`; the
 `whole-head-reference` job of `greedy-native.yml` does the same and runs the
 gate with `--ignored`. Greedy 1.4 gives a determinant of 0.73 with the mask and
 0.62 without; the bounds are a few percent around them.
+
+`masked_nmi_affine_from_the_unmasked_one_on_whole_head_t1s` runs on the same
+`GREEDY_T1_TEMPLATE_DIR`, which the script also fills with sub-HML0689 and
+sub-HML0962 from OpenNeuro ds007522 (CC0), copied byte for byte to
+`greedy/whole-head/ds007522/` in the dataset and pinned in the script. From the
+identity start their masked affines collapse (determinants 29.8 and 2.24, as in
+Greedy 1.4); started from the unmasked affine with `-ia` they converge.
