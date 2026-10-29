@@ -227,9 +227,9 @@ NEUROFLOW_MCP_BIN=/absolute/path/to/neuroflow-mcp \
   NEURODESK_HARDWARE_GPU=1 node scripts/desktop/neuroflow-smoke.mjs --t1
 ```
 
-The `neuroflow` CI workflow builds v0.2.1 at commit
-`2a844009fb135311cada8161c0dcd658df9d5833` and runs this check on `macos-15`.
-That release's [step_order implementation](https://github.com/cdrake/neuroflow/blob/2a844009fb135311cada8161c0dcd658df9d5833/crates/neuroflow-mcp/src/runtime.rs#L77-L112)
+The `neuroflow` CI workflow builds v0.3.0 at commit
+`3d2afdc0e38aa6ce9dd9c059b757a3a88647b2ca` and runs this check on `macos-15`.
+That release's [step_order implementation](https://github.com/cdrake/neuroflow/blob/3d2afdc0e38aa6ce9dd9c059b757a3a88647b2ca/crates/neuroflow-core/src/lib.rs#L475-L528)
 executes dependencies before their consumers, using document order only to
 break ties. Reordering a step in the builder retains its bindings; it does
 not force the runtime to launch a consumer before its inputs exist. CI also

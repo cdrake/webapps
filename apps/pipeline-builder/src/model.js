@@ -23,11 +23,15 @@ export function parseWorkflow(text) {
   if (doc?.kind !== "workflow" || typeof doc.steps !== "object" || !doc.steps) {
     throw new Error("The file is not a NeuroFlow workflow.");
   }
-  return { ...emptyWorkflow(), ...doc, neuroflow: NEUROFLOW_VERSION };
+  return { ...emptyWorkflow(), ...doc, neuroflow: workflowVersion(doc.neuroflow) };
 }
 
 export function serializeWorkflow(doc) {
-  return `${JSON.stringify({ ...doc, neuroflow: NEUROFLOW_VERSION }, null, 2)}\n`;
+  return `${JSON.stringify({ ...doc, neuroflow: workflowVersion(doc.neuroflow) }, null, 2)}\n`;
+}
+
+function workflowVersion(version) {
+  return version === undefined || version === "0.1.0" ? NEUROFLOW_VERSION : version;
 }
 
 export function elementType(type) {
