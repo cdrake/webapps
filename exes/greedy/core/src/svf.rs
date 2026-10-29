@@ -1,5 +1,5 @@
 use crate::nmi::{
-    corner_gradient, histogram_sample, joint_histogram, mask_bins, mask_levels,
+    check_mask_grid, corner_gradient, histogram_sample, joint_histogram, mask_bins, masked_pyramid,
     score_gradient_from_histogram,
 };
 use crate::par::for_each_z;
@@ -226,13 +226,15 @@ pub fn register_nmi_svf_masked(
     verbose: bool,
     mut dump: impl FnMut(&str, &VectorField),
 ) -> Result<VectorField> {
-    let masks = mask.map(|m| mask_levels(m, &fixed.grid)).transpose()?;
+    if let Some(mask) = &mask {
+        check_mask_grid(mask, &fixed.grid)?;
+    }
     if !grids_match(&fixed.grid, &moving.grid, 1e-4) {
         return Err(Error(
             "SV registration requires moving resampled onto the fixed grid".into(),
         ));
     }
-    let fixed_levels = build_pyramid(fixed)?;
+    let (fixed_levels, masks) = masked_pyramid(fixed, mask)?;
     let moving_levels = build_pyramid(moving)?;
     let mut velocity = VectorField {
         grid: fixed_levels[0].grid.clone(),

@@ -57,6 +57,17 @@ GREEDY_BENCH_DIR=/path/to/allineate-benchmark \
   cargo test -p greedy-rs --test workflows nmi_affine_2mm_matches_greedy_within_float_double_spread -- --ignored
 ```
 
+The whole-head regression gate for issue #623 (a masked and an unmasked NMI
+affine of a defaced 1 mm T1 to ICBM 2009c) is also ignored by default. The
+`whole-head-reference` job of `greedy-native.yml` runs it on every change;
+locally, fetch the pair with the pins BISON carries and run it by name:
+
+```sh
+python3 scripts/fetch_t1_template.py /path/to/greedy-t1-template
+GREEDY_T1_TEMPLATE_DIR=/path/to/greedy-t1-template \
+  cargo test --release -p greedy-rs --test workflows masked_nmi_affine_on_a_whole_head_pair_matches_greedy -- --ignored
+```
+
 Build the threaded browser runtime through the workspace package, which selects
 the pinned nightly and shared-memory flags:
 
@@ -89,9 +100,13 @@ greedy-rs -d 3 -rf fixed.nii.gz -rm ct.nii.gz warped-ct.nii.gz -rb auto -r warp.
 
 - `-V 0` silences the Greedy-style optimizer trace; `-threads N` limits the
   rayon pool (results are identical for any thread count).
-- `-gm MASK` (affine and `-sv`, NMI only) is Greedy's fixed-image mask. It must be on the fixed grid. At every pyramid level the mask is smoothed and resampled like an image, then thresholded at > 0.5, and fixed voxels outside it are excluded from the joint histogram and the gradient. Use it with whole-head images, rather than registering two skull-stripped images whose mask boundaries differ (for example, at the brainstem cut-off).
+- `-gm MASK` (affine and `-sv`, NMI only) is Greedy's fixed-image mask. It must be on the fixed grid. At every pyramid level the mask is smoothed and resampled like an image; at the coarse levels the fixed image is divided by it where it is at least 0.5 and zeroed elsewhere (Greedy's masked downsampling), and fixed voxels outside it are excluded from the joint histogram and the gradient. Use it with whole-head images, rather than registering two skull-stripped images whose mask boundaries differ (for example, at the brainstem cut-off).
 - Affine registration uses 12 degrees of freedom by default. `-dof 6` limits
   the result to rigid-body translation and rotation.
+- The affine starts from the physical identity, as Greedy does; `-ia-image-centers`
+  starts from aligned image centres. The two are not interchangeable: on a
+  whole-head T1 to template pair with `-gm`, the image-centres start falls into a
+  degenerate NMI basin (determinant 4) in Greedy and greedy-rs alike (#623).
 - Reslicing is linear by default. Use `-ri NN` for masks and label maps.
   Scalar 4-D inputs are resliced volume by volume with one transform chain;
   their number of time points, temporal spacing, and temporal units are kept.

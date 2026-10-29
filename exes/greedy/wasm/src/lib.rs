@@ -1,5 +1,5 @@
 use greedy_rs_core::{
-    AffineMetric, DEFAULT_AFFINE_JITTER, Interpolation, Transform, decode_image,
+    AffineMetric, AffineStart, DEFAULT_AFFINE_JITTER, Interpolation, Transform, decode_image,
     decode_vector_field, encode_image, encode_vector_field, read_matrix, register_affine,
     register_affine_masked, register_nmi_svf, register_nmi_svf_masked, reslice,
     reslice_with_background,
@@ -43,20 +43,31 @@ fn parse_iterations(value: &str) -> Result<[usize; 3], JsValue> {
         .ok_or_else(|| JsValue::from_str("iterations must be three x-separated integers"))
 }
 
+fn affine_start(image_centers: bool) -> AffineStart {
+    if image_centers {
+        AffineStart::ImageCenters
+    } else {
+        AffineStart::Identity
+    }
+}
+
 /// Register moving to fixed using the light 3-D affine interface. `metric` is
-/// `SSD` or `NMI`; `iterations` uses Greedy's `100x50x10` notation.
+/// `SSD` or `NMI`; `iterations` uses Greedy's `100x50x10` notation;
+/// `image_centers` is Greedy's `-ia-image-centers` (otherwise the identity).
 #[wasm_bindgen]
 pub fn register_affine_wasm(
     fixed: &[u8],
     moving: &[u8],
     metric: &str,
     iterations: &str,
+    image_centers: bool,
 ) -> Result<String, JsValue> {
     let fixed = decode_image(fixed).map_err(wasm_error)?;
     let moving = decode_image(moving).map_err(wasm_error)?;
     let matrix = register_affine(
         fixed,
         moving,
+        affine_start(image_centers),
         parse_metric(metric)?,
         parse_iterations(iterations)?,
         false,
@@ -100,8 +111,9 @@ pub fn register_nmi_svf_wasm(
     encode_vector_field(&warp, false).map_err(wasm_error)
 }
 
-/// `greedy -a [-gm MASK]` (12 DOF): the RAS matrix text exactly as the CLI writes `-o aff.mat`.
-/// Inputs are raw `.nii` bytes; `mask` restricts the metric to the fixed image's mask.
+/// `greedy -a [-gm MASK] [-ia-image-centers]` (12 DOF): the RAS matrix text exactly as the
+/// CLI writes `-o aff.mat`. Inputs are raw `.nii` bytes; `mask` restricts the metric to the
+/// fixed image's mask.
 #[wasm_bindgen]
 pub fn register_affine_masked_wasm(
     fixed: &[u8],
@@ -109,6 +121,7 @@ pub fn register_affine_masked_wasm(
     mask: Option<Vec<u8>>,
     metric: &str,
     iterations: &str,
+    image_centers: bool,
 ) -> Result<String, JsValue> {
     let fixed = decode_image(fixed).map_err(wasm_error)?;
     let moving = decode_image(moving).map_err(wasm_error)?;
@@ -120,6 +133,7 @@ pub fn register_affine_masked_wasm(
         fixed,
         moving,
         mask,
+        affine_start(image_centers),
         parse_metric(metric)?,
         parse_iterations(iterations)?,
         false,
