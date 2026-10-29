@@ -4,10 +4,11 @@
 // runs the same bytes. --check rebuilds and fails when the committed files differ.
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+const root = fileURLToPath(new URL("../../../", import.meta.url)).replace(/\/$/, "");
 const crate = fileURLToPath(new URL("../../../exes/greedy/wasm", import.meta.url));
 const committed = fileURLToPath(new URL("../wasm-single", import.meta.url));
 const target = fileURLToPath(new URL("../../../exes/greedy/target/wasm-single", import.meta.url));
@@ -17,6 +18,17 @@ const check = process.argv.includes("--check");
 // wasm-pack runs the wasm-opt on PATH; CI's setup-wasm-opt action installs this version.
 const wasmOpt = execFileSync("wasm-opt", ["--version"], { encoding: "utf8" });
 if (!wasmOpt.includes("version_117")) throw new Error(`Need binaryen version_117 wasm-opt on PATH, found: ${wasmOpt.trim()}`);
+
+// Panic messages embed source paths. Map this checkout, the Cargo registry and the toolchain's std
+// sources (rustc reads them from rust-src when that is installed) to fixed names, so the bytes do not
+// depend on the host.
+const rustc = (...args) => execFileSync("rustup", ["run", "nightly-2025-11-15", "rustc", ...args], { encoding: "utf8" }).trim();
+const commit = rustc("-vV").match(/^commit-hash: (\S+)$/m)[1];
+const remap = [
+  [root, "/webapps"],
+  [process.env.CARGO_HOME ?? join(homedir(), ".cargo"), "/cargo"],
+  [join(rustc("--print", "sysroot"), "lib/rustlib/src/rust"), `/rustc/${commit}`],
+].map(([from, to]) => `--remap-path-prefix=${from}=${to}`);
 
 const output = mkdtempSync(join(tmpdir(), "greedy-wasm-single-"));
 try {
@@ -36,7 +48,7 @@ try {
     "--no-pack",
     "--",
     "--no-default-features",
-  ], { stdio: "inherit", env: { ...process.env, CARGO_TARGET_DIR: target } });
+  ], { stdio: "inherit", env: { ...process.env, CARGO_TARGET_DIR: target, RUSTFLAGS: remap.join(" ") } });
   const stale = [];
   for (const file of FILES) {
     let bytes = readFileSync(join(output, file));
