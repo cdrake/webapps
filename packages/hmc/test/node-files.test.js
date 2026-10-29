@@ -104,7 +104,7 @@ test("the CLI refuses a series no GP fit can hold before it starts MindGrab", as
     `;
     const message = execFileSync(process.execPath, ["--experimental-test-module-mocks", "--no-warnings", "--input-type=module", "-e", script, JSON.stringify(options)],
       { cwd: fileURLToPath(new URL("..", import.meta.url)), encoding: "utf8" }).trim();
-    assert.match(message, /^GP model too large \(1\.41 of 0\.94 GB\)/);
+    assert.match(message, /^GP model too large \(1\.54 of 1\.06 GB\)/);
     await assert.rejects(readdir(options.output), { code: "ENOENT" });
   } finally {
     await rm(work, { recursive: true, force: true });

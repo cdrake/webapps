@@ -164,6 +164,8 @@ async function run(signal, parameters = {}) {
   if (!Number.isInteger(workers) || workers < 1 || workers > 4) throw new Error("Choose 1 to 4 registration workers.");
   return operation("Correcting head motion…", signal, async current => {
     const hmc = await api;
+    // Refuse before masking what no mask could fit: a mask of 0 voxels is a lower bound.
+    assertNifreezeInput({ ...input, hmc, model, maskVoxels: 0 });
     let brain = mask?.data;
     let maskProvenance = { Source: "supplied" };
     if (!brain) {

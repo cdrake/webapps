@@ -148,7 +148,7 @@ The first estimates (2-10 s for each call, NiFreeze trivial 1-6 min, SHORELine 1
 - The GP fit without the patch needs about 11.5 GB: scikit-learn 1.9.1 builds an (89, 89, 161668) float64 array (10.2 GB) for the gradient. The port must sum over the targets first, as the patch does.
 - Each epic run used 1.7-1.8 times the CPU seconds of r1, because the three runs and their 10 parallel nodes shared one host.
 - QSIPrep time by node (r1): model-stage registrations 7335 s, SHORE predictions 5897 s, b0 template registrations 2238 s (22 × 102 s, Rigid, 1000 iterations). The remaining 2.5 ks is conform, SynthStrip, ACPC registration and outputs.
-- Measured in the WebAssembly estimator (#452): splitting the series takes 4·V·(frames + DWI) + 9·V bytes and one GP fit 4·V·DWI + 9·V + 16·M·(DWI − 1) + 88·(DWI − 1)² bytes, for V grid voxels and M mask voxels. Its 1 GiB heap, not the machine, limits the input (below).
+- Measured in the WebAssembly estimator (#452): initialisation takes 4·V·(F + D) + 12·V + 12·M bytes, for V grid voxels, F frames, D DWI volumes and M mask voxels; a GP prediction adds what does not fit in the freed series copy (below). Its 1 GiB heap, not the machine, limits the input.
 - Anchors for the WASM build: SYNcro WASM, affine + SyN at 1 mm, 186 s (`packages/syncro/validation/README.md:33`); N4 on the slab, 1.9 s (`packages/n4/README.md:22`). Each kernel starts at 256 MiB (`CMakeLists.txt:35`); the measured whole-app peaks below include them.
 
 ### Measured WebAssembly pipeline (#452)
@@ -206,23 +206,50 @@ The estimator's linear-memory maximum is 1 GiB (`packages/hmc/scripts/build-wasm
 
 #### The estimator's 1 GiB heap
 
-`packages/hmc/validation/estimator-limits.mjs` builds series from the full input (slices repeated along z, frames repeated with their gradients, or a wider mask) and runs the GP estimator's split and one fit in `hmc.wasm` (SHA256 `9ab321e7…`), one case per process. V is grid voxels, F frames, D DWI volumes, M effective mask voxels:
+Three scripts run NiFreeze GP initialisation and one prediction in `hmc.wasm` (SHA256 `9ab321e7…`), one case per process, and record the heap. `packages/hmc/validation/estimator-limits.mjs` builds series from the full input (slices repeated along z, frames repeated with their gradients, or a wider mask). `init-limits.mjs` builds large grids with one b0, few DWI volumes, noise and a mask of the first M voxels. `gp-quadratic.mjs` builds a 2 × 2 × 2 grid with many DWI volumes. V is grid voxels, F frames, D DWI volumes, M mask voxels and n = D − 1. The estimates are those of `packages/hmc/src/limits.js`; the limit is 1.06 GB.
 
-| Grid | F / D | M | Split estimate | Fit estimate | Result |
-| --- | ---: | ---: | ---: | ---: | --- |
-| 120 × 120 × 75 (reference) | 101 / 90 | 161,668 | 0.835 GB | 0.629 GB | passes |
-| 120 × 120 × 94 | 101 / 90 | 202,042 | 1.046 GB | 0.788 GB | passes (heap 1.054 GB) |
-| 120 × 120 × 98 | 101 / 90 | 210,209 | 1.091 GB | - | fails in the split |
-| 120 × 120 × 75 | 202 / 180 | 161,679 | 1.660 GB | - | fails in the split |
-| 120 × 120 × 75 | 101 / 90 | 373,717 | 0.835 GB | 0.931 GB | passes |
-| 120 × 120 × 75 | 101 / 90 | 395,137 | 0.835 GB | 0.962 GB | fails in the fit |
-| 120 × 120 × 38 | 202 / 180 | 200,157 | 0.841 GB | 0.975 GB | passes |
-| 120 × 120 × 38 | 202 / 180 | 227,289 | 0.841 GB | 1.053 GB | fails in the fit |
-| 120 × 120 × 19 | 404 / 360 | 135,294 | 0.839 GB | 1.185 GB | fails in the fit |
+| Grid | F / D | M | Init estimate | Fit estimate | Heap after init / prediction | Result |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| 120 × 120 × 75 (reference) | 101 / 90 | 161,668 | 0.840 GB | 0.840 GB | - | passes |
+| 120 × 120 × 94 | 101 / 90 | 202,042 | 1.053 GB | 1.053 GB | 1.054 GB after init | passes |
+| 120 × 120 × 98 | 101 / 90 | 210,209 | 1.098 GB | - | - | fails in init |
+| 120 × 120 × 75 | 202 / 180 | 161,679 | 1.665 GB | - | - | fails in init |
+| 120 × 120 × 75 | 101 / 90 | 373,717 | 0.843 GB | 0.843 GB | - | passes |
+| 120 × 120 × 75 | 101 / 90 | 395,137 | 0.843 GB | 1.129 GB | - | fails in the prediction |
+| 120 × 120 × 38 | 202 / 180 | 200,157 | 0.845 GB | 0.845 GB | - | passes |
+| 120 × 120 × 38 | 202 / 180 | 227,289 | 0.845 GB | 1.230 GB | - | fails in the prediction |
+| 120 × 120 × 19 | 404 / 360 | 135,294 | 0.841 GB | 1.387 GB | - | fails in the prediction |
+| 250 × 250 × 275 (review of #631) | 7 / 6 | 2,000,000 | 1.124 GB | 1.278 GB | - | fails in init |
+| 250 × 250 × 264 | 7 / 6 | 2,000,000 | 1.080 GB | 1.228 GB | - | fails in init |
+| 250 × 250 × 262 | 7 / 6 | 2,000,000 | 1.072 GB | 1.219 GB | 1.066 / 1.066 GB | passes (refused) |
+| 250 × 250 × 250 | 7 / 6 | 1,000,000 | 1.012 GB | 1.145 GB | 1.010 / 1.072 GB | passes (refused) |
+| 250 × 250 × 255 | 7 / 6 | 1,000,000 | 1.032 GB | 1.167 GB | 1.030 GB / - | fails in the prediction |
+| 250 × 250 × 231 | 7 / 6 | 1,000,000 | 0.936 GB | 1.060 GB | 0.934 / 0.934 GB | passes |
+| 250 × 250 × 173 | 7 / 6 | 4,000,000 | 0.740 GB | 1.058 GB | 0.716 / 0.963 GB | passes |
+| 250 × 250 × 220 | 7 / 6 | 4,000,000 | 0.928 GB | 1.211 GB | 0.901 / 1.061 GB | passes (refused) |
+| 250 × 250 × 230 | 7 / 6 | 4,000,000 | 0.968 GB | 1.244 GB | 0.940 GB / - | fails in the prediction |
+| 200 × 200 × 148 | 21 / 20 | 1,000,000 | 1.054 GB | 1.054 GB | 1.052 / 1.052 GB | passes |
+| 200 × 200 × 153 | 21 / 20 | 10,000 | 1.077 GB | 1.077 GB | - | fails in init |
+| 200 × 200 × 98 | 21 / 20 | 1,600,000 | 0.709 GB | 1.058 GB | 0.704 / 0.947 GB | passes |
+| 200 × 200 × 125 | 21 / 20 | 1,600,000 | 0.899 GB | 1.166 GB | 0.893 GB / - | fails in the prediction |
+| 160 × 160 × 83 | 61 / 60 | 500,000 | 1.060 GB | 1.060 GB | 1.059 / 1.059 GB | passes |
+| 160 × 160 × 86 | 61 / 60 | 500,000 | 1.098 GB | 1.098 GB | - | fails in init |
+| 128 × 128 × 66 | 121 / 120 | 200,000 | 1.058 GB | 1.058 GB | 1.059 / 1.059 GB | passes |
+| 128 × 128 × 69 | 121 / 120 | 200,000 | 1.106 GB | 1.106 GB | - | fails in init |
+| 2 × 2 × 2 | 3,201 / 3,200 | 8 | 0.000 GB | 0.983 GB | 0.901 GB after the prediction | passes |
+| 2 × 2 × 2 | 3,501 / 3,500 | 8 | 0.000 GB | 1.176 GB | - | fails in the prediction |
 
-The split needs 4·V·(F + D) + 9·V bytes: the copied Float32 series and its DWI volumes. The heap after the split matched it within 1% in every passing case. A GP fit then needs 4·V·D + 9·V + 16·M·(D − 1) + 88·(D − 1)² bytes: the kept DWI volumes, the fit's Float32 targets and their float64 copy, and the log-likelihood's eleven float64 n × n matrices (n = D − 1: the angles, the Gram matrix, three kernel gradients, the Cholesky factor, the identity, K⁻¹, two products and A·Aᵀ, all live at once in `exes/dwi/gp/src/likelihood.rs`). The fit can reuse the freed series copy, so the first three terms are a fitted bound, not an allocation count. The quadratic term is negligible on these inputs (0.7 MB at D = 90), but it dominates when the grid is small and D is large: a review found that a 2 × 2 × 2 grid with 8,000 DWI volumes passed an estimate without it (1.28 MB) and trapped in its first prediction. `packages/hmc/validation/gp-quadratic.mjs` runs such grids: from D = 200 to 3,200 the heap grew by 88·(D − 1)² within 3% (0.901 GB for an estimate of 0.901 GB at D = 3,200, which completed in 20 minutes under the 0.94 GB limit), and D = 3,500 (1.08 GB) trapped with the heap at 0.98 GB, one 98 MB matrix short of the 1 GiB maximum. Every failure was the WebAssembly trap `unreachable` from a failed `memory.grow`. Host memory was not involved.
+Initialisation (`nifreeze_init` with the series copied in by `createNifreezeModel`) holds the Float32 series and its DWI volumes, 4·V·(F + D), the float64 median bzero and four byte masks: the brain mask copied in, its bools, the GP data mask and the copy kept, 12·V together. For GP it also holds the voxel indices, a `Vec<u32>` grown by doubling whose old and new buffers are live together, at most 12·M. The previous estimate counted 9·V and no mask term, so it accepted the review's 250 × 250 × 275 grid (1.048 GB), which trapped in `nifreeze_init`. In the `init-limits.mjs` cases, the heap after init was between 3.3% below and 0.14% above 4·V·(F + D) + 12·V + 12·M; it is furthest below for the largest masks. Init passed up to an estimate of 1.072 GB (heap 1.0734 GB, 0.3 MB under 1 GiB) and failed from 1.077 GB.
 
-`packages/hmc/src/limits.js` enforces these limits. A split estimate above 1.05 GB is refused, which is between the largest that passed (1.046 GB) and the smallest that failed (1.091 GB). A GP fit estimate above 0.94 GB is refused: 0.931 GB passed on the reference grid and 0.962 GB failed. The bound refuses one smaller-grid case that passed (0.975 GB), which keeps the limit conservative. The mean b0 model has only the split limit. The app checks the split when a series loads, from the decoded grid, the frame count and the NiFreeze DWI count. `correctNiFreeze` checks both limits before it allocates the estimator, using the brain-mask voxel count, which is an upper bound for the effective mask. Both the app and the `hmc` command line therefore get the same message. The command line also checks the series right after reading it and the gradients, before automatic MindGrab masking: the split, and for GP the fit with a mask of 0 voxels, a lower bound that no mask can pass if it fails. In the app, the message shows in the status bar instead of `unreachable`. The reference input uses 80% of the split limit and 67% of the fit limit.
+The prediction is limited by where its buffers go, not only by how many bytes it holds. It first reuses the freed series copy and copied-in mask, 4·V·F + V bytes. Whatever it holds beyond that goes on top of the heap. One more whole block is added for placement, because a block that does not fit in the free space moves to the top whole. A prediction keeps the float64 output, a new data mask and voxel indices, 9·V + 8·M, and at its largest holds one of these:
+
+- fitting: the Float32 targets, their float64 copy, the mean and standard deviation, and the log-likelihood's eleven float64 n × n matrices (the angles, the Gram matrix, three kernel gradients, the Cholesky factor, the identity, K⁻¹, two products and A·Aᵀ, all live at once in `exes/dwi/gp/src/likelihood.rs`): 12·M·n + 16·M + 88·n² more; the largest block is 8·V, 8·M·n or 8·n²;
+- predicting: the float64 targets, mean and standard deviation, the posterior mean and the float64 volume: 8·M·n + 24·M + 8·V; the largest block is 8·V or 8·M·n;
+- clipping: the volume, its median filter and the scratch of Rust's stable sort, which takes len − len/2 values or the whole length up to 8 MB (`core::slice::sort::stable::driftsort_main`): 16·V plus 4·V when V is above 2 million; the largest block is 8·V.
+
+The fit estimate is the init estimate plus that overflow. The reference regime (F about 100) frees a series copy large enough that nothing overflows. A few-frame series frees little, so its whole-grid float64 buffers go on top of the heap: the 250 × 250 × 250 grid with 7 frames grew by 62.5 MB in the prediction, its sort scratch. Where each buffer lands is hard to predict: an exact replay of the allocations through a best-fit heap misjudged which of the 1 and 2 million-voxel masks on that grid grows the heap, so the estimate counts the whole overflow instead. It refuses some few-frame inputs that passed (marked "refused" above). Every failure was the WebAssembly trap `unreachable` from a failed `memory.grow`. Host memory was not involved.
+
+`packages/hmc/src/limits.js` refuses an input whose init or fit estimate exceeds 1.06 GB. Every tested input it accepts passed, and every tested input that failed is refused; the accepted inputs closest to the limit (1.058–1.060 GB) passed in init, in the prediction or in both. Beyond these cases the bound is not validated. The mean b0 model has only the init limit, without the 12·M term. The app checks init when a series loads, from the decoded grid, the frame count and the NiFreeze DWI count. At the start of a run, before automatic MindGrab masking and before it copies the series, the app checks again with the selected model and a mask of 0 voxels. The command line makes the same check right after reading the series and the gradients. A mask of 0 voxels is a lower bound: no mask can pass if it fails. `correctNiFreeze` then checks both estimates with the brain-mask voxel count, an upper bound for the effective mask, before it allocates the estimator. The app and the `hmc` command line therefore get the same message. In the app, the message shows in the status bar instead of `unreachable`. The reference input uses 79% of the limit.
 
 #### Capped whole-app runs (16 GB and 8 GB)
 
@@ -258,7 +285,7 @@ The slab row was the first run of the harness, and its sample file was not kept.
 
 - 16 GB and 8 GB held every tested accepted input, with automatic masking, the viewer and a replacement run. The largest peak was 6.49 GB of the 8 GiB (8.59 GB) cap, for the largest accepted grid on its second cycle. These runs tested no separate host-memory limit, and none was added. Whether 8 GB holds every input the estimator accepts is not validated: the tested inputs vary slices and frames of one acquisition, with GP, two workers and int16 storage, in one browser on Linux.
 - The reference input fails at 5 GiB and below. At 5 and 4 GiB, the kernel killed the page at the end of the run, while the corrected series was compressed, packaged and loaded into the viewer. Every passing run also peaked in that phase. At 3 GiB, the kill came during MindGrab masking. A 6 GiB cap passed. The kernel reclaimed page cache to keep `memory.current` at 5.10 GB. On a real 8 GB machine, the operating system and other tabs share the memory, so the 2.1–3.0 GB of headroom under the 8 GiB cap is the margin that matters.
-- The 1.4× grid fails at every cap, and at the same point. Before the guard, it failed about 40 s into the run with `unreachable` in the status bar. With the guard, it is refused when it loads (now `Series too large for motion correction (1.17 of 1.05 GB): crop it or use fewer volumes.`).
+- The 1.4× grid fails at every cap, and at the same point. Before the guard, it failed about 40 s into the run with `unreachable` in the status bar. With the guard, it is refused when it loads (now `Series too large for motion correction (1.17 of 1.06 GB): crop it or use fewer volumes.`).
 - Run times are from a shared host and are not comparable with the timing matrix above. The 202-frame input took 1,499–1,504 s because it has 180 GP targets, each fitted on 179 volumes.
 
 Float64-stored inputs were not run. The app keeps the decoded file next to its Float32 copy, so a Float64 copy of the reference would add about 0.65 GB. This estimate is not measured. Other browsers and operating systems were not measured.
