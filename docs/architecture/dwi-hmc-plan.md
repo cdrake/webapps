@@ -148,14 +148,14 @@ The first estimates (2-10 s for each call, NiFreeze trivial 1-6 min, SHORELine 1
 - The GP fit without the patch needs about 11.5 GB: scikit-learn 1.9.1 builds an (89, 89, 161668) float64 array (10.2 GB) for the gradient. The port must sum over the targets first, as the patch does.
 - Each epic run used 1.7-1.8 times the CPU seconds of r1, because the three runs and their 10 parallel nodes shared one host.
 - QSIPrep time by node (r1): model-stage registrations 7335 s, SHORE predictions 5897 s, b0 template registrations 2238 s (22 × 102 s, Rigid, 1000 iterations). The remaining 2.5 ks is conform, SynthStrip, ACPC registration and outputs.
-- The GP target memory estimate stays: about 1.6e5 mask voxels × 90 volumes.
-- Anchors for the WASM build: SYNcro WASM, affine + SyN at 1 mm, 186 s (`packages/syncro/validation/README.md:33`); N4 on the slab, 1.9 s (`packages/n4/README.md:22`). Each kernel starts at 256 MiB (`CMakeLists.txt:35`), so 4 workers need about 1 GiB.
+- Measured in the WebAssembly estimator (#452): splitting the series takes 4·V·(frames + DWI) + 9·V bytes and one GP fit 4·V·DWI + 9·V + 16·M·(DWI − 1) bytes, for V grid voxels and M mask voxels. Its 1 GiB heap, not the machine, limits the input (below).
+- Anchors for the WASM build: SYNcro WASM, affine + SyN at 1 mm, 186 s (`packages/syncro/validation/README.md:33`); N4 on the slab, 1.9 s (`packages/n4/README.md:22`). Each kernel starts at 256 MiB (`CMakeLists.txt:35`); the measured whole-app peaks below include them.
 
 ### Measured WebAssembly pipeline (#452)
 
 The completed matrix contains 120 successful trials: two inputs, two methods, two hosts, three worker counts, and five repeats per configuration. Every trial completed all expected registrations and resamples, produced finite corrected frames and motion/b-vector tables, kept original b0 frames unchanged, and verified all artifact hashes. The decompressed corrected-image bytes and all remaining emitted artifact bytes are hash-identical across hosts and worker counts within each input/method combination; gzip container bytes are not compared. Full input trials processed 101 frames and 90 DWI volumes; slab trials processed 137 frames and 124 DWI volumes. These are software-output checks, not new scientific accuracy gates.
 
-Measurements used source `4ef5de3f7265dccb5157707da9e1ca37ff0193f3`, HMC app/package `0.4.20261024`, HMC WASM SHA256 `9ab321e70b7533264e80b5a5fbd4343fd0cfa19e232c56d550cbb2243f3c8f22`, and registration WASM SHA256 `d552ee295d79cd1722ced2c13c58d9afa0a5008275bbe70593d8caf9243de9ef`. All trials have the same 72-file source/manifest/lock identity map. The host was Linux `7.0.0-29-generic`, AMD EPYC-Milan, eight logical CPUs, 33,649,500,160 bytes RAM (31.34 GiB), Node `v24.19.0`, and Chromium `156.0.8078.4`. No 16 GB limit was imposed; the CPU quota was unavailable.
+Measurements used source `4ef5de3f7265dccb5157707da9e1ca37ff0193f3`, HMC app/package `0.4.20261024`, HMC WASM SHA256 `9ab321e70b7533264e80b5a5fbd4343fd0cfa19e232c56d550cbb2243f3c8f22`, and registration WASM SHA256 `d552ee295d79cd1722ced2c13c58d9afa0a5008275bbe70593d8caf9243de9ef`. All trials have the same 72-file source/manifest/lock identity map. The host was Linux `7.0.0-29-generic`, AMD EPYC-Milan, eight logical CPUs, 33,649,500,160 bytes RAM (31.34 GiB), Node `v24.19.0`, and Chromium `156.0.8078.4`. No memory limit was imposed on these timing trials (the capped whole-app runs are below); the CPU quota was unavailable.
 
 The reserved host ran one trial at a time. Worker order rotated across five repeats: `1,2,4`; `2,4,1`; `4,1,2`; `1,4,2`; `2,1,4`. Hosts were blocked rather than alternated: all 60 Node trials preceded all 60 Chromium trials. Input order was full then slab, and method order mean-b0 then GP. Within-host worker comparisons therefore have alternating repeats, but Node-versus-Chromium differences can include host-order drift and are not a browser overhead estimate. No profile ran during timing.
 
@@ -200,9 +200,70 @@ Mean-b0 benefits substantially from four workers: Chromium full medians fall fro
 
 A separate untimed full-input GP profile with four workers completed 101 frames, 90 registrations/resamples, and 106 verified artifact hashes. The main isolate recorded 273,180 samples. Synchronous GP target generation accounted for 85.84% of weighted sample time, or 88.91% after excluding idle; gzip accounted for 4.05%. Each ANTs worker was 87.69–87.97% idle. `packages/hmc/src/nifreeze.js` supplies a lazy target factory, and `pool.js` calls it before dispatching registration inputs. The `nifreeze_predict` export in `exes/dwi/hmc-wasm/src/lib.rs` constructs the model, fits/predicts, and clips the target in one call. These samples support serial target generation as the main limiter. They do not distinguish model construction, fit, prediction, or clipping costs. Worker profiles use a different clock origin, so no cross-thread interval comparison or registration-versus-resampling cost split is claimed. V8 samples do not cover all native background threads. The instrumented run supplies no timing or speedup estimate.
 
-### Whole-app memory and proposed input qualification
+### Whole-app memory and the input limit
 
 The estimator's linear-memory maximum is 1 GiB (`packages/hmc/scripts/build-wasm.sh`); each registration kernel starts at 256 MiB and can grow to 4 GiB (`packages/hmc-registration/CMakeLists.txt`). These capacities are not observed RSS or a whole-app memory ceiling. Host memory also holds input/working images, corrected Float32 data, compression buffers, transferred worker data, and viewer/results state. Teardown releases model allocations and terminates workers, but does not promise surviving WASM memories shrink or that RSS falls immediately.
+
+#### The estimator's 1 GiB heap
+
+`packages/hmc/validation/estimator-limits.mjs` builds series from the full input (slices repeated along z, frames repeated with their gradients, or a wider mask) and runs the GP estimator's split and one fit in `hmc.wasm` (SHA256 `9ab321e7…`), one case per process. V is grid voxels, F frames, D DWI volumes, M effective mask voxels:
+
+| Grid | F / D | M | Split estimate | Fit estimate | Result |
+| --- | ---: | ---: | ---: | ---: | --- |
+| 120 × 120 × 75 (reference) | 101 / 90 | 161,668 | 0.835 GB | 0.629 GB | passes |
+| 120 × 120 × 94 | 101 / 90 | 202,042 | 1.046 GB | 0.787 GB | passes (heap 1.054 GB) |
+| 120 × 120 × 98 | 101 / 90 | 210,209 | 1.091 GB | - | fails in the split |
+| 120 × 120 × 75 | 202 / 180 | 161,679 | 1.660 GB | - | fails in the split |
+| 120 × 120 × 75 | 101 / 90 | 373,717 | 0.835 GB | 0.931 GB | passes |
+| 120 × 120 × 75 | 101 / 90 | 395,137 | 0.835 GB | 0.961 GB | fails in the fit |
+| 120 × 120 × 38 | 202 / 180 | 200,157 | 0.841 GB | 0.972 GB | passes |
+| 120 × 120 × 38 | 202 / 180 | 227,289 | 0.841 GB | 1.050 GB | fails in the fit |
+| 120 × 120 × 19 | 404 / 360 | 135,294 | 0.839 GB | 1.174 GB | fails in the fit |
+
+The split needs 4·V·(F + D) + 9·V bytes: the copied Float32 series and its DWI volumes. The heap after the split matched it within 1% in every passing case. A GP fit then needs 4·V·D + 9·V + 16·M·(D − 1) bytes: the kept DWI volumes, plus the fit's Float32 targets and their float64 copy. The fit can reuse the freed series copy, so this second figure is a fitted bound, not an allocation count. Every failure was the WebAssembly trap `unreachable` from a failed `memory.grow`. Host memory was not involved.
+
+`packages/hmc/src/limits.js` enforces these limits. A split estimate above 1.05 GB is refused, which is between the largest that passed (1.046 GB) and the smallest that failed (1.091 GB). A GP fit estimate above 0.94 GB is refused: 0.931 GB passed on the reference grid and 0.961 GB failed. The bound refuses one smaller-grid case that passed (0.972 GB), which keeps the limit conservative. The mean b0 model has only the split limit. The app checks the split when a series loads, from the decoded grid, the frame count and the NiFreeze DWI count. `correctNiFreeze` checks both limits before it allocates the estimator, using the brain-mask voxel count, which is an upper bound for the effective mask. Both the app and the `hmc` command line therefore get the same message. In the app, the message shows in the status bar instead of `unreachable`. The reference input uses 80% of the split limit and 67% of the fit limit.
+
+#### Capped whole-app runs (16 GB and 8 GB)
+
+These runs did not use machines with 16 GB or 8 GB of RAM. They used a cgroup memory cap on a larger host, which the maintainer accepted for this validation. The host was a Linux `5.15.0-194-generic` VM with an AMD EPYC-Rome CPU, 16 logical CPUs and 33,649,123,328 bytes of RAM. It used Node `v24.19.0` and Chrome for Testing `156.0.8078.4`, and it was shared with other work (load average 1.7–9.7). The measured page was built from `abf1ecd61` before the guard was added. The registration WASM SHA256 was `53779fcd…`. `packages/hmc/validation/memory-cap-trial.mjs` starts Chromium alone in a transient user scope. This is the exact command, with `<cap>` set to `16G`, `8G`, `6G`, `5G`, `4G` or `3G` (GiB):
+
+```sh
+systemd-run --user --scope --unit=hmc452-<time> --quiet -p MemoryMax=<cap> -p MemorySwapMax=0 \
+  ~/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome --headless=new --remote-debugging-port=0 \
+  --user-data-dir=$TMPDIR/chrome-XXXX --no-first-run --no-default-browser-check about:blank
+```
+
+`MemorySwapMax=0` matters because the host has 63 GB of swap. Without it, the cap would page instead of failing. A scope given `MemoryMax=100M` killed a 500 MB allocation, which confirmed that the user manager enforces the cap. The harness runs outside the scope. It serves the production build (`pnpm --filter hmc build`, `vite preview` on loopback) and drops the input on the page as a user would. It then runs GP with 2 workers (the default), seed 1234 and automatic CPU MindGrab masking, and the corrected image is shown in the viewer. The harness samples the scope's `memory.current` and the Chromium process-tree RSS every 100 ms. The largest gap between samples was 0.24 s. `memory.current` is what the cap limits, and it includes page cache that the kernel can reclaim. RSS can count shared pages twice. A run passes when the status bar reads "Head motion corrected" and `memory.events` shows no `oom_kill`. "2 cycles" means that after the first run, the same input was dropped again with the results still shown, and then the app ran again. In the earlier 32 GB observations, this replacement state had the highest peak. The `memory-inputs.mjs` inputs tile the reference's stored int16 voxels.
+
+| Input | Decoded Float32 | Cap | Cycles | Result | Run seconds | Peak `memory.current` | Peak RSS |
+| --- | ---: | --- | ---: | --- | ---: | ---: | ---: |
+| ds005134 slab, 67 × 92 × 10 × 137 | 0.034 GB | 8G | 1 | passes | 284 | 3.19 GB | 4.19 GB |
+| ds005577 reference, 120 × 120 × 75 × 101 | 0.436 GB | 16G | 1 | passes | 566 | 5.18 GB | 6.48 GB |
+| ds005577 reference, 120 × 120 × 75 × 101 | 0.436 GB | 8G | 1 | passes | 543 | 5.58 GB | 6.99 GB |
+| ds005577 reference, 120 × 120 × 75 × 101 | 0.436 GB | 8G | 2 | passes | 565, 558 | 5.74 GB | 7.01 GB |
+| ds005577 reference, 120 × 120 × 75 × 101 | 0.436 GB | 6G | 1 | passes | 584 | 5.10 GB | 6.47 GB |
+| ds005577 reference, 120 × 120 × 75 × 101 | 0.436 GB | 5G | 1 | OOM-killed at 557 s, writing outputs | - | 5.37 GB | 6.80 GB |
+| ds005577 reference, 120 × 120 × 75 × 101 | 0.436 GB | 4G | 1 | OOM-killed at 544 s, writing outputs | - | 4.29 GB | 5.86 GB |
+| ds005577 reference, 120 × 120 × 75 × 101 | 0.436 GB | 3G | 1 | OOM-killed at 11 s, MindGrab masking | - | 3.22 GB | 4.43 GB |
+| 1.25× slices, 120 × 120 × 94 × 101 | 0.547 GB | 16G | 1 | passes | 703 | 5.83 GB | 6.59 GB |
+| 1.25× slices, 120 × 120 × 94 × 101 | 0.547 GB | 8G | 1 | passes | 670 | 5.85 GB | 7.24 GB |
+| 1.25× slices, 120 × 120 × 94 × 101 | 0.547 GB | 8G | 2 | passes | 692, 696 | 6.49 GB | 8.23 GB |
+| 0.6× slices, 2× frames, 120 × 120 × 45 × 202 | 0.524 GB | 16G | 1 | passes | 1504 | 5.62 GB | 6.99 GB |
+| 0.6× slices, 2× frames, 120 × 120 × 45 × 202 | 0.524 GB | 8G | 1 | passes | 1499 | 5.89 GB | 7.38 GB |
+| 1.4× slices, 120 × 120 × 105 × 101 | 0.611 GB | 16G | 1 | `unreachable` at 42 s (estimator heap) | - | 4.55 GB | 5.57 GB |
+| 1.4× slices, 120 × 120 × 105 × 101 | 0.611 GB | 8G | 1 | `unreachable` at 41 s (estimator heap) | - | 4.26 GB | 5.28 GB |
+
+The slab row was the first run of the harness, and its sample file was not kept. The measurements show four results:
+
+- 16 GB and 8 GB hold every input the estimator accepts, with automatic masking, the viewer and a replacement run. The largest peak was 6.49 GB of the 8 GiB (8.59 GB) cap, for the largest accepted grid on its second cycle. Host memory therefore needs no input limit of its own. No smaller 8 GB envelope is needed: the estimator's heap limit is stricter.
+- The reference input fails at 5 GiB and below. At 5 and 4 GiB, the kernel killed the page at the end of the run, while the corrected series was compressed, packaged and loaded into the viewer. Every passing run also peaked in that phase. At 3 GiB, the kill came during MindGrab masking. A 6 GiB cap passed. The kernel reclaimed page cache to keep `memory.current` at 5.10 GB. On a real 8 GB machine, the operating system and other tabs share the memory, so the 2.1–3.0 GB of headroom under the 8 GiB cap is the margin that matters.
+- The 1.4× grid fails at every cap, and at the same point. Before the guard, it failed about 40 s into the run with `unreachable` in the status bar. With the guard, it is refused when it loads (`Series too large for motion correction (1.17 of 1.05 GB model memory): crop it or use fewer volumes.`).
+- Run times are from a shared host and are not comparable with the timing matrix above. The 202-frame input took 1,499–1,504 s because it has 180 GP targets, each fitted on 179 volumes.
+
+Float64-stored inputs were not run. The app keeps the decoded file next to its Float32 copy, so a Float64 copy of the reference would add about 0.65 GB. This estimate is not measured. Other browsers and operating systems were not measured.
+
+#### Earlier observations without a cap (32 GB host)
 
 Separate production-browser observations on the same 32 GB host included automatic mean-b0 MindGrab CPU masking, the viewer, processing and output display. They used the same full input, GP, seed 1234, and effective 161,668-voxel mask. All five cycles completed and verified 105 scientific files against the accepted supplied-mask reference, including decompressed corrected image, gradients, motion and 101 transforms. The transform ZIP was inventoried/extracted; its container bytes were not reference-compared. The sidecar was checked separately for automatic-mask provenance.
 
@@ -216,13 +277,11 @@ Separate production-browser observations on the same 32 GB host included automat
 
 These are one observation per state, not repeated timing trials or memory upper bounds. Summed Chromium process-tree RSS was sampled nominally every 100 ms from before navigation. Maximum gaps within processing were 145–396 ms; longer 4.8–5.1 s gaps occurred in verification pauses. The four-worker page paused 253.4 and 303.6 seconds for artifact verification between cycles, so the observations do not bound instantaneous back-to-back reruns. The largest peak occurred during replacement input masking/model startup, not the registration-status interval. Status timestamps do not identify the exact allocation responsible. Observer/reference-file memory was outside the browser process tree.
 
-Propose an initial qualification limit tied to the measured full-input case: signed-int16 stored voxels, spatial grid no larger than `120 × 120 × 75` (1,080,000 voxels), at most 101 frames and 90 DWI frames, at most 161,668 effective GP mask voxels, and at most 436,320,000 decoded Float32 image bytes. The measured stored payload is 218,160,000 bytes; compressed size alone must not determine eligibility. The separately measured slab has 137 frames and 124 DWI frames at much smaller spatial size; it remains separately eligible as a tested example, rather than evidence that the full geometry supports those larger frame counts. Smaller inputs within this proposed qualification envelope still require boundary testing before a hard guard is justified. Broader masks, Float64 storage, other dimension/frame tradeoffs and multiple retained results remain unqualified.
-
-This is a conservative proposal for review, not a proven safe capacity limit or a new enforced guard. A 16 GB target requires a separate constrained-memory run, including automatic masking, viewer and retained/replaced outputs; a sampled 6.10 GiB peak on a nominal 32 GB machine does not validate that target. Platform/browser differences and allocator transients also remain unmeasured. No new input guard or UI limit is implemented here.
-
 ### Reproduction and source qualification
 
 `packages/hmc/validation/benchmark-matrix.mjs CACHE OUTDIR` runs the matrix; `--resume` validates and reuses complete receipts without rerunning them when source, input pins, machine and runtime identities match. `benchmark-receipts.mjs` rejects failed/incomplete trials. Keep a checkout of the measured revision for resume validation, since later source changes intentionally fail identity checks. The matrix runner verifies cross-host/worker artifact equality and computes the medians/ranges above. Review of all 120 saved receipts repeated those validations and recomputed all 24 summary rows exactly.
+
+The estimator table comes from `node packages/hmc/validation/estimator-limits.mjs CACHE zScale frameScale [pinned|all|frac:F]`. CACHE is the `--provision` cache of `benchmark.mjs --data full`. The capped runs use `node packages/hmc/validation/memory-inputs.mjs CACHE INPUTS zScale frameScale` to write each input, then `node packages/hmc/validation/memory-cap-trial.mjs http://127.0.0.1:4288/hmc/ INPUTS/<name> <cap> gp 2 OUT.json [cycles]` against `vite preview` of the production build. Run them one at a time. Their samples and summaries are kept locally under `/storage/tmp/hmc-452/trials/`.
 
 Local evidence is preserved under `$TMPDIR/hmc-matrix-final-20261024.mJruFz/` (120 receipts and `matrix.json`), `$TMPDIR/hmc-full-gp-cpu-profile-final/` (receipt and five CPU profiles), and `$TMPDIR/hmc-reviewed-memory-w{1,2,4}/` (whole-app receipts). These are local evidence paths, not public dataset URLs. Source-only summaries belong here; large raw evidence stays outside the repository.
 

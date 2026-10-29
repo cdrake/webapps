@@ -12,6 +12,7 @@ import { brainMask, mindgrab } from "@neurodesk/runtime-support/mindgrab";
 import { parseBvalBvec } from "@neurodesk/dwi2trx/gradients";
 import { readSeries } from "@neurodesk/hmc";
 import { correctNiFreeze } from "@neurodesk/hmc/nifreeze";
+import { nifreezeInputProblem } from "@neurodesk/hmc/limits";
 import { browserRuntime, loadHmcBrowser } from "@neurodesk/hmc/browser";
 import wasmUrl from "@neurodesk/hmc/hmc.wasm?url";
 import registrationWorker from "@neurodesk/hmc-registration/worker?worker&url";
@@ -133,6 +134,9 @@ async function load(files, signal, runIndex) {
     const decoded = await readSeries(buffer);
     const gradients = parseBvalBvec(await bval.text(), await bvec.text());
     if (gradients.bvals.length !== decoded.frames) throw new Error("The gradients must list every image volume.");
+    const dwiVolumes = (await api).b0Flags("nifreeze", gradients.bvals, gradients.bvecs).filter(b0 => !b0).length;
+    const tooLarge = nifreezeInputProblem({ voxels: decoded.dims.reduce((a, b) => a * b, 1), frames: decoded.frames, dwiVolumes });
+    if (tooLarge) throw new Error(tooLarge);
     await show(image);
     current.throwIfAborted();
     input = { sourceFiles: files, fileName: image.name, buffer, series: decoded, ...gradients, sidecar };

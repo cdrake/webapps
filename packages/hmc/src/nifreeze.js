@@ -3,6 +3,7 @@
 // median, GP and registration argv are the existing Rust ports, exposed by hmc.wasm.
 import { correctHeadMotion } from "./pipeline.js";
 import { sidecarText } from "./outputs.js";
+import { nifreezeInputProblem } from "./limits.js";
 import { sha256 } from "@neurodesk/webapp-components/file-io/hash";
 
 /** A reproducible visit order. The sidecar records it; it is not NumPy's permutation. */
@@ -28,6 +29,13 @@ export function nifreezeOrder(length, seed) {
 export async function correctNiFreeze({ model = "gp", seed = 1234, visitOrder, onPrediction, maskProvenance = { Source: "unspecified" }, ...options }) {
   const { series, bvals, bvecs, mask, hmc, signal } = options;
   signal?.throwIfAborted();
+  const voxels = series.dims.reduce((a, b) => a * b, 1);
+  const problem = nifreezeInputProblem({
+    voxels, frames: series.frames, model,
+    dwiVolumes: hmc.b0Flags("nifreeze", bvals, bvecs).filter(b0 => !b0).length,
+    maskVoxels: mask ? mask.reduce((sum, value) => sum + (value ? 1 : 0), 0) : voxels,
+  });
+  if (problem) throw new Error(problem);
   const argv = hmc.nifreezeArguments(seed);
   const estimator = hmc.createNifreezeModel({ data: series.data, dims: series.dims, frames: series.frames, bvals, bvecs, mask, model });
   try {
