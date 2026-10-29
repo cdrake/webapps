@@ -157,6 +157,7 @@ fn print_help() {
            -n LEVELS       Iterations at each pyramid level (default: 100x50x10)\n\
            -dof 6|12       Rigid or affine registration (default: 12)\n\
            -ia-image-centers  Start from aligned image centres (default: the identity)\n\
+           -ia FILE        Start from an affine matrix, such as an unmasked -o result\n\
            -jitter SIGMA   Affine sample jitter in moving voxels (default: 0.5)\n\
            -gm MASK        Fixed-image mask: NMI is scored only inside it (fixed grid)\n\
            -threads N      Limit the Rayon worker pool\n\
@@ -222,6 +223,16 @@ fn run_affine(args: &[String], jitter: f64) {
         match args[at].as_str() {
             "-a" | "-float" => {}
             "-ia-image-centers" => start = AffineStart::ImageCenters,
+            "-ia-identity" => start = AffineStart::Identity,
+            "-ia" => {
+                let path = take(args, &mut at, "-ia");
+                start = AffineStart::Matrix(
+                    read_matrix(
+                        &fs::read_to_string(&path).unwrap_or_else(|e| fail(format!("{path}: {e}"))),
+                    )
+                    .unwrap_or_else(|e| fail(e)),
+                );
+            }
             "-dump-pyramid" => dump_pyramid = true,
             "-dump-prefix" => dump_prefix = take(args, &mut at, "-dump-prefix"),
             "-d" => {

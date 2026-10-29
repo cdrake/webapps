@@ -113,11 +113,14 @@ pub fn matrix(parameters: [f64; 12]) -> Mat4 {
 /// `-ia-image-centers`. On a whole-head T1 to template pair the masked NMI
 /// landscape has a degenerate basin that an image-centres start can fall
 /// into while the identity start converges (#623), so the two are not
-/// interchangeable.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+/// interchangeable. Neither converges on every subject; `Matrix` (`-ia FILE`)
+/// starts from a physical RAS matrix as `-o` writes it, such as the unmasked
+/// affine of the same pair.
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum AffineStart {
     Identity,
     ImageCenters,
+    Matrix(Mat4),
 }
 
 /// Greedy's `-ia-image-centers`: voxel coordinates are `dims / 2`, not
@@ -1175,6 +1178,7 @@ fn start_transform(start: AffineStart, fixed: &Grid, moving: &Grid) -> Mat4 {
             &downsample_grid(fixed, PYRAMID_FACTORS[0]),
             &downsample_grid(moving, PYRAMID_FACTORS[0]),
         ),
+        AffineStart::Matrix(matrix) => matrix,
     }
 }
 
