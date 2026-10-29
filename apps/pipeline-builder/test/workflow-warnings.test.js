@@ -112,10 +112,10 @@ test("an optional output warning reported by the NeuroFlow core is not repeated"
   const validate = await createValidator(tools, await readFile(new URL("../vendor/neuroflow/neuroflow_wasm_bg.wasm", import.meta.url)));
   const doc = workflow({ ref: "steps.source.outputs.conditional" });
   doc.outputs.result = { type: "neuro:volume", ref: "steps.source.outputs.conditional" };
-  const optional = validate(doc).issues.filter(issue => /is optional/.test(issue.message));
-  assert.deepEqual(optional.map(issue => [issue.path, issue.code]), [
-    ["steps.target.inputs.input_images", undefined],
-    ["outputs.result.ref", undefined],
+  const optional = validate(doc).issues.filter(issue => issue.code === "optional-output");
+  assert.deepEqual(optional.map(issue => [issue.path, /is optional, so /.test(issue.message)]), [
+    ["steps.target.inputs.input_images", true],
+    ["outputs.result.ref", true],
   ]);
 });
 
