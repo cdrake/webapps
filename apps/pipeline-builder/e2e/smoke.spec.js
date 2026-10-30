@@ -209,6 +209,36 @@ test("editing a step keeps its sections as the user left them and keeps focus", 
   expect(doc.steps["brain-extraction"].inputs).toMatchObject({ param_threshold: { constant: 0.4 }, param_method: { constant: "bet" } });
 });
 
+test("an incomplete number preserves the saved parameter and can be corrected or cleared", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("#toolSelect")).toBeEnabled();
+  await page.locator("#toolSelect").selectOption("neurodesk.webapps/brain-extraction/extract");
+  await page.locator("#addStepButton").click();
+  await page.locator("#stepEditor details summary").click();
+  const threshold = page.locator("#param-param_threshold");
+  const error = page.locator("#param-param_threshold-error");
+  await threshold.fill("0.4");
+  await threshold.press("Tab");
+  await page.locator("#output-output_brain").check();
+  await page.locator("#workflowDescription").fill("Skull-strip a head MRI.");
+  await page.locator("#workflowDescription").press("Tab");
+  await threshold.fill("");
+  await threshold.pressSequentially("1e");
+  await threshold.press("Tab");
+  await expect(error).toHaveText("Enter a valid number.");
+  await expect(threshold).toHaveAttribute("aria-invalid", "true");
+  expect((await exported(page)).steps["brain-extraction"].inputs.param_threshold).toEqual({ constant: 0.4 });
+  await threshold.fill("0.3");
+  await threshold.press("Tab");
+  await expect(error).toBeHidden();
+  await expect(threshold).not.toHaveAttribute("aria-invalid");
+  expect((await exported(page)).steps["brain-extraction"].inputs.param_threshold).toEqual({ constant: 0.3 });
+  await threshold.fill("");
+  await threshold.press("Tab");
+  await expect(error).toBeHidden();
+  expect((await exported(page)).steps["brain-extraction"].inputs).not.toHaveProperty("param_threshold");
+});
+
 test("array parameters export as typed arrays and reject invalid entries in place", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("#toolSelect")).toBeEnabled();

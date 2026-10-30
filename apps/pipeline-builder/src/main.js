@@ -179,7 +179,9 @@ function parameterField(id, name, decl, tool) {
     error = el("p", { id: `param-${name}-error`, className: "nd-message error", hidden: true });
     control.setAttribute("aria-describedby", error.id);
     control.onchange = () => {
-      const parsed = parseParameter(control.value, decl);
+      const parsed = control.validity.badInput
+        ? { error: "Enter a valid number." }
+        : parseParameter(control.value, decl);
       error.textContent = parsed.error ?? "";
       error.hidden = !parsed.error;
       if (parsed.error) return control.setAttribute("aria-invalid", "true");
