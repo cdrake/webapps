@@ -166,7 +166,7 @@ An app can set `ci.e2e_shards` to 2-4 in `registry/apps.yml`. The CPU browser jo
 - Each registration group and each denoised image gets a new WebAssembly instance, in its own Worker in the browser and worker thread in Node, so its memory is freed when it ends. Do not reuse an instance across stages.
 - Outputs are on the native T1 grid: uint8 labels, one float32 probability per class and the uint8 mask, gzip level 9 with mtime 0 (`src/outputs.js`), so the bytes are the same in every browser and on the command line.
 - `apps/bison/scripts/copy-runtime.mjs` stages the hmc-registration and ants-denoise workers and kernels (pthread builds, so the page needs cross-origin isolation) and Greedy's worker and single-threaded build in the gitignored `public/bison-runtime/`. ONNX Runtime Web starts its threads from `src/worker.js` (named `em-pthread`); the worker must not set its own message handler there.
-- The `bison` command line has no release yet; the app is in `registry/standalone-exceptions.json` until its packaging is done.
+- The `bison` command line ships through `exes/node-cli` (`packages/bison/release.json`, `bison-native.yml`). Its archives bundle the model files and must pass `validation/cli-check.mjs` against `validation/browser-reference.json`, which `bison-native.yml` also checks the built web app against; rerecord it when the pipeline, its tools or the models change.
 
 ## ants-denoise
 
