@@ -104,6 +104,26 @@ test("optional outputs are reported once, by the NeuroFlow core", async () => {
   assert.deepEqual(optional(), ["steps.target.inputs.input_images"]);
 });
 
+test("undeclared inputs and invalid constants are reported once per path", async () => {
+  const param = { ...target, inputs: { ...target.inputs, param_echoTimesMs: {
+    type: "core:array<core:number>", optional: true,
+    extensions: { "neurodesk/parameter": { type: "array", items: { type: "number", minimum: 0.001 } } },
+  } } };
+  const validate = await createValidator([source, param], await readFile(new URL("../vendor/neuroflow/neuroflow_wasm_bg.wasm", import.meta.url)));
+  const doc = workflow({ ref: "inputs.missing" });
+  const issues = constant => {
+    doc.steps.target.inputs.param_echoTimesMs = { constant };
+    return validate(doc).issues.filter(issue => ["input-undeclared", "constant-invalid"].includes(issue.code)).map(issue => [issue.code, issue.path]);
+  };
+  // The core checks the element type; the builder alone checks the per-item minimum.
+  for (const constant of ["[10,20]", [0]]) {
+    assert.deepEqual(issues(constant), [
+      ["input-undeclared", "steps.target.inputs.input_images"],
+      ["constant-invalid", "steps.target.inputs.param_echoTimesMs"],
+    ]);
+  }
+});
+
 test("the core's issues survive a builder check that throws", async () => {
   const validate = await createValidator(tools, await readFile(new URL("../vendor/neuroflow/neuroflow_wasm_bg.wasm", import.meta.url)));
   const result = validate({ ...model.emptyWorkflow(), steps: { broken: null } });

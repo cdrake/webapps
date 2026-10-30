@@ -9,7 +9,9 @@ export async function createValidator(tools, wasm) {
   return doc => {
     try {
       const core = JSON.parse(validate_workflow_with_tools_json(JSON.stringify(doc), catalog));
-      const issues = [...(core.issues ?? []), ...builderIssues(doc, tools)];
+      const checked = new Set((core.issues ?? []).filter(issue => issue.code === "constant-invalid").map(issue => issue.path));
+      const builder = builderIssues(doc, tools).filter(issue => !(issue.code === "constant-invalid" && checked.has(issue.path)));
+      const issues = [...(core.issues ?? []), ...builder];
       return { ...core, issues, ok: core.ok && !issues.some(issue => issue.severity === "error") };
     } catch (error) {
       return { ok: false, issues: [{ severity: "error", message: String(error?.message ?? error), path: "" }] };

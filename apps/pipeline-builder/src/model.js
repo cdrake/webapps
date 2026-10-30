@@ -356,21 +356,14 @@ export function workflowIssues(doc, tools) {
     const output = /^steps\.([^.]+)\.outputs\.([^.]+)$/.exec(ref ?? "");
     return output && byId.get(doc.steps[output[1]]?.tool)?.outputs?.[output[2]];
   };
-  // NeuroFlow 0.5.0 checks only the shape of an inputs.<name> reference.
-  const undeclared = (path, ref) => {
-    const input = /^inputs\.([^.]+)$/.exec(ref ?? "");
-    if (input && !Object.hasOwn(doc.inputs ?? {}, input[1])) {
-      issues.push({ severity: "error", code: "input-undeclared", path, message: `${ref} is not a declared workflow input.` });
-    }
-  };
   for (const [id, step] of Object.entries(doc.steps)) {
-    for (const [name, binding] of Object.entries(step.inputs ?? {})) undeclared(`steps.${id}.inputs.${name}`, binding?.ref);
     const tool = byId.get(step.tool);
     for (const [name, input] of Object.entries(tool?.inputs ?? {})) {
       const path = `steps.${id}.inputs.${name}`;
       const binding = step.inputs?.[name];
       const source = declaration(binding?.ref);
-      // NeuroFlow does not type-check constants; the desktop request validator does.
+      // NeuroFlow 0.6.0 checks type, enum, min and max; this also covers the
+      // per-item limits in neurodesk/parameter. validator.js keeps one issue per path.
       const invalid = binding && "constant" in binding && (name.startsWith("param_") || name === "engine")
         && parameterError(binding.constant, input);
       if (invalid) issues.push({ severity: "error", code: "constant-invalid", path, message: invalid });
@@ -402,9 +395,6 @@ export function workflowIssues(doc, tools) {
         }
       }
     }
-  }
-  for (const [name, output] of Object.entries(doc.outputs ?? {})) {
-    undeclared(`outputs.${name}`, output?.ref);
   }
   return issues;
 }
