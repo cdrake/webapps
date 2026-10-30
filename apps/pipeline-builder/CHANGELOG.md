@@ -1,5 +1,13 @@
 # pipeline-builder
 
+## 0.2.20261030
+
+### Patch Changes
+
+- 1e81185: Store array parameters such as QSMbly echo times, Easy MP2RAGE acquisition values and SeedSeg folds and models as typed JSON arrays. Their fields accept a JSON array or comma-separated values, check each value against the declared item type, range and choices, and show an error in place without changing the saved value. Number fields also reject text, fractional integers and values outside their range. Validation reports an imported constant that does not match its parameter type, which the NeuroFlow core does not check.
+- Keep the saved parameter and show an inline error when a numeric field contains an incomplete number such as `1e`.
+- 5b7e5f1: Refuse an imported workflow whose steps, bindings, inputs or outputs are not objects, instead of opening it and breaking every later edit until New. Report a reference to an undeclared workflow input as an error, which the NeuroFlow core does not check. A builder check that fails no longer hides the core's own issues.
+
 ## 0.2.20261029
 
 ### Patch Changes

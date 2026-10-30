@@ -13,7 +13,7 @@ export async function createValidator(tools, wasm) {
       const coreOptional = new Set((core.issues ?? [])
         .filter(issue => issue.code === "optional-output")
         .map(issue => issue.path?.replace(/\.ref$/, "")));
-      const builder = workflowIssues(doc, tools)
+      const builder = builderIssues(doc, tools)
         .filter(issue => issue.code !== "optional-output" || !coreOptional.has(issue.path));
       const issues = [...(core.issues ?? []), ...builder];
       return { ...core, issues, ok: core.ok && !issues.some(issue => issue.severity === "error") };
@@ -21,6 +21,15 @@ export async function createValidator(tools, wasm) {
       return { ok: false, issues: [{ severity: "error", message: String(error?.message ?? error), path: "" }] };
     }
   };
+}
+
+// A builder check that throws must not hide the core's own issues.
+function builderIssues(doc, tools) {
+  try {
+    return workflowIssues(doc, tools);
+  } catch (error) {
+    return [{ severity: "error", path: "", message: `Builder checks failed: ${String(error?.message ?? error)}` }];
+  }
 }
 
 /** The registry index under `base`, then every tool it lists. */
