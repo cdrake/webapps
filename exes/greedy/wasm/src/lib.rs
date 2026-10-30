@@ -1,8 +1,8 @@
 use greedy_rs_core::{
     AffineMetric, AffineStart, DEFAULT_AFFINE_JITTER, Interpolation, Transform, decode_image,
     decode_vector_field, encode_image, encode_vector_field, read_matrix, register_affine,
-    register_affine_masked, register_nmi_svf, register_nmi_svf_masked, reslice,
-    reslice_with_background,
+    register_affine_masked, register_nmi_svf, register_nmi_svf_masked, register_rigid_masked,
+    reslice, reslice_with_background,
 };
 use wasm_bindgen::prelude::*;
 
@@ -126,6 +126,53 @@ pub fn register_affine_masked_wasm(
     image_centers: bool,
     initial: Option<String>,
 ) -> Result<String, JsValue> {
+    register_linear(
+        12,
+        fixed,
+        moving,
+        mask,
+        metric,
+        iterations,
+        image_centers,
+        initial,
+    )
+}
+
+/// `greedy -a -dof 6`, otherwise as `register_affine_masked_wasm`: a rigid RAS matrix as the CLI
+/// writes it.
+#[wasm_bindgen]
+pub fn register_rigid_masked_wasm(
+    fixed: &[u8],
+    moving: &[u8],
+    mask: Option<Vec<u8>>,
+    metric: &str,
+    iterations: &str,
+    image_centers: bool,
+    initial: Option<String>,
+) -> Result<String, JsValue> {
+    register_linear(
+        6,
+        fixed,
+        moving,
+        mask,
+        metric,
+        iterations,
+        image_centers,
+        initial,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn register_linear(
+    dof: u8,
+    fixed: &[u8],
+    moving: &[u8],
+    mask: Option<Vec<u8>>,
+    metric: &str,
+    iterations: &str,
+    image_centers: bool,
+    initial: Option<String>,
+) -> Result<String, JsValue> {
     let start = match initial {
         Some(text) => AffineStart::Matrix(read_matrix(&text).map_err(wasm_error)?),
         None => affine_start(image_centers),
@@ -136,7 +183,12 @@ pub fn register_affine_masked_wasm(
         .map(|m| decode_image(&m))
         .transpose()
         .map_err(wasm_error)?;
-    let matrix = register_affine_masked(
+    let register = if dof == 6 {
+        register_rigid_masked
+    } else {
+        register_affine_masked
+    };
+    let matrix = register(
         fixed,
         moving,
         mask,

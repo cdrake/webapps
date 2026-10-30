@@ -44,3 +44,19 @@ test('the single-threaded build runs without a thread pool', async () => {
     assert.ok(Math.abs(at(resliced, x, y, z) - at(moving, x + 2, y, z)) < 1e-4, `voxel ${x}, ${y}, ${z}`);
   }
 });
+
+test('the rigid export recovers a translation with an orthonormal matrix', async () => {
+  const api = await loadGreedySingleThread();
+  const fixed = phantom();
+  // The moving image is the fixed one 4 mm along x: fixed point p maps to moving point p - 4 x.
+  const moving = api.reslice_affine_options(fixed, fixed, '1 0 0 4\n0 1 0 0\n0 0 1 0\n0 0 0 1\n', false, 0);
+  const rows = api.register_rigid_masked_wasm(fixed, moving, null, 'NMI', '100x50x10', false, null).trim().split('\n').map((line) => line.split(' ').map(Number));
+  const rotation = rows.slice(0, 3).map((row) => row.slice(0, 3));
+  for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 3; j++) {
+      const dot = rotation.reduce((sum, row) => sum + row[i] * row[j], 0);
+      assert.ok(Math.abs(dot - (i === j ? 1 : 0)) < 1e-9, `columns ${i}, ${j}`);
+    }
+  }
+  assert.ok(Math.abs(rows[0][3] + 4) < 0.5, `x translation ${rows[0][3]}`);
+});
