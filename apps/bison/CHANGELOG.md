@@ -1,5 +1,11 @@
 # bison
 
+## 0.1.20261029
+
+### Patch Changes
+
+- @neurodesk/bison@0.2.4
+
 ## 0.1.20261027
 
 ### Patch Changes

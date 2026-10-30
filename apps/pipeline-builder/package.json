@@ -1,6 +1,6 @@
 {
   "name": "pipeline-builder",
-  "version": "0.2.20261027",
+  "version": "0.2.20261029",
   "private": true,
   "type": "module",
   "scripts": {

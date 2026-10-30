@@ -1,5 +1,13 @@
 # @neurodesk/bison
 
+## 0.2.4
+
+### Patch Changes
+
+- Updated dependencies [f1ac9b2]
+- Updated dependencies [ac283dd]
+  - @neurodesk/hmc-registration@0.3.1
+
 ## 0.2.3
 
 ### Patch Changes
