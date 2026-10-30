@@ -73,6 +73,11 @@ Also checked:
   finds every file identical.
 - Resize. `pillow_fixture.py` resizes seven synthetic images in the image;
   `test/slices.test.js` holds the port to its hashes.
+- WebGPU. ONNX Runtime Web 1.29 with the WebGPU backend in headless Chromium
+  (SwiftShader adapter) on the 30 slices with the smallest original margins
+  plus every 20th slice: 0 of 64 (standard) and 0 of 62 (headmotion2)
+  predictions differ, largest logit difference 0.81. A full run was not
+  practical on the software adapter (about 16 s per slice).
 - ONNX. `validate_onnx.py` runs the export with ONNX Runtime (Python, CPU) on
   the PNGs the original wrote: 0 of 679 predictions differ, largest logit
   difference 0.95.
