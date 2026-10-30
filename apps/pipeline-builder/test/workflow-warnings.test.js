@@ -90,33 +90,18 @@ test("array refs defer item count checks to execution", () => {
   }
 });
 
-test("optional outputs warn on required consumers and workflow outputs", () => {
+test("optional outputs are reported once, by the NeuroFlow core", async () => {
+  const validate = await createValidator(tools, await readFile(new URL("../vendor/neuroflow/neuroflow_wasm_bg.wasm", import.meta.url)));
   const doc = workflow({ ref: "steps.source.outputs.conditional" });
   doc.steps.target.inputs.input_optional = { ref: "steps.source.outputs.conditional" };
   doc.outputs.result = { type: "neuro:volume", ref: "steps.source.outputs.conditional" };
-  assert.deepEqual(model.workflowIssues(doc, tools).filter(issue => issue.code === "optional-output"), [
-    {
-      severity: "warning", code: "optional-output", path: "steps.target.inputs.input_images",
-      message: "steps.source.outputs.conditional is optional and may be absent when this required input runs.",
-    },
-    {
-      severity: "warning", code: "optional-output", path: "outputs.result",
-      message: "steps.source.outputs.conditional is optional and may not produce this workflow output.",
-    },
-  ]);
+  assert.deepEqual(model.workflowIssues(doc, tools).filter(issue => issue.code === "optional-output"), []);
+  const optional = () => validate(doc).issues.filter(issue => issue.code === "optional-output").map(issue => issue.path);
+  assert.deepEqual(optional(), ["steps.target.inputs.input_images", "outputs.result.ref"]);
+  // An optional workflow output (spec 0.1.3) accepts an absent value.
+  doc.neuroflow = "0.1.3";
   doc.outputs.result.optional = true;
-  assert.equal(model.workflowIssues(doc, tools).filter(issue => issue.code === "optional-output").length, 1);
-});
-
-test("an optional output warning reported by the NeuroFlow core is not repeated", async () => {
-  const validate = await createValidator(tools, await readFile(new URL("../vendor/neuroflow/neuroflow_wasm_bg.wasm", import.meta.url)));
-  const doc = workflow({ ref: "steps.source.outputs.conditional" });
-  doc.outputs.result = { type: "neuro:volume", ref: "steps.source.outputs.conditional" };
-  const optional = validate(doc).issues.filter(issue => issue.code === "optional-output");
-  assert.deepEqual(optional.map(issue => [issue.path, /is optional, so /.test(issue.message)]), [
-    ["steps.target.inputs.input_images", true],
-    ["outputs.result.ref", true],
-  ]);
+  assert.deepEqual(optional(), ["steps.target.inputs.input_images"]);
 });
 
 test("the core's issues survive a builder check that throws", async () => {
