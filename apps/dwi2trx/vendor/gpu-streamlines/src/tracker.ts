@@ -92,6 +92,14 @@ const REQUIRED_STORAGE_BUFFERS = 10
  *  limit to the 16 KB spec minimum (wgpu-native defaults higher). */
 const REQUIRED_WORKGROUP_STORAGE = 20800
 
+/** Lanes per tidy row in the Boot kernel (THR_X_SL). Its reductions and ballots
+ *  need exactly this subgroup; another size gives wrong streamlines or loses the device. */
+const REQUIRED_SUBGROUP_SIZE = 32
+
+function subgroupSizeError(detail: string): Error {
+  return new Error(`tracking needs ${REQUIRED_SUBGROUP_SIZE}-lane GPU subgroups; this GPU ${detail}.`)
+}
+
 /**
  * Request a WebGPU device able to run the Boot tracker. Throws a *specific*
  * diagnostic (and logs the adapter's features + key limits to the console) so
@@ -128,6 +136,18 @@ export async function getTrackingDevice(): Promise<GPUDevice> {
         `(adapter features: ${features.join(', ') || 'none'}). On Chrome try ` +
         `enabling chrome://flags/#enable-unsafe-webgpu; Safari/Firefox may not ` +
         `support subgroups yet.`,
+    )
+  }
+  // Chromium reports the range its compiler may choose from; the kernel checks the
+  // size it actually got, since the range alone does not guarantee 32.
+  const { subgroupMinSize, subgroupMaxSize } = adapter.info
+  if (
+    subgroupMinSize !== undefined &&
+    subgroupMaxSize !== undefined &&
+    (subgroupMinSize > REQUIRED_SUBGROUP_SIZE || subgroupMaxSize < REQUIRED_SUBGROUP_SIZE)
+  ) {
+    throw subgroupSizeError(
+      `has ${subgroupMinSize === subgroupMaxSize ? subgroupMinSize : `${subgroupMinSize}-${subgroupMaxSize}`}-lane subgroups`,
     )
   }
   if (maxSB < REQUIRED_STORAGE_BUFFERS) {
@@ -496,6 +516,9 @@ export async function trackStreamlines(
         const counts = new Int32Array(
           await readback(device, offsBuf, (nseeds + 1) * 4),
         )
+        if (counts.subarray(0, nseeds).some(count => count < 0)) {
+          throw subgroupSizeError('ran the seed-count pass with another subgroup layout')
+        }
         const offsets = new Int32Array(nseeds + 1)
         for (let i = 0; i < nseeds; i++) offsets[i + 1] = offsets[i] + counts[i]
         const nSlines = offsets[nseeds]
@@ -575,6 +598,11 @@ export async function trackStreamlines(
           const meta = new Int32Array(
             await readback(device, slineMetaBuf, 2 * nSlines * 4),
           )
+          for (let i = 1; i < meta.length; i += 2) {
+            if (meta[i] < 0) {
+              throw subgroupSizeError('ran the streamline pass with another subgroup layout')
+            }
+          }
           const winSlines = Math.max(
             1,
             Math.floor(READBACK_WINDOW_BYTES / (stride * REAL_SIZE)),
