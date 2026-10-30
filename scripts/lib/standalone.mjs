@@ -44,6 +44,9 @@ function validateDownloads(downloads, id) {
 }
 
 // Shared modules the app shell imports at run time (Standalone dialog, page-wide drop, handoff sweep).
+/** Build or checksum instructions the Standalone dialog must never show users. */
+export const DIALOG_FORBIDDEN = /cargo build|compile from source|make macos-release|sha-256|sha256|shasum|Prepare this upstream/i;
+
 export const SHELL_COMPONENTS = ['core/dom.js', 'ui/renderInfoDialog.js', 'ui/renderStandalone.js', 'ui/pageDrop.js', 'file-io/detectFiles.js', 'handoff/index.js', 'handoff/receive.js', 'styles/imaging-workspace.css', 'styles/base.css'];
 
 export async function stageStandaloneAssets(destination) {

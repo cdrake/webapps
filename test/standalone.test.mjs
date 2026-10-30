@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { JSDOM } from 'jsdom';
 import { loadAppsRegistry } from '../scripts/lib/apps-registry.mjs';
-import { loadStandalone } from '../scripts/lib/standalone.mjs';
+import { DIALOG_FORBIDDEN, loadStandalone } from '../scripts/lib/standalone.mjs';
 import { ciWorkflowApps, cpuWorkflowApps, hardwareWorkflowApps } from '../scripts/desktop/ci-apps.mjs';
 import { prepareWorkflow, workflowApps } from '../scripts/desktop/workflows.mjs';
 import { openStandalone } from '../packages/components/src/ui/renderStandalone.js';
@@ -24,6 +24,17 @@ test('scanner packages link the supported apps to their OpenRecon recipes', asyn
   assert.match(scanner.textContent, /Run the QSMxT container on the MRI scanner console/);
   assert.match(scanner.textContent, /official OpenRecon package/);
   assert.deepEqual([...scanner.querySelectorAll('a')].map(node => node.href), ['https://webclient.us.api.teamplay.siemens-healthineers.com/c2p', 'https://github.com/neurodesk/openrecon/', 'https://github.com/neurodesk/openrecon/tree/main/recipes/qsmxt']);
+  dom.window.close();
+});
+
+test('no Standalone dialog shows build or checksum instructions', async () => {
+  const catalog = await loadStandalone(await loadAppsRegistry());
+  const dom = new JSDOM('<html><body></body></html>');
+  for (const [id, app] of Object.entries(catalog.apps)) {
+    const dialog = openStandalone({ title: id, app }, dom.window.document);
+    assert.doesNotMatch(dialog.root.textContent, DIALOG_FORBIDDEN, id);
+    dialog.root.remove();
+  }
   dom.window.close();
 });
 
