@@ -611,6 +611,33 @@ try {
     await expect(page.locator('#resultList .nd-volume-toggle')).toHaveCount(0);
     await expect(page.locator('#maskField')).toContainText('Drop a mask on the image grid');
   });
+  await check('brainqcnet', async page => {
+    await expect(page.locator('#statusText')).toHaveText('Drag and drop files', { timeout: 60000 });
+    await expect(page.locator('#technicalLog')).toHaveClass(/collapsed/);
+    await expect(page.locator('#runButton')).toBeDisabled();
+    await page.locator('#imageInput').setInputFiles(nifti('interface-t1.nii'));
+    await expect(page.locator('#fileInfo')).toHaveText('interface-t1.nii · 16 × 16 × 16 · 1.00 × 1.00 × 1.00 mm');
+    await expect(page.getByRole('button', { name: 'Check quality', exact: true })).toBeEnabled();
+    await page.locator('#method').selectOption('median');
+    // The settings chosen in Advanced settings must survive closing that section and its parent.
+    const advanced = page.locator('#advancedSettings > summary');
+    await expect(page.locator('#areas')).toBeHidden();
+    await advanced.tap();
+    await page.locator('#areas').fill('5');
+    await page.locator('#backend').selectOption('wasm');
+    await advanced.tap();
+    await expect(page.locator('#areas')).toBeHidden();
+    const task = page.locator('#taskSection > summary');
+    await task.tap();
+    await expect(page.locator('#method')).toBeHidden();
+    await task.tap();
+    await advanced.tap();
+    await expect(page.locator('#method')).toHaveValue('median');
+    await expect(page.locator('#areas')).toHaveValue('5');
+    await expect(page.locator('#backend')).toHaveValue('wasm');
+    await expect(page.locator('#cancelButton')).toBeHidden();
+    await expect(page.locator('#outputSection')).not.toHaveAttribute('open', '');
+  });
   await check('sdc', async page => {
     await expect(page.locator('#statusText')).toHaveText('Drag and drop files', { timeout: 60000 });
     await expect(page.locator('#technicalLog')).toHaveClass(/collapsed/);
