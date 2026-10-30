@@ -38,6 +38,12 @@ async function runEnsemble(page) {
 // WebAssembly and its WebGPU parity waits for a real Mac (NEURODESK_HARDWARE_GPU=1 outside Actions).
 const virtualGpu = hardwareGpu && process.env.GITHUB_ACTIONS === 'true';
 
+// A start consumes the adopted inputs, so each run adopts the image again.
+async function adoptImage(page) {
+  await page.locator('#neurodesk-input-transfer').setInputFiles({ name: 'synthetic-prostate-t1.nii', mimeType: 'application/x-nifti', buffer: image });
+  await page.evaluate(() => neurodeskAutomation.dispatch('adopt', { role: 'image' }));
+}
+
 async function downloadRow(page, row) {
   const waiting = page.waitForEvent('download');
   await row.locator('.download-btn').click();
@@ -224,6 +230,7 @@ test('default nnU-Net v2 produces native-grid probabilities, ranked markers and 
     }
   }
   if (hardwareGpu && !virtualGpu) {
+    await adoptImage(page);
     await page.evaluate(() => neurodeskAutomation.dispatch('start', { operation: 'segment', parameters: { backend: 'wasm' } }));
     await expect.poll(() => page.evaluate(async () => (await neurodeskAutomation.dispatch('snapshot')).state), { timeout: 540000 }).toMatch(/succeeded|failed/);
     const cpu = await page.evaluate(() => neurodeskAutomation.dispatch('snapshot'));
@@ -285,11 +292,10 @@ for (const settings of [
     await page.goto('/');
     await page.waitForFunction(() => Boolean(globalThis.neurodeskAutomation));
     assertHardwareAdapter(await readAdapterInfo(page));
-    await page.locator('#neurodesk-input-transfer').setInputFiles({ name: 'synthetic-prostate-t1.nii', mimeType: 'application/x-nifti', buffer: image });
-    await page.evaluate(() => neurodeskAutomation.dispatch('adopt', { role: 'image' }));
     const reports = [];
     const outputs = [];
     for (const backend of ['auto', 'wasm']) {
+      await adoptImage(page);
       await page.evaluate(parameters => neurodeskAutomation.dispatch('start', { operation: 'segment', parameters }), {
         folds: settings.folds, mirror: settings.mirror, backend,
       });
