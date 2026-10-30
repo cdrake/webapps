@@ -218,11 +218,12 @@ function num(
   return Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : def
 }
 
-/** Physical GPU command size set by e2e/dispatch.spec.js, which compares one command
- *  per pass with the bounded default; results must not depend on it (#598). */
-function dispatchWindowOverride(): number | undefined {
-  const value = (globalThis as { neurodeskTrackingDispatchWorkgroups?: unknown })
-    .neurodeskTrackingDispatchWorkgroups
+/** Physical GPU command size and seed batch size set by e2e/dispatch.spec.js, which
+ *  compares them with the defaults; results must not depend on either (#598). */
+function trackingOverride(
+  name: 'neurodeskTrackingDispatchWorkgroups' | 'neurodeskTrackingChunkSeeds',
+): number | undefined {
+  const value = (globalThis as Record<string, unknown>)[name]
   return Number.isSafeInteger(value) && (value as number) > 0 ? (value as number) : undefined
 }
 
@@ -1125,7 +1126,8 @@ async function runTrack({ signal, progress }: ProcessingContext = {}) {
       // Drop sub-streamline stubs: keep only tracts ≳ 5 voxels long (a 1-2 point
       // fragment is noise that bloats the TRX and clutters the render).
       minPts: Math.max(2, Math.ceil(5 / stepSize)),
-      maxWorkgroupsPerDispatch: dispatchWindowOverride() ?? DEFAULT_PARAMS.maxWorkgroupsPerDispatch,
+      maxWorkgroupsPerDispatch: trackingOverride('neurodeskTrackingDispatchWorkgroups') ?? DEFAULT_PARAMS.maxWorkgroupsPerDispatch,
+      chunkSize: trackingOverride('neurodeskTrackingChunkSeeds') ?? DEFAULT_PARAMS.chunkSize,
     }
     const parameterReport = trackingParametersReport(params)
     const { lines, truncated, deviceLost, processedSeeds } = await trackStreamlines(

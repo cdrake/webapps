@@ -77,12 +77,12 @@ test('physical dispatch windows preserve the actual Boot Philox seed and lane st
   for (const result of results.slice(1)) expect(result).toEqual(results[0]);
 });
 
-async function trackExample(browser, baseURL, maxWorkgroups) {
+async function trackExample(browser, baseURL, overrides = {}) {
   const context = await browser.newContext({ baseURL });
   try {
     const page = await context.newPage();
-    await page.addInitScript(maxWorkgroups => {
-      if (maxWorkgroups) globalThis.neurodeskTrackingDispatchWorkgroups = maxWorkgroups;
+    await page.addInitScript(overrides => {
+      Object.assign(globalThis, overrides);
       window.trackingDispatches = [];
       const pipelines = new WeakMap();
       const passes = new WeakMap();
@@ -102,7 +102,7 @@ async function trackExample(browser, baseURL, maxWorkgroups) {
         window.trackingDispatches.push({ entryPoint: passes.get(this), x: counts[0] });
         return dispatch.apply(this, counts);
       };
-    }, maxWorkgroups);
+    }, overrides);
     await page.goto('/');
     assertHardwareAdapter(await readAdapterInfo(page));
     for (const [role, extension] of [['image', 'nii.gz'], ['bval', 'bval'], ['bvec', 'bvec']]) {
@@ -126,8 +126,8 @@ test('bounded dispatch windows write the same TRX as one command per pass', asyn
   test.skip(!hardwareGpu || !process.env.DWI2TRX_FIXTURE_DIR, 'Requires hardware WebGPU with subgroups and DWI2TRX_FIXTURE_DIR.');
   test.setTimeout(1_200_000);
   // One command per pass is the pre-#598 dispatch; the example is small enough to finish that way.
-  const single = await trackExample(browser, baseURL, 1_000_000);
-  const bounded = await trackExample(browser, baseURL, undefined);
+  const single = await trackExample(browser, baseURL, { neurodeskTrackingDispatchWorkgroups: 1_000_000 });
+  const bounded = await trackExample(browser, baseURL);
   expect(single.parameters.maxWorkgroupsPerDispatch).toBe(1_000_000);
   expect(bounded.parameters.maxWorkgroupsPerDispatch).toBe(16);
   const largest = run => Math.max(...run.passes.map(({ x }) => x));
@@ -147,4 +147,21 @@ test('bounded dispatch windows write the same TRX as one command per pass', asyn
       commands: { single: single.passes.length, bounded: bounded.passes.length }, workgroups: total(single) }, null, 2),
     contentType: 'application/json',
   });
+});
+
+test('the seed batch size does not change the TRX', async ({ browser, baseURL }) => {
+  test.skip(!hardwareGpu || !process.env.DWI2TRX_FIXTURE_DIR, 'Requires hardware WebGPU with subgroups and DWI2TRX_FIXTURE_DIR.');
+  test.setTimeout(1_200_000);
+  const whole = await trackExample(browser, baseURL);
+  // An odd batch size gives four batches, each ending mid-workgroup.
+  const chunkSize = 2 * Math.floor(whole.measurements.seeds / 8) + 1;
+  expect(chunkSize).toBeGreaterThan(1);
+  const batched = await trackExample(browser, baseURL, { neurodeskTrackingChunkSeeds: chunkSize });
+  expect(batched.parameters.chunkSize).toBe(chunkSize);
+  for (const run of [whole, batched]) {
+    expect(run.measurements.processedSeeds).toBe(run.measurements.seeds);
+    expect(run.measurements.partial).toBe(false);
+  }
+  expect(batched.measurements).toEqual(whole.measurements);
+  expect(batched.tracts).toBe(whole.tracts);
 });

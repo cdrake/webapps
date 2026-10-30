@@ -712,7 +712,8 @@ fn getNumStreamlinesBoot_k(
         return;
     }
 
-    let global_id = logical_group * BLOCK_Y * THR_X_SL + THR_X_SL * tidy + tidx;
+    // Philox stream per (seed index in the whole run, lane), whatever the batch size (#598).
+    let global_id = (u32(params.rng_offset) + logical_group * BLOCK_Y + tidy) * THR_X_SL + tidx;
     var st = philox_init(
         u32(params.rng_seed_lo), u32(params.rng_seed_hi), global_id, 0u);
 
@@ -782,7 +783,8 @@ fn genStreamlinesMergeBoot_k(
 
     if (i32(slid) >= params.nseed) { return; }
 
-    let global_id = logical_group * BLOCK_Y * THR_X_SL + THR_X_SL * tidy + tidx;
+    // Philox stream per (seed index in the whole run, lane), whatever the batch size (#598).
+    let global_id = (u32(params.rng_offset) + logical_group * BLOCK_Y + tidy) * THR_X_SL + tidx;
     var st = philox_init(
         u32(params.rng_seed_lo), u32(params.rng_seed_hi), global_id + 1u, 0u);
 
