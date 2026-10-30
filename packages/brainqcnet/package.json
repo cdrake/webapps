@@ -20,5 +20,12 @@
   },
   "devDependencies": {
     "onnxruntime-node": "1.29.0"
-  }
+  },
+  "files": [
+    "src",
+    "model.manifest.json",
+    "LICENSE",
+    "NOTICE",
+    "README.md"
+  ]
 }
