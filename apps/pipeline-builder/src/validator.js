@@ -9,9 +9,9 @@ export async function createValidator(tools, wasm) {
   return doc => {
     try {
       const core = JSON.parse(validate_workflow_with_tools_json(JSON.stringify(doc), catalog));
-      // NeuroFlow 0.3.0 reports optional outputs itself; keep the builder's copy only where core did not.
+      // NeuroFlow reports optional outputs itself (code since 0.3.1); keep the builder's copy only where core did not.
       const coreOptional = new Set((core.issues ?? [])
-        .filter(issue => / is optional, so /.test(issue.message))
+        .filter(issue => issue.code === "optional-output")
         .map(issue => issue.path?.replace(/\.ref$/, "")));
       const builder = workflowIssues(doc, tools)
         .filter(issue => issue.code !== "optional-output" || !coreOptional.has(issue.path));
