@@ -1600,7 +1600,41 @@
       "desktop": true,
       "profile": "batch",
       "assets": [],
-      "downloads": [],
+      "downloads": [
+        {
+          "kind": "cli",
+          "platform": "linux-x64",
+          "version": "0.6.20261029",
+          "url": "https://github.com/neurodesk/webapps/releases/download/noddi-v0.6.20261029/noddi-0.6.20261029-linux-x64.tar.gz",
+          "sha256": "4f5a54e768513c5a02aa936bdd7f104e107869a1eb88994dce4cec08a350afb8",
+          "bytes": 52980671,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/noddi-v0.6.20261029/noddi-0.6.20261029-linux-x64.tar.gz.validation.txt",
+          "modelsIncluded": true,
+          "command": "tar -xzf noddi-0.6.20261029-linux-x64.tar.gz\n./noddi-0.6.20261029-linux-x64/noddi dwi.nii.gz dwi.bval dwi.bvec results"
+        },
+        {
+          "kind": "cli",
+          "platform": "macos-arm64",
+          "version": "0.6.20261029",
+          "url": "https://github.com/neurodesk/webapps/releases/download/noddi-v0.6.20261029/noddi-0.6.20261029-macos-arm64.pkg",
+          "sha256": "8f1ecd0a37fde96a0b811e8836676425214059a52340b016ada20878ffb3137f",
+          "bytes": 46598207,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/noddi-v0.6.20261029/noddi-0.6.20261029-macos-arm64.pkg.validation.txt",
+          "modelsIncluded": true,
+          "command": "sudo installer -pkg noddi-0.6.20261029-macos-arm64.pkg -target /\nnoddi self-check\nnoddi dwi.nii.gz dwi.bval dwi.bvec results"
+        },
+        {
+          "kind": "cli",
+          "platform": "windows-x64",
+          "version": "0.6.20261029",
+          "url": "https://github.com/neurodesk/webapps/releases/download/noddi-v0.6.20261029/noddi-0.6.20261029-windows-x64.zip",
+          "sha256": "88e991d7f214269f495007ed5893edf97ba27b822fbb631ba7f52c15d3dd5867",
+          "bytes": 43326279,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/noddi-v0.6.20261029/noddi-0.6.20261029-windows-x64.zip.validation.txt",
+          "modelsIncluded": true,
+          "command": "Expand-Archive -Path .\\noddi-0.6.20261029-windows-x64.zip -DestinationPath .\n.\\noddi-0.6.20261029-windows-x64\\noddi.exe dwi.nii.gz dwi.bval dwi.bvec results"
+        }
+      ],
       "containers": []
     },
     "degibbs": {
