@@ -22,6 +22,14 @@ Local changes:
   physical command size, and `TrackResult.deviceLost` tells a lost device apart from
   out-of-memory salvage. The app's hardware test runs the example with one command
   per pass and with the default, and requires the same TRX bytes.
+- `src/wgsl/boot.wgsl`, `src/tracker.ts`: both Boot kernels assume each tidy row is
+  one 32-lane subgroup whose lane IDs equal `tid.x` (their shuffles, ballots and the
+  removed `subgroupBarrier()` calls depend on it). WGSL allows other sizes (Intel
+  8/16/32, AMD 64). `getTrackingDevice` refuses an adapter whose subgroup range
+  excludes 32, and each kernel checks the layout it was compiled with: a mismatched
+  workgroup writes -1 instead of tracking, and the host throws. On a matching GPU the
+  check changes no output. `e2e/subgroups.spec.js` runs it on SwiftShader's 4-lane
+  subgroups.
 - `src/trx.ts`: fixed local DOS timestamp (1980-01-01) for deterministic ZIP bytes;
   geometry, member order and uncompressed payload are unchanged.
 - `package.json`: include the new dispatcher and this provenance, and pin the
