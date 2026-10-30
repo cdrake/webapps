@@ -47,7 +47,7 @@ for (const { example, id, verdict, details } of CASES) {
     const stem = file.name.replace(/\.nii\.gz$/, "");
     const downloads = {};
     for (const name of ["table.csv", "tot_df.csv", "x_results_locally.csv", "y_results_locally.csv", "z_results_locally.csv"]) {
-      const result = await downloadRow(page, `${stem}_${name}`);
+      const result = await downloadRow(page, `${name} · `);
       expect(result.name).toBe(`${stem}_${name}`);
       downloads[name] = result.bytes.toString("utf8");
     }

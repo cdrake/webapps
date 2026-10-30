@@ -36,12 +36,12 @@ for (const id of ["sub-000103-standard", "sub-000103-headmotion2"]) {
     const t = tOf(files["tot_df.csv"]);
     const tables = reportFiles(input.name, referenceSummary(slices), t);
     const stem = input.name.replace(/\.nii\.gz$/, "");
-    assert.deepEqual(Object.fromEntries(Object.entries(tables).map(([role, { name, text }]) => [role, [name, text]])), {
-      table: [`${stem}_table.csv`, files["table.csv"]],
-      summary: [`${stem}_tot_df.csv`, files["tot_df.csv"]],
-      xAreas: [`${stem}_x_results_locally.csv`, files["x_results_locally.csv"]],
-      yAreas: [`${stem}_y_results_locally.csv`, files["y_results_locally.csv"]],
-      zAreas: [`${stem}_z_results_locally.csv`, files["z_results_locally.csv"]],
+    assert.deepEqual(Object.fromEntries(Object.entries(tables).map(([role, { name, label, text }]) => [role, [name, label, text]])), {
+      table: [`${stem}_table.csv`, "table.csv · every slice", files["table.csv"]],
+      summary: [`${stem}_tot_df.csv`, "tot_df.csv · summary", files["tot_df.csv"]],
+      xAreas: [`${stem}_x_results_locally.csv`, "x_results_locally.csv · x areas", files["x_results_locally.csv"]],
+      yAreas: [`${stem}_y_results_locally.csv`, "y_results_locally.csv · y areas", files["y_results_locally.csv"]],
+      zAreas: [`${stem}_z_results_locally.csv`, "z_results_locally.csv · z areas", files["z_results_locally.csv"]],
     });
     assert.equal(mapName(input.name), `${stem}_flaggedslices.nii.gz`);
   });

@@ -43,7 +43,7 @@ const SLICE_TYPES = {
 };
 const viewer = new NiiVue({ isDragDropEnabled: false });
 let layout = SLICE_TYPE.MULTIPLANAR;
-let overlayOpacity = 0.6;
+let overlayOpacity = 0.4;
 let attached = null;
 // The viewer attaches to its canvas with the first image, so an empty canvas shows only #emptyState.
 function viewerReady() {
@@ -277,9 +277,9 @@ async function checkQuality(signal, settings = formSettings()) {
     const mapFile = await gzipFile(createNiftiFromData(map, input.buffer), mapName(input.file.name), current);
     await show({ image: input.file, map: mapFile }, { signal: current });
     current.throwIfAborted();
-    outputs = { map: { description: "Flagged-slice map · 0 to 3 flagged slices per voxel", file: mapFile } };
-    for (const [role, { name, text }] of Object.entries(tables)) {
-      outputs[role] = { description: name, file: textFile(name, text), viewable: false };
+    outputs = { map: { description: "Flagged-slice map · 0–3 per voxel", file: mapFile } };
+    for (const [role, { name, label, text }] of Object.entries(tables)) {
+      outputs[role] = { description: label, file: textFile(name, text), viewable: false };
     }
     // The input leads the list, so the viewer can go back to the image without the map.
     results.render({ input: { description: "T1-weighted image", file: input.file }, ...outputs });

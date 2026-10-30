@@ -12,11 +12,12 @@ export async function verifyOffline(page, { fixture, download }) {
   await page.locator('#runButton').click();
   await expect(page.locator('#statusText')).toHaveText(/^(No artifact|Artifact) detected · slices flagged \d+ %$/, { timeout: 900000 });
   const row = (name) => `#resultList .nd-volume-toggle:has-text("${name}") .nd-download-btn`;
-  const table = await download(row('small_table.csv'));
+  const table = await download(row('table.csv · '));
   const rows = table.bytes.toString('utf8').trim().split('\n');
+  assert.equal(table.filename, 'small_table.csv');
   assert.equal(rows[0], 'pred,slice,axis');
   const preds = rows.slice(1).map((line) => Number(line.split(',')[0]));
-  const tot = (await download(row('small_tot_df.csv'))).bytes.toString('utf8').trim().split('\n');
+  const tot = (await download(row('tot_df.csv · '))).bytes.toString('utf8').trim().split('\n');
   const proba = Number(tot[1].split(',')[1]);
   const share = preds.filter((pred) => pred === 1).length / preds.length;
   assert.ok(Math.abs(proba - share) <= 0.005, `tot_df.csv proportion ${proba} against ${share} of table.csv`);

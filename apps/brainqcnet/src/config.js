@@ -49,19 +49,23 @@ function inputStem(inputName) {
   return suffix ? `${stem}_${suffix}` : stem;
 }
 
+const TABLES = Object.freeze([
+  ["table", "table.csv", "every slice", (summary) => tableCsv(summary)],
+  ["summary", "tot_df.csv", "summary", (summary, inputName, seconds) => totCsv(summary, subjectId(inputName), seconds)],
+  ...["x", "y", "z"].map((axis) => [`${axis}Areas`, `${axis}_results_locally.csv`, `${axis} areas`, (summary) => localCsv(summary, axis)]),
+]);
+
 /**
- * The BIDS app's five tables (named as it names them, after the input) and the
- * flagged-slice map's name. `seconds` is the processing time tot_df.csv records as `t`.
+ * The BIDS app's five tables, named as it names them after the input stem, with a label
+ * that leads with that name. `seconds` is the processing time tot_df.csv records as `t`.
  */
 export function reportFiles(inputName, summary, seconds) {
   const stem = inputStem(inputName);
-  return {
-    table: { name: `${stem}_table.csv`, text: tableCsv(summary) },
-    summary: { name: `${stem}_tot_df.csv`, text: totCsv(summary, subjectId(inputName), seconds) },
-    xAreas: { name: `${stem}_x_results_locally.csv`, text: localCsv(summary, "x") },
-    yAreas: { name: `${stem}_y_results_locally.csv`, text: localCsv(summary, "y") },
-    zAreas: { name: `${stem}_z_results_locally.csv`, text: localCsv(summary, "z") },
-  };
+  return Object.fromEntries(TABLES.map(([role, file, label, write]) => [role, {
+    name: `${stem}_${file}`,
+    label: `${file} · ${label}`,
+    text: write(summary, inputName, seconds),
+  }]));
 }
 
 export function mapName(inputName) {
