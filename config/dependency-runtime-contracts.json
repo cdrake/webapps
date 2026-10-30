@@ -215,6 +215,16 @@
     "reason": "packages/syncro/scripts/build.mjs bundles dist/node.js and stages registration runtime files relative to the built Node adapter."
   },
   {
+    "from": "packages/syncro/src/node.js",
+    "to": "./greedy/greedy_rs_wasm.js",
+    "reason": "packages/syncro/scripts/build.mjs bundles dist/node.js and stages @neurodesk/greedy's single-threaded build relative to the built Node adapter."
+  },
+  {
+    "from": "packages/syncro/src/node.js",
+    "to": "./greedy/greedy_rs_wasm_bg.wasm",
+    "reason": "packages/syncro/scripts/build.mjs bundles dist/node.js and stages @neurodesk/greedy's single-threaded build relative to the built Node adapter."
+  },
+  {
     "from": "apps/dicomview/src/protocol-session.js",
     "to": "./vendor/dicompare/DicompareController.js",
     "reason": "apps/dicomview/scripts/stage-dicompare.mjs stages dicompare's embedding kit and schema library in apps/dicomview/src/vendor/dicompare before the dev and build scripts run."

@@ -1,14 +1,36 @@
 # Registration audit, October 2026
 
 This audit lists every place the catalog aligns images, for issue #612. Several
-apps register images as one step of a larger pipeline, and the tools and
-settings differ between them. The audit records what each step runs today, what
-pins its output, and what a change would have to re-record. It changes no code.
-
-Recommendations at the end are proposals. The maintainer decides.
+apps register images as one step of a larger pipeline, often with ANTs, the
+slowest engine in the catalog, and the tools and settings differ between them.
+The audit records what each step runs today, what pins its output, and what a
+change would have to re-record. [Outcome](#outcome-of-612) records what #612
+changed; the [proposals](#proposals) are for the maintainer to decide.
 
 Paths are relative to the repository root. Line numbers are from `main` at
 `e93524d8`.
+
+## Summary
+
+| App | Step | Engine now | Transform | Pinned by | Verdict |
+| --- | --- | --- | --- | --- | --- |
+| BISON | T1 → ICBM 2009c affine (`packages/bison/src/register.js` `affineArguments`) | ANTs, GC | rigid + affine | MINC agreement gates, CLI/browser byte equality | Keep (WP1 measured) |
+| BISON | T1_VP → template affine + SyN (`nonlinearArguments`) | ANTs, GC + CC r2 | affine + SyN to 2 mm | same; prior correlation r 0.85 | Keep: Greedy failed the gates (WP1) |
+| BISON | FLAIR → T1 (`rigidArguments`) | ANTs, Mattes | rigid | same | Keep (WP1 measured) |
+| SYNcro app | normalisation to MNI152 (`apps/syncro/src/worker.js`) | Greedy by default, ANTs SyN on request | affine + NMI SVF | ANTs path: container parity | Keep: Greedy is already the default |
+| SYNcro app | pathological → primary (`worker.js`) | Greedy NMI affine | affine | none | Keep |
+| SYNcro command line | normalisation (`packages/syncro/src/node.js`) | Greedy by default, ANTs SyN with `--normalization ants` | affine + NMI SVF | release check on both engines; ANTs path: container parity | Done (WP2) |
+| HMC | each DWI volume → model prediction (`exes/dwi/hmc/src/registration.rs`) | ANTs, GC | two rigid stages | #451 native-float gate, reference transform hashes | Keep ANTs for NiFreeze parity (WP3 declined) |
+| fastprep | T1 → MNI152NLin2009cAsym (`exes/fastprep/core/src/stages.rs`) | Greedy NMI affine + SVF with `-gm` | affine + SVF | parity with `fastprep.py` | Keep |
+| fastprep | SynthSR SDC warp | Greedy NMI SVF | SVF | parity with `fastprep.py` | Keep |
+| fastprep | BOLD → T1, reference alignment | niimath `-allineate` (`lpc`, `shr`) | affine, rigid | parity with `fastprep.py` | Keep |
+| Deface | template + face mask → subject (`packages/deface/src/pipeline.js`) | niimath `-deface` (allineate fast or Hellinger) | affine | CLI/browser byte equality | Keep: already EdgeReg's engine |
+| CALMaR | lesion T1 → MNI160 (`apps/calmar/web/js/inference-worker.js`) | PCA prealign + SynthMorph ONNX | rigid + deformable SVF | registration quality and parity fixtures | Keep: learned, no iterative engine |
+| TopoFit | template surfaces → subject (`packages/topofit/src/pipeline.js`) | TReGA ONNX + least squares | affine | TReGA bit reproducibility | Keep: part of the pinned OpenRecon workflow |
+| NeSVoR | slices and stacks (`packages/nesvor/src/registration`) | SVoRT ONNX + JS rigid NCC | rigid | registration comparison scripts | Keep: slice-to-volume, no general engine fits |
+| DWI correct | volume → prediction (`exes/dwi/shoreline`) | own Rust rigid + eddy | rigid + eddy | FSL eddy comparisons | Keep: 30 s against 2345 s for the ANTs harness |
+
+The sections below give each step's settings and sources.
 
 ## Available registration tools
 
@@ -16,7 +38,7 @@ Paths are relative to the repository root. Line numbers are from `main` at
 |---|---|---|---|---|---|
 | ANTs SyN (`packages/registration`) | ANTs 2.6.2 WASM, one thread | Affine, then SyN | Fixed ANTsPy 0.6.1 `SyN` argv (`packages/registration/src/index.js:2-13`) | `0GenericAffine.mat`, `1Warp`, `1InverseWarp` | No. The argv is fixed and `register()` has no initial-transform input (`index.js:58-67`) |
 | hmc-registration (`packages/hmc-registration`) | Same ANTs commit, `antsRegistration`, `antsApplyTransforms` and helpers | Any `antsRegistration` stage | None; callers pass argv. `checkArguments` only requires `--float 1` and `--random-seed` (`src/index.js:35-64`) | ITK `.mat`, warps | Yes, `--initial-moving-transform` (BISON uses it) |
-| Greedy (`exes/greedy`, `packages/greedy`) | greedy-rs, Rust port of part of Greedy; threaded WASM, CPU | Affine 12 DOF, rigid (`-dof 6`, CLI only), NMI SVF | `-n 100x50x10`, pyramid 4,2,1; the CLI affine defaults to SSD, the JS wrapper uses NMI (`exes/greedy/cli/src/main.rs:205-240`, `packages/greedy/src/index.js:14-29`) | Text 4×4 `.mat` (RAS, fixed→moving), NIfTI warp | SVF only, `-it AFFINE.mat`. The CLI affine starts from the identity unless `-ia-image-centers` is given, as Greedy; the JS wrapper starts from image centres |
+| Greedy (`exes/greedy`, `packages/greedy`) | greedy-rs, Rust port of part of Greedy; threaded WASM in the browser, a committed single-threaded build (`@neurodesk/greedy/single`) in Node, CPU | Affine 12 DOF, rigid (`-dof 6`, CLI only), NMI SVF | `-n 100x50x10`, pyramid 4,2,1; the CLI affine defaults to SSD, the JS wrapper uses NMI (`exes/greedy/cli/src/main.rs:205-240`, `packages/greedy/src/index.js:14-29`) | Text 4×4 `.mat` (RAS, fixed→moving), NIfTI warp | SVF only, `-it AFFINE.mat`. The CLI affine starts from the identity unless `-ia-image-centers` is given, as Greedy; the JS wrapper starts from image centres |
 | EdgeReg (`packages/edgereg`) | niimath `-allineate` (AFNI 3dAllineate fast engine), `@niivue/niimath` 1.4.20260909 WASM, one thread | Affine 12 DOF, fixed schedule | `niimath MOVING -gz 0 [-robustfov] -allineate FIXED OUT -odt input` (`packages/edgereg/src/registration.js:3,16-20`) | No. Only the resliced image | No |
 | elastix (`packages/elastix`) | elastix 5.2 via `@itk-wasm/elastix` 2.1.0, one thread | Rigid, affine (default), B-spline, each a preset chain from translation | elastix `defaultParameterMap` per stage, 3 resolutions, grid 10 (`packages/elastix/src/parameter-maps.js:5-45`) | TOML parameter files, ITK HDF5 (linear only), OME-Zarr | Stages chain internally (`parameter-maps.js:67-74`). The library's `initialTransform` option is never passed (`apps/elastix/src/registration.js`, the `elastix(maps, …)` call) |
 | FireANTs (`packages/fireants`) | `@fireants/fireants` 0.1.20260913, C/WASM, CPU or WebGPU | Moments → rigid → affine → greedy or SyN | Engine defaults; the repo passes no stages (`apps/fireants/src/main.js:277-295`, `packages/fireants/src/node.js:64-73`) | No. Only the warped image | The engine has `--init-affine <file>`; the repo never uses it |
@@ -25,6 +47,15 @@ Paths are relative to the repository root. Line numbers are from `main` at
 EdgeReg is in the repository. It is affine only. Its first commit is by Chris
 Rorden (2026-09-10); `packages/edgereg/NOTICE` credits niimath to him and
 `-allineate` to AFNI 3dAllineate by Robert W. Cox.
+
+Speeds on a 1 mm T1, as recorded in the repository:
+
+- ANTs SyN: 49 s on an M4 Pro (`apps/ants/README.md`); SYNcro 186 s in WASM against 125 s in the container. BISON's three registrations take 1253 of the pipeline's 1352 s on sub-HML0541 (`packages/bison/docs/preprocessing.md`).
+- Greedy: NMI affine 0.6 s on 14 threads, 3.8 s on one; NMI SVF 4.7 s and 22.6 s (native, `exes/greedy/README.md`).
+- EdgeReg: 8–10 s, 0.3 GB (`packages/edgereg/README.md`).
+
+Only #612's BISON measurement compares engines on the same data and host ([Outcome](#outcome-of-612)).
+Greedy has no neighbourhood cross-correlation metric.
 
 The dedicated apps (ANTs, Greedy, EdgeReg, elastix, FireANTs) register two
 user images as their main purpose. Their validation:
@@ -91,8 +122,8 @@ both JSON files.
 | Step | Purpose | Tool and settings | Source |
 |---|---|---|---|
 | Pathological modality → primary | Optional second input | Greedy NMI affine `100x50x10` (both engines) | `packages/syncro/src/pipeline.js:200-204`, `apps/syncro/src/worker.js:90,123` |
-| Synthetic brain → MNI152 1 mm | Normalisation, default engine | Greedy NMI affine, then NMI SVF initialised with it | `worker.js:92-107`, `packages/greedy/src/index.js:20-26` |
-| Synthetic brain → MNI152 1 mm | Normalisation, optional engine; the only engine in the Node CLI | ANTs SyN, fixed ANTsPy argv | `worker.js:125-130`, `packages/syncro/src/node.js:101,107-111` |
+| Synthetic brain → MNI152 1 mm | Normalisation, default engine in the app and the command line | Greedy NMI affine, then NMI SVF initialised with it | `worker.js:92-107`, `packages/greedy/src/index.js:20-26`, `packages/syncro/src/node.js` |
+| Synthetic brain → MNI152 1 mm | Normalisation, optional engine (`--normalization ants` on the command line) | ANTs SyN, fixed ANTsPy argv | `worker.js:125-130`, `packages/syncro/src/node.js` |
 
 Validation:
 
@@ -101,8 +132,9 @@ Validation:
 - MindGrab + Greedy, the default: the browser test only requires the registered brain to cover at least 10 % of the template's positive voxels (`apps/syncro/e2e/quality.spec.js:49-62`).
 - Every path: the runtime refuses a result covering less than 1 % of the template (`packages/syncro/src/pipeline.js:109-121`).
 
-`packages/syncro/validation/README.md` says the default path has no end-to-end
-parity.
+- SynthStrip + Greedy on the command line: against the SYNcro 0.1.1 container's ANTs result, Dice 0.990 and correlation 0.947 (`packages/syncro/validation/results/greedy-standalone.json`). The release check (`validation/package-check.mjs`) runs both engines.
+
+The MindGrab + Greedy default in the app still has only the 10 % floor.
 
 ### fastprep (`exes/fastprep/core/src/stages.rs`)
 
@@ -264,12 +296,64 @@ measure, such as template-to-subject overlap of manual or
 independent labels, reviewed by hand, before the reference and floors are
 re-recorded.
 
+## Outcome of #612
+
+Three apps ran ANTs implicitly: BISON, SYNcro's command line and HMC. Only SYNcro's command line
+changed.
+
+### WP1: BISON stays on ANTs
+
+BISON's registrations stand in for MINC tools (`bestlinreg_s2`, `nlfit_s`), so the gates are the
+native-MINC agreement thresholds in `packages/bison/test/pipeline-native.test.js`. The native
+reference was rebuilt on its five subjects from Neurodesk's CVMFS MINC and ANTs containers; the ANTs
+pipeline reproduced the documented numbers and passed all ten gates.
+
+Greedy estimated all three registrations, with ANTs `--apply` resampling through them. Its masked
+affine (`-gm`) collapsed on the T1-to-template pair, so the unmasked affine was used
+([#623](https://github.com/neurodesk/webapps/issues/623), since fixed by matching Greedy's masked
+downsampling and affine start in #627). Its linear
+steps passed on their own and took a fraction of the time. Its nonlinear registration did not: the
+fast 2 mm schedule failed every subject on CSF, the cerebellum and deep grey matter, and the best
+variant (400x200x100 iterations, linear mask dilated by 4 voxels) still failed two subjects, with
+CSF Dice 0.69 against a gate of 0.77 on sub-HML0774. Greedy has only NMI; BISON's own measurements
+show that cross-correlation is what brings SyN close to `nlfit_s`. Swapping just the linear steps
+would save about 165 s of an unloaded 1352 s run (the ANTs affine and rigid take 94 and 130 s; Greedy
+about 30 s each), at the cost of a second engine in BISON and a lower linear mask Dice (0.971 on
+sub-HML0541, against ANTs' 0.975 and a gate of 0.97). BISON keeps ANTs. [`packages/bison/docs/preprocessing.md#greedy`](../../packages/bison/docs/preprocessing.md#greedy)
+has the table.
+
+The single-threaded Greedy build (`@neurodesk/greedy/single`) gives the threaded browser build's
+bytes. A future BISON engine with a cross-correlation metric could run threaded in the browser
+and single-threaded on the command line without breaking their byte equality.
+
+### WP2: SYNcro's command line follows the app
+
+The command line now defaults to Greedy, as the app does, through `@neurodesk/greedy/single`; the
+committed single-threaded build runs the same bytes on Linux, Windows and macOS.
+`--normalization ants` keeps the ANTs SyN path and its container parity. The release check
+(`validation/package-check.mjs`) normalises the pinned scan with both engines. Against the
+SYNcro 0.1.1 container's ANTs result, the Greedy run's warped brain has Dice 0.990 and correlation
+0.947; against the MNI152 template its Dice is 0.967 (ANTs 0.966) and correlation 0.783 (ANTs
+0.815). Brain extraction stays SynthStrip, where the app defaults to MindGrab.
+
+### WP3: HMC keeps ANTs
+
+`docs/architecture/dwi-hmc-plan.md` keeps ANTs because NiFreeze's parity depends on its GC metric.
+A Greedy option would carry no parity claim, add a control and a second argv path, and speed up a
+step that takes about five minutes with four workers. It was not added.
+
+### Not swapped
+
+fastprep, Deface and SYNcro's app already use Greedy or allineate. CALMaR, TopoFit and NeSVoR use
+learned registration that is part of the published method. DWI correct's own engine is already
+two orders of magnitude faster than the ANTs harness it replaced.
+
 ## Proposals
 
 These are for the maintainer to decide.
 
 1. Affine initialisation. Test EdgeReg's allineate affine as the shared linear step where an app registers a subject to a template: BISON step 1, SYNcro, fastprep T1w → MNI, and the pathological-modality step in SYNcro. BrowserQC and Deface already use allineate inside niimath. This first needs `-savemat` output from `packages/edgereg` and a converter to Greedy and ITK conventions, with a round-trip test. fastprep's niimath resampler can already apply Greedy transforms alongside its own, so fastprep needs the converter only to start a registration. BISON resamples its template mask through the initial affine before the nonlinear step (`packages/bison/src/preprocess.js:193-196`, `src/register.js:117-118`), and SYNcro resamples the pathological modality through its affine in Greedy (`apps/syncro/src/worker.js:131-137`), so both also need compatible transforms for resampling.
 2. Deformable step. Greedy SVF already accepts an initial affine and is the SYNcro default. Compare it against ANTs SyN (hmc-registration argv) and FireANTs on one subject-to-template case as an initial screen. One case cannot show that a default fits every pipeline: SYNcro registers an extracted synthetic brain (`packages/syncro/src/pipeline.js:215-225`), fastprep whole-head images with a template mask (`exes/fastprep/core/src/stages.rs:386-398`), and SYNcro's validation notes limit conclusions from one T1 scan (`packages/syncro/validation/README.md:37`). Evaluate the candidates on representative data for each pipeline before choosing a shared default.
-3. Validation first. Greedy in SYNcro and every fastprep registration have no pinned reference; SYNcro's default MindGrab + Greedy path has only a 10 % overlap floor. Add a reference or overlap gate before swapping tools there, so a swap shows a measured difference.
+3. Validation first. Every fastprep registration has no pinned reference, and SYNcro's default MindGrab + Greedy path in the app has only a 10 % overlap floor (the command line's SynthStrip + Greedy path is now compared with the container). Add a reference or overlap gate before swapping tools there, so a swap shows a measured difference.
 4. Keep method-specific registrations. HMC, NeSVoR, SDC, dwicorrect, TopoFit (its affine and learned spherical registration) and CALMaR's SynthMorph are tied to their methods and parity targets. They are not candidates for a generic default.
-5. BISON. Decide the acceptance measure for a new registration before changing it, per the caveat above.
+5. BISON. Decide the acceptance measure for a new registration before changing it, per the caveat above. Greedy failed the native-agreement gates (Outcome, WP1); retry only with a cross-correlation metric or another engine.
