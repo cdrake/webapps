@@ -1662,7 +1662,41 @@
       "desktop": true,
       "profile": "interactive",
       "assets": [],
-      "downloads": [],
+      "downloads": [
+        {
+          "kind": "cli",
+          "platform": "linux-x64",
+          "version": "0.4.20261027",
+          "url": "https://github.com/neurodesk/webapps/releases/download/dwidenoise-v0.4.20261027/dwidenoise-0.4.20261027-linux-x64.tar.gz",
+          "sha256": "8c974f88532b4103be54a8fbbb222bf15af69f19976d3797785dd559d9026e97",
+          "bytes": 44554885,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/dwidenoise-v0.4.20261027/dwidenoise-0.4.20261027-linux-x64.tar.gz.validation.txt",
+          "modelsIncluded": true,
+          "command": "tar -xzf dwidenoise-0.4.20261027-linux-x64.tar.gz\n./dwidenoise-0.4.20261027-linux-x64/dwidenoise sub-01_dwi.nii.gz results"
+        },
+        {
+          "kind": "cli",
+          "platform": "macos-arm64",
+          "version": "0.4.20261027",
+          "url": "https://github.com/neurodesk/webapps/releases/download/dwidenoise-v0.4.20261027/dwidenoise-0.4.20261027-macos-arm64.pkg",
+          "sha256": "7161e268866aedb19591b2ed893a120ce5850cd3bdb195806eebad2c15c966d5",
+          "bytes": 38159117,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/dwidenoise-v0.4.20261027/dwidenoise-0.4.20261027-macos-arm64.pkg.validation.txt",
+          "modelsIncluded": true,
+          "command": "sudo installer -pkg dwidenoise-0.4.20261027-macos-arm64.pkg -target /\ndwidenoise self-check\ndwidenoise sub-01_dwi.nii.gz results"
+        },
+        {
+          "kind": "cli",
+          "platform": "windows-x64",
+          "version": "0.4.20261027",
+          "url": "https://github.com/neurodesk/webapps/releases/download/dwidenoise-v0.4.20261027/dwidenoise-0.4.20261027-windows-x64.zip",
+          "sha256": "ba2946959cc909c4188660d86e7b783eb5316d8178974e86ec179dd0dda8d72b",
+          "bytes": 34872675,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/dwidenoise-v0.4.20261027/dwidenoise-0.4.20261027-windows-x64.zip.validation.txt",
+          "modelsIncluded": true,
+          "command": "Expand-Archive -Path .\\dwidenoise-0.4.20261027-windows-x64.zip -DestinationPath .\n.\\dwidenoise-0.4.20261027-windows-x64\\dwidenoise.exe sub-01_dwi.nii.gz results"
+        }
+      ],
       "containers": []
     },
     "me-ica": {
