@@ -2086,3 +2086,41 @@ apps:
         title: NiiVue
         reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
         url: https://github.com/niivue/niivue
+
+  brainqcnet:
+    packages:
+      - { name: BrainQCNet, url: https://github.com/garciaml/BrainQCNet_CPU, role: slice classifier (ResNet152 ProtoPNet checkpoint 19112020) and the BIDS app's preprocessing and summaries, ported in packages/brainqcnet }
+      - { name: ONNX Runtime Web, url: https://onnxruntime.ai, role: inference on WebGPU or the CPU }
+      - { name: dcm2niix (WebAssembly), url: https://github.com/rordenlab/dcm2niix, role: DICOM to NIfTI conversion }
+      - { name: NiiVue, url: https://github.com/niivue/niivue, role: image viewer }
+    citations:
+      - group: Artifact detection
+        title: BrainQCNet
+        reference: 'Garcia M, Dosenbach N, Kelly C. BrainQCNet: a deep learning attention-based model for the automated detection of artifacts in brain structural MRI scans. Imaging Neuroscience. 2024;2.'
+        doi: 10.1162/imag_a_00300
+        code: https://github.com/garciaml/BrainQCNet_CPU
+      - group: Artifact detection
+        title: ProtoPNet
+        reference: 'Chen C, Li O, Tao D, Barnett A, Rudin C, Su JK. This looks like that: deep learning for interpretable image recognition. Advances in Neural Information Processing Systems 32 (NeurIPS 2019). 2019:8930–8941.'
+        url: https://proceedings.neurips.cc/paper/2019/hash/adf7ee2dcf142b0e11888e72b43fcb75-Abstract.html
+        code: https://github.com/cfchen-duke/ProtoPNet
+      - group: Artifact detection
+        title: ResNet
+        reference: 'He K, Zhang X, Ren S, Sun J. Deep residual learning for image recognition. Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR). 2016:770–778.'
+        doi: 10.1109/CVPR.2016.90
+      - group: Example data
+        title: MR-ART
+        reference: 'Nárai Á, Hermann P, Auer T, et al. Movement-related artefacts (MR-ART) dataset of matched motion-corrupted and clean structural MRI brain scans. Scientific Data. 2022;9:630.'
+        doi: 10.1038/s41597-022-01694-8
+      - group: Browser inference
+        title: ONNX Runtime Web
+        reference: "Microsoft. ONNX Runtime: cross-platform, high performance ML inferencing and training accelerator [Computer software]."
+        url: https://onnxruntime.ai
+      - group: DICOM conversion
+        title: dcm2niix
+        reference: 'Li X, Morgan PS, Ashburner J, Smith J, Rorden C. The first step for neuroimaging data analysis: DICOM to NIfTI conversion. Journal of Neuroscience Methods. 2016;264:47–56.'
+        doi: 10.1016/j.jneumeth.2016.03.001
+      - group: Visualization
+        title: NiiVue
+        reference: "NiiVue Contributors. NiiVue: a WebGL2 medical image viewer [Computer software]."
+        url: https://github.com/niivue/niivue
