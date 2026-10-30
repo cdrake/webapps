@@ -1,5 +1,12 @@
 # dwi2trx
 
+## 0.8.20261029
+
+### Patch Changes
+
+- 3f7b882: Report a lost GPU device during tracking as such instead of as out of memory, and record the physical GPU command size (`maxWorkgroupsPerDispatch`) in the tracking provenance. A hardware test now runs the example with one GPU command per pass and with the bounded 16-workgroup commands and requires the same TRX bytes.
+  - @neurodesk/dwi2trx@0.8.20261029
+
 ## 0.8.20261027
 
 ### Patch Changes
