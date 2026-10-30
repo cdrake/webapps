@@ -13,6 +13,7 @@ import { n4Arguments, registrationSession } from '../src/preprocess.js';
 const RUNTIME = Object.freeze({
   registration: { worker: 'https://app.test/hmc-registration/src/worker.js' },
   denoise: { worker: 'https://app.test/ants-denoise/src/worker.js', module: 'https://app.test/k/ants-denoise.mjs', wasm: 'https://app.test/k/ants-denoise.wasm' },
+  greedy: { worker: 'https://app.test/greedy/src/worker.js' },
 });
 
 // Records every Worker; the test answers each message with reply(data) or fails it with crash().
@@ -44,9 +45,31 @@ function fakeWorkers() {
 
 const tick = () => new Promise((resolve) => setImmediate(resolve));
 
-test('createBrowserDrivers needs both worker URLs', () => {
+test('createBrowserDrivers needs every worker URL', () => {
   assert.throws(() => createBrowserDrivers({}), /runtime\.registration\.worker/);
   assert.throws(() => createBrowserDrivers({ runtime: { registration: RUNTIME.registration } }), /runtime\.denoise\.worker/);
+  assert.throws(() => createBrowserDrivers({ runtime: { registration: RUNTIME.registration, denoise: RUNTIME.denoise } }), /runtime\.greedy\.worker/);
+});
+
+test('createGreedy starts a module Worker per instance and follows the Greedy worker protocol', async () => {
+  const { workers, FakeWorker } = fakeWorkers();
+  const runtime = { ...RUNTIME, greedy: { ...RUNTIME.greedy, wasm: 'https://app.test/k/greedy.wasm' } };
+  const greedy = await createBrowserDrivers({ runtime, WorkerClass: FakeWorker }).createGreedy();
+  assert.equal(workers.length, 1);
+  assert.equal(workers[0].url, RUNTIME.greedy.worker);
+  assert.deepEqual(workers[0].options, { type: 'module' });
+  const fixed = new Uint8Array([1, 2]);
+  const affine = greedy.affine({ fixed, moving: new Uint8Array([3]) });
+  assert.deepEqual(workers[0].sent[0], { method: 'affine', fixed, moving: new Uint8Array([3]), wasm: 'https://app.test/k/greedy.wasm', id: 0 });
+  workers[0].reply({ matrix: '1 0 0 0', heapBytes: 4096 });
+  assert.equal(await affine, '1 0 0 0');
+  assert.equal(greedy.memoryBytes(), 4096);
+  const rigid = greedy.rigid({ fixed, moving: fixed });
+  assert.equal(workers[0].sent[1].method, 'rigid');
+  workers[0].reply({ error: 'unreachable' });
+  await assert.rejects(rigid, /Greedy rigid registration failed: unreachable/);
+  await greedy.dispose();
+  assert.ok(workers[0].terminated);
 });
 
 test('each createRegistration call starts its own module Worker; run follows the hmc worker protocol', async () => {

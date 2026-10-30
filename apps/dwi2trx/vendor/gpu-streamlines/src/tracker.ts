@@ -262,13 +262,14 @@ function modelOffsets(inputs: TrackingInputs): ModelOffsets {
 // --- params struct (must match BootTrackingParams in boot.wgsl) ---
 // 6 f32 + 18 i32 = 96 bytes, little-endian. Five modelData offsets are followed
 // by the physical dispatch's logical workgroup offset (initially zero).
-// tc_threshold/step_size/rng_offset are zero on the getNum pass.
+// tc_threshold/step_size are zero on the getNum pass. rng_offset is the batch's first
+// seed index in the whole run, so a seed's random stream does not depend on the batch size.
 function packBootParams(
   inputs: TrackingInputs,
   off: ModelOffsets,
   p: TrackingParams,
   nseeds: number,
-  rngOffset: number,
+  firstSeed: number,
   forGen: boolean,
 ): ArrayBuffer {
   const buf = new ArrayBuffer(96)
@@ -292,7 +293,7 @@ function packBootParams(
   f32(p.minSignal)
   i32(seedLo)
   i32(seedHi)
-  i32(forGen ? rngOffset : 0)
+  i32(firstSeed)
   i32(nseeds)
   i32(inputs.dims[0])
   i32(inputs.dims[1])
@@ -400,7 +401,6 @@ export async function trackStreamlines(
   const out: Float32Array[] = []
   let truncated = false
   let deviceLost = false
-  let rngOffset = 0
   let processedSeeds = 0
   const maxBinding = device.limits.maxStorageBufferBindingSize
   const maxBuffer = device.limits.maxBufferSize
@@ -494,7 +494,7 @@ export async function trackStreamlines(
         const paramsGetnum = track(
           paramsBuffer(
             device,
-            packBootParams(inputs, off, params, nseeds, rngOffset, false),
+            packBootParams(inputs, off, params, nseeds, start, false),
           ),
         )
         const counted = await dispatchBootWindows(device, getnumPipe, gridX, [
@@ -566,7 +566,7 @@ export async function trackStreamlines(
           const paramsGen = track(
             paramsBuffer(
               device,
-              packBootParams(inputs, off, params, nseeds, rngOffset, true),
+              packBootParams(inputs, off, params, nseeds, start, true),
             ),
           )
           const generated = await dispatchBootWindows(device, genPipe, gridX, [
@@ -631,7 +631,6 @@ export async function trackStreamlines(
         if (shouldStop?.()) break
         // Batch fully read back — commit it and advance.
         for (const s of batchOut) out.push(s)
-        rngOffset += nseeds
         start += nseeds
         processedSeeds = start
         onProgress?.(start, nSeedsTotal)

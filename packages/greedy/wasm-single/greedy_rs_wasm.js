@@ -148,6 +148,49 @@ export function register_nmi_svf_wasm(fixed, moving, matrix, iterations) {
 }
 
 /**
+ * `greedy -a -dof 6`, otherwise as `register_affine_masked_wasm`: a rigid RAS matrix as the CLI
+ * writes it.
+ * @param {Uint8Array} fixed
+ * @param {Uint8Array} moving
+ * @param {Uint8Array | null | undefined} mask
+ * @param {string} metric
+ * @param {string} iterations
+ * @param {boolean} image_centers
+ * @param {string | null} [initial]
+ * @returns {string}
+ */
+export function register_rigid_masked_wasm(fixed, moving, mask, metric, iterations, image_centers, initial) {
+    let deferred8_0;
+    let deferred8_1;
+    try {
+        const ptr0 = passArray8ToWasm0(fixed, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passArray8ToWasm0(moving, wasm.__wbindgen_malloc);
+        const len1 = WASM_VECTOR_LEN;
+        var ptr2 = isLikeNone(mask) ? 0 : passArray8ToWasm0(mask, wasm.__wbindgen_malloc);
+        var len2 = WASM_VECTOR_LEN;
+        const ptr3 = passStringToWasm0(metric, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len3 = WASM_VECTOR_LEN;
+        const ptr4 = passStringToWasm0(iterations, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len4 = WASM_VECTOR_LEN;
+        var ptr5 = isLikeNone(initial) ? 0 : passStringToWasm0(initial, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len5 = WASM_VECTOR_LEN;
+        const ret = wasm.register_rigid_masked_wasm(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3, ptr4, len4, image_centers, ptr5, len5);
+        var ptr7 = ret[0];
+        var len7 = ret[1];
+        if (ret[3]) {
+            ptr7 = 0; len7 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred8_0 = ptr7;
+        deferred8_1 = len7;
+        return getStringFromWasm0(ptr7, len7);
+    } finally {
+        wasm.__wbindgen_free(deferred8_0, deferred8_1, 1);
+    }
+}
+
+/**
  * Reslice a NIfTI moving image into the fixed image's grid through one RAS affine.
  * @param {Uint8Array} fixed
  * @param {Uint8Array} moving

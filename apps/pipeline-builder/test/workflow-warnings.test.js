@@ -119,6 +119,14 @@ test("an optional output warning reported by the NeuroFlow core is not repeated"
   ]);
 });
 
+test("the core's issues survive a builder check that throws", async () => {
+  const validate = await createValidator(tools, await readFile(new URL("../vendor/neuroflow/neuroflow_wasm_bg.wasm", import.meta.url)));
+  const result = validate({ ...model.emptyWorkflow(), steps: { broken: null } });
+  assert.equal(result.ok, false);
+  assert.ok(result.issues.some(issue => issue.path === "steps.broken" && !/Builder checks failed/.test(issue.message)));
+  assert.ok(result.issues.some(issue => /Builder checks failed/.test(issue.message)));
+});
+
 test("required outputs and unbounded inputs need no additional warnings", () => {
   const unbounded = { ...target, inputs: { input_images: { type: "core:array<neuro:volume>", optional: true } } };
   const doc = workflow({ ref: "steps.source.outputs.images" });

@@ -4,7 +4,7 @@
 // the directory is removed.
 
 export { HMC_REGISTRATION_WASM_SHA256 } from "./pin.js";
-export { readMatTransform } from "./mat.js";
+export { readMatTransform, writeMatTransform } from "./mat.js";
 
 const MAX_SEED = 2147483647;
 

@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "@neurodesk/ants-denoise": "workspace:*",
+    "@neurodesk/greedy": "workspace:*",
     "@neurodesk/hmc-registration": "workspace:*",
     "@neurodesk/node-drivers": "workspace:*",
     "@neurodesk/webapp-components": "workspace:*",

@@ -14,9 +14,9 @@ Paths are relative to the repository root. Line numbers are from `main` at
 
 | App | Step | Engine now | Transform | Pinned by | Verdict |
 | --- | --- | --- | --- | --- | --- |
-| BISON | T1 → ICBM 2009c affine (`packages/bison/src/register.js` `affineArguments`) | ANTs, GC | rigid + affine | MINC agreement gates, CLI/browser byte equality | Keep (WP1 measured) |
+| BISON | T1 → ICBM 2009c affine (`packages/bison/src/preprocess.js` `greedyRegistration`) | Greedy NMI, image-centres start | affine | MINC agreement gates, CLI/browser byte equality | Done: Greedy (WP1) |
 | BISON | T1_VP → template affine + SyN (`nonlinearArguments`) | ANTs, GC + CC r2 | affine + SyN to 2 mm | same; prior correlation r 0.85 | Keep: Greedy failed the gates (WP1) |
-| BISON | FLAIR → T1 (`rigidArguments`) | ANTs, Mattes | rigid | same | Keep (WP1 measured) |
+| BISON | FLAIR → T1 (`greedyRegistration`) | Greedy NMI, identity start | rigid | same | Done: Greedy (WP1) |
 | SYNcro app | normalisation to MNI152 (`apps/syncro/src/worker.js`) | Greedy by default, ANTs SyN on request | affine + NMI SVF | ANTs path: container parity | Keep: Greedy is already the default |
 | SYNcro app | pathological → primary (`worker.js`) | Greedy NMI affine | affine | none | Keep |
 | SYNcro command line | normalisation (`packages/syncro/src/node.js`) | Greedy by default, ANTs SyN with `--normalization ants` | affine + NMI SVF | release check on both engines; ANTs path: container parity | Done (WP2) |
@@ -77,9 +77,9 @@ Template: ICBM 2009c nlin sym (`src/assets.js:12-13`). Shared settings: seed
 
 | Step | Purpose | Transform and settings | Source |
 |---|---|---|---|
-| T1 → template | Brain mask and priors | Centre-of-mass init; Rigid[0.1] then Affine[0.1], GC; `1000x500x250x0` / `1000x500x250x50`; shrink `8x4x2x1`, smooth `3x2x1x0vox` | `register.js:66-74`, `preprocess.js:189` |
+| T1 → template | Brain mask and priors | Greedy `-a -m NMI -ia-image-centers -n 100x50x10` (single-threaded WASM), converted to ITK `.mat` (`greedyMatrixToMat`) | `preprocess.js` `greedyRegistration`, `register.js` |
 | T1_VP → template | Non-linear priors, Av_T1, Av_FLAIR | Init from the step above (`lin.mat`); Affine[0.1] GC `500x250x50`; SyN[0.1,3,0] CC radius 2, `100x70x50`, shrink `8x4x2`, smooth `3x2x1vox` | `register.js:84-92`, `preprocess.js:220` |
-| FLAIR → T1 | FLAIR features | Identity init; Rigid[0.1], Mattes 32, `1000x500x250`, shrink `4x2x1`, smooth `2x1x0` | `register.js:99-105`, `preprocess.js:288` |
+| FLAIR → T1 | FLAIR features | Greedy `-a -dof 6 -m NMI -n 100x50x10`, identity start, converted to ITK `.mat` | `preprocess.js` `greedyRegistration` |
 
 The mapping to the upstream MINC steps is in `packages/bison/docs/preprocessing.md`.
 
@@ -88,7 +88,7 @@ Validation:
 - `packages/bison/validation/browser-reference.json`, checked by `validation/cli-check.mjs`: labels and mask byte-identical, probability means within 1e-6.
 - `test/pipeline-native.test.js:35-46` (opt-in, `BISON_FULL_PIPELINE=1`): mask Dice ≥ 0.95 and per-class Dice floors against the native reference, set at the five-subject minimum minus 0.02.
 - `validation/preprocess-reference.mjs`: linear T1 mask Dice ≥ 0.97 against native.
-- `test/register.test.js:27-58` pins the argv structure.
+- `test/register.test.js` pins the SyN argv structure and checks that `--apply` through a converted Greedy matrix resamples as Greedy does.
 
 The native reference (`packages/bison/validation/native`) runs upstream BISON on
 MINC: `bestlinreg_s2` for the linear steps and `nlfit_s -level 2` for the
@@ -298,33 +298,32 @@ re-recorded.
 
 ## Outcome of #612
 
-Three apps ran ANTs implicitly: BISON, SYNcro's command line and HMC. Only SYNcro's command line
-changed.
+Three apps ran ANTs implicitly: BISON, SYNcro's command line and HMC. SYNcro's command line and
+BISON's two linear registrations changed.
 
-### WP1: BISON stays on ANTs
+### WP1: BISON's linear registrations run on Greedy
 
 BISON's registrations stand in for MINC tools (`bestlinreg_s2`, `nlfit_s`), so the gates are the
 native-MINC agreement thresholds in `packages/bison/test/pipeline-native.test.js`. The native
 reference was rebuilt on its five subjects from Neurodesk's CVMFS MINC and ANTs containers; the ANTs
 pipeline reproduced the documented numbers and passed all ten gates.
 
-Greedy estimated all three registrations, with ANTs `--apply` resampling through them. Its masked
-affine (`-gm`) collapsed on the T1-to-template pair, so the unmasked affine was used
-([#623](https://github.com/neurodesk/webapps/issues/623), since fixed by matching Greedy's masked
-downsampling and affine start in #627). Its linear
-steps passed on their own and took a fraction of the time. Its nonlinear registration did not: the
-fast 2 mm schedule failed every subject on CSF, the cerebellum and deep grey matter, and the best
-variant (400x200x100 iterations, linear mask dilated by 4 voxels) still failed two subjects, with
-CSF Dice 0.69 against a gate of 0.77 on sub-HML0774. Greedy has only NMI; BISON's own measurements
-show that cross-correlation is what brings SyN close to `nlfit_s`. Swapping just the linear steps
-would save about 165 s of an unloaded 1352 s run (the ANTs affine and rigid take 94 and 130 s; Greedy
-about 30 s each), at the cost of a second engine in BISON and a lower linear mask Dice (0.971 on
-sub-HML0541, against ANTs' 0.975 and a gate of 0.97). BISON keeps ANTs. [`packages/bison/docs/preprocessing.md#greedy`](../../packages/bison/docs/preprocessing.md#greedy)
-has the table.
+The T1 → template affine (`-a -m NMI -ia-image-centers`) and the FLAIR → T1 rigid
+(`-a -dof 6 -m NMI`, identity start) now run on Greedy; ANTs SyN, started from the Greedy affine,
+still registers T1_VP, and hmc `--apply` still resamples. With the Greedy steps every subject passed
+all ten label gates, the linear mask Dice was 0.971-0.978 (gate 0.97), label agreement 0.933-0.944,
+and the steps took 24-40 s each against 94 and 130 s for ANTs unloaded. The masked affine
+(`-gm`, started from the unmasked one) converged but lowered the linear mask Dice to 0.92-0.97, so
+it is not used. Greedy's nonlinear registration stays out: the 2 mm schedule reaches r 0.69
+(unmasked) or 0.78 (masked) against ANTs CC's 0.87 and the 0.85 gate, and the longer schedules
+measured in #626 failed the label gates. Greedy has only NMI; BISON's own measurements show that
+cross-correlation is what brings SyN close to `nlfit_s`.
 
-The single-threaded Greedy build (`@neurodesk/greedy/single`) gives the threaded browser build's
-bytes. A future BISON engine with a cross-correlation metric could run threaded in the browser
-and single-threaded on the command line without breaking their byte equality.
+The browser worker and the command line both run Greedy's committed single-threaded WebAssembly
+(`@neurodesk/greedy/single`, `src/worker.js`), so labels and mask stay byte-identical; the native
+`greedy-rs` differs from the WebAssembly build in the twelfth digit of the matrix. The WebAssembly
+build gained a rigid (`-dof 6`) export. [`packages/bison/docs/preprocessing.md#greedy`](../../packages/bison/docs/preprocessing.md#greedy)
+has the per-subject tables.
 
 ### WP2: SYNcro's command line follows the app
 
@@ -356,4 +355,4 @@ These are for the maintainer to decide.
 2. Deformable step. Greedy SVF already accepts an initial affine and is the SYNcro default. Compare it against ANTs SyN (hmc-registration argv) and FireANTs on one subject-to-template case as an initial screen. One case cannot show that a default fits every pipeline: SYNcro registers an extracted synthetic brain (`packages/syncro/src/pipeline.js:215-225`), fastprep whole-head images with a template mask (`exes/fastprep/core/src/stages.rs:386-398`), and SYNcro's validation notes limit conclusions from one T1 scan (`packages/syncro/validation/README.md:37`). Evaluate the candidates on representative data for each pipeline before choosing a shared default.
 3. Validation first. Every fastprep registration has no pinned reference, and SYNcro's default MindGrab + Greedy path in the app has only a 10 % overlap floor (the command line's SynthStrip + Greedy path is now compared with the container). Add a reference or overlap gate before swapping tools there, so a swap shows a measured difference.
 4. Keep method-specific registrations. HMC, NeSVoR, SDC, dwicorrect, TopoFit (its affine and learned spherical registration) and CALMaR's SynthMorph are tied to their methods and parity targets. They are not candidates for a generic default.
-5. BISON. Decide the acceptance measure for a new registration before changing it, per the caveat above. Greedy failed the native-agreement gates (Outcome, WP1); retry only with a cross-correlation metric or another engine.
+5. BISON. Decide the acceptance measure for a new registration before changing it, per the caveat above. Greedy's linear steps passed the native-agreement gates and are in use; its nonlinear registration failed them (Outcome, WP1). Retry the nonlinear step only with a cross-correlation metric or another engine.
