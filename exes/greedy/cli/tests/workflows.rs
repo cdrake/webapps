@@ -370,7 +370,7 @@ fn masked_nmi_affine_on_a_whole_head_pair_matches_greedy() {
 /// start (determinants 29.8 and 2.24; Greedy 1.4 collapses too), while starting
 /// it from the unmasked affine with `-ia` converges (#623): determinants 0.72
 /// and 0.64. The corners of a box around the template brain land 3.0 and 9.7 mm
-/// on average from where the unmasked affine puts them (63 and 534 mm from the
+/// on average from where the unmasked affine puts them (534 and 63 mm from the
 /// identity start; 5.5 to 7.0 mm on three subjects where both starts converge).
 #[test]
 #[ignore = "requires GREEDY_T1_TEMPLATE_DIR to hold the whole-head T1s"]
