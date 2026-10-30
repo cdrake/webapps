@@ -10,7 +10,7 @@ import { exampleBytes, examples, reference, withoutTime } from "./fixtures.mjs";
 
 async function downloadRow(page, name) {
   const event = page.waitForEvent("download");
-  await page.locator("#resultList .nd-volume-toggle").filter({ hasText: name }).getByRole("button", { name: "Download" }).click();
+  await page.locator("#resultList .nd-volume-toggle").filter({ hasText: name }).getByRole("button", { name: "Download" }).click({ timeout: 30000 });
   const download = await event;
   return { name: download.suggestedFilename(), bytes: await readFile(await download.path()) };
 }
@@ -36,7 +36,8 @@ for (const { example, id, verdict, details } of CASES) {
     await expect(page.locator("#cancelButton")).toBeVisible();
     await expect(page.locator("#statusText")).toHaveText(verdict, { timeout: 40 * 60 * 1000 });
     const minutes = (Date.now() - started) / 60000;
-    test.info().annotations.push({ type: "run time", description: `${minutes.toFixed(1)} min` });
+    const model = (await page.locator("#technicalLog").textContent()).match(/model ready in ([\d.]+) s/)?.[1];
+    console.log(`${example.id}: ${minutes.toFixed(1)} min from Check quality to the verdict, ${model} s of it fetching the model`);
     await expect(page.locator("#cancelButton")).toBeHidden();
     await expect(page.locator("#technicalLog")).toContainText(`Classified ${original.slices.length} slices`);
     await expect(page.locator("#technicalLog")).toContainText("BrainQCNet on WebAssembly");
@@ -55,7 +56,8 @@ for (const { example, id, verdict, details } of CASES) {
     }
     expect(withoutTime(downloads["tot_df.csv"]), "tot_df.csv without t").toBe(withoutTime(original.files["tot_df.csv"]));
 
-    const map = await downloadRow(page, `${stem}_flaggedslices.nii.gz`);
+    const map = await downloadRow(page, "Flagged-slice map");
+    expect(map.name).toBe(`${stem}_flaggedslices.nii.gz`);
     const nifti = gunzipSync(map.bytes);
     expect(nifti.readInt16LE(70), "uint8 map").toBe(2);
     const volume = await readVolume(await exampleBytes(file));

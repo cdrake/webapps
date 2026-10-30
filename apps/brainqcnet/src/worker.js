@@ -42,9 +42,11 @@ self.onmessage = async ({ data: job }) => {
     progress(0, "Reading the T1-weighted image…");
     const volume = await readVolume(job.bytes);
     progress(0.01, "Downloading the BrainQCNet model…");
+    const fetched = performance.now();
     const model = await fetchModel({ url: MODEL.url, integrity: { bytes: MODEL.bytes, sha256: MODEL.sha256 } }, {
-      onProgress: ({ fraction }) => progress(0.01 + 0.09 * (fraction || 0), "Downloading the BrainQCNet model…"),
+      onProgress: ({ fraction }) => progress(0.01 + 0.09 * (fraction || 0), `Downloading the BrainQCNet model · ${Math.floor(100 * (fraction || 0))} %`),
     });
+    log(`BrainQCNet model ready in ${((performance.now() - fetched) / 1000).toFixed(1)} s`);
     let backend = job.backend;
     let result;
     try {

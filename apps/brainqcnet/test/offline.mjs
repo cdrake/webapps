@@ -20,7 +20,8 @@ export async function verifyOffline(page, { fixture, download }) {
   const proba = Number(tot[1].split(',')[1]);
   const share = preds.filter((pred) => pred === 1).length / preds.length;
   assert.ok(Math.abs(proba - share) <= 0.005, `tot_df.csv proportion ${proba} against ${share} of table.csv`);
-  const map = await download(row('small_flaggedslices.nii.gz'));
+  const map = await download(row('Flagged-slice map'));
+  assert.equal(map.filename, 'small_flaggedslices.nii.gz');
   const header = gunzipSync(map.bytes);
   assert.deepEqual([header.readInt16LE(42), header.readInt16LE(44), header.readInt16LE(46)], [44, 52, 44]);
   assert.equal(header.readInt16LE(70), 2, 'the map is uint8');
