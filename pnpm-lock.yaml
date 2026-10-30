@@ -1930,6 +1930,9 @@ importers:
         specifier: 1.29.0
         version: 1.29.0
     devDependencies:
+      '@neurodesk/greedy':
+        specifier: workspace:*
+        version: link:../greedy
       '@neurodesk/registration':
         specifier: workspace:*
         version: link:../registration

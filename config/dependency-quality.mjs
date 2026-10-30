@@ -46,6 +46,7 @@ export const devRuntimeContracts = [
   // SYNcro bundles these helpers; only ONNX Runtime and nifti-reader-js remain external.
   ['packages/syncro/src/assets.js', '@neurodesk/synthsr'],
   ['packages/syncro/src/pipeline.js', '@neurodesk/synthsr'],
+  ['packages/syncro/src/node.js', '@neurodesk/greedy'],
   ['packages/syncro/src/node.js', '@neurodesk/registration'],
   ['packages/syncro/src/node.js', '@neurodesk/synthsr'],
   ['packages/syncro/src/node.js', '@neurodesk/synthstrip'],

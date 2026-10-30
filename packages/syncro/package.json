@@ -35,6 +35,7 @@
     "nifti-reader-js": "0.8.0"
   },
   "devDependencies": {
+    "@neurodesk/greedy": "workspace:*",
     "@neurodesk/registration": "workspace:*",
     "@neurodesk/synthsr": "workspace:*",
     "@neurodesk/synthstrip": "workspace:*",

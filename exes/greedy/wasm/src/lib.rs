@@ -7,7 +7,9 @@ use greedy_rs_core::{
 use wasm_bindgen::prelude::*;
 
 // Exposes async `initThreadPool` to the browser glue. It must be called before
-// registration so the core's existing Rayon slab loops use Web Workers.
+// registration so the core's existing Rayon slab loops use Web Workers. Without
+// the `threads` feature the module runs single-threaded, as in Node.
+#[cfg(feature = "threads")]
 pub use wasm_bindgen_rayon::init_thread_pool;
 
 #[wasm_bindgen]

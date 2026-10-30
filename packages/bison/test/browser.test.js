@@ -92,10 +92,10 @@ test('a registration error keeps the log and marks kernel aborts', async () => {
   assert.equal(denoiseError({ error: 'ANTs DenoiseImage failed (exit 1). See processing log.' }).aborted, false);
 });
 
-test('registrationSession replaces a Worker after an abort and after its run limit', async () => {
+test('registrationSession replaces a Worker after an abort and keeps it otherwise', async () => {
   const { workers, FakeWorker } = fakeWorkers();
   const drivers = createBrowserDrivers({ runtime: RUNTIME, WorkerClass: FakeWorker });
-  const session = registrationSession(() => drivers.createRegistration(), 2);
+  const session = registrationSession(() => drivers.createRegistration());
   const answer = async (data) => {
     const running = session.run(['--float', '1'], {});
     await tick();
@@ -106,13 +106,11 @@ test('registrationSession replaces a Worker after an abort and after its run lim
   await assert.rejects(answer({ error: 'antsRegistration aborted (unreachable): x', log: [] }));
   assert.equal(workers.length, 1);
   assert.equal(workers[0].terminated, true);
-  await answer({ outputs: {}, log: [] });
-  await answer({ outputs: {}, log: [] });
-  await answer({ outputs: {}, log: [] });
-  assert.equal(workers.length, 3);
-  assert.deepEqual(workers.map((worker) => worker.terminated), [true, true, false]);
+  for (let run = 0; run < 30; run++) await answer({ outputs: {}, log: [] });
+  assert.equal(workers.length, 2);
+  assert.deepEqual(workers.map((worker) => worker.terminated), [true, false]);
   await session.dispose();
-  assert.equal(workers[2].terminated, true);
+  assert.equal(workers[1].terminated, true);
 });
 
 test('a Worker error rejects the pending call as an abort, and the instance refuses later work', async () => {
