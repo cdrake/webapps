@@ -28,3 +28,5 @@ for s in ref['slices']:
     if len(batch) == 16: flush()
 if batch: flush()
 print(json.dumps({'slices': len(ref['slices']), 'resize_hash_mismatch': int(hash_bad), 'max_abs_logit_diff': worst, 'pred_flips': flips}))
+if hash_bad or flips:
+    sys.exit(1)

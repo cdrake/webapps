@@ -71,6 +71,15 @@ Also checked:
 - Methods and areas. `transform_log_to_csv.py` rerun on the headmotion2 log with
   `percentage`, `mean` and `median` and 2, 3, 5 and 7 areas: `compare-summary.mjs`
   finds every file identical.
+- Random predictions. `summary_cases.py` writes 24 random prediction tables
+  (including 101 of 200 slices flagged on one axis) as `predict_all_axes.py`
+  logs them and runs the original `transform_log_to_csv.py` with several
+  methods and area counts. `test/summary-cases.json` holds the 139 resulting
+  file sets; the port writes each identically. Per-axis and per-area means and
+  medians are NumPy scalars, which round 0.505 to 0.5 where Python gives 0.51.
+- Non-finite voxels. `make_nonfinite.py` puts NaN, +inf or -inf voxels inside
+  the foreground of a float32 copy; `png_only.sh` and `compare-slices.mjs`
+  find every slice identical (682 / 682 each). A slice with a NaN is black.
 - Resize. `pillow_fixture.py` resizes seven synthetic images in the image;
   `test/slices.test.js` holds the port to its hashes.
 - WebGPU. ONNX Runtime Web 1.29 with the WebGPU backend in headless Chromium
@@ -95,6 +104,10 @@ node validation/make-reference.mjs sub-000103-standard in/sub-000103_acq-standar
 node validation/check-reference.mjs validation/references/sub-000103-standard.json in/sub-000103_acq-standard_T1w.nii.gz brainqcnet-resnet152-19112020.onnx
 BRAINQCNET_EXAMPLE_DIR=in node --test test/*.test.js
 ```
+
+In CI, `apps/brainqcnet/e2e/slices.spec.js` downloads the pinned examples and
+holds every slice image to the references; `e2e/workflow.spec.js` holds the
+browser's tables to them.
 
 `run_all.sh` loops `run_reference.sh` over a folder. Give each T1w file its own
 run: the original `run.py` writes every T1w of a subject without a `run-`

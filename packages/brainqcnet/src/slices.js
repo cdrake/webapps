@@ -135,6 +135,9 @@ export function greyscale(values, precision) {
   let min = Infinity;
   let max = -Infinity;
   for (const v of values) {
+    // A NaN makes NumPy's min NaN, so the whole slice normalizes to NaN and
+    // maps to the colormap's under and bad colours, black.
+    if (Number.isNaN(v)) return new Uint8Array(values.length);
     if (v < min) min = v;
     if (v > max) max = v;
   }

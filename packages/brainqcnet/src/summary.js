@@ -22,6 +22,19 @@ export function round2(x) {
   return Number(x.toFixed(2));
 }
 
+/**
+ * NumPy's round(x, 2) on a float64 scalar, as pandas' mean and median return:
+ * rint(x * 100) / 100, ties to even after the multiplication. It differs from
+ * round2 where x * 100 rounds onto .5, e.g. 101 / 200 gives 0.5, not 0.51.
+ */
+export function roundNumpy2(x) {
+  const scaled = x * 100;
+  const floor = Math.floor(scaled);
+  const fraction = scaled - floor;
+  const rounded = fraction > 0.5 || (fraction === 0.5 && floor % 2 !== 0) ? floor + 1 : floor;
+  return rounded / 100;
+}
+
 /** Python repr of a float in [0, 1e16): integers keep their ".0". */
 export function pyFloat(x) {
   return Number.isInteger(x) ? `${x}.0` : String(x);
@@ -41,9 +54,11 @@ function median(values) {
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
+// Per axis and per area: pandas' mean and median are NumPy scalars, the
+// percentage a Python float.
 function proba(preds, method) {
-  if (method === 'mean') return round2(mean(preds));
-  if (method === 'median') return round2(median(preds));
+  if (method === 'mean') return roundNumpy2(mean(preds));
+  if (method === 'median') return roundNumpy2(median(preds));
   return round2(preds.filter((p) => p > 0).length / preds.length);
 }
 
@@ -81,7 +96,8 @@ export function summarize(predictions, { method = DEFAULT_METHOD, areas = DEFAUL
     // predict_all_axes.py logs round(share, 2) * 100 percent; the CSV step divides it back.
     overall = round2((round2(preds.filter((p) => p === 1).length / preds.length) * 100) / 100);
   } else {
-    overall = proba(preds, method);
+    // Parsed back from the log as a Python float.
+    overall = round2(method === 'mean' ? mean(preds) : median(preds));
   }
   const axes = {};
   for (const axis of ['x', 'y', 'z']) {

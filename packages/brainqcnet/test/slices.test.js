@@ -20,6 +20,9 @@ test('greyscale maps the slice range through matplotlib Greys_r bytes', () => {
   assert.deepEqual([...greyscale(Float64Array.from([10, 20, 30]), 'float32')], [0, 150, 255]);
   assert.deepEqual([...greyscale(Float64Array.from([7, 7]), 'float32')], [0, 0]);
   assert.deepEqual([...greyscale(Float64Array.from([0, 1, 3]), 'float64')], [0, 104, 255]);
+  assert.deepEqual([...greyscale(Float64Array.from([0, 1, NaN]), 'float32')], [0, 0, 0]);
+  assert.deepEqual([...greyscale(Float64Array.from([0, 1, Infinity]), 'float32')], [0, 0, 0]);
+  assert.deepEqual([...greyscale(Float64Array.from([-Infinity, 0, 1]), 'float64')], [0, 0, 0]);
 });
 
 test('cropping keeps the bounding box of positive voxels and slices rotate as np.rot90', () => {

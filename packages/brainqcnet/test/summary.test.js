@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import { flaggedSliceMap } from '../src/pipeline.js';
-import { localCsv, pyFloat, round2, subjectId, summarize, tableCsv, totCsv } from '../src/summary.js';
+import { localCsv, pyFloat, round2, roundNumpy2, subjectId, summarize, tableCsv, totCsv } from '../src/summary.js';
 
 test('round2 is Python round(x, 2): exact ties go to even', () => {
   assert.equal(round2(0.125), 0.12);
@@ -12,6 +12,9 @@ test('round2 is Python round(x, 2): exact ties go to even', () => {
   assert.equal(round2(1 / 3), 0.33);
   assert.equal(round2(0.665), 0.67);
   assert.equal(round2(2 / 3), 0.67);
+  assert.equal(roundNumpy2(101 / 200), 0.5);
+  assert.equal(round2(101 / 200), 0.51);
+  assert.equal(roundNumpy2(0.125), 0.12);
   assert.equal(pyFloat(1), '1.0');
   assert.equal(pyFloat(0.07), '0.07');
 });
@@ -58,4 +61,17 @@ test('the flagged-slice map counts flagged slices through each voxel on the inpu
   assert.equal(at(1, 1, 1), 1);
   assert.equal(at(1, 2, 2), 3);
   assert.equal(at(2, 2, 2), 2);
+});
+
+// validation/summary_cases.py: random predictions summarized by the original
+// transform_log_to_csv.py, including 101 of 200 slices flagged on x.
+test('summaries equal transform_log_to_csv.py on random predictions', async () => {
+  const cases = JSON.parse(await readFile(new URL('./summary-cases.json', import.meta.url), 'utf8'));
+  for (const { preds, method, areas, files } of cases) {
+    const predictions = Object.entries(preds).flatMap(([axis, bits]) => [...bits].map((pred, slice) => ({ axis, slice, pred: Number(pred) })));
+    const summary = summarize(predictions, { method, areas });
+    const label = `${method}, ${areas} areas, ${preds.x.length}/${preds.y.length}/${preds.z.length} slices`;
+    assert.equal(totCsv(summary, 'sub-01', 12.3456), files['tot_df.csv'], label);
+    for (const axis of ['x', 'y', 'z']) assert.equal(localCsv(summary, axis), files[`${axis}_results_locally.csv`], `${label}, ${axis}`);
+  }
 });
