@@ -150,3 +150,15 @@ test("explicit spec versions survive editing so the core can reject unsupported 
     assert.equal(validate(roundTrip).ok, version !== "9.9.9");
   }
 });
+
+test("the core rejects a misspelled key, including after an import round trip", async () => {
+  const validate = await createValidator(tools, await readFile(new URL("../vendor/neuroflow/neuroflow_wasm_bg.wasm", import.meta.url)));
+  const doc = workflow({ constant: ["one", "two"] });
+  doc.steps.target.optinal = true;
+  const roundTrip = JSON.parse(model.serializeWorkflow(model.parseWorkflow(JSON.stringify(doc))));
+  for (const candidate of [doc, roundTrip]) {
+    const result = validate(candidate);
+    assert.equal(result.ok, false);
+    assert.deepEqual(result.issues.filter(issue => issue.code === "unknown-field").map(issue => issue.path), ["steps.target.optinal"]);
+  }
+});

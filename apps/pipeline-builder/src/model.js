@@ -356,7 +356,7 @@ export function workflowIssues(doc, tools) {
     const output = /^steps\.([^.]+)\.outputs\.([^.]+)$/.exec(ref ?? "");
     return output && byId.get(doc.steps[output[1]]?.tool)?.outputs?.[output[2]];
   };
-  // NeuroFlow 0.3.2 checks only the shape of an inputs.<name> reference.
+  // NeuroFlow 0.5.0 checks only the shape of an inputs.<name> reference.
   const undeclared = (path, ref) => {
     const input = /^inputs\.([^.]+)$/.exec(ref ?? "");
     if (input && !Object.hasOwn(doc.inputs ?? {}, input[1])) {

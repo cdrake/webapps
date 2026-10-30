@@ -228,9 +228,9 @@ NEUROFLOW_MCP_BIN=/absolute/path/to/neuroflow-mcp \
   NEURODESK_HARDWARE_GPU=1 node scripts/desktop/neuroflow-smoke.mjs --t1
 ```
 
-The `neuroflow` CI workflow builds v0.3.2 at commit
-`c4ba6118448d82a98bd701efb75f938f3235e6a5` and runs this check on `macos-15`.
-That release's [step_order implementation](https://github.com/cdrake/neuroflow/blob/c4ba6118448d82a98bd701efb75f938f3235e6a5/crates/neuroflow-core/src/lib.rs#L485-L538)
+The `neuroflow` CI workflow builds v0.6.0 at commit
+`c83106a95102adf85685000635814b492049fb20` and runs this check on `macos-15`.
+That release's [step_order implementation](https://github.com/cdrake/neuroflow/blob/c83106a95102adf85685000635814b492049fb20/crates/neuroflow-core/src/lib.rs#L536-L589)
 executes dependencies before their consumers, using document order only to
 break ties. Reordering a step in the builder retains its bindings; it does
 not force the runtime to launch a consumer before its inputs exist. CI also
@@ -243,7 +243,7 @@ Models and dependencies come from the checksummed offline inventory. Set
 `NEURODESK_ASSET_CACHE` to reuse those downloads and
 `NEUROFLOW_EVIDENCE_DIR` to choose where the run record and outputs are kept.
 
-The [v0.3.2 release](https://github.com/cdrake/neuroflow/releases/tag/v0.3.2) provides
+The [v0.6.0 release](https://github.com/cdrake/neuroflow/releases/tag/v0.6.0) provides
 `neuroflow-mcp` binaries for Linux x86-64 (musl), macOS arm64 and Windows x86-64.
 Verify the archive against the release's `SHA256SUMS`, extract it, and set
 `NEUROFLOW_MCP_BIN` to the executable for the checks above.
