@@ -13,6 +13,9 @@ on:
       - 'packages/runtime-support/**'
       - 'apps/bison/**'
       - 'models/bison.manifest.json'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
   push:
     branches: [main]
     paths:
@@ -28,6 +31,9 @@ on:
       - 'packages/runtime-support/**'
       - 'apps/bison/**'
       - 'models/bison.manifest.json'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
   workflow_dispatch:
     inputs:
       sign_release:
