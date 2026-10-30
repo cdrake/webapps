@@ -101,8 +101,8 @@
     },
     {
       "id": "hmc-registration-wasm",
-      "version": "0.3.0",
-      "target": "hmc-registration/0.3.0",
+      "version": "0.3.1",
+      "target": "hmc-registration/0.3.1",
       "deduplicate": true,
       "reason": "Share the checksum-verified ANTs binary used by BISON and HMC while keeping each worker and pthread module inside its app service-worker scope.",
       "files": [
@@ -110,7 +110,22 @@
           "name": "hmc-registration.wasm",
           "source_app": "bison",
           "source": "bison-runtime/hmc-registration/wasm/hmc-registration.wasm",
-          "sha256": "53779fcd0064a8394aa42ca2e82c5f8b33cf4aebbe98e3a43af6212e558ccf86"
+          "sha256": "f09b37582d2978c95711fecc1ff3d8a20e00434a2a621cc5bea62495606f6433"
+        }
+      ]
+    },
+    {
+      "id": "ants-denoise-wasm",
+      "version": "0.2.0",
+      "target": "ants-denoise/0.2.0",
+      "deduplicate": true,
+      "reason": "Share the checksum-verified DenoiseImage binary used by BISON and ANTs DenoiseImage while keeping each worker and pthread module inside its app service-worker scope.",
+      "files": [
+        {
+          "name": "ants-denoise.wasm",
+          "source_app": "bison",
+          "source": "bison-runtime/ants-denoise/wasm/ants-denoise.wasm",
+          "sha256": "8be0e6e1c1f31b8deb1bf5f33d566d2bc87410634d5a1c2baedfb0d7637d8ed6"
         }
       ]
     },

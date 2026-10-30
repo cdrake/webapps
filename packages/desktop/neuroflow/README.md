@@ -227,9 +227,9 @@ NEUROFLOW_MCP_BIN=/absolute/path/to/neuroflow-mcp \
   NEURODESK_HARDWARE_GPU=1 node scripts/desktop/neuroflow-smoke.mjs --t1
 ```
 
-The `neuroflow` CI workflow builds v0.2.1 at commit
-`2a844009fb135311cada8161c0dcd658df9d5833` and runs this check on `macos-15`.
-That release's [step_order implementation](https://github.com/cdrake/neuroflow/blob/2a844009fb135311cada8161c0dcd658df9d5833/crates/neuroflow-mcp/src/runtime.rs#L77-L112)
+The `neuroflow` CI workflow builds v0.3.1 at commit
+`18bf82246a0689c875b37ebfdc0742f9b64b1bb1` and runs this check on `macos-15`.
+That release's [step_order implementation](https://github.com/cdrake/neuroflow/blob/18bf82246a0689c875b37ebfdc0742f9b64b1bb1/crates/neuroflow-core/src/lib.rs#L481-L534)
 executes dependencies before their consumers, using document order only to
 break ties. Reordering a step in the builder retains its bindings; it does
 not force the runtime to launch a consumer before its inputs exist. CI also
@@ -242,10 +242,18 @@ Models and dependencies come from the checksummed offline inventory. Set
 `NEURODESK_ASSET_CACHE` to reuse those downloads and
 `NEUROFLOW_EVIDENCE_DIR` to choose where the run record and outputs are kept.
 
-The pinned release has no binaries and cannot cancel an active workflow while
-keeping its MCP server alive. Upstream requests track
-[release binaries](https://github.com/cdrake/neuroflow/issues/30) and
-[cancellation](https://github.com/cdrake/neuroflow/issues/31).
+The [v0.3.1 release](https://github.com/cdrake/neuroflow/releases/tag/v0.3.1) provides
+`neuroflow-mcp` binaries for Linux x86-64 (musl), macOS arm64 and Windows x86-64.
+Verify the archive against the release's `SHA256SUMS`, extract it, and set
+`NEUROFLOW_MCP_BIN` to the executable for the checks above.
+
+Since v0.3.0, cancel a running `tools/call` by sending the MCP `notifications/cancelled`
+notification with that call's `requestId`. NeuroFlow stops the active step, starts no
+later steps, and records `cancelled` in `run.json`; its MCP server keeps serving
+subsequent requests. On Unix it stops the active process group. On Windows it stops
+only the direct child, so descendant processes may continue. The cancelled call
+receives no response and returns no run ID; inspect the run record in the configured
+sessions directory.
 
 The same CI workflow runs the DWI template with `--dwi`, after building
 dwidenoise, degibbs, dwicorrect, brain-extraction, noddi and dwi2trx. It

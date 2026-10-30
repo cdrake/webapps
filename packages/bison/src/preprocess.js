@@ -28,9 +28,6 @@ import {
 } from './register.js';
 import { applyVolumePol, fitVolumePol } from './volume-pol.js';
 
-// One kernel instance aborts on its 27th run (#537); load a new one well before.
-export const REGISTRATION_RUNS_PER_INSTANCE = 20;
-
 // N4 in place of nu_correct -iter 200 -distance 50 (defaults -fwhm 0.15, shrink 4, 200 bins, Wiener
 // noise 0.01): N4's own four-level schedule, 50 iterations each with no early stop, from 200 mm knots
 // to 25 mm. One level at nu_correct's 50 mm and -stop 0.001 stops early and leaves a field that
@@ -75,13 +72,12 @@ function sameGrid(volume, reference, name) {
 }
 
 /**
- * A registration instance that is replaced after `limit` runs (#537) or after an abort.
+ * A registration instance that is replaced after an abort.
  * run() has the instance's signature. dispose() ends the instance, where the driver can (a worker
  * thread), so its heap is freed; peakHeapBytes() is the largest heap an instance reported.
  */
-export function registrationSession(createRegistration, limit = REGISTRATION_RUNS_PER_INSTANCE) {
+export function registrationSession(createRegistration) {
   let instance = null;
-  let runs = 0;
   let peak = null;
   const end = async () => {
     const ended = instance;
@@ -92,12 +88,7 @@ export function registrationSession(createRegistration, limit = REGISTRATION_RUN
   };
   return {
     async run(argv, inputs) {
-      if (!instance || runs >= limit) {
-        await end();
-        instance = await createRegistration();
-        runs = 0;
-      }
-      runs++;
+      instance ??= await createRegistration();
       try {
         return await instance.run(argv, inputs);
       } catch (error) {

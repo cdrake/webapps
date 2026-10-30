@@ -1,8 +1,8 @@
 // antsRegistration and --apply argv for BISON, in place of the MINC tools run_native.sh calls
 // (bestlinreg_s2 + nlfit_s, mincresample, itk_resample), and Greedy's linear transforms as ITK .mat
 // files: Greedy replaces the linear bestlinreg_s2 runs (docs/preprocessing.md#greedy). The argv run in @neurodesk/hmc-registration:
-// one 3D float kernel that needs exactly one `--float 1` and one `--random-seed`, and that aborts
-// on its 27th run (#537), so callers load a new instance for each group of runs.
+// one 3D float kernel that needs exactly one `--float 1` and one `--random-seed`. Callers load a new
+// instance for each group of runs, so each group's heap is freed when it ends.
 //
 // Transform direction: an antsRegistration or Greedy transform maps fixed points to moving points.
 // The template is the fixed image of the T1 registrations and the T1 is the fixed image of the FLAIR

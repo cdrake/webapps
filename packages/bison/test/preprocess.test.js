@@ -33,25 +33,23 @@ test('N4 runs four full levels from 200 mm knots with a weight image', () => {
   assert.ok(!N4_OPTIONS.includes('-mask'));
 });
 
-test('registrationSession loads a new kernel after its run limit and after an abort', async () => {
+test('registrationSession keeps one kernel for every run and loads a new one after an abort', async () => {
   let loads = 0;
   const create = async () => {
     loads++;
-    let runs = 0;
     return {
       run: (argv) => {
-        runs++;
         if (argv[0] === 'abort') throw Object.assign(new Error('trap'), { aborted: true });
-        return { outputs: {}, runs };
+        return { outputs: {} };
       },
     };
   };
-  const session = registrationSession(create, 3);
-  for (let i = 0; i < 7; i++) await session.run(['x']);
-  assert.equal(loads, 3);
+  const session = registrationSession(create);
+  for (let i = 0; i < 50; i++) await session.run(['x']);
+  assert.equal(loads, 1);
   await assert.rejects(session.run(['abort']), /trap/);
   await session.run(['x']);
-  assert.equal(loads, 4);
+  assert.equal(loads, 2);
 });
 
 test('registrationSession disposes each instance it replaces and keeps the largest heap', async () => {
@@ -59,10 +57,21 @@ test('registrationSession disposes each instance it replaces and keeps the large
   let loads = 0;
   const create = async () => {
     const id = loads++;
-    return { run: () => ({ outputs: {} }), memoryBytes: () => (id + 1) * 100, dispose: async () => disposed.push(id) };
+    return {
+      run: (argv) => {
+        if (argv[0] === 'abort') throw Object.assign(new Error('trap'), { aborted: true });
+        return { outputs: {} };
+      },
+      memoryBytes: () => (id + 1) * 100,
+      dispose: async () => disposed.push(id),
+    };
   };
-  const session = registrationSession(create, 2);
-  for (let i = 0; i < 5; i++) await session.run(['x']);
+  const session = registrationSession(create);
+  await session.run(['x']);
+  await assert.rejects(session.run(['abort']), /trap/);
+  await session.run(['x']);
+  await assert.rejects(session.run(['abort']), /trap/);
+  await session.run(['x']);
   assert.deepEqual(disposed, [0, 1]);
   assert.equal(session.peakHeapBytes(), 300);
   await session.dispose();

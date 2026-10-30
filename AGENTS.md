@@ -163,10 +163,16 @@ An app can set `ci.e2e_shards` to 2-4 in `registry/apps.yml`. The CPU browser jo
 - The reference is the upstream BISON and BISON-WMH scripts on MINC preprocessing, run on epic with the MINC toolkit (`packages/bison/validation/native`, its `README.md`). Its "Divergences from upstream" section and `docs/preprocessing.md` map every step; add any new divergence there.
 - The T1 affine and the FLAIR rigid run on Greedy; the T1_VP SyN stays on ANTs: Greedy's SVF (NMI only, no cross-correlation) failed the native-agreement gates on CSF and the cerebellum (`docs/preprocessing.md#greedy`). Retry only with a metric or engine that changes that. Both the browser and Node run Greedy's committed single-threaded WebAssembly (`@neurodesk/greedy/single`, its `src/worker.js` in the browser); the native `greedy-rs` gives different matrix digits, so it would break the byte equality.
 - N4 replaces `nu_correct` with its own four-level schedule (`N4_OPTIONS`), not a one-to-one option translation: the direct translation stops early and brightens deep grey matter ([preprocessing.md#n4](packages/bison/docs/preprocessing.md#n4)). Keep it unless a new comparison against N3 on every validation subject shows better.
-- Each registration group and each denoised image gets a new WebAssembly instance, in its own Worker in the browser and worker thread in Node, so its memory is freed when it ends; one hmc kernel instance also aborts on its 27th run (#537, `REGISTRATION_RUNS_PER_INSTANCE`). Do not reuse an instance across stages.
+- Each registration group and each denoised image gets a new WebAssembly instance, in its own Worker in the browser and worker thread in Node, so its memory is freed when it ends. Do not reuse an instance across stages.
 - Outputs are on the native T1 grid: uint8 labels, one float32 probability per class and the uint8 mask, gzip level 9 with mtime 0 (`src/outputs.js`), so the bytes are the same in every browser and on the command line.
 - `apps/bison/scripts/copy-runtime.mjs` stages the hmc-registration and ants-denoise workers and kernels (pthread builds, so the page needs cross-origin isolation) and Greedy's worker and single-threaded build in the gitignored `public/bison-runtime/`. ONNX Runtime Web starts its threads from `src/worker.js` (named `em-pthread`); the worker must not set its own message handler there.
 - The `bison` command line has no release yet; the app is in `registry/standalone-exceptions.json` until its packaging is done.
+
+## ants-denoise
+
+- The app runs `@neurodesk/ants-denoise`'s own module worker (`?worker&url`; Vite emits the kernel beside it), one worker per run, terminated on cancel. Change the filter in the package, so the app and BISON stay identical.
+- `e2e/expected.json` pins native ANTs 2.6.5 `DenoiseImage` on the example with one ITK thread (`scripts/native-reference.mjs`, Docker), and the browser tests must reproduce it byte for byte. Rerecord it after a module rebuild or an example change.
+- The radii stop at the largest pair checked against native (patch 2, search 3), and the shrink factor stays 1. The app has no command line of its own: the Standalone dialog lists the ANTs container (`registry/standalone-exceptions.json`).
 
 ## nesvor and the compute server
 
