@@ -68,7 +68,11 @@ toolbar.addEventListener("nd-overlay-change", ({ detail }) => {
   if (attached && viewer.volumes.length > 1) void viewer.setVolume(1, { opacity: overlayOpacity });
 });
 $("viewer").prepend(toolbar);
-const log = createConsole({ id: "technicalLog", resizable: true });
+const log = createConsole({
+  id: "technicalLog",
+  resizable: true,
+  channels: [{ id: "analysis", label: "Analysis" }, { id: "technical", label: "Technical" }],
+});
 $("viewer").append(log);
 const progress = new ProgressManager();
 bindInfoTooltips(document);
@@ -84,10 +88,10 @@ let loading = null;
 let running = null;
 let outputs = {};
 
-function status(message, error = false) {
+function status(message, error = false, channel = "analysis") {
   $("statusText").textContent = message;
   $("statusText").classList.toggle("error", error);
-  log.log(message, error ? "error" : "info");
+  log.log(message, error ? "error" : "info", channel);
 }
 
 // The T1 and, once a run has finished, the flagged-slice map over it (1-3 flagged slices, 0 transparent).
@@ -111,7 +115,7 @@ const show = createPreviewQueue({
 const results = createResultList({
   element: $("resultList"),
   onView: (stage, result) => {
-    log.log(`Showing ${result.file.name}`, "info");
+    log.log(`Showing ${result.file.name}`, "info", "analysis");
     const scene = { image: input.file, map: stage === "map" ? result.file : null };
     void show(scene).catch((error) => status(error.message, true));
   },
@@ -158,7 +162,7 @@ function begin(message, signal) {
   signal?.addEventListener("abort", abort, { once: true });
   setBusy(true);
   progress.begin(message);
-  status(message);
+  status(message, false, "technical");
   return { controller, release: () => signal?.removeEventListener("abort", abort) };
 }
 
@@ -229,7 +233,7 @@ function classifyInWorker(job, signal) {
       if (data.type === "progress") {
         progress.setProgress(data.value, data.message);
       } else if (data.type === "log") {
-        log.log(data.message, "info");
+        log.log(data.message, "info", "technical");
       } else if (data.type === "error") {
         stop();
         reject(new Error(data.message));
@@ -269,7 +273,7 @@ async function checkQuality(signal, settings = formSettings()) {
   try {
     const backend = await resolveBackend(settings.backend);
     current.throwIfAborted();
-    log.log(`BrainQCNet, ${settings.method} method, ${settings.areas} areas per axis`, "info");
+    log.log(`BrainQCNet, ${settings.method} method, ${settings.areas} areas per axis`, "info", "analysis");
     const result = await classifyInWorker({ bytes: input.buffer.slice(0), backend, method: settings.method, areas: settings.areas }, current);
     const { summary } = result;
     const tables = reportFiles(input.file.name, summary, result.seconds);
@@ -285,7 +289,7 @@ async function checkQuality(signal, settings = formSettings()) {
     results.render({ input: { description: "T1-weighted image", file: input.file }, ...outputs });
     renderVerdict(summary);
     $("outputSection").open = true;
-    log.log(`Classified ${result.predictions.length} slices in ${result.seconds.toFixed(1)} s on ${result.backend === "wasm" ? "WebAssembly" : "WebGPU"}`, "info");
+    log.log(`Classified ${result.predictions.length} slices in ${result.seconds.toFixed(1)} s on ${result.backend === "wasm" ? "WebAssembly" : "WebGPU"}`, "info", "technical");
     const message = verdictStatus(summary);
     progress.end(message);
     status(message);
@@ -335,7 +339,7 @@ $("imageInput").addEventListener("change", (event) => {
 bindFileDrop($("dropZone"), importFiles);
 const exampleControl = createExampleSelector({
   examples,
-  onStatus: status,
+  onStatus: (message, error) => status(message, error, "technical"),
   onLoad: async (_example, { fetchFiles, assertCurrent, signal }) => {
     const files = await fetchFiles();
     assertCurrent();

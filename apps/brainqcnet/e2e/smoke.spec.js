@@ -45,6 +45,24 @@ test("a 4D series is refused, and the run stays unavailable", async ({ page }) =
   await expect(page.locator("#runButton")).toBeDisabled();
 });
 
+test("analysis errors and technical lifecycle messages stay in separate logs", async ({ page }) => {
+  await page.goto("./");
+  await page.locator("#imageInput").setInputFiles({ name: "sub-01_dwi.nii.gz", mimeType: "application/gzip", buffer: series4d() });
+  const error = "This image has 3 volumes. Choose one 3D T1-weighted volume.";
+  const analysis = page.getByRole("tabpanel", { name: "Analysis log" });
+  const technical = page.getByRole("tabpanel", { name: "Technical log" });
+  await expect(analysis).toBeVisible();
+  await expect(analysis).toContainText(error);
+  await expect(analysis).not.toContainText("Reading image");
+  await page.getByRole("tab", { name: "Technical", exact: true }).click();
+  await expect(technical).toContainText("Reading image");
+  await expect(technical).not.toContainText(error);
+  await page.locator("#technicalLog").getByRole("button", { name: "Clear", exact: true }).click();
+  await expect(technical).toHaveText("");
+  await page.getByRole("tab", { name: "Analysis", exact: true }).click();
+  await expect(analysis).toContainText(error);
+});
+
 test("an areas count outside the offered range is refused at its field", async ({ page }) => {
   test.setTimeout(180000);
   await page.goto("./");
