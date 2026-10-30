@@ -147,10 +147,10 @@ jobs:
           path: packages/greedy/native/
           if-no-files-found: error
 
-  # The whole-head regression gate for issue #623 (cli/tests/workflows.rs,
-  # masked_nmi_affine_on_a_whole_head_pair_matches_greedy) is #[ignore] so the
-  # matrix job's default run stays data-free; this job fetches the pinned pair and
-  # runs it by name, so a missing download fails rather than skips.
+  # The whole-head regression gates for issue #623 (cli/tests/workflows.rs, the
+  # tests named *whole_head*) are #[ignore] so the matrix job's default run stays
+  # data-free; this job fetches the pinned data and runs them by name, so a
+  # missing download fails rather than skips.
   whole-head-reference:
     runs-on: ubuntu-22.04
     timeout-minutes: 30
@@ -165,12 +165,12 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ${{ github.workspace }}/../greedy-t1-template/.download
-          key: greedy-t1-template-${{ hashFiles('apps/bison/examples.json', 'models/bison.manifest.json') }}
-      - name: Fetch the whole-head T1 and ICBM 2009c pair (sha256-checked)
+          key: greedy-t1-template-${{ hashFiles('apps/bison/examples.json', 'models/bison.manifest.json', 'exes/greedy/scripts/fetch_t1_template.py') }}
+      - name: Fetch the whole-head T1s and ICBM 2009c (sha256-checked)
         run: python3 exes/greedy/scripts/fetch_t1_template.py "$DATA"
-      - name: Masked and unmasked NMI affine on the whole-head pair match Greedy
+      - name: Masked NMI affine on the whole-head T1s (identity and -ia starts)
         working-directory: exes/greedy
-        run: GREEDY_T1_TEMPLATE_DIR="$DATA" cargo test --locked --release -p greedy-rs --test workflows masked_nmi_affine_on_a_whole_head_pair_matches_greedy -- --ignored --nocapture
+        run: GREEDY_T1_TEMPLATE_DIR="$DATA" cargo test --locked --release -p greedy-rs --test workflows whole_head -- --ignored --nocapture
 
   npm:
     needs: [native, macos-sign]

@@ -366,6 +366,69 @@ fn masked_nmi_affine_on_a_whole_head_pair_matches_greedy() {
     fs::remove_file(output).unwrap();
 }
 
+/// On these two ds007522 T1s the masked NMI affine collapses from the identity
+/// start (determinants 29.8 and 2.24; Greedy 1.4 collapses too), while starting
+/// it from the unmasked affine with `-ia` converges (#623): determinants 0.72
+/// and 0.64. The corners of a box around the template brain land 3.0 and 9.7 mm
+/// on average from where the unmasked affine puts them (534 and 63 mm from the
+/// identity start; 5.5 to 7.0 mm on three subjects where both starts converge).
+#[test]
+#[ignore = "requires GREEDY_T1_TEMPLATE_DIR to hold the whole-head T1s"]
+fn masked_nmi_affine_from_the_unmasked_one_on_whole_head_t1s() {
+    let data = env::var("GREEDY_T1_TEMPLATE_DIR")
+        .expect("GREEDY_T1_TEMPLATE_DIR must hold the whole-head T1s");
+    let template = format!("{data}/mni_icbm152_t1_tal_nlin_sym_09c.nii");
+    let mask = format!("{data}/mni_icbm152_t1_tal_nlin_sym_09c_mask.nii");
+    let directory = env::temp_dir().join(format!("greedy-rs-staged-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&directory);
+    fs::create_dir(&directory).unwrap();
+    for (subject, bounds) in [("0689", 0.65..0.80), ("0962", 0.58..0.72)] {
+        let t1 = format!("{data}/sub-HML{subject}_ses-01_rec-defaced_T1w.nii");
+        let unmasked = directory.join(format!("{subject}-unmasked.mat"));
+        let masked = directory.join(format!("{subject}-masked.mat"));
+        let common = ["-V", "0", "-d", "3", "-a", "-m", "NMI", "-n", "100x50x10"];
+        let mut arguments = common.to_vec();
+        arguments.extend(["-i", &template, &t1, "-o", unmasked.to_str().unwrap()]);
+        run(&arguments);
+        let mut arguments = common.to_vec();
+        arguments.extend(["-i", &template, &t1, "-gm", &mask]);
+        arguments.extend([
+            "-ia",
+            unmasked.to_str().unwrap(),
+            "-o",
+            masked.to_str().unwrap(),
+        ]);
+        run(&arguments);
+        let read = |path: &std::path::Path| {
+            greedy_rs_core::read_matrix(&fs::read_to_string(path).unwrap()).unwrap()
+        };
+        let (unmasked, masked) = (read(&unmasked), read(&masked));
+        let m = masked.0;
+        let determinant = m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1])
+            - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
+            + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+        assert!(
+            bounds.contains(&determinant),
+            "sub-HML{subject}: determinant {determinant} outside {bounds:?}"
+        );
+        let mut total = 0.0;
+        for x in [-70.0, 70.0] {
+            for y in [-100.0, 70.0] {
+                for z in [-60.0, 80.0] {
+                    let (a, b) = (masked.apply([x, y, z]), unmasked.apply([x, y, z]));
+                    total += (0..3).map(|i| (a[i] - b[i]).powi(2)).sum::<f64>().sqrt();
+                }
+            }
+        }
+        assert!(
+            total / 8.0 < 15.0,
+            "sub-HML{subject}: box corners {} mm from the unmasked affine",
+            total / 8.0
+        );
+    }
+    fs::remove_dir_all(directory).unwrap();
+}
+
 /// Regression gate against Greedy 1.3 (double, `-threads 1 -jitter 0`) on the
 /// 2 mm benchmark pair. Runs only when `GREEDY_BENCH_DIR` points at
 /// allineate-benchmark; the bar is Greedy's own float-versus-double spread.
