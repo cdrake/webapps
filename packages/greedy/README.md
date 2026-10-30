@@ -44,6 +44,27 @@ The Greedy app stages that directory at build time and initializes it inside a
 dedicated worker. Registration accepts uncompressed NIfTI bytes; callers use
 `gunzip` before registration and `gzip` for downloadable output.
 
+## Single-threaded build
+
+`wasm-single/` is a second build of the same crate without threads, committed
+so that every platform runs the same bytes. `@neurodesk/greedy/single` loads it
+in Node (`loadGreedySingleThread()`), with the threaded build's exports except
+`initThreadPool`; SYNcro's command line uses it. The core's reductions do not
+depend on the thread count, and on a BISON T1 and template pair the threaded
+build in Chromium and this build in Node gave byte-identical affine and warp
+outputs.
+
+After changing `exes/greedy/core` or `exes/greedy/wasm`, rebuild it on Linux
+and commit the result:
+
+```bash
+pnpm --filter @neurodesk/greedy build:wasm-single
+```
+
+LLVM folds math constants with the host's libm, so a build on another system
+can differ. The `wasm-single` job in `greedy-native.yml` rebuilds it with
+`--check` and fails when the committed files differ.
+
 ## Rebuild
 
 From the repository root:

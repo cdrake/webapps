@@ -64,6 +64,38 @@ Every `antsRegistration` has `--float 1`, `--random-seed 1234` (`DEFAULT_SEED`),
 `--collapse-output-transforms 1`, `--winsorize-image-intensities [0.005,0.995]` and no histogram
 matching. Identical template images (BISON and BISON-WMH share `SP_1..7`) are resampled once.
 
+## Greedy
+
+Issue #612 asked whether Greedy (`@neurodesk/greedy`, NMI only) could replace ANTs here. On
+2026-10-27 the native reference was rebuilt on five ds007522 subjects with the MINC 1.9.18 and
+ANTs 2.6.0 containers from Neurodesk's CVMFS (`--volpol masked-order1 --flair-reg ants`). The ANTs
+pipeline reproduced the documented numbers against it (sub-HML0541: linear mask Dice 0.975, label
+agreement 0.940, WMH 15.3 against 16.3 mL) and passed every gate of `test/pipeline-native.test.js`.
+
+Greedy estimated all three registrations and ANTs `--apply` resampled through them, converted to
+ITK `.mat` (template fixed for the affine, T1_VP fixed for the warp, linear mask as `-gm`). Mean
+over the five subjects; r as in the table above, for Av_T1 and the CSF and cerebellar priors.
+Seconds are the nonlinear step in Node, one thread, T1 + FLAIR runs on one shared 16-core host with
+five runs at a time; the load was not controlled, so compare them only roughly.
+
+| Nonlinear registration | r Av_T1 | r CSF | r cerebellar GM / WM | Label gates passed | Seconds |
+| --- | --- | --- | --- | --- | ---: |
+| ANTs SyN, CC (current) | 0.867 | 0.794 | 0.985 / 0.977 | 10 of 10 | 1607-1645 |
+| Greedy 100x50x0, linear mask | 0.817 | 0.727 | 0.944 / 0.918 | 0 of 10 | 103-123 |
+| Greedy 400x200x100, linear mask | 0.864 | 0.798 | 0.960 / 0.953 | 4 of 10 | 979-1039 |
+| Greedy 400x200x100, mask dilated 4 voxels | 0.884 | 0.819 | 0.975 / 0.955 | 6 of 10 | 936-1011 |
+
+The fast schedule failed every subject on CSF, the cerebellum and deep grey matter. The best
+variant still failed sub-HML0774 (CSF Dice 0.69, cerebellar WM 0.85; gates 0.77 and 0.88) and
+sub-HML0689 narrowly. Greedy has no cross-correlation metric, and the table above shows that CC is
+what brings SyN close to `nlfit_s`. So registration stays on ANTs. The linear steps passed alone:
+linear mask Dice 0.971-0.978 (ANTs 0.972-0.983) and FLAIR mask 0.972-0.977, in 31-64 s and
+23-37 s against 252-549 s and 325-391 s for ANTs on the same host. Swapping only those would save about
+165 s of an unloaded 1352 s run for a second engine, with a linear mask Dice of 0.971 on
+sub-HML0541 against the 0.97 gate; it was not done. Greedy's masked affine (`-gm`
+with the template mask) collapsed on these T1-to-template pairs; unmasked it landed within 4 mm of
+`bestlinreg_s2`.
+
 ## Transform direction and order
 
 An `antsRegistration` transform maps fixed points to moving points. The template is the fixed

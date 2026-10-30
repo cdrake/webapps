@@ -1600,21 +1600,123 @@
       "desktop": true,
       "profile": "batch",
       "assets": [],
-      "downloads": [],
+      "downloads": [
+        {
+          "kind": "cli",
+          "platform": "linux-x64",
+          "version": "0.6.20261029",
+          "url": "https://github.com/neurodesk/webapps/releases/download/noddi-v0.6.20261029/noddi-0.6.20261029-linux-x64.tar.gz",
+          "sha256": "4f5a54e768513c5a02aa936bdd7f104e107869a1eb88994dce4cec08a350afb8",
+          "bytes": 52980671,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/noddi-v0.6.20261029/noddi-0.6.20261029-linux-x64.tar.gz.validation.txt",
+          "modelsIncluded": true,
+          "command": "tar -xzf noddi-0.6.20261029-linux-x64.tar.gz\n./noddi-0.6.20261029-linux-x64/noddi dwi.nii.gz dwi.bval dwi.bvec results"
+        },
+        {
+          "kind": "cli",
+          "platform": "macos-arm64",
+          "version": "0.6.20261029",
+          "url": "https://github.com/neurodesk/webapps/releases/download/noddi-v0.6.20261029/noddi-0.6.20261029-macos-arm64.pkg",
+          "sha256": "8f1ecd0a37fde96a0b811e8836676425214059a52340b016ada20878ffb3137f",
+          "bytes": 46598207,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/noddi-v0.6.20261029/noddi-0.6.20261029-macos-arm64.pkg.validation.txt",
+          "modelsIncluded": true,
+          "command": "sudo installer -pkg noddi-0.6.20261029-macos-arm64.pkg -target /\nnoddi self-check\nnoddi dwi.nii.gz dwi.bval dwi.bvec results"
+        },
+        {
+          "kind": "cli",
+          "platform": "windows-x64",
+          "version": "0.6.20261029",
+          "url": "https://github.com/neurodesk/webapps/releases/download/noddi-v0.6.20261029/noddi-0.6.20261029-windows-x64.zip",
+          "sha256": "88e991d7f214269f495007ed5893edf97ba27b822fbb631ba7f52c15d3dd5867",
+          "bytes": 43326279,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/noddi-v0.6.20261029/noddi-0.6.20261029-windows-x64.zip.validation.txt",
+          "modelsIncluded": true,
+          "command": "Expand-Archive -Path .\\noddi-0.6.20261029-windows-x64.zip -DestinationPath .\n.\\noddi-0.6.20261029-windows-x64\\noddi.exe dwi.nii.gz dwi.bval dwi.bvec results"
+        }
+      ],
       "containers": []
     },
     "degibbs": {
       "desktop": true,
       "profile": "interactive",
       "assets": [],
-      "downloads": [],
+      "downloads": [
+        {
+          "kind": "cli",
+          "platform": "linux-x64",
+          "version": "0.4.20261027",
+          "url": "https://github.com/neurodesk/webapps/releases/download/degibbs-v0.4.20261027/degibbs-0.4.20261027-linux-x64.tar.gz",
+          "sha256": "96b4d5284ba9e2e04d2124d31788ebcb6476cb05d1379ceec4f13dd8458d97e3",
+          "bytes": 44610296,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/degibbs-v0.4.20261027/degibbs-0.4.20261027-linux-x64.tar.gz.validation.txt",
+          "modelsIncluded": true,
+          "command": "tar -xzf degibbs-0.4.20261027-linux-x64.tar.gz\n./degibbs-0.4.20261027-linux-x64/degibbs sub-01_dwi.nii.gz results"
+        },
+        {
+          "kind": "cli",
+          "platform": "macos-arm64",
+          "version": "0.4.20261027",
+          "url": "https://github.com/neurodesk/webapps/releases/download/degibbs-v0.4.20261027/degibbs-0.4.20261027-macos-arm64.pkg",
+          "sha256": "b484b73ad0c1cbe0c022b0970898b31af0b807529dd3e5f4b5636dbc6d9e654a",
+          "bytes": 38229325,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/degibbs-v0.4.20261027/degibbs-0.4.20261027-macos-arm64.pkg.validation.txt",
+          "modelsIncluded": true,
+          "command": "sudo installer -pkg degibbs-0.4.20261027-macos-arm64.pkg -target /\ndegibbs self-check\ndegibbs sub-01_dwi.nii.gz results"
+        },
+        {
+          "kind": "cli",
+          "platform": "windows-x64",
+          "version": "0.4.20261027",
+          "url": "https://github.com/neurodesk/webapps/releases/download/degibbs-v0.4.20261027/degibbs-0.4.20261027-windows-x64.zip",
+          "sha256": "58c8974db09af2b8c1565c4162ce839142966f9c75d27bf6f7d4d628349f224d",
+          "bytes": 34929681,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/degibbs-v0.4.20261027/degibbs-0.4.20261027-windows-x64.zip.validation.txt",
+          "modelsIncluded": true,
+          "command": "Expand-Archive -Path .\\degibbs-0.4.20261027-windows-x64.zip -DestinationPath .\n.\\degibbs-0.4.20261027-windows-x64\\degibbs.exe sub-01_dwi.nii.gz results"
+        }
+      ],
       "containers": []
     },
     "n4": {
       "desktop": true,
       "profile": "interactive",
       "assets": [],
-      "downloads": [],
+      "downloads": [
+        {
+          "kind": "cli",
+          "platform": "linux-x64",
+          "version": "0.6.20261027",
+          "url": "https://github.com/neurodesk/webapps/releases/download/n4-v0.6.20261027/n4-0.6.20261027-linux-x64.tar.gz",
+          "sha256": "12debbd7c75b776ac1d617b5ad6b117030a0859eb38649886f572ca98a86dd41",
+          "bytes": 55127358,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/n4-v0.6.20261027/n4-0.6.20261027-linux-x64.tar.gz.validation.txt",
+          "modelsIncluded": true,
+          "command": "tar -xzf n4-0.6.20261027-linux-x64.tar.gz\n./n4-0.6.20261027-linux-x64/n4 sub-01_dwi.nii.gz results"
+        },
+        {
+          "kind": "cli",
+          "platform": "macos-arm64",
+          "version": "0.6.20261027",
+          "url": "https://github.com/neurodesk/webapps/releases/download/n4-v0.6.20261027/n4-0.6.20261027-macos-arm64.pkg",
+          "sha256": "f544fbb7a10863092feea765adc9e1d718f76f61eafcfd4f7ebfd8e06fab6f9b",
+          "bytes": 48754353,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/n4-v0.6.20261027/n4-0.6.20261027-macos-arm64.pkg.validation.txt",
+          "modelsIncluded": true,
+          "command": "sudo installer -pkg n4-0.6.20261027-macos-arm64.pkg -target /\nn4 self-check\nn4 sub-01_dwi.nii.gz results"
+        },
+        {
+          "kind": "cli",
+          "platform": "windows-x64",
+          "version": "0.6.20261027",
+          "url": "https://github.com/neurodesk/webapps/releases/download/n4-v0.6.20261027/n4-0.6.20261027-windows-x64.zip",
+          "sha256": "327c72cc4c631e8df7e6c2073978543cdd6da07eb165a1305befe9c8650e0586",
+          "bytes": 45461307,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/n4-v0.6.20261027/n4-0.6.20261027-windows-x64.zip.validation.txt",
+          "modelsIncluded": true,
+          "command": "Expand-Archive -Path .\\n4-0.6.20261027-windows-x64.zip -DestinationPath .\n.\\n4-0.6.20261027-windows-x64\\n4.exe sub-01_dwi.nii.gz results"
+        }
+      ],
       "containers": []
     },
     "dcm2niix": {
@@ -1628,7 +1730,41 @@
       "desktop": true,
       "profile": "interactive",
       "assets": [],
-      "downloads": [],
+      "downloads": [
+        {
+          "kind": "cli",
+          "platform": "linux-x64",
+          "version": "0.4.20261027",
+          "url": "https://github.com/neurodesk/webapps/releases/download/dwidenoise-v0.4.20261027/dwidenoise-0.4.20261027-linux-x64.tar.gz",
+          "sha256": "8c974f88532b4103be54a8fbbb222bf15af69f19976d3797785dd559d9026e97",
+          "bytes": 44554885,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/dwidenoise-v0.4.20261027/dwidenoise-0.4.20261027-linux-x64.tar.gz.validation.txt",
+          "modelsIncluded": true,
+          "command": "tar -xzf dwidenoise-0.4.20261027-linux-x64.tar.gz\n./dwidenoise-0.4.20261027-linux-x64/dwidenoise sub-01_dwi.nii.gz results"
+        },
+        {
+          "kind": "cli",
+          "platform": "macos-arm64",
+          "version": "0.4.20261027",
+          "url": "https://github.com/neurodesk/webapps/releases/download/dwidenoise-v0.4.20261027/dwidenoise-0.4.20261027-macos-arm64.pkg",
+          "sha256": "7161e268866aedb19591b2ed893a120ce5850cd3bdb195806eebad2c15c966d5",
+          "bytes": 38159117,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/dwidenoise-v0.4.20261027/dwidenoise-0.4.20261027-macos-arm64.pkg.validation.txt",
+          "modelsIncluded": true,
+          "command": "sudo installer -pkg dwidenoise-0.4.20261027-macos-arm64.pkg -target /\ndwidenoise self-check\ndwidenoise sub-01_dwi.nii.gz results"
+        },
+        {
+          "kind": "cli",
+          "platform": "windows-x64",
+          "version": "0.4.20261027",
+          "url": "https://github.com/neurodesk/webapps/releases/download/dwidenoise-v0.4.20261027/dwidenoise-0.4.20261027-windows-x64.zip",
+          "sha256": "ba2946959cc909c4188660d86e7b783eb5316d8178974e86ec179dd0dda8d72b",
+          "bytes": 34872675,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/dwidenoise-v0.4.20261027/dwidenoise-0.4.20261027-windows-x64.zip.validation.txt",
+          "modelsIncluded": true,
+          "command": "Expand-Archive -Path .\\dwidenoise-0.4.20261027-windows-x64.zip -DestinationPath .\n.\\dwidenoise-0.4.20261027-windows-x64\\dwidenoise.exe sub-01_dwi.nii.gz results"
+        }
+      ],
       "containers": []
     },
     "me-ica": {
@@ -1670,7 +1806,41 @@
       "desktop": true,
       "profile": "interactive",
       "assets": [],
-      "downloads": [],
+      "downloads": [
+        {
+          "kind": "cli",
+          "platform": "linux-x64",
+          "version": "0.4.20261029",
+          "url": "https://github.com/neurodesk/webapps/releases/download/hmc-v0.4.20261029/hmc-0.4.20261029-linux-x64.tar.gz",
+          "sha256": "b6e295b1f937c851618f4fd4d1da5be2d091a185c110d08369eba31e2053172c",
+          "bytes": 56832776,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/hmc-v0.4.20261029/hmc-0.4.20261029-linux-x64.tar.gz.validation.txt",
+          "modelsIncluded": true,
+          "command": "tar -xzf hmc-0.4.20261029-linux-x64.tar.gz\n./hmc-0.4.20261029-linux-x64/hmc sub-01_dwi.nii.gz sub-01_dwi.bval sub-01_dwi.bvec results"
+        },
+        {
+          "kind": "cli",
+          "platform": "macos-arm64",
+          "version": "0.4.20261029",
+          "url": "https://github.com/neurodesk/webapps/releases/download/hmc-v0.4.20261029/hmc-0.4.20261029-macos-arm64.pkg",
+          "sha256": "60287dade6974e472f7f22c27b890f007de9fa534db5f0a0a72a3aafb730c8bf",
+          "bytes": 50486576,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/hmc-v0.4.20261029/hmc-0.4.20261029-macos-arm64.pkg.validation.txt",
+          "modelsIncluded": true,
+          "command": "sudo installer -pkg hmc-0.4.20261029-macos-arm64.pkg -target /\nhmc self-check\nhmc sub-01_dwi.nii.gz sub-01_dwi.bval sub-01_dwi.bvec results"
+        },
+        {
+          "kind": "cli",
+          "platform": "windows-x64",
+          "version": "0.4.20261029",
+          "url": "https://github.com/neurodesk/webapps/releases/download/hmc-v0.4.20261029/hmc-0.4.20261029-windows-x64.zip",
+          "sha256": "93e4d7cdb2fe8e69c4622ee7ac535849c40c433d3f89b745bef77b0903749d97",
+          "bytes": 47214939,
+          "validationUrl": "https://github.com/neurodesk/webapps/releases/download/hmc-v0.4.20261029/hmc-0.4.20261029-windows-x64.zip.validation.txt",
+          "modelsIncluded": true,
+          "command": "Expand-Archive -Path .\\hmc-0.4.20261029-windows-x64.zip -DestinationPath .\n.\\hmc-0.4.20261029-windows-x64\\hmc.exe sub-01_dwi.nii.gz sub-01_dwi.bval sub-01_dwi.bvec results"
+        }
+      ],
       "containers": []
     },
     "ants-denoise": {

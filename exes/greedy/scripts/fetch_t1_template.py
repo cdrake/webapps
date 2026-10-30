@@ -4,12 +4,13 @@
     python3 exes/greedy/scripts/fetch_t1_template.py DEST
 
 reads the pins the BISON app already carries (apps/bison/examples.json for the
-defaced T1, models/bison.manifest.json for the template and its mask), checks
-each download against its size and sha256, and decompresses the three files
+defaced T1, models/bison.manifest.json for the template and its mask) and the
+two T1s pinned below (WHOLE_HEAD), checks
+each download against its size and sha256, and decompresses the files
 into DEST as the `.nii` names `cli/tests/workflows.rs` expects. Then run
 
     GREEDY_T1_TEMPLATE_DIR=DEST cargo test --release -p greedy-rs --test workflows \
-      masked_nmi_affine_on_a_whole_head_pair_matches_greedy -- --ignored
+      whole_head -- --ignored
 
 Downloads are kept in DEST/.download, so a second run only re-checks. Needs
 Python 3.9+ and no other dependency.
@@ -28,6 +29,20 @@ EXAMPLES = os.path.join(ROOT, 'apps', 'bison', 'examples.json')
 MANIFEST = os.path.join(ROOT, 'models', 'bison.manifest.json')
 
 T1 = 'sub-HML0541_ses-01_rec-defaced_T1w.nii.gz'
+# OpenNeuro ds007522 (CC0), byte for byte: the identity start collapses the
+# masked NMI affine on these two, and the unmasked start does not (#623).
+WHOLE_HEAD = [
+    {
+        'url': 'https://huggingface.co/datasets/neurodeskorg/webapps/resolve/5002380600bb2bcd44c3db4fd5e4f3fcc40a7df3/greedy/whole-head/ds007522/sub-HML0689/ses-01/anat/sub-HML0689_ses-01_rec-defaced_T1w.nii.gz',
+        'bytes': 10691252,
+        'sha256': '4a3a463b20ddb906be0d3cd6ae5020fd7219759dc7d21c0bb7ae8fa1293946e3',
+    },
+    {
+        'url': 'https://huggingface.co/datasets/neurodeskorg/webapps/resolve/5002380600bb2bcd44c3db4fd5e4f3fcc40a7df3/greedy/whole-head/ds007522/sub-HML0962/ses-01/anat/sub-HML0962_ses-01_rec-defaced_T1w.nii.gz',
+        'bytes': 9195684,
+        'sha256': '5e206aa8b6cdd29494cac3bfc901c7e5920849a865a79bc43546a89cc594535a',
+    },
+]
 TEMPLATES = ['templates/mni_icbm152_t1_tal_nlin_sym_09c.nii.gz', 'templates/mni_icbm152_t1_tal_nlin_sym_09c_mask.nii.gz']
 
 
@@ -76,14 +91,14 @@ def pins():
     missing = [name for name in TEMPLATES if name not in entries]
     if missing:
         sys.exit(f'{MANIFEST}: no pin for {", ".join(missing)}')
-    return [t1[0]] + [entries[name] for name in TEMPLATES]
+    return [t1[0]] + [entries[name] for name in TEMPLATES] + WHOLE_HEAD
 
 
 def main(dest):
     dest = os.path.abspath(dest)
     cache = os.path.join(dest, '.download')
     for entry in pins():
-        name = os.path.basename(entry.get('name') or entry['filename'])
+        name = os.path.basename(entry.get('name') or entry.get('filename') or entry['url'])
         archive = os.path.join(cache, name)
         download(entry, archive)
         out = os.path.join(dest, name[: -len('.gz')])
