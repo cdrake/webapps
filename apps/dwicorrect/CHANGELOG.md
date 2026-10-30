@@ -1,5 +1,11 @@
 # dwicorrect
 
+## 0.1.20261029
+
+### Patch Changes
+
+- @neurodesk/sdc@0.3.20261029
+
 ## 0.1.20261027
 
 ### Patch Changes

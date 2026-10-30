@@ -58,8 +58,9 @@ jobs:
       NEURODESK_HARDWARE_GPU: '1'
       NEURODESK_HARDWARE_GPU_VENDOR: apple
       ONNXRUNTIME_NODE_INSTALL: skip
-      # v0.2.1: scalar-to-array bindings (v0.2.0) and gradient-table inspectors.
-      NEUROFLOW_COMMIT: 2a844009fb135311cada8161c0dcd658df9d5833
+      # v0.3.0: array item counts, optional-output warnings and run cancellation
+      # on top of v0.2.1's gradient-table inspectors.
+      NEUROFLOW_COMMIT: 3d2afdc0e38aa6ce9dd9c059b757a3a88647b2ca
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -67,7 +68,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           repository: cdrake/neuroflow
-          ref: 2a844009fb135311cada8161c0dcd658df9d5833 # v0.2.1
+          ref: 3d2afdc0e38aa6ce9dd9c059b757a3a88647b2ca # v0.3.0
           path: .audit/neuroflow-runtime
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable

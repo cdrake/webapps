@@ -1,5 +1,12 @@
 # noddi
 
+## 0.6.20261029
+
+### Patch Changes
+
+- @neurodesk/dwi2trx@0.8.20261029
+- @neurodesk/noddi@0.6.20261029
+
 ## 0.6.20261027
 
 ### Patch Changes

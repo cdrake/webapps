@@ -1,5 +1,13 @@
 # syncro
 
+## 0.7.20261029
+
+### Patch Changes
+
+- Updated dependencies [4761b2c]
+  - @neurodesk/greedy@0.7.20261029
+  - @neurodesk/syncro@0.7.20261029
+
 ## 0.7.20261027
 
 ### Patch Changes

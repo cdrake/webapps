@@ -1,5 +1,12 @@
 # @neurodesk/fastprep
 
+## 0.2.8
+
+### Patch Changes
+
+- 4761b2c: Pass `-ia-image-centers` through the browser Greedy driver now that the WebAssembly affine takes the start as an argument.
+  - @neurodesk/sdc@0.3.20261029
+
 ## 0.2.7
 
 ### Patch Changes

@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import * as model from "../src/model.js";
+import { createValidator } from "../src/validator.js";
 
 const source = {
   id: "lab/source",
@@ -106,9 +108,52 @@ test("optional outputs warn on required consumers and workflow outputs", () => {
   assert.equal(model.workflowIssues(doc, tools).filter(issue => issue.code === "optional-output").length, 1);
 });
 
+test("an optional output warning reported by the NeuroFlow core is not repeated", async () => {
+  const validate = await createValidator(tools, await readFile(new URL("../vendor/neuroflow/neuroflow_wasm_bg.wasm", import.meta.url)));
+  const doc = workflow({ ref: "steps.source.outputs.conditional" });
+  doc.outputs.result = { type: "neuro:volume", ref: "steps.source.outputs.conditional" };
+  const optional = validate(doc).issues.filter(issue => /is optional/.test(issue.message));
+  assert.deepEqual(optional.map(issue => [issue.path, issue.code]), [
+    ["steps.target.inputs.input_images", undefined],
+    ["outputs.result.ref", undefined],
+  ]);
+});
+
 test("required outputs and unbounded inputs need no additional warnings", () => {
   const unbounded = { ...target, inputs: { input_images: { type: "core:array<neuro:volume>", optional: true } } };
   const doc = workflow({ ref: "steps.source.outputs.images" });
   doc.outputs.result = { type: "neuro:volume", ref: "steps.source.outputs.image" };
   assert.deepEqual(model.workflowIssues(doc, [source, unbounded]), []);
+});
+
+test("bounded 0.1.2 workflows remain valid through import, export and their round trip", async () => {
+  const bounded = { ...target, neuroflow: "0.1.2", inputs: { input_images: { type: "core:array<neuro:volume>", minItems: 2, maxItems: 3 } } };
+  const validate = await createValidator([source, bounded], await readFile(new URL("../vendor/neuroflow/neuroflow_wasm_bg.wasm", import.meta.url)));
+  const doc = { ...workflow({ constant: ["one", "two"] }), neuroflow: "0.1.2", description: "A bounded collection" };
+  doc.inputs.images.minItems = 2;
+  doc.inputs.images.maxItems = 3;
+  assert.equal(validate(doc).ok, true);
+  const imported = model.parseWorkflow(JSON.stringify(doc));
+  const exported = JSON.parse(model.serializeWorkflow(doc));
+  const roundTrip = JSON.parse(model.serializeWorkflow(imported));
+  for (const edited of [imported, exported, roundTrip]) {
+    assert.equal(edited.neuroflow, "0.1.2");
+    assert.deepEqual(edited.inputs.images, doc.inputs.images);
+    assert.equal(validate(edited).ok, true, JSON.stringify(validate(edited).issues));
+    for (const constant of [["one"], ["one", "two", "three", "four"]]) {
+      const invalid = structuredClone(edited);
+      invalid.steps.target.inputs.input_images = { constant };
+      assert.equal(validate(invalid).ok, false, "item bounds still apply after editing");
+    }
+  }
+});
+
+test("explicit spec versions survive editing so the core can reject unsupported versions", async () => {
+  const validate = await createValidator(tools, await readFile(new URL("../vendor/neuroflow/neuroflow_wasm_bg.wasm", import.meta.url)));
+  for (const version of ["0.1.1", "0.1.2", "9.9.9"]) {
+    const doc = { ...workflow({ constant: ["one", "two"] }), neuroflow: version, description: "Version preservation" };
+    const roundTrip = JSON.parse(model.serializeWorkflow(model.parseWorkflow(JSON.stringify(doc))));
+    assert.equal(roundTrip.neuroflow, version);
+    assert.equal(validate(roundTrip).ok, version !== "9.9.9");
+  }
 });

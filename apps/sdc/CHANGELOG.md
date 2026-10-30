@@ -1,5 +1,12 @@
 # sdc
 
+## 0.3.20261029
+
+### Patch Changes
+
+- 3eb6bf8: Build the automation report's provenance, including the PyHySCO backend, adapter and any WebGPU fallback error, in the tested pipeline module.
+  - @neurodesk/sdc@0.3.20261029
+
 ## 0.3.20261027
 
 ### Patch Changes
