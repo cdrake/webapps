@@ -1688,6 +1688,20 @@
           "apptainerName": "ants_2.6.5_20261012"
         }
       ]
+    },
+    "brainqcnet": {
+      "desktop": true,
+      "profile": "interactive",
+      "assets": [],
+      "downloads": [],
+      "containers": [
+        {
+          "id": "brainqcnetcpu",
+          "label": "BrainQCNet CPU 1.0.1 (the authors' BIDS app)",
+          "url": "https://hub.docker.com/r/garciaml/brainqcnetcpu",
+          "dockerImage": "garciaml/brainqcnetcpu:1.0.1@sha256:d00acfddf4e6d8e594a0c6dff905080e4349250c173736c4248a5be9f697c969"
+        }
+      ]
     }
   }
 }

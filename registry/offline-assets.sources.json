@@ -5495,6 +5495,27 @@
         "bytes": 1827303,
         "kind": "example"
       }
+    ],
+    "brainqcnet": [
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/9afd0f8eabb2e0348c413530fbff42f7bf7a5134/brainqcnet/examples/sub-000103_acq-standard_T1w.nii.gz",
+        "sha256": "5cbe235acfdccd9b6f406a6f5a6f5bd61483ead7789c8d7ec6167dc64cb3c7bc",
+        "bytes": 11088525,
+        "kind": "example"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/9afd0f8eabb2e0348c413530fbff42f7bf7a5134/brainqcnet/examples/sub-000103_acq-headmotion2_T1w.nii.gz",
+        "sha256": "754432d53bf5013ac672f0370b6427fab73a2954e0fdc9e8cb7b380f70978b6d",
+        "bytes": 11626660,
+        "kind": "example"
+      },
+      {
+        "url": "https://huggingface.co/datasets/neurodeskorg/webapps/resolve/fa3365f8d94b0926776644e6ad82442e2da1a370/brainqcnet/brainqcnet-resnet152-19112020.onnx",
+        "sha256": "e5d469201e0b25a4395117d17be6bb053c8f8491535e38f0168fcf27eeeed67b",
+        "bytes": 235537156,
+        "kind": "model",
+        "license": "NOASSERTION"
+      }
     ]
   },
   "exclusions": [],
