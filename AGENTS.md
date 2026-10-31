@@ -341,7 +341,7 @@ An app can set `ci.e2e_shards` to 2-4 in `registry/apps.yml`. The CPU browser jo
 ## pipeline-builder
 
 - Validation is NeuroFlow's core, vendored as WASM (`vendor/neuroflow/README.md`, `provenance.json`). Import/export keeps the workflow's `neuroflow` version; 0.1.0 or missing becomes 0.1.1.
-- NeuroFlow core v0.3.2 does not check constants (type, integer, min/max, enum; cdrake/neuroflow#50), does not resolve `inputs.<name>` refs (#49), and ignores the `localId` grammar (#51). PR #648 adds builder checks for the first two in `workflowIssues` (`constant-invalid`, `input-undeclared`), typed array parameters, and import shape checks in `parseWorkflow`.
+- NeuroFlow core v0.6.0 reports undeclared `inputs.<name>` refs (`input-undeclared`) and invalid constants (`constant-invalid`: type, integer, enum, min/max). It ignores the `localId` grammar (cdrake/neuroflow#51). The builder's `constant-invalid` check in `workflowIssues` stays for the per-item limits in `neurodesk/parameter`; `validator.js` drops it where the core already reported that path. PR #648 also adds typed array parameters and import shape checks in `parseWorkflow`.
 - Optional-output warnings come only from the core (v0.3.2 matches the removed builder check on every catalog binding).
 - Open: `bindNewWorkflowInput` drops item bounds; carrying `minItems`/`maxItems` needs the generator to emit them and a 0.1.2 document. If it does, the core's item-count issue will duplicate the builder's `input-count` warning.
 
